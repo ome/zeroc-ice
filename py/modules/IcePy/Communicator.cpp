@@ -1003,12 +1003,12 @@ communicatorCreateObjectAdapterWithRouter(CommunicatorObject* self, PyObject* ar
         return 0;
     }
 
-    AllowThreads allowThreads; // Release Python's global interpreter lock to avoid a potential deadlock.
 
     assert(self->communicator);
     Ice::ObjectAdapterPtr adapter;
     try
     {
+        AllowThreads allowThreads; // Release Python's global interpreter lock to avoid a potential deadlock.
         adapter = (*self->communicator)->createObjectAdapterWithRouter(name, router);
     }
     catch(const Ice::Exception& ex)
