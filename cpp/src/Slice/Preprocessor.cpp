@@ -46,7 +46,8 @@ extern "C" char* mcpp_get_mem_buffer(Outdest od);
 
 Slice::Preprocessor::Preprocessor(const string& path, const string& fileName, const vector<string>& args) :
     _path(path),
-    _fileName(fileName),
+    _fileName(fullPath(fileName)),
+    _shortFileName(fileName),
     _args(args),
     _cppHandle(0)
 {
@@ -316,7 +317,6 @@ Slice::Preprocessor::printMakefileDependencies(Language lang, const vector<strin
     {
         fullIncludePaths.push_back(fullPath(*p));
     }
-    string absoluteFileName = fullPath(_fileName);
 
     //
     // Process each dependency.
@@ -328,9 +328,9 @@ Slice::Preprocessor::printMakefileDependencies(Language lang, const vector<strin
         string file = IceUtilInternal::trim(unprocessed.substr(pos, end - pos));
         if(IceUtilInternal::isAbsolutePath(file))
         {
-            if(file == absoluteFileName)
+            if(file == _fileName)
             {
-                file = _fileName;
+                file = _shortFileName;
             }
             else
             {
