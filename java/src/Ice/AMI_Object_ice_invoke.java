@@ -37,6 +37,7 @@ public abstract class AMI_Object_ice_invoke extends IceInternal.OutgoingAsync
         byte[] outParams;
         try
         {
+            __is.startReadEncaps();
             int sz = __is.getReadEncapsSize();
             outParams = __is.readBlob(sz);
             __is.endReadEncaps();
