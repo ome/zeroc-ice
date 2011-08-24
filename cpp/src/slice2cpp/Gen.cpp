@@ -322,6 +322,10 @@ Slice::Gen::generate(const UnitPtr& p)
                 H << nl << "#include <" << s.substr(includePrefix.size()) << ">";
             }
         }
+        else
+        {
+            H << "\n#include <Ice/StreamF.h>";
+        }
     }
 
     printVersionCheck(H);
