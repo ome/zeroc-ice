@@ -29,7 +29,7 @@ SRCS		= $(OBJS:.obj=.cpp) \
 
 CPPFLAGS	= -I. -I../../include $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 
-!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+!if "$(CPP_COMPILER)" != "BCC2006" && "$(OPTIMIZE)" != "yes"
 CPDBFLAGS        = /pdb:$(CLIENT:.exe=.pdb)
 SPDBFLAGS        = /pdb:$(SERVER:.exe=.pdb)
 !endif
@@ -46,8 +46,6 @@ $(SERVER): $(OBJS) $(SOBJS)
 
 clean::
 	del /q Test.cpp Test.h
-
-clean::
-	del /q db\Test db\log.*
+	for %f in (db\*) do if not %f == db\.gitignore del /q %f
 
 !include .depend

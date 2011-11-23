@@ -46,7 +46,7 @@ SRCS		= $(OBJS:.obj=.cpp) \
 
 CPPFLAGS	= -I. -Idummyinclude $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 
-!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+!if "$(CPP_COMPILER)" != "BCC2006" && "$(OPTIMIZE)" != "yes"
 CPDBFLAGS        = /pdb:$(CLIENT:.exe=.pdb)
 SPDBFLAGS        = /pdb:$(SERVER:.exe=.pdb)
 COPDBFLAGS       = /pdb:$(COLLOCATED:.exe=.pdb)
@@ -86,13 +86,12 @@ NameIndex.h NameIndex.cpp: PhoneBook.ice $(SLICE2FREEZE)
 #	del /q Grammar.output
 
 clean::
-	del /q NameIndex.h NameIndex.cpp
-
-clean::
 	del /q PhoneBook.cpp PhoneBook.h
 
 clean::
-#	del /q Grammar.cpp Grammar.h
-#	del /q Scanner.cpp
+	-del /q NameIndex.h NameIndex.cpp
+#	-del /q Grammar.cpp Grammar.h
+#	-del /q Scanner.cpp
+	-for %f in (db\*) do if not %f == db\.gitignore del /q %f
 
 !include .depend

@@ -101,7 +101,9 @@ OBJS		= Acceptor.o \
 		  UdpTransceiver.o \
 		  UnknownEndpointI.o
 
-SRCS		= $(OBJS:.o=.cpp)
+SRCS		= $(OBJS:.o=.cpp) \
+		  DLLMain.cpp \
+		  EventLoggerI.cpp
 
 SLICE_SRCS	= $(SDIR)/BuiltinSequences.ice \
 		  $(SDIR)/CommunicatorF.ice \
@@ -161,5 +163,15 @@ $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 
 install:: all
 	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))
+
+clean::
+	-rm -f EventLoggerMsg.h
+
+# The dummy EventLoggerMsg.h is necessary to get correct dependencies
+# for windows
+EventLoggerI.cpp: EventLoggerMsg.h
+
+EventLoggerMsg.h:
+	-touch EventLoggerMsg.h
 
 include .depend

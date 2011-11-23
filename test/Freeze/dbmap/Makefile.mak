@@ -26,7 +26,7 @@ SRCS		= $(OBJS:.obj=.cpp)
 
 CPPFLAGS	= -I. -I..\..\include $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 
-!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+!if "$(CPP_COMPILER)" != "BCC2006" && "$(OPTIMIZE)" != "yes"
 CPDBFLAGS        = /pdb:$(CLIENT:.exe=.pdb)
 !endif
 
@@ -37,7 +37,7 @@ $(CLIENT): $(OBJS)
 
 ByteIntMap.h ByteIntMap.cpp: $(SLICE2FREEZE)
 	del /q ByteIntMap.h ByteIntMap.cpp
-	$(SLICE2FREEZE) --dict Test::ByteIntMap,byte,int --dict-index Test::ByteIntMap ByteIntMap
+	$(SLICE2FREEZE) --dict Test::ByteIntMap,byte,int --dict-index Test::ByteIntMap,sort ByteIntMap
 
 IntIdentityMap.h IntIdentityMap.cpp: $(SLICE2FREEZE)
 	del /q IntIdentityMap.h IntIdentityMap.cpp
@@ -56,9 +56,11 @@ WstringWstringMap.h WstringWstringMap.cpp: $(SLICE2FREEZE)
 	$(SLICE2FREEZE) --dict Test::WstringWstringMap,[\"cpp:type:wstring\"]string,[\"cpp:type:wstring\"]string --dict-index Test::WstringWstringMap WstringWstringMap
 
 clean::
-	del /q ByteIntMap.h ByteIntMap.cpp IntIdentityMap.h IntIdentityMap.cpp IntIdentityMapWithIndex.h IntIdentityMapWithIndex.cpp SortedMap.h SortedMap.cpp WstringWstringMap.h WstringWstringMap.cpp
 
 clean::
-	del /q db\binary db\binary.* db\intIdentity db\intIdentity.* db\__catalog db\log.*
+	del /q ByteIntMap.h ByteIntMap.cpp IntIdentityMap.h IntIdentityMap.cpp
+	del /q IntIdentityMapWithIndex.h IntIdentityMapWithIndex.cpp SortedMap.h SortedMap.cpp
+	del /q WstringWstringMap.h WstringWstringMap.cpp
+	for %f in (db\*) do if not %f == db\.gitignore del /q %f
 
 !include .depend

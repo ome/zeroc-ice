@@ -1,24 +1,24 @@
-# Microsoft Developer Studio Project File - Name="procC" - Package Owner=<4>
+# Microsoft Developer Studio Project File - Name="customevictC" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Console Application" 0x0103
 
-CFG=procC - Win32 Debug
+CFG=customevictC - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "procC.mak".
+!MESSAGE NMAKE /f "customevictC.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "procC.mak" CFG="procC - Win32 Debug"
+!MESSAGE NMAKE /f "customevictC.mak" CFG="customevictC - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "procC - Win32 Release" (based on "Win32 (x86) Console Application")
-!MESSAGE "procC - Win32 Debug" (based on "Win32 (x86) Console Application")
+!MESSAGE "customevictC - Win32 Release" (based on "Win32 (x86) Console Application")
+!MESSAGE "customevictC - Win32 Debug" (based on "Win32 (x86) Console Application")
 !MESSAGE 
 
 # Begin Project
@@ -28,7 +28,7 @@ CFG=procC - Win32 Debug
 CPP=cl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "procC - Win32 Release"
+!IF  "$(CFG)" == "customevictC - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I "." /I "../../../../include" /I "../../../../include/stlport" /D "_CONSOLE" /D "NDEBUG" /D "WIN32_LEAN_AND_MEAN" /FD /c
+# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I "." /I "../../../include" /I "../../../include/stlport" /I "dummyinclude" /D "_CONSOLE" /D "NDEBUG" /D "WIN32_LEAN_AND_MEAN" /FD /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
@@ -51,10 +51,10 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 Ice.lib IceUtil.lib setargv.obj /nologo /subsystem:console /pdb:none /machine:I386 /out:"client.exe" /libpath:"../../../../lib" /FIXED:no
-# SUBTRACT LINK32 /debug /nodefaultlib
+# ADD LINK32 Freeze.lib Ice.lib IceUtil.lib setargv.obj /nologo /subsystem:console /pdb:none /machine:I386 /out:"client.exe" /libpath:"../../../lib" /FIXED:no
+# SUBTRACT LINK32 /debug
 
-!ELSEIF  "$(CFG)" == "procC - Win32 Debug"
+!ELSEIF  "$(CFG)" == "customevictC - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 1
@@ -68,7 +68,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I "." /I "../../../../include" /I "../../../../include/stlport" /D "_CONSOLE" /D "_DEBUG" /D "WIN32_LEAN_AND_MEAN" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I "." /I "../../../include" /I "../../../include/stlport" /I "dummyinclude" /D "_CONSOLE" /D "_DEBUG" /D "WIN32_LEAN_AND_MEAN" /FD /GZ /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
@@ -77,15 +77,15 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 Iced.lib IceUtild.lib setargv.obj /nologo /subsystem:console /debug /machine:I386 /out:"client.exe" /pdbtype:sept /libpath:"../../../../lib" /FIXED:no
+# ADD LINK32 Freezed.lib Iced.lib IceUtild.lib setargv.obj /nologo /subsystem:console /debug /machine:I386 /out:"client.exe" /pdbtype:sept /libpath:"../../../lib" /FIXED:no
 # SUBTRACT LINK32 /pdb:none
 
 !ENDIF 
 
 # Begin Target
 
-# Name "procC - Win32 Release"
-# Name "procC - Win32 Debug"
+# Name "customevictC - Win32 Release"
+# Name "customevictC - Win32 Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
@@ -95,7 +95,7 @@ SOURCE=.\Client.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\HR.cpp
+SOURCE=.\Item.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -103,7 +103,7 @@ SOURCE=.\HR.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
-SOURCE=.\HR.h
+SOURCE=.\Item.h
 # End Source File
 # End Group
 # Begin Group "Resource Files"
@@ -111,37 +111,72 @@ SOURCE=.\HR.h
 # PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 # Begin Source File
 
-SOURCE=.\HR.ice
+SOURCE=.\Item.ice
 
-!IF  "$(CFG)" == "procC - Win32 Release"
+!IF  "$(CFG)" == "customevictC - Win32 Release"
 
-USERDEP__HR_IC="..\..\..\..\bin\slice2cpp.exe"	"..\..\..\..\lib\slice.lib"	
 # Begin Custom Build
-InputPath=.\HR.ice
+InputPath=.\Item.ice
 
 BuildCmds= \
-	..\..\..\..\bin\slice2cpp.exe HR.ice
+	..\..\..\bin\slice2cpp.exe Item.ice
 
-"HR.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"Item.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 
-"HR.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"Item.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "procC - Win32 Debug"
+!ELSEIF  "$(CFG)" == "customevictC - Win32 Debug"
 
-USERDEP__HR_IC="..\..\..\..\bin\slice2cpp.exe"	"..\..\..\..\lib\sliced.lib"	
 # Begin Custom Build
-InputPath=.\HR.ice
+InputPath=.\Item.ice
 
 BuildCmds= \
-	..\..\..\..\bin\slice2cpp.exe HR.ice
+	..\..\..\bin\slice2cpp.exe Item.ice
 
-"HR.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"Item.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 
-"HR.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"Item.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\ItemInfo.ice
+
+!IF  "$(CFG)" == "customevictC - Win32 Release"
+
+# Begin Custom Build
+InputPath=.\ItemInfo.ice
+
+BuildCmds= \
+	..\..\..\bin\slice2cpp.exe ItemInfo.ice
+
+"ItemInfo.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"ItemInfo.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "customevictC - Win32 Debug"
+
+# Begin Custom Build
+InputPath=.\ItemInfo.ice
+
+BuildCmds= \
+	..\..\..\bin\slice2cpp.exe ItemInfo.ice
+
+"ItemInfo.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"ItemInfo.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
 

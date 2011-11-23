@@ -286,35 +286,15 @@ static void yy_fatal_error YY_PROTO(( yyconst char msg[] ));
 	*yy_cp = '\0'; \
 	yy_c_buf_p = yy_cp;
 
-#define YY_NUM_RULES 48
-#define YY_END_OF_BUFFER 49
-static yyconst short int yy_accept[228] =
+#define YY_NUM_RULES 12
+#define YY_END_OF_BUFFER 13
+static yyconst short int yy_accept[42] =
     {   0,
-       43,   43,   49,   47,   43,   44,   45,   46,   47,   44,
-       47,   47,   47,   47,   47,   47,   47,   47,   47,   47,
-       47,   47,   47,   47,   47,   47,   47,   47,   47,   43,
-        0,    6,    5,    0,   43,    0,    0,    0,    0,    0,
-        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-        0,    0,    0,    0,    0,    0,   12,    0,    0,    0,
-        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-        0,    0,    0,   18,    0,    0,    0,    0,    0,    0,
-        0,    0,    0,    0,    0,    0,    0,    0,    0,    1,
-
-        0,    0,    0,    0,    0,    0,   36,    0,    0,    0,
-        8,   32,    7,    0,   14,   29,   26,    0,    0,   28,
-        0,    0,    0,   33,    0,    0,    0,    0,    0,    0,
-       22,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-        0,    0,    0,    0,    0,    0,   21,    0,    0,    0,
-        0,    0,    0,   20,   17,    0,    0,    0,    0,    0,
-        0,    0,    0,    0,    0,    0,    0,    0,    0,   41,
-        0,    0,   31,    0,   13,   10,    0,    0,   23,   25,
-       24,    0,   37,    0,    0,    2,    0,    0,   11,    0,
-       34,    0,   42,    0,    0,    0,   40,    0,    0,    0,
-
-        0,    0,    0,   16,    0,    0,   27,   15,   39,   35,
-        0,    3,    0,    0,   19,    0,    0,   30,    0,    0,
-        0,    0,    9,   38,    0,    4,    0
+        7,    7,   13,   11,    7,    8,    9,   10,   11,    8,
+       11,   11,    7,    0,    6,    5,    0,    7,    0,    0,
+        0,    0,    1,    0,    0,    0,    0,    0,    0,    0,
+        2,    0,    0,    0,    3,    0,    0,    0,    0,    4,
+        0
     } ;
 
 static yyconst int yy_ec[256] =
@@ -328,11 +308,11 @@ static yyconst int yy_ec[256] =
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,   12,    1,    1,    1,    1,   13,   14,   15,   16,
+        1,   12,    1,    1,    1,    1,    1,    1,    1,    1,
 
-       17,   18,   19,   20,   21,   22,    1,   23,   24,   25,
-       26,   27,   28,   29,   30,   31,   32,   33,   34,   35,
-       36,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+       13,    1,    1,    1,   14,    1,    1,   15,    1,   16,
+        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
@@ -349,145 +329,57 @@ static yyconst int yy_ec[256] =
         1,    1,    1,    1,    1
     } ;
 
-static yyconst int yy_meta[37] =
+static yyconst int yy_meta[17] =
     {   0,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1
+        1,    2,    3,    2,    1,    1,    1,    1,    1,    1,
+        1,    4,    1,    1,    1,    1
     } ;
 
-static yyconst short int yy_base[232] =
+static yyconst short int yy_base[48] =
     {   0,
-        0,  255,  260,  262,   35,  262,  262,  262,   32,  262,
-       40,   30,  233,   31,   24,  237,  240,  231,   29,  229,
-      240,   40,  221,  235,   43,  234,  223,  236,   52,   54,
-       65,  262,  262,   68,  262,  217,   60,  220,  219,  215,
-       47,   65,  223,  218,  219,  211,  210,  226,  222,  215,
-      205,   63,  214,   61,  205,   57,  214,   71,  208,  215,
-      201,   80,   89,  208,  207,  200,  262,  203,  189,  209,
-      205,  209,  207,  193,  188,  202,  190,  185,  184,  198,
-      196,  195,  196,  262,  191,  178,  187,  181,  173,  171,
-      173,  178,   64,   79,  175,  174,  187,  170,   99,  262,
-
-      173,  164,  165,  174,  173,  164,  262,  178,  168,  164,
-      262,  262,  262,  176,  262,  262,  262,  173,  167,  262,
-      156,  152,   77,  262,  168,  170,  151,  164,  151,  147,
-      262,  155,  146,  163,  170,  157,  160,  155,  156,  145,
-      148,  145,  150,  145,  140,  133,  262,  132,  145,  132,
-      145,  133,  135,  262,  262,  128,  125,  142,  137,  128,
-      147,  148,  148,  118,  119,  134,  127,  131,  127,  262,
-      118,  111,  262,  112,  262,  262,  123,  105,  262,  262,
-      262,  107,  262,  106,  133,  262,   98,  114,  262,  103,
-      262,  116,  262,  101,  110,   94,  262,  104,  111,   91,
-
-      104,  100,  104,  262,   94,  110,  262,  262,  262,  262,
-      107,  262,   97,   95,  262,   89,  114,  262,   93,  100,
-      111,  112,  262,  262,  110,  262,  262,  110,   85,   50,
-       37
+        0,   43,   48,   80,   32,   80,   80,   80,    9,   80,
+       37,   17,   27,   35,   80,   80,    0,   80,    0,   31,
+       23,   40,   80,   20,   30,   18,   25,   26,   24,   22,
+       80,   18,   44,   53,   80,   19,   18,   19,   18,   80,
+       80,   57,   60,   63,   67,   71,   75
     } ;
 
-static yyconst short int yy_def[232] =
+static yyconst short int yy_def[48] =
     {   0,
-      227,    1,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  228,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      228,  229,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  229,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  230,  227,  227,  227,
-      230,  231,  227,  227,  231,  227,    0,  227,  227,  227,
-      227
+       41,    1,   41,   41,   42,   41,   41,   41,   41,   41,
+       43,   41,   42,   43,   41,   41,   14,   41,   12,   41,
+       41,   41,   41,   41,   44,   41,   44,   45,   41,   45,
+       41,   41,   41,   41,   41,   46,   46,   47,   47,   41,
+        0,   41,   41,   41,   41,   41,   41
     } ;
 
-static yyconst short int yy_nxt[299] =
+static yyconst short int yy_nxt[97] =
     {   0,
         4,    5,    6,    5,    7,    4,    8,    4,    9,    4,
-       10,   11,   12,    4,   13,   14,   15,   16,    4,   17,
-       18,    4,   19,    4,   20,   21,   22,   23,   24,   25,
-       26,   27,    4,   28,    4,    4,   30,  225,   30,   32,
-       33,   34,   35,   34,   36,   37,   31,   40,   42,   47,
-      221,   41,   51,   62,   48,   30,   38,   30,   43,   55,
-       52,   63,   56,   57,   71,   31,   34,   35,   34,   34,
-       35,   34,   66,   58,   64,   67,   72,   73,   84,   87,
-       74,   62,   90,   93,   88,  185,   94,   85,   91,   63,
-       99,  100,  127,  150,  128,  129,   95,  151,   63,  187,
-
-       99,  100,   64,  135,  130,  211,  212,  201,  211,  212,
-      161,  217,  226,  201,  226,  222,  224,  223,  222,  220,
-      219,  218,  216,  215,  214,  213,  210,  209,  208,  207,
-      206,  205,  204,  203,  202,  186,  200,  199,  198,  197,
-      196,  195,  194,  193,  192,  191,  190,  189,  188,  187,
-      186,  162,  184,  183,  182,  181,  180,  179,  178,  177,
-      176,  175,  174,  173,  172,  171,  170,  169,  168,  167,
-      166,  165,  164,  163,  162,  160,  159,  158,  157,  156,
-      155,  154,  153,  152,  149,  148,  147,  146,  145,  144,
-      143,  142,  141,  140,  139,  138,  137,  136,  134,  133,
-
-      132,  131,  126,  125,  124,  123,  122,  121,  111,  120,
-      119,  118,  117,  116,  115,  114,  113,  112,  111,  110,
-      109,  108,  107,  106,  105,  104,  103,  102,  101,   98,
-       97,   96,   92,   89,   86,   83,   82,   81,   80,   79,
-       78,   77,   76,   75,   70,   69,   68,   65,   61,   60,
-       59,   54,   53,   50,   49,   46,   45,   44,   39,  227,
-       29,    3,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227
+       10,   11,    4,    4,    4,    4,   15,   16,   19,   32,
+       40,   40,   38,   38,   31,   32,   20,   33,   31,   28,
+       29,   21,   22,   23,   28,   26,   24,   18,   14,   18,
+       20,   22,   23,   14,   25,   34,   35,   41,   12,   41,
+       41,   41,   41,   33,   34,   35,   41,   36,   13,   41,
+       13,   17,   17,   27,   27,   27,   27,   30,   30,   30,
+       30,   37,   37,   37,   37,   39,   39,   39,   39,    3,
+       41,   41,   41,   41,   41,   41,   41,   41,   41,   41,
+       41,   41,   41,   41,   41,   41
 
     } ;
 
-static yyconst short int yy_chk[299] =
+static yyconst short int yy_chk[97] =
     {   0,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    5,  231,    5,    9,
-        9,   11,   11,   11,   12,   12,    5,   14,   15,   19,
-      230,   14,   22,   29,   19,   30,   12,   30,   15,   25,
-       22,   29,   25,   25,   41,   30,   31,   31,   31,   34,
-       34,   34,   37,   25,   29,   37,   41,   42,   52,   54,
-       42,   62,   56,   58,   54,  229,   58,   52,   56,   62,
-       63,   63,   93,  123,   93,   94,   58,  123,   63,  187,
-
-       99,   99,   62,   99,   94,  201,  201,  187,  211,  211,
-      228,  211,  225,  201,  222,  221,  220,  219,  217,  216,
-      214,  213,  206,  205,  203,  202,  200,  199,  198,  196,
-      195,  194,  192,  190,  188,  185,  184,  182,  178,  177,
-      174,  172,  171,  169,  168,  167,  166,  165,  164,  163,
-      162,  161,  160,  159,  158,  157,  156,  153,  152,  151,
-      150,  149,  148,  146,  145,  144,  143,  142,  141,  140,
-      139,  138,  137,  136,  135,  134,  133,  132,  130,  129,
-      128,  127,  126,  125,  122,  121,  119,  118,  114,  110,
-      109,  108,  106,  105,  104,  103,  102,  101,   98,   97,
-
-       96,   95,   92,   91,   90,   89,   88,   87,   86,   85,
-       83,   82,   81,   80,   79,   78,   77,   76,   75,   74,
-       73,   72,   71,   70,   69,   68,   66,   65,   64,   61,
-       60,   59,   57,   55,   53,   51,   50,   49,   48,   47,
-       46,   45,   44,   43,   40,   39,   38,   36,   28,   27,
-       26,   24,   23,   21,   20,   18,   17,   16,   13,    3,
-        2,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227,  227,  227,
-      227,  227,  227,  227,  227,  227,  227,  227
+        1,    1,    1,    1,    1,    1,    9,    9,   12,   32,
+       39,   38,   37,   36,   30,   29,   12,   32,   28,   27,
+       26,   12,   20,   20,   25,   24,   21,   14,   13,   11,
+       20,   22,   22,    5,   22,   33,   33,    3,    2,    0,
+        0,    0,    0,   33,   34,   34,    0,   34,   42,    0,
+       42,   43,   43,   44,   44,   44,   44,   45,   45,   45,
+       45,   46,   46,   46,   46,   47,   47,   47,   47,   41,
+       41,   41,   41,   41,   41,   41,   41,   41,   41,   41,
+       41,   41,   41,   41,   41,   41
 
     } ;
 
@@ -533,8 +425,19 @@ using namespace IceGrid;
 
 #define YY_INPUT(buf, result, maxSize) parser->getInput(buf, result, maxSize)
 
+namespace IceGrid
+{
+
+typedef std::map<std::string, int> StringTokenMap;
+static StringTokenMap keywordMap;
+
+void initScanner();
+
+}
+#define	YY_USER_INIT initScanner();
+
 #define YY_NEVER_INTERACTIVE 1
-#line 537 "lex.yy.c"
+#line 440 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -688,10 +591,10 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 38 "Scanner.l"
+#line 51 "Scanner.l"
 
 
-#line 694 "lex.yy.c"
+#line 597 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -743,13 +646,13 @@ yy_match:
 			while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 				{
 				yy_current_state = (int) yy_def[yy_current_state];
-				if ( yy_current_state >= 228 )
+				if ( yy_current_state >= 42 )
 					yy_c = yy_meta[(unsigned int) yy_c];
 				}
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
 			++yy_cp;
 			}
-		while ( yy_base[yy_current_state] != 262 );
+		while ( yy_base[yy_current_state] != 80 );
 
 yy_find_action:
 		yy_act = yy_accept[yy_current_state];
@@ -780,7 +683,7 @@ case 1:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 40 "Scanner.l"
+#line 53 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
@@ -790,7 +693,7 @@ case 2:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 44 "Scanner.l"
+#line 57 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
@@ -800,7 +703,7 @@ case 3:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 48 "Scanner.l"
+#line 61 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
@@ -810,14 +713,14 @@ case 4:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 52 "Scanner.l"
+#line 65 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 56 "Scanner.l"
+#line 69 "Scanner.l"
 {
     // C++-style comment
     int c;
@@ -834,7 +737,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 70 "Scanner.l"
+#line 83 "Scanner.l"
 {
     // C-style comment
     while(true)
@@ -866,259 +769,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 99 "Scanner.l"
-{
-    return ICE_GRID_HELP;
-}
-	YY_BREAK
-case 8:
-YY_RULE_SETUP
-#line 103 "Scanner.l"
-{
-    return ICE_GRID_EXIT;
-}
-	YY_BREAK
-case 9:
-YY_RULE_SETUP
-#line 107 "Scanner.l"
-{
-    return ICE_GRID_APPLICATION;
-}
-	YY_BREAK
-case 10:
-YY_RULE_SETUP
-#line 111 "Scanner.l"
-{
-    return ICE_GRID_SERVER;
-}
-	YY_BREAK
-case 11:
-YY_RULE_SETUP
-#line 115 "Scanner.l"
-{
-    return ICE_GRID_ADAPTER;
-}
-	YY_BREAK
-case 12:
-YY_RULE_SETUP
-#line 119 "Scanner.l"
-{
-    return ICE_GRID_ADD;
-}
-	YY_BREAK
-case 13:
-YY_RULE_SETUP
-#line 123 "Scanner.l"
-{
-    return ICE_GRID_REMOVE;
-}
-	YY_BREAK
-case 14:
-YY_RULE_SETUP
-#line 127 "Scanner.l"
-{
-    return ICE_GRID_LIST;
-}
-	YY_BREAK
-case 15:
-YY_RULE_SETUP
-#line 131 "Scanner.l"
-{
-    return ICE_GRID_SHUTDOWN;
-}
-	YY_BREAK
-case 16:
-YY_RULE_SETUP
-#line 135 "Scanner.l"
-{
-    return ICE_GRID_DESCRIBE;
-}
-	YY_BREAK
-case 17:
-YY_RULE_SETUP
-#line 139 "Scanner.l"
-{
-    return ICE_GRID_STATE;
-}
-	YY_BREAK
-case 18:
-YY_RULE_SETUP
-#line 143 "Scanner.l"
-{
-    return ICE_GRID_PID;
-}
-	YY_BREAK
-case 19:
-YY_RULE_SETUP
-#line 147 "Scanner.l"
-{
-    return ICE_GRID_ENDPOINTS;
-}
-	YY_BREAK
-case 20:
-YY_RULE_SETUP
-#line 151 "Scanner.l"
-{
-    return ICE_GRID_START;
-}
-	YY_BREAK
-case 21:
-YY_RULE_SETUP
-#line 155 "Scanner.l"
-{
-    return ICE_GRID_PATCH;
-}
-	YY_BREAK
-case 22:
-YY_RULE_SETUP
-#line 159 "Scanner.l"
-{
-    return ICE_GRID_STOP;
-}
-	YY_BREAK
-case 23:
-YY_RULE_SETUP
-#line 163 "Scanner.l"
-{
-    return ICE_GRID_SIGNAL;
-}
-	YY_BREAK
-case 24:
-YY_RULE_SETUP
-#line 167 "Scanner.l"
-{
-    return ICE_GRID_STDOUT;
-}
-	YY_BREAK
-case 25:
-YY_RULE_SETUP
-#line 171 "Scanner.l"
-{
-    return ICE_GRID_STDERR;
-}
-	YY_BREAK
-case 26:
-YY_RULE_SETUP
-#line 175 "Scanner.l"
-{
-    return ICE_GRID_NODE;
-}
-	YY_BREAK
-case 27:
-YY_RULE_SETUP
-#line 179 "Scanner.l"
-{
-    return ICE_GRID_REGISTRY;
-}
-	YY_BREAK
-case 28:
-YY_RULE_SETUP
-#line 183 "Scanner.l"
-{
-    return ICE_GRID_PING;
-}
-	YY_BREAK
-case 29:
-YY_RULE_SETUP
-#line 187 "Scanner.l"
-{
-    return ICE_GRID_LOAD;
-}
-	YY_BREAK
-case 30:
-YY_RULE_SETUP
-#line 191 "Scanner.l"
-{
-    return ICE_GRID_ACTIVATION;
-}
-	YY_BREAK
-case 31:
-YY_RULE_SETUP
-#line 195 "Scanner.l"
-{
-    return ICE_GRID_OBJECT;
-}
-	YY_BREAK
-case 32:
-YY_RULE_SETUP
-#line 199 "Scanner.l"
-{
-    return ICE_GRID_FIND;
-}
-	YY_BREAK
-case 33:
-YY_RULE_SETUP
-#line 203 "Scanner.l"
-{
-    return ICE_GRID_SHOW;
-}
-	YY_BREAK
-case 34:
-YY_RULE_SETUP
-#line 207 "Scanner.l"
-{
-    return ICE_GRID_COPYING;
-}
-	YY_BREAK
-case 35:
-YY_RULE_SETUP
-#line 211 "Scanner.l"
-{
-    return ICE_GRID_WARRANTY;
-}
-	YY_BREAK
-case 36:
-YY_RULE_SETUP
-#line 215 "Scanner.l"
-{
-    return ICE_GRID_DIFF;
-}
-	YY_BREAK
-case 37:
-YY_RULE_SETUP
-#line 219 "Scanner.l"
-{
-    return ICE_GRID_UPDATE;
-}
-	YY_BREAK
-case 38:
-YY_RULE_SETUP
-#line 223 "Scanner.l"
-{
-    return ICE_GRID_INSTANTIATE;
-}
-	YY_BREAK
-case 39:
-YY_RULE_SETUP
-#line 227 "Scanner.l"
-{
-    return ICE_GRID_TEMPLATE;
-}
-	YY_BREAK
-case 40:
-YY_RULE_SETUP
-#line 231 "Scanner.l"
-{
-    return ICE_GRID_SERVICE;
-}
-	YY_BREAK
-case 41:
-YY_RULE_SETUP
-#line 235 "Scanner.l"
-{
-    return ICE_GRID_ENABLE;
-}
-	YY_BREAK
-case 42:
-YY_RULE_SETUP
-#line 239 "Scanner.l"
-{
-    return ICE_GRID_DISABLE;
-}
-	YY_BREAK
-case 43:
-YY_RULE_SETUP
-#line 243 "Scanner.l"
+#line 112 "Scanner.l"
 {
     size_t len = strlen(yytext);
     for(size_t i = 0; i < len; ++i)
@@ -1134,9 +785,9 @@ YY_RULE_SETUP
     }
 }
 	YY_BREAK
-case 44:
+case 8:
 YY_RULE_SETUP
-#line 258 "Scanner.l"
+#line 127 "Scanner.l"
 {
     size_t len = strlen(yytext);
     for(size_t i = 0; i < len; ++i)
@@ -1149,9 +800,9 @@ YY_RULE_SETUP
     return ';';
 }
 	YY_BREAK
-case 45:
+case 9:
 YY_RULE_SETUP
-#line 270 "Scanner.l"
+#line 139 "Scanner.l"
 {
     // "..."-type strings
     string s;
@@ -1231,9 +882,9 @@ YY_RULE_SETUP
     return ICE_GRID_STRING;
 }
 	YY_BREAK
-case 46:
+case 10:
 YY_RULE_SETUP
-#line 349 "Scanner.l"
+#line 218 "Scanner.l"
 {
     // '...'-type strings
     string s;
@@ -1264,9 +915,9 @@ YY_RULE_SETUP
     return ICE_GRID_STRING;
 }
 	YY_BREAK
-case 47:
+case 11:
 YY_RULE_SETUP
-#line 379 "Scanner.l"
+#line 248 "Scanner.l"
 {
     // Simple strings
     string s;
@@ -1286,17 +937,20 @@ YY_RULE_SETUP
 	
 	s += c;
     }
+
     yylvalp->clear();
     yylvalp->push_back(s);
-    return ICE_GRID_STRING;
+
+    StringTokenMap::const_iterator pos = keywordMap.find(s);
+    return pos != keywordMap.end() ? pos->second : ICE_GRID_STRING;
 }
 	YY_BREAK
-case 48:
+case 12:
 YY_RULE_SETUP
-#line 403 "Scanner.l"
+#line 275 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 1299 "lex.yy.c"
+#line 953 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1589,7 +1243,7 @@ static yy_state_type yy_get_previous_state()
 		while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 			{
 			yy_current_state = (int) yy_def[yy_current_state];
-			if ( yy_current_state >= 228 )
+			if ( yy_current_state >= 42 )
 				yy_c = yy_meta[(unsigned int) yy_c];
 			}
 		yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
@@ -1624,11 +1278,11 @@ yy_state_type yy_current_state;
 	while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 		{
 		yy_current_state = (int) yy_def[yy_current_state];
-		if ( yy_current_state >= 228 )
+		if ( yy_current_state >= 42 )
 			yy_c = yy_meta[(unsigned int) yy_c];
 		}
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
-	yy_is_jam = (yy_current_state == 227);
+	yy_is_jam = (yy_current_state == 41);
 
 	return yy_is_jam ? 0 : yy_current_state;
 	}
@@ -2180,5 +1834,55 @@ int main()
 	return 0;
 	}
 #endif
-#line 403 "Scanner.l"
+#line 275 "Scanner.l"
 
+
+namespace IceGrid {
+
+//
+// initScanner() fills the keyword map with all keyword-token pairs.
+//
+
+void
+initScanner()
+{
+    keywordMap["help"] = ICE_GRID_HELP;
+    keywordMap["quit"] = ICE_GRID_EXIT;
+    keywordMap["exit"] = ICE_GRID_EXIT;
+    keywordMap["application"] = ICE_GRID_APPLICATION;
+    keywordMap["server"] = ICE_GRID_SERVER;
+    keywordMap["adapter"] = ICE_GRID_ADAPTER;
+    keywordMap["add"] = ICE_GRID_ADD;
+    keywordMap["remove"] = ICE_GRID_REMOVE;
+    keywordMap["list"] = ICE_GRID_LIST;
+    keywordMap["shutdown"] = ICE_GRID_SHUTDOWN;
+    keywordMap["describe"] = ICE_GRID_DESCRIBE;
+    keywordMap["state"] = ICE_GRID_STATE;
+    keywordMap["pid"] = ICE_GRID_PID;
+    keywordMap["endpoints"] = ICE_GRID_ENDPOINTS;
+    keywordMap["start"] = ICE_GRID_START;
+    keywordMap["patch"] = ICE_GRID_PATCH;
+    keywordMap["stop"] = ICE_GRID_STOP;
+    keywordMap["signal"] = ICE_GRID_SIGNAL;
+    keywordMap["stdout"] = ICE_GRID_STDOUT;
+    keywordMap["stderr"] = ICE_GRID_STDERR;
+    keywordMap["node"] = ICE_GRID_NODE;
+    keywordMap["registry"] = ICE_GRID_REGISTRY;
+    keywordMap["ping"] = ICE_GRID_PING;
+    keywordMap["load"] = ICE_GRID_LOAD;
+    keywordMap["activation"] = ICE_GRID_ACTIVATION;
+    keywordMap["object"] = ICE_GRID_OBJECT;
+    keywordMap["find"] = ICE_GRID_FIND;
+    keywordMap["show"] = ICE_GRID_SHOW;
+    keywordMap["copying"] = ICE_GRID_COPYING;
+    keywordMap["warranty"] = ICE_GRID_WARRANTY;
+    keywordMap["diff"] = ICE_GRID_DIFF;
+    keywordMap["update"] = ICE_GRID_UPDATE;
+    keywordMap["instantiate"] = ICE_GRID_INSTANTIATE;
+    keywordMap["template"] = ICE_GRID_TEMPLATE;
+    keywordMap["service"] = ICE_GRID_SERVICE;
+    keywordMap["enable"] = ICE_GRID_ENABLE;
+    keywordMap["disable"] = ICE_GRID_DISABLE;
+}
+
+}

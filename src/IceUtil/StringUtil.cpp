@@ -89,7 +89,7 @@ encodeChar(string::value_type b, string& s, const string& special)
             s.append("\\t");
             break;
         }
-        
+
         default: 
         {
             unsigned char i = static_cast<unsigned char>(b);
@@ -249,7 +249,7 @@ decodeChar(const string& s, string::size_type start, string::size_type end, stri
                 {
                     throw IllegalArgumentException(__FILE__, __LINE__, "octal value out of range");
                 }
-                c = (char)oct;
+                c = static_cast<char>(oct);
                 break;
             }
             default:

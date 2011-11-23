@@ -32,8 +32,8 @@ IntLongMap.h IntLongMap.cpp: $(SLICE2FREEZE)
 	$(SLICE2FREEZE) -I$(slicedir) --dict IntLongMap,int,long IntLongMap
 
 clean::
-	rm -f IntLongMap.h IntLongMap.cpp
-	rm -f db/data/IntLongMap db/logs/log* 
-	rm -rf full incremental
+	-rm -f IntLongMap.h IntLongMap.cpp
+	-rm -f db/__* db/data/* db/logs/*
+	-rm -rf hotbackup hotbackup.1
 
 include .depend

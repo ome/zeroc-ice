@@ -25,7 +25,7 @@ SLICE_SRCS	= TestOld.ice
 
 CPPFLAGS	= -I. $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 
-!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+!if "$(CPP_COMPILER)" != "BCC2006" && "$(OPTIMIZE)" != "yes"
 PDBFLAGS        = /pdb:$(CLIENT:.exe=.pdb)
 !endif
 
@@ -40,11 +40,10 @@ IntSMap.h IntSMap.cpp: $(SLICE2FREEZE)
 
 clean::
 	del /q IntSMap.h IntSMap.cpp
-
-clean::
 	del /q TestOld.cpp TestOld.h
-
-clean::
-	del /q db\*.db db\log.* db\__catalog
+        if exist db_init rmdir /s /q db_init
+        if exist db_check rmdir /s /q db_check
+        if exist db_tmp rmdir /s /q db_tmp
+	for %f in (db\*) do if not %f == db\.gitignore del /q %f
 
 !include .depend

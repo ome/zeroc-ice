@@ -15,3 +15,13 @@ Demos in this directory:
 
   An implementation of the simple (non-persistent, non-life-cycle)
   version of the filesystem example.
+
+- lifecycle
+
+  An implementation of the simple (non-persistent, non-life-cycle)
+  version of the file system example.
+
+- freeze_filesystem
+
+  An implementation of the persistent version of the filesystem
+  example described in the Freeze chapter.

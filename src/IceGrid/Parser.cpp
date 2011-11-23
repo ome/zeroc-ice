@@ -220,7 +220,7 @@ Parser::usage(const string& category, const string& command)
 {
     if(_helpCommands.find(category) == _helpCommands.end())
     {
-        invalidCommand("unknown category `" + category + "'");
+        invalidCommand("unknown command `" + category + "'");
     }
     else if(_helpCommands[category].find(command) == _helpCommands[category].end())
     {
@@ -373,7 +373,7 @@ Parser::addApplication(const list<string>& origArgs)
             }
             catch(const PatchException& ex)
             {
-                patchFailed(ex.reasons);
+                warning(patchFailed(ex.reasons));
             }
         }
     }
@@ -484,7 +484,7 @@ Parser::updateApplication(const list<string>& args)
 {
     if(args.size() < 1)
     {
-        invalidCommand("application diff", "requires at least one argument");
+        invalidCommand("application update", "requires at least one argument");
         return;
     }
 
@@ -559,8 +559,14 @@ Parser::patchApplication(const list<string>& origArgs)
 }
 
 void
-Parser::listAllApplications()
+Parser::listAllApplications(const list<string>& args)
 {
+    if(!args.empty())
+    {
+        invalidCommand("application list", "doesn't require any argument");
+        return;
+    }
+
     try
     {
         Ice::StringSeq names = _admin->getAllApplicationNames();
@@ -801,8 +807,14 @@ Parser::shutdownNode(const list<string>& args)
 }
 
 void
-Parser::listAllNodes()
+Parser::listAllNodes(const list<string>& args)
 {
+    if(!args.empty())
+    {
+        invalidCommand("node list", "doesn't require any argument");
+        return;
+    }
+
     try
     {
         Ice::StringSeq names = _admin->getAllNodeNames();
@@ -892,8 +904,14 @@ Parser::shutdownRegistry(const list<string>& args)
 }
 
 void
-Parser::listAllRegistries()
+Parser::listAllRegistries(const list<string>& args)
 {
+    if(!args.empty())
+    {
+        invalidCommand("registry list", "doesn't require any argument");
+        return;
+    }
+
     try
     {
         Ice::StringSeq names = _admin->getAllRegistryNames();
@@ -1205,8 +1223,14 @@ Parser::enableServer(const list<string>& args, bool enable)
 }
 
 void
-Parser::listAllServers()
+Parser::listAllServers(const list<string>& args)
 {
+    if(!args.empty())
+    {
+        invalidCommand("server list", "doesn't require any argument");
+        return;
+    }
+
     try
     {
         Ice::StringSeq ids = _admin->getAllServerIds();
@@ -1272,8 +1296,14 @@ Parser::removeAdapter(const list<string>& args)
 }
 
 void
-Parser::listAllAdapters()
+Parser::listAllAdapters(const list<string>& args)
 {
+    if(!args.empty())
+    {
+        invalidCommand("adapter list", "doesn't require any argument");
+        return;
+    }
+
     try
     {
         Ice::StringSeq ids = _admin->getAllAdapterIds();
@@ -1288,9 +1318,9 @@ Parser::listAllAdapters()
 void
 Parser::addObject(const list<string>& args)
 {
-    if(args.size() < 1)
+    if(args.size() != 1 && args.size() != 2)
     {
-        invalidCommand("object add", "requires at least one argument");
+        invalidCommand("object add", "requires one or two arguments");
         return;
     }
 
@@ -1361,6 +1391,12 @@ Parser::findObject(const list<string>& args)
 void
 Parser::describeObject(const list<string>& args)
 {
+    if(args.size() > 1)
+    {
+        invalidCommand("object describe", "requires at most one argument");
+        return;
+    }
+
     try
     {
         ObjectInfoSeq objects;
@@ -1399,6 +1435,12 @@ Parser::describeObject(const list<string>& args)
 void
 Parser::listObject(const list<string>& args)
 {
+    if(args.size() > 1)
+    {
+        invalidCommand("object list", "requires at most one argument");
+        return;
+    }
+
     try
     {
         ObjectInfoSeq objects;
@@ -1816,57 +1858,99 @@ Parser::scanPosition(const char* s)
 void
 Parser::invalidCommand(const char* s)
 {
-    error(string(s) + "\n(`help' for more info)");
+    error(s);
 }
 
 void
 Parser::invalidCommand(const string& s)
 {
-    invalidCommand(s.c_str());
+    error(s.c_str());
 }
 
 void
-Parser::invalidCommand(const string& command, const string& s)
+Parser::invalidCommand(const string& command, const string& msg)
 {
-    error("`" + command + "'\n(`" + command + " help' for more info)");
+    error("`" + command + "' " + msg + "\n(`" + command + " help' for more info)");
 }
 
 void
+Parser::invalidCommand(const list<string>& s)
+{
+    if(s.empty())
+    {
+        return;
+    }
+    
+    string cat = *s.begin();
+    if(_helpCommands.find(cat) == _helpCommands.end())
+    {
+        cerr << "unknown `" << cat << "' command (see `help' for more info)" << endl;
+    }
+    else if(s.size() == 1)
+    {
+        cerr << "invalid `" << cat << "' command (see `" << cat << " help' for more info)" << endl;
+    }
+    else
+    {
+        string cmd = *(++s.begin());
+        if(_helpCommands[cat].find(cmd) == _helpCommands[cat].end())
+        {
+            cmd = cat + " " + cmd;
+            cerr << "unknown `" << cmd << "' command (see `" << cat << " help' for more info)" << endl;
+        }
+        else
+        {
+            cmd = cat + " " + cmd;
+            cerr << "invalid `" << cmd << "' command (see `" << cmd << " help' for more info)" << endl;
+        }
+    }
+}
+
+string
 Parser::patchFailed(const Ice::StringSeq& reasons)
 {
-    ostringstream os;
-    IceUtil::Output out(os);
-    out.setIndent(2);
-    out << "the patch failed on some nodes:\n";
-    for(Ice::StringSeq::const_iterator p = reasons.begin(); p != reasons.end(); ++p)
+    if(reasons.size() == 1)
     {
-        string reason = *p;
-        string::size_type beg = 0;
-        string::size_type end = reason.find_first_of("\n");
-        if(end == string::npos)
+        ostringstream s;
+        s << "the patch failed:\n" << reasons[0];
+        return s.str();
+    }
+    else
+    {
+        ostringstream os;
+        IceUtil::Output out(os);
+        out.setIndent(2);
+        out << "the patch failed on some nodes:\n";
+        for(Ice::StringSeq::const_iterator p = reasons.begin(); p != reasons.end(); ++p)
         {
-            end = reason.size();
-        }
-        out << "- " << reason.substr(beg, end - beg);
-        out.inc();
-        while(end < reason.size())
-        {
-            beg = end + 1;
-            end = reason.find_first_of("\n", beg);
+            string reason = *p;
+            string::size_type beg = 0;
+            string::size_type end = reason.find_first_of("\n");
             if(end == string::npos)
             {
                 end = reason.size();
             }
-            out.newline();
-            out << reason.substr(beg, end - beg);
+            out << "- " << reason.substr(beg, end - beg);
+            out.inc();
+            while(end < reason.size())
+            {
+                beg = end + 1;
+                end = reason.find_first_of("\n", beg);
+                if(end == string::npos)
+                {
+                    end = reason.size();
+                }
+                out.newline();
+                out << reason.substr(beg, end - beg);
+            }
+            out.dec();
+            if(p + 1 != reasons.end())
+            {
+                out.newline();
+            }
         }
-        out.dec();
-        if(p + 1 != reasons.end())
-        {
-            out.newline();
-        }
+        return os.str();
     }
-    warning(os.str());
 }
 
 void
@@ -1999,6 +2083,10 @@ Parser::exception(const Ice::Exception& ex)
     {
         error("couldn't find node `" + ex.name + "'");
     }
+    catch(const RegistryNotExistException& ex)
+    {
+        error("couldn't find registry `" + ex.name + "'");
+    }
     catch(const ServerNotExistException& ex)
     {
         error("couldn't find server `" + ex.id + "'");
@@ -2006,6 +2094,10 @@ Parser::exception(const Ice::Exception& ex)
     catch(const AdapterNotExistException& ex)
     {
         error("couldn't find adapter `" + ex.id + "'");
+    }
+    catch(const ObjectNotRegisteredException& ex)
+    {
+        error("couldn't find object `" + _communicator->identityToString(ex.id) + "'");
     }
     catch(const ObjectExistsException& ex)
     {
@@ -2019,16 +2111,7 @@ Parser::exception(const Ice::Exception& ex)
     }
     catch(const PatchException& ex)
     {
-        if(ex.reasons.size() == 1)
-        {
-            ostringstream s;
-            s << ex << ":\n" << ex.reasons[0];
-            error(s.str());
-        }
-        else
-        {
-            patchFailed(ex.reasons);
-        }
+        error(patchFailed(ex.reasons));
     }
     catch(const BadSignalException& ex)
     {
@@ -2039,6 +2122,10 @@ Parser::exception(const Ice::Exception& ex)
     catch(const NodeUnreachableException& ex)
     {
         error("node `" + ex.name + "' couldn't be reached:\n" + ex.reason);
+    }
+    catch(const RegistryUnreachableException& ex)
+    {
+        error("registry `" + ex.name + "' couldn't be reached:\n" + ex.reason);
     }
     catch(const AccessDeniedException& ex)
     {

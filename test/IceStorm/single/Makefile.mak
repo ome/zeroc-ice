@@ -30,7 +30,7 @@ SRCS		= $(OBJS:.obj=.cpp) \
 CPPFLAGS	= -I. -I../../include $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 LIBS		= icestorm$(LIBSUFFIX).lib $(LIBS)
 
-!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+!if "$(CPP_COMPILER)" != "BCC2006" && "$(OPTIMIZE)" != "yes"
 PPDBFLAGS        = /pdb:$(PUBLISHER:.exe=.pdb)
 SPDBFLAGS        = /pdb:$(SUBSCRIBER:.exe=.pdb)
 !endif
@@ -45,9 +45,6 @@ $(SUBSCRIBER): $(OBJS) $(SOBJS)
 	@if exist $@.manifest echo ^ ^ ^ Embedding manifest using $(MT) && \
 	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
-clean::
-	del /q Single.cpp Single.h
-
 !if "$(OPTIMIZE)" == "yes"
 
 all::
@@ -61,6 +58,8 @@ all::
 !endif
 
 clean::
-	del /q db\topicmanager db\log.*
+	del /q build.txt
+	del /q Single.cpp Single.h
+	for %f in (db\*) do if not %f == db\.gitignore del /q %f
 
 !include .depend

@@ -65,8 +65,7 @@ Follow these steps to install a Glacier2 router as a service:
 
 1. In a command window, execute the following line:
 
-   > glacier2router --install Glacier2Router \
-     --Ice.Config=<ice-home>\config\glacier2router.cfg
+   > glacier2router --install Glacier2Router --Ice.Config=<ice-home>\config\glacier2router.cfg
 
    Installing the service on Windows Vista with UAC enabled requires
    administrator privileges. In this case, run the command shell as
@@ -114,11 +113,9 @@ services:
 
 1. In a command window, execute the following lines:
 
-   > icegridnode --install IceGridNode \
-     --Ice.Config=<ice-home>\config\icegridnode.cfg
+   > icegridnode --install IceGridNode --Ice.Config=<ice-home>\config\icegridnode.cfg
 
-   > icegridregistry --install IceGridRegistry \
-     --Ice.Config=<ice-home>\config\icegridregistry.cfg
+   > icegridregistry --install IceGridRegistry --Ice.Config=<ice-home>\config\icegridregistry.cfg
 
    Installing a service on Windows Vista with UAC enabled requires
    administrator privileges. In this case, run the command shell as
@@ -280,7 +277,8 @@ Windows Firewall
 
 Your choice of user account also determines whether you receive any
 notification when the Windows Firewall blocks the ports that are used
-by your service.
+by your service. For example, if you use 'Local Service' as 
+recommended above, you will not see any Windows Security Alert dialog.
 
 See the following Microsoft article for details:
 
@@ -301,3 +299,7 @@ the steps below to unblock the ports of a Glacier2 router service:
 Note that adding an exception for a program unblocks all ports on
 which the program listens. Review the endpoint configurations of your
 services carefully to ensure that no unnecessary ports are opened.
+
+For services listening on one or a few fixed ports, you could also
+create port exceptions in your Windows Firewall. Please refer to the 
+Windows Firewall documentation for details.

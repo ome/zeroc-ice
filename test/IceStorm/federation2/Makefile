@@ -40,6 +40,7 @@ $(SUBSCRIBER): $(OBJS) $(SOBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(SOBJS) $(LIBS)
 
 clean::
-	rm -f db/topicmanager db/log.*
+	-rm -f build.txt
+	-rm -f db/* db2/*
 
 include .depend

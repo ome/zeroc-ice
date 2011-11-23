@@ -11,9 +11,9 @@ top_srcdir	= ..\..
 
 !include $(top_srcdir)\config\Make.rules.mak
 
-SUBDIRS		= printer simple_filesystem
+SUBDIRS		= printer simple_filesystem lifecycle freeze_filesystem
 
 $(EVERYTHING)::
 	@for %i in ( $(SUBDIRS) ) do \
-	    @echo "making $@ in %i" & \
-	    cmd /c "cd %i & $(MAKE) -nologo -f Makefile.mak $@" || exit 1
+	    @echo "making $@ in %i" && \
+	    cmd /c "cd %i && $(MAKE) -nologo -f Makefile.mak $@" || exit 1

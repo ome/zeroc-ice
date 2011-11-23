@@ -395,11 +395,11 @@ if lang == "all":
     shutil.move("PropertyNames.cpp", os.path.join(toplevel, "src", "Ice"))
     shutil.move("PropertyNames.h", os.path.join(toplevel, "src", "Ice"))
     processFile("java")
-    if os.path.exists(os.path.join(toplevel, "..", "icej")):
-        shutil.move("PropertyNames.java", os.path.join(toplevel, "..", "icej", "src", "IceInternal"));
+    if os.path.exists(os.path.join(toplevel, "..", "java")):
+        shutil.move("PropertyNames.java", os.path.join(toplevel, "..", "java", "src", "IceInternal"));
     processFile("cs")
-    if os.path.exists(os.path.join(toplevel, "..", "icecs")):
-        shutil.move("PropertyNames.cs", os.path.join(toplevel, "..", "icecs", "src", "Ice"));
+    if os.path.exists(os.path.join(toplevel, "..", "cs")):
+        shutil.move("PropertyNames.cs", os.path.join(toplevel, "..", "cs", "src", "Ice"));
 else:
     processFile(lang)
 

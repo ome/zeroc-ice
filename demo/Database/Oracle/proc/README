@@ -19,13 +19,6 @@ Building the demo
 On Linux or Unix, set ORACLE_HOME to point to your Oracle installation
 home directory. Then build as usual.
 
-On Windows using Visual Studio Project files, you need to add the 
-following directories to your Visual C++ environment: 
-
- - Include files: <oracle-home>\precomp\public
- - Library files: <oracle-home>\precomp\lib
- - Executable files: <oracle-home>\bin
-
 On Windows with nmake Makefiles, please review Makefile.mak.
 
 Then build as usual.

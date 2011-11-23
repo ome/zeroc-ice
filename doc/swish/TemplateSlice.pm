@@ -1,6 +1,6 @@
 #=====================================================================
 # These routines format the HTML output.
-#    $Id: TemplateSlice.pm,v 1.5 2007/03/05 02:06:05 michi Exp $
+#    $Id$
 #=====================================================================
 package TemplateSlice;
 use strict;
@@ -75,6 +75,7 @@ sub page_header {
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
     <head>
+       <meta http-equiv="Content-type" content="text/html;charset=utf-8"/>
        <title>
           $html_title
        </title>
@@ -336,7 +337,10 @@ EOF
 #
 
 sub footer {
+    my $results = shift;
+    my $links = qq[<table width="100%"><tr><td colspan="2" bgcolor="#EEEEEE">$results->{LINKS}</td></tr></table>] if $results->{LINKS};
     return <<EOF;
+            $links
         </div>
     </body>
 </html>

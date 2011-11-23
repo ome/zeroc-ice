@@ -504,6 +504,7 @@ IceInternal::ReferenceFactory::create(const string& str)
                 throw ex;
             }
 
+            string adapterstr;
             end = IceUtil::checkQuote(s, beg);
             if(end == string::npos)
             {
@@ -518,14 +519,24 @@ IceInternal::ReferenceFactory::create(const string& str)
                 {
                     end = s.size();
                 }
+                adapterstr = s.substr(beg, end - beg);
             }
             else
             {
                 beg++; // Skip leading quote
+                adapterstr = s.substr(beg, end - beg);
+                end++; // Skip trailing quote.
             }
 
+            // Check for trailing whitespace.
+            if(end != string::npos && s.find_first_not_of(delim, end) != string::npos)
+            {
+                ProxyParseException ex(__FILE__, __LINE__);
+                ex.str = str;
+                throw ex;
+            }
 
-            if(!IceUtil::unescapeString(s, beg, end, adapter) || adapter.size() == 0)
+            if(!IceUtil::unescapeString(adapterstr, 0, adapterstr.size(), adapter) || adapter.size() == 0)
             {
                 ProxyParseException ex(__FILE__, __LINE__);
                 ex.str = str;
@@ -583,19 +594,40 @@ IceInternal::ReferenceFactory::createFromProperties(const string& propertyPrefix
     {
         ref = ref->changeLocator(
             LocatorPrx::uncheckedCast(_communicator->propertyToProxy(property)));
+        if(ref->getType() == Reference::TypeDirect)
+        {
+            Warning out(_instance->initializationData().logger);
+            out << "`" << property << "=" << properties->getProperty(property)
+                << "': cannot set a locator on a direct reference; setting ignored";
+        }
     }
 
     property = propertyPrefix + ".LocatorCacheTimeout";
     if(!properties->getProperty(property).empty())
     {
         ref = ref->changeLocatorCacheTimeout(properties->getPropertyAsInt(property));
+        if(ref->getType() == Reference::TypeDirect)
+        {
+            Warning out(_instance->initializationData().logger);
+            out << "`" << property << "=" << properties->getProperty(property)
+                << "': cannot set a locator cache timeout on a direct reference; setting ignored";
+        }
     }
 
     property = propertyPrefix + ".Router";
     if(!properties->getProperty(property).empty())
     {
-        ref = ref->changeRouter(
-            RouterPrx::uncheckedCast(_communicator->propertyToProxy(property)));
+        if(propertyPrefix.size() > 7 && propertyPrefix.substr(propertyPrefix.size() - 7, 7) == ".Router")
+        {
+            Warning out(_instance->initializationData().logger);
+            out << "`" << property << "=" << properties->getProperty(property)
+                << "': cannot set a router on a router; setting ignored";
+        }
+        else
+        {
+            ref = ref->changeRouter(
+                RouterPrx::uncheckedCast(_communicator->propertyToProxy(property)));
+        }
     }
 
     property = propertyPrefix + ".PreferSecure";

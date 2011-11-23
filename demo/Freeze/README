@@ -2,13 +2,17 @@ Demos in this directory:
 
 - backup
 
-  Illustrates how to perform hot-backups of a Berkeley DB database. 
-  This demo is not supported nor distributed on Windows.
+  Illustrates how to perform hot-backups of a Berkeley DB database.
 
 - bench
 
   A simple benchmark to measure the performance of Freeze for various
   data types.
+
+- customEvictor
+
+  Illustrates how to write your own evictor, using either IceUtil::Cache
+  or EvictorBase.
 
 - library
 

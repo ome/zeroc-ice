@@ -56,6 +56,8 @@ IceInternal::ObjectAdapterFactory::shutdown()
 void
 IceInternal::ObjectAdapterFactory::waitForShutdown()
 {
+    map<string, ObjectAdapterIPtr> adapters;
+
     {
         IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
         
@@ -76,12 +78,13 @@ IceInternal::ObjectAdapterFactory::waitForShutdown()
             wait();
         }
         _waitForShutdown = true;
+        adapters = _adapters;
     }
     
     //
     // Now we wait for deactivation of each object adapter.
     //
-    for_each(_adapters.begin(), _adapters.end(),
+    for_each(adapters.begin(), adapters.end(),
              IceUtil::secondVoidMemFun<const string, ObjectAdapterI>(&ObjectAdapter::waitForDeactivate));
     
     {
@@ -115,9 +118,7 @@ IceInternal::ObjectAdapterFactory::destroy()
 
     {
         IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-
-        adapters = _adapters;
-        _adapters.clear();
+        adapters.swap(_adapters);
     }
 
     //
@@ -169,14 +170,19 @@ IceInternal::ObjectAdapterFactory::createObjectAdapter(const string& name, const
 ObjectAdapterPtr
 IceInternal::ObjectAdapterFactory::findObjectAdapter(const ObjectPrx& proxy)
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-
-    if(!_instance)
+    map<string, ObjectAdapterIPtr> adapters;
     {
-        return 0;
+        IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+
+        if(!_instance)
+        {
+            return 0;
+        }
+        
+        adapters = _adapters;
     }
 
-    for(map<string, ObjectAdapterIPtr>::iterator p = _adapters.begin(); p != _adapters.end(); ++p)
+    for(map<string, ObjectAdapterIPtr>::iterator p = adapters.begin(); p != adapters.end(); ++p)
     {
         try
         {
@@ -199,7 +205,7 @@ IceInternal::ObjectAdapterFactory::removeObjectAdapter(const string& name)
 {
     IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
 
-    if(_waitForShutdown)
+    if(!_instance)
     {
         return;
     }

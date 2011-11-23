@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <IceUtil/Exception.h>
+#include <cstdlib>
 
 using namespace std;
 

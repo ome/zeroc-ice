@@ -138,6 +138,29 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     }
     cout << "ok" << endl;
 
+    cout << "testing protected members... " << flush;
+    EPtr e = initial->getE();
+    test(e->checkValues());
+    FPtr f = initial->getF();
+    test(f->checkValues());
+    test(f->e2->checkValues());
+    cout << "ok" << endl;
+
+    cout << "getting I, J and H... " << flush;
+    IPtr i = initial->getI();
+    test(i);
+    IPtr j = initial->getJ();
+    test(j && JPtr::dynamicCast(j));
+    IPtr h = initial->getH();
+    test(h && HPtr::dynamicCast(h));
+    cout << "ok" << endl;
+
+    cout << "setting I... " << flush;
+    initial->setI(i);
+    initial->setI(j);
+    initial->setI(h);
+    cout << "ok" << endl;
+
     if(!collocated)
     {
         cout << "testing UnexpectedObjectException... " << flush;

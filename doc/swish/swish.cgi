@@ -15,7 +15,7 @@ my $DEFAULT_CONFIG_FILE = '.swishcgi.conf';
 #
 #    To display documentation for this program type "perldoc swish.cgi"
 #
-#    swish.cgi $Revision: 1.3 $ Copyright (C) 2001 Bill Moseley swishscript@hank.org
+#    swish.cgi $Revision$ Copyright (C) 2001 Bill Moseley swishscript@hank.org
 #    Example CGI program for searching with SWISH-E
 #
 #    This example program will only run under an OS that supports fork().
@@ -34,7 +34,7 @@ my $DEFAULT_CONFIG_FILE = '.swishcgi.conf';
 #
 #    The above lines must remain at the top of this program
 #
-#    $Id: swish.cgi,v 1.3 2007/03/05 02:06:05 michi Exp $
+#    $Id$
 #
 ####################################################################################
 
@@ -3304,7 +3304,7 @@ Please do not contact the author or any of the swish-e developers directly.
 
 =head1 LICENSE
 
-swish.cgi $Revision: 1.3 $ Copyright (C) 2001 Bill Moseley search@hank.org
+swish.cgi $Revision$ Copyright (C) 2001 Bill Moseley search@hank.org
 Example CGI program for searching with SWISH-E
 
 

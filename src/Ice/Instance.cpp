@@ -484,7 +484,11 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Initi
             
             if(stdOutFilename != "")
             {
-                FILE* file = freopen(stdOutFilename.c_str(), "a", stdout);
+#ifdef _LARGEFILE64_SOURCE
+                FILE* file = freopen64(stdOutFilename.c_str(), "a", stdout);
+#else
+		FILE* file = freopen(stdOutFilename.c_str(), "a", stdout);
+#endif
                 if(file == 0)
                 {
                     FileException ex(__FILE__, __LINE__);
@@ -496,7 +500,11 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Initi
             
             if(stdErrFilename != "")
             {
+#ifdef _LARGEFILE64_SOURCE
+                FILE* file = freopen64(stdErrFilename.c_str(), "a", stderr);
+#else
                 FILE* file = freopen(stdErrFilename.c_str(), "a", stderr);
+#endif
                 if(file == 0)
                 {
                     FileException ex(__FILE__, __LINE__);
@@ -609,7 +617,7 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Initi
             Int num = _initData.properties->getPropertyAsIntWithDefault("Ice.MessageSizeMax", defaultMessageSizeMax);
             if(num < 1)
             {
-                const_cast<size_t&>(_messageSizeMax) = defaultMessageSizeMax * 1024; // Ignore stupid values.
+                const_cast<size_t&>(_messageSizeMax) = defaultMessageSizeMax * 1024; // Ignore non-sensical values.
             }
             else if(static_cast<size_t>(num) > (size_t)(0x7fffffff / 1024))
             {

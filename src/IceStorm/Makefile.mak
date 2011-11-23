@@ -41,7 +41,6 @@ SERVICE_OBJS	= IceStormInternal.obj \
 		  TopicI.obj \
 		  TopicManagerI.obj \
                   PersistentTopicMap.obj \
-		  Event.obj \
 		  Service.obj
 
 AOBJS		= Admin.obj \
@@ -71,7 +70,7 @@ CPPFLAGS	= $(CPPFLAGS) -DICE_STORM_API_EXPORTS
 
 !endif
 
-!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+!if "$(CPP_COMPILER)" != "BCC2006" && "$(OPTIMIZE)" != "yes"
 PDBFLAGS        = /pdb:$(DLLNAME:.dll=.pdb)
 SPDBFLAGS       = /pdb:$(SVCDLLNAME:.dll=.pdb)
 APDBFLAGS       = /pdb:$(ADMIN:.exe=.pdb)
@@ -104,9 +103,6 @@ $(ADMIN): $(AOBJS)
 	del /q PersistentTopicMap.h PersistentTopicMap.cpp
 	$(SLICE2FREEZECMD) --dict IceStorm::PersistentTopicMap,Ice::Identity,IceStorm::LinkRecordSeq \
 	PersistentTopicMap ..\IceStorm\LinkRecord.ice
-
-Event.cpp Event.h: Event.ice
-	$(SLICE2CPP) --dll-export ICE_STORM_API $(SLICE2CPPFLAGS) Event.ice
 
 IceStorm.cpp $(HDIR)\IceStorm.h: $(SDIR)\IceStorm.ice
 	$(SLICE2CPP) --dll-export ICE_STORM_API $(SLICE2CPPFLAGS) $(SDIR)\IceStorm.ice

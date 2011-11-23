@@ -241,14 +241,7 @@ Freeze::IteratorHelperI::find(const Key& key) const
     {
         try
         {
-            if(_dbc->get(&dbKey, &dbValue, DB_SET) == 0)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return _dbc->get(&dbKey, &dbValue, DB_SET) == 0;  
         }
         catch(const ::DbDeadlockException& dx)
         {
@@ -1491,18 +1484,20 @@ Freeze::MapIndexI::untypedCount(const Key& k, const ConnectionIPtr& connection) 
 
     int result = 0;
     
+    DbTxn * txn = connection->dbTxn();
+
     try
     {
         for(;;)
         {
             Dbc* dbc = 0;
-            
+     
             try
             {
                 //
                 // Move to the first record
                 // 
-                _db->cursor(0, &dbc, 0);
+                _db->cursor(txn, &dbc, 0);
                 bool found = (dbc->get(&dbKey, &dbValue, DB_SET) == 0);
                 
                 if(found)
@@ -1527,9 +1522,16 @@ Freeze::MapIndexI::untypedCount(const Key& k, const ConnectionIPtr& connection) 
                     }
                     catch(const DbDeadlockException&)
                     {
-                        //
-                        // Ignored
-                        //
+                        if(txn != 0)
+                        {
+                            throw;
+                        }
+                        else
+                        {
+                            //
+                            // Ignored
+                            //
+                        }
                     }
                 }
 
@@ -1537,11 +1539,15 @@ Freeze::MapIndexI::untypedCount(const Key& k, const ConnectionIPtr& connection) 
                 {
                     Warning out(connection->communicator()->getLogger());
                     out << "Deadlock in Freeze::MapIndexI::untypedCount while searching \"" 
-                        << _dbName << "\"; retrying ...";
+                        << _dbName << "\"";
                 }
 
+                if(txn != 0)
+                {
+                    throw;
+                }
                 //
-                // Retry
+                // Otherwise retry
                 //
             }
             catch(...)
@@ -1554,20 +1560,29 @@ Freeze::MapIndexI::untypedCount(const Key& k, const ConnectionIPtr& connection) 
                     }
                     catch(const DbDeadlockException&)
                     {
-                        //
-                        // Ignored
-                        //
+                        if(txn != 0)
+                        {
+                            throw;
+                        }
+                        else
+                        {
+                            //
+                            // Ignored
+                            //
+                        }
                     }
                 }
                 throw;
             }
         }
     }
+    catch(const DbDeadlockException& dx)
+    {
+        throw DeadlockException(__FILE__, __LINE__, dx.what());
+    }
     catch(const DbException& dx)
     {
-        DatabaseException ex(__FILE__, __LINE__);
-        ex.message = dx.what();
-        throw ex;
+        throw DatabaseException(__FILE__, __LINE__, dx.what());
     }
     
     return result;

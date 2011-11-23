@@ -20,6 +20,7 @@ class UnknownEndpointI : public EndpointI
 {
 public:
 
+    UnknownEndpointI(const ::std::string&);
     UnknownEndpointI(Ice::Short, BasicStream*);
 
     virtual void streamWrite(BasicStream*) const;
@@ -61,7 +62,6 @@ private:
     //
     // All members are const, because endpoints are immutable.
     //
-    const InstancePtr _instance;
     Ice::Short _type;
     const std::vector<Ice::Byte> _rawBytes;
 };

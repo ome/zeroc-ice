@@ -27,7 +27,7 @@ using namespace std;
 using namespace Slice;
 
 //
-// Don't use "using namespace IceUtil", or stupid VC++ 6.0 complains
+// Don't use "using namespace IceUtil", or VC++ 6.0 complains
 // about ambigious symbols for constructs like
 // "IceUtil::constMemFun(&Slice::Exception::isLocal)".
 //
@@ -3393,6 +3393,7 @@ Slice::Gen::TypesVisitor::visitDataMember(const DataMemberPtr& p)
     bool isClass = false;
     bool propertyMapping = false;
     bool isValue = false;
+    bool isProtected = false;
     ContainedPtr cont = ContainedPtr::dynamicCast(p->container());
     assert(cont);
     if(StructPtr::dynamicCast(cont))
@@ -3419,6 +3420,7 @@ Slice::Gen::TypesVisitor::visitDataMember(const DataMemberPtr& p)
         {
             propertyMapping = true;
         }
+        isProtected = cont->hasMetaData("protected") || p->hasMetaData("protected");
     }
     _out << sp;
 
@@ -3434,14 +3436,28 @@ Slice::Gen::TypesVisitor::visitDataMember(const DataMemberPtr& p)
         dataMemberName += "_prop";
     }
 
-    _out << nl << (propertyMapping ? "Private" : "Public") << ' ' << dataMemberName << " As " << type;
+    _out << nl;
+    if(propertyMapping)
+    {
+        _out << "Private";
+    }
+    else if(isProtected)
+    {
+        _out << "Protected";
+    }
+    else
+    {
+        _out << "Public";
+    }
+
+    _out << ' ' << dataMemberName << " As " << type;
 
     if(!propertyMapping)
     {
         return;
     }
 
-    _out << nl << "Public";
+    _out << nl << (isProtected ? "Protected" : "Public");
     if(!isValue)
     {
         _out << " Overridable";

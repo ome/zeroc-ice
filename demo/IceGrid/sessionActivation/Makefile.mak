@@ -29,7 +29,7 @@ SRCS		= $(OBJS:.obj=.cpp) \
 
 CPPFLAGS	= -I. $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 
-!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+!if "$(CPP_COMPILER)" != "BCC2006" && "$(OPTIMIZE)" != "yes"
 CPDBFLAGS        = /pdb:$(CLIENT:.exe=.pdb)
 SPDBFLAGS        = /pdb:$(SERVER:.exe=.pdb)
 !endif
@@ -46,6 +46,10 @@ $(SERVER): $(OBJS) $(SOBJS)
 	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
 clean::
-	del /q Hello.cpp Hello.h
+	-del /q Hello.cpp Hello.h
+
+clean::
+	-for %f in (db\registry\*) do if not %f == db\registry\.gitignore del /q %f
+	-for %f in (distrib servers tmp) do if exist db\node\%f rmdir /s /q db\node\%f
 
 !include .depend

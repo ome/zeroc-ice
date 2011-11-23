@@ -30,7 +30,7 @@ SRCS		= $(OBJS:.obj=.cpp) \
 CPPFLAGS	= -I. $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 LIBS		= $(libdir)\icestorm$(LIBSUFFIX).lib $(libdir)\icegrid$(LIBSUFFIX).lib $(LIBS)
 
-!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+!if "$(CPP_COMPILER)" != "BCC2006" && "$(OPTIMIZE)" != "yes"
 PPDBFLAGS        = /pdb:$(PUBLISHER:.exe=.pdb)
 SPDBFLAGS        = /pdb:$(SUBSCRIBER:.exe=.pdb)
 !endif
@@ -47,5 +47,9 @@ $(SUBSCRIBER): $(OBJS) $(SOBJS)
 
 clean::
 	del /q Clock.cpp Clock.h
+
+clean::
+	-for %f in (db\registry\*) do if not %f == db\registry\.gitignore del /q %f
+	-for %f in (distrib servers tmp) do if exist db\node\%f rmdir /s /q db\node\%f
 
 !include .depend

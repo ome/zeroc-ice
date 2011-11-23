@@ -77,7 +77,7 @@ MT = "$(PDK_HOME)\bin\mt.exe"
 # ----------------------------------------------------------------------
 
 SHELL			= /bin/sh
-VERSION			= 3.2.0
+VERSION			= 3.2.1
 SOVERSION		= 32
 bindir			= $(top_srcdir)\bin
 libdir			= $(top_srcdir)\lib
@@ -97,8 +97,11 @@ SETARGV			= setargv.obj
 
 !if "$(CPP_COMPILER)" == "BCC2006"
 !include 	$(top_srcdir)/config/Make.rules.bcc
-!else
+!elseif "$(CPP_COMPILER)" == "VC60" || "$(CPP_COMPILER)" == "VC71" || \
+	"$(CPP_COMPILER)" == "VC80" || "$(CPP_COMPILER)" == "VC80_EXPRESS"
 !include 	$(top_srcdir)/config/Make.rules.msvc
+! else
+!error Invalid setting for CPP_COMPILER: $(CPP_COMPILER)
 !endif
 
 install_libdir	  = $(prefix)\lib
@@ -154,6 +157,6 @@ clean::
 !endif
 
 clean::
-	-del /q *.obj *.bak *.ilk *.exp *.pdb *.tds
+	-del /q *.obj *.bak *.ilk *.exp *.pdb *.tds *.idb
 
 install::

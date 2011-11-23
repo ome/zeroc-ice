@@ -70,6 +70,7 @@ ServerAdapterI::activate_async(const AMD_Adapter_activatePtr& cb, const Ice::Cur
         {
             return;
         }
+        _activateAfterDeactivating = _server->getState() >= Deactivating;
     }
 
     //
@@ -138,11 +139,20 @@ ServerAdapterI::setDirectProxy(const Ice::ObjectPrx& prx, const Ice::Current&)
     bool updated = _proxy != prx;
     _proxy = prx;
 
-    for(vector<AMD_Adapter_activatePtr>::const_iterator p = _activateCB.begin(); p != _activateCB.end(); ++p)
+    //
+    // If the server is being deactivated and the activation callback
+    // was added during the deactivation, we don't send the response
+    // now. The server is going to be activated again and the adapter
+    // activated.
+    //
+    if(_server->getState() < Deactivating || !_activateAfterDeactivating)
     {
-        (*p)->ice_response(_proxy);
+        for(vector<AMD_Adapter_activatePtr>::const_iterator p = _activateCB.begin(); p != _activateCB.end(); ++p)
+        {
+            (*p)->ice_response(_proxy);
+        }
+        _activateCB.clear();
     }
-    _activateCB.clear();
 
     if(updated)
     {
@@ -183,6 +193,7 @@ ServerAdapterI::clear()
 {
     Lock sync(*this);
     _proxy = 0;
+    _activateAfterDeactivating = false;
 }
 
 void 

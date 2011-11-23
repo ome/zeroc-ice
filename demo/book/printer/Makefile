@@ -16,7 +16,7 @@ TARGETS		= $(CLIENT) $(SERVER)
 
 SLICE_SRCS	= Printer.ice
 
-OBJS		= $(SLICE_SRCS:.ice=.o)
+OBJS		= Printer.o
 
 COBJS		= Client.o
 
@@ -45,9 +45,5 @@ $(SLICE_GEN): $(SLICE_SRCS) $(SLICE2CPP)
 	$(SLICE2CPP) $(SLICE_SRCS)
 
 test::
-
-clean::
-	rm -f $(SLICE_GEN)
-	rm -fr Debug Release *.opt *.plg *.ncb *.vcproj
 
 include .depend

@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <IceUtil/Random.h>
+#include <Ice/Communicator.h>
 #include <Ice/LoggerUtil.h>
 #include <Ice/Locator.h>
 #include <IceGrid/AdapterCache.h>
@@ -67,11 +68,20 @@ struct TransformToReplica : public unary_function<const pair<string, ServerAdapt
 
 }
 
-ServerAdapterEntryPtr
+AdapterCache::AdapterCache(const Ice::CommunicatorPtr& communicator) : _communicator(communicator)
+{
+}
+
+void
 AdapterCache::addServerAdapter(const AdapterDescriptor& desc, const ServerEntryPtr& server, const string& app)
 {
     Lock sync(*this);
-    assert(!getImpl(desc.id));
+    if(getImpl(desc.id))
+    {
+        Ice::Error out(_communicator->getLogger());
+        out << "can't add duplicate adapter `" << desc.id << "'";
+        return;
+    }
 
     istringstream is(desc.priority);
     int priority = 0;
@@ -83,21 +93,27 @@ AdapterCache::addServerAdapter(const AdapterDescriptor& desc, const ServerEntryP
     if(!desc.replicaGroupId.empty())
     {
         ReplicaGroupEntryPtr repEntry = ReplicaGroupEntryPtr::dynamicCast(getImpl(desc.replicaGroupId));
-        assert(repEntry);
+        if(!repEntry)
+        {
+            Ice::Error out(_communicator->getLogger());
+            out << "can't add adapter `" << desc.id << "' to unknown replica group `" << desc.replicaGroupId << "'";
+        }
         repEntry->addReplica(desc.id, entry);
     }
-
-    return entry;
 }
 
-ReplicaGroupEntryPtr
+void
 AdapterCache::addReplicaGroup(const ReplicaGroupDescriptor& desc, const string& app)
 {
     Lock sync(*this);
-    assert(!getImpl(desc.id));
-    ReplicaGroupEntryPtr entry = new ReplicaGroupEntry(*this, desc.id, app, desc.loadBalancing);
-    addImpl(desc.id, entry);
-    return entry;
+    if(getImpl(desc.id))
+    {
+        Ice::Error out(_communicator->getLogger());
+        out << "can't add duplicate replica group `" << desc.id << "'";
+        return;
+    }
+
+    addImpl(desc.id, new ReplicaGroupEntry(*this, desc.id, app, desc.loadBalancing));
 }
 
 AdapterEntryPtr
@@ -118,14 +134,23 @@ AdapterCache::removeServerAdapter(const string& id)
     Lock sync(*this);
 
     ServerAdapterEntryPtr entry = ServerAdapterEntryPtr::dynamicCast(getImpl(id));
-    assert(entry);
+    if(!entry)
+    {
+        Ice::Error out(_communicator->getLogger());
+        out << "can't remove unknown adapter `" << id << "'";
+        return;
+    }
     removeImpl(id);
     
     string replicaGroupId = entry->getReplicaGroupId();
     if(!replicaGroupId.empty())
     {
         ReplicaGroupEntryPtr repEntry = ReplicaGroupEntryPtr::dynamicCast(getImpl(replicaGroupId));
-        assert(repEntry);
+        if(!repEntry)
+        {
+            Ice::Error out(_communicator->getLogger());
+            out << "can't remove adapter `" << id << "' from unknown replica group `" << replicaGroupId << "'";
+        }
         repEntry->removeReplica(id);
     }
 }
@@ -134,6 +159,13 @@ void
 AdapterCache::removeReplicaGroup(const string& id)
 {
     Lock sync(*this);
+    ReplicaGroupEntryPtr entry = ReplicaGroupEntryPtr::dynamicCast(getImpl(id));
+    if(!entry)
+    {
+        Ice::Error out(_communicator->getLogger());
+        out << "can't remove unknown replica group `" << id << "'";
+        return;
+    }
     removeImpl(id);
 }
 
@@ -459,6 +491,10 @@ ReplicaGroupEntry::getLeastLoadedNodeLoad(LoadSample loadSample) const
 AdapterInfoSeq
 ReplicaGroupEntry::getAdapterInfo() const
 {
+    //
+    // This method is called with the database locked so we're sure
+    // that no new adapters will be added or removed concurrently.
+    //
     vector<ServerAdapterEntryPtr> replicas;
     {
         Lock sync(*this);
@@ -473,4 +509,24 @@ ReplicaGroupEntry::getAdapterInfo() const
         infos.push_back(infs[0]);
     }
     return infos;
+}
+
+bool 
+ReplicaGroupEntry::hasAdaptersFromOtherApplications() const
+{
+    vector<ServerAdapterEntryPtr> replicas;
+    {
+        Lock sync(*this);
+        replicas = _replicas;
+    }
+
+    AdapterInfoSeq infos;
+    for(vector<ServerAdapterEntryPtr>::const_iterator p = replicas.begin(); p != replicas.end(); ++p)
+    {
+        if((*p)->getApplication() != _application)
+        {
+            return true;
+        }
+    }
+    return false;
 }

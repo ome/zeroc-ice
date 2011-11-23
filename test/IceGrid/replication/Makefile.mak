@@ -31,7 +31,7 @@ SRCS		= $(OBJS:.obj=.cpp) \
 CPPFLAGS	= -I. -I../../include $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 LINKWITH	= $(LIBS) icebox$(LIBSUFFIX).lib
 
-!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+!if "$(CPP_COMPILER)" != "BCC2006" && "$(OPTIMIZE)" != "yes"
 CPDBFLAGS       = /pdb:$(CLIENT:.exe=.pdb)
 SPDBFLAGS       = /pdb:$(SERVER:.exe=.pdb)
 !endif
@@ -61,5 +61,11 @@ all::
 	@echo debug > build.txt
 
 !endif
+
+clean::
+	del /q build.txt
+	if exist db\node rmdir /s /q db\node 
+	if exist db\registry rmdir /s /q db\registry 
+	if exist db\replica-1 rmdir /s /q db\replica-1
 
 !include .depend

@@ -28,14 +28,14 @@ class AdminSessionI : public BaseSessionI, public AdminSession
 {
 public:
 
-    AdminSessionI(const std::string&, const DatabasePtr&, int, const std::string&);
+    AdminSessionI(const std::string&, const DatabasePtr&, bool, int, const std::string&);
     virtual ~AdminSessionI();
 
-    virtual Ice::ObjectPrx registerWithServantLocator(const SessionServantLocatorIPtr&, const Ice::ConnectionPtr&, 
-                                                      const RegistryIPtr&);
+    Ice::ObjectPrx registerWithServantLocator(const SessionServantLocatorIPtr&, const Ice::ConnectionPtr&, 
+                                              const RegistryIPtr&);
 
-    virtual Ice::ObjectPrx registerWithObjectAdapter(const Ice::ObjectAdapterPtr&, const RegistryIPtr&, 
-                                                     const Glacier2::SessionControlPrx&);
+    Ice::ObjectPrx registerWithObjectAdapter(const Ice::ObjectAdapterPtr&, const RegistryIPtr&, 
+                                             const Glacier2::SessionControlPrx&);
 
     virtual void keepAlive(const Ice::Current& current) { BaseSessionI::keepAlive(current); }
 
@@ -102,6 +102,7 @@ private:
     const WaitQueuePtr _waitQueue;
     const ReapThreadPtr _reaper;
     const RegistryIPtr _registry;
+    const bool _filters;
 };
 typedef IceUtil::Handle<AdminSessionFactory> AdminSessionFactoryPtr;
 

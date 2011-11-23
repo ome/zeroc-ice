@@ -41,7 +41,7 @@ Ice has dependencies on a number of third-party libraries:
   If you intend to use Ice for Java with Berkeley DB, you must also
   include the option --enable-java.
 
-- expat 1.9x
+- expat 1.95.7 or later
 
 - OpenSSL 0.9.7 or later (OpenSSL 0.9.8 or later recommended)
 
@@ -89,11 +89,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ gtar xvfz Ice-3.2.0.tar.gz
+$ gtar xvfz Ice-3.2.1.tar.gz
 
-Change the working directory to Ice-3.2.0:
+Change the working directory to Ice-3.2.1:
 
-$ cd Ice-3.2.0
+$ cd Ice-3.2.1
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular
@@ -163,4 +163,5 @@ When compiling Ice programs, you must pass the location of the
 location of the <prefix>/lib directory with the -L option.
 
 If you built in 64-bit mode, the libraries are installed in
+<prefix>/lib/sparcv9 and the binaries are installed in 
 <prefix>/lib/sparcv9. No other changes are necessary.

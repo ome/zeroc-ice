@@ -1,3 +1,98 @@
+Changes since version 3.2.0
+---------------------------
+
+- Added demo book/lifecycle.
+
+- It is now possible to redirect stderr and stdout with Ice.StdErr and
+  Ice.StdOut to files bigger than 2GB.
+
+- Added two new IceGrid properties:
+
+    IceGrid.Registry.SessionFilters
+    IceGrid.Registry.AdminSessionFilters 
+
+  These properties allow you to disable the installation of Glacier2
+  filters for IceGrid client and administrative sessions created by
+  Glacier2. See the Ice manual for more information.
+
+- Fixed object adapter activation deadlock. The deadlock could occur
+  if another thread invokes concurrently on the locator while the
+  adapter is registering its endpoints with the locator registry.
+  
+- If the glacier2router cannot contact the permissions verifier or
+  session manager on startup, it now prints a warning and continues 
+  rather than exiting. These warnings are disabled if the router is
+  started with the --nowarn command line option.
+
+- Added support for protected class data members using the new
+  metadata tag ["protected"]. The tag can be applied to a Slice class
+  or to individual data members.
+
+- IceGrid now emulates SIGTERM and SIGKILL signals on Windows. Sending
+  SIGTERM on a Windows process generates a Ctrl+Break event and
+  sending SIGKILL terminates the process.
+
+- IceGrid now allows you to define an object adapter with a replica
+  group from a different IceGrid application.
+
+- Changed the throughput demo to better support cross-language
+  testing.
+
+- Fixed a bug in IceUtil::Cond under Windows that could cause a
+  deadlock if a signal was used in conjunction with multiple waiting
+  threads where at least one thread is using timedWait. Note that this
+  bug also affects IceUtil::Monitor since this uses IceUtil::Cond.
+
+- Fixed throughput performance problem on Windows that would occur
+  when sending large requests.
+
+- Added Ice.TCP.RcvSize and Ice.TCP.SndSize properties. These
+  properties control the size of the TCP receive and send buffers for
+  the TCP and SSL transports.
+
+- Added support for opaque endpoints. For example:
+
+  opaque -t 2 -v CTEyNy4wLjAuMREnAAD/////AA==
+
+  This is the same as:
+
+  ssl -h 127.0.0.1 -p 10001
+
+  The "opaque" protocol identifier indicates an unknown protocol.
+  Both the -t and the -v option must be present:
+
+  -t <num>:    Indicates the protocol type (TCP = 1, SSL = 2, UDP = 3).
+
+  -v <base64>: Provides the value of the opaque endpoint. The option
+               argument is the marshaled representation of the
+               endpoint (including the endpoint's enclosing
+               encapsulation) in base64 encoding.
+
+  This syntax is useful if, for example, a client that has the SSL
+  plugin configured sends a proxy with an SSL endpoint to a server
+  without the SSL plugin. Prior to this version, the server would
+  drop the unknown SSL endpoint when it stringified the proxy.
+  As of this version, the server preserves the endpoint and, when the
+  server stringifies a proxy containing an unknown endpoint, it uses
+  the above opaque syntax.
+
+- Trailing characters past the adapter id in a stringified proxy
+  will now raise a ProxyParseException.
+
+- Fixed an IceGrid registry assertion failure that would be triggered
+  on registration of duplicate well-known objects with the same object
+  adapter.
+
+- Added code generated from FileParser.ice to the IceGrid library.
+
+- Fixed collocation optimization to also work for indirect proxies
+  referring to a replica group.
+
+- The findAllReplicas() operation in the IceGrid::Query interface now
+  accepts well-known proxies from a replica group. This allows you to
+  retrieve the replicas of a replicated object using its well-known
+  proxy.
+
 Changes since version 3.2b
 --------------------------
 

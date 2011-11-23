@@ -581,9 +581,9 @@ Ice::ObjectAdapterI::isLocal(const ObjectPrx& proxy) const
         {
             //
             // Proxy is local if the reference adapter id matches this
-            // adapter id.
+            // adapter id or replica group id.
             //
-            return ir->getAdapterId() == _id;
+            return ir->getAdapterId() == _id || ir->getAdapterId() == _replicaGroupId;
         }
 
         //
@@ -593,7 +593,14 @@ Ice::ObjectAdapterI::isLocal(const ObjectPrx& proxy) const
         if(info)
         {
             bool isCached;
-            endpoints = info->getEndpoints(ir, ir->getLocatorCacheTimeout(), isCached);
+            try
+            {
+                endpoints = info->getEndpoints(ir, ir->getLocatorCacheTimeout(), isCached);
+            }
+            catch(const Ice::LocalException&)
+            {
+                return false;
+            }
         }
         else
         {

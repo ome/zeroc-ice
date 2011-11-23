@@ -83,7 +83,7 @@ Ice has dependencies on a number of third-party libraries:
   "Software Porting And Archive Centre for HP-UX" located at
   http://hpux.cs.utah.edu.
 
-- bzip2 1.0, which can be downloaded from the "Software Porting And
+- bzip2 1.0.3, which can be downloaded from the "Software Porting And
   Archive Centre for HP-UX", http://hpux.cs.utah.edu. For 32-bit
   builds, you can also use the binary distribution from the "Software
   Porting And Archive Centre for HP-UX".
@@ -113,11 +113,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ gunzip -c Ice-3.2.0.tar.gz | tar xvf -
+$ gunzip -c Ice-3.2.1.tar.gz | tar xvf -
 
-Change the working directory to Ice-3.2.0:
+Change the working directory to Ice-3.2.1:
 
-$ cd Ice-3.2.0
+$ cd Ice-3.2.1
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular
@@ -182,4 +182,5 @@ compiling Ice programs, you must pass the location of the
 location of the <prefix>/lib directory with the -L option.
 
 If you built in 64-bit mode, the libraries are installed in
-<prefix>/lib/pa20_64. No other changes are necessary.
+<prefix>/lib/pa20_64 and the binaries are installed in 
+<prefix>/bin/pa20_64. No other changes are necessary.

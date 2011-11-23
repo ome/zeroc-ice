@@ -8,8 +8,8 @@
 // **********************************************************************
 
 #include <IceUtil/IceUtil.h>
-#include <HelloI.h>
 #include <Ice/Ice.h>
+#include <HelloI.h>
 
 using namespace std;
 
@@ -20,7 +20,16 @@ onCtrlC(int)
 {
     if(communicator)
     {
-        communicator->shutdown();
+        try
+        {
+            communicator->shutdown();
+        }
+        catch(const Ice::CommunicatorDestroyedException&)
+        {
+            //
+            // This might occur if we receive more than one signal.
+            //
+        }
     }
 }
 

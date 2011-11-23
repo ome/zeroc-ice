@@ -38,6 +38,8 @@ const int FixedSeqSize = 50000;
 
 interface Throughput
 {
+    bool needsWarmup();
+    void startWarmup();
     void endWarmup();
 
     void sendByteSeq(["cpp:array"] ByteSeq seq);
@@ -56,7 +58,7 @@ interface Throughput
     FixedSeq recvFixedSeq();
     FixedSeq echoFixedSeq(FixedSeq seq);
 
-    idempotent void shutdown();
+    void shutdown();
 };
 
 };

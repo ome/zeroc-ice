@@ -7,9 +7,9 @@
 //
 // **********************************************************************
 
-#include <ChatSessionI.h>
-#include <Ice/Application.h>
+#include <Ice/Ice.h>
 #include <Glacier2/PermissionsVerifier.h>
+#include <ChatSessionI.h>
 
 using namespace std;
 using namespace Demo;

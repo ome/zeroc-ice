@@ -43,11 +43,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ tar xvfz Ice-3.2.0.tar.gz
+$ tar xvfz Ice-3.2.1.tar.gz
 
-Change the working directory to Ice-3.2.0:
+Change the working directory to Ice-3.2.1:
 
-$ cd Ice-3.2.0
+$ cd Ice-3.2.1
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular

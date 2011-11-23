@@ -961,12 +961,31 @@ CommunicatorHelper::getIds(multiset<string>& adapterIds, multiset<Ice::Identity>
         for(q = p->objects.begin(); q != p->objects.end(); ++q)
         {
             ids.insert(q->id);
+            objectIds.insert(q->id);
         }
         for(q = p->allocatables.begin(); q != p->allocatables.end(); ++q)
         {
-            ids.insert(q->id);
+             if(ids.find(q->id) == ids.end())
+             {
+                 objectIds.insert(q->id);
+             }
+             else
+             {
+                 ids.erase(q->id);
+             }
         }
-        objectIds.insert(ids.begin(), ids.end());
+    }
+}
+
+void 
+CommunicatorHelper::getReplicaGroups(set<string>& replicaGroups) const
+{
+    for(AdapterDescriptorSeq::const_iterator p = _desc->adapters.begin(); p != _desc->adapters.end(); ++p)
+    {
+        if(!p->replicaGroupId.empty())
+        {
+            replicaGroups.insert(p->replicaGroupId);
+        }
     }
 }
 
@@ -985,10 +1004,18 @@ CommunicatorHelper::instantiateImpl(const CommunicatorDescriptorPtr& instance, c
         adapter.registerProcess = p->registerProcess;
         adapter.serverLifetime = p->serverLifetime;
         adapter.replicaGroupId = resolve.asId(p->replicaGroupId, "object adapter replica group id", true);
-        if(!adapter.replicaGroupId.empty() && !resolve.hasReplicaGroup(adapter.replicaGroupId))
-        {
-            resolve.exception("unknown replica group `" + adapter.replicaGroupId + "'");
-        }
+
+        //
+        // Don't check for unknown replica groups here. This check is
+        // instead done by the database before the application is
+        // added. It's legal for an OA to refer to a replica group
+        // from another application.
+        //
+        //if(!adapter.replicaGroupId.empty() && !resolve.hasReplicaGroup(adapter.replicaGroupId))
+        //{
+        //resolve.exception("unknown replica group `" + adapter.replicaGroupId + "'");
+        //}
+
         adapter.priority = resolve.asInt(p->priority, "object adapter priority");
         adapter.objects = resolve(p->objects, "well-known");
         adapter.allocatables = resolve(p->allocatables, "allocatable");
@@ -1498,6 +1525,16 @@ IceBoxHelper::getIds(multiset<string>& adapterIds, multiset<Ice::Identity>& obje
 }
 
 void
+IceBoxHelper::getReplicaGroups(set<string>& replicaGroups) const
+{
+    CommunicatorHelper::getReplicaGroups(replicaGroups);
+    for(vector<ServiceInstanceHelper>::const_iterator p = _services.begin(); p != _services.end(); ++p)
+    {
+        p->getReplicaGroups(replicaGroups);
+    }
+}
+
+void
 IceBoxHelper::print(const Ice::CommunicatorPtr& communicator, Output& out) const
 {
     print(communicator, out, ServerInfo());
@@ -1687,6 +1724,13 @@ ServiceInstanceHelper::getIds(multiset<string>& adapterIds, multiset<Ice::Identi
 }
 
 void
+ServiceInstanceHelper::getReplicaGroups(set<string>& replicaGroups) const
+{
+    assert(_service.getDescriptor());
+    _service.getReplicaGroups(replicaGroups);
+}
+
+void
 ServiceInstanceHelper::print(const Ice::CommunicatorPtr& communicator, Output& out) const
 {
     if(_service.getDescriptor())
@@ -1866,6 +1910,13 @@ ServerInstanceHelper::getIds(multiset<string>& adapterIds, multiset<Ice::Identit
 {
     assert(_serverInstance);
     _serverInstance->getIds(adapterIds, objectIds);
+}
+
+void
+ServerInstanceHelper::getReplicaGroups(set<string>& replicaGroups) const
+{
+    assert(_serverInstance);
+    _serverInstance->getReplicaGroups(replicaGroups);
 }
 
 NodeHelper::NodeHelper(const string& name, 
@@ -2127,6 +2178,21 @@ NodeHelper::getIds(multiset<string>& serverIds, multiset<string>& adapterIds, mu
     {
         serverIds.insert(p->first);
         p->second.getIds(adapterIds, objectIds);
+    }    
+}
+
+void
+NodeHelper::getReplicaGroups(set<string>& replicaGroups) const
+{
+    assert(_instantiated);
+    ServerInstanceHelperDict::const_iterator p;
+    for(p = _serverInstances.begin(); p != _serverInstances.end(); ++p)
+    {
+        p->second.getReplicaGroups(replicaGroups);
+    }
+    for(p = _servers.begin(); p != _servers.end(); ++p)
+    {
+        p->second.getReplicaGroups(replicaGroups);
     }    
 }
 
@@ -2691,6 +2757,29 @@ ApplicationHelper::getIds(set<string>& serverIds, set<string>& adapterIds, set<I
     copy(sIds.begin(), sIds.end(), inserter(serverIds, serverIds.begin()));
     copy(aIds.begin(), aIds.end(), inserter(adapterIds, adapterIds.begin()));
     copy(oIds.begin(), oIds.end(), inserter(objectIds, objectIds.begin()));
+}
+
+void
+ApplicationHelper::getReplicaGroups(set<string>& replicaGroups, set<string>& adapterReplicaGroups) const
+{
+    ReplicaGroupDescriptorSeq::const_iterator r;
+    for(r = _def.replicaGroups.begin(); r != _def.replicaGroups.end(); ++r)
+    {
+        replicaGroups.insert(r->id);
+    }
+
+    set<string> allAdapterReplicaGroups;
+    for(NodeHelperDict::const_iterator p = _nodes.begin(); p != _nodes.end(); ++p)
+    {
+        p->second.getReplicaGroups(allAdapterReplicaGroups);
+    }
+    
+    //
+    // Only return references to replica groups which don't belong to
+    // this application.
+    //
+    set_difference(allAdapterReplicaGroups.begin(), allAdapterReplicaGroups.end(),
+                   replicaGroups.begin(), replicaGroups.end(), set_inserter(adapterReplicaGroups));
 }
 
 const ApplicationDescriptor&

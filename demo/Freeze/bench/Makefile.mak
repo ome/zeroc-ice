@@ -21,7 +21,7 @@ SRCS		= $(OBJS:.obj=.cpp)
 
 CPPFLAGS	= -I. $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 
-!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+!if "$(CPP_COMPILER)" != "BCC2006" && "$(OPTIMIZE)" != "yes"
 PDBFLAGS        = /pdb:$(CLIENT:.exe=.pdb)
 !endif
 
@@ -44,9 +44,8 @@ BenchTypes.h BenchTypes.cpp: Test.ice $(SLICE2FREEZE)
         BenchTypes Test.ice
 
 clean::
-	del /q BenchTypes.h BenchTypes.cpp
-
-clean::
-	del /q Test.cpp Test.h
+	-del /q BenchTypes.h BenchTypes.cpp
+	-del /q Test.cpp Test.h
+	-for %f in (db\*) do if not %f == db\.gitignore del /q %f
 
 !include .depend

@@ -26,7 +26,7 @@ SRCS		= $(OBJS:.obj=.cpp)
 
 CPPFLAGS	= -I. -Idummyinclude -I../../include $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 
-!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+!if "$(CPP_COMPILER)" != "BCC2006" && "$(OPTIMIZE)" != "yes"
 PDBFLAGS        = /pdb:$(CLIENT:.exe=.pdb)
 !endif
 
@@ -54,16 +54,10 @@ ComplexDict.h ComplexDict.cpp: Complex.ice $(SLICE2FREEZE)
 #	del /q Grammar.output
 
 clean::
-	del /q ComplexDict.h ComplexDict.cpp
-
-clean::
 	del /q Complex.cpp Complex.h
-
-clean::
 #	del /q Grammar.cpp Grammar.h
 #	del /q Scanner.cpp
-
-clean::
-	del /q db\test db\log.*
+	del /q ComplexDict.h ComplexDict.cpp
+	for %f in (db\*) do if not %f == db\.gitignore del /q %f
 
 !include .depend

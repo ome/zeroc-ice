@@ -175,7 +175,7 @@ IceSSL::PluginI::setupSSL(const CommunicatorPtr& communicator)
         //
         // Initialize the PRNG.
         //
-#ifdef WINDOWS
+#ifdef _WIN32
         RAND_screen(); // Uses data from the screen if possible.
 #endif
         char randFile[1024];
@@ -322,4 +322,6 @@ IceSSL::getConnectionInfo(const ConnectionPtr& connection)
         os << "couldn't get connection information:\n" << ex << endl;
         throw ConnectionInvalidException(__FILE__, __LINE__, os.str());
     }
+
+    return ConnectionInfo(); // Required to prevent compiler warning on Solaris.
 }

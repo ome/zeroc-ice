@@ -131,7 +131,12 @@ AllocatableObjectCache::add(const ObjectInfo& info, const AllocatablePtr& parent
     const Ice::Identity& id = info.proxy->ice_getIdentity();
 
     Lock sync(*this);
-    assert(!getImpl(id));
+    if(getImpl(id))
+    {
+        Ice::Error out(_communicator->getLogger());
+        out << "can't add duplicate allocatable object `" << _communicator->identityToString(id) << "'";
+        return;
+    }
 
     AllocatableObjectEntryPtr entry = new AllocatableObjectEntry(*this, info, parent);
     addImpl(id, entry);
@@ -169,7 +174,11 @@ AllocatableObjectCache::remove(const Ice::Identity& id)
     {
         Lock sync(*this);
         entry = getImpl(id);
-        assert(entry);
+        if(!entry)
+        {
+            Ice::Error out(_communicator->getLogger());
+            out << "can't remove unknown object `" << _communicator->identityToString(id) << "'";
+        }
         removeImpl(id);
 
         map<string, TypeEntry>::iterator p = _types.find(entry->getType());
@@ -286,25 +295,28 @@ AllocatableObjectEntry::allocated(const SessionIPtr& session)
             << ")";
     }    
 
-    Glacier2::SessionControlPrx ctl = session->getSessionControl();
-    if(ctl)
+    if(session->useFilters())
     {
-        try
+        Glacier2::SessionControlPrx ctl = session->getSessionControl();
+        if(ctl)
         {
-            Ice::IdentitySeq seq(1);
-            seq.push_back(_info.proxy->ice_getIdentity());
-            ctl->identities()->add(seq);
-        }
-        catch(const Ice::LocalException& ex)
-        {
-            if(traceLevels && traceLevels->object > 0)
+            try
             {
-                Ice::Trace out(traceLevels->logger, traceLevels->objectCat);
-                out << "couldn't add Glacier2 filter for object `" << _info.proxy->ice_toString();
-                out << "' allocated by `" << session->getId() << "':\n" << ex;
-            }    
-        }
-    }    
+                Ice::IdentitySeq seq(1);
+                seq.push_back(_info.proxy->ice_getIdentity());
+                ctl->identities()->add(seq);
+            }
+            catch(const Ice::LocalException& ex)
+            {
+                if(traceLevels && traceLevels->object > 0)
+                {
+                    Ice::Trace out(traceLevels->logger, traceLevels->objectCat);
+                    out << "couldn't add Glacier2 filter for object `" << _info.proxy->ice_toString();
+                    out << "' allocated by `" << session->getId() << "':\n" << ex;
+                }    
+            }
+        }    
+    }
 }
 
 void
@@ -317,23 +329,26 @@ AllocatableObjectEntry::released(const SessionIPtr& session)
 
     TraceLevelsPtr traceLevels = _cache.getTraceLevels();
 
-    Glacier2::SessionControlPrx ctl = session->getSessionControl();
-    if(ctl)
+    if(session->useFilters())
     {
-        try
+        Glacier2::SessionControlPrx ctl = session->getSessionControl();
+        if(ctl)
         {
-            Ice::IdentitySeq seq(1);
-            seq.push_back(_info.proxy->ice_getIdentity());
-            ctl->identities()->remove(seq);
-        }
-        catch(const Ice::LocalException& ex)
-        {
-            if(traceLevels && traceLevels->object > 0)
+            try
             {
-                Ice::Trace out(traceLevels->logger, traceLevels->objectCat);
-                out << "couldn't remove Glacier2 filter for object `" << _info.proxy->ice_toString();
-                out << "' allocated by `" << session->getId() << "':\n" << ex;
-            }    
+                Ice::IdentitySeq seq(1);
+                seq.push_back(_info.proxy->ice_getIdentity());
+                ctl->identities()->remove(seq);
+            }
+            catch(const Ice::LocalException& ex)
+            {
+                if(traceLevels && traceLevels->object > 0)
+                {
+                    Ice::Trace out(traceLevels->logger, traceLevels->objectCat);
+                    out << "couldn't remove Glacier2 filter for object `" << _info.proxy->ice_toString();
+                    out << "' allocated by `" << session->getId() << "':\n" << ex;
+                }    
+            }
         }
     }
 

@@ -29,7 +29,7 @@ SRCS		= $(OBJS:.obj=.cpp) \
 
 CPPFLAGS	= -I. $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 
-!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+!if "$(CPP_COMPILER)" != "BCC2006" && "$(OPTIMIZE)" != "yes"
 CPDBFLAGS        = /pdb:$(CLIENT:.exe=.pdb)
 SPDBFLAGS        = /pdb:$(SERVER:.exe=.pdb)
 !endif
@@ -47,5 +47,12 @@ $(SERVER): $(OBJS) $(SOBJS)
 
 clean::
 	del /q Hello.cpp Hello.h
+
+clean::
+	-for %d in (master replica1 replica2) do \
+	  for %f in (db\%d\*) do if not %f == db\%d\.gitignore del /q %f
+	-for %d in (node1 node2) do \
+	  for %f in (db\%d\*) do if not %f == db\%d\.gitignore del /q %f
+	-for %f in (distrib servers tmp) do if exist db\%d\%f rmdir /s /q db\%d\%f
 
 !include .depend

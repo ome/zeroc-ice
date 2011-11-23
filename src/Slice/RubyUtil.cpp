@@ -353,21 +353,57 @@ Slice::Ruby::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
     DataMemberList members = p->dataMembers();
     if(!members.empty())
     {
+        bool prot = p->hasMetaData("protected");
+        DataMemberList protectedMembers;
+        DataMemberList::iterator q;
+
         _out << sp << nl << "attr_accessor ";
-        for(DataMemberList::iterator q = members.begin(); q != members.end(); ++q)
+        for(q = members.begin(); q != members.end(); ++q)
         {
             if(q != members.begin())
             {
                 _out << ", ";
             }
             _out << ":" << fixIdent((*q)->name(), IdentNormal);
+            if(prot || (*q)->hasMetaData("protected"))
+            {
+                protectedMembers.push_back(*q);
+            }
+        }
+
+        if(!protectedMembers.empty())
+        {
+            _out << nl << "protected ";
+            for(q = protectedMembers.begin(); q != protectedMembers.end(); ++q)
+            {
+                if(q != protectedMembers.begin())
+                {
+                    _out << ", ";
+                }
+                //
+                // We need to list the symbols of the reader and the writer (e.g., ":member" and ":member=").
+                //
+                _out << ":" << fixIdent((*q)->name(), IdentNormal) << ", :"
+                     << fixIdent((*q)->name(), IdentNormal) << '=';
+            }
         }
     }
 
     _out.dec();
     _out << nl << "end"; // End of mix-in module for class.
 
-    if(!p->isInterface())
+    if(p->isInterface())
+    {
+        //
+        // Class.
+        //
+        _out << nl << "class " << name;
+        _out.inc();
+        _out << nl << "include " << name << "_mixin";
+        _out.dec();
+        _out << nl << "end";
+    }
+    else
     {
         //
         // Class.
@@ -477,6 +513,7 @@ Slice::Ruby::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
             _out.dec();
             _out << nl << "end";
 
+/* If AMI/AMD is ever implemented...
             if(p->hasMetaData("ami") || (*oli)->hasMetaData("ami"))
             {
                 _out << sp << nl << "def " << fixedOpName << "_async(_cb";
@@ -495,6 +532,7 @@ Slice::Ruby::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
                 _out.dec();
                 _out << nl << "end";
             }
+*/
         }
         _out.dec();
         _out << nl << "end"; // End of mix-in module for proxy.
@@ -509,7 +547,7 @@ Slice::Ruby::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
         _out.dec();
         _out << nl << "end";
 
-        _out << sp << nl << "def " << name << "Prx.uncheckedCast(proxy, facet='')";
+        _out << sp << nl << "def " << name << "Prx.uncheckedCast(proxy, facet=nil)";
         _out.inc();
         _out << nl << "ice_uncheckedCast(proxy, facet)";
         _out.dec();
@@ -533,7 +571,7 @@ Slice::Ruby::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << nl << "end";
     _classHistory.insert(scoped); // Avoid redundant declarations.
 
-    _out << sp << nl << "T_" << name << ".defineClass(" << (p->isInterface() ? string("nil") : name) << ", "
+    _out << sp << nl << "T_" << name << ".defineClass(" << name << ", "
          << (p->isAbstract() ? "true" : "false") << ", ";
     if(!base)
     {

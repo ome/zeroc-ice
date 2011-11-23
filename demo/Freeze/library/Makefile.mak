@@ -47,7 +47,7 @@ SRCS		= $(OBJS:.obj=.cpp) \
 CPPFLAGS	= -I. -Idummyinclude $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 SLICE2CPPFLAGS	= --ice $(SLICE2CPPFLAGS)
 
-!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+!if "$(CPP_COMPILER)" != "BCC2006" && "$(OPTIMIZE)" != "yes"
 CPDBFLAGS        = /pdb:$(CLIENT:.exe=.pdb)
 SPDBFLAGS        = /pdb:$(SERVER:.exe=.pdb)
 COPDBFLAGS       = /pdb:$(COLLOCATED:.exe=.pdb)
@@ -87,13 +87,12 @@ LibraryTypes.h LibraryTypes.cpp: Library.ice $(SLICE2FREEZE)
 #	del /q Grammar.output
 
 clean::
-	del /q LibraryTypes.h LibraryTypes.cpp
-
-clean::
 	del /q Library.cpp Library.h
 
 clean::
-#	del /q Grammar.cpp Grammar.h
-#	del /q Scanner.cpp
+	-del /q LibraryTypes.h LibraryTypes.cpp
+#	-del /q Grammar.cpp Grammar.h
+#	-del /q Scanner.cpp
+	-for %f in (db\*) do if not %f == db\.gitignore del /q %f
 
 !include .depend
