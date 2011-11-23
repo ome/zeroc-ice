@@ -41,7 +41,7 @@ public:
     virtual void printHeader();
 };
 
-class SLICE_API JavaGenerator : public ::IceUtil::noncopyable
+class SLICE_API JavaGenerator : private ::IceUtil::noncopyable
 {
 public:
 
@@ -55,6 +55,8 @@ public:
 protected:
 
     JavaGenerator(const std::string&);
+
+    JavaGenerator(const std::string&, Slice::FeatureProfile profile);
 
     //
     // Given the fully-scoped Java class name, create any intermediate
@@ -115,6 +117,13 @@ protected:
 				   const std::string& patchParams = "");
 
     //
+    // Generate code to marshal or unmarshal a dictionary type.
+    //
+    void writeDictionaryMarshalUnmarshalCode(::IceUtil::Output&, const std::string&, const DictionaryPtr&,
+                                           const std::string&, bool, int&, bool,
+                                           const StringList& = StringList());
+
+    //
     // Generate code to marshal or unmarshal a sequence type.
     //
     void writeSequenceMarshalUnmarshalCode(::IceUtil::Output&, const std::string&, const SequencePtr&,
@@ -129,6 +138,13 @@ protected:
 				         const std::string& patchParams = "");
 
     //
+    // Generate code to marshal or unmarshal a dictionary type using the public stream API.
+    //
+    void writeStreamDictionaryMarshalUnmarshalCode(::IceUtil::Output&, const std::string&, const DictionaryPtr&,
+                                                   const std::string&, bool, int&, bool,
+                                                   const StringList& = StringList());
+
+    //
     // Generate code to marshal or unmarshal a sequence type using the public stream API.
     //
     void writeStreamSequenceMarshalUnmarshalCode(::IceUtil::Output&, const std::string&, const SequencePtr&,
@@ -139,6 +155,12 @@ protected:
     // Find custom sequence metadata.
     //
     static std::string findMetaData(const StringList&);
+
+protected:
+
+    virtual JavaOutput* createOutput();
+
+    Slice::FeatureProfile _featureProfile;
 
 private:
 

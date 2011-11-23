@@ -1,12 +1,11 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <HTML
 ><HEAD
 ><TITLE
->Freeze::Transaction</TITLE
+>Freeze::EvictorIterator</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -14,11 +13,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Freeze::Statistics"
-HREF="x7516.html"><LINK
+TITLE="Freeze::EvictorDeactivatedException"
+HREF="x7569.html"><LINK
 REL="NEXT"
-TITLE="Freeze::TransactionAlreadyInProgressException"
-HREF="x7624.html"></HEAD
+TITLE="Freeze::InvalidPositionException"
+HREF="x7659.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -46,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x7516.html"
+HREF="x7569.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -60,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x7624.html"
+HREF="x7659.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -74,11 +73,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="FREEZE.TRANSACTION"
-></A
+NAME="FREEZE.EVICTORITERATOR"
 ><TT
 CLASS="LITERAL"
->Freeze::Transaction</TT
+>Freeze::EvictorIterator</TT
+></A
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -86,8 +85,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN7580"
-></A
->Overview</H2
+>Overview</A
+></H2
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -96,39 +95,32 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->local interface <TT
+>local interface <CODE
 CLASS="CLASSNAME"
->Transaction</TT
+>EvictorIterator</CODE
 ></PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->A transaction. If you want to use a transaction concurrently 
-
-in multiple threads, you need to serialize access to this
-
-transaction.</P
+>An iterator for the objects managed by the evictor.
+Note that an EvictorIterator is not thread-safe: the application needs to
+serialize access to a given EvictorIterator, for example by using it
+in just one thread.</P
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN7585"
-></A
->Used By</H3
+>Used By</A
+></H3
 ><P
 >	    <A
-HREF="x6296.html#FREEZE.CONNECTION.BEGINTRANSACTION"
+HREF="x6728.html#FREEZE.EVICTOR.GETITERATOR"
 ><TT
 CLASS="FUNCTION"
->Connection::beginTransaction</TT
-></A
->, <A
-HREF="x6296.html#FREEZE.CONNECTION.CURRENTTRANSACTION"
-><TT
-CLASS="FUNCTION"
->Connection::currentTransaction</TT
+>Evictor::getIterator</TT
 ></A
 ></P
 ></DIV
@@ -137,9 +129,26 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN7595"
+NAME="AEN7592"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x6728.html"
+><CODE
+CLASS="CLASSNAME"
+>Evictor</CODE
 ></A
->Operation Index</H3
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN7599"
+>Operation Index</A
+></H3
 ><P
 ></P
 ><DIV
@@ -147,27 +156,27 @@ CLASS="VARIABLELIST"
 ><DL
 ><DT
 ><A
-HREF="x7577.html#FREEZE.TRANSACTION.COMMIT"
+HREF="x7577.html#FREEZE.EVICTORITERATOR.HASNEXT"
 ><TT
 CLASS="FUNCTION"
->commit</TT
+>hasNext</TT
 ></A
 ></DT
 ><DD
 ><P
->Commit this transaction.</P
+>Determines if the iteration has more elements.</P
 ></DD
 ><DT
 ><A
-HREF="x7577.html#FREEZE.TRANSACTION.ROLLBACK"
+HREF="x7577.html#FREEZE.EVICTORITERATOR.NEXT"
 ><TT
 CLASS="FUNCTION"
->rollback</TT
+>next</TT
 ></A
 ></DT
 ><DD
 ><P
->Roll back this transaction.</P
+>Obtains the next identity in the iteration.</P
 ></DD
 ></DL
 ></DIV
@@ -178,11 +187,11 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="FREEZE.TRANSACTION.COMMIT"
-></A
+NAME="FREEZE.EVICTORITERATOR.HASNEXT"
 ><TT
 CLASS="LITERAL"
->commit</TT
+>hasNext</TT
+></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -194,27 +203,68 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 ><SPAN
 CLASS="TYPE"
->void</SPAN
+>bool</SPAN
 > <TT
 CLASS="FUNCTION"
->commit</TT
+>hasNext</TT
 >();</PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->Commit this transaction.</P
+>Determines if the iteration has more elements.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN7621"
+>Return Value</A
+></H3
+><P
+>		True if the iterator has more elements, false
+otherwise.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN7624"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x6672.html"
+><CODE
+CLASS="CLASSNAME"
+>DatabaseException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if a database failure
+occurs while retrieving a batch of objects.</P
+></DD
+></DL
+></DIV
+></DIV
 ></DIV
 ><DIV
 CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="FREEZE.TRANSACTION.ROLLBACK"
-></A
+NAME="FREEZE.EVICTORITERATOR.NEXT"
 ><TT
 CLASS="LITERAL"
->rollback</TT
+>next</TT
+></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -224,18 +274,74 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
-><SPAN
-CLASS="TYPE"
->void</SPAN
+><A
+HREF="x2628.html"
+><CODE
+CLASS="STRUCTNAME"
+>::Ice::Identity</CODE
+></A
 > <TT
 CLASS="FUNCTION"
->rollback</TT
+>next</TT
 >();</PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->Roll back this transaction.</P
+>Obtains the next identity in the iteration.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN7641"
+>Return Value</A
+></H3
+><P
+>		s The next identity in the iteration.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN7644"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x7667.html"
+><CODE
+CLASS="CLASSNAME"
+>NoSuchElementException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if there is no further
+elements in the iteration.</P
+></DD
+><DT
+><A
+HREF="x6672.html"
+><CODE
+CLASS="CLASSNAME"
+>DatabaseException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if a database failure
+occurs while retrieving a batch of objects.</P
+></DD
+></DL
+></DIV
+></DIV
 ></DIV
 ></DIV
 ><DIV
@@ -254,7 +360,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x7516.html"
+HREF="x7569.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -272,7 +378,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x7624.html"
+HREF="x7659.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -284,7 +390,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Freeze::Statistics</TT
+>Freeze::EvictorDeactivatedException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -301,7 +407,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Freeze::TransactionAlreadyInProgressException</TT
+>Freeze::InvalidPositionException</TT
 ></TD
 ></TR
 ></TABLE

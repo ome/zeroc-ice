@@ -18,6 +18,8 @@
 #define new DEBUG_NEW
 #endif
 
+using namespace std;
+
 class DialogPatcherFeedback : public IcePatch2::PatcherFeedback
 {
 public:
@@ -30,7 +32,7 @@ public:
     }
 
     virtual bool
-    noFileSummary(const std::string& reason)
+    noFileSummary(const string& reason)
     {
 	return IDYES == AfxMessageBox("Cannot load file summary. Perform a thorough patch?", MB_YESNO|MB_ICONSTOP);
     }
@@ -42,7 +44,7 @@ public:
     }
 
     virtual bool
-    checksumProgress(const std::string& path)
+    checksumProgress(const string& path)
     {
 	return _dialog->checksumProgress(path);
     }
@@ -72,7 +74,7 @@ public:
     }
 
     virtual bool
-    patchStart(const std::string& path, Ice::Long size, Ice::Long totalProgress, Ice::Long totalSize)
+    patchStart(const string& path, Ice::Long size, Ice::Long totalProgress, Ice::Long totalSize)
     {
 	return _dialog->patchStart(path, size, totalProgress, totalSize);
     }
@@ -123,7 +125,7 @@ CPatchDlg::checksumStart()
 }
 
 bool
-CPatchDlg::checksumProgress(const std::string& path)
+CPatchDlg::checksumProgress(const string& path)
 {
     // TODO: indicate busy progress
  
@@ -175,7 +177,7 @@ CPatchDlg::fileListEnd()
 }
 
 bool
-CPatchDlg::patchStart(const std::string& path, Ice::Long size, Ice::Long totalProgress, Ice::Long totalSize)
+CPatchDlg::patchStart(const string& path, Ice::Long size, Ice::Long totalProgress, Ice::Long totalSize)
 {
     if(!_isPatch)
     {
@@ -259,6 +261,7 @@ CPatchDlg::OnInitDialog()
     //
     _path = (CEdit*)GetDlgItem(IDC_PATH);
     _thorough = (CButton*)GetDlgItem(IDC_THOROUGH);
+    _remove = (CButton*)GetDlgItem(IDC_ORPHAN);
     _select = (CButton*)GetDlgItem(IDC_SELECTDIR);
     _start = (CButton*)GetDlgItem(IDC_STARTPATCH);
     _cancel = (CButton*)GetDlgItem(IDC_CANCELPATCH);
@@ -278,6 +281,9 @@ CPatchDlg::OnInitDialog()
 
     CString thorough = properties->getPropertyWithDefault("IcePatch2.Thorough", "0").c_str();
     _thorough->SetCheck(thorough != "0");
+
+    CString remove = properties->getPropertyWithDefault("IcePatch2.Remove", "0").c_str();
+    _remove->SetCheck(remove != "0");
 
     //
     // Indicate ready status.
@@ -362,12 +368,6 @@ CPatchDlg::OnStartPatch()
 	Ice::PropertiesPtr properties = _communicator->getProperties();
 
 	//
-	// Since this is a demo, we want to prevent files from
-	// accidental deletion.
-	//
-	properties->setProperty("IcePatch2.Remove", "0");
-
-	//
 	// Set the patch directory.
 	// 
 	CString path;
@@ -377,13 +377,19 @@ CPatchDlg::OnStartPatch()
 	    AfxMessageBox(CString("Please select a patch directory."), MB_OK|MB_ICONEXCLAMATION);
 	    return;
 	}
-	properties->setProperty("IcePatch2.Directory", std::string(path));
+	properties->setProperty("IcePatch2.Directory", string(path));
 
 	//
 	// Set the thorough patch flag.
 	//
-	std::string thorough = _thorough->GetCheck() == BST_CHECKED ? "1" : "0";
+	string thorough = _thorough->GetCheck() == BST_CHECKED ? "1" : "0";
 	properties->setProperty("IcePatch2.Thorough", thorough);
+
+	//
+	// Set the remove orphan flag.
+	//
+	string remove = _remove->GetCheck() == BST_CHECKED ? "1" : "0";
+	properties->setProperty("IcePatch2.Remove", remove);
 
         DialogPatcherFeedbackPtr feedback = new DialogPatcherFeedback(this);
 	IcePatch2::PatcherPtr patcher = new IcePatch2::Patcher(_communicator, feedback);
@@ -394,6 +400,7 @@ CPatchDlg::OnStartPatch()
 	_path->EnableWindow(false);
 	_select->EnableWindow(false);
 	_thorough->EnableWindow(false);
+	_remove->EnableWindow(false);
 	_start->EnableWindow(false);
 
 	//
@@ -418,7 +425,7 @@ CPatchDlg::OnStartPatch()
     {
         handleException(ex);
     }
-    catch(const std::string& ex)
+    catch(const string& ex)
     {
         AfxMessageBox(CString(ex.c_str()), MB_OK|MB_ICONEXCLAMATION);
     }
@@ -440,6 +447,7 @@ CPatchDlg::reset(const CString& status)
     _path->EnableWindow(true);
     _select->EnableWindow(true);
     _thorough->EnableWindow(true);
+    _remove->EnableWindow(true);
     _start->EnableWindow(true);
 
     _status->SetWindowText(status);
@@ -471,9 +479,9 @@ CPatchDlg::handleException(const IceUtil::Exception& e)
     }
     catch(const IceUtil::Exception& ex)
     {
-        std::ostringstream ostr;
+        ostringstream ostr;
         ostr << ex;
-        std::string s = ostr.str();
+        string s = ostr.str();
         AfxMessageBox(CString(s.c_str()), MB_OK|MB_ICONEXCLAMATION);
     }
 

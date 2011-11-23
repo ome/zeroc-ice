@@ -21,10 +21,11 @@
 #include <Ice/ServantManagerF.h>
 #include <Ice/ProxyF.h>
 #include <Ice/ObjectF.h>
-#include <Ice/Exception.h>
-#include <Ice/EndpointF.h>
+#include <Ice/RouterInfoF.h>
+#include <Ice/EndpointIF.h>
 #include <Ice/LocatorInfoF.h>
 #include <Ice/ThreadPoolF.h>
+#include <Ice/Exception.h>
 #include <Ice/Process.h>
 #include <list>
 
@@ -65,9 +66,11 @@ public:
 
     virtual ObjectPrx createProxy(const Identity&) const;
     virtual ObjectPrx createDirectProxy(const Identity&) const;
+    virtual ObjectPrx createIndirectProxy(const Identity&) const;
     virtual ObjectPrx createReverseProxy(const Identity&) const;
 
     virtual void addRouter(const RouterPrx&);
+    virtual void removeRouter(const RouterPrx&);
 
     virtual void setLocator(const LocatorPrx&);
 //    virtual LocatorPrx getLocator() const;
@@ -84,15 +87,16 @@ public:
 
 private:
 
-    ObjectAdapterI(const IceInternal::InstancePtr&, const CommunicatorPtr&, const std::string&);
+    ObjectAdapterI(const IceInternal::InstancePtr&, const CommunicatorPtr&, const std::string&, const std::string&);
     virtual ~ObjectAdapterI();
     friend class IceInternal::ObjectAdapterFactory;
     
     ObjectPrx newProxy(const Identity&, const std::string&) const;
     ObjectPrx newDirectProxy(const Identity&, const std::string&) const;
+    ObjectPrx newIndirectProxy(const Identity&, const std::string&, const std::string&) const;
     void checkForDeactivation() const;
     static void checkIdentity(const Identity&);
-    std::vector<IceInternal::EndpointPtr> parseEndpoints(const std::string&) const;
+    std::vector<IceInternal::EndpointIPtr> parseEndpoints(const std::string&) const;
 
     bool _deactivated;
     IceInternal::InstancePtr _instance;
@@ -102,9 +106,11 @@ private:
     bool _printAdapterReadyDone;
     const std::string _name;
     const std::string _id;
+    const std::string _replicaGroupId;
     std::vector<IceInternal::IncomingConnectionFactoryPtr> _incomingConnectionFactories;
-    std::vector<IceInternal::EndpointPtr> _routerEndpoints;
-    std::vector<IceInternal::EndpointPtr> _publishedEndpoints;
+    std::vector<IceInternal::EndpointIPtr> _routerEndpoints;
+    std::vector<IceInternal::RouterInfoPtr> _routerInfos;
+    std::vector<IceInternal::EndpointIPtr> _publishedEndpoints;
     IceInternal::LocatorInfoPtr _locatorInfo;
     int _directCount; // The number of direct proxies dispatching on this object adapter.
     bool _waitForDeactivate;
@@ -116,12 +122,11 @@ private:
         ProcessI(const CommunicatorPtr&);
 
         virtual void shutdown(const Current&);
-
 	virtual void writeMessage(const std::string&, Int, const Current&);
 
     private:
 
-        CommunicatorPtr _communicator;
+        const CommunicatorPtr _communicator;
     };
 };
 

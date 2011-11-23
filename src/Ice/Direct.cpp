@@ -40,25 +40,18 @@ IceInternal::Direct::Direct(const Current& current) :
     try
     {
 	_servant = servantManager->findServant(_current.id, _current.facet);
-	
-	if(!_servant && !_current.id.category.empty())
-	{
-	    _locator = servantManager->findServantLocator(_current.id.category);
-	    if(_locator)
-	    {
-		_servant = _locator->locate(_current, _cookie);
-	    }
-	}
-	
 	if(!_servant)
 	{
-	    _locator = servantManager->findServantLocator("");
+	    _locator = servantManager->findServantLocator(_current.id.category);
+	    if(!_locator && !_current.id.category.empty())
+	    {
+		_locator = servantManager->findServantLocator("");
+	    }
 	    if(_locator)
 	    {
 		_servant = _locator->locate(_current, _cookie);
 	    }
 	}
-	
 	if(!_servant)
 	{
 	    if(servantManager && servantManager->hasServant(_current.id))
@@ -93,7 +86,6 @@ IceInternal::Direct::Direct(const Current& current) :
 		throw;
 	    }
 	}
-
 	adapter->decDirectCount();
 	throw;
     }

@@ -386,6 +386,15 @@ Slice::Contained::setMetaData(const list<string>& metaData)
     _metaData = metaData;
 }
 
+//
+// TODO: remove this method once "cs:" and "vb:" prefix are hard errors.
+//
+void
+Slice::Contained::addMetaData(const string& s)
+{
+    _metaData.push_back(s);
+}
+
 bool
 Slice::Contained::operator<(const Contained& rhs) const
 {
@@ -570,14 +579,14 @@ Slice::Container::createClassDef(const string& name, bool intf, const ClassList&
     // definition. This way the code generator can rely on always
     // having a class declaration available for lookup.
     //
-    ClassDeclPtr decl = createClassDecl(name, intf, local, true);
+    ClassDeclPtr decl = createClassDecl(name, intf, local);
     def->_declaration = decl;
 
     return def;
 }
 
 ClassDeclPtr
-Slice::Container::createClassDecl(const string& name, bool intf, bool local, bool implicit)
+Slice::Container::createClassDecl(const string& name, bool intf, bool local)
 {
     checkPrefix(name);
 
@@ -626,12 +635,12 @@ Slice::Container::createClassDecl(const string& name, bool intf, bool local, boo
 	}
     }
 
-    if(!nameIsLegal(name, intf ? "interface" : "class", implicit))
+    if(!nameIsLegal(name, intf ? "interface" : "class"))
     {
 	return 0;
     }
 
-    if(!checkForGlobalDef(name, intf ? "interface" : "class", implicit))
+    if(!checkForGlobalDef(name, intf ? "interface" : "class"))
     {
 	return 0;
     }
@@ -760,6 +769,17 @@ Slice::Container::createSequence(const string& name, const TypePtr& type, bool l
 {
     checkPrefix(name);
 
+    if(_unit->profile() == IceE && !local)
+    {
+	BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
+	if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(type))
+	{
+	    string msg = "Sequence `" + name + "' cannot contain object values.";
+	    _unit->error(msg);
+	    return 0;
+	}
+    }
+
     ContainedList matches = _unit->findContents(thisScope() + name);
     if(!matches.empty())
     {
@@ -809,6 +829,17 @@ Slice::Container::createDictionary(const string& name, const TypePtr& keyType, c
 {
     checkPrefix(name);
 
+    if(_unit->profile() == IceE && !local)
+    {
+	BuiltinPtr builtin = BuiltinPtr::dynamicCast(valueType);
+	if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(valueType))
+	{
+	    string msg = "Dictionary `" + name + "' cannot contain object values.";
+	    _unit->error(msg);
+	    return 0;
+	}
+    }
+ 
     ContainedList matches = _unit->findContents(thisScope() + name);
     if(!matches.empty())
     {
@@ -1862,11 +1893,8 @@ Slice::Container::checkIntroduced(const string& scoped, ContainedPtr namedThing)
     return true;
 }
 
-//
-// TODO: remove the suppressWarnings parameter once deprecrecated features are outlawed.
-//
 bool
-Slice::Container::nameIsLegal(const string& newName, const char* newConstruct, bool suppressWarnings)
+Slice::Container::nameIsLegal(const string& newName, const char* newConstruct)
 {
     ModulePtr module = ModulePtr::dynamicCast(this);
 
@@ -1903,34 +1931,15 @@ Slice::Container::nameIsLegal(const string& newName, const char* newConstruct, b
     //
     // Check whether any of the enclosing modules have the same name.
     //
-    // TODO: Remove the test for deprecated features and turn this into a permanent hard error
-    //       once reusing a name for a nested scope is outlawed.
-    //
     while(module)
     {
 	if(newName == module->name())
 	{
-	    if(_unit->disallowDeprecatedFeatures())
-	    {
-		string msg = newConstruct;
-		msg += " name `" + newName + "' must differ from the name of enclosing module `" + module->name()
-		       + "' (first defined at " + module->file() + ":" + module->line() + ")";
-		_unit->error(msg);
-		return false;
-	    }
-	    else
-	    {
-		if(!suppressWarnings)
-		{
-		    string msg = newConstruct;
-		    msg += " name `" + newName + "': using the name of an enclosing module for nested types is "
-			   + "deprecated. (Module `" + module->name() + "' was first defined at " + module->file() + ":"
-		           + module->line() + ")";
-		    _unit->warning(msg);
-		    return true;
-		}
-	    }
-	    return true;
+	    string msg = newConstruct;
+	    msg += " name `" + newName + "' must differ from the name of enclosing module `" + module->name()
+		   + "' (first defined at " + module->file() + ":" + module->line() + ")";
+	    _unit->error(msg);
+	    return false;
 	}
 	if(!_unit->caseSensitive())
 	{
@@ -1940,26 +1949,11 @@ Slice::Container::nameIsLegal(const string& newName, const char* newConstruct, b
 	    toLower(thisName);
 	    if(name == thisName)
 	    {
-		if(_unit->disallowDeprecatedFeatures())
-		{
-		    string msg = newConstruct;
-		    msg += " name `" + name + "' cannot differ only in capitalization from enclosing module `"
-			   + module->name() + "' (first defined at " + module->file() + ":" + module->line() + ")";
-		    _unit->error(msg);
-		    return false;
-		}
-		else
-		{
-		    if(!suppressWarnings)
-		    {
-			string msg = newConstruct;
-			msg += " name `" + newName + "': using the name of an enclosing module for nested types is "
-			       + "deprecated. (Module `" + module->name() + "' was first defined at "
-			       + module->file() + ":" + module->line() + " and differs only in capitalization.)";
-			_unit->warning(msg);
-			return true;
-		    }
-		}
+		string msg = newConstruct;
+		msg += " name `" + name + "' cannot differ only in capitalization from enclosing module `"
+		       + module->name() + "' (first defined at " + module->file() + ":" + module->line() + ")";
+		_unit->error(msg);
+		return false;
 	    }
 	}
 	module = ModulePtr::dynamicCast(module->container());
@@ -1968,34 +1962,20 @@ Slice::Container::nameIsLegal(const string& newName, const char* newConstruct, b
     return true;
 }
 
-//
-// TODO: remove the suppressWarnings parameter once deprecrecated features are outlawed.
-//
 bool
-Slice::Container::checkForGlobalDef(const string& name, const char* newConstruct, bool suppressWarnings)
+Slice::Container::checkForGlobalDef(const string& name, const char* newConstruct)
 {
     if(dynamic_cast<Unit*>(this) && strcmp(newConstruct, "module"))
     {
-	if(_unit->disallowDeprecatedFeatures())
+	static const string vowels = "aeiou";
+	string glottalStop;
+	if(vowels.find_first_of(newConstruct[0]) != string::npos)
 	{
-	    static const string vowels = "aeiou";
-	    string glottalStop;
-	    if(vowels.find_first_of(newConstruct[0]) != string::npos)
-	    {
-		glottalStop = "n";
-	    }
-	    _unit->error("`" + name + "': a" + glottalStop + " " + newConstruct +
-			 " can be defined only at module scope");
-	    return false;
+	    glottalStop = "n";
 	}
-	else
-	{
-	    if(!suppressWarnings)
-	    {
-		_unit->warning("`" + name + "': " + newConstruct + " definitions at global scope are deprecated");
-	    }
-	}
-	return true;
+	_unit->error("`" + name + "': a" + glottalStop + " " + newConstruct +
+		     " can be defined only at module scope");
+	return false;
     }
     return true;
 }
@@ -2577,6 +2557,28 @@ Slice::ClassDef::createDataMember(const string& name, const TypePtr& type)
 {
     checkPrefix(name);
 
+    if(_unit->profile() == IceE)
+    {
+	if(!isLocal())
+	{
+	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
+	    if((builtin && builtin->kind() == Builtin::KindObject))
+	    {
+		string msg = "Class data member `" + name + "' cannot be a value object.";
+		_unit->error(msg);
+		return 0;
+	    } 
+
+	    ClassDeclPtr classDecl = ClassDeclPtr::dynamicCast(type);
+	    if(classDecl != 0 && !classDecl->isLocal())
+	    {
+		string msg = "Class data member `" + name + "' cannot be a value object.";
+		_unit->error(msg);
+		return 0;
+	    }
+	}
+    }
+
     assert(!isInterface()); 
     ContainedList matches = _unit->findContents(thisScope() + name);
     if(!matches.empty())
@@ -2759,18 +2761,29 @@ Slice::ClassDef::dataMembers() const
     return result;
 }
 
+//
+// Return the data members of this class and its parent classes, in base-to-derived order.
+//
 DataMemberList
 Slice::ClassDef::allDataMembers() const
 {
-    DataMemberList result = dataMembers();
-    result.sort();
-    result.unique();
-    for(ClassList::const_iterator p = _bases.begin(); p != _bases.end(); ++p)
+    DataMemberList result;
+
+    //
+    // Check if we have a base class. If so, recursively
+    // get the data members of the base(s).
+    //
+    if(!_bases.empty() && !_bases.front()->isInterface())
     {
-	DataMemberList li = (*p)->allDataMembers();
-	result.merge(li);
-	result.unique();
+	result = _bases.front()->allDataMembers();
     }
+
+    //
+    // Append this class's data members.
+    //
+    DataMemberList myMembers = dataMembers();
+    result.splice(result.end(), myMembers);
+
     return result;
 }
 
@@ -2793,6 +2806,9 @@ Slice::ClassDef::classDataMembers() const
     return result;
 }
 
+//
+// Return the class data members of this class and its parent classes, in base-to-derived order.
+//
 DataMemberList
 Slice::ClassDef::allClassDataMembers() const
 {
@@ -3021,6 +3037,28 @@ Slice::Exception::createDataMember(const string& name, const TypePtr& type)
 {
     checkPrefix(name);
 
+    if(_unit->profile() == IceE)
+    {
+	if(!isLocal())
+	{
+	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
+	    if((builtin && builtin->kind() == Builtin::KindObject))
+	    {
+		string msg = "Exception data member `" + name + "' cannot be a value object.";
+		_unit->error(msg);
+		return 0;
+	    }
+
+	    ClassDeclPtr classDecl = ClassDeclPtr::dynamicCast(type);
+	    if(classDecl != 0 && !classDecl->isLocal())
+	    {
+		string msg = "Exception data member `" + name + "' cannot be a value object.";
+		_unit->error(msg);
+		return 0;
+	    }
+	}
+    }
+
     ContainedList matches = _unit->findContents(thisScope() + name);
     if(!matches.empty())
     {
@@ -3134,6 +3172,32 @@ Slice::Exception::dataMembers() const
     return result;
 }
 
+//
+// Return the data members of this exception and its parent exceptions, in base-to-derived order.
+//
+DataMemberList
+Slice::Exception::allDataMembers() const
+{
+    DataMemberList result;
+
+    //
+    // Check if we have a base exception. If so, recursively
+    // get the data members of the base exception(s).
+    //
+    if(base())
+    {
+	result = base()->allDataMembers();
+    }
+
+    //
+    // Append this exceptions's data members.
+    //
+    DataMemberList myMembers = dataMembers();
+    result.splice(result.end(), myMembers);
+
+    return result;
+}
+
 DataMemberList
 Slice::Exception::classDataMembers() const
 {
@@ -3153,6 +3217,9 @@ Slice::Exception::classDataMembers() const
     return result;
 }
 
+//
+// Return the class data members of this exception and its parent exceptions, in base-to-derived order.
+//
 DataMemberList
 Slice::Exception::allClassDataMembers() const
 {
@@ -3168,20 +3235,11 @@ Slice::Exception::allClassDataMembers() const
     }
 
     //
-    // Append this exception's class members.
+    // Append this exceptions's class data members.
     //
-    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
-    {
-	DataMemberPtr q = DataMemberPtr::dynamicCast(*p);
-	if(q)
-	{
-	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(q->type());
-	    if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(q->type()))
-	    {
-		result.push_back(q);
-	    }
-	}
-    }
+    DataMemberList myMembers = classDataMembers();
+    result.splice(result.end(), myMembers);
+
     return result;
 }
 
@@ -3292,6 +3350,27 @@ Slice::Struct::createDataMember(const string& name, const TypePtr& type)
 {
     checkPrefix(name);
 
+    if(_unit->profile() == IceE)
+    {
+	if(!isLocal())
+	{	    
+	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
+	    if((builtin && builtin->kind() == Builtin::KindObject))
+	    {
+		string msg = "Struct data member `" + name + "' cannot be a value object.";
+		_unit->error(msg);
+		return 0;
+	    }
+	    ClassDeclPtr classDecl = ClassDeclPtr::dynamicCast(type);
+	    if(classDecl != 0 && !classDecl->isLocal())
+	    {
+		string msg = "Struct data member `" + name + "' cannot be a value object.";
+		_unit->error(msg);
+		return 0;
+	    }
+	}
+    }
+ 
     ContainedList matches = _unit->findContents(thisScope() + name);
     if(!matches.empty())
     {
@@ -4137,6 +4216,29 @@ Slice::Operation::createParamDecl(const string& name, const TypePtr& type, bool 
 {
     checkPrefix(name);
 
+    if(_unit->profile() == IceE)
+    {
+	ClassDefPtr cl = ClassDefPtr::dynamicCast(this->container());
+	assert(cl);
+	if(!cl->isLocal())
+	{
+	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
+	    if((builtin && builtin->kind() == Builtin::KindObject))
+	    {
+		string msg = "Object `" + name + "' cannot be passed by value.";
+		_unit->error(msg);
+		return 0;
+	    }
+	    ClassDeclPtr classDecl =  ClassDeclPtr::dynamicCast(type);
+	    if(classDecl != 0 && !classDecl->isLocal())
+	    {
+		string msg = "Object `" + name + "' cannot be passed by value.";
+		_unit->error(msg);
+		return 0;
+	    }
+	}
+    }
+
     ContainedList matches = _unit->findContents(thisScope() + name);
     if(!matches.empty())
     {
@@ -4423,6 +4525,26 @@ Slice::Operation::Operation(const ContainerPtr& container,
     _returnType(returnType),
     _mode(mode)
 {
+    if(_unit->profile() == IceE)
+    {
+	ClassDefPtr cl = ClassDefPtr::dynamicCast(this->container());
+	assert(cl);
+	if(!cl->isLocal())
+	{
+	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(returnType);
+	    if((builtin && builtin->kind() == Builtin::KindObject))
+	    {
+		string msg = "Method `" + name + "' cannot return an object by value.";
+		_unit->error(msg);
+	    }
+	    ClassDeclPtr classDecl = ClassDeclPtr::dynamicCast(returnType);
+	    if(classDecl != 0 && !classDecl->isLocal())
+	    {
+		string msg = "Method `" + name + "' cannot return an object by value.";
+		_unit->error(msg);
+	    }
+	}
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -4627,14 +4749,20 @@ Slice::Unit::nextLine()
 void
 Slice::Unit::scanPosition(const char* s)
 {
-    string line(s);
-    string::size_type idx;
+    assert(*s == '#');
 
-    idx = line.find("line");
-    if(idx != string::npos)
+    const char* p = s + 1; // Skip leading #
+    while(isspace(*p))
     {
-	line.erase(0, idx + 4);
+        ++p;
     }
+    if(strncmp(p, "line", 4) == 0)
+    {
+        p += 4;
+    }
+
+    string line(p);
+    string::size_type idx;
 
     idx = line.find_first_not_of(" \t\r#");
     if(idx != string::npos)
@@ -5015,10 +5143,10 @@ Slice::Unit::usesConsts() const
     return false;
 }
 
-bool
-Slice::Unit::disallowDeprecatedFeatures() const
+FeatureProfile
+Slice::Unit::profile() const
 {
-    return _disallowDeprecatedFeatures;
+    return _featureProfile;
 }
 
 StringList
@@ -5027,23 +5155,18 @@ Slice::Unit::includeFiles() const
     return _includeFiles;
 }
 
-//
-// TODO: remove third parameter once global definitions are outlawed.
-//
 int
-Slice::Unit::parse(FILE* file, bool debug, bool disallowDeprecatedFeatures)
+Slice::Unit::parse(FILE* file, bool debug, Slice::FeatureProfile profile)
 {
     slice_debug = debug ? 1 : 0;
 
     assert(!Slice::unit);
     Slice::unit = this;
 
-    // TODO: remove this once global definitions are outlawed.
-    _disallowDeprecatedFeatures = disallowDeprecatedFeatures;
-
     _currentComment = "";
     _currentLine = 1;
     _currentIncludeLevel = 0;
+    _featureProfile = profile;
     pushContainer(this);
     pushDefinitionContext();
 

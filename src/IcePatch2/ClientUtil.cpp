@@ -47,7 +47,7 @@ public:
     }
 
     void
-    add(const FileInfo info)
+    add(const FileInfo& info)
     {
 	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 	if(!_exception.empty())
@@ -115,6 +115,7 @@ public:
 	    try
 	    {
 		decompressFile(_dataDir + '/' + info.path);
+		setFileFlags(_dataDir + '/' + info.path, info);
 		remove(_dataDir + '/' + info.path + ".bz2");
 	    }
 	    catch(const string& ex)
@@ -147,52 +148,6 @@ IcePatch2::Patcher::Patcher(const CommunicatorPtr& communicator, const PatcherFe
     _chunkSize(communicator->getProperties()->getPropertyAsIntWithDefault("IcePatch2.ChunkSize", 100)),
     _remove(communicator->getProperties()->getPropertyAsIntWithDefault("IcePatch2.Remove", 1))
 {
-    if(_dataDir.empty())
-    {
-	throw string("no data directory specified");
-    }
-
-    //
-    // Make sure that _chunkSize doesn't exceed MessageSizeMax, otherwise
-    // it won't work at all.
-    //
-    int sizeMax = communicator->getProperties()->getPropertyAsIntWithDefault("Ice.MessageSizeMax", 1024);
-    if(_chunkSize < 1)
-    {
-	const_cast<Int&>(_chunkSize) = 1;
-    }
-    else if(_chunkSize > sizeMax)
-    {
-        const_cast<Int&>(_chunkSize) = sizeMax;
-    }
-    if(_chunkSize == sizeMax)
-    {
-        const_cast<Int&>(_chunkSize) = _chunkSize * 1024 - 512; // Leave some headroom for protocol header.
-    }
-    else
-    {
-	const_cast<Int&>(_chunkSize) *= 1024;
-    }
-
-    if(!isAbsolute(_dataDir))
-    {
-#ifdef _WIN32
-	char cwd[_MAX_PATH];
-	if(_getcwd(cwd, _MAX_PATH) == NULL)
-	{
-	    throw "cannot get the current directory:\n" + lastError();
-	}
-#else
-	char cwd[PATH_MAX];
-	if(getcwd(cwd, PATH_MAX) == NULL)
-	{
-	    throw "cannot get the current directory:\n" + lastError();
-	}
-#endif
-    
-	const_cast<string&>(_dataDir) = simplify(string(cwd) + '/' + _dataDir);
-    }
-	
     PropertiesPtr properties = communicator->getProperties();
 
     const char* endpointsProperty = "IcePatch2.Endpoints";
@@ -201,17 +156,39 @@ IcePatch2::Patcher::Patcher(const CommunicatorPtr& communicator, const PatcherFe
     {
 	throw string("property `") + endpointsProperty + "' is not set";
     }
-    
+
     const char* idProperty = "IcePatch2.Identity";
-    const Identity id = stringToIdentity(properties->getPropertyWithDefault(idProperty, "IcePatch2/server"));
+    string idStr = properties->getProperty(idProperty);
+    if(idStr.empty())
+    {
+	const char* instanceProperty = "IcePatch2.InstanceName";
+	idStr = properties->getPropertyWithDefault(instanceProperty, "IcePatch2") + "/server";
+    }
+    const Identity id = stringToIdentity(idStr);
     
     ObjectPrx serverBase = communicator->stringToProxy(identityToString(id) + ':' + endpoints);
-    const_cast<FileServerPrx&>(_serverCompress) = FileServerPrx::checkedCast(serverBase->ice_compress(true));
-    if(!_serverCompress)
+    FileServerPrx server = FileServerPrx::checkedCast(serverBase);
+    if(!server)
     {
 	throw "proxy `" + identityToString(id) + ':' + endpoints + "' is not a file server.";
     }
-    const_cast<FileServerPrx&>(_serverNoCompress) = FileServerPrx::checkedCast(_serverCompress->ice_compress(false));
+
+    init(server);
+}
+
+IcePatch2::Patcher::Patcher(const FileServerPrx& server,
+			    const PatcherFeedbackPtr& feedback,
+			    const string& dataDir,
+			    bool thorough,
+			    Ice::Int chunkSize,
+			    Ice::Int remove) :
+    _feedback(feedback),
+    _dataDir(simplify(dataDir)),
+    _thorough(thorough),
+    _chunkSize(chunkSize),
+    _remove(remove)
+{
+    init(server);
 }
 
 IcePatch2::Patcher::~Patcher()
@@ -296,7 +273,7 @@ public:
     ice_exception(const Exception& ex)
     {
 	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-	_exception = auto_ptr<Exception>(ex.ice_clone());
+	_exception.reset(ex.ice_clone());
 	_done = true;
 	notify();
     }
@@ -400,26 +377,59 @@ IcePatch2::Patcher::prepare()
 
 		if(node0Nxt < 256)
 		{
-		    _serverNoCompress->getFileInfoSeq_async(nxtCB, node0Nxt);
+		    _serverCompress->getFileInfoSeq_async(nxtCB, node0Nxt);
 		}
 
 		FileInfoSeq files = curCB->getFileInfoSeq();
 		
-		sort(files.begin(), files.end(), FileInfoLess());
+ 		sort(files.begin(), files.end(), FileInfoLess());
 		files.erase(unique(files.begin(), files.end(), FileInfoEqual()), files.end());
-		
+
+		//
+		// Compute the set of files which were removed.
+		//
 		set_difference(tree0.nodes[node0].files.begin(),
 			       tree0.nodes[node0].files.end(),
 			       files.begin(),
 			       files.end(),
 			       back_inserter(_removeFiles),
-			       FileInfoLess());
-		
+			       FileInfoWithoutFlagsLess()); // NOTE: We ignore the flags here.
+
+		//
+		// Compute the set of files which were updated (either the file contents, flags or both).
+		//
+		FileInfoSeq updatedFiles;
+		updatedFiles.reserve(files.size());
+				    
 		set_difference(files.begin(),
 			       files.end(),
 			       tree0.nodes[node0].files.begin(),
 			       tree0.nodes[node0].files.end(),
-			       back_inserter(_updateFiles),
+			       back_inserter(updatedFiles),
+			       FileInfoLess());
+
+		//
+		// Compute the set of files whose contents was updated.
+		//
+		FileInfoSeq contentsUpdatedFiles;
+		contentsUpdatedFiles.reserve(files.size());
+
+		set_difference(files.begin(),
+			       files.end(),
+			       tree0.nodes[node0].files.begin(),
+			       tree0.nodes[node0].files.end(),
+			       back_inserter(contentsUpdatedFiles),
+			       FileInfoWithoutFlagsLess()); // NOTE: We ignore the flags here.
+		copy(contentsUpdatedFiles.begin(), contentsUpdatedFiles.end(), back_inserter(_updateFiles));
+
+		//
+		// Compute the set of files whose flags were updated.
+		//
+		set_difference(updatedFiles.begin(),
+			       updatedFiles.end(),
+			       contentsUpdatedFiles.begin(),
+			       contentsUpdatedFiles.end(),
+			       back_inserter(_updateFlags),
 			       FileInfoLess());
 	    }
 
@@ -433,11 +443,12 @@ IcePatch2::Patcher::prepare()
 	{
 	    return false;
 	}
-    }
-    
+    }    
+
     sort(_removeFiles.begin(), _removeFiles.end(), FileInfoLess());
     sort(_updateFiles.begin(), _updateFiles.end(), FileInfoLess());
-
+    sort(_updateFlags.begin(), _updateFlags.end(), FileInfoLess());
+		
     string pathLog = simplify(_dataDir + '/' + logFile);
     _log.open(pathLog.c_str());
     if(!_log)
@@ -466,6 +477,14 @@ IcePatch2::Patcher::patch(const string& d)
 	if(!_updateFiles.empty())
 	{
 	    if(!updateFiles(_updateFiles))
+	    {
+		return false;
+	    }
+	}
+
+	if(!_updateFlags.empty())
+	{
+	    if(!updateFlags(_updateFlags))
 	    {
 		return false;
 	    }
@@ -505,6 +524,19 @@ IcePatch2::Patcher::patch(const string& d)
 	    }
 	}
 
+	FileInfoSeq updateFlag;
+	for(p = _updateFlags.begin(); p != _updateFlags.end(); ++p)
+	{
+	    if(p->path == dir)
+	    {
+		updateFlag.push_back(*p);
+	    }
+	    else if(p->path.compare(0, dirWithSlash.size(), dirWithSlash) == 0)
+	    {
+		updateFlag.push_back(*p);
+	    }
+	}
+
 	if(!remove.empty())
 	{
 	    if(!removeFiles(remove))
@@ -521,6 +553,14 @@ IcePatch2::Patcher::patch(const string& d)
 	    }
 	}
 	
+	if(!updateFlag.empty())
+	{
+	    if(!updateFlags(updateFlag))
+	    {
+		return false;
+	    }
+	}
+
 	return true;
     }
 }
@@ -531,6 +571,59 @@ IcePatch2::Patcher::finish()
     _log.close();
 
     saveFileInfoSeq(_dataDir, _localFiles);
+}
+
+void
+IcePatch2::Patcher::init(const FileServerPrx& server)
+{
+    if(_dataDir.empty())
+    {
+	throw string("no data directory specified");
+    }
+
+    //
+    // Make sure that _chunkSize doesn't exceed MessageSizeMax, otherwise
+    // it won't work at all.
+    //
+    int sizeMax = server->ice_communicator()->getProperties()->getPropertyAsIntWithDefault("Ice.MessageSizeMax", 1024);
+    if(_chunkSize < 1)
+    {
+	const_cast<Int&>(_chunkSize) = 1;
+    }
+    else if(_chunkSize > sizeMax)
+    {
+        const_cast<Int&>(_chunkSize) = sizeMax;
+    }
+    if(_chunkSize == sizeMax)
+    {
+        const_cast<Int&>(_chunkSize) = _chunkSize * 1024 - 512; // Leave some headroom for protocol header.
+    }
+    else
+    {
+	const_cast<Int&>(_chunkSize) *= 1024;
+    }
+
+    if(!isAbsolute(_dataDir))
+    {
+#ifdef _WIN32
+	char cwd[_MAX_PATH];
+	if(_getcwd(cwd, _MAX_PATH) == NULL)
+	{
+	    throw "cannot get the current directory:\n" + lastError();
+	}
+#else
+	char cwd[PATH_MAX];
+	if(getcwd(cwd, PATH_MAX) == NULL)
+	{
+	    throw "cannot get the current directory:\n" + lastError();
+	}
+#endif
+    
+	const_cast<string&>(_dataDir) = simplify(string(cwd) + '/' + _dataDir);
+    }
+	
+    const_cast<FileServerPrx&>(_serverCompress) = FileServerPrx::uncheckedCast(server->ice_compress(true));
+    const_cast<FileServerPrx&>(_serverNoCompress) = FileServerPrx::uncheckedCast(server->ice_compress(false));
 }
 
 bool
@@ -657,7 +750,7 @@ public:
     ice_exception(const Exception& ex)
     {
 	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-	_exception = auto_ptr<Exception>(ex.ice_clone());
+	_exception.reset(ex.ice_clone());
 	_done = true;
 	notify();
     }
@@ -839,3 +932,53 @@ IcePatch2::Patcher::updateFilesInternal(const FileInfoSeq& files, const Decompre
 
     return true;
 }
+
+bool
+IcePatch2::Patcher::updateFlags(const FileInfoSeq& files)
+{
+    for(FileInfoSeq::const_iterator p = files.begin(); p != files.end(); ++p)
+    {
+	if(p->size >= 0) // Regular file?
+	{
+	    setFileFlags(_dataDir + '/' + p->path, *p);
+	}
+    }
+
+    //
+    // Remove the old files whose flags were updated from the set of
+    // local files.
+    // 
+    FileInfoSeq localFiles;
+    localFiles.reserve(_localFiles.size());
+    set_difference(_localFiles.begin(),
+		   _localFiles.end(),
+		   files.begin(),
+		   files.end(),
+		   back_inserter(localFiles),
+		   FileInfoWithoutFlagsLess()); // NOTE: We ignore the flags.
+
+    //
+    // Add the new files to the set of local file. 
+    //
+    _localFiles.clear();
+    set_union(localFiles.begin(),
+	      localFiles.end(),
+	      files.begin(),
+	      files.end(),
+	      back_inserter(_localFiles),
+	      FileInfoLess());
+
+    FileInfoSeq newUpdateFlags;
+
+    set_difference(_updateFlags.begin(),
+		   _updateFlags.end(),
+		   files.begin(),
+		   files.end(),
+		   back_inserter(newUpdateFlags),
+		   FileInfoLess());
+	
+    _updateFlags.swap(newUpdateFlags);
+
+    return true;
+}
+

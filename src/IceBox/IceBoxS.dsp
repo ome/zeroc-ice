@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D "NDEBUG" /D "_CONSOLE" /FD /c
+# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D "_CONSOLE" /D "NDEBUG" /D "WIN32_LEAN_AND_MEAN" /FD /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
@@ -51,13 +51,13 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 setargv.obj /nologo /subsystem:console /incremental:yes /machine:I386 /out:"Release/icebox.exe"
+# ADD LINK32 setargv.obj /nologo /subsystem:console /incremental:yes /machine:I386 /out:"Release/icebox.exe" /FIXED:no
 # SUBTRACT LINK32 /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
 TargetName=icebox
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\$(TargetName).exe ..\..\bin
+PostBuild_Cmds=del /Q ..\..\bin\iceboxd.exe	del /Q ..\..\bin\iceboxd.pdb	copy $(OutDir)\$(TargetName).exe ..\..\bin
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "iceboxS - Win32 Debug"
@@ -74,7 +74,7 @@ PostBuild_Cmds=copy $(OutDir)\$(TargetName).exe ..\..\bin
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "_DEBUG" /D "_CONSOLE" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "_CONSOLE" /D "_DEBUG" /D "WIN32_LEAN_AND_MEAN" /FD /GZ /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
@@ -83,13 +83,13 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 setargv.obj /nologo /subsystem:console /debug /machine:I386 /out:"Debug/icebox.exe" /pdbtype:sept
-# SUBTRACT LINK32 /incremental:no /nodefaultlib
+# ADD LINK32 setargv.obj /nologo /subsystem:console /debug /machine:I386 /out:"Debug/iceboxd.exe" /pdbtype:sept /FIXED:no
+# SUBTRACT LINK32 /pdb:none
 # Begin Special Build Tool
 OutDir=.\Debug
-TargetName=icebox
+TargetName=iceboxd
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\$(TargetName).exe ..\..\bin
+PostBuild_Cmds=del /Q ..\..\bin\icebox.exe	copy $(OutDir)\$(TargetName).exe ..\..\bin	copy $(OutDir)\$(TargetName).pdb ..\..\bin
 # End Special Build Tool
 
 !ENDIF 

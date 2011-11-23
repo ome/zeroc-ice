@@ -15,7 +15,7 @@
 namespace Ice
 {
 
-class ICE_API Application : public IceUtil::noncopyable
+class ICE_API Application : private IceUtil::noncopyable
 {
 public:
 
@@ -30,7 +30,7 @@ public:
     // are printed if exceptions propagate to main(), and the
     // Communicator is always destroyed, regardless of exceptions.
     //
-    int main(int, char*[], const char* = 0);
+    int main(int, char*[], const char* = 0, const Ice::LoggerPtr& = 0);
     virtual int run(int, char*[]) = 0;
 
     //
@@ -58,7 +58,7 @@ public:
     //
     // These methods can be used to temporarily block a signal and
     // arrange for delivery of a pending signal later. Any signal that
-    // is received after holdInterrupt() was called is remember and
+    // is received after holdInterrupt() was called is remembered and
     // delivered when releaseInterupt() is called. That signal is then
     // handled according to the signal disposition established with
     // destroyOnInterrupt(), shutdownOnInterrupt() or

@@ -17,10 +17,10 @@
 #include <string>
 #include <map>
 
-namespace Ice
+namespace IceInternal
 {
 
-class ICE_API FactoryTableDef : public IceUtil::noncopyable
+class ICE_API FactoryTableDef : private IceUtil::noncopyable
 {
 public:
 
@@ -45,7 +45,7 @@ private:
     OFTable _oft;
 };
 
-class ICE_API FactoryTableWrapper : public IceUtil::noncopyable
+class ICE_API FactoryTableWrapper : private IceUtil::noncopyable
 {
 public:
 

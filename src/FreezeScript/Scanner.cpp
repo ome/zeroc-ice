@@ -445,7 +445,7 @@ char *yytext;
 
 #include <map>
 
-#ifdef _WIN32
+#ifdef _MSC_VER
     // I get these warnings from some flex versions:
     // warning C4003: not enough actual parameters for macro 'yywrap'
 #   pragma warning( disable : 4003 )
@@ -790,10 +790,9 @@ YY_RULE_SETUP
 {
     IntegerTokPtr itp = new IntegerTok;
     *yylvalp = itp;
-    errno = 0;
-    itp->v = IceUtil::strToInt64(yytext, 0, 0);
-    if(errno == ERANGE && (itp->v == IceUtil::Int64Min || itp->v == IceUtil::Int64Max))
+    if(!IceUtil::stringToInt64(string(yytext), itp->v))
     {
+	assert(itp->v != 0);
         string msg = "integer constant `";
         msg += yytext;
         msg += "' out of range";
@@ -804,7 +803,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 137 "Scanner.l"
+#line 136 "Scanner.l"
 {
     errno = 0;
     FloatingTokPtr ftp = new FloatingTok;
@@ -835,7 +834,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 165 "Scanner.l"
+#line 164 "Scanner.l"
 {
     // Igore white-space
     
@@ -847,97 +846,97 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 174 "Scanner.l"
+#line 173 "Scanner.l"
 return TOK_LESS_THAN;
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 175 "Scanner.l"
+#line 174 "Scanner.l"
 return TOK_GREATER_THAN;
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 176 "Scanner.l"
+#line 175 "Scanner.l"
 return TOK_LESS_EQUAL;
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 177 "Scanner.l"
+#line 176 "Scanner.l"
 return TOK_GREATER_EQUAL;
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 178 "Scanner.l"
+#line 177 "Scanner.l"
 return TOK_EQUAL;
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 179 "Scanner.l"
+#line 178 "Scanner.l"
 return TOK_NEQ;
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 180 "Scanner.l"
+#line 179 "Scanner.l"
 return TOK_ADD;
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 181 "Scanner.l"
+#line 180 "Scanner.l"
 return TOK_SUB;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 182 "Scanner.l"
+#line 181 "Scanner.l"
 return TOK_MUL;
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 183 "Scanner.l"
+#line 182 "Scanner.l"
 return TOK_DIV;
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 184 "Scanner.l"
+#line 183 "Scanner.l"
 return TOK_MOD;
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 185 "Scanner.l"
+#line 184 "Scanner.l"
 return TOK_LPAREN;
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 186 "Scanner.l"
+#line 185 "Scanner.l"
 return TOK_RPAREN;
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 187 "Scanner.l"
+#line 186 "Scanner.l"
 return TOK_LBRACKET;
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 188 "Scanner.l"
+#line 187 "Scanner.l"
 return TOK_RBRACKET;
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 189 "Scanner.l"
+#line 188 "Scanner.l"
 return TOK_SCOPE_DELIMITER;
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 191 "Scanner.l"
+#line 190 "Scanner.l"
 {
     return yytext[0];
 }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 195 "Scanner.l"
+#line 194 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 940 "lex.yy.c"
+#line 939 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1819,7 +1818,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 195 "Scanner.l"
+#line 194 "Scanner.l"
 
 
 namespace FreezeScript

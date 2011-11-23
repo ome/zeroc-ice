@@ -17,10 +17,10 @@
 #include <Ice/ConnectionIF.h>
 #include <Ice/InstanceF.h>
 #include <Ice/ObjectAdapterF.h>
-#include <Ice/EndpointF.h>
+#include <Ice/EndpointIF.h>
 #include <Ice/AcceptorF.h>
 #include <Ice/TransceiverF.h>
-#include <Ice/RouterF.h>
+#include <Ice/RouterInfoF.h>
 #include <Ice/EventHandler.h>
 #include <list>
 #include <set>
@@ -44,9 +44,9 @@ public:
 
     void waitUntilFinished();
 
-    Ice::ConnectionIPtr create(const std::vector<EndpointPtr>&, bool&);
-    void setRouter(const ::Ice::RouterPrx&);
-    void removeAdapter(const ::Ice::ObjectAdapterPtr&);
+    Ice::ConnectionIPtr create(const std::vector<EndpointIPtr>&, bool&);
+    void setRouterInfo(const RouterInfoPtr&);
+    void removeAdapter(const Ice::ObjectAdapterPtr&);
     void flushBatchRequests();
 
 private:
@@ -57,8 +57,8 @@ private:
 
     const InstancePtr _instance;
     bool _destroyed;
-    std::multimap<EndpointPtr, Ice::ConnectionIPtr> _connections;
-    std::set<EndpointPtr> _pending; // Endpoints for which connection establishment is pending.
+    std::multimap<EndpointIPtr, Ice::ConnectionIPtr> _connections;
+    std::set<EndpointIPtr> _pending; // Endpoints for which connection establishment is pending.
 };
 
 class IncomingConnectionFactory : public EventHandler, public IceUtil::Monitor<IceUtil::Mutex>
@@ -72,8 +72,8 @@ public:
     void waitUntilHolding() const;
     void waitUntilFinished();
 
-    EndpointPtr endpoint() const;
-    bool equivalent(const EndpointPtr&) const;
+    EndpointIPtr endpoint() const;
+    bool equivalent(const EndpointIPtr&) const;
     std::list<Ice::ConnectionIPtr> connections() const;
     void flushBatchRequests();
 
@@ -85,14 +85,14 @@ public:
     virtual void read(BasicStream&);
     virtual void message(BasicStream&, const ThreadPoolPtr&);
     virtual void finished(const ThreadPoolPtr&);
-    virtual void exception(const ::Ice::LocalException&);
+    virtual void exception(const Ice::LocalException&);
     virtual std::string toString() const;
     
 private:
 
-    IncomingConnectionFactory(const InstancePtr&, const EndpointPtr&, const ::Ice::ObjectAdapterPtr&);
+    IncomingConnectionFactory(const InstancePtr&, const EndpointIPtr&, const Ice::ObjectAdapterPtr&);
     virtual ~IncomingConnectionFactory();
-    friend class ::Ice::ObjectAdapterI;
+    friend class Ice::ObjectAdapterI;
 
     enum State
     {
@@ -123,11 +123,12 @@ private:
 
     AcceptorPtr _acceptor;
     const TransceiverPtr _transceiver;
-    const EndpointPtr _endpoint;
+    const EndpointIPtr _endpoint;
 
-    const ::Ice::ObjectAdapterPtr _adapter;
+    const Ice::ObjectAdapterPtr _adapter;
 
     bool _registeredWithPool;
+    int _finishedCount;
 
     const bool _warn;
 

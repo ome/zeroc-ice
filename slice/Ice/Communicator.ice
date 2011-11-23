@@ -62,8 +62,9 @@ local interface Communicator
     /**
      *
      * Shuts down this communicator's server functionality, including
-     * the deactivation of all object adapters. Subsequent calls to
-     * [shutdown] are ignored.
+     * the deactivation of all object adapters. (Attempts to use
+     * a deactivated object adapter raise [ObjectAdapterDeactivatedException].)
+     * Subsequent calls to [shutdown] are ignored.
      *
      * <note><para> After [shutdown] returns, no new requests are
      * processed. However, requests that have been started before
@@ -179,8 +180,7 @@ local interface Communicator
      * either because no factory was found, or because all factories
      * returned nil, the object is sliced to the next most-derived type
      * and the process repeats. If no factory is found that can create an
-     * instance, the Ice run-time will slice the object to the type
-     * Ice::Object.</para>
+     * instance, the Ice run-time throws [NoObjectFactoryException].</para>
      *
      * <para>The following order is used to locate a factory for a type:
      *

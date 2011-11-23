@@ -12,7 +12,7 @@
 
 #include <IceSSL/Exception.h>
 #include <IceSSL/ServerContext.h>
-#include <IceSSL/SslServerTransceiver.h>
+#include <IceSSL/SslTransceiver.h>
 #include <IceSSL/OpenSSLUtils.h>
 #include <IceSSL/TraceLevels.h>
 
@@ -81,11 +81,7 @@ IceSSL::ServerContext::createTransceiver(int socket, const OpenSSLPluginIPtr& pl
     }
 
     SSL* ssl = createSSLConnection(socket);
-    SslTransceiverPtr transceiver = new SslServerTransceiver(plugin, socket, _certificateVerifier, ssl);
-
-    transceiverSetup(transceiver, timeout);
-
-    return transceiver;
+    return new SslTransceiver(IceSSL::Server, plugin, socket, _certificateVerifier, ssl, timeout);
 }
 
 //
@@ -101,7 +97,6 @@ IceSSL::ServerContext::ServerContext(const TraceLevelsPtr& traceLevels, const Co
     _dsaPublicKeyProperty  = "IceSSL.Server.Overrides.DSA.Certificate";
     _caCertificateProperty = "IceSSL.Server.Overrides.CACertificate";
     _passphraseRetriesProperty = "IceSSL.Server.Passphrase.Retries";
-    _connectionHandshakeRetries = "IceSSL.Server.Handshake.Retries";
 }
 
 void

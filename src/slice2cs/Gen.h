@@ -15,6 +15,7 @@
 namespace Slice
 {
 
+
 class CsVisitor : public CsGenerator, public ParserVisitor
 {
 public:
@@ -33,10 +34,13 @@ protected:
     virtual std::vector<std::string> getArgsAsync(const OperationPtr&);
     virtual std::vector<std::string> getArgsAsyncCB(const OperationPtr&);
 
+    void emitAttributes(const ContainedPtr&);
+    ::std::string getParamAttributes(const ParamDeclPtr&);
+
     ::IceUtil::Output& _out;
 };
 
-class Gen : public ::IceUtil::noncopyable
+class Gen : private ::IceUtil::noncopyable
 {
 public:
 
@@ -68,6 +72,20 @@ private:
     bool _stream;
 
     void printHeader();
+
+    class UnitVisitor : public CsVisitor
+    {
+    public:
+
+        UnitVisitor(::IceUtil::Output&, bool);
+
+	virtual bool visitModuleStart(const ModulePtr&);
+
+    private:
+
+	bool _stream;
+	bool _globalMetaDataDone;
+    };
 
     class TypesVisitor : public CsVisitor
     {

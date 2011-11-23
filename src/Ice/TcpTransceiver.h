@@ -34,6 +34,7 @@ public:
     virtual void read(Buffer&, int);
     virtual std::string type() const;
     virtual std::string toString() const;
+    virtual void initialize(int);
 
 private:
 
@@ -51,6 +52,9 @@ private:
     fd_set _wFdSet;
 
     const std::string _desc;
+#ifdef _WIN32
+    const bool _isPeerLocal;
+#endif
 };
 
 }

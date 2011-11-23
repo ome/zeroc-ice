@@ -22,22 +22,29 @@ Third-party libraries
 
 Ice has dependencies on a number of third-party libraries:
 
-- Berkeley DB 4.2.52 or 4.3.27 configured with --enable-cxx.
+- Berkeley DB 4.3.29 configured with --enable-cxx.
+
+  If you intend to use Ice for Java with Berkeley DB, you must also
+  include the option --enable-java.
 
   You can download the Berkeley DB source distribution from
   http://www.sleepycat.com/download
-
-  Note that Ice for Java is not compatible with version 4.3, therefore
-  if you intend to use Ice for Java with Berkeley DB, you must use
-  version 4.2.52 and the option --enable-java.
 
   If you are using RedHat 9 and do not want to use NPTL (New Posix
   Thread Library), set LD_ASSUME_KERNEL=2.4.1 before running
   configure.
 
+  On Fedora Core 4, we recommend changing the default optimization
+  level when building Berkeley DB in order to avoid a compiler bug
+  in the FC4 version of GCC. If you are building with java support
+  this is absolutely necessary. We recommend that you use the
+  following syntax when you run configure:
+
+  $ CFLAGS="-O1" ../dist/configure <your configure options>
+
 - expat 1.9x
 
-- OpenSSL 0.96 or 0.97
+- OpenSSL 0.9.7 or later
 
 - bzip2 1.0
 
@@ -70,11 +77,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ tar xvfz Ice-2.1.1.tar.gz
+$ tar xvfz Ice-3.0.0.tar.gz
 
-Change the working directory to Ice-2.1.1:
+Change the working directory to Ice-3.0.0:
 
-$ cd Ice-2.1.1
+$ cd Ice-3.0.0
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular
@@ -137,11 +144,12 @@ Simply run "make install". This will install Ice in the directory
 specified by the "prefix" variable in config/Make.rules.
 
 After installation, make sure that the <prefix>/bin directory is in
-your PATH, and the <prefix>/lib directory is in your
-LD_LIBRARY_PATH. When compiling Ice programs, you must also make sure
-to pass the location of the <prefix>/include directory to the compiler
-with the -I option, and the location of the <prefix>/lib directory
-with the -L option.
+your PATH, and the <prefix>/lib directory is in your LD_LIBRARY_PATH.
+Also if you built Berkeley DB yourself, please insure that it's 
+installation lib directory is in your LD_LIBRARY_PATH as well. When 
+compiling Ice programs, you must also make sure to pass the location 
+of the <prefix>/include directory to the compiler with the -I option, 
+and the location of the <prefix>/lib directory with the -L option.  
 
 If LP64 is set to yes, the libraries are installed in <prefix>/lib64
 and the programs are installed in <prefix>/bin64. No other changes are

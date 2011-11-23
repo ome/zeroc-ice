@@ -186,7 +186,7 @@ IceInternal::BasicStream::startSeq(int numElements, int minSize)
     _seqDataStack = sd;
 
     int bytesLeft = static_cast<int>(b.end() - i);
-    if(_seqDataStack == 0) // Outermost sequence
+    if(_seqDataStack->previous == 0) // Outermost sequence
     {
 	//
 	// The sequence must fit within the message.
@@ -233,23 +233,6 @@ IceInternal::BasicStream::checkSeq(int bytesLeft)
 }
 
 void
-IceInternal::BasicStream::endSeq(int sz)
-{
-    if(sz == 0) // Pop only if something was pushed previously.
-    {
-	return;
-    }
-
-    //
-    // Pop the sequence stack.
-    //
-    SeqData* oldSeqData = _seqDataStack;
-    assert(oldSeqData);
-    _seqDataStack = oldSeqData->previous;
-    delete oldSeqData;
-}
-
-void
 IceInternal::BasicStream::checkFixedSeq(int numElements, int elemSize)
 {
     int bytesLeft = static_cast<int>(b.end() - i);
@@ -267,6 +250,23 @@ IceInternal::BasicStream::checkFixedSeq(int numElements, int elemSize)
     {
 	checkSeq(bytesLeft - numElements * elemSize);
     }
+}
+
+void
+IceInternal::BasicStream::endSeq(int sz)
+{
+    if(sz == 0) // Pop only if something was pushed previously.
+    {
+	return;
+    }
+
+    //
+    // Pop the sequence stack.
+    //
+    SeqData* oldSeqData = _seqDataStack;
+    assert(oldSeqData);
+    _seqDataStack = oldSeqData->previous;
+    delete oldSeqData;
 }
 
 IceInternal::BasicStream::WriteEncaps::WriteEncaps()
@@ -1514,10 +1514,21 @@ IceInternal::BasicStream::read(PatchFunc patchFunc, void* patchAddr)
     }
     assert(index > 0);
 
+    string mostDerivedId;
+    readTypeId(mostDerivedId);
+    string id = mostDerivedId;
     while(true)
     {
-	string id;
-	readTypeId(id);
+	//
+	// If we slice all the way down to Ice::Object, we throw
+	// because Ice::Object is abstract.
+	//
+        if(id == Ice::Object::ice_staticId())
+	{
+	    throw NoObjectFactoryException(__FILE__, __LINE__,
+	                                   "class sliced to ::Ice::Object, which is abstract",
+					   mostDerivedId);
+	}
 
         //
         // Try to find a factory registered for the specific type.
@@ -1542,23 +1553,12 @@ IceInternal::BasicStream::read(PatchFunc patchFunc, void* patchAddr)
         }
 
         //
-        // There isn't a static factory for Ice::Object, so check for
-        // that case now.  We do this *after* the factory inquiries
-        // above so that a factory could be registered for
-        // "::Ice::Object".
-        //
-        if(!v && id == Ice::Object::ice_staticId())
-        {
-            v = new ::Ice::Object;
-        }
-
-        //
         // Last chance: check the table of static factories (i.e.,
         // automatically generated factories for concrete classes).
         //
         if(!v)
         {
-            ObjectFactoryPtr of = Ice::factoryTable->getObjectFactory(id);
+            ObjectFactoryPtr of = IceInternal::factoryTable->getObjectFactory(id);
             if(of)
             {
                 v = of->create(id);
@@ -1583,6 +1583,7 @@ IceInternal::BasicStream::read(PatchFunc patchFunc, void* patchAddr)
                     traceSlicing("class", id, _slicingCat, _instance->logger());
                 }
                 skipSlice(); // Slice off this derived part -- we don't understand it.
+		readTypeId(id); // Read next id for next iteration.
                 continue;
             }
             else
@@ -1831,7 +1832,7 @@ IceInternal::BasicStream::patchPointers(Int index, IndexToPtrMap::const_iterator
     //
     // Called whenever we have unmarshaled a new instance. The index
     // is the index of the instance.  UnmarshaledPos denotes the
-    // instance just unmarshaled and patchPost denotes the patch map
+    // instance just unmarshaled and patchPos denotes the patch map
     // entry for the index just unmarshaled. (Exactly one of these two
     // iterators must be end().)  Patch any pointers in the patch map
     // with the new address.

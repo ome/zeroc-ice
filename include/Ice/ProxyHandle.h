@@ -12,6 +12,7 @@
 
 #include <IceUtil/Handle.h>
 #include <Ice/Config.h>
+#include <iosfwd>
 
 namespace IceInternal
 {
@@ -154,12 +155,7 @@ public:
 	}
     }
 
-#ifdef _WIN32 // COMPILERBUG: Is VC++ or GNU C++ right here???
-    template<>
-    ProxyHandle(const ProxyHandle<T>& r)
-#else
     ProxyHandle(const ProxyHandle& r)
-#endif
     {
 	this->_ptr = r._ptr;
 
@@ -236,12 +232,7 @@ public:
 	return *this;
     }
 
-#ifdef _WIN32 // COMPILERBUG: Is VC++ or GNU C++ right here???
-    template<>
-    ProxyHandle& operator=(const ProxyHandle<T>& r)
-#else
     ProxyHandle& operator=(const ProxyHandle& r)
-#endif
     {
 	if(this->_ptr != r._ptr)
 	{
@@ -299,6 +290,12 @@ public:
     }
 };
 
+}
+
+template<class OStream, class Y>
+OStream& operator<<(OStream& os, ::IceInternal::ProxyHandle<Y> p)
+{
+    return os << (p ? p->ice_toString() : "");
 }
 
 #endif

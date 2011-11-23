@@ -16,7 +16,7 @@
 #include <Ice/LocatorF.ice>
 #include <Ice/Identity.ice>
 #include <Ice/FacetMap.ice>
-
+#include <Ice/Locator.ice>
 module Ice
 {
 
@@ -99,12 +99,11 @@ local interface ObjectAdapter
      * Deactivate all endpoints that belong to this object
      * adapter. After deactivation, the object adapter stops receiving
      * requests through its endpoints. Object adapters that have been
-     * deactivated must not be reactivated again, i.e., the
-     * deactivation is permanent and [activate] or [hold] must not be
-     * called after calling [deactivate]; attempting to do so results
-     * in an [ObjectAdapterDeactivatedException] being thrown. Calls
-     * to [deactivate] on an already deactivated object adapter are
-     * ignored.
+     * deactivated must not be reactivated again, and cannot be used
+     * otherwise. Attempts to use a deactivated object adapter raise
+     * [ObjectAdapterDeactivatedException]; however, attempts to
+     * [deactivate] an already deactivated object adapter are ignored
+     * and do nothing.
      *
      * <note><para> After [deactivate] returns, no new requests are
      * processed by the object adapter. However, requests that have
@@ -275,7 +274,7 @@ local interface ObjectAdapter
      *
      * Remove all facets with the given identity from the Active
      * Servant Map (that is, completely remove the &Ice; object,
-     * including it's default facet). Removing an identity that
+     * including its default facet). Removing an identity that
      * is not in the map throws [NotRegisteredException].
      *
      * @param id The identity of the &Ice; object to be removed.
@@ -442,13 +441,17 @@ local interface ObjectAdapter
 
     /**
      *
-     * Create a proxy that matches this object adapter and the given
-     * identity.
+     * Create a proxy for the object with the given identity. If this
+     * object adapter is configured with an adapter id, the return
+     * value is an indirect proxy that refers to the adapter id. If
+     * a replica group id is also defined, the return value is an
+     * indirect proxy that refers to the replica group id. Otherwise,
+     * if no adapter id is defined, the return value is a direct
+     * proxy containing this object adapter's published endpoints.
      *
-     * @param id The identity for which a proxy is to be created.
+     * @param id The object's identity.
      *
-     * @return A proxy that matches the given identity and this object
-     * adapter.
+     * @return A proxy for the object with the given identity.
      *
      * @see Identity
      *
@@ -457,14 +460,13 @@ local interface ObjectAdapter
 
     /**
      *
-     * Create a "direct proxy" that matches this object adapter and
-     * the given identity. A direct proxy always contains the current
-     * adapter endpoints.
+     * Create a direct proxy for the object with the given identity.
+     * The returned proxy contains this object adapter's published
+     * endpoints.
      *
-     * @param id The identity for which a proxy is to be created.
+     * @param id The object's identity.
      *
-     * @return A proxy that matches the given identity and this object
-     * adapter.
+     * @return A proxy for the object with the given identity.
      *
      * @see Identity
      *
@@ -473,10 +475,25 @@ local interface ObjectAdapter
 
     /**
      *
-     * Create a "reverse proxy" that matches this object adapter and
-     * the given identity. A reverse proxy uses the incoming
-     * connections that have been established from a client to this
-     * object adapter.
+     * Create an indirect proxy for the object with the given identity.
+     * If this object adapter is configured with an adapter id, the
+     * return value refers to the adapter id. Otherwise, the return
+     * value contains only the object identity.
+     *
+     * @param id The object's identity.
+     *
+     * @return A proxy for the object with the given identity.
+     *
+     * @see Identity
+     *
+     **/
+    nonmutating Object* createIndirectProxy(Identity id);
+
+    /**
+     *
+     * Create a "reverse proxy" for the object with the given identity.
+     * A reverse proxy uses the incoming connections that have been
+     * established from a client to this object adapter.
      *
      * <note><para> This operation is intended to be used by special
      * services, such as [Router] implementations. Regular user code
@@ -508,11 +525,28 @@ local interface ObjectAdapter
      *
      * @param rtr The router to add to this object adapter.
      *
+     * @see removeRouter
      * @see Router
      * @see Communicator::setDefaultRouter
      *
      **/
     void addRouter(Router* rtr);
+
+    /**
+     *
+     * Remove a router from this object adapter. By doing so, this
+     * object adapter can no longer receive callbacks from this router
+     * over connections that are established from this process to the
+     * router.
+     *
+     * @param rtr The router to remove from this object adapter.
+     *
+     * @see addRouter
+     * @see Router
+     * @see Communicator::setDefaultRouter
+     *
+     **/
+    void removeRouter(Router* rtr);
 
     /**
      * Set an &Ice; locator for this object adapter. By doing so, the

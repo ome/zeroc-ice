@@ -36,11 +36,15 @@ OBJS		= Acceptor.o \
 		  EndpointFactoryManager.o \
 		  EndpointFactory.o \
 		  Endpoint.o \
+		  EndpointI.o \
 		  EventHandler.o \
 		  Exception.o \
 		  FacetMap.o \
 		  FactoryTableDef.o \
 		  FactoryTable.o \
+		  GC.o \
+		  GCRecMutex.o \
+		  GCShared.o \
 		  Identity.o \
 		  IdentityUtil.o \
 		  IncomingAsync.o \
@@ -98,15 +102,15 @@ OBJS		= Acceptor.o \
 		  SysLoggerI.o \
 		  TcpAcceptor.o \
 		  TcpConnector.o \
-		  TcpEndpoint.o \
+		  TcpEndpointI.o \
 		  TcpTransceiver.o \
 	          ThreadPool.o \
 		  TraceLevels.o \
 		  TraceUtil.o \
 		  Transceiver.o \
-		  UdpEndpoint.o \
+		  UdpEndpointI.o \
 		  UdpTransceiver.o \
-		  UnknownEndpoint.o
+		  UnknownEndpointI.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
@@ -116,6 +120,7 @@ SLICE_SRCS	= $(SDIR)/BuiltinSequences.ice \
 		  $(SDIR)/ConnectionF.ice \
 		  $(SDIR)/Connection.ice \
 		  $(SDIR)/Current.ice \
+		  $(SDIR)/Endpoint.ice \
 		  $(SDIR)/FacetMap.ice \
 		  $(SDIR)/Identity.ice \
 		  $(SDIR)/LocalException.ice \
@@ -146,7 +151,7 @@ SDIR		= $(slicedir)/Ice
 
 include $(top_srcdir)/config/Make.rules
 
-CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_API_EXPORTS -DICE_PROTOCOL_API_EXPORTS $(BZIP2_FLAGS)
+CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_API_EXPORTS $(BZIP2_FLAGS)
 SLICE2CPPFLAGS	:= --ice --include-dir Ice --dll-export ICE_API $(SLICE2CPPFLAGS)
 
 LINKWITH        := -lIceUtil $(BZIP2_LIBS) $(ICE_OS_LIBS)

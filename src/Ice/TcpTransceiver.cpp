@@ -85,9 +85,9 @@ IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
     //
     // Limit packet size to avoid performance problems on WIN32
     //
-    if(packetSize > 64 * 1024)
-    {
-	packetSize = 64 * 1024;
+    if(_isPeerLocal && packetSize > 64 * 1024)
+    { 
+   	packetSize = 64 * 1024;
     }
 #endif
 
@@ -326,12 +326,20 @@ IceInternal::TcpTransceiver::toString() const
     return _desc;
 }
 
+void
+IceInternal::TcpTransceiver::initialize(int)
+{
+}
+
 IceInternal::TcpTransceiver::TcpTransceiver(const InstancePtr& instance, SOCKET fd) :
     _traceLevels(instance->traceLevels()),
     _logger(instance->logger()),
     _stats(instance->stats()),
     _fd(fd),
     _desc(fdToString(fd))
+#ifdef _WIN32
+    , _isPeerLocal(isPeerLocal(fd))
+#endif
 {
     FD_ZERO(&_rFdSet);
     FD_ZERO(&_wFdSet);

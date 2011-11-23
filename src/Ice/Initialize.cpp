@@ -7,7 +7,7 @@
 //
 // **********************************************************************
 
-#include <IceUtil/GC.h>
+#include <Ice/GC.h>
 #include <Ice/CommunicatorI.h>
 #include <Ice/PropertiesI.h>
 #include <Ice/Initialize.h>
@@ -21,7 +21,7 @@ using namespace IceInternal;
 namespace IceInternal
 {
 
-extern IceUtil::Handle<IceUtil::GC> theCollector;
+extern IceUtil::Handle<IceInternal::GC> theCollector;
 
 }
 
@@ -50,8 +50,10 @@ Ice::stringSeqToArgs(const StringSeq& args, int& argc, char* argv[])
 {
     //
     // Shift all elements in argv which are present in args to the
-    // beginning of argv.
+    // beginning of argv. We record the original value of argc so
+    // that we can know later if we've shifted the array.
     //
+    const int argcOrig = argc;
     int i = 0;
     while(i < argc)
     {
@@ -71,8 +73,10 @@ Ice::stringSeqToArgs(const StringSeq& args, int& argc, char* argv[])
 
     //
     // Make sure that argv[argc] == 0, the ISO C++ standard requires this.
+    // We can only do this if we've shifted the array, otherwise argv[argc]
+    // may point to an invalid address.
     //
-    if(argv)
+    if(argv && argcOrig != argc)
     {
 	argv[argc] = 0;
     }
@@ -110,10 +114,12 @@ public:
     }
 };
 static DefaultPropertiesDestroyer defaultPropertiesDestroyer;
+static IceUtil::StaticMutex defaultPropMutex = ICE_STATIC_MUTEX_INITIALIZER;
 
 PropertiesPtr
 Ice::getDefaultProperties()
 {
+    IceUtil::StaticMutex::Lock sync(defaultPropMutex);
     if(!defaultProperties)
     {
 	defaultProperties = createProperties();
@@ -124,6 +130,7 @@ Ice::getDefaultProperties()
 PropertiesPtr
 Ice::getDefaultProperties(StringSeq& args)
 {
+    IceUtil::StaticMutex::Lock sync(defaultPropMutex);
     if(!defaultProperties)
     {
 	defaultProperties = createProperties(args);
@@ -144,11 +151,25 @@ CommunicatorPtr
 Ice::initialize(int& argc, char* argv[], Int version)
 {
     PropertiesPtr properties = getDefaultProperties(argc, argv);
-    return initializeWithProperties(argc, argv, properties, version);
+    return initializeWithPropertiesAndLogger(argc, argv, properties, 0, version);
 }
 
 CommunicatorPtr
 Ice::initializeWithProperties(int& argc, char* argv[], const PropertiesPtr& properties, Int version)
+{
+    return initializeWithPropertiesAndLogger(argc, argv, properties, 0, version);
+}
+
+CommunicatorPtr
+Ice::initializeWithLogger(int& argc, char* argv[], const LoggerPtr& logger, Int version)
+{
+    PropertiesPtr properties = getDefaultProperties(argc, argv);
+    return initializeWithPropertiesAndLogger(argc, argv, properties, logger, version);
+}
+
+CommunicatorPtr
+Ice::initializeWithPropertiesAndLogger(int& argc, char* argv[], const PropertiesPtr& properties,
+				       const LoggerPtr& logger, Int version)
 {
 #ifndef ICE_IGNORE_VERSION
     //
@@ -172,7 +193,7 @@ Ice::initializeWithProperties(int& argc, char* argv[], const PropertiesPtr& prop
     args = properties->parseIceCommandLineOptions(args);
     stringSeqToArgs(args, argc, argv);
 
-    CommunicatorI* communicatorI = new CommunicatorI(properties);
+    CommunicatorI* communicatorI = new CommunicatorI(properties, logger);
     CommunicatorPtr result = communicatorI; // For exception safety.
     communicatorI->finishSetup(argc, argv);
     return result;

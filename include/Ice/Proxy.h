@@ -15,7 +15,8 @@
 #include <Ice/ProxyF.h>
 #include <Ice/ProxyFactoryF.h>
 #include <Ice/ConnectionIF.h>
-#include <Ice/EndpointF.h>
+#include <Ice/EndpointIF.h>
+#include <Ice/Endpoint.h>
 #include <Ice/ObjectF.h>
 #include <Ice/ObjectAdapterF.h>
 #include <Ice/ReferenceF.h>
@@ -24,6 +25,8 @@
 //#include <Ice/LocatorF.h> // Can't include RouterF.h here, otherwise we have cyclic includes
 #include <Ice/Current.h>
 #include <Ice/StreamF.h>
+#include <Ice/CommunicatorF.h>
+#include <iosfwd>
 
 namespace IceProxy
 {
@@ -79,6 +82,10 @@ public:
     bool operator<(const Object&) const;
     ::Ice::Int ice_hash() const;
 
+    ::Ice::CommunicatorPtr ice_communicator() const;
+
+    ::std::string ice_toString() const;
+
     bool ice_isA(const ::std::string&);
     bool ice_isA(const ::std::string&, const ::Ice::Context&);
     void ice_ping();
@@ -100,6 +107,12 @@ public:
 
     ::Ice::Identity ice_getIdentity() const;
     ::Ice::ObjectPrx ice_newIdentity(const ::Ice::Identity&) const;
+
+    ::std::string ice_getAdapterId() const;
+    ::Ice::ObjectPrx ice_newAdapterId(const ::std::string&) const;
+
+    ::Ice::EndpointSeq ice_getEndpoints() const;
+    ::Ice::ObjectPrx ice_newEndpoints(const ::Ice::EndpointSeq&) const;
 
     ::Ice::Context ice_getContext() const;
     ::Ice::ObjectPrx ice_newContext(const ::Ice::Context&) const;
@@ -125,7 +138,7 @@ public:
     ::Ice::ObjectPrx ice_router(const ::Ice::RouterPrx&) const;
     ::Ice::ObjectPrx ice_locator(const ::Ice::LocatorPrx&) const;
     ::Ice::ObjectPrx ice_collocationOptimization(bool) const;
-    ::Ice::ObjectPrx ice_default() const;
+    ::Ice::ObjectPrx ice_connectionId(const ::std::string&) const;
 
     ::Ice::ConnectionPtr ice_connection();
 
@@ -154,6 +167,8 @@ private:
 };
 
 } }
+
+ICE_API ::std::ostream& operator<<(::std::ostream&, const ::IceProxy::Ice::Object&);
 
 namespace IceDelegate { namespace Ice
 {

@@ -29,7 +29,7 @@ namespace IceUtil
 // manually I've decided to leave them as virtual.
 //
 
-class ICE_UTIL_API OutputBase : public ::IceUtil::noncopyable
+class ICE_UTIL_API OutputBase : private ::IceUtil::noncopyable
 {
 public:
 
@@ -57,15 +57,6 @@ public:
     void sp(); // Print separator.
 
     bool operator!() const; // Check whether the output state is ok.
-
-    std::streamsize width() const;
-    std::streamsize width(std::streamsize newWidth);
-
-    std::ios_base::fmtflags flags() const;
-    std::ios_base::fmtflags flags(std::ios_base::fmtflags newFlags);
-
-    std::ostream::char_type fill() const;
-    std::ostream::char_type fill(std::ostream::char_type newFill);
 
 protected:
 

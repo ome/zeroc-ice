@@ -106,7 +106,7 @@ using namespace IcePatch2;
 string
 IcePatch2::lastError()
 {
-#ifdef WIN32
+#ifdef _WIN32
     LPVOID lpMsgBuf = 0;
     DWORD ok = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
 			     FORMAT_MESSAGE_FROM_SYSTEM |
@@ -309,10 +309,8 @@ IcePatch2::getSuffix(const string& pa)
     {
 	return string();
     }
-    else
-    {
-	return path.substr(dotPos + 1);
-    }
+
+    return path.substr(dotPos + 1);
 }
 
 string
@@ -327,10 +325,8 @@ IcePatch2::getWithoutSuffix(const string& pa)
     {
 	return path;
     }
-    else
-    {
-	return path.substr(0, dotPos);
-    }
+
+    return path.substr(0, dotPos);
 }
 
 bool
@@ -712,6 +708,20 @@ IcePatch2::decompressFile(const string& pa)
     }
 
     fclose(stdioFileBZ2);
+};
+
+void
+IcePatch2::setFileFlags(const string& pa, const FileInfo& info)
+{
+#ifndef _WIN32 // Windows doesn't support the executable flag
+    const string path = simplify(pa);
+    struct stat buf;
+    if(stat(path.c_str(), &buf) == -1)
+    {
+	throw "cannot stat `" + path + "':\n" + lastError();
+    }
+    chmod(path.c_str(), info.executable ? buf.st_mode | S_IXUSR : buf.st_mode & ~S_IXUSR);
+#endif
 }
 
 static bool
@@ -781,6 +791,7 @@ getFileInfoSeqInt(const string& basePath, const string& relPath, int compress, G
 	    FileInfo info;
 	    info.path = relPath;
 	    info.size = -1;
+	    info.executable = false;
 
 	    ByteSeq bytes(relPath.size());
 	    copy(relPath.begin(), relPath.end(), bytes.begin());
@@ -813,6 +824,11 @@ getFileInfoSeqInt(const string& basePath, const string& relPath, int compress, G
 	    FileInfo info;
 	    info.path = relPath;
 	    info.size = 0;
+#ifdef _WIN32
+	    info.executable = false; // Windows doesn't support the executable flag
+#else
+	    info.executable = buf.st_mode & S_IXUSR;
+#endif
 
 	    ByteSeq bytes(relPath.size() + buf.st_size);
 	    copy(relPath.begin(), relPath.end(), bytes.begin());
@@ -1076,12 +1092,13 @@ IcePatch2::getFileTree0(const FileInfoSeq& infoSeq, FileTree0& tree0)
 	}
 
 	ByteSeq allChecksums1;
-	allChecksums1.resize(tree1.files.size() * 20);
+	allChecksums1.resize(tree1.files.size() * 21); // 20 bytes for the checksum + 1 byte for the flag
 	ByteSeq::iterator c1 = allChecksums1.begin();
-	
-	for(p = tree1.files.begin(); p != tree1.files.end(); ++p, c1 += 20)
+
+	for(p = tree1.files.begin(); p != tree1.files.end(); ++p, c1 += 21)
 	{
 	    copy(p->checksum.begin(), p->checksum.end(), c1);
+	    *(c1 + 20) = p->executable;
 	}
 	
 	if(!allChecksums1.empty())
@@ -1111,7 +1128,10 @@ IcePatch2::getFileTree0(const FileInfoSeq& infoSeq, FileTree0& tree0)
 ostream&
 IcePatch2::operator<<(ostream& os, const FileInfo& info)
 {
-    os << IceUtil::escapeString(info.path, "") << '\t' << bytesToString(info.checksum) << '\t' << info.size;
+    os << IceUtil::escapeString(info.path, "") << '\t'
+       << bytesToString(info.checksum) << '\t'
+       << info.size << '\t'
+       << info.executable;
     return os;
 }
 
@@ -1126,8 +1146,10 @@ IcePatch2::operator>>(istream& is, FileInfo& info)
     getline(is, s, '\t');
     info.checksum = stringToBytes(s);
 
-    getline(is, s, '\n');
-    info.size = atoi(s.c_str());
+    is >> info.size;
+    is >> info.executable;
+
+    getline(is, s); // Read until the EOL
 
     return is;
 }

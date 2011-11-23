@@ -16,7 +16,9 @@
 #include <Ice/LoggerF.h>
 #include <Ice/Connector.h>
 
-#ifndef _WIN32
+#ifdef _WIN32
+#   include <winsock2.h>
+#else
 #   include <netinet/in.h> // For struct sockaddr_in
 #endif
 
@@ -36,7 +38,7 @@ private:
     
     TcpConnector(const InstancePtr&, const std::string&, int);
     virtual ~TcpConnector();
-    friend class TcpEndpoint;
+    friend class TcpEndpointI;
 
     InstancePtr _instance;
     TraceLevelsPtr _traceLevels;

@@ -13,8 +13,8 @@
 # protocol. Otherwise TCP is used.
 #
 
-#protocol = ""
 protocol = "ssl"
+#protocol = "tcp"
 
 #
 # Set compressed to 1 in case you want to run the tests with
@@ -302,7 +302,7 @@ def mixedClientServerTestWithOptions(name, additionalServerOptions, additionalCl
     print "ok"
 
     printOutputFromPipe(clientPipe)
-    
+
     clientStatus = clientPipe.close()
     serverStatus = serverPipe.close()
 

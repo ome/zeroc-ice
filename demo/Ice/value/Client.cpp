@@ -14,10 +14,24 @@
 using namespace std;
 using namespace Demo;
 
-int
-run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
+class ValueClient : public Ice::Application
 {
-    Ice::PropertiesPtr properties = communicator->getProperties();
+public:
+
+    virtual int run(int, char*[]);
+};
+
+int
+main(int argc, char* argv[])
+{
+    ValueClient app;
+    return app.main(argc, argv, "config");
+}
+
+int
+ValueClient::run(int argc, char* argv[])
+{
+    Ice::PropertiesPtr properties = communicator()->getProperties();
     const char* refProperty = "Value.Initial";
     std::string ref = properties->getProperty(refProperty);
     if(ref.empty())
@@ -26,7 +40,7 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 	return EXIT_FAILURE;
     }
 
-    Ice::ObjectPrx base = communicator->stringToProxy(ref);
+    Ice::ObjectPrx base = communicator()->stringToProxy(ref);
     InitialPrx initial = InitialPrx::checkedCast(base);
     if(!initial)
     {
@@ -47,17 +61,6 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
     cout << "==> " << simple->message << endl;
 
     cout << '\n'
-	 << "Ok, this worked. Now let's try to transfer an object for a class\n"
-	 << "with operations as type ::Ice::Object. Because no factory is installed,\n"
-	 << "the class will be sliced to ::Ice::Object.\n"
-	 << "[press enter]\n";
-    cin.getline(c, 2);
-
-    ::Ice::ObjectPtr obj = initial->getPrinterAsObject();
-    cout << "==> The type ID of the received object is \"" << obj->ice_id() << "\"" << endl;
-    assert(obj->ice_id() == "::Ice::Object");
-
-    cout << '\n'
 	 << "Yes, this worked. Now let's try to transfer an object for a class\n"
 	 << "with operations as type ::Demo::Printer, without installing a factory first.\n"
 	 << "This should give us a `no factory' exception.\n"
@@ -66,17 +69,16 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 
     PrinterPtr printer;
     PrinterPrx printerProxy;
-    bool gotException = false;
     try
     {
 	initial->getPrinter(printer, printerProxy);
+	cerr << argv[0] << "Did not get the expected NoObjectFactoryException!" << endl;
+	exit(EXIT_FAILURE);
     }
     catch(const Ice::NoObjectFactoryException& ex)
     {
 	cout << "==> " << ex << endl;
-	gotException = true;
     }
-    assert(gotException);
 
     cout << '\n'
 	 << "Yep, that's what we expected. Now let's try again, but with\n"
@@ -86,7 +88,7 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
     cin.getline(c, 2);
 
     Ice::ObjectFactoryPtr factory = new ObjectFactory;
-    communicator->addObjectFactory(factory, "::Demo::Printer");
+    communicator()->addObjectFactory(factory, "::Demo::Printer");
 
     initial->getPrinter(printer, printerProxy);
     cout << "==> " << printer->message << endl;
@@ -128,7 +130,7 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 	 << "[press enter]\n";
     cin.getline(c, 2);
     
-    communicator->addObjectFactory(factory, "::Demo::DerivedPrinter");
+    communicator()->addObjectFactory(factory, "::Demo::DerivedPrinter");
     
     derivedAsBase = initial->getDerivedPrinter();
     DerivedPrinterPtr derived = DerivedPrinterPtr::dynamicCast(derivedAsBase);
@@ -154,18 +156,21 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 	 << "[press enter]\n";
     cin.getline(c, 2);
 
-    gotException = false;
     try
     {
 	initial->throwDerivedPrinter();
+	cerr << argv[0] << ": Did not get the expected DerivedPrinterException!" << endl;
+	exit(EXIT_FAILURE);
     }
     catch(const DerivedPrinterException& ex)
     {
 	derived = ex.derived;
-	assert(derived);
-	gotException = true;
+	if(!derived)
+	{
+	    cerr << argv[0] << "Unexpected null pointer for `derived'" << endl;
+	    exit(EXIT_FAILURE);
+	}
     }
-    assert(gotException);
 
     cout << "==> " << derived->derivedMessage << endl;
     cout << "==> ";
@@ -175,39 +180,4 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 	 << "That's it for this demo. Have fun with Ice!\n";
 
     return EXIT_SUCCESS;
-}
-
-int
-main(int argc, char* argv[])
-{
-    int status;
-    Ice::CommunicatorPtr communicator;
-
-    try
-    {
-	Ice::PropertiesPtr properties = Ice::createProperties();
-        properties->load("config");
-	communicator = Ice::initializeWithProperties(argc, argv, properties);
-	status = run(argc, argv, communicator);
-    }
-    catch(const Ice::Exception& ex)
-    {
-	cerr << ex << endl;
-	status = EXIT_FAILURE;
-    }
-
-    if(communicator)
-    {
-	try
-	{
-	    communicator->destroy();
-	}
-	catch(const Ice::Exception& ex)
-	{
-	    cerr << ex << endl;
-	    status = EXIT_FAILURE;
-	}
-    }
-
-    return status;
 }

@@ -56,13 +56,13 @@ public:
     void startSeq(int, int);
     void checkSeq();
     void checkSeq(int);
+    void checkFixedSeq(int, int); // For sequences of fixed-size types.
     void endElement()
     {
 	assert(_seqDataStack);
 	--_seqDataStack->numElements;
     }
     void endSeq(int);
-    void checkFixedSeq(int, int); // For sequences of fixed-size types.
 
     void startWriteEncaps();
     void endWriteEncaps();
@@ -208,7 +208,7 @@ private:
     //
     Instance* _instance;
 
-    class ICE_API ReadEncaps : public ::IceUtil::noncopyable
+    class ICE_API ReadEncaps : private ::IceUtil::noncopyable
     {
     public:
 
@@ -231,7 +231,7 @@ private:
 	ReadEncaps* previous;
     };
 
-    class ICE_API WriteEncaps : public ::IceUtil::noncopyable
+    class ICE_API WriteEncaps : private ::IceUtil::noncopyable
     {
     public:
 

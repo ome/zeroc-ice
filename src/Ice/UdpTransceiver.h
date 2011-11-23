@@ -40,6 +40,7 @@ public:
     virtual void read(Buffer&, int);
     virtual std::string type() const;
     virtual std::string toString() const;
+    virtual void initialize(int);
 
     bool equivalent(const std::string&, int) const;
     int effectivePort() const;
@@ -52,7 +53,7 @@ private:
 
     void setBufSize(const InstancePtr&);
 
-    friend class UdpEndpoint;
+    friend class UdpEndpointI;
 
     const TraceLevelsPtr _traceLevels;
     const Ice::LoggerPtr _logger;

@@ -43,8 +43,8 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D "NDEBUG" /D FD_SETSIZE=1024 /D "_USRDLL" /D "ICE_API_EXPORTS" /D "ICE_PROTOCOL_API_EXPORTS" /D "_CONSOLE" /FD /c
-# SUBTRACT CPP /Fr /YX
+# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D FD_SETSIZE=1024 /D "_USRDLL" /D "ICE_API_EXPORTS" /D "_CONSOLE" /D "NDEBUG" /D "WIN32_LEAN_AND_MEAN" /FD /c
+# SUBTRACT CPP /Z<none> /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -54,12 +54,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 ws2_32.lib libbz2.lib advapi32.lib /nologo /entry:"ice_DLL_Main" /dll /incremental:yes /machine:I386 /out:"Release/ice21.dll" /implib:"Release/ice.lib"
+# ADD LINK32 ws2_32.lib libbz2.lib advapi32.lib /nologo /entry:"ice_DLL_Main" /dll /incremental:yes /machine:I386 /out:"Release/ice30.dll" /implib:"Release/ice.lib" /FIXED:no
 # SUBTRACT LINK32 /pdb:none /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\ice.lib ..\..\lib	copy $(OutDir)\ice21.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\ice.lib ..\..\lib	copy $(OutDir)\ice30.dll ..\..\bin
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "ice - Win32 Debug"
@@ -76,7 +76,7 @@ PostBuild_Cmds=copy $(OutDir)\ice.lib ..\..\lib	copy $(OutDir)\ice21.dll ..\..\b
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "_DEBUG" /D "_USRDLL" /D "ICE_API_EXPORTS" /D "ICE_PROTOCOL_API_EXPORTS" /D FD_SETSIZE=1024 /D "_CONSOLE" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "_USRDLL" /D "ICE_API_EXPORTS" /D FD_SETSIZE=1024 /D "_CONSOLE" /D "_DEBUG" /D "WIN32_LEAN_AND_MEAN" /FD /GZ /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
@@ -87,12 +87,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386
-# ADD LINK32 ws2_32.lib libbz2d.lib advapi32.lib /nologo /entry:"ice_DLL_Main" /dll /debug /machine:I386 /out:"Debug/ice21d.dll" /implib:"Debug/iced.lib"
-# SUBTRACT LINK32 /pdb:none /incremental:no /nodefaultlib
+# ADD LINK32 ws2_32.lib libbz2d.lib advapi32.lib /nologo /entry:"ice_DLL_Main" /dll /debug /machine:I386 /out:"Debug/ice30d.dll" /implib:"Debug/iced.lib" /FIXED:no
+# SUBTRACT LINK32 /pdb:none
 # Begin Special Build Tool
 OutDir=.\Debug
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\iced.lib ..\..\lib	copy $(OutDir)\ice21d.pdb ..\..\bin	copy $(OutDir)\ice21d.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\iced.lib ..\..\lib	copy $(OutDir)\ice30d.pdb ..\..\bin	copy $(OutDir)\ice30d.dll ..\..\bin
 # End Special Build Tool
 
 !ENDIF 
@@ -186,6 +186,10 @@ SOURCE=.\EndpointFactoryManager.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\EndpointI.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\EventHandler.cpp
 # End Source File
 # Begin Source File
@@ -211,6 +215,18 @@ SOURCE=.\FactoryTable.cpp
 # Begin Source File
 
 SOURCE=.\FactoryTableDef.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\GC.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\GCRecMutex.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\GCShared.cpp
 # End Source File
 # Begin Source File
 
@@ -398,7 +414,7 @@ SOURCE=.\TcpConnector.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\TcpEndpoint.cpp
+SOURCE=.\TcpEndpointI.cpp
 # End Source File
 # Begin Source File
 
@@ -422,7 +438,7 @@ SOURCE=.\Transceiver.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\UdpEndpoint.cpp
+SOURCE=.\UdpEndpointI.cpp
 # End Source File
 # Begin Source File
 
@@ -430,7 +446,7 @@ SOURCE=.\UdpTransceiver.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\UnknownEndpoint.cpp
+SOURCE=.\UnknownEndpointI.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -587,6 +603,18 @@ SOURCE=..\..\include\ice\FactoryTableDef.h
 # Begin Source File
 
 SOURCE=..\..\include\ice\Functional.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\include\Ice\GC.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\include\Ice\GCRecMutex.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\include\Ice\GCShared.h
 # End Source File
 # Begin Source File
 
@@ -906,7 +934,7 @@ SOURCE=.\TcpConnector.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\TcpEndpoint.h
+SOURCE=.\TcpEndpointI.h
 # End Source File
 # Begin Source File
 
@@ -942,7 +970,7 @@ SOURCE=.\TransceiverF.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\UdpEndpoint.h
+SOURCE=.\UdpEndpointI.h
 # End Source File
 # Begin Source File
 
@@ -950,7 +978,7 @@ SOURCE=.\UdpTransceiver.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\UnknownEndpoint.h
+SOURCE=.\UnknownEndpointI.h
 # End Source File
 # Begin Source File
 
@@ -1196,6 +1224,49 @@ BuildCmds= \
    $(BuildCmds)
 
 "Current.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\slice\Ice\Endpoint.ice
+
+!IF  "$(CFG)" == "ice - Win32 Release"
+
+USERDEP__ENDPO="..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
+# Begin Custom Build
+InputPath=..\..\slice\Ice\Endpoint.ice
+
+BuildCmds= \
+	..\..\bin\slice2cpp.exe --ice -DICE_CPP --dll-export ICE_API --include-dir Ice -I../../slice ../../slice/Ice/Endpoint.ice \
+	move Endpoint.h ..\..\include\ice \
+	
+
+"..\..\include\ice\Endpoint.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"Endpoint.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "ice - Win32 Debug"
+
+USERDEP__ENDPO="..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
+# Begin Custom Build
+InputPath=..\..\slice\Ice\Endpoint.ice
+
+BuildCmds= \
+	..\..\bin\slice2cpp.exe --ice -DICE_CPP --dll-export ICE_API --include-dir Ice -I../../slice ../../slice/Ice/Endpoint.ice \
+	move Endpoint.h ..\..\include\ice \
+	
+
+"..\..\include\ice\Endpoint.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"Endpoint.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
 

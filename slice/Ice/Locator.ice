@@ -25,6 +25,10 @@ exception AdapterNotFoundException
 {
 };
 
+exception InvalidReplicaGroupIdException
+{
+};
+
 /**
  *
  * This exception is raised if a server tries to set endpoints for
@@ -127,7 +131,7 @@ interface LocatorRegistry
      *
      * Set the adapter endpoints with the locator registry.
      *
-     * @param id The adapter id.
+     * @param adapterId The adapter id.
      *
      * @param proxy The adapter proxy (a dummy direct proxy created
      * by the adapter). The direct proxy contains the adapter
@@ -144,6 +148,34 @@ interface LocatorRegistry
      **/
     ["amd"] idempotent void setAdapterDirectProxy(string id, Object* proxy)
 	throws AdapterNotFoundException, AdapterAlreadyActiveException;
+
+    /**
+     *
+     * Set the adapter endpoints with the locator registry.
+     *
+     * @param adapterId The adapter id.
+     *
+     * @param replicaGroupId The replica group id.
+     *
+     * @param proxy The adapter proxy (a dummy direct proxy created
+     * by the adapter). The direct proxy contains the adapter
+     * endpoints.
+     *
+     * @throws AdapterNotFoundException Raised if the adapter cannot
+     * be found, or if the locator only allows registered adapters to
+     * set their active proxy and the adapter is not registered with
+     * the locator.
+     *
+     * @throws AdapterAlreadyActive Raised if an adapter with the same
+     * id is already active.
+     *
+     * @throws InvalidReplicaGroupIdException Raised if the given
+     * replica group doesn't match the one registered with the
+     * locator registry for this object adapter.
+     *
+     **/
+    ["amd"] idempotent void setReplicatedAdapterDirectProxy(string adapterId, string replicaGroupId, Object* proxy)
+	throws AdapterNotFoundException, AdapterAlreadyActiveException, InvalidReplicaGroupIdException;
 
     /**
      *

@@ -260,6 +260,217 @@ public:
 };
 typedef Handle<RWRecMutexTestThread> RWRecMutexTestThreadPtr;
 
+class RWRecMutexUpgradeThread : public Thread, public IceUtil::Monitor<IceUtil::Mutex>
+{
+public:
+
+    RWRecMutexUpgradeThread(RWRecMutex& m, bool timed = false)
+        : _m(m),
+	  _timed(timed),
+	  _destroyed(false),
+	  _upgrading(false),
+	  _hasWriteLock(false),
+	  _failed(false)
+    {
+    }
+
+    virtual void
+    run()
+    {
+	//
+	// Acquire a read lock.
+	//
+	RWRecMutex::RLock tlock(_m);
+
+	{
+	    Lock sync(*this);
+	    _upgrading = true;
+	    notify();
+	}
+
+	try
+	{
+	    if(_timed)
+	    {
+		if(!_m.timedUpgrade(IceUtil::Time::seconds(10)))
+		{
+		    _failed = true;
+		}
+	    }
+	    else
+	    {
+		_m.upgrade();
+	    }
+	}
+	catch(DeadlockException&)
+	{
+	    _failed = true;
+	}
+
+	{
+	    Lock sync(*this);
+	    _hasWriteLock = true;
+	    notify();
+
+	    while(!_destroyed)
+	    {
+		wait();
+	    }
+	}
+    }
+
+    void
+    waitUpgrade()
+    {
+	Lock sync(*this);
+
+	//
+	// Wait for the _upgrading flag to be set.
+	//
+	while(!_upgrading)
+	{
+	    wait();
+	}
+    }
+
+    void
+    destroy()
+    {
+	Lock sync(*this);
+	_destroyed = true;
+	notify();
+    }
+
+    //
+    // This waits a maximum of N seconds if the lock is not already
+    // acquired. It could while forever, but that would cause the test
+    // to hang in the event of a failure.
+    //
+    bool
+    waitHasWriteLock()
+    {
+	Lock sync(*this);
+	if(!_hasWriteLock)
+	{
+	    timedWait(Time::seconds(10));
+	}
+	return _hasWriteLock;
+    }
+
+    bool
+    failed() const
+    {
+	return _failed;
+    }
+
+private:
+
+    RWRecMutex& _m;
+    bool _timed;
+    bool _destroyed;
+    bool _upgrading;
+    bool _hasWriteLock;
+    bool _failed;
+};
+typedef Handle<RWRecMutexUpgradeThread> RWRecMutexUpgradeThreadPtr;
+
+class RWRecMutexWriteThread : public Thread, public IceUtil::Monitor<IceUtil::Mutex>
+{
+public:
+
+    RWRecMutexWriteThread(RWRecMutex& m)
+        : _m(m),
+	  _destroyed(false),
+	  _waitWrite(false),
+	  _hasWriteLock(false)
+    {
+    }
+
+    virtual void
+    run()
+    {
+	{
+	    Lock sync(*this);
+	    _waitWrite = true;
+	    notify();
+	}
+	//
+	// Acquire a read lock.
+	//
+	RWRecMutex::WLock sync(_m);
+
+	{
+	    Lock sync(*this);
+	    _hasWriteLock = true;
+	    notify();
+
+	    while(!_destroyed)
+	    {
+		wait();
+	    }
+	}
+    }
+
+    void
+    waitWrite()
+    {
+	Lock sync(*this);
+
+	//
+	// Wait for the _upgrading flag to be set.
+	//
+	while(!_waitWrite)
+	{
+	    wait();
+	}
+
+	//
+	// Its necessary to sleep for 1 second to ensure that the
+	// thread is actually IN the upgrade and waiting.
+	//
+	ThreadControl::sleep(Time::seconds(1));
+    }
+
+    void
+    destroy()
+    {
+	Lock sync(*this);
+	_destroyed = true;
+	notify();
+    }
+
+    bool
+    hasWriteLock()
+    {
+	Lock sync(*this);
+	return _hasWriteLock;
+    }
+
+    //
+    // This waits a maximum of N seconds if the lock is not already
+    // acquired. It could while forever, but that would cause the test
+    // to hang in the event of a failure.
+    //
+    bool
+    waitHasWriteLock()
+    {
+	Lock sync(*this);
+	if(!_hasWriteLock)
+	{
+	    timedWait(Time::seconds(10));
+	}
+	return _hasWriteLock;
+    }
+
+private:
+
+    RWRecMutex& _m;
+    bool _destroyed;
+    bool _waitWrite;
+    bool _hasWriteLock;
+};
+typedef Handle<RWRecMutexWriteThread> RWRecMutexWriteThreadPtr;
+
 RWRecMutexTest::RWRecMutexTest() :
     TestBase(rwRecMutexTestName)
 {
@@ -508,14 +719,12 @@ RWRecMutexTest::run()
 	//
 	// A read lock at this point should fail.
 	//
-
 	RWRecMutex::TryRLock trlock(mutex);
 	test(!trlock.acquired());
 	
 	//
 	// As should a write lock.
 	//
-	
 	RWRecMutex::TryWLock twlock(mutex);
 	test(!twlock.acquired());
 	
@@ -539,4 +748,130 @@ RWRecMutexTest::run()
 	}
     }
 #endif
+
+    // TEST: Ensure that only one reader can upgrade to a writer.
+    // Other readers get a DeadlockException.
+    {
+	mutex.readLock();
+
+	RWRecMutexUpgradeThreadPtr t1 = new RWRecMutexUpgradeThread(mutex);
+	ThreadControl control1 = t1->start();
+
+	//
+	// Wait for the thread to get into the upgrade call. The
+	// upgrade will hang since the readLock is held by this thread
+	// and therefore cannot succeed until we release our read
+	// lock.
+	//
+	t1->waitUpgrade();
+
+	//
+	// Its necessary to sleep for 1 second to ensure that the
+	// thread is actually IN the upgrade and waiting.
+	//
+	ThreadControl::sleep(Time::seconds(1));
+
+	try
+	{
+	    mutex.upgrade();
+	    test(false);
+	}
+	catch(const DeadlockException&)
+	{
+	}
+
+	//
+	// Release the waiting thread, join.
+	//
+	mutex.unlock();
+	t1->destroy();
+	control1.join();
+
+	test(!t1->failed());
+    }
+
+    // TEST: Same as previous test, but for a timedUpgrade.
+    {
+	mutex.readLock();
+
+	RWRecMutexUpgradeThreadPtr t1 = new RWRecMutexUpgradeThread(mutex, true);
+	ThreadControl control1 = t1->start();
+
+	t1->waitUpgrade();
+	//
+	// Its necessary to sleep for 1 second to ensure that the
+	// thread is actually IN the upgrade and waiting.
+	//
+	ThreadControl::sleep(Time::seconds(1));
+
+	try
+	{
+	    mutex.upgrade();
+	    test(false);
+	}
+	catch(const DeadlockException&)
+	{
+	}
+
+	//
+	// Release the waiting thread, join.
+	//
+	mutex.unlock();
+	t1->destroy();
+	control1.join();
+
+	test(!t1->failed());
+    }
+
+    // TEST: Check that an upgrader is given preference over a writer.
+    {
+	mutex.readLock();
+
+	RWRecMutexUpgradeThreadPtr t1 = new RWRecMutexUpgradeThread(mutex);
+	
+	ThreadControl control1 = t1->start();
+
+	//
+	// Its not necessary to sleep here, since the upgrade thread
+	// acquires the read lock before signalling. Therefore the
+	// write thread cannot get the write lock.
+	//
+	t1->waitUpgrade();
+
+	RWRecMutexWriteThreadPtr t2 = new RWRecMutexWriteThread(mutex);
+	ThreadControl control2 = t2->start();
+	t2->waitWrite();
+	//
+	// Its necessary to sleep for 1 second to ensure that the
+	// thread is actually IN the write lock and waiting.
+	//
+	ThreadControl::sleep(Time::seconds(1));
+
+	//
+	// Unlocking the read mutex lets the upgrade continue. At this
+	// point t1 should have the write-lock, and t2 should not.
+	//
+	test(!t2->hasWriteLock());
+	mutex.unlock();
+
+	//
+	// Wait for t1 to get the write lock. It will not release it
+	// until the thread is destroyed. t2 should not have the write
+	// lock.
+	//
+	test(!t1->failed());
+	test(t1->waitHasWriteLock());
+	test(!t2->hasWriteLock());
+	t1->destroy();
+	t2->destroy();
+
+	//
+	// After the thread has terminated the thread must have
+	// acquired the write lock.
+	//
+	test(t2->waitHasWriteLock());
+
+	control1.join();
+	control2.join();
+    }
 }

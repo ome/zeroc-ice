@@ -90,8 +90,374 @@ IceUtil::Options::addOpt(const string& shortOpt, const string& longOpt, ArgType 
     addValidOpt(longOpt, LongOpt, at, dflt, rt);
 }
 
+
+//
+// Split a command line into argv-style arguments, applying
+// bash quoting rules. The return value is the arguments
+// in the command line, with all shell escapes applied, and
+// quotes removed.
+//
+
 vector<string>
-IceUtil::Options::parse(int argc, char* argv[])
+IceUtil::Options::split(const string& line)
+{
+    const string IFS = " \t\n"; // Internal Field Separator.
+
+    //
+    // Strip leading and trailing whitespace.
+    //
+    string::size_type start = line.find_first_not_of(IFS);
+    if(start == string::npos)
+    {
+        return vector<string>();
+    }
+    string::size_type end = line.find_last_not_of(IFS);
+    assert(end != string::npos);
+    string l(line, start, end - start + 1);
+
+    vector<string> vec;
+
+    enum ParseState { Normal, DoubleQuote, SingleQuote, ANSIQuote };
+    ParseState state = Normal;
+
+    string arg;
+
+    for(string::size_type i = 0; i < l.size(); ++i)
+    {
+	char c = l[i];
+        switch(state)
+	{
+	    case Normal:
+	    {
+		switch(c)
+		{
+		    case '\\':
+		    {
+			//
+			// Ignore a backslash at the end of the string,
+			// and strip backslash-newline pairs. Anything
+			// else following a backslash is taken literally.
+			//
+			if(i < l.size() - 1 && l[++i] != '\n')
+			{
+			    arg.push_back(l[i]);
+			}
+			break;
+		    }
+		    case '\'':
+		    {
+			state = SingleQuote;
+			break;
+		    }
+		    case '"':
+		    {
+			state = DoubleQuote;
+			break;
+		    }
+		    case '$':
+		    {
+			if(i < l.size() - 1 && l[i + 1] == '\'')
+			{
+			    state = ANSIQuote; // Bash uses $'<text>' to allow ANSI escape sequences within <text>.
+			    ++i;
+			}
+			else
+			{
+			    arg.push_back(l[i]);
+			}
+			break;
+		    }
+		    default:
+		    {
+			if(IFS.find(l[i]) != string::npos)
+			{
+			    vec.push_back(arg);
+			    arg.clear();
+
+			    //
+			    // Move to start of next argument.
+			    //
+			    while(++i < l.size() && IFS.find(l[i]) != string::npos)
+			    {
+				;
+			    }
+			    --i;
+			}
+			else
+			{
+			    arg.push_back(l[i]);
+			}
+			break;
+		    }
+		}
+		break;
+	    }
+	    case DoubleQuote:
+	    {
+	        //
+		// Within double quotes, only backslash retains its special
+		// meaning, and only if followed by double quote, backslash,
+		// or newline. If not followed by one of these characters,
+		// both the backslash and the character are preserved.
+		//
+		if(c == '\\' && i < l.size() - 1)
+		{
+		    switch(c = l[++i])
+		    {
+			case '"':
+			case '\\':
+			case '\n':
+			{
+			    arg.push_back(c);
+			    break;
+			}
+			default:
+			{
+			    arg.push_back('\\');
+			    arg.push_back(c);
+			    break;
+			}
+		    }
+		}
+		else if(c == '"') // End of double-quote mode.
+		{
+		    state = Normal;
+		}
+		else
+		{
+		    arg.push_back(c); // Everything else is taken literally.
+		}
+		break;
+	    }
+	    case SingleQuote:
+	    {
+		if(c == '\'') // End of single-quote mode.
+		{
+		    state = Normal;
+		}
+		else
+		{
+		    arg.push_back(c); // Everything else is taken literally.
+		}
+		break;
+	    }
+	    case ANSIQuote:
+	    {
+		switch(c)
+		{
+		    case '\\':
+		    {
+			switch(c = l[++i])
+			{
+			    //
+			    // Single-letter escape sequences.
+			    //
+			    case 'a':
+			    {
+				arg.push_back('\a');
+				break;
+			    }
+			    case 'b':
+			    {
+				arg.push_back('\b');
+				break;
+			    }
+			    case 'f':
+			    {
+				arg.push_back('\f');
+				break;
+			    }
+			    case 'n':
+			    {
+				arg.push_back('\n');
+				break;
+			    }
+			    case 'r':
+			    {
+				arg.push_back('\r');
+				break;
+			    }
+			    case 't':
+			    {
+				arg.push_back('\t');
+				break;
+			    }
+			    case 'v':
+			    {
+				arg.push_back('\v');
+				break;
+			    }
+			    case '\\':
+			    {
+				arg.push_back('\\');
+				break;
+			    }
+			    case '\'':
+			    {
+				arg.push_back('\'');
+				break;
+			    }
+			    case 'e': // Not ANSI-C, but used by bash.
+			    {
+				arg.push_back('\033');
+				break;
+			    }
+
+			    //
+			    // Process up to three octal digits.
+			    //
+			    case '0':
+			    case '1':
+			    case '2':
+			    case '3':
+			    {
+				static string octalDigits = "01234567";
+				unsigned short us = c - '0';
+				for(string::size_type j = i;
+				    j < i + 2 && j < l.size() && octalDigits.find_first_of(c = l[i]) != string::npos;
+				    ++j)
+				{
+				    us = us * 8 + c - '0';
+				    ++i;
+				}
+				arg.push_back(static_cast<char>(us));
+				break;
+			    }
+
+			    //
+			    // Process up to two hex digits.
+			    //
+			    case 'x':
+			    {
+				if(i == l.size() - 1)
+				{
+				    arg.push_back('x');
+				    continue;
+				}
+				IceUtil::Int64 ull = 0;
+				for(string::size_type j = i + 1; j < i + 3 && j < l.size() && isxdigit(c = l[j]); ++j)
+				{
+				    ull *= 16;
+				    if(isdigit(c))
+				    {
+					ull += c - '0';
+				    }
+				    else if(islower(c))
+				    {
+					ull += c - 'a' + 10;
+				    }
+				    else
+				    {
+					ull += c - 'A' + 10;
+				    }
+				    ++i;
+				}
+				arg.push_back(static_cast<char>(ull));
+				break;
+			    }
+
+			    //
+			    // Process control-chars.
+			    //
+			    case 'c':
+			    {
+				if(isalpha(c) || c == '@' || (c >= '[' && c <= '_'))
+				{
+				    arg.push_back(static_cast<char>(toupper(c) - '@'));
+				}
+				else
+				{
+				    //
+				    // Bash does not define what should happen if a \c
+				    // is not followed by a recognized control character.
+				    // We simply treat this case like other unrecognized
+				    // escape sequences, that is, we preserver the escape
+				    // sequence unchanged.
+				    //
+				    arg.push_back('\\');
+				    arg.push_back('c');
+				    arg.push_back(c);
+				}
+				break;
+			    }
+
+			    //
+			    // If inside an ANSI-quoted string, a backslash isn't followed by
+			    // one of the recognized characters, both the backslash and the
+			    // character are preserved.
+			    //
+			    default:
+			    {
+				arg.push_back('\\');
+				arg.push_back(c);
+				break;
+			    }
+			}
+			break;
+		    }
+		    case '\'': // End of ANSI-quote mode.
+		    {
+			state = Normal;
+			break;
+		    }
+		    default:
+		    {
+			arg.push_back(c); // Everything else is taken literally.
+			break;
+		    }
+		}
+	        break;
+	    }
+	    default:
+	    {
+		assert(!"Impossible parse state");
+		break;
+	    }
+	}
+    }
+
+    switch(state)
+    {
+	case Normal:
+	{
+	    vec.push_back(arg);
+	    break;
+	}
+	case SingleQuote:
+	{
+	    throw BadQuote("missing closing single quote");
+	    break;
+	}
+	case DoubleQuote:
+	{
+	    throw BadQuote("missing closing double quote");
+	    break;
+	}
+	case ANSIQuote:
+	{
+	    throw BadQuote("unterminated $' quote");
+	    break;
+	}
+	default:
+	{
+	    assert(!"Impossible parse state");
+	    break;
+	}
+    }
+
+    return vec;
+}
+
+//
+// Parse a vector of arguments and return the non-option
+// arguments as the return value. Throw BadOpt if any of the
+// options are invalid.
+// Note that args[0] is ignored because that is the name
+// of the executable.
+//
+
+vector<string>
+IceUtil::Options::parse(const vector<string>& args)
 {
     IceUtil::RecMutex::Lock sync(_m);
 
@@ -101,14 +467,14 @@ IceUtil::Options::parse(int argc, char* argv[])
     }
     parseCalled = true;
 
-    set<string> seenOpts; // To catch repeated non-repeatable options.
+    set<string> seenNonRepeatableOpts; // To catch repeated non-repeatable options.
 
     vector<string> result;
 
-    int i;
-    for(i = 1; i < argc; ++i)
+    string::size_type i;
+    for(i = 1; i < args.size(); ++i)
     {
-	if(strcmp(argv[i], "-") == 0 || strcmp(argv[i], "--") == 0)
+	if(args[i] == "-" || args[i] == "--")
 	{
 	    ++i;
 	    break; // "-" and "--" indicate end of options.
@@ -118,98 +484,87 @@ IceUtil::Options::parse(int argc, char* argv[])
 	ValidOpts::iterator pos;
         bool argDone = false;
 
-	if(strncmp(argv[i], "--", 2) == 0)
+	if(args[i].compare(0, 2, "--") == 0)
 	{
 	    //
 	    // Long option. If the option has an argument, it can either be separated by '='
 	    // or appear as a separate argument. For example, "--name value" is the same
 	    // as "--name=value".
 	    //
-	    const char *p = argv[i] + 2;
-	    while(*p != '=' && *p != '\0')
+	    string::size_type p = args[i].find('=', 2);
+	    if(p != string::npos)
 	    {
-		++p;
-	    }
-	    if(*p == '=')
-	    {
-		opt.assign(argv[i] + 2, p - (argv[i] + 2));
+	        opt = args[i].substr(2, p - 2);
 	    }
 	    else
 	    {
-		opt = argv[i] + 2;
+		opt = args[i].substr(2);
 	    }
 
 	    pos = checkOpt(opt, LongOpt);
 
-	    if(*p == '=')
+	    if(p != string::npos)
 	    {
-	        if(pos->second.arg == NoArg)
+	        if(pos->second.arg == NoArg && p != args[i].size() - 1)
 		{
-		    string err = "--";
-		    err += opt;
-		    err.push_back('=');
-		    err += p + 1;
+		    string err = "`";
+		    err += args[i];
 		    err += "': option does not take an argument";
 		    throw BadOpt(err);
 		}
-		setOpt(opt, p + 1, pos->second.repeat);
+		setOpt(opt, args[i].substr(p + 1), pos->second.repeat);
 		argDone = true;
 	    }
 
-	    set<string>::iterator seenPos = seenOpts.find(opt);
-	    if(seenPos != seenOpts.end())
+	    if(pos->second.repeat == NoRepeat)
 	    {
-		ValidOpts::const_iterator validPos = _validOpts.find(opt);
-		if(validPos != _validOpts.end() && validPos->second.repeat == NoRepeat)
+		set<string>::iterator seenPos = seenNonRepeatableOpts.find(opt);
+		if(seenPos != seenNonRepeatableOpts.end())
 		{
 		    string err = "`--";
 		    err += opt + ":' option cannot be repeated";
 		    throw BadOpt(err);
 		}
+		seenNonRepeatableOpts.insert(seenPos, opt);
 	    }
-	    seenOpts.insert(seenPos, opt);
 	}
-	else if(*argv[i] == '-')
+	else if(!args[i].empty() && args[i][0] == '-')
 	{
 	    //
 	    // Short option.
 	    //
-	    const char *p = argv[i];
-	    char c;
-	    while((c = *++p) != '\0')
+	    for(string::size_type p = 1; p < args[i].size(); ++p)
 	    {
-		opt.clear();
-		opt.push_back(c);
+	        opt.clear();
+		opt.push_back(args[i][p]);
 		pos = checkOpt(opt, ShortOpt);
-		if(pos->second.arg == NeedArg && *(p + 1) != '\0')
+		if(pos->second.arg == NeedArg && p != args[i].size() - 1)
 		{
-		    string optArg;
-		    while(*++p != '\0')
-		    {
-			optArg.push_back(*p);
-		    }
-		    --p;
+		    string optArg = args[i].substr(p + 1);
 		    setOpt(opt, optArg, pos->second.repeat);
 		    argDone = true;
+		    break;
 		}
 	    }
 
-	    set<string>::iterator seenPos = seenOpts.find(opt);
-	    if(seenPos != seenOpts.end())
+	    if(pos->second.repeat == NoRepeat)
 	    {
-		ValidOpts::const_iterator validPos = _validOpts.find(opt);
-		if(validPos != _validOpts.end() && validPos->second.repeat == NoRepeat)
+		set<string>::iterator seenPos = seenNonRepeatableOpts.find(opt);
+		if(seenPos != seenNonRepeatableOpts.end())
 		{
 		    string err = "`-";
 		    err += opt + ":' option cannot be repeated";
 		    throw BadOpt(err);
 		}
+		seenNonRepeatableOpts.insert(seenPos, opt);
 	    }
-	    seenOpts.insert(seenPos, opt);
 	}
 	else
 	{
-	    result.push_back(argv[i]); // Not an option or option argument.
+	    //
+	    // Not an option or option argument.
+	    //
+	    result.push_back(args[i]);
 	    argDone = true;
 	}
 
@@ -217,7 +572,7 @@ IceUtil::Options::parse(int argc, char* argv[])
 	{
 	    if(pos->second.arg == NeedArg) // Need an argument that is separated by whitespace.
 	    {
-		if(i == argc - 1)
+		if(i == args.size() - 1)
 		{
 		    string err = "`-";
 		    if(opt.size() != 1)
@@ -228,7 +583,7 @@ IceUtil::Options::parse(int argc, char* argv[])
 		    err += "' option requires an argument";
 		    throw BadOpt(err);
 		}
-		setOpt(opt, argv[++i], pos->second.repeat);
+		setOpt(opt, args[++i], pos->second.repeat);
 	    }
 	    else
 	    {
@@ -237,12 +592,28 @@ IceUtil::Options::parse(int argc, char* argv[])
 	}
     }
 
-    while(i < argc)
+    while(i < args.size())
     {
-        result.push_back(argv[i++]);
+        result.push_back(args[i++]);
     }
 
     return result;
+}
+
+//
+// Parse a normal argc/argv pair and return the non-option
+// arguments as the return value.
+//
+
+vector<string>
+IceUtil::Options::parse(int argc, const char* const argv[])
+{
+    vector<string> vec;
+    for(int i = 0; i < argc; ++i)
+    {
+        vec.push_back(argv[i]);
+    }
+    return parse(vec);
 }
 
 bool
@@ -359,7 +730,6 @@ IceUtil::Options::checkOpt(const string& opt, LengthType lt)
 	err.push_back('\'');
 	throw BadOpt(err);
     }
-
     return pos;
 }
 

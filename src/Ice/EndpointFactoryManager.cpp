@@ -9,7 +9,7 @@
 
 #include <Ice/EndpointFactoryManager.h>
 #include <Ice/Endpoint.h>
-#include <Ice/UnknownEndpoint.h>
+#include <Ice/UnknownEndpointI.h>
 #include <Ice/BasicStream.h>
 #include <Ice/LocalException.h>
 #include <Ice/Instance.h>
@@ -63,8 +63,8 @@ IceInternal::EndpointFactoryManager::get(Short type) const
     return 0;
 }
 
-EndpointPtr
-IceInternal::EndpointFactoryManager::create(const string& str) const
+EndpointIPtr
+IceInternal::EndpointFactoryManager::create(const string& str, bool adapterEndp) const
 {
     IceUtil::Mutex::Lock sync(*this); // TODO: Necessary?
 
@@ -98,16 +98,14 @@ IceInternal::EndpointFactoryManager::create(const string& str) const
     {
         if(_factories[i]->protocol() == protocol)
         {
-            return _factories[i]->create(str.substr(end));
+            return _factories[i]->create(str.substr(end), adapterEndp);
         }
     }
 
-    EndpointParseException ex(__FILE__, __LINE__);
-    ex.str = str;
-    throw ex;
+    return 0;
 }
 
-EndpointPtr
+EndpointIPtr
 IceInternal::EndpointFactoryManager::read(BasicStream* s) const
 {
     IceUtil::Mutex::Lock sync(*this); // TODO: Necessary?
@@ -126,7 +124,7 @@ IceInternal::EndpointFactoryManager::read(BasicStream* s) const
         }
     }
 
-    return new UnknownEndpoint(type, s);
+    return new UnknownEndpointI(type, s);
 }
 
 void

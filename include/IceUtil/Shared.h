@@ -12,23 +12,7 @@
 
 #include <IceUtil/Config.h>
 
-//
-// Here are the sparc64+linux atomic functions, if you wish them.
-//
-#if defined(__linux) && defined(__sparc__) && defined(USE_SPARC_ASM) && !defined(ICE_USE_MUTEX_SHARED)
-#   define ICE_HAS_ATOMIC_FUNCTIONS
-extern "C" 
-{
-#include <asm-sparc64/atomic.h>
-int __atomic_exchange_and_add(atomic_t *v, int i);
-}
-#define ice_atomic_t  atomic_t
-#define ice_atomic_set(v,i)   atomic_set(v,i)
-#define ice_atomic_inc(v)   atomic_inc(v)
-#define ice_atomic_dec_and_test(v)  atomic_dec_and_test(v)
-#define ice_atomic_exchange_add(i,v)  (__atomic_exchange_and_add(v,i))
-
-#elif defined(ICE_USE_MUTEX_SHARED)
+#if defined(ICE_USE_MUTEX_SHARED)
 #   include <IceUtil/Mutex.h>
 
 #elif (defined(__linux) || defined(__FreeBSD__)) && (defined(__i386) || defined(__x86_64)) && !defined(__ICC)
@@ -146,12 +130,21 @@ inline int ice_atomic_exchange_add(int i, ice_atomic_t* v)
 namespace IceUtil
 {
 
-class ICE_UTIL_API SimpleShared : public noncopyable
+class ICE_UTIL_API SimpleShared
 {
 public:
 
     SimpleShared();
-    virtual ~SimpleShared();
+    SimpleShared(const SimpleShared&);
+
+    virtual ~SimpleShared()
+    {
+    }
+
+    SimpleShared& operator=(const SimpleShared&)
+    {
+        return *this;
+    }
 
     void __incRef()
     {
@@ -188,12 +181,21 @@ private:
     bool _noDelete;
 };
 
-class ICE_UTIL_API Shared : public noncopyable
+class ICE_UTIL_API Shared
 {
 public:
 
     Shared();
-    virtual ~Shared();
+    Shared(const Shared&);
+
+    virtual ~Shared()
+    {
+    }
+
+    Shared& operator=(const Shared&)
+    {
+        return *this;
+    }
 
     void __incRef()
     {

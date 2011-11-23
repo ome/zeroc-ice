@@ -65,8 +65,11 @@ IceBox::ServiceManagerI::run()
         ObjectAdapterPtr adapter = _server->communicator()->createObjectAdapter("IceBox.ServiceManager");
 
 	PropertiesPtr properties = _server->communicator()->getProperties();
-
-	string identity = properties->getPropertyWithDefault("IceBox.ServiceManager.Identity", "ServiceManager");
+        string identity = properties->getProperty("IceBox.ServiceManager.Identity");
+        if(identity.empty())
+        {
+            identity = properties->getPropertyWithDefault("IceBox.InstanceName", "IceBox") + "/ServiceManager";
+        }
         adapter->add(obj, stringToIdentity(identity));
 
         //
@@ -292,11 +295,11 @@ IceBox::ServiceManagerI::start(const string& service, const string& entryPoint, 
     try
     {
 	//
-	// If Ice.UseSharedCommunicator.<name> is defined, create a
-	// communicator for the service. The communicator inherits
-	// from the shared communicator properties. If it's not
-	// defined, add the service properties to the shared
-	// commnunicator property set.
+	// If Ice.UseSharedCommunicator.<name> is not defined, create
+	// a communicator for the service. The communicator inherits
+	// from the shared communicator properties. If it's defined
+	// add the service properties to the shared commnunicator
+	// property set.
 	//
 	PropertiesPtr properties = _server->communicator()->getProperties();
 	if(properties->getPropertyAsInt("IceBox.UseSharedCommunicator." + service) > 0)
@@ -338,7 +341,47 @@ IceBox::ServiceManagerI::start(const string& service, const string& entryPoint, 
 	//
 	// Start the service.
 	//
-	info.service->start(service, communicator, serviceArgs);
+	try
+	{
+	    info.service->start(service, communicator, serviceArgs);
+	}
+	catch(...)
+	{
+	    if(info.communicator)
+	    {
+		try
+		{
+		    info.communicator->shutdown();
+		    info.communicator->waitForShutdown();
+		}
+		catch(const Ice::CommunicatorDestroyedException&)
+		{
+		    //
+		    // Ignore, the service might have already destroyed
+		    // the communicator for its own reasons.
+		    //
+		}
+		catch(const Ice::Exception& ex)
+		{
+		    Warning out(_logger);
+		    out << "ServiceManager: exception in shutting down communicator for service " << service << ":\n";
+		    out << ex;
+		}
+
+		try
+		{
+		    info.communicator->destroy();
+		    info.communicator = 0;
+		}
+		catch(const Exception& ex)
+		{
+		    Warning out(_logger);
+		    out << "ServiceManager: exception in shutting down communicator for service " << service << ":\n";
+		    out << ex;
+		}
+	    }
+	    throw;
+	}
 
         info.library = library;
         _services[service] = info;
@@ -470,3 +513,4 @@ IceBox::ServiceManagerI::stopAll()
 
     _services.clear();
 }
+

@@ -18,7 +18,7 @@
 #include <Ice/LocalException.h>
 #include <Ice/DefaultsAndOverrides.h>
 #include <Ice/TraceLevels.h>
-#include <IceUtil/GC.h>
+#include <Ice/GC.h>
 
 using namespace std;
 using namespace Ice;
@@ -27,7 +27,7 @@ using namespace IceInternal;
 namespace IceInternal
 {
 
-IceUtil::Handle<IceUtil::GC> theCollector = 0;
+IceUtil::Handle<IceInternal::GC> theCollector = 0;
 
 }
 
@@ -52,7 +52,7 @@ static LoggerPtr gcLogger;
 static int gcInterval;
 
 static void
-printGCStats(const IceUtil::GCStats& stats)
+printGCStats(const IceInternal::GCStats& stats)
 {
     if(gcTraceLevel)
     {
@@ -71,19 +71,7 @@ printGCStats(const IceUtil::GCStats& stats)
 void
 Ice::CommunicatorI::destroy()
 {
-    InstancePtr instance;
-
-    {
-	RecMutex::Lock sync(*this);
-	
-	if(_destroyed) // Don't destroy twice.
-	{
-	    return;
-	}
-	_destroyed = true;
-	instance = _instance;
-    }
-
+    if(_instance->destroy())
     {
 	IceUtil::StaticMutex::Lock sync(gcMutex);
 
@@ -117,260 +105,131 @@ Ice::CommunicatorI::destroy()
 	    theCollector = 0; // Force destruction of the collector.
 	}
     }
-
-    if(instance)
-    {
-	instance->destroy();
-    }
 }
 
 void
 Ice::CommunicatorI::shutdown()
 { 
-    ObjectAdapterFactoryPtr objectAdapterFactory;
-
-    {
-	RecMutex::Lock sync(*this);
-	if(_destroyed)
-	{
-	    throw CommunicatorDestroyedException(__FILE__, __LINE__);
-	}
-	objectAdapterFactory = _instance->objectAdapterFactory();
-    }
-
-    //
-    // We must call shutdown on the object adapter factory outside the
-    // synchronization, otherwise the communicator is blocked during
-    // shutdown.
-    //
-    objectAdapterFactory->shutdown();
+    _instance->objectAdapterFactory()->shutdown();
 }
 
 void
 Ice::CommunicatorI::waitForShutdown()
 {
-    ObjectAdapterFactoryPtr objectAdapterFactory;
-
-    {
-	RecMutex::Lock sync(*this);
-	if(_destroyed)
-	{
-	    throw CommunicatorDestroyedException(__FILE__, __LINE__);
-	}
-	objectAdapterFactory = _instance->objectAdapterFactory();
-    }
-
-    //
-    // We must call waitForShutdown on the object adapter factory
-    // outside the synchronization, otherwise the communicator is
-    // blocked while we wait for shutdown.
-    //
-    objectAdapterFactory->waitForShutdown();
+    _instance->objectAdapterFactory()->waitForShutdown();
 }
 
 ObjectPrx
 Ice::CommunicatorI::stringToProxy(const string& s) const
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     return _instance->proxyFactory()->stringToProxy(s);
 }
 
 string
 Ice::CommunicatorI::proxyToString(const ObjectPrx& proxy) const
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     return _instance->proxyFactory()->proxyToString(proxy);
 }
 
 ObjectAdapterPtr
 Ice::CommunicatorI::createObjectAdapter(const string& name)
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
-    
-    ObjectAdapterPtr adapter = _instance->objectAdapterFactory()->createObjectAdapter(name);
-
-    return adapter;
+    return createObjectAdapterWithEndpoints(name, getProperties()->getProperty(name + ".Endpoints"));
 }
 
 ObjectAdapterPtr
 Ice::CommunicatorI::createObjectAdapterWithEndpoints(const string& name, const string& endpoints)
 {
-    getProperties()->setProperty(name + ".Endpoints", endpoints);
-    return createObjectAdapter(name);
+    return _instance->objectAdapterFactory()->createObjectAdapter(name, endpoints);
 }
 
 void
 Ice::CommunicatorI::addObjectFactory(const ObjectFactoryPtr& factory, const string& id)
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     _instance->servantFactoryManager()->add(factory, id);
 }
 
 void
 Ice::CommunicatorI::removeObjectFactory(const string& id)
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     _instance->servantFactoryManager()->remove(id);
 }
 
 ObjectFactoryPtr
 Ice::CommunicatorI::findObjectFactory(const string& id) const
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     return _instance->servantFactoryManager()->find(id);
 }
 
 PropertiesPtr
 Ice::CommunicatorI::getProperties() const
 {
-    //
-    // No check for destruction. It must be possible to access the
-    // properties after destruction.
-    //
     return _instance->properties();
 }
 
 LoggerPtr
 Ice::CommunicatorI::getLogger() const
 {
-    //
-    // No check for destruction. It must be possible to access the
-    // logger after destruction.
-    //
     return _instance->logger();
 }
 
 void
 Ice::CommunicatorI::setLogger(const LoggerPtr& logger)
 {
-    //
-    // No check for destruction. It must be possible to set the logger
-    // after destruction (needed by logger plugins for example to
-    // unset the logger).
-    //
     _instance->logger(logger);
 }
 
 StatsPtr
 Ice::CommunicatorI::getStats() const
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     return _instance->stats();
 }
 
 void
 Ice::CommunicatorI::setStats(const StatsPtr& stats)
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     _instance->stats(stats);
 }
 
 RouterPrx
 Ice::CommunicatorI::getDefaultRouter() const
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     return _instance->referenceFactory()->getDefaultRouter();
 }
 
 void
 Ice::CommunicatorI::setDefaultRouter(const RouterPrx& router)
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     _instance->referenceFactory()->setDefaultRouter(router);
 }
 
 LocatorPrx
 Ice::CommunicatorI::getDefaultLocator() const
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     return _instance->referenceFactory()->getDefaultLocator();
 }
 
 void
 Ice::CommunicatorI::setDefaultLocator(const LocatorPrx& locator)
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     _instance->referenceFactory()->setDefaultLocator(locator);
 }
 
 void
 Ice::CommunicatorI::setDefaultContext(const Context& ctx)
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     _instance->setDefaultContext(ctx);
 }
 
 Ice::Context
 Ice::CommunicatorI::getDefaultContext() const
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     return _instance->getDefaultContext();
 }
 
 PluginManagerPtr
 Ice::CommunicatorI::getPluginManager() const
 {
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
     return _instance->pluginManager();
 }
 
@@ -380,20 +239,19 @@ Ice::CommunicatorI::flushBatchRequests()
     _instance->flushBatchRequests();
 }
 
-Ice::CommunicatorI::CommunicatorI(const PropertiesPtr& properties) :
-    _destroyed(false)
+Ice::CommunicatorI::CommunicatorI(const PropertiesPtr& properties, const LoggerPtr& logger)
 {
     __setNoDelete(true);
     try
     {
-	_instance = new Instance(this, properties);
+	const_cast<InstancePtr&>(_instance) = new Instance(this, properties, logger);
 
         //
         // Keep a reference to the dynamic library list to ensure
         // the libraries are not unloaded until this Communicator's
         // destructor is invoked.
         //
-        _dynamicLibraryList = _instance->dynamicLibraryList();
+	const_cast<DynamicLibraryListPtr&>(_dynamicLibraryList) = _instance->dynamicLibraryList();
     }
     catch(...)
     {
@@ -422,7 +280,7 @@ Ice::CommunicatorI::CommunicatorI(const PropertiesPtr& properties) :
 	}
 	if(++communicatorCount == 1)
 	{
-	    theCollector = new IceUtil::GC(gcInterval, printGCStats);
+	    theCollector = new IceInternal::GC(gcInterval, printGCStats);
 	    if(gcInterval > 0)
 	    {
 		theCollector->start();
@@ -433,7 +291,7 @@ Ice::CommunicatorI::CommunicatorI(const PropertiesPtr& properties) :
 
 Ice::CommunicatorI::~CommunicatorI()
 {
-    if(!_destroyed)
+    if(!_instance->destroyed())
     {
 	Warning out(_instance->logger());
 	out << "Ice::Communicator::destroy() has not been called";
@@ -456,5 +314,13 @@ Ice::CommunicatorI::~CommunicatorI()
 void
 Ice::CommunicatorI::finishSetup(int& argc, char* argv[])
 {
-    _instance->finishSetup(argc, argv);
+    try
+    {
+	_instance->finishSetup(argc, argv);
+    }
+    catch(...)
+    {
+	_instance->destroy();
+	throw;
+    }
 }

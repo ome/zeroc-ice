@@ -26,8 +26,8 @@ Third-party libraries
 
 Ice has dependencies on a number of third-party libraries:
 
-- Berkeley DB 4.2.52 or 4.3.27 with C++ support enabled, and built
-  with a C++ compiler compatible with the one you are using.
+- Berkeley DB 4.3.29 with C++ support enabled, and built with a C++
+  compiler compatible with the one you are using.
 
   You can download the Berkeley DB source distribution from
   http://www.sleepycat.com/download
@@ -45,11 +45,6 @@ Ice has dependencies on a number of third-party libraries:
   (plus --prefix=<dir> and/or --enable-java if you like)
   $ gmake
 
-  Note that Ice for Java is not compatible with version 4.3, therefore
-  if you intend to use Ice for Java with Berkeley DB, you must use
-  version 4.2.52 and obtain a Berkeley DB patch (see INSTALL in your
-  IceJ distribution).
- 
 - OpenSSL
 
   For 32 bit builds, we recommend openssl-0.9.6m-2 from the "AIX
@@ -102,11 +97,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ gunzip -c Ice-2.1.1.tar.gz | tar xvf -
+$ gunzip -c Ice-3.0.0.tar.gz | tar xvf -
 
-Change the working directory to Ice-2.1.1:
+Change the working directory to Ice-3.0.0:
 
-$ cd Ice-2.1.1
+$ cd Ice-3.0.0
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular

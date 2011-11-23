@@ -627,9 +627,9 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
             }
         }
 
-        _out << sp << nl << "def checkedCast(proxy, facet='', _ctx=None):";
+        _out << sp << nl << "def checkedCast(proxy, facetOrCtx=None, _ctx=None):";
         _out.inc();
-        _out << nl << "return _M_" << abs << "Prx.ice_checkedCast(proxy, '" << scoped << "', facet, _ctx)";
+        _out << nl << "return _M_" << abs << "Prx.ice_checkedCast(proxy, '" << scoped << "', facetOrCtx, _ctx)";
         _out.dec();
         _out << nl << "checkedCast = staticmethod(checkedCast)";
 
@@ -1235,8 +1235,7 @@ Slice::Python::CodeVisitor::visitConst(const ConstPtr& p)
         case Slice::Builtin::KindLong:
         {
             IceUtil::Int64 l;
-            string::size_type pos;
-            IceUtil::stringToInt64(value, l, pos);
+            IceUtil::stringToInt64(value, l);
             //
             // The platform's 'long' type may not be 64 bits, so we store 64-bit
             // values as a string.
@@ -1261,14 +1260,10 @@ Slice::Python::CodeVisitor::visitConst(const ConstPtr& p)
             static const string basicSourceChars = "abcdefghijklmnopqrstuvwxyz"
                                                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                                    "0123456789"
-                                                   "_{}[]#()<>%:;,?*+=/^&|~!=, '";
+                                                   "_{}[]#()<>%:;.?*+-/^&|~!=, '";
             static const set<char> charSet(basicSourceChars.begin(), basicSourceChars.end());
 
             _out << "\"";                                       // Opening "
-
-            ios_base::fmtflags originalFlags = _out.flags();    // Save stream state
-            streamsize originalWidth = _out.width();
-            ostream::char_type originalFill = _out.fill();
 
             for(string::const_iterator c = value.begin(); c != value.end(); ++c)
             {
@@ -1314,11 +1309,13 @@ Slice::Python::CodeVisitor::visitConst(const ConstPtr& p)
                     if(charSet.find(*c) == charSet.end())
                     {
                         unsigned char uc = *c;                  // Char may be signed, so make it positive.
-                        _out << "\\";                           // Print as octal if not in basic source character set.
-                        _out.flags(ios_base::oct);
-                        _out.width(3);
-                        _out.fill('0');
-                        _out << static_cast<unsigned>(uc);
+			stringstream s;
+                        s << "\\";                              // Print as octal if not in basic source character set.
+                        s.flags(ios_base::oct);
+                        s.width(3);
+                        s.fill('0');
+                        s << static_cast<unsigned>(uc);
+			_out << s.str();
                     }
                     else
                     {
@@ -1328,10 +1325,6 @@ Slice::Python::CodeVisitor::visitConst(const ConstPtr& p)
                 }
                 }
             }
-
-            _out.fill(originalFill);                            // Restore stream state
-            _out.width(originalWidth);
-            _out.flags(originalFlags);
 
             _out << "\"";                                       // Closing "
             break;

@@ -11,20 +11,20 @@
 #define ICE_OBJECT_ADAPTER_FACTORY_H
 
 #include <Ice/ObjectAdapterI.h>
-#include <IceUtil/Mutex.h>
+#include <IceUtil/RecMutex.h>
 #include <IceUtil/Monitor.h>
 
 namespace IceInternal
 {
 
-class ObjectAdapterFactory : public ::IceUtil::Shared, public ::IceUtil::Monitor< ::IceUtil::Mutex>
+class ObjectAdapterFactory : public ::IceUtil::Shared, public ::IceUtil::Monitor< ::IceUtil::RecMutex>
 {
 public:
 
     void shutdown();
     void waitForShutdown();
 
-    ::Ice::ObjectAdapterPtr createObjectAdapter(const std::string&);
+    ::Ice::ObjectAdapterPtr createObjectAdapter(const std::string&, const std::string&);
     ::Ice::ObjectAdapterPtr findObjectAdapter(const ::Ice::ObjectPrx&);
     void flushBatchRequests() const;
 

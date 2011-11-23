@@ -20,23 +20,25 @@ usage(const char* n)
     cerr << "Usage: " << n << " [options] slice-files...\n";
     cerr <<	
         "Options:\n"
-        "-h, --help           Show this message.\n"
-        "-v, --version        Display the Ice version.\n"
-        "--header-ext EXT     Use EXT instead of the default `h' extension.\n"
-        "--source-ext EXT     Use EXT instead of the default `cpp' extension.\n"
-        "-DNAME               Define NAME as 1.\n"
-        "-DNAME=DEF           Define NAME as DEF.\n"
-        "-UNAME               Remove any definition for NAME.\n"
-        "-IDIR                Put DIR in the include file search path.\n"
-        "--include-dir DIR    Use DIR as the header include directory in source files.\n"
-        "--output-dir DIR     Create files in the directory DIR.\n"
-        "--dll-export SYMBOL  Use SYMBOL for DLL exports.\n"
-        "--impl               Generate sample implementations.\n"
-        "--depend             Generate Makefile dependencies.\n"
-        "-d, --debug          Print debug messages.\n"
-        "--ice                Permit `Ice' prefix (for building Ice source code only)\n"
-        "--checksum           Generate checksums for Slice definitions.\n"
-        "--stream             Generate marshaling support for public stream API.\n"
+        "-h, --help               Show this message.\n"
+        "-v, --version            Display the Ice version.\n"
+        "--header-ext EXT         Use EXT instead of the default `h' extension.\n"
+        "--source-ext EXT         Use EXT instead of the default `cpp' extension.\n"
+	"--add-header HDR[,GUARD] Add #include for HDR (with guard GUARD) to generated source file.\n"
+        "-DNAME                   Define NAME as 1.\n"
+        "-DNAME=DEF               Define NAME as DEF.\n"
+        "-UNAME                   Remove any definition for NAME.\n"
+        "-IDIR                    Put DIR in the include file search path.\n"
+	"-E                       Print preprocessor output on stdout.\n"
+        "--include-dir DIR        Use DIR as the header include directory in source files.\n"
+        "--output-dir DIR         Create files in the directory DIR.\n"
+        "--dll-export SYMBOL      Use SYMBOL for DLL exports.\n"
+        "--impl                   Generate sample implementations.\n"
+        "--depend                 Generate Makefile dependencies.\n"
+        "-d, --debug              Print debug messages.\n"
+        "--ice                    Permit `Ice' prefix (for building Ice source code only)\n"
+        "--checksum               Generate checksums for Slice definitions.\n"
+        "--stream                 Generate marshaling support for public stream API.\n"
         ;
     // Note: --case-sensitive is intentionally not shown here!
 }
@@ -46,6 +48,7 @@ main(int argc, char* argv[])
 {
     string cppArgs;
     vector<string> includePaths;
+    bool preprocess;
     string include;
     string output;
     string dllExport;
@@ -62,9 +65,11 @@ main(int argc, char* argv[])
     opts.addOpt("v", "version");
     opts.addOpt("", "header-ext", IceUtil::Options::NeedArg, "h");
     opts.addOpt("", "source-ext", IceUtil::Options::NeedArg, "cpp");
+    opts.addOpt("", "add-header", IceUtil::Options::NeedArg, "", IceUtil::Options::Repeat);
     opts.addOpt("D", "", IceUtil::Options::NeedArg, "", IceUtil::Options::Repeat);
     opts.addOpt("U", "", IceUtil::Options::NeedArg, "", IceUtil::Options::Repeat);
     opts.addOpt("I", "", IceUtil::Options::NeedArg, "", IceUtil::Options::Repeat);
+    opts.addOpt("E");
     opts.addOpt("", "include-dir", IceUtil::Options::NeedArg);
     opts.addOpt("", "output-dir", IceUtil::Options::NeedArg);
     opts.addOpt("", "dll-export", IceUtil::Options::NeedArg);
@@ -101,6 +106,8 @@ main(int argc, char* argv[])
 
     string headerExtension = opts.optArg("header-ext");
     string sourceExtension = opts.optArg("source-ext");
+    
+    vector<string> extraHeaders = opts.argVec("add-header");
 
     if(opts.isSet("D"))
     {
@@ -126,6 +133,7 @@ main(int argc, char* argv[])
 	    cppArgs += " -I" + *i;
 	}
     }
+    preprocess = opts.isSet("E");
     if(opts.isSet("include-dir"))
     {
 	include = opts.optArg("include-dir");
@@ -171,33 +179,51 @@ main(int argc, char* argv[])
 	    {
 		return EXIT_FAILURE;
 	    }
-	
-	    UnitPtr u = Unit::createUnit(false, false, ice, caseSensitive);
-	    int parseStatus = u->parse(cppHandle, debug, false);
-	
-	    if(!icecpp.close())
-	    {
-		u->destroy();
-		return EXIT_FAILURE;
-	    }
 
-	    if(parseStatus == EXIT_FAILURE)
+	    if(preprocess)
 	    {
-		status = EXIT_FAILURE;
+	        char buf[4096];
+		while(fgets(buf, sizeof(buf), cppHandle) != NULL)
+		{
+		    if(fputs(buf, stdout) == EOF)
+		    {
+		        return EXIT_FAILURE;
+		    }
+		}
+		if(!icecpp.close())
+		{
+		    return EXIT_FAILURE;
+		}
 	    }
 	    else
 	    {
-		Gen gen(argv[0], icecpp.getBaseName(), headerExtension, sourceExtension, include,
-			includePaths, dllExport, output, impl, checksum, stream);
-		if(!gen)
+		UnitPtr u = Unit::createUnit(false, false, ice, caseSensitive);
+		int parseStatus = u->parse(cppHandle, debug);
+	    
+		if(!icecpp.close())
 		{
 		    u->destroy();
 		    return EXIT_FAILURE;
 		}
-		gen.generate(u);
-	    }
 
-	    u->destroy();
+		if(parseStatus == EXIT_FAILURE)
+		{
+		    status = EXIT_FAILURE;
+		}
+		else
+		{
+		    Gen gen(argv[0], icecpp.getBaseName(), headerExtension, sourceExtension, extraHeaders, include,
+			    includePaths, dllExport, output, impl, checksum, stream);
+		    if(!gen)
+		    {
+			u->destroy();
+			return EXIT_FAILURE;
+		    }
+		    gen.generate(u);
+		}
+
+		u->destroy();
+	    }
 	}
     }
 

@@ -22,6 +22,8 @@ SUBDIRS		= IceUtil \
 		  slice2docbook \
 		  slice2java \
 		  slice2py \
+		  slice2cppe \
+		  slice2javae \
 		  Ice \
 		  IceXML \
 		  IceSSL \
@@ -29,13 +31,16 @@ SUBDIRS		= IceUtil \
 		  FreezeScript \
 		  IceBox \
 		  IceStorm \
-		  IcePack \
 		  Glacier2 \
-		  IcePatch2
+		  IcePatch2 \
+		  IceGrid
 
 $(EVERYTHING)::
 	@for subdir in $(SUBDIRS); \
 	do \
-	    echo "making $@ in $$subdir"; \
-	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
+	    if test -d $$subdir ; \
+	    then \
+		echo "making $@ in $$subdir"; \
+		( cd $$subdir && $(MAKE) $@ ) || exit 1; \
+	    fi; \
 	done

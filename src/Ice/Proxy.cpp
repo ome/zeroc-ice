@@ -15,7 +15,7 @@
 #include <Ice/OutgoingAsync.h>
 #include <Ice/Direct.h>
 #include <Ice/Reference.h>
-#include <Ice/Endpoint.h>
+#include <Ice/EndpointI.h>
 #include <Ice/Instance.h>
 #include <Ice/RouterInfo.h>
 #include <Ice/LocatorInfo.h>
@@ -131,6 +131,18 @@ Int
 IceProxy::Ice::Object::ice_hash() const
 {
     return _reference->hash();
+}
+
+CommunicatorPtr
+IceProxy::Ice::Object::ice_communicator() const
+{
+    return _reference->getCommunicator();
+}
+
+string
+IceProxy::Ice::Object::ice_toString() const
+{
+    return _reference->toString();
 }
 
 bool
@@ -321,31 +333,17 @@ IceProxy::Ice::Object::ice_getContext() const
 ObjectPrx
 IceProxy::Ice::Object::ice_newContext(const Context& newContext) const
 {
-    if(_reference->hasContext() && newContext == _reference->getContext())
-    {
-	return ObjectPrx(const_cast< ::IceProxy::Ice::Object*>(this));
-    }
-    else
-    {
-	ObjectPrx proxy(new ::IceProxy::Ice::Object());
-	proxy->setup(_reference->changeContext(newContext));
-	return proxy;
-    }
+    ObjectPrx proxy(new ::IceProxy::Ice::Object());
+    proxy->setup(_reference->changeContext(newContext));
+    return proxy;
 }
 
 ObjectPrx
 IceProxy::Ice::Object::ice_defaultContext() const
 {
-    if(!_reference->hasContext())
-    {
-	return ObjectPrx(const_cast< ::IceProxy::Ice::Object*>(this));
-    }
-    else
-    {
-	ObjectPrx proxy(new ::IceProxy::Ice::Object());
-	proxy->setup(_reference->defaultContext());
-	return proxy;
-    }
+    ObjectPrx proxy(new ::IceProxy::Ice::Object());
+    proxy->setup(_reference->defaultContext());
+    return proxy;
 }
 
 Identity
@@ -365,6 +363,60 @@ IceProxy::Ice::Object::ice_newIdentity(const Identity& newIdentity) const
     {
 	ObjectPrx proxy(new ::IceProxy::Ice::Object());
 	proxy->setup(_reference->changeIdentity(newIdentity));
+	return proxy;
+    }
+}
+
+string
+IceProxy::Ice::Object::ice_getAdapterId() const
+{
+    return _reference->getAdapterId();
+}
+
+ObjectPrx
+IceProxy::Ice::Object::ice_newAdapterId(const string& newAdapterId) const
+{
+    if(newAdapterId == _reference->getAdapterId())
+    {
+	return ObjectPrx(const_cast< ::IceProxy::Ice::Object*>(this));
+    }
+    else
+    {
+	ObjectPrx proxy(new ::IceProxy::Ice::Object());
+	proxy->setup(_reference->changeAdapterId(newAdapterId));
+	return proxy;
+    }
+}
+
+EndpointSeq
+IceProxy::Ice::Object::ice_getEndpoints() const
+{
+    vector<EndpointIPtr> endpoints = _reference->getEndpoints();
+    EndpointSeq retSeq;
+    for(vector<EndpointIPtr>::const_iterator p = endpoints.begin(); p != endpoints.end(); ++p)
+    {
+	retSeq.push_back(EndpointPtr::dynamicCast(*p));
+    }
+    return retSeq;
+}
+
+ObjectPrx
+IceProxy::Ice::Object::ice_newEndpoints(const EndpointSeq& newEndpoints) const
+{
+    vector<EndpointIPtr> endpoints;
+    for(EndpointSeq::const_iterator p = newEndpoints.begin(); p != newEndpoints.end(); ++p)
+    {
+	endpoints.push_back(EndpointIPtr::dynamicCast(*p));
+    }
+
+    if(endpoints == _reference->getEndpoints())
+    {
+	return ObjectPrx(const_cast< ::IceProxy::Ice::Object*>(this));
+    }
+    else
+    {
+	ObjectPrx proxy(new ::IceProxy::Ice::Object());
+	proxy->setup(_reference->changeEndpoints(endpoints));
 	return proxy;
     }
 }
@@ -597,11 +649,9 @@ IceProxy::Ice::Object::ice_collocationOptimization(bool b) const
 }
 
 ObjectPrx
-IceProxy::Ice::Object::ice_default() const
+IceProxy::Ice::Object::ice_connectionId(const string& id) const
 {
-    ReferencePtr ref = _reference->changeDefault();
-    ref = ref->changeDefault();
-
+    ReferencePtr ref = _reference->changeConnectionId(id);
     if(ref == _reference)
     {
 	return ObjectPrx(const_cast< ::IceProxy::Ice::Object*>(this));
@@ -732,6 +782,12 @@ IceProxy::Ice::Object::__checkTwowayOnly(const char* name) const
     }
 }
 
+ostream&
+operator<<(ostream& os, const ::IceProxy::Ice::Object& p)
+{
+    return os << p.ice_toString();
+}
+
 Handle< ::IceDelegate::Ice::Object>
 IceProxy::Ice::Object::__getDelegate()
 {
@@ -812,22 +868,37 @@ bool
 IceDelegateM::Ice::Object::ice_isA(const string& __id, const Context& __context)
 {
     static const string __operation("ice_isA");
-    Outgoing __outS(__connection.get(), __reference.get(), __operation, ::Ice::Nonmutating, __context, __compress);
-    BasicStream* __is = __outS.is();
-    BasicStream* __os = __outS.os();
-    __os->write(__id);
-    bool __ret;
+    Outgoing __og(__connection.get(), __reference.get(), __operation, ::Ice::Nonmutating, __context, __compress);
     try
     {
-	if(!__outS.invoke())
+	BasicStream* __os = __og.os();
+	__os->write(__id);
+    }
+    catch(const ::Ice::LocalException& __ex)
+    {
+	__og.abort(__ex);
+    }
+    bool __ret;
+    bool __ok = __og.invoke();
+    try
+    {
+	BasicStream* __is = __og.is();
+	if(!__ok)
 	{
-	    __is->throwException();
+	    try
+	    {
+		__is->throwException();
+	    }
+	    catch(const ::Ice::UserException& __ex)
+	    {
+		throw ::Ice::UnknownUserException(__FILE__, __LINE__, __ex.ice_name());
+	    }
 	}
         __is->read(__ret);
     }
     catch(const ::Ice::LocalException& __ex)
     {
-        throw ::IceInternal::NonRepeatable(__ex);
+	throw ::IceInternal::NonRepeatable(__ex);
     }
     return __ret;
 }
@@ -836,18 +907,26 @@ void
 IceDelegateM::Ice::Object::ice_ping(const Context& __context)
 {
     static const string __operation("ice_ping");
-    Outgoing __outS(__connection.get(), __reference.get(), __operation, ::Ice::Nonmutating, __context, __compress);
-    BasicStream* __is = __outS.is();
+    Outgoing __og(__connection.get(), __reference.get(), __operation, ::Ice::Nonmutating, __context, __compress);
+    bool __ok = __og.invoke();
     try
     {
-	if(!__outS.invoke())
+	BasicStream* __is = __og.is();
+	if(!__ok)
 	{
-	    __is->throwException();
+	    try
+	    {
+		__is->throwException();
+	    }
+	    catch(const ::Ice::UserException& __ex)
+	    {
+		throw ::Ice::UnknownUserException(__FILE__, __LINE__, __ex.ice_name());
+	    }
 	}
     }
     catch(const ::Ice::LocalException& __ex)
     {
-        throw ::IceInternal::NonRepeatable(__ex);
+	throw ::IceInternal::NonRepeatable(__ex);
     }
 }
 
@@ -855,20 +934,28 @@ vector<string>
 IceDelegateM::Ice::Object::ice_ids(const Context& __context)
 {
     static const string __operation("ice_ids");
-    Outgoing __outS(__connection.get(), __reference.get(), __operation, ::Ice::Nonmutating, __context, __compress);
-    BasicStream* __is = __outS.is();
+    Outgoing __og(__connection.get(), __reference.get(), __operation, ::Ice::Nonmutating, __context, __compress);
     vector<string> __ret;
+    bool __ok = __og.invoke();
     try
     {
-	if(!__outS.invoke())
+	BasicStream* __is = __og.is();
+	if(!__ok)
 	{
-	    __is->throwException();
+	    try
+	    {
+		__is->throwException();
+	    }
+	    catch(const ::Ice::UserException& __ex)
+	    {
+		throw ::Ice::UnknownUserException(__FILE__, __LINE__, __ex.ice_name());
+	    }
 	}
-        __is->read(__ret);
+	__is->read(__ret);
     }
     catch(const ::Ice::LocalException& __ex)
     {
-        throw ::IceInternal::NonRepeatable(__ex);
+	throw ::IceInternal::NonRepeatable(__ex);
     }
     return __ret;
 }
@@ -877,20 +964,28 @@ string
 IceDelegateM::Ice::Object::ice_id(const Context& __context)
 {
     static const string __operation("ice_id");
-    Outgoing __outS(__connection.get(), __reference.get(), __operation, ::Ice::Nonmutating, __context, __compress);
-    BasicStream* __is = __outS.is();
+    Outgoing __og(__connection.get(), __reference.get(), __operation, ::Ice::Nonmutating, __context, __compress);
     string __ret;
+    bool __ok = __og.invoke();
     try
     {
-	if(!__outS.invoke())
+	BasicStream* __is = __og.is();
+	if(!__ok)
 	{
-	    __is->throwException();
+	    try
+	    {
+		__is->throwException();
+	    }
+	    catch(const ::Ice::UserException& __ex)
+	    {
+		throw ::Ice::UnknownUserException(__FILE__, __LINE__, __ex.ice_name());
+	    }
 	}
-        __is->read(__ret);
+	__is->read(__ret);
     }
     catch(const ::Ice::LocalException& __ex)
     {
-        throw ::IceInternal::NonRepeatable(__ex);
+	throw ::IceInternal::NonRepeatable(__ex);
     }
     return __ret;
 }
@@ -902,15 +997,22 @@ IceDelegateM::Ice::Object::ice_invoke(const string& operation,
 				      vector<Byte>& outParams,
 				      const Context& context)
 {
-    Outgoing __outS(__connection.get(), __reference.get(), operation, mode, context, __compress);
-    BasicStream* __os = __outS.os();
-    __os->writeBlob(inParams);
-    bool ok = __outS.invoke();
+    Outgoing __og(__connection.get(), __reference.get(), operation, mode, context, __compress);
+    try
+    {
+	BasicStream* __os = __og.os();
+	__os->writeBlob(inParams);
+    }
+    catch(const ::Ice::LocalException& __ex)
+    {
+	__og.abort(__ex);
+    }
+    bool ok = __og.invoke();
     if(__reference->getMode() == Reference::ModeTwoway)
     {
         try
         {
-            BasicStream* __is = __outS.is();
+            BasicStream* __is = __og.is();
             Int sz = __is->getReadEncapsSize();
             __is->readBlob(outParams, sz);
         }

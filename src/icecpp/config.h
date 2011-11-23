@@ -12,8 +12,9 @@
 // configure script from the gcc-2.8.1 distribution.
 //
 
-#if defined(__linux) || defined(__FreeBSD__) || defined(__sun) || defined(__hpux) || defined(__APPLE__) || defined(_AIX)
-#   define HAVE_INTTYPES_H 1
+#if defined(__linux) || defined(__FreeBSD__) \
+    || defined(__sun) || defined(__hpux) || defined(__APPLE__) \
+    || defined(_AIX) || defined(__osf1__)
 #   define TIME_WITH_SYS_TIME 1
 #   define HAVE_BCMP 1
 #   define HAVE_BCOPY 1
@@ -25,16 +26,30 @@
 #elif defined(_WIN32)
 #   include <malloc.h>
 #   include <io.h>
-#   pragma warning( disable : 4018 )
-#   pragma warning( disable : 4244 )
+#   ifdef _MSC_VER
+#       pragma warning( disable : 4018 )
+#       pragma warning( disable : 4244 )
+//
+//
+//     TEMPORARY: move deprecated warning on VC8 to level 4
+#      if _MSC_VER==1400
+#         pragma warning( 4 : 4996 )
+#         pragma warning( 4 : 4267 )   
+#      endif
+#   endif
 #   define alloca _alloca
+#endif
+
+#if defined(__linux) || defined(__FreeBSD__) || defined(__sun) || \
+    defined(__hpux) || defined(__APPLE__) || defined(_AIX)
+#   define HAVE_INTTYPES_H 1
 #endif
 
 #if defined(__hpux) || defined(_AIX)
 #include <alloca.h>
 #endif
 
-#if defined(__sun)
+#if defined(__sun) || defined(__osf1__)
 #include <alloca.h>
 #include <malloc.h>
 #include <strings.h>
@@ -56,8 +71,10 @@
 #define LONG_TYPE_SIZE 4
 #if defined(_WIN32)
 #   define WCHAR_TYPE_SIZE 2
-#elif (defined(__linux) || defined(__FreeBSD__)) && (defined(__i386) || defined(__x86_64) || defined(__sparc)) \
-      || defined (__sun) || defined(__hpux) || defined(__APPLE__) || defined(_AIX)
+#elif (defined(__linux) || defined(__FreeBSD__)) && \
+      (defined(__i386) || defined(__x86_64) || defined(__sparc)) || \
+       defined (__sun) || defined(__hpux) || defined(__APPLE__) || \
+       defined(_AIX) || defined(__osf1__)
 #   define WCHAR_TYPE_SIZE 4
 #else
 #   error "unsupported operating system or platform"

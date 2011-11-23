@@ -27,6 +27,7 @@ usage(const char* n)
         "-DNAME=DEF           Define NAME as DEF.\n"
         "-UNAME               Remove any definition for NAME.\n"
         "-IDIR                Put DIR in the include file search path.\n"
+	"-E                   Print preprocessor output on stdout.\n"
         "-s, --stand-alone    Create stand-alone docbook file.\n"
         "--no-globals         Don't document the global module.\n"
         "--chapter            Use \"chapter\" instead of \"section\" as\n"
@@ -42,6 +43,7 @@ int
 main(int argc, char* argv[])
 {
     string cppArgs;
+    bool preprocess;
     bool standAlone;
     bool noGlobals;
     bool chapter;
@@ -56,6 +58,7 @@ main(int argc, char* argv[])
     opts.addOpt("D", "", IceUtil::Options::NeedArg, "", IceUtil::Options::Repeat);
     opts.addOpt("U", "", IceUtil::Options::NeedArg, "", IceUtil::Options::Repeat);
     opts.addOpt("I", "", IceUtil::Options::NeedArg, "", IceUtil::Options::Repeat);
+    opts.addOpt("E");
     opts.addOpt("s", "stand-alone");
     opts.addOpt("", "no-globals");
     opts.addOpt("", "chapter");
@@ -110,6 +113,7 @@ main(int argc, char* argv[])
 	    cppArgs += " -I" + *i;
 	}
     }
+    preprocess = opts.isSet("E");
     standAlone = opts.isSet("s") || opts.isSet("stand-alone");
     noGlobals = opts.isSet("no-globals");
     chapter = opts.isSet("chapter");
@@ -160,8 +164,22 @@ main(int argc, char* argv[])
 	    p->destroy();
 	    return EXIT_FAILURE;
 	}
-	
-	status = p->parse(cppHandle, debug, false);
+	if(preprocess)
+	{
+	    char buf[4096];
+	    while(fgets(buf, sizeof(buf), cppHandle) != NULL)
+	    {
+		if(fputs(buf, stdout) == EOF)
+		{
+		    p->destroy();
+		    return EXIT_FAILURE;
+		}
+	    }
+	}
+	else
+	{
+	    status = p->parse(cppHandle, debug);
+	}
 
 	if(!icecpp.close())
 	{
@@ -170,7 +188,7 @@ main(int argc, char* argv[])
 	}
     }
 
-    if(status == EXIT_SUCCESS)
+    if(status == EXIT_SUCCESS && !preprocess)
     {
 	Gen gen(argv[0], docbook, standAlone, noGlobals, chapter, noIndex);
 	if(!gen)

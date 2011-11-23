@@ -39,7 +39,7 @@ sequence<string> StringSeq;
 
 /** A sequence of objects. **/
 sequence<Object> ObjectSeq;
-
+    
 /** A sequence of object proxies. **/
 sequence<Object*> ObjectProxySeq;
 

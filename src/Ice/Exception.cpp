@@ -29,6 +29,22 @@ Ice::LocalException::LocalException(const char* file, int line) :
 {
 }
 
+#if defined(__SUNPRO_CC)
+ostream&
+Ice::operator<<(ostream& out, const Ice::UserException& ex)
+{
+    ex.ice_print(out);
+    return out;
+}
+
+ostream&
+Ice::operator<<(ostream& out, const Ice::LocalException& ex)
+{
+    ex.ice_print(out);
+    return out;
+}
+#endif
+
 void
 Ice::InitializationException::ice_print(ostream& out) const
 {
@@ -194,6 +210,17 @@ Ice::SocketException::ice_print(ostream& out) const
 }
 
 void
+Ice::FileException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\nfile exception: " << errorToString(error);
+    if(!path.empty())
+    {
+	out << "\npath: " << path;
+    }
+}
+
+void
 Ice::ConnectFailedException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
@@ -344,24 +371,10 @@ Ice::ForcedCloseConnectionException::ice_print(ostream& out) const
 }
 
 void
-Ice::AbortBatchRequestException::ice_print(ostream& out) const
-{
-    Exception::ice_print(out);
-    out << ":\nprotocol error: batch request was aborted";
-}
-
-void
 Ice::IllegalMessageSizeException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: illegal message size";
-}
-
-void
-Ice::CompressionNotSupportedException::ice_print(ostream& out) const
-{
-    Exception::ice_print(out);
-    out << ":\nprotocol error: compressed messages not supported";
 }
 
 void
@@ -479,4 +492,18 @@ Ice::TwowayOnlyException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\n operation `" << operation << "' can only be invoked as a twoway request";
+}
+
+void
+Ice::CloneNotImplementedException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\n ice_clone() must be implemented in classes derived from abstract base classes";
+}
+
+void
+Ice::FeatureNotSupportedException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\nfeature `" << unsupportedFeature << "' is not supported.";
 }

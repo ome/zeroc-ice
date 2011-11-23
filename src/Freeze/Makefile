@@ -32,6 +32,7 @@ OBJS		= CatalogData.o \
                   Index.o \
 	  	  MapI.o \
                   ObjectStore.o \
+		  PingObject.o \
                   SharedDbEnv.o \
                   SharedDb.o \
                   TransactionHolder.o \
@@ -49,7 +50,8 @@ SLICE_SRCS	= $(SDIR)/DB.ice \
 		  $(SDIR)/EvictorF.ice \
 		  $(SDIR)/EvictorStorage.ice \
 		  $(SDIR)/Evictor.ice \
-                  $(SDIR)/Transaction.ice
+                  $(SDIR)/Transaction.ice \
+		  PingObject.ice
 
 HDIR		= $(includedir)/Freeze
 SDIR		= $(slicedir)/Freeze

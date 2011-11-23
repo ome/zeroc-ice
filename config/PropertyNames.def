@@ -23,7 +23,10 @@
 #
 # The file is organized into labelled sections. The label for a
 # section must be an identifier followed by a colon, such as
-# "ice:". Section labels must appear on a line by themselves (possibly
+# "ice:". The section label is optionally followed by a boolean
+# which is used to determine whether command line processing is
+# done on this section by default. The default is true.
+# Section labels must appear on a line by themselves (possibly
 # followed by a comment).  Leading and trailing whitespace is
 # ignored. Each section must occur only once in a file. "validProps"
 # is reserved and cannot be used as a section name.
@@ -106,8 +109,9 @@ Ice:
     ACM.Client
     ACM.Server
     ChangeUser
+    Compression.Level
     Config
-    ConnectionIdleTime
+    Default.CollocationOptimization
     Default.Host
     Default.Locator
     Default.Package
@@ -156,13 +160,16 @@ Ice:
     Warn.Connections
     Warn.Datagrams
     Warn.Dispatch
+    Warn.Endpoints
     Warn.Leaks
 
 IceBox:
+    InstanceName
     LoadOrder
     PrintServicesReady
     Service.<any>
     ServiceManager.AdapterId
+    ServiceManager.ReplicaGroupId
     ServiceManager.Endpoints
     ServiceManager.Identity
     ServiceManager.PublishedEndpoints
@@ -173,8 +180,12 @@ IceBox:
     ServiceManager.ThreadPool.StackSize
     UseSharedCommunicator.<any>
 
-IcePack:
+IceGrid:
+    AdminGUI.Endpoints
+    InstanceName
     Node.AdapterId
+    Node.ReplicaGroupId
+    Node.RegisterProcess
     Node.CollocateRegistry
     Node.Data
     Node.Endpoints
@@ -191,15 +202,19 @@ IcePack:
     Node.Trace.Activator
     Node.Trace.Adapter
     Node.Trace.Server
+    Node.Trace.Patch
     Node.WaitTime
     Registry.Admin.AdapterId
+    Registry.Admin.ReplicaGroupId
     Registry.Admin.Endpoints
     Registry.Admin.PublishedEndpoints
     Registry.Admin.ThreadPool.Size
     Registry.Admin.ThreadPool.SizeMax
     Registry.Admin.ThreadPool.SizeWarn
     Registry.Admin.ThreadPool.StackSize
+    Registry.AdminSessionTimeout
     Registry.Client.AdapterId
+    Registry.Client.ReplicaGroupId
     Registry.Client.Endpoints
     Registry.Client.PublishedEndpoints
     Registry.Client.ThreadPool.Size
@@ -207,26 +222,33 @@ IcePack:
     Registry.Client.ThreadPool.SizeWarn
     Registry.Client.ThreadPool.StackSize
     Registry.Data
+    Registry.DefaultTemplates
     Registry.DynamicRegistration
     Registry.Internal.AdapterId
+    Registry.Internal.ReplicaGroupId
     Registry.Internal.Endpoints
     Registry.Internal.PublishedEndpoints
     Registry.Internal.ThreadPool.Size
     Registry.Internal.ThreadPool.SizeMax
     Registry.Internal.ThreadPool.SizeWarn
     Registry.Internal.ThreadPool.StackSize
+    Registry.NodeSessionTimeout
     Registry.Server.AdapterId
+    Registry.Server.ReplicaGroupId
     Registry.Server.Endpoints
     Registry.Server.PublishedEndpoints
     Registry.Server.ThreadPool.Size
     Registry.Server.ThreadPool.SizeMax
     Registry.Server.ThreadPool.SizeWarn
     Registry.Server.ThreadPool.StackSize
-    Registry.Trace.AdapterRegistry
-    Registry.Trace.NodeRegistry
-    Registry.Trace.ObjectRegistry
-    Registry.Trace.ServerRegistry
-
+    Registry.Trace.Application
+    Registry.Trace.Adapter
+    Registry.Trace.Node
+    Registry.Trace.Object
+    Registry.Trace.Patch
+    Registry.Trace.Server
+    Registry.Trace.Session
+    
 IcePatch:
     BusyTimeout
     Directory
@@ -240,16 +262,21 @@ IcePatch:
 
 IcePatch2:
     AdapterId
+    ReplicaGroupId
     Admin.AdapterId
+    Admin.ReplicaGroupId
     Admin.Endpoints
     Admin.PublishedEndpoints
     Admin.ThreadPool.Size
     Admin.ThreadPool.SizeMax
     Admin.ThreadPool.SizeWarn
     Admin.ThreadPool.StackSize
+    AdminIdentity
     ChunkSize
     Directory
     Endpoints
+    Identity
+    InstanceName
     PublishedEndpoints
     Remove
     Thorough
@@ -258,10 +285,9 @@ IcePatch2:
     ThreadPool.SizeWarn
     ThreadPool.StackSize
 
-IceSSL:
+IceSSL: false
     Client.CertPath
     Client.Config
-    Client.Handshake.Retries
     Client.IgnoreValidPeriod
     Client.Overrides.CACertificate
     Client.Overrides.DSA.Certificate
@@ -295,7 +321,9 @@ IceSSL:
 
 IceStorm:
     Flush.Timeout
+    InstanceName
     Publish.AdapterId
+    Publish.ReplicaGroupId
     Publish.Endpoints
     Publish.PublishedEndpoints
     Publish.RegisterProcess
@@ -304,6 +332,7 @@ IceStorm:
     Publish.ThreadPool.SizeWarn
     Publish.ThreadPool.StackSize
     TopicManager.AdapterId
+    TopicManager.ReplicaGroupId
     TopicManager.Endpoints
     TopicManager.Proxy
     TopicManager.PublishedEndpoints
@@ -320,8 +349,10 @@ IceStorm:
 Glacier:
     Router.AcceptCert
     Router.AdapterId
+    Router.ReplicaGroupId
     Router.AllowCategories
     Router.Client.AdapterId
+    Router.Client.ReplicaGroupId
     Router.Client.Endpoints
     Router.Client.ForwardContext
     Router.Client.PublishedEndpoints
@@ -336,6 +367,7 @@ Glacier:
     Router.PrintProxyOnFd
     Router.PublishedEndpoints
     Router.Server.AdapterId
+    Router.Server.ReplicaGroupId
     Router.Server.Endpoints
     Router.Server.ForwardContext
     Router.Server.PublishedEndpoints
@@ -356,6 +388,7 @@ Glacier:
     Router.Trace.Throttle
     Router.UserId
     Starter.AdapterId
+    Starter.ReplicaGroupId
     Starter.AddUserToAllowCategories
     Starter.Certificate.BitStrength
     Starter.Certificate.CommonName
@@ -384,6 +417,7 @@ Glacier2:
     Admin.Endpoints
     AdminIdentity
     Admin.PublishedEndpoints
+    Admin.RegisterProcess
     AllowCategories
     Client.AlwaysBatch
     Client.Buffered
@@ -395,6 +429,7 @@ Glacier2:
     Client.Trace.Reject
     Client.Trace.Request
     CryptPasswords
+    InstanceName
     PermissionsVerifier
     RouterIdentity
     Server.AlwaysBatch
@@ -406,6 +441,7 @@ Glacier2:
     Server.Trace.Override
     Server.Trace.Request
     SessionManager
+    SessionManager.CloseCount
     SessionTimeout
     Trace.RoutingTable
     Trace.Session

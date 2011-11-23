@@ -19,7 +19,7 @@ ServerLocatorRegistry::ServerLocatorRegistry()
 
 void 
 ServerLocatorRegistry::setAdapterDirectProxy_async(const Ice::AMD_LocatorRegistry_setAdapterDirectProxyPtr& cb,
-						   const ::std::string& adapter, const ::Ice::ObjectPrx& object, 
+						   const std::string& adapter, const ::Ice::ObjectPrx& object, 
 						   const ::Ice::Current&)
 {
     _adapters[adapter] = object;
@@ -27,11 +27,25 @@ ServerLocatorRegistry::setAdapterDirectProxy_async(const Ice::AMD_LocatorRegistr
 }
 
 void 
+ServerLocatorRegistry::setReplicatedAdapterDirectProxy_async(
+    const Ice::AMD_LocatorRegistry_setReplicatedAdapterDirectProxyPtr& cb,
+    const std::string& adapter, const ::std::string&, const ::Ice::ObjectPrx& object, const ::Ice::Current&)
+{
+    _adapters[adapter] = object;
+    cb->ice_response();
+}
+
+void 
 ServerLocatorRegistry::setServerProcessProxy_async(const Ice::AMD_LocatorRegistry_setServerProcessProxyPtr& cb,
-						   const ::std::string&, const ::Ice::ProcessPrx&, 
-						   const ::Ice::Current&)
+						   const ::std::string&, const Ice::ProcessPrx&, const ::Ice::Current&)
 {
     cb->ice_response();
+}
+
+void
+ServerLocatorRegistry::addObject(const Ice::ObjectPrx& object, const ::Ice::Current&)
+{
+    addObject(object);
 }
 
 Ice::ObjectPrx

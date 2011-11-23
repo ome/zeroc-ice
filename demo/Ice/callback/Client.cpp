@@ -11,24 +11,27 @@
 #include <Callback.h>
 
 using namespace std;
-using namespace Ice;
 using namespace Demo;
 
 class CallbackReceiverI : public CallbackReceiver
 {
 public:
 
-    virtual void callback(const Current&)
+    virtual void callback(const Ice::Current&)
     {
 	cout << "received callback" << endl;
     }
 };
 
-class CallbackClient : public Application
+class CallbackClient : public Ice::Application
 {
 public:
 
     virtual int run(int, char*[]);
+
+private:
+
+    void menu();
 };
 
 int
@@ -38,27 +41,10 @@ main(int argc, char* argv[])
     return app.main(argc, argv, "config");
 }
 
-void
-menu()
-{
-    cout <<
-	"usage:\n"
-	"t: send callback as twoway\n"
-	"o: send callback as oneway\n"
-	"O: send callback as batch oneway\n"
-	"d: send callback as datagram\n"
-	"D: send callback as batch datagram\n"
-	"f: flush all batch requests\n"
-	"S: switch secure mode on/off\n"
-	"s: shutdown server\n"
-	"x: exit\n"
-	"?: help\n";
-}
-
 int
 CallbackClient::run(int argc, char* argv[])
 {
-    PropertiesPtr properties = communicator()->getProperties();
+    Ice::PropertiesPtr properties = communicator()->getProperties();
     const char* proxyProperty = "Callback.Client.CallbackServer";
     std::string proxy = properties->getProperty(proxyProperty);
     if(proxy.empty())
@@ -67,24 +53,24 @@ CallbackClient::run(int argc, char* argv[])
 	return EXIT_FAILURE;
     }
 
-    ObjectPrx base = communicator()->stringToProxy(proxy);
-    CallbackPrx twoway = CallbackPrx::checkedCast(base->ice_twoway()->ice_timeout(-1)->ice_secure(false));
+    CallbackSenderPrx twoway = CallbackSenderPrx::checkedCast(
+	communicator()->stringToProxy(proxy)->ice_twoway()->ice_timeout(-1)->ice_secure(false));
     if(!twoway)
     {
 	cerr << appName() << ": invalid proxy" << endl;
 	return EXIT_FAILURE;
     }
-    CallbackPrx oneway = CallbackPrx::uncheckedCast(twoway->ice_oneway());
-    CallbackPrx batchOneway = CallbackPrx::uncheckedCast(twoway->ice_batchOneway());
-    CallbackPrx datagram = CallbackPrx::uncheckedCast(twoway->ice_datagram());
-    CallbackPrx batchDatagram = CallbackPrx::uncheckedCast(twoway->ice_batchDatagram());
+    CallbackSenderPrx oneway = CallbackSenderPrx::uncheckedCast(twoway->ice_oneway());
+    CallbackSenderPrx batchOneway = CallbackSenderPrx::uncheckedCast(twoway->ice_batchOneway());
+    CallbackSenderPrx datagram = CallbackSenderPrx::uncheckedCast(twoway->ice_datagram());
+    CallbackSenderPrx batchDatagram = CallbackSenderPrx::uncheckedCast(twoway->ice_batchDatagram());
     
-    ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Callback.Client");
-    adapter->add(new CallbackReceiverI, stringToIdentity("callbackReceiver"));
+    Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Callback.Client");
+    adapter->add(new CallbackReceiverI, Ice::stringToIdentity("callbackReceiver"));
     adapter->activate();
 
     CallbackReceiverPrx twowayR = CallbackReceiverPrx::uncheckedCast(
-	adapter->createProxy(stringToIdentity("callbackReceiver")));
+	adapter->createProxy(Ice::stringToIdentity("callbackReceiver")));
     CallbackReceiverPrx onewayR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_oneway());
     CallbackReceiverPrx datagramR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_datagram());
 
@@ -143,11 +129,11 @@ CallbackClient::run(int argc, char* argv[])
 		secure = !secure;
 		secureStr = secure ? "s" : "";
 		
-		twoway = CallbackPrx::uncheckedCast(twoway->ice_secure(secure));
-		oneway = CallbackPrx::uncheckedCast(oneway->ice_secure(secure));
-		batchOneway = CallbackPrx::uncheckedCast(batchOneway->ice_secure(secure));
-		datagram = CallbackPrx::uncheckedCast(datagram->ice_secure(secure));
-		batchDatagram = CallbackPrx::uncheckedCast(batchDatagram->ice_secure(secure));
+		twoway = CallbackSenderPrx::uncheckedCast(twoway->ice_secure(secure));
+		oneway = CallbackSenderPrx::uncheckedCast(oneway->ice_secure(secure));
+		batchOneway = CallbackSenderPrx::uncheckedCast(batchOneway->ice_secure(secure));
+		datagram = CallbackSenderPrx::uncheckedCast(datagram->ice_secure(secure));
+		batchDatagram = CallbackSenderPrx::uncheckedCast(batchDatagram->ice_secure(secure));
 
 		twowayR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_secure(secure));
 		onewayR = CallbackReceiverPrx::uncheckedCast(onewayR->ice_secure(secure));
@@ -180,7 +166,7 @@ CallbackClient::run(int argc, char* argv[])
 		menu();
 	    }
 	}
-	catch(const Exception& ex)
+	catch(const Ice::Exception& ex)
 	{
 	    cerr << ex << endl;
 	}
@@ -188,4 +174,21 @@ CallbackClient::run(int argc, char* argv[])
     while(cin.good() && c != 'x');
 
     return EXIT_SUCCESS;
+}
+
+void
+CallbackClient::menu()
+{
+    cout <<
+	"usage:\n"
+	"t: send callback as twoway\n"
+	"o: send callback as oneway\n"
+	"O: send callback as batch oneway\n"
+	"d: send callback as datagram\n"
+	"D: send callback as batch datagram\n"
+	"f: flush all batch requests\n"
+	"S: switch secure mode on/off\n"
+	"s: shutdown server\n"
+	"x: exit\n"
+	"?: help\n";
 }

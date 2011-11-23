@@ -7,8 +7,21 @@
 //
 // **********************************************************************
 
+#include <IceUtil/StaticMutex.h>
 #include <Ice/Network.h>
 #include <Ice/LocalException.h>
+
+#if defined(_WIN32)
+#  include <winsock2.h>
+#elif defined(__linux) || defined(__APPLE__) || defined(__FreeBSD__)
+#  include <ifaddrs.h>
+#else
+#  include <sys/ioctl.h>
+#  include <net/if.h>
+#  ifdef __sun
+#    include <sys/sockio.h>
+#  endif
+#endif
 
 using namespace std;
 using namespace Ice;
@@ -17,6 +30,29 @@ using namespace IceInternal;
 #ifdef __sun
 #    define INADDR_NONE (unsigned long)-1
 #endif
+
+static IceUtil::StaticMutex inetMutex = ICE_STATIC_MUTEX_INITIALIZER;
+
+string
+inetAddrToString(const struct in_addr& in)
+{
+    //
+    // inet_ntoa uses static memory on some platforms so we protect
+    // access and make a copy.
+    //
+    IceUtil::StaticMutex::Lock lock(inetMutex);
+    return string(inet_ntoa(in));
+}
+
+int
+IceInternal::getSocketErrno()
+{
+#ifdef _WIN32
+    return WSAGetLastError();
+#else
+    return errno;
+#endif
+}
 
 bool
 IceInternal::interrupted()
@@ -82,6 +118,7 @@ IceInternal::connectFailed()
     return error == WSAECONNREFUSED ||
            error == WSAETIMEDOUT ||
            error == WSAENETUNREACH ||
+           error == WSAEHOSTUNREACH ||
            error == WSAECONNRESET ||
            error == WSAESHUTDOWN ||
            error == WSAECONNABORTED;
@@ -89,6 +126,7 @@ IceInternal::connectFailed()
     return errno == ECONNREFUSED ||
            errno == ETIMEDOUT ||
            errno == ENETUNREACH ||
+           errno == EHOSTUNREACH ||
            errno == ECONNRESET ||
            errno == ESHUTDOWN ||
            errno == ECONNABORTED;
@@ -176,20 +214,6 @@ IceInternal::createSocket(bool udp)
 	throw ex;
     }
 
-#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0400)
-    //
-    // Temporary work-around!
-    // Make this socket non-inheritable, so that IcePack-launched servers
-    // do not inherit it.
-    // 
-    if(!SetHandleInformation(reinterpret_cast<HANDLE>(fd), HANDLE_FLAG_INHERIT, 0))
-    {
-	SyscallException ex(__FILE__, __LINE__);
-	ex.error = getSystemErrno();
-	throw ex;
-    }
-#endif
-
     if(!udp)
     {
 	setTcpNoDelay(fd);
@@ -197,6 +221,20 @@ IceInternal::createSocket(bool udp)
     }
 
     return fd;
+}
+
+static void
+closeSocketNoThrow(SOCKET fd)
+{
+#ifdef _WIN32
+    int error = WSAGetLastError();
+    closesocket(fd);
+    WSASetLastError(error);
+#else
+    int error = errno;
+    close(fd);
+    errno = error;
+#endif
 }
 
 void
@@ -293,22 +331,46 @@ IceInternal::setBlock(SOCKET fd, bool block)
     {
 #ifdef _WIN32
 	unsigned long arg = 0;
-	ioctlsocket(fd, FIONBIO, &arg);
+	if(ioctlsocket(fd, FIONBIO, &arg) == SOCKET_ERROR)
+	{
+	    closeSocketNoThrow(fd);
+	    SocketException ex(__FILE__, __LINE__);
+	    ex.error = WSAGetLastError();
+	    throw ex;
+	}
 #else
 	int flags = fcntl(fd, F_GETFL);
 	flags &= ~O_NONBLOCK;
-	fcntl(fd, F_SETFL, flags);
+	if(fcntl(fd, F_SETFL, flags) == SOCKET_ERROR)
+	{
+	    closeSocketNoThrow(fd);
+	    SocketException ex(__FILE__, __LINE__);
+	    ex.error = errno;
+	    throw ex;
+	}
 #endif
     }
     else
     {
 #ifdef _WIN32
 	unsigned long arg = 1;
-	ioctlsocket(fd, FIONBIO, &arg);
+	if(ioctlsocket(fd, FIONBIO, &arg) == SOCKET_ERROR)
+	{
+	    closeSocketNoThrow(fd);
+	    SocketException ex(__FILE__, __LINE__);
+	    ex.error = WSAGetLastError();
+	    throw ex;
+	}
 #else
 	int flags = fcntl(fd, F_GETFL);
 	flags |= O_NONBLOCK;
-	fcntl(fd, F_SETFL, flags);
+	if(fcntl(fd, F_SETFL, flags) == SOCKET_ERROR)
+	{
+	    closeSocketNoThrow(fd);
+	    SocketException ex(__FILE__, __LINE__);
+	    ex.error = errno;
+	    throw ex;
+	}
 #endif
     }
 }
@@ -319,7 +381,7 @@ IceInternal::setTcpNoDelay(SOCKET fd)
     int flag = 1;
     if(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&flag, int(sizeof(int))) == SOCKET_ERROR)
     {
-	closeSocket(fd);
+	closeSocketNoThrow(fd);
 	SocketException ex(__FILE__, __LINE__);
 	ex.error = getSocketErrno();
 	throw ex;
@@ -332,7 +394,7 @@ IceInternal::setKeepAlive(SOCKET fd)
     int flag = 1;
     if(setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (char*)&flag, int(sizeof(int))) == SOCKET_ERROR)
     {
-	closeSocket(fd);
+	closeSocketNoThrow(fd);
 	SocketException ex(__FILE__, __LINE__);
 	ex.error = getSocketErrno();
 	throw ex;
@@ -344,7 +406,7 @@ IceInternal::setSendBufferSize(SOCKET fd, int sz)
 {
     if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (char*)&sz, int(sizeof(int))) == SOCKET_ERROR)
     {
-	closeSocket(fd);
+	closeSocketNoThrow(fd);
 	SocketException ex(__FILE__, __LINE__);
 	ex.error = getSocketErrno();
 	throw ex;
@@ -358,7 +420,7 @@ IceInternal::getSendBufferSize(SOCKET fd)
     socklen_t len = sizeof(sz);
     if(getsockopt(fd, SOL_SOCKET, SO_SNDBUF, (char*)&sz, &len) == SOCKET_ERROR || len != sizeof(sz))
     {
-	closeSocket(fd);
+	closeSocketNoThrow(fd);
 	SocketException ex(__FILE__, __LINE__);
 	ex.error = getSocketErrno();
 	throw ex;
@@ -371,7 +433,7 @@ IceInternal::setRecvBufferSize(SOCKET fd, int sz)
 {
     if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (char*)&sz, int(sizeof(int))) == SOCKET_ERROR)
     {
-	closeSocket(fd);
+	closeSocketNoThrow(fd);
 	SocketException ex(__FILE__, __LINE__);
 	ex.error = getSocketErrno();
 	throw ex;
@@ -385,7 +447,7 @@ IceInternal::getRecvBufferSize(SOCKET fd)
     socklen_t len = sizeof(sz);
     if(getsockopt(fd, SOL_SOCKET, SO_RCVBUF, (char*)&sz, &len) == SOCKET_ERROR || len != sizeof(sz))
     {
-	closeSocket(fd);
+	closeSocketNoThrow(fd);
 	SocketException ex(__FILE__, __LINE__);
 	ex.error = getSocketErrno();
 	throw ex;
@@ -400,7 +462,7 @@ IceInternal::doBind(SOCKET fd, struct sockaddr_in& addr)
     int flag = 1;
     if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*)&flag, int(sizeof(int))) == SOCKET_ERROR)
     {
-	closeSocket(fd);
+	closeSocketNoThrow(fd);
 	SocketException ex(__FILE__, __LINE__);
 	ex.error = getSocketErrno();
 	throw ex;
@@ -409,7 +471,7 @@ IceInternal::doBind(SOCKET fd, struct sockaddr_in& addr)
 
     if(bind(fd, reinterpret_cast<struct sockaddr*>(&addr), int(sizeof(addr))) == SOCKET_ERROR)
     {
-	closeSocket(fd);
+	closeSocketNoThrow(fd);
 	SocketException ex(__FILE__, __LINE__);
 	ex.error = getSocketErrno();
 	throw ex;
@@ -435,7 +497,7 @@ repeatListen:
 	    goto repeatListen;
 	}
 	
-	closeSocket(fd);
+	closeSocketNoThrow(fd);
 	SocketException ex(__FILE__, __LINE__);
 	ex.error = getSocketErrno();
 	throw ex;
@@ -451,6 +513,33 @@ IceInternal::doConnect(SOCKET fd, struct sockaddr_in& addr, int timeout)
     // WIN32.
     //
     setSendBufferSize(fd, 64 * 1024);
+
+    //
+    // Under WinCE its not possible to find out the connection failure
+    // reason with SO_ERROR, so its necessary to use the WSAEVENT
+    // mechanism. We use the same mechanism for any Winsock platform.
+    //
+    WSAEVENT event = WSACreateEvent();
+    if(event == 0)
+    {
+	closeSocketNoThrow(fd);
+
+	SocketException ex(__FILE__, __LINE__);
+	ex.error = WSAGetLastError();
+	throw ex;
+    }
+
+    if(WSAEventSelect(fd, event, FD_CONNECT) == SOCKET_ERROR)
+    {
+	int error = WSAGetLastError();
+
+    	WSACloseEvent(event);
+    	closeSocketNoThrow(fd);
+
+	SocketException ex(__FILE__, __LINE__);
+	ex.error = error;
+	throw ex;
+    }
 #endif
 
 repeatConnect:
@@ -463,43 +552,80 @@ repeatConnect:
 	
 	if(connectInProgress())
 	{
+	    int val;
+#ifdef _WIN32
+	    WSAEVENT events[1];
+	    events[0] = event;
+	    long tout = (timeout >= 0) ? timeout : WSA_INFINITE;
+	    DWORD rc = WSAWaitForMultipleEvents(1, events, FALSE, tout, FALSE);
+	    if(rc == WSA_WAIT_FAILED)
+	    {
+    	    	int error = WSAGetLastError();
+
+		WSACloseEvent(event);
+    	    	closeSocketNoThrow(fd);
+
+		SocketException ex(__FILE__, __LINE__);
+		ex.error = error;
+		throw ex;
+	    }
+
+	    if(rc == WSA_WAIT_TIMEOUT)
+	    {
+		WSACloseEvent(event);
+    	    	closeSocketNoThrow(fd);
+
+		assert(timeout >= 0);
+		throw ConnectTimeoutException(__FILE__, __LINE__);
+	    }
+	    assert(rc == WSA_WAIT_EVENT_0);
+	    
+	    WSANETWORKEVENTS nevents;
+	    if(WSAEnumNetworkEvents(fd, event, &nevents) == SOCKET_ERROR)
+	    {
+    	    	int error = WSAGetLastError();
+		WSACloseEvent(event);
+    	    	closeSocketNoThrow(fd);
+
+		SocketException ex(__FILE__, __LINE__);
+		ex.error = error;
+		throw ex;
+	    }
+
+	    //
+	    // Now we close the event, because we're finished and
+	    // this code be repeated.
+	    //
+	    WSACloseEvent(event);
+
+	    assert(nevents.lNetworkEvents & FD_CONNECT);
+	    val = nevents.iErrorCode[FD_CONNECT_BIT];
+#else
 	repeatSelect:
 	    int ret;
 	    fd_set wFdSet;
 	    FD_ZERO(&wFdSet);
 	    FD_SET(fd, &wFdSet);
-#ifdef _WIN32
 	    //
-	    // WIN32 notifies about connection failures
+	    // Note that although we use a different mechanism for
+	    // WIN32, winsock notifies about connection failures
 	    // through the exception filedescriptors
 	    //
-	    fd_set xFdSet;
-	    FD_ZERO(&xFdSet);
-	    FD_SET(fd, &xFdSet);
-#endif
 	    if(timeout >= 0)
 	    {
 		struct timeval tv;
 		tv.tv_sec = timeout / 1000;
 		tv.tv_usec = (timeout - tv.tv_sec * 1000) * 1000;
-#ifdef _WIN32
-		ret = ::select(fd + 1, 0, &wFdSet, &xFdSet, &tv);
-#else
 		ret = ::select(fd + 1, 0, &wFdSet, 0, &tv);
-#endif
 	    }
 	    else
 	    {
-#ifdef _WIN32
-		ret = ::select(fd + 1, 0, &wFdSet, &xFdSet, 0);
-#else
 		ret = ::select(fd + 1, 0, &wFdSet, 0, 0);
-#endif
 	    }
 	    
 	    if(ret == 0)
 	    {
-		closeSocket(fd);
+		closeSocketNoThrow(fd);
 		throw ConnectTimeoutException(__FILE__, __LINE__);
 	    }
 	    else if(ret == SOCKET_ERROR)
@@ -514,27 +640,25 @@ repeatConnect:
 		throw ex;
 	    }
 	    
-#ifdef _WIN32
 	    //
 	    // Strange windows bug: The following call to Sleep() is
 	    // necessary, otherwise no error is reported through
 	    // getsockopt.
 	    //
-	    Sleep(0);
-#endif
+	    //Sleep(0);
 	    socklen_t len = static_cast<socklen_t>(sizeof(int));
-	    int val;
 	    if(getsockopt(fd, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&val), &len) == SOCKET_ERROR)
 	    {
-		closeSocket(fd);
+		closeSocketNoThrow(fd);
 		SocketException ex(__FILE__, __LINE__);
 		ex.error = getSocketErrno();
 		throw ex;
 	    }
+#endif
 	    
 	    if(val > 0)
 	    {
-		closeSocket(fd);
+		closeSocketNoThrow(fd);
 #ifdef _WIN32
 		WSASetLastError(val);
 #else
@@ -563,7 +687,7 @@ repeatConnect:
 	    return;
 	}
     
-	closeSocket(fd);
+	closeSocketNoThrow(fd);
 	if(connectionRefused())
 	{
 	    ConnectionRefusedException ex(__FILE__, __LINE__);
@@ -644,20 +768,6 @@ repeatAccept:
 
     setTcpNoDelay(ret);
     setKeepAlive(ret);
-
-#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0400)
-    //
-    // Temporary work-around!
-    // Make this socket non-inheritable, so that IcePack-launched servers
-    // do not inherit it.
-    // 
-    if(!SetHandleInformation(reinterpret_cast<HANDLE>(ret), HANDLE_FLAG_INHERIT, 0))
-    {
-	SyscallException ex(__FILE__, __LINE__);
-	ex.error = getSystemErrno();
-	throw ex;
-    }
-#endif
 
 #ifdef _WIN32
     //
@@ -781,7 +891,7 @@ IceInternal::getLocalHost(bool numeric)
 	struct sockaddr_in addr;
 	memset(&addr, 0, sizeof(struct sockaddr_in));
 	memcpy(&addr.sin_addr, entry->h_addr, entry->h_length);
-	return string(inet_ntoa(addr.sin_addr));
+	return inetAddrToString(addr.sin_addr);
     }
     else
     {
@@ -816,7 +926,7 @@ IceInternal::getLocalHost(bool numeric)
     {
 	assert(info->ai_family == PF_INET);
 	struct sockaddr_in* sin = reinterpret_cast<sockaddr_in*>(info->ai_addr);
-	result = inet_ntoa(sin->sin_addr);
+	result = inetAddrToString(sin->sin_addr);
     }
     else
     {
@@ -865,27 +975,36 @@ IceInternal::createPipe(SOCKET fds[2])
 
     try
     {
-	setBlock(fds[0], true);
-	doConnect(fds[0], addr, -1);
-	fds[1] = doAccept(fd, -1);
+        setBlock(fds[0], true);
+        doConnect(fds[0], addr, -1);
     }
     catch(...)
     {
 	::closesocket(fd);
-	::closesocket(fds[0]);
 	throw;
     }
 
-    ::closesocket(fd);
-	
     try
     {
-	setBlock(fds[1], true);
+	fds[1] = doAccept(fd, -1);
     }
     catch(...)
     {
 	::closesocket(fds[0]);
-	::closesocket(fds[1]);
+	::closesocket(fd);
+	throw;
+    }
+
+    ::closesocket(fd);
+
+    try
+    {
+        setBlock(fds[1], true);
+    }
+    catch(...)
+    {
+	::closesocket(fds[0]);
+	::closesocket(fd);
 	throw;
     }
 
@@ -900,13 +1019,21 @@ IceInternal::createPipe(SOCKET fds[2])
 
     try
     {
-	setBlock(fds[0], true);
-	setBlock(fds[1], true);
+        setBlock(fds[0], true);
     }
     catch(...)
     {
-	close(fds[0]);
-	close(fds[1]);
+    	closeSocketNoThrow(fds[1]);
+	throw;
+    }
+
+    try
+    {
+        setBlock(fds[1], true);
+    }
+    catch(...)
+    {
+    	closeSocketNoThrow(fds[0]);
 	throw;
     }
 
@@ -935,8 +1062,18 @@ IceInternal::errorToString(int error)
 	    LPCTSTR msg = (LPCTSTR)lpMsgBuf;
 	    assert(msg && strlen((const char*)msg) > 0);
 	    string result = (const char*)msg;
+	    if(result[result.length() - 1] == '\n')
+	    {
+	        result = result.substr(0, result.length() - 2);
+	    }
 	    LocalFree(lpMsgBuf);
 	    return result;
+	}
+	else
+	{
+	    ostringstream os;
+	    os << "unknown error: " << error;
+	    return os.str();
 	}
     }
 
@@ -1096,7 +1233,11 @@ IceInternal::errorToString(int error)
 	return "WSANO_DATA";
 
     default:
-	return "unknown socket error";
+    {
+	ostringstream os;
+	os << "unknown socket error: " << error;
+	return os.str();
+    }
     }
 }
 
@@ -1144,7 +1285,7 @@ IceInternal::fdToString(SOCKET fd)
     struct sockaddr_in localAddr;
     if(getsockname(fd, reinterpret_cast<struct sockaddr*>(&localAddr), &localLen) == SOCKET_ERROR)
     {
-	closeSocket(fd);
+	closeSocketNoThrow(fd);
 	SocketException ex(__FILE__, __LINE__);
 	ex.error = getSocketErrno();
 	throw ex;
@@ -1161,7 +1302,7 @@ IceInternal::fdToString(SOCKET fd)
 	}
 	else
 	{
-	    closeSocket(fd);
+	    closeSocketNoThrow(fd);
 	    SocketException ex(__FILE__, __LINE__);
 	    ex.error = getSocketErrno();
 	    throw ex;
@@ -1169,27 +1310,239 @@ IceInternal::fdToString(SOCKET fd)
     }
 
     ostringstream s;
-    s << "local address = " << inet_ntoa(localAddr.sin_addr) << ':' << ntohs(localAddr.sin_port);
+    s << "local address = " << addrToString(localAddr);
     if(peerNotConnected)
     {
 	s << "\nremote address = <not connected>";
     }
     else
     {
-	s << "\nremote address = " << inet_ntoa(remoteAddr.sin_addr) << ':' << ntohs(remoteAddr.sin_port);
+	s << "\nremote address = " << addrToString(remoteAddr);
     }
     return s.str();
 }
 
-std::string
+string
 IceInternal::addrToString(const struct sockaddr_in& addr)
 {
-    //
-    // inet_ntoa uses thread-specific data on Windows, Linux, Solaris
-    // and HP-UX
-    //
-
     ostringstream s;
-    s << inet_ntoa(addr.sin_addr) << ':' << ntohs(addr.sin_port);
+    s << inetAddrToString(addr.sin_addr) << ':' << ntohs(addr.sin_port);
     return s.str();
 }
+
+vector<string>
+IceInternal::getLocalHosts()
+{
+    vector<string> result;
+
+#if defined(_WIN32)
+    vector<struct sockaddr_in> addrs = getLocalAddresses();
+    for(unsigned int i = 0; i < addrs.size(); ++i)
+    {
+        result.push_back(inetAddrToString(addrs[i].sin_addr));
+    }
+#elif defined(__linux) || defined(__APPLE__) || defined(__FreeBSD__)
+    struct ifaddrs* ifap;
+    if(::getifaddrs(&ifap) == SOCKET_ERROR)
+    {
+        SocketException ex(__FILE__, __LINE__);
+        ex.error = getSocketErrno();
+        throw ex;
+    }
+
+    struct ifaddrs* curr = ifap;
+    while(curr != 0)
+    {
+        if(curr->ifa_addr && curr->ifa_addr->sa_family == AF_INET)
+        {
+            struct sockaddr_in* addr = reinterpret_cast<struct sockaddr_in*>(curr->ifa_addr);
+    	    if(addr->sin_addr.s_addr != 0)
+    	    {
+    	        result.push_back(inetAddrToString((*addr).sin_addr));
+    	    }
+        }
+    
+        curr = curr->ifa_next;
+    }
+
+    ::freeifaddrs(ifap);
+#else
+    SOCKET fd = createSocket(false);
+
+#ifdef _AIX
+    int cmd = CSIOCGIFCONF;
+#else
+    int cmd = SIOCGIFCONF;
+#endif
+    struct ifconf ifc;
+    int numaddrs = 10;
+    int old_ifc_len = 0;
+
+    //
+    // Need to call ioctl multiple times since we do not know up front
+    // how many addresses there will be, and thus how large a buffer we need.
+    // We keep increasing the buffer size until subsequent calls return
+    // the same length, meaning we have all the addresses.
+    //
+    while(true)
+    {
+        int bufsize = numaddrs * sizeof(struct ifreq);
+        ifc.ifc_len = bufsize;
+        ifc.ifc_buf = (char*)malloc(bufsize);
+    
+        int rs = ioctl(fd, cmd, &ifc);
+        if(rs == SOCKET_ERROR)
+        {
+    	    closeSocketNoThrow(fd);
+    	    SocketException ex(__FILE__, __LINE__);
+    	    ex.error = getSocketErrno();
+    	    throw ex;
+        }
+        else if(ifc.ifc_len == old_ifc_len)
+        {
+            //
+    	    // Returned same length twice in a row, finished.
+    	    //
+            break;
+        }
+        else
+        {
+            old_ifc_len = ifc.ifc_len;
+        }
+    
+        numaddrs += 10;
+        free(ifc.ifc_buf);
+    }
+
+    numaddrs = ifc.ifc_len / sizeof(struct ifreq);
+    struct ifreq* ifr = ifc.ifc_req;
+    for(int i = 0; i < numaddrs; ++i)
+    {
+        if(ifr[i].ifr_addr.sa_family == AF_INET)
+        {
+            struct sockaddr_in* addr = reinterpret_cast<struct sockaddr_in*>(&ifr[i].ifr_addr);
+    	    if(addr->sin_addr.s_addr != 0)
+    	    {
+    	        result.push_back(inetAddrToString((*addr).sin_addr));
+    	    }
+        }
+    }
+
+    free(ifc.ifc_buf);
+    closeSocket(fd);
+#endif
+
+    return result;
+}
+
+#ifdef _WIN32
+vector<struct sockaddr_in>
+IceInternal::getLocalAddresses()
+{
+    vector<struct sockaddr_in> result;
+    try
+    {
+        SOCKET fd = createSocket(false);
+
+        vector<unsigned char> buffer;
+        buffer.resize(1024);
+        unsigned long len = 0;
+        DWORD rs = WSAIoctl(fd, SIO_ADDRESS_LIST_QUERY, 0, 0, &buffer[0], buffer.size(), &len, 0, 0);
+        if(rs == SOCKET_ERROR)
+        {
+            //
+            // If the buffer wasn't big enough, resize it to the
+            // required length and try again.
+            //
+            if(getSocketErrno() == WSAEFAULT)
+            {
+                buffer.resize(len);
+                rs = WSAIoctl(fd, SIO_ADDRESS_LIST_QUERY, 0, 0, &buffer[0], buffer.size(), &len, 0, 0);
+            }
+
+            if(rs == SOCKET_ERROR)
+            {
+                closeSocketNoThrow(fd);
+                SocketException ex(__FILE__, __LINE__);
+                ex.error = getSocketErrno();
+                throw ex;
+            }
+        }
+        //        
+        // Add the local interface addresses.
+        //
+        SOCKET_ADDRESS_LIST* addrs = reinterpret_cast<SOCKET_ADDRESS_LIST*>(&buffer[0]);
+        for (int i = 0; i < addrs->iAddressCount; ++i)
+        {
+            result.push_back(*reinterpret_cast<struct sockaddr_in*>(addrs->Address[i].lpSockaddr));
+        }
+
+        //
+        // Add the loopback interface address.
+        //
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(0);
+        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        result.push_back(addr);
+
+        closeSocket(fd);
+    }
+    catch(const Ice::LocalException&)
+    {
+        //
+        // TODO: Warning?
+        //
+    }
+    return result;
+}
+
+bool
+IceInternal::isLocalAddress(const struct sockaddr_in& addr)
+{
+    struct sockaddr_in addr0 = addr;
+    addr0.sin_port = htons(0); // Local interface addresses have the port set to 0.
+
+    try
+    {
+        vector<struct sockaddr_in> localAddrs = getLocalAddresses();
+        for(vector<struct sockaddr_in>::const_iterator p = localAddrs.begin(); p != localAddrs.end(); ++p)
+        {
+	    if(compareAddress(addr0, *p))
+	    {
+	        return true;
+	    }
+        }
+    }
+    catch(const Ice::LocalException&)
+    {
+	//
+	// TODO: Warning?
+	//
+    }
+    return false;
+}
+
+bool
+IceInternal::isPeerLocal(SOCKET fd)
+{
+    socklen_t remoteLen = static_cast<socklen_t>(sizeof(struct sockaddr_in));
+    struct sockaddr_in remoteAddr;
+    if(getpeername(fd, reinterpret_cast<struct sockaddr*>(&remoteAddr), &remoteLen) == SOCKET_ERROR)
+    {
+	if(notConnected())
+	{
+	    return false;
+	}
+	else
+	{
+	    closeSocketNoThrow(fd);
+	    SocketException ex(__FILE__, __LINE__);
+	    ex.error = getSocketErrno();
+	    throw ex;
+	}
+    }
+    return isLocalAddress(remoteAddr);
+}
+#endif

@@ -12,28 +12,76 @@
 #include <Chat.h>
 
 using namespace std;
-using namespace Ice;
 using namespace Demo;
+
+class SessionPingThread : public IceUtil::Thread, public IceUtil::Monitor<IceUtil::Mutex>
+{
+public:
+
+    SessionPingThread(const Glacier2::SessionPrx& session) :
+        _session(session),
+        _timeout(IceUtil::Time::seconds(20)),
+        _destroy(false)
+    {
+    }
+
+    virtual void
+    run()
+    {
+        Lock sync(*this);
+        while(!_destroy)
+        {
+            timedWait(_timeout);
+            if(_destroy)
+            {
+                break;
+            }
+            try
+            {
+                _session->ice_ping();
+            }
+            catch(const Ice::Exception&)
+            {
+                break;
+            }
+        }
+    }
+
+    void
+    destroy()
+    {
+        Lock sync(*this);
+        _destroy = true;
+        notify();
+    }
+
+private:
+
+    const Glacier2::SessionPrx _session;
+    const IceUtil::Time _timeout;
+    bool _destroy;
+};
+typedef IceUtil::Handle<SessionPingThread> SessionPingThreadPtr;
 
 class ChatCallbackI : public ChatCallback
 {
 public:
 
     virtual void
-    message(const string& data, const Current&)
+    message(const string& data, const Ice::Current&)
     {
 	cout << data << endl;
     }
 };
 
-class ChatClient : public Application
+class ChatClient : public Ice::Application
 {
 public:
 
     virtual int
     run(int argc, char* argv[])
     {
-	RouterPrx defaultRouter = communicator()->getDefaultRouter();
+	Ice::RouterPrx defaultRouter = communicator()->getDefaultRouter();
 	if(!defaultRouter)
 	{
 	    cerr << argv[0] << ": no default router set" << endl;
@@ -75,12 +123,15 @@ public:
 	    }
 	}
 
+	SessionPingThreadPtr ping = new SessionPingThread(session);
+	ping->start();
+
 	string category = router->getServerProxy()->ice_getIdentity().category;
-	Identity callbackReceiverIdent;
+	Ice::Identity callbackReceiverIdent;
 	callbackReceiverIdent.name = "callbackReceiver";
 	callbackReceiverIdent.category = category;
 
-	ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Chat.Client");
+	Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Chat.Client");
 	ChatCallbackPrx callback = ChatCallbackPrx::uncheckedCast(
 	    adapter->add(new ChatCallbackI, callbackReceiverIdent));
 	adapter->activate();
@@ -116,12 +167,19 @@ public:
 	    while(cin.good());
 	    router->destroySession();
 	}
-	catch(const Exception& ex)
+	catch(const Ice::Exception& ex)
 	{
 	    cerr << ex << endl;
+
+            ping->destroy();
+            ping->getThreadControl().join();
+
 	    return EXIT_FAILURE;
 	}
 
+        ping->destroy();
+        ping->getThreadControl().join();
+	
 	return EXIT_SUCCESS;
     }
 

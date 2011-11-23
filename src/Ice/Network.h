@@ -17,7 +17,7 @@
 #include <Ice/Config.h>
 
 #ifdef _WIN32
-#   include <winsock.h>
+#   include <winsock2.h>
 typedef int ssize_t;
 #else
 #   include <unistd.h>
@@ -69,47 +69,56 @@ typedef int socklen_t;
 namespace IceInternal
 {
 
-ICE_PROTOCOL_API bool interrupted();
-ICE_PROTOCOL_API bool acceptInterrupted();
-ICE_PROTOCOL_API bool noBuffers();
-ICE_PROTOCOL_API bool wouldBlock();
-ICE_PROTOCOL_API bool connectFailed();
-ICE_PROTOCOL_API bool connectionRefused();
-ICE_PROTOCOL_API bool connectInProgress();
-ICE_PROTOCOL_API bool connectionLost();
-ICE_PROTOCOL_API bool notConnected();
-ICE_PROTOCOL_API bool recvTruncated();
+ICE_API bool interrupted();
+ICE_API bool acceptInterrupted();
+ICE_API bool noBuffers();
+ICE_API bool wouldBlock();
+ICE_API bool connectFailed();
+ICE_API bool connectionRefused();
+ICE_API bool connectInProgress();
+ICE_API bool connectionLost();
+ICE_API bool notConnected();
+ICE_API bool recvTruncated();
 
-ICE_PROTOCOL_API SOCKET createSocket(bool);
-ICE_PROTOCOL_API void closeSocket(SOCKET);
-ICE_PROTOCOL_API void shutdownSocketWrite(SOCKET);
-ICE_PROTOCOL_API void shutdownSocketReadWrite(SOCKET);
+ICE_API SOCKET createSocket(bool);
+ICE_API void closeSocket(SOCKET);
+ICE_API void shutdownSocketWrite(SOCKET);
+ICE_API void shutdownSocketReadWrite(SOCKET);
 
-ICE_PROTOCOL_API void setBlock(SOCKET, bool);
-ICE_PROTOCOL_API void setTcpNoDelay(SOCKET);
-ICE_PROTOCOL_API void setKeepAlive(SOCKET);
-ICE_PROTOCOL_API void setSendBufferSize(SOCKET, int);
-ICE_PROTOCOL_API int getSendBufferSize(SOCKET);
-ICE_PROTOCOL_API void setRecvBufferSize(SOCKET, int);
-ICE_PROTOCOL_API int getRecvBufferSize(SOCKET);
+ICE_API void setBlock(SOCKET, bool);
+ICE_API void setTcpNoDelay(SOCKET);
+ICE_API void setKeepAlive(SOCKET);
+ICE_API void setSendBufferSize(SOCKET, int);
+ICE_API int getSendBufferSize(SOCKET);
+ICE_API void setRecvBufferSize(SOCKET, int);
+ICE_API int getRecvBufferSize(SOCKET);
 
-ICE_PROTOCOL_API void doBind(SOCKET, struct sockaddr_in&);
-ICE_PROTOCOL_API void doListen(SOCKET, int);
-ICE_PROTOCOL_API void doConnect(SOCKET, struct sockaddr_in&, int);
-ICE_PROTOCOL_API SOCKET doAccept(SOCKET, int);
+ICE_API void doBind(SOCKET, struct sockaddr_in&);
+ICE_API void doListen(SOCKET, int);
+ICE_API void doConnect(SOCKET, struct sockaddr_in&, int);
+ICE_API SOCKET doAccept(SOCKET, int);
 
-ICE_PROTOCOL_API void getAddress(const std::string&, int, struct sockaddr_in&);
-ICE_PROTOCOL_API std::string getLocalHost(bool);
-ICE_PROTOCOL_API bool compareAddress(const struct sockaddr_in&, const struct sockaddr_in&);
+ICE_API void getAddress(const std::string&, int, struct sockaddr_in&);
+ICE_API std::string getLocalHost(bool);
+ICE_API bool compareAddress(const struct sockaddr_in&, const struct sockaddr_in&);
 
-ICE_PROTOCOL_API void createPipe(SOCKET fds[2]);
+ICE_API void createPipe(SOCKET fds[2]);
 
-ICE_PROTOCOL_API std::string errorToString(int);
-ICE_PROTOCOL_API std::string errorToStringDNS(int);
-ICE_PROTOCOL_API std::string lastErrorToString();
+ICE_API std::string errorToString(int);
+ICE_API std::string errorToStringDNS(int);
+ICE_API std::string lastErrorToString();
 
-ICE_PROTOCOL_API std::string fdToString(SOCKET);
-ICE_PROTOCOL_API std::string addrToString(const struct sockaddr_in&);
+ICE_API std::string fdToString(SOCKET);
+ICE_API std::string addrToString(const struct sockaddr_in&);
+
+ICE_API std::vector<std::string> getLocalHosts();
+#ifdef _WIN32
+ICE_API std::vector<struct sockaddr_in> getLocalAddresses();
+ICE_API bool isLocalAddress(const struct sockaddr_in&);
+ICE_API bool isPeerLocal(SOCKET);
+#endif
+
+ICE_API int getSocketErrno();
 
 }
 

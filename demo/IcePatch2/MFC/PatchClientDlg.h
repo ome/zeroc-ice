@@ -39,10 +39,11 @@ protected:
     virtual void DoDataExchange(CDataExchange*);    // DDX/DDV support
 
 protected:
-    Ice::CommunicatorPtr _communicator;
+    const Ice::CommunicatorPtr _communicator;
     IceUtil::Time _startTime;
     CEdit* _path;
     CButton* _thorough;
+    CButton* _remove;
     CButton* _select;
     CButton* _start;
     CButton* _cancel;

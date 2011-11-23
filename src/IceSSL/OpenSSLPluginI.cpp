@@ -7,13 +7,14 @@
 //
 // **********************************************************************
 
+#include <IceSSL/OpenSSLPluginI.h>
+
 #include <Ice/LoggerUtil.h>
 #include <Ice/Properties.h>
 #include <Ice/ProtocolPluginFacade.h>
 #include <Ice/Communicator.h>
 #include <Ice/LocalException.h>
 
-#include <IceSSL/OpenSSLPluginI.h>
 #include <IceSSL/TraceLevels.h>
 #include <IceSSL/Exception.h>
 #include <IceSSL/ConfigParser.h>
@@ -22,7 +23,7 @@
 #include <IceSSL/SslTransceiver.h>
 #include <IceSSL/DefaultCertificateVerifier.h>
 #include <IceSSL/SingleCertificateVerifier.h>
-#include <IceSSL/SslEndpoint.h>
+#include <IceSSL/SslEndpointI.h>
 #include <IceSSL/RSAPrivateKey.h>
 #include <IceSSL/DHParams.h>
 
@@ -147,7 +148,7 @@ idFunction()
 {
 #if defined(_WIN32)
     return static_cast<unsigned long>(GetCurrentThreadId());
-#elif defined(__FreeBSD__) || defined(__APPLE__)
+#elif defined(__FreeBSD__) || defined(__APPLE__) || defined(__osf1__)
     //
     // On FreeBSD, pthread_t is a pointer to a per-thread structure
     // 
@@ -247,37 +248,35 @@ IceSSL::OpenSSLPluginI::~OpenSSLPluginI()
 }
 
 SslTransceiverPtr
-IceSSL::OpenSSLPluginI::createTransceiver(ContextType connectionType, int socket, int timeout)
+IceSSL::OpenSSLPluginI::createServerTransceiver(int socket, int timeout)
 {
     IceUtil::RecMutex::Lock sync(_configMutex);
 
-    if(connectionType == ClientServer)
-    {
-        UnsupportedContextException unsupportedException(__FILE__, __LINE__);
-
-        unsupportedException.message = "unable to create client/server connections";
-
-        throw unsupportedException;
-    }
-
     // Configure the context if need be.
-    if(!isConfigured(connectionType))
+    if(!isConfigured(IceSSL::Server))
     {
-        configure(connectionType);
+        configure(IceSSL::Server);
     }
 
     SslTransceiverPtr transceiver;
 
-    if(connectionType == Client)
+    return _serverContext.createTransceiver(socket, this, timeout);
+}
+
+SslTransceiverPtr
+IceSSL::OpenSSLPluginI::createClientTransceiver(int socket, int timeout)
+{
+    IceUtil::RecMutex::Lock sync(_configMutex);
+
+    // Configure the context if need be.
+    if(!isConfigured(IceSSL::Client))
     {
-        transceiver = _clientContext.createTransceiver(socket, this, timeout);
-    }
-    else if(connectionType == Server)
-    {
-        transceiver = _serverContext.createTransceiver(socket, this, timeout);
+        configure(IceSSL::Client);
     }
 
-    return transceiver;
+    SslTransceiverPtr transceiver;
+
+    return _clientContext.createTransceiver(socket, this, timeout);
 }
 
 bool

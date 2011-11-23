@@ -591,6 +591,8 @@ Slice::JavaVisitor::writeDispatch(Output& out, const ClassDefPtr& p)
 
 	    int iter;
 	    
+	    out << nl << "__checkMode(" << sliceModeToIceMode(op) << ", __current.mode);";
+
 	    if(!inParams.empty())
 	    {
 		out << nl << "IceInternal.BasicStream __is = __inS.is();";
@@ -722,6 +724,8 @@ Slice::JavaVisitor::writeDispatch(Output& out, const ClassDefPtr& p)
 	    
 	    int iter;
 	    
+	    out << nl << "__checkMode(" << sliceModeToIceMode(op) << ", __current.mode);";
+
 	    if(!inParams.empty())
 	    {
 		out << nl << "IceInternal.BasicStream __is = __inS.is();";
@@ -1375,8 +1379,17 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
 {
     string name = p->name();
     ClassList bases = p->bases();
+    ClassDefPtr baseClass;
+    if(!bases.empty() && !bases.front()->isInterface())
+    {
+	baseClass = bases.front();
+    }
+
     string package = getPackage(p);
     string absolute = getAbsolute(p);
+    DataMemberList members = p->dataMembers();
+    DataMemberList allDataMembers = p->allDataMembers();
+    DataMemberList::const_iterator d;
 
     if(!open(absolute))
     {
@@ -1443,8 +1456,7 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
         else
         {
             out << " extends ";
-            ClassDefPtr base = bases.front();
-            out << getAbsolute(base, package);
+            out << getAbsolute(baseClass, package);
             bases.pop_front();
         }
 
@@ -1494,6 +1506,53 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
 
     out << sb;
 
+    if(!p->isInterface() && !allDataMembers.empty())
+    {
+	//
+	// Constructors.
+	//
+	out << sp;
+	out << nl << "public " << name << "()";
+	out << sb;
+	if(baseClass)
+	{
+	    out << nl << "super();";
+	}
+	out << eb;
+
+	out << sp << nl << "public " << name << spar;
+	vector<string> paramDecl;
+	for(d = allDataMembers.begin(); d != allDataMembers.end(); ++d)
+	{
+	    string memberName = fixKwd((*d)->name());
+	    string memberType = typeToString((*d)->type(), TypeModeMember, package, (*d)->getMetaData());
+	    paramDecl.push_back(memberType + " " + memberName);
+	}
+	out << paramDecl << epar;
+	out << sb;
+	if(baseClass && allDataMembers.size() != members.size())
+	{
+	    out << nl << "super" << spar;
+	    vector<string> baseParamNames;
+	    DataMemberList baseDataMembers = baseClass->allDataMembers();
+	    for(d = baseDataMembers.begin(); d != baseDataMembers.end(); ++d)
+	    {
+		baseParamNames.push_back(fixKwd((*d)->name()));
+	    }
+	    out << baseParamNames << epar << ';';
+	}
+	vector<string> paramNames;
+	for(d = members.begin(); d != members.end(); ++d)
+	{
+	    paramNames.push_back(fixKwd((*d)->name()));
+	}
+	for(vector<string>::const_iterator i = paramNames.begin(); i != paramNames.end(); ++i)
+	{
+	    out << nl << "this." << *i << " = " << *i << ';';
+	}
+	out << eb;
+    }
+
     //
     // Default factory for non-abstract classes.
     //
@@ -1526,8 +1585,6 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
     {
         writeDispatch(out, p);
 
-        DataMemberList members = p->dataMembers();
-        DataMemberList::const_iterator d;
         int iter;
 
         out << sp << nl << "public void" << nl << "__write(IceInternal.BasicStream __os)";
@@ -1738,6 +1795,9 @@ Slice::Gen::TypesVisitor::visitExceptionStart(const ExceptionPtr& p)
     ExceptionPtr base = p->base();
     string package = getPackage(p);
     string absolute = getAbsolute(p);
+    DataMemberList allDataMembers = p->allDataMembers();
+    DataMemberList members = p->dataMembers();
+    DataMemberList::const_iterator d;
 
     if(!open(absolute))
     {
@@ -1764,6 +1824,53 @@ Slice::Gen::TypesVisitor::visitExceptionStart(const ExceptionPtr& p)
         out << getAbsolute(base, package);
     }
     out << sb;
+
+    if(!allDataMembers.empty())
+    {
+	//
+	// Constructors.
+	//
+	out << sp;
+	out << nl << "public " << name << "()";
+	out << sb;
+	if(base)
+	{
+	    out << nl << "super();";
+	}
+	out << eb;
+
+	out << sp << nl << "public " << name << spar;
+	vector<string> paramDecl;
+	for(d = allDataMembers.begin(); d != allDataMembers.end(); ++d)
+	{
+	    string memberName = fixKwd((*d)->name());
+	    string memberType = typeToString((*d)->type(), TypeModeMember, package, (*d)->getMetaData());
+	    paramDecl.push_back(memberType + " " + memberName);
+	}
+	out << paramDecl << epar;
+	out << sb;
+	if(base && allDataMembers.size() != members.size())
+	{
+	    out << nl << "super" << spar;
+	    vector<string> baseParamNames;
+	    DataMemberList baseDataMembers = base->allDataMembers();
+	    for(d = baseDataMembers.begin(); d != baseDataMembers.end(); ++d)
+	    {
+		baseParamNames.push_back(fixKwd((*d)->name()));
+	    }
+	    out << baseParamNames << epar << ';';
+	}
+	vector<string> paramNames;
+	for(d = members.begin(); d != members.end(); ++d)
+	{
+	    paramNames.push_back(fixKwd((*d)->name()));
+	}
+	for(vector<string>::const_iterator i = paramNames.begin(); i != paramNames.end(); ++i)
+	{
+	    out << nl << "this." << *i << " = " << *i << ';';
+	}
+	out << eb;
+    }
 
     out << sp << nl << "public String" << nl << "ice_name()";
     out << sb;
@@ -2034,7 +2141,30 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
     DataMemberList::const_iterator d;
     int iter;
 
+    string name = fixKwd(p->name());
     string typeS = typeToString(p, TypeModeIn, package);
+
+    out << sp << nl << "public " << name << "()";
+    out << sb;
+    out << eb;
+
+    vector<string> paramDecl;
+    vector<string> paramNames;
+    for(d = members.begin(); d != members.end(); ++d)
+    {
+	string memberName = fixKwd((*d)->name());
+	string memberType = typeToString((*d)->type(), TypeModeMember, package, (*d)->getMetaData());
+	paramDecl.push_back(memberType + " " + memberName);
+	paramNames.push_back(memberName);
+    }
+
+    out << sp << nl << "public " << name << spar << paramDecl << epar;
+    out << sb;
+    for(vector<string>::const_iterator i = paramNames.begin(); i != paramNames.end(); ++i)
+    {
+	out << nl << "this." << *i << " = " << *i << ';';
+    }
+    out << eb;
 
     out << sp << nl << "public boolean" << nl << "equals(java.lang.Object rhs)";
     out << sb;
@@ -2150,11 +2280,17 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
     out << eb;
 
     out << sp << nl << "public java.lang.Object" << nl << "clone()";
-    out.inc();
-    out << nl << "throws java.lang.CloneNotSupportedException";
-    out.dec();
     out << sb;
-    out << nl << "return super.clone();";
+    out << nl << "java.lang.Object o = null;";
+    out << nl << "try";
+    out << sb;
+    out << nl << "o = super.clone();";
+    out << eb;
+    out << nl << "catch(CloneNotSupportedException ex)";
+    out << sb;
+    out << nl << "assert false; // impossible";
+    out << eb;
+    out << nl << "return o;";
     out << eb;
 
     if(!p->isLocal())
@@ -2499,10 +2635,6 @@ Slice::Gen::TypesVisitor::visitConst(const ConstPtr& p)
 	    {
 		out << "\"";
 
-		ios_base::fmtflags originalFlags = out.flags();
-		streamsize originalWidth = out.width();
-		ostream::char_type originalFill = out.fill();
-
 		const string val = p->value();
 		for(string::const_iterator c = val.begin(); c != val.end(); ++c)
 		{
@@ -2536,20 +2668,18 @@ Slice::Gen::TypesVisitor::visitConst(const ConstPtr& p)
 			    default:
 			    {
 				unsigned char uc = *c;
-				out << "\\u";
-				out.flags(ios_base::hex);
-				out.width(4);
-				out.fill('0');
-				out << static_cast<unsigned>(uc);
+				ostringstream s;
+				s << "\\u";
+				s.flags(ios_base::hex);
+				s.width(4);
+				s.fill('0');
+				s << static_cast<unsigned>(uc);
+				out << s.str();
 				break;
 			    }
 			}
 		    }
 		}
-
-		out.fill(originalFill);
-		out.width(originalWidth);
-		out.flags(originalFlags);
 
 		out << "\"";
 		break;
@@ -3181,522 +3311,75 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
     TypePtr key = p->keyType();
     TypePtr value = p->valueType();
 
+    string name = p->name();
     string absolute = getAbsolute(p);
     string helper = getAbsolute(p, "", "", "Helper");
+    string package = getPackage(p);
+    StringList metaData = p->getMetaData();
+    string mapType = findMetaData(metaData);
+    string formalType, actualType;
+    if(mapType.empty())
+    {
+	formalType = "java.util.Map";
+	actualType = "java.util.HashMap";
+    }
+    else
+    {
+	formalType = mapType;
+	actualType = mapType;
+    }
 
     if(open(helper))
     {
         Output& out = output();
-        string name = p->name();
-        string package = getPackage(p);
-        string keyS = typeToString(key, TypeModeIn, package);
-        string valueS = typeToString(value, TypeModeIn, package);
-	StringList metaData = p->getMetaData();
-	string dictType = findMetaData(metaData);
-        int iter;
-        int i;
+	int iter;
 
         out << sp << nl << "public final class " << name << "Helper";
         out << sb;
 
-        out << nl << "public static void" << nl << "write(IceInternal.BasicStream __os, " << "java.util.Map __v)";
+        out << nl << "public static void" << nl << "write(IceInternal.BasicStream __os, java.util.Map __v)";
         out << sb;
-        out << nl << "if(__v == null)";
-        out << sb;
-        out << nl << "__os.writeSize(0);";
-        out << eb;
-        out << nl << "else";
-        out << sb;
-        out << nl << "__os.writeSize(__v.size());";
-        out << nl << "java.util.Iterator __i = __v.entrySet().iterator();";
-        out << nl << "while(__i.hasNext())";
-        out << sb;
-        out << nl << "java.util.Map.Entry __e = (java.util.Map.Entry)" << "__i.next();";
-        iter = 0;
-        for(i = 0; i < 2; i++)
-        {
-            string val;
-            string arg;
-            TypePtr type;
-            if(i == 0)
-            {
-                arg = "__e.getKey()";
-                type = key;
-            }
-            else
-            {
-                arg = "__e.getValue()";
-                type = value;
-            }
+	iter = 0;
+        writeDictionaryMarshalUnmarshalCode(out, package, p, "__v", true, iter, false);
+	out << eb;
 
-            BuiltinPtr b = BuiltinPtr::dynamicCast(type);
-            if(b)
-            {
-                switch(b->kind())
-                {
-                    case Builtin::KindByte:
-                    {
-                        val = "((java.lang.Byte)" + arg + ").byteValue()";
-                        break;
-                    }
-                    case Builtin::KindBool:
-                    {
-                        val = "((java.lang.Boolean)" + arg + ").booleanValue()";
-                        break;
-                    }
-                    case Builtin::KindShort:
-                    {
-                        val = "((java.lang.Short)" + arg + ").shortValue()";
-                        break;
-                    }
-                    case Builtin::KindInt:
-                    {
-                        val = "((java.lang.Integer)" + arg + ").intValue()";
-                        break;
-                    }
-                    case Builtin::KindLong:
-                    {
-                        val = "((java.lang.Long)" + arg + ").longValue()";
-                        break;
-                    }
-                    case Builtin::KindFloat:
-                    {
-                        val = "((java.lang.Float)" + arg + ").floatValue()";
-                        break;
-                    }
-                    case Builtin::KindDouble:
-                    {
-                        val = "((java.lang.Double)" + arg + ").doubleValue()";
-                        break;
-                    }
-                    case Builtin::KindString:
-                    case Builtin::KindObject:
-                    case Builtin::KindObjectProxy:
-                    {
-                        break;
-                    }
-                    case Builtin::KindLocalObject:
-                    {
-                        assert(false);
-                        break;
-                    }
-                }
-            }
+	out << sp << nl << "public static " << formalType
+	    << nl << "read(IceInternal.BasicStream __is)";
+	out << sb;
+	out << nl << actualType << " __v = new " << actualType << "();";
+	out << nl << "read(__is, __v);";
+	out << nl << "return __v;";
+	out << eb;
 
-            if(val.empty())
-            {
-                val = "((" + typeToString(type, TypeModeIn, package) + ')' + arg + ')';
-            }
-            writeMarshalUnmarshalCode(out, package, type, val, true, iter, false);
-        }
-        out << eb;
-        out << eb;
-        out << eb;
-
-	BuiltinPtr builtin = BuiltinPtr::dynamicCast(value);
-	if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(value))
-	{
-	    //
-	    // The dictionary uses class values.
-	    //
-	    out << sp << nl << "private static class Patcher implements IceInternal.Patcher";
-            if(_stream)
-            {
-                out << ", Ice.ReadObjectCallback";
-            }
-	    out << sb;
-	    string keyTypeS = keyS;
-            BuiltinPtr b = BuiltinPtr::dynamicCast(key);
-	    if(b)
-	    {
-		switch(b->kind())
-		{
-                    case Builtin::KindByte:
-                    {
-                        keyTypeS = "java.lang.Byte";
-                        break;
-                    }
-                    case Builtin::KindBool:
-                    {
-                        keyTypeS = "java.lang.Boolean";
-                        break;
-                    }
-                    case Builtin::KindShort:
-                    {
-                        keyTypeS = "java.lang.Short";
-                        break;
-                    }
-                    case Builtin::KindInt:
-                    {
-                        keyTypeS = "java.lang.Integer";
-                        break;
-                    }
-                    case Builtin::KindLong:
-                    {
-                        keyTypeS = "java.lang.Long";
-                        break;
-                    }
-                    case Builtin::KindFloat:
-                    {
-                        keyTypeS = "java.lang.Float";
-                        break;
-                    }
-                    case Builtin::KindDouble:
-                    {
-                        keyTypeS = "java.lang.Double";
-                        break;
-                    }
-		    default:
-		    {
-			break;	// Do nothing
-		    }
-		}
-	    }
-	    out << sp << nl << "Patcher(java.util.Map m, " << keyTypeS << " key)";
-	    out << sb;
-	    out << nl << "__m = m;";
-	    out << nl << "__key = key;";
-	    out << eb;
-
-	    out << sp << nl << "public void" << nl << "patch(Ice.Object v)";
-	    out << sb;
-	    out << nl << valueS << " _v = (" << valueS << ")v;";
-	    out << nl << "__m.put(__key, v);";
-	    out << eb;
-
-	    out << sp << nl << "public String" << nl << "type()";
-	    out << sb;
-	    out << nl << "return \"" << value->typeId() << "\";";
-	    out << eb;
-
-            if(_stream)
-            {
-                out << sp << nl << "public void" << nl << "invoke(Ice.Object v)";
-                out << sb;
-                out << nl << "patch(v);";
-                out << eb;
-            }
-
-	    out << sp << nl << "private java.util.Map __m;";
-	    out << nl << "private " << keyTypeS << " __key;";
-	    out << eb;
-	}
-
-        out << sp << nl << "public static " << (dictType.empty() ? "java.util.Map" : dictType);
-        out << nl << "read(IceInternal.BasicStream __is)";
-        out << sb;
-        out << nl << "int __sz = __is.readSize();";
-        out << nl << (dictType.empty() ? "java.util.Map" : dictType) << " __r = new "
-	    << (dictType.empty() ? "java.util.HashMap(__sz)" : dictType + "()") << ';';
-        out << nl << "for(int __i = 0; __i < __sz; __i++)";
-        out << sb;
-        iter = 0;
-        for(i = 0; i < 2; i++)
-        {
-            string arg;
-            TypePtr type;
-            if(i == 0)
-            {
-                arg = "__key";
-                type = key;
-            }
-            else
-            {
-                arg = "__value";
-                type = value;
-            }
-
-            BuiltinPtr b = BuiltinPtr::dynamicCast(type);
-            if(b)
-            {
-                switch(b->kind())
-                {
-                    case Builtin::KindByte:
-                    {
-                        out << nl << "java.lang.Byte " << arg << " = new java.lang.Byte(__is.readByte());";
-                        break;
-                    }
-                    case Builtin::KindBool:
-                    {
-                        out << nl << "java.lang.Boolean " << arg << " = new java.lang.Boolean(__is.readBool());";
-                        break;
-                    }
-                    case Builtin::KindShort:
-                    {
-                        out << nl << "java.lang.Short " << arg << " = new java.lang.Short(__is.readShort());";
-                        break;
-                    }
-                    case Builtin::KindInt:
-                    {
-                        out << nl << "java.lang.Integer " << arg << " = new java.lang.Integer(__is.readInt());";
-                        break;
-                    }
-                    case Builtin::KindLong:
-                    {
-                        out << nl << "java.lang.Long " << arg << " = new java.lang.Long(__is.readLong());";
-                        break;
-                    }
-                    case Builtin::KindFloat:
-                    {
-                        out << nl << "java.lang.Float " << arg << " = new java.lang.Float(__is.readFloat());";
-                        break;
-                    }
-                    case Builtin::KindDouble:
-                    {
-                        out << nl << "java.lang.Double " << arg << " = new java.lang.Double(__is.readDouble());";
-                        break;
-                    }
-                    case Builtin::KindString:
-                    {
-                        out << nl << "java.lang.String " << arg << " = __is.readString();";
-                        break;
-                    }
-                    case Builtin::KindObject:
-                    {
-                        out << nl << "__is.readObject(new Patcher(__r, __key));";
-                        break;
-                    }
-                    case Builtin::KindObjectProxy:
-                    {
-                        out << nl << "Ice.ObjectPrx " << arg << " = __is.readProxy();";
-                        break;
-                    }
-                    case Builtin::KindLocalObject:
-                    {
-                        assert(false);
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                string s = typeToString(type, TypeModeIn, package);
-		BuiltinPtr builtin2 = BuiltinPtr::dynamicCast(type);
-		if((builtin2 && builtin2->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(type))
-		{
-		    writeMarshalUnmarshalCode(out, package, type, arg, false, iter, false, StringList(),
-					      "new Patcher(__r, __key)");
-		}
-		else
-		{
-		    out << nl << s << ' ' << arg << ';';
-		    writeMarshalUnmarshalCode(out, package, type, arg, false, iter, false);
-		}
-            }
-        }
-	if(!(builtin && builtin->kind() == Builtin::KindObject) && !ClassDeclPtr::dynamicCast(value))
-	{
-	    out << nl << "__r.put(__key, __value);";
-	}
-        out << eb;
-        out << nl << "return __r;";
-        out << eb;
+	out << sp << nl << "public static void"
+	    << nl << "read(IceInternal.BasicStream __is, java.util.Map __v)";
+	out << sb;
+	iter = 0;
+	writeDictionaryMarshalUnmarshalCode(out, package, p, "__v", false, iter, false);
+	out << eb;
 
         if(_stream)
         {
-            out << sp << nl << "public static void" << nl << "write(Ice.OutputStream __outS, " << "java.util.Map __v)";
+            out << sp << nl << "public static void" << nl << "write(Ice.OutputStream __outS, java.util.Map __v)";
             out << sb;
-            out << nl << "if(__v == null)";
-            out << sb;
-            out << nl << "__outS.writeSize(0);";
-            out << eb;
-            out << nl << "else";
-            out << sb;
-            out << nl << "__outS.writeSize(__v.size());";
-            out << nl << "java.util.Iterator __i = __v.entrySet().iterator();";
-            out << nl << "while(__i.hasNext())";
-            out << sb;
-            out << nl << "java.util.Map.Entry __e = (java.util.Map.Entry)" << "__i.next();";
-            iter = 0;
-            for(i = 0; i < 2; i++)
-            {
-                string val;
-                string arg;
-                TypePtr type;
-                if(i == 0)
-                {
-                    arg = "__e.getKey()";
-                    type = key;
-                }
-                else
-                {
-                    arg = "__e.getValue()";
-                    type = value;
-                }
-
-                BuiltinPtr b = BuiltinPtr::dynamicCast(type);
-                if(b)
-                {
-                    switch(b->kind())
-                    {
-                        case Builtin::KindByte:
-                        {
-                            val = "((java.lang.Byte)" + arg + ").byteValue()";
-                            break;
-                        }
-                        case Builtin::KindBool:
-                        {
-                            val = "((java.lang.Boolean)" + arg + ").booleanValue()";
-                            break;
-                        }
-                        case Builtin::KindShort:
-                        {
-                            val = "((java.lang.Short)" + arg + ").shortValue()";
-                            break;
-                        }
-                        case Builtin::KindInt:
-                        {
-                            val = "((java.lang.Integer)" + arg + ").intValue()";
-                            break;
-                        }
-                        case Builtin::KindLong:
-                        {
-                            val = "((java.lang.Long)" + arg + ").longValue()";
-                            break;
-                        }
-                        case Builtin::KindFloat:
-                        {
-                            val = "((java.lang.Float)" + arg + ").floatValue()";
-                            break;
-                        }
-                        case Builtin::KindDouble:
-                        {
-                            val = "((java.lang.Double)" + arg + ").doubleValue()";
-                            break;
-                        }
-                        case Builtin::KindString:
-                        case Builtin::KindObject:
-                        case Builtin::KindObjectProxy:
-                        {
-                            break;
-                        }
-                        case Builtin::KindLocalObject:
-                        {
-                            assert(false);
-                            break;
-                        }
-                    }
-                }
-
-                if(val.empty())
-                {
-                    val = "((" + typeToString(type, TypeModeIn, package) + ')' + arg + ')';
-                }
-                writeStreamMarshalUnmarshalCode(out, package, type, val, true, iter, false);
-            }
-            out << eb;
-            out << eb;
+	    iter = 0;
+	    writeStreamDictionaryMarshalUnmarshalCode(out, package, p, "__v", true, iter, false);
             out << eb;
 
-	    out << sp << nl << "public static " << (dictType.empty() ? "java.util.Map" : dictType)
+	    out << sp << nl << "public static " << formalType
                 << nl << "read(Ice.InputStream __inS)";
             out << sb;
-            out << nl << "int __sz = __inS.readSize();";
-	    out << nl << (dictType.empty() ? "java.util.Map" : dictType) << " __r = new "
-		<< (dictType.empty() ? "java.util.HashMap(__sz)" : dictType + "()") << ';';
-            out << nl << "for(int __i = 0; __i < __sz; __i++)";
-            out << sb;
-            iter = 0;
-            for(i = 0; i < 2; i++)
-            {
-                string arg;
-                TypePtr type;
-                if(i == 0)
-                {
-                    arg = "__key";
-                    type = key;
-                }
-                else
-                {
-                    arg = "__value";
-                    type = value;
-                }
+	    out << nl << actualType << " __v = new " << actualType << "();";
+	    out << nl << "read(__inS, __v);";
+	    out << nl << "return __v;";
+            out << eb;
 
-                BuiltinPtr b = BuiltinPtr::dynamicCast(type);
-                if(b)
-                {
-                    switch(b->kind())
-                    {
-                        case Builtin::KindByte:
-                        {
-                            out << nl << "java.lang.Byte " << arg << " = new java.lang.Byte(__inS.readByte());";
-                            break;
-                        }
-                        case Builtin::KindBool:
-                        {
-                            out << nl << "java.lang.Boolean " << arg << " = new java.lang.Boolean(__inS.readBool());";
-                            break;
-                        }
-                        case Builtin::KindShort:
-                        {
-                            out << nl << "java.lang.Short " << arg << " = new java.lang.Short(__inS.readShort());";
-                            break;
-                        }
-                        case Builtin::KindInt:
-                        {
-                            out << nl << "java.lang.Integer " << arg << " = new java.lang.Integer(__inS.readInt());";
-                            break;
-                        }
-                        case Builtin::KindLong:
-                        {
-                            out << nl << "java.lang.Long " << arg << " = new java.lang.Long(__inS.readLong());";
-                            break;
-                        }
-                        case Builtin::KindFloat:
-                        {
-                            out << nl << "java.lang.Float " << arg << " = new java.lang.Float(__inS.readFloat());";
-                            break;
-                        }
-                        case Builtin::KindDouble:
-                        {
-                            out << nl << "java.lang.Double " << arg << " = new java.lang.Double(__inS.readDouble());";
-                            break;
-                        }
-                        case Builtin::KindString:
-                        {
-                            out << nl << "java.lang.String " << arg << " = __inS.readString();";
-                            break;
-                        }
-                        case Builtin::KindObject:
-                        {
-                            out << nl << "__inS.readObject(new Patcher(__r, __key));";
-                            break;
-                        }
-                        case Builtin::KindObjectProxy:
-                        {
-                            out << nl << "Ice.ObjectPrx " << arg << " = __inS.readProxy();";
-                            break;
-                        }
-                        case Builtin::KindLocalObject:
-                        {
-                            assert(false);
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    string s = typeToString(type, TypeModeIn, package);
-                    BuiltinPtr builtin2 = BuiltinPtr::dynamicCast(type);
-                    if((builtin2 && builtin2->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(type))
-                    {
-                        writeStreamMarshalUnmarshalCode(out, package, type, arg, false, iter, false, StringList(),
-                                                        "new Patcher(__r, __key)");
-                    }
-                    else
-                    {
-                        out << nl << s << ' ' << arg << ';';
-                        writeStreamMarshalUnmarshalCode(out, package, type, arg, false, iter, false);
-                    }
-                }
-            }
-            if(!(builtin && builtin->kind() == Builtin::KindObject) && !ClassDeclPtr::dynamicCast(value))
-            {
-                out << nl << "__r.put(__key, __value);";
-            }
-            out << eb;
-            out << nl << "return __r;";
-            out << eb;
+	    out << sp << nl << "public static void"
+		<< nl << "read(Ice.InputStream __inS, java.util.Map __v)";
+	    out << sb;
+	    iter = 0;
+	    writeStreamDictionaryMarshalUnmarshalCode(out, package, p, "__v", false, iter, false);
+	    out << eb;
         }
 
         out << eb;
@@ -3996,15 +3679,15 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
         writeDelegateThrowsClause(package, throws);
         out << sb;
 
-        out << nl << "IceInternal.Outgoing __outS = getOutgoing(\"" << op->name() << "\", " << sliceModeToIceMode(op)
-	    << ", __ctx);";
+        out << nl << "IceInternal.Outgoing __og = __connection.getOutgoing(__reference, \"" << op->name() << "\", "
+	    << sliceModeToIceMode(op) << ", __ctx, __compress);";
         out << nl << "try";
         out << sb;
         if(!inParams.empty())
         {
 	    out << nl << "try";
 	    out << sb;
-            out << nl << "IceInternal.BasicStream __os = __outS.os();";
+            out << nl << "IceInternal.BasicStream __os = __og.os();";
 	    iter = 0;
 	    for(pli = inParams.begin(); pli != inParams.end(); ++pli)
 	    {
@@ -4018,19 +3701,19 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
 	    out << eb;
 	    out << nl << "catch(Ice.LocalException __ex)";
 	    out << sb;
-	    out << nl << "__outS.abort(__ex);";
+	    out << nl << "__og.abort(__ex);";
 	    out << eb;
 	}
-	out << nl << "boolean __ok = __outS.invoke();";
+	out << nl << "boolean __ok = __og.invoke();";
 	out << nl << "try";
 	out << sb;
-	out << nl << "IceInternal.BasicStream __is = __outS.is();";
+	out << nl << "IceInternal.BasicStream __is = __og.is();";
         out << nl << "if(!__ok)";
         out << sb;
-	out << nl << "try";
-	out << sb;
+        out << nl << "try";
+        out << sb;
 	out << nl << "__is.throwException();";
-	out << eb;
+        out << eb;
 	for(ExceptionList::const_iterator t = throws.begin(); t != throws.end(); ++t)
 	{
 	    out << nl << "catch(" << getAbsolute(*t, package) << " __ex)";
@@ -4040,7 +3723,7 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
 	}
 	out << nl << "catch(Ice.UserException __ex)";
 	out << sb;
-        out << nl << "throw new Ice.UnknownUserException();";
+        out << nl << "throw new Ice.UnknownUserException(__ex.ice_name());";
 	out << eb;
         out << eb;
         for(pli = outParams.begin(); pli != outParams.end(); ++pli)
@@ -4086,7 +3769,7 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
         out << eb;
         out << nl << "finally";
         out << sb;
-        out << nl << "reclaimOutgoing(__outS);";
+        out << nl << "__connection.reclaimOutgoing(__og);";
         out << eb;
         out << eb;
     }
@@ -4803,13 +4486,14 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	{
 	    out << nl << "catch(" << getAbsolute(*r, classPkg) << " __ex)";
 	    out << sb;
-	    out << nl << "throw __ex;";
+	    out << nl << "ice_exception(__ex);";
+	    out << nl << "return;";
 	    out << eb;
 	}
 	out << nl << "catch(Ice.UserException __ex)";
 	out << sb;
-        out << nl << "throw new Ice.UnknownUserException();";
-	out << eb;
+        out << nl << "throw new Ice.UnknownUserException(__ex.ice_name());";
+        out << eb;
         out << eb;
         for(pli = outParams.begin(); pli != outParams.end(); ++pli)
         {
@@ -4848,14 +4532,6 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	out << nl << "__finished(__ex);";
 	out << nl << "return;";
 	out << eb;
-	if(!throws.empty())
-	{
-	    out << nl << "catch(Ice.UserException __ex)";
-	    out << sb;
-	    out << nl << "ice_exception(__ex);";
-	    out << nl << "return;";
-	    out << eb;
-	}
 	out << nl << "ice_response" << spar << args << epar << ';';
 	out << eb;
 	out << eb;

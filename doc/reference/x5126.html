@@ -1,0 +1,1412 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Ice::Properties</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Ice::Process"
+HREF="x5062.html"><LINK
+REL="NEXT"
+TITLE="Ice::ProtocolException"
+HREF="x5496.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x5062.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x5496.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICE.PROPERTIES"
+><TT
+CLASS="LITERAL"
+>Ice::Properties</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN5129"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local interface <CODE
+CLASS="CLASSNAME"
+>Properties</CODE
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>A property set used to configure <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> and <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> applications.
+Properties are key/value pairs, with both keys and values
+being <SPAN
+CLASS="TYPE"
+>string</SPAN
+>s. By convention, property keys should have the form
+<TT
+CLASS="REPLACEABLE"
+><I
+>application-name</I
+></TT
+>[.<TT
+CLASS="REPLACEABLE"
+><I
+>category</I
+></TT
+>[.<TT
+CLASS="REPLACEABLE"
+><I
+>sub-category</I
+></TT
+>]].<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5141"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="x1181.html#ICE.COMMUNICATOR.GETPROPERTIES"
+><TT
+CLASS="FUNCTION"
+>Communicator::getProperties</TT
+></A
+>, <A
+HREF="x5126.html#ICE.PROPERTIES.CLONE"
+><TT
+CLASS="FUNCTION"
+>clone</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5151"
+>Operation Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x5126.html#ICE.PROPERTIES.CLONE"
+><TT
+CLASS="FUNCTION"
+>clone</TT
+></A
+></DT
+><DD
+><P
+>Create a copy of this property set.</P
+></DD
+><DT
+><A
+HREF="x5126.html#ICE.PROPERTIES.GETCOMMANDLINEOPTIONS"
+><TT
+CLASS="FUNCTION"
+>getCommandLineOptions</TT
+></A
+></DT
+><DD
+><P
+>Get a sequence of command-line options that is equivalent to
+this property set.</P
+></DD
+><DT
+><A
+HREF="x5126.html#ICE.PROPERTIES.GETPROPERTIESFORPREFIX"
+><TT
+CLASS="FUNCTION"
+>getPropertiesForPrefix</TT
+></A
+></DT
+><DD
+><P
+>Get all properties whose keys begins with
+<TT
+CLASS="REPLACEABLE"
+><I
+>prefix</I
+></TT
+>.</P
+></DD
+><DT
+><A
+HREF="x5126.html#ICE.PROPERTIES.GETPROPERTY"
+><TT
+CLASS="FUNCTION"
+>getProperty</TT
+></A
+></DT
+><DD
+><P
+>Get a property by key.</P
+></DD
+><DT
+><A
+HREF="x5126.html#ICE.PROPERTIES.GETPROPERTYASINT"
+><TT
+CLASS="FUNCTION"
+>getPropertyAsInt</TT
+></A
+></DT
+><DD
+><P
+>Get a property as an integer.</P
+></DD
+><DT
+><A
+HREF="x5126.html#ICE.PROPERTIES.GETPROPERTYASINTWITHDEFAULT"
+><TT
+CLASS="FUNCTION"
+>getPropertyAsIntWithDefault</TT
+></A
+></DT
+><DD
+><P
+>Get a property as an integer.</P
+></DD
+><DT
+><A
+HREF="x5126.html#ICE.PROPERTIES.GETPROPERTYWITHDEFAULT"
+><TT
+CLASS="FUNCTION"
+>getPropertyWithDefault</TT
+></A
+></DT
+><DD
+><P
+>Get a property by key.</P
+></DD
+><DT
+><A
+HREF="x5126.html#ICE.PROPERTIES.LOAD"
+><TT
+CLASS="FUNCTION"
+>load</TT
+></A
+></DT
+><DD
+><P
+>Load properties from a file.</P
+></DD
+><DT
+><A
+HREF="x5126.html#ICE.PROPERTIES.PARSECOMMANDLINEOPTIONS"
+><TT
+CLASS="FUNCTION"
+>parseCommandLineOptions</TT
+></A
+></DT
+><DD
+><P
+>Convert a sequence of command-line options into properties.</P
+></DD
+><DT
+><A
+HREF="x5126.html#ICE.PROPERTIES.PARSEICECOMMANDLINEOPTIONS"
+><TT
+CLASS="FUNCTION"
+>parseIceCommandLineOptions</TT
+></A
+></DT
+><DD
+><P
+>Convert a sequence of command-line options into properties.</P
+></DD
+><DT
+><A
+HREF="x5126.html#ICE.PROPERTIES.SETPROPERTY"
+><TT
+CLASS="FUNCTION"
+>setProperty</TT
+></A
+></DT
+><DD
+><P
+>Set a property.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.PROPERTIES.CLONE"
+><TT
+CLASS="LITERAL"
+>clone</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x5126.html"
+><CODE
+CLASS="CLASSNAME"
+>Properties</CODE
+></A
+> <TT
+CLASS="FUNCTION"
+>clone</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Create a copy of this property set.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5229"
+>Return Value</A
+></H3
+><P
+>		A copy of this property set.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.PROPERTIES.GETCOMMANDLINEOPTIONS"
+><TT
+CLASS="LITERAL"
+>getCommandLineOptions</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x78.html#ICE.STRINGSEQ"
+><SPAN
+CLASS="TYPE"
+>StringSeq</SPAN
+></A
+> <TT
+CLASS="FUNCTION"
+>getCommandLineOptions</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get a sequence of command-line options that is equivalent to
+this property set. Each element of the returned sequence is
+a command-line option of the form
+<TT
+CLASS="LITERAL"
+>--<TT
+CLASS="REPLACEABLE"
+><I
+>key</I
+></TT
+>=<TT
+CLASS="REPLACEABLE"
+><I
+>value</I
+></TT
+></TT
+>.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5243"
+>Return Value</A
+></H3
+><P
+>		The command line options for this property set.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.PROPERTIES.GETPROPERTIESFORPREFIX"
+><TT
+CLASS="LITERAL"
+>getPropertiesForPrefix</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x78.html#ICE.PROPERTYDICT"
+><SPAN
+CLASS="TYPE"
+>PropertyDict</SPAN
+></A
+> <TT
+CLASS="FUNCTION"
+>getPropertiesForPrefix</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>prefix</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get all properties whose keys begins with
+<TT
+CLASS="REPLACEABLE"
+><I
+>prefix</I
+></TT
+>. If
+<TT
+CLASS="REPLACEABLE"
+><I
+>prefix</I
+></TT
+> is an empty string,
+then all properties are returned.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5258"
+>Return Value</A
+></H3
+><P
+>		The matching property set.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.PROPERTIES.GETPROPERTY"
+><TT
+CLASS="LITERAL"
+>getProperty</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="FUNCTION"
+>getProperty</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>key</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get a property by key. If the property does not exist, an empty
+string is returned.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5270"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>key</I
+></TT
+></DT
+><DD
+><P
+>			    The property key.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5278"
+>Return Value</A
+></H3
+><P
+>		The property value.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5281"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x5126.html#ICE.PROPERTIES.SETPROPERTY"
+><TT
+CLASS="FUNCTION"
+>setProperty</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.PROPERTIES.GETPROPERTYASINT"
+><TT
+CLASS="LITERAL"
+>getPropertyAsInt</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>int</SPAN
+> <TT
+CLASS="FUNCTION"
+>getPropertyAsInt</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>key</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get a property as an integer. If the property does not exist, 0
+is returned.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5297"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>key</I
+></TT
+></DT
+><DD
+><P
+>			    The property key.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5305"
+>Return Value</A
+></H3
+><P
+>		The property value interpreted as an integer.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5308"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x5126.html#ICE.PROPERTIES.SETPROPERTY"
+><TT
+CLASS="FUNCTION"
+>setProperty</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.PROPERTIES.GETPROPERTYASINTWITHDEFAULT"
+><TT
+CLASS="LITERAL"
+>getPropertyAsIntWithDefault</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>int</SPAN
+> <TT
+CLASS="FUNCTION"
+>getPropertyAsIntWithDefault</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>key</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>int</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>value</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get a property as an integer. If the property does not exist, the
+given default value is returned.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5326"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>key</I
+></TT
+></DT
+><DD
+><P
+>			    The property key.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>value</I
+></TT
+></DT
+><DD
+><P
+>			    The default value to use if the property does not
+exist.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5339"
+>Return Value</A
+></H3
+><P
+>		The property value interpreted as an integer, or the
+default value.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5342"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x5126.html#ICE.PROPERTIES.SETPROPERTY"
+><TT
+CLASS="FUNCTION"
+>setProperty</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.PROPERTIES.GETPROPERTYWITHDEFAULT"
+><TT
+CLASS="LITERAL"
+>getPropertyWithDefault</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="FUNCTION"
+>getPropertyWithDefault</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>key</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>value</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get a property by key. If the property does not exist, the
+given default value is returned.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5360"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>key</I
+></TT
+></DT
+><DD
+><P
+>			    The property key.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>value</I
+></TT
+></DT
+><DD
+><P
+>			    The default value to use if the property does not
+exist.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5373"
+>Return Value</A
+></H3
+><P
+>		The property value or the default value.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5376"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x5126.html#ICE.PROPERTIES.SETPROPERTY"
+><TT
+CLASS="FUNCTION"
+>setProperty</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.PROPERTIES.LOAD"
+><TT
+CLASS="LITERAL"
+>load</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>load</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>file</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Load properties from a file.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5392"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>file</I
+></TT
+></DT
+><DD
+><P
+>			    The property file.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.PROPERTIES.PARSECOMMANDLINEOPTIONS"
+><TT
+CLASS="LITERAL"
+>parseCommandLineOptions</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x78.html#ICE.STRINGSEQ"
+><SPAN
+CLASS="TYPE"
+>StringSeq</SPAN
+></A
+> <TT
+CLASS="FUNCTION"
+>parseCommandLineOptions</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>prefix</I
+></TT
+>,
+    <A
+HREF="x78.html#ICE.STRINGSEQ"
+><SPAN
+CLASS="TYPE"
+>StringSeq</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>options</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Convert a sequence of command-line options into properties.
+All options that begin with
+<TT
+CLASS="LITERAL"
+>--<TT
+CLASS="REPLACEABLE"
+><I
+>prefix</I
+></TT
+>.</TT
+> are
+converted into properties. If the prefix is empty, all options
+that begin with <TT
+CLASS="LITERAL"
+>--</TT
+> are converted to properties.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5416"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>prefix</I
+></TT
+></DT
+><DD
+><P
+>			    The property prefix, or an empty string to
+convert all options starting with <TT
+CLASS="LITERAL"
+>--</TT
+>.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>options</I
+></TT
+></DT
+><DD
+><P
+>			    The command-line options.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5430"
+>Return Value</A
+></H3
+><P
+>		The command-line options that do not start with the specified
+prefix, in their original order.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.PROPERTIES.PARSEICECOMMANDLINEOPTIONS"
+><TT
+CLASS="LITERAL"
+>parseIceCommandLineOptions</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x78.html#ICE.STRINGSEQ"
+><SPAN
+CLASS="TYPE"
+>StringSeq</SPAN
+></A
+> <TT
+CLASS="FUNCTION"
+>parseIceCommandLineOptions</TT
+>(<A
+HREF="x78.html#ICE.STRINGSEQ"
+><SPAN
+CLASS="TYPE"
+>StringSeq</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>options</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Convert a sequence of command-line options into properties.
+All options that begin with one of the following prefixes
+are converted into properties: <TT
+CLASS="LITERAL"
+>--Ice</TT
+>, <TT
+CLASS="LITERAL"
+>--IceBox</TT
+>, <TT
+CLASS="LITERAL"
+>--IceGrid</TT
+>,
+<TT
+CLASS="LITERAL"
+>--IcePatch</TT
+>, <TT
+CLASS="LITERAL"
+>--IcePatch2</TT
+>, <TT
+CLASS="LITERAL"
+>--IceSSL</TT
+>, <TT
+CLASS="LITERAL"
+>--IceStorm</TT
+>, <TT
+CLASS="LITERAL"
+>--Freeze</TT
+>,
+<TT
+CLASS="LITERAL"
+>--Glacier</TT
+>, and <TT
+CLASS="LITERAL"
+>--Glacier2</TT
+>.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5454"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>options</I
+></TT
+></DT
+><DD
+><P
+>			    The command-line options.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5462"
+>Return Value</A
+></H3
+><P
+>		The command-line options that do not start with one of
+the listed prefixes, in their original order.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.PROPERTIES.SETPROPERTY"
+><TT
+CLASS="LITERAL"
+>setProperty</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>setProperty</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>key</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>value</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Set a property. To unset a property, set it to
+the empty string.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5476"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>key</I
+></TT
+></DT
+><DD
+><P
+>			    The property key.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>value</I
+></TT
+></DT
+><DD
+><P
+>			    The property value.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5489"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x5126.html#ICE.PROPERTIES.GETPROPERTY"
+><TT
+CLASS="FUNCTION"
+>getProperty</TT
+></A
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x5062.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x5496.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::Process</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::ProtocolException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -52,14 +52,6 @@ namespace IceInternal
 #    endif
 #endif
 
-#ifndef ICE_PROTOCOL_API 
-#   ifdef ICE_PROTOCOL_API_EXPORTS
-#       define ICE_PROTOCOL_API ICE_DECLSPEC_EXPORT
-#   else
-#       define ICE_PROTOCOL_API ICE_DECLSPEC_IMPORT
-#   endif
-#endif
-
 namespace Ice
 {
 
@@ -75,10 +67,8 @@ typedef double Double;
 // TODO: Should not be inline, this is not performance critical.
 #ifdef _WIN32
 inline int getSystemErrno() { return GetLastError(); }
-inline int getSocketErrno() { return WSAGetLastError(); }
 #else
 inline int getSystemErrno() { return errno; }
-inline int getSocketErrno() { return errno; }
 #endif
 
 #endif

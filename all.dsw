@@ -387,49 +387,13 @@ Package=<4>
     Project_Dep_Name mfchelloS
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name helloicepackC
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name helloicepackS
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name helloicepacksvc
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepack
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepackC
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepacknode
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepackregistry
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name deployerC
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name deployerS
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name deployersvc
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name simpleC
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name simpleS
-    End Project Dependency
-    Begin Project Dependency
     Project_Dep_Name freezescriptdbmap
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name freezescriptevictor
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name transformdb
+    Project_Dep_Name transformDB
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name dumpdb
@@ -448,15 +412,6 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name checksumS
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name simpleicepackC
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name simpleicepackS
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name simpleicepacksvc
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name glacier2
@@ -538,6 +493,72 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name sessionS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegrid
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridadmin
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegriddeployerC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegriddeployerS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegriddeployerSvc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridnode
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridregistry
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridsessionC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridsessionS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridsimpleC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridsimpleS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridupdateC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridupdateS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name minimalC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name minimalS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name holdC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name holdS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name simpleC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name simpleS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridreplicationC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridreplicationS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridreplicationSvc
     End Project Dependency
 }}}
 
@@ -919,72 +940,6 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name iceutil
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "deployerC"=.\test\icepack\deployer\deployerC.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name ice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icebox
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepack
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name iceutil
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "deployerS"=.\test\icepack\deployer\deployerS.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name ice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name iceutil
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "deployersvc"=.\test\icepack\deployer\deployersvc.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name ice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icebox
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name iceutil
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name iceboxS
     End Project Dependency
 }}}
 
@@ -1548,7 +1503,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "helloicepackC"=.\demo\icepack\hello\helloicepackC.dsp - Package Owner=<4>
+Project: "holdC"=.\test\Ice\hold\holdC.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -1558,12 +1513,6 @@ Package=<4>
 {{{
     Begin Project Dependency
     Project_Dep_Name ice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepack
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepackC
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name iceutil
@@ -1572,7 +1521,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "helloicepackS"=.\demo\icepack\hello\helloicepackS.dsp - Package Owner=<4>
+Project: "holdS"=.\test\Ice\hold\holdS.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -1582,39 +1531,6 @@ Package=<4>
 {{{
     Begin Project Dependency
     Project_Dep_Name ice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepack
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepacknode
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name iceutil
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "helloicepacksvc"=.\demo\icepack\hello\helloicepacksvc.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name ice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icebox
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepack
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepacknode
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name iceutil
@@ -1713,7 +1629,121 @@ Package=<4>
 
 ###############################################################################
 
-Project: "icepack"=.\src\icepack\icepack.dsp - Package Owner=<4>
+Project: "icegrid"=.\src\IceGrid\icegrid.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name glacier2
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "icegridadmin"=.\src\IceGrid\icegridadmin.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name icegrid
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icexml
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "icegriddeployerC"=.\test\IceGrid\deployer\icegriddeployerC.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegrid
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "icegriddeployerS"=.\test\IceGrid\deployer\icegriddeployerS.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegrid
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "icegriddeployerSvc"=.\test\IceGrid\deployer\icegriddeployerSvc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegrid
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icebox
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name freeze
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "icegridnode"=.\src\IceGrid\icegridnode.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -1728,13 +1758,34 @@ Package=<4>
     Project_Dep_Name icebox
     End Project Dependency
     Begin Project Dependency
+    Project_Dep_Name icegrid
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icestorm
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icestormS
+    End Project Dependency
+    Begin Project Dependency
     Project_Dep_Name iceutil
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icexml
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icepatch2
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name glacier2
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name freeze
     End Project Dependency
 }}}
 
 ###############################################################################
 
-Project: "icepackC"=.\src\icepack\icepackC.dsp - Package Owner=<4>
+Project: "icegridregistry"=.\src\IceGrid\icegridregistry.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -1746,10 +1797,22 @@ Package=<4>
     Project_Dep_Name ice
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name icepack
+    Project_Dep_Name icegrid
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name iceutil
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name glacier2
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icestorm
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name freeze
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icestormS
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name icebox
@@ -1761,7 +1824,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "icepacknode"=.\src\icepack\icepacknode.dsp - Package Owner=<4>
+Project: "icegridreplicationC"=.\test\IceGrid\replication\icegridreplicationC.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -1770,28 +1833,19 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name freeze
-    End Project Dependency
-    Begin Project Dependency
     Project_Dep_Name ice
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name icebox
+    Project_Dep_Name icegrid
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name iceutil
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icexml
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepack
     End Project Dependency
 }}}
 
 ###############################################################################
 
-Project: "icepackregistry"=.\src\icepack\icepackregistry.dsp - Package Owner=<4>
+Project: "icegridreplicationS"=.\test\IceGrid\replication\icegridreplicationS.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -1803,22 +1857,160 @@ Package=<4>
     Project_Dep_Name ice
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name icepack
+    Project_Dep_Name icegrid
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "icegridreplicationSvc"=.\test\IceGrid\replication\icegridreplicationSvc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegrid
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name iceutil
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name slice
+    Project_Dep_Name icebox
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "icegridsessionC"=.\test\IceGrid\session\icegridsessionC.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ice
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name slice2cpp
+    Project_Dep_Name icegrid
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name freeze
+    Project_Dep_Name iceutil
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name icepacknode
+    Project_Dep_Name glacier2
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "icegridsessionS"=.\test\IceGrid\session\icegridsessionS.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "icegridsimpleC"=.\test\IceGrid\simple\icegridsimpleC.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegrid
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "icegridsimpleS"=.\test\IceGrid\simple\icegridsimpleS.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegrid
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "icegridupdateC"=.\test\IceGrid\update\icegridupdateC.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegrid
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name glacier2
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "icegridupdateS"=.\test\IceGrid\update\icegridupdateS.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
     End Project Dependency
 }}}
 
@@ -2415,18 +2607,6 @@ Package=<4>
     Project_Dep_Name iceboxS
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name icepack
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepackC
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepacknode
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepackregistry
-    End Project Dependency
-    Begin Project Dependency
     Project_Dep_Name icepatch2C
     End Project Dependency
     Begin Project Dependency
@@ -2470,6 +2650,60 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name transformdb
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegrid
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridadmin
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridnode
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icegridregistry
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "minimalC"=.\demo\Ice\minimal\minimalC.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icessl
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "minimalS"=.\demo\Ice\minimal\minimalS.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name icessl
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
     End Project Dependency
 }}}
 
@@ -2789,6 +3023,12 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -2801,11 +3041,17 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iceutil
+    End Project Dependency
 }}}
 
 ###############################################################################
 
-Project: "simpleC"=.\test\icepack\simple\simpleC.dsp - Package Owner=<4>
+Project: "simpleC"=.\demo\IceGrid\simple\simpleC.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -2813,20 +3059,11 @@ Package=<5>
 
 Package=<4>
 {{{
-    Begin Project Dependency
-    Project_Dep_Name ice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name iceutil
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepack
-    End Project Dependency
 }}}
 
 ###############################################################################
 
-Project: "simpleS"=.\test\icepack\simple\simpleS.dsp - Package Owner=<4>
+Project: "simpleS"=.\demo\IceGrid\simple\simpleS.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -2834,12 +3071,6 @@ Package=<5>
 
 Package=<4>
 {{{
-    Begin Project Dependency
-    Project_Dep_Name ice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name iceutil
-    End Project Dependency
 }}}
 
 ###############################################################################
@@ -2872,69 +3103,6 @@ Package=<4>
 {{{
     Begin Project Dependency
     Project_Dep_Name ice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name iceutil
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "simpleicepackC"=.\demo\icepack\simple\simpleicepackC.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name ice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepack
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name iceutil
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "simpleicepackS"=.\demo\icepack\simple\simpleicepackS.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name ice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name iceutil
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "simpleicepacksvc"=.\demo\icepack\simple\simpleicepacksvc.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name ice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icebox
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name icepack
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name iceutil

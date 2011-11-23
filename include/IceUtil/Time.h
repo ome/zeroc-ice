@@ -12,6 +12,10 @@
 
 #include <IceUtil/Config.h>
 
+#ifndef _WIN32
+#   include <sys/time.h>
+#endif
+
 namespace IceUtil
 {
 
@@ -30,7 +34,9 @@ public:
     static Time milliSeconds(Int64);
     static Time microSeconds(Int64);
     
+#ifndef _WIN32
     operator timeval() const;
+#endif
 
     Int64 toSeconds() const;
     Int64 toMilliSeconds() const;
@@ -99,30 +105,9 @@ public:
 	return _usec != rhs._usec;
     }
 
-    Time& operator*=(const Time& rhs)
+    double operator/(const Time& rhs) const
     {
-	_usec *= rhs._usec;
-	return *this;
-    }
-
-    Time operator*(const Time& rhs) const
-    {
-	Time t;
-	t._usec = _usec * rhs._usec;
-	return t;
-    }
-
-    Time& operator/=(const Time& rhs)
-    {
-	_usec /= rhs._usec;
-	return *this;
-    }
-
-    Time operator/(const Time& rhs) const
-    {
-	Time t;
-	t._usec = _usec / rhs._usec;
-	return t;
+	return (double)_usec / (double)rhs._usec;
     }
 
     Time& operator*=(int rhs)

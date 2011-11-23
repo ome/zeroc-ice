@@ -15,10 +15,10 @@ SUBDIRS		= Freeze \
 		  Glacier2 \
 		  Ice \
 		  IceBox \
-		  IcePack \
 		  IcePatch2 \
 		  IceSSL \
-		  IceStorm
+		  IceStorm \
+		  IceGrid
 
 $(EVERYTHING)::
 	@for subdir in $(SUBDIRS); \

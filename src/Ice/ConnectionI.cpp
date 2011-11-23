@@ -17,7 +17,7 @@
 #include <Ice/ThreadPool.h>
 #include <Ice/ConnectionMonitor.h>
 #include <Ice/ObjectAdapterI.h> // For getThreadPool() and getServantManager().
-#include <Ice/Endpoint.h>
+#include <Ice/EndpointI.h>
 #include <Ice/Outgoing.h>
 #include <Ice/OutgoingAsync.h>
 #include <Ice/Incoming.h>
@@ -37,7 +37,7 @@ void IceInternal::decRef(ConnectionI* p) { p->__decRef(); }
 void
 Ice::ConnectionI::validate()
 {
-    bool active;
+    bool active = false;
 
     if(!_endpoint->datagram()) // Datagram connections are always implicitly validated.
     {
@@ -114,6 +114,7 @@ Ice::ConnectionI::validate()
 		traceHeader("sending validate connection", os, _logger, _traceLevels);
 		try
 		{
+		    _transceiver->initialize(timeout);
 		    _transceiver->write(os, timeout);
 		}
 		catch(const TimeoutException&)
@@ -128,6 +129,7 @@ Ice::ConnectionI::validate()
 		is.i = is.b.begin();
 		try
 		{
+		    _transceiver->initialize(timeout);
 		    _transceiver->read(is, timeout);
 		}
 		catch(const TimeoutException&)
@@ -257,6 +259,18 @@ Ice::ConnectionI::close(bool force)
     }
     else
     {
+	//
+	// If we do a graceful shutdown, then we wait until all
+	// outstanding requests have been completed. Otherwise, the
+	// CloseConnectionException will cause all outstanding
+	// requests to be retried, regardless of whether the server
+	// has processed them or not.
+	//
+	while(!_requests.empty() || !_asyncRequests.empty())
+	{
+	    wait();
+	}
+	    
 	setState(StateClosing, CloseConnectionException(__FILE__, __LINE__));
     }
 }
@@ -292,7 +306,7 @@ Ice::ConnectionI::isFinished() const
 	    return false;
 	}
 
-	if(_transceiver != 0 || _dispatchCount != 0 ||
+	if(_transceiver || _dispatchCount != 0 ||
 	   (_threadPerConnection && _threadPerConnection->getThreadControl().isAlive()))
 	{
 	    return false;
@@ -1122,7 +1136,7 @@ Ice::ConnectionI::sendNoResponse()
     }
 }
 
-EndpointPtr
+EndpointIPtr
 Ice::ConnectionI::endpoint() const
 {
     return _endpoint; // No mutex protection necessary, _endpoint is immutable.
@@ -1140,41 +1154,21 @@ Ice::ConnectionI::setAdapter(const ObjectAdapterPtr& adapter)
     
     assert(_state < StateClosing);
 
-    //
-    // Before we set an adapter (or reset it) we wait until the
-    // dispatch count with any old adapter is zero.
-    //
-    // A deadlock can occur if we wait while an operation is
-    // outstanding on this adapter that holds a lock while
-    // calling this function (e.g., __getDelegate).
-    //
-    // In order to avoid such a deadlock, we only wait if the new
-    // adapter is different than the current one.
-    //
-    // TODO: Verify that this fix solves all cases.
-    //
-    if(_adapter.get() != adapter.get())
+    _adapter = adapter;
+
+    if(_adapter)
     {
-	while(_dispatchCount > 0)
-	{
-	    wait();
-	}
-
-	//
-	// We never change the thread pool with which we were initially
-	// registered, even if we add or remove an object adapter.
-	//
-
-	_adapter = adapter;
-	if(_adapter)
-	{
-	    _servantManager = dynamic_cast<ObjectAdapterI*>(_adapter.get())->getServantManager();
-	}
-	else
-	{
-	    _servantManager = 0;
-	}
+	_servantManager = dynamic_cast<ObjectAdapterI*>(_adapter.get())->getServantManager();
     }
+    else
+    {
+	_servantManager = 0;
+    }
+
+    //
+    // We never change the thread pool with which we were initially
+    // registered, even if we add or remove an object adapter.
+    //
 }
 
 ObjectAdapterPtr
@@ -1193,7 +1187,8 @@ Ice::ConnectionI::createProxy(const Identity& ident) const
     //
     vector<ConnectionIPtr> connections;
     connections.push_back(const_cast<ConnectionI*>(this));
-    ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), "", Reference::ModeTwoway, connections);
+    ReferencePtr ref = _instance->referenceFactory()->create(ident, _instance->getDefaultContext(), "",
+							     Reference::ModeTwoway, connections);
     return _instance->proxyFactory()->referenceToProxy(ref);
 }
 
@@ -1286,7 +1281,7 @@ Ice::ConnectionI::finished(const ThreadPoolPtr& threadPool)
 
     threadPool->promoteFollower();
 
-    auto_ptr<LocalException> exception;
+    auto_ptr<LocalException> localEx;
     
     map<Int, Outgoing*> requests;
     map<Int, AsyncRequest> asyncRequests;
@@ -1294,11 +1289,9 @@ Ice::ConnectionI::finished(const ThreadPoolPtr& threadPool)
     {
 	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 	
-	if(_state == StateActive || _state == StateClosing)
-	{
-	    registerWithPool();
-	}
-	else if(_state == StateClosed)
+	--_finishedCount;
+
+	if(_finishedCount == 0 && _state == StateClosed)
 	{
 	    //
 	    // We must make sure that nobody is sending when we close
@@ -1312,7 +1305,7 @@ Ice::ConnectionI::finished(const ThreadPoolPtr& threadPool)
 	    }
 	    catch(const LocalException& ex)
 	    {
-		exception = auto_ptr<LocalException>(dynamic_cast<LocalException*>(ex.ice_clone()));
+		localEx.reset(dynamic_cast<LocalException*>(ex.ice_clone()));
 	    }
 
 	    _transceiver = 0;
@@ -1339,9 +1332,9 @@ Ice::ConnectionI::finished(const ThreadPoolPtr& threadPool)
 	q->second.p->__finished(*_exception.get()); // The exception is immutable at this point.
     }
 
-    if(exception.get())
+    if(localEx.get())
     {
-	exception->ice_throw();
+	localEx->ice_throw();
     }    
 }
 
@@ -1372,7 +1365,7 @@ Ice::ConnectionI::toString() const
 
 Ice::ConnectionI::ConnectionI(const InstancePtr& instance,
 			      const TransceiverPtr& transceiver,
-			      const EndpointPtr& endpoint,
+			      const EndpointIPtr& endpoint,
 			      const ObjectAdapterPtr& adapter) :
     EventHandler(instance),
     _transceiver(transceiver),
@@ -1383,11 +1376,13 @@ Ice::ConnectionI::ConnectionI(const InstancePtr& instance,
     _logger(_instance->logger()), // Cached for better performance.
     _traceLevels(_instance->traceLevels()), // Cached for better performance.
     _registeredWithPool(false),
+    _finishedCount(0),
     _warn(_instance->properties()->getPropertyAsInt("Ice.Warn.Connections") > 0),
     _acmTimeout(0),
     _requestHdr(headerSize + sizeof(Int), 0),
     _requestBatchHdr(headerSize + sizeof(Int), 0),
     _replyHdr(headerSize, 0),
+    _compressionLevel(1),
     _nextRequestId(1),
     _requestsHint(_requests.end()),
     _asyncRequestsHint(_asyncRequests.end()),
@@ -1451,6 +1446,17 @@ Ice::ConnectionI::ConnectionI(const InstancePtr& instance,
     replyHdr[7] = encodingMinor;
     replyHdr[8] = replyMsg;
     replyHdr[9] = 0;
+
+    int& compressionLevel = const_cast<int&>(_compressionLevel);
+    compressionLevel = _instance->properties()->getPropertyAsIntWithDefault("Ice.Compression.Level", 1);
+    if(compressionLevel < 1)
+    {
+	compressionLevel = 1;
+    }
+    else if(compressionLevel > 9)
+    {
+	compressionLevel = 9;
+    }
 
     ObjectAdapterI* adapterImpl = _adapter ? dynamic_cast<ObjectAdapterI*>(_adapter.get()) : 0;
     if(adapterImpl)
@@ -1548,7 +1554,7 @@ Ice::ConnectionI::setState(State state, const LocalException& ex)
 	//
 	assert(_state != StateClosed);
 
-	_exception = auto_ptr<LocalException>(dynamic_cast<LocalException*>(ex.ice_clone()));
+	_exception.reset(dynamic_cast<LocalException*>(ex.ice_clone()));
 
 	if(_warn)
 	{
@@ -1825,6 +1831,7 @@ Ice::ConnectionI::unregisterWithPool()
     {
 	_threadPool->unregister(_transceiver->fd());
 	_registeredWithPool = false;
+	++_finishedCount; // For each unregistration, finished() is called once.
     }
 }
 
@@ -1904,7 +1911,7 @@ Ice::ConnectionI::doCompress(BasicStream& uncompressed, BasicStream& compressed)
 					   &compressedLen,
 					   reinterpret_cast<char*>(&uncompressed.b[0]) + headerSize,
 					   uncompressedLen,
-					   1, 0, 0);
+					   _compressionLevel, 0, 0);
     if(bzError != BZ_OK)
     {
 	CompressionException ex(__FILE__, __LINE__);
@@ -2010,10 +2017,13 @@ Ice::ConnectionI::parseMessage(BasicStream& stream, Int& invokeNum, Int& request
 	    case closeConnectionMsg:
 	    {
 		traceHeader("received close connection", stream, _logger, _traceLevels);
-		if(_endpoint->datagram() && _warn)
+		if(_endpoint->datagram())
 		{
-		    Warning out(_logger);
-		    out << "ignoring close connection message for datagram connection:\n" << _desc;
+		    if(_warn)
+		    {
+		        Warning out(_logger);
+		        out << "ignoring close connection message for datagram connection:\n" << _desc;
+		    }
 		}
 		else
 		{
@@ -2164,9 +2174,24 @@ Ice::ConnectionI::parseMessage(BasicStream& stream, Int& invokeNum, Int& request
 	    }
 	}
     }
+    catch(const SocketException& ex)
+    {
+	exception(ex);
+    }
     catch(const LocalException& ex)
     {
-	setState(StateClosed, ex);
+	if(_endpoint->datagram())
+	{
+	    if(_warn)
+	    {
+	        Warning out(_instance->logger());
+	        out << "datagram connection exception:\n" << ex << '\n' << _desc;
+	    }
+	}
+	else
+	{
+	    setState(StateClosed, ex);
+	}
     }
 }
 
@@ -2282,16 +2307,19 @@ Ice::ConnectionI::run()
 	    //
 	    IceUtil::Mutex::Lock sendSync(_sendMutex);
 	    
-	    try
+	    if(_transceiver)
 	    {
-		_transceiver->close();
-	    }
-	    catch(const LocalException&)
-	    {
-		// Here we ignore any exceptions in close().
-	    }
+	        try
+	        {
+		    _transceiver->close();
+	        }
+	        catch(const LocalException&)
+	        {
+		    // Here we ignore any exceptions in close().
+	        }
 	    
-	    _transceiver = 0;
+	        _transceiver = 0;
+	    }
 	    notifyAll();
 	    return;
 	}
@@ -2397,9 +2425,25 @@ Ice::ConnectionI::run()
 	{
 	    continue;
 	}
-	catch(const LocalException& ex)
+	catch(const SocketException& ex)
 	{
 	    exception(ex);
+	}
+	catch(const LocalException& ex)
+	{
+	    if(_endpoint->datagram())
+	    {
+	        if(_warn)
+	        {
+	            Warning out(_instance->logger());
+	            out << "datagram connection exception:\n" << ex << '\n' << _desc;
+	        }
+		continue;
+	    }
+	    else
+	    {
+	        exception(ex);
+	    }
 	}
 
 	Byte compress = 0;
@@ -2409,7 +2453,7 @@ Ice::ConnectionI::run()
 	ObjectAdapterPtr adapter;
 	OutgoingAsyncPtr outAsync;
 	
-	auto_ptr<LocalException> exception;
+	auto_ptr<LocalException> localEx;
 	
 	map<Int, Outgoing*> requests;
 	map<Int, AsyncRequest> asyncRequests;
@@ -2445,7 +2489,7 @@ Ice::ConnectionI::run()
 		}
 		catch(const LocalException& ex)
 		{
-		    exception = auto_ptr<LocalException>(dynamic_cast<LocalException*>(ex.ice_clone()));
+		    localEx.reset(dynamic_cast<LocalException*>(ex.ice_clone()));
 		}
 		
 		_transceiver = 0;
@@ -2495,10 +2539,10 @@ Ice::ConnectionI::run()
 	    q->second.p->__finished(*_exception.get()); // The exception is immutable at this point.
 	}
 
-	if(exception.get())
+	if(localEx.get())
 	{
 	    assert(closed);
-	    exception->ice_throw();
+	    localEx->ice_throw();
 	}    
     }
 }

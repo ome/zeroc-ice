@@ -29,10 +29,6 @@ IceInternal::DefaultsAndOverrides::DefaultsAndOverrides(const PropertiesPtr& pro
     const_cast<string&>(defaultProtocol) = properties->getPropertyWithDefault("Ice.Default.Protocol", "tcp");
 
     const_cast<string&>(defaultHost) = properties->getProperty("Ice.Default.Host");
-    if(defaultHost.empty())
-    {
-	const_cast<string&>(defaultHost) = getLocalHost(true);
-    }
 
     const_cast<string&>(defaultRouter) = properties->getProperty("Ice.Default.Router");
 
@@ -60,4 +56,7 @@ IceInternal::DefaultsAndOverrides::DefaultsAndOverrides(const PropertiesPtr& pro
     }
 
     const_cast<string&>(defaultLocator) = properties->getProperty("Ice.Default.Locator");
+
+    const_cast<bool&>(defaultCollocationOptimization) =
+	properties->getPropertyAsIntWithDefault("Ice.Default.CollocationOptimization", 1) > 0;
 }

@@ -16,7 +16,7 @@
 namespace Slice
 {
 
-class SLICE_API CsGenerator : public ::IceUtil::noncopyable
+class SLICE_API CsGenerator : private ::IceUtil::noncopyable
 {
 public:
 
@@ -50,6 +50,7 @@ private:
     class MetaDataVisitor : public ParserVisitor
     {
     public:
+        MetaDataVisitor();
 
         virtual bool visitModuleStart(const ModulePtr&);
         virtual void visitModuleEnd(const ModulePtr&);
@@ -73,6 +74,7 @@ private:
         void validate(const ContainedPtr&);
 
         StringSet _history;
+	bool _globalMetaDataDone;
     };
 };
 

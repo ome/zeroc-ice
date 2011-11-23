@@ -16,7 +16,10 @@
 #include <Ice/EndpointFactoryManager.h>
 #include <Ice/RouterInfo.h>
 #include <Ice/LocatorInfo.h>
+#include <Ice/LoggerUtil.h>
 #include <Ice/BasicStream.h>
+#include <Ice/Properties.h>
+#include <Ice/DefaultsAndOverrides.h>
 #include <IceUtil/StringUtil.h>
 
 using namespace std;
@@ -51,7 +54,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
 				      const string& facet,
 				      Reference::Mode mode,
 				      bool secure,
-				      const vector<EndpointPtr>& endpoints,
+				      const vector<EndpointIPtr>& endpoints,
 				      const RouterInfoPtr& routerInfo,
 				      bool collocationOptimization)
 {
@@ -70,7 +73,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
     //
     // Create new reference
     //
-    return new DirectReference(_instance, ident, context, facet, mode, secure,
+    return new DirectReference(_instance, _communicator, ident, context, facet, mode, secure,
 			       endpoints, routerInfo, collocationOptimization);
 }
 
@@ -100,7 +103,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
     //
     // Create new reference
     //
-    return new IndirectReference(_instance, ident, context, facet, mode, secure,
+    return new IndirectReference(_instance, _communicator, ident, context, facet, mode, secure,
 				 adapterId, routerInfo, locatorInfo, collocationOptimization);
 }
 
@@ -126,7 +129,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
     //
     // Create new reference
     //
-    return new FixedReference(_instance, ident, context, facet, mode, fixedConnections);
+    return new FixedReference(_instance, _communicator, ident, context, facet, mode, fixedConnections);
 }
 
 ReferencePtr
@@ -406,15 +409,17 @@ IceInternal::ReferenceFactory::create(const string& str)
 
     if(beg == string::npos)
     {
-	return create(ident, Context(), facet, mode, secure, "", routerInfo, locatorInfo, true);
+	return create(ident, _instance->getDefaultContext(), facet, mode, secure, "", routerInfo, locatorInfo,
+		      _instance->defaultsAndOverrides()->defaultCollocationOptimization);
     }
 
-    vector<EndpointPtr> endpoints;
+    vector<EndpointIPtr> endpoints;
 
     switch(s[beg])
     {
 	case ':':
 	{
+	    vector<string> unknownEndpoints;
 	    end = beg;
 	    
 	    while(end < s.length() && s[end] == ':')
@@ -428,10 +433,35 @@ IceInternal::ReferenceFactory::create(const string& str)
 		}
 		
 		string es = s.substr(beg, end - beg);
-		EndpointPtr endp = _instance->endpointFactoryManager()->create(es);
-		endpoints.push_back(endp);
+		EndpointIPtr endp = _instance->endpointFactoryManager()->create(es, false);
+		if(endp != 0)
+		{
+		    endpoints.push_back(endp);
+		}
+		else
+		{
+		    unknownEndpoints.push_back(es);
+		}
 	    }
-	    return create(ident, Context(), facet, mode, secure, endpoints, routerInfo, true);
+	    if(endpoints.size() == 0)
+	    {
+	        EndpointParseException ex(__FILE__, __LINE__);
+		ex.str = unknownEndpoints.front();
+		throw ex;
+	    }
+	    else if(unknownEndpoints.size() != 0 && 
+	    	    _instance->properties()->getPropertyAsIntWithDefault("Ice.Warn.Endpoints", 1) > 0)
+	    {
+		Warning out(_instance->logger());
+	        out << "Proxy contains unknown endpoints:";
+	        for(unsigned int idx = 0; idx < unknownEndpoints.size(); ++idx)
+		{
+		    out << " `" << unknownEndpoints[idx] << "'";
+		}
+	    }
+
+	    return create(ident, _instance->getDefaultContext(), facet, mode, secure, endpoints, routerInfo,
+			  _instance->defaultsAndOverrides()->defaultCollocationOptimization);
 	    break;
 	}
 	case '@':
@@ -470,7 +500,8 @@ IceInternal::ReferenceFactory::create(const string& str)
 		ex.str = str;
 		throw ex;
 	    }
-	    return create(ident, Context(), facet, mode, secure, adapter, routerInfo, locatorInfo, true);
+	    return create(ident, _instance->getDefaultContext(), facet, mode, secure, adapter, routerInfo,
+			  locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization);
 	    break;
 	}
 	default:
@@ -480,6 +511,8 @@ IceInternal::ReferenceFactory::create(const string& str)
 	    throw ex;
 	}
     }
+
+    return 0; // Unreachable, prevents compiler warning.
 }
 
 ReferencePtr
@@ -521,7 +554,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
     bool secure;
     s->read(secure);
 
-    vector<EndpointPtr> endpoints;
+    vector<EndpointIPtr> endpoints;
     string adapterId;
 
     RouterInfoPtr routerInfo = _instance->routerManager()->get(getDefaultRouter());
@@ -535,15 +568,17 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
 	endpoints.reserve(sz);
 	while(sz--)
 	{
-	    EndpointPtr endpoint = _instance->endpointFactoryManager()->read(s);
+	    EndpointIPtr endpoint = _instance->endpointFactoryManager()->read(s);
 	    endpoints.push_back(endpoint);
 	}
-	return create(ident, Context(), facet, mode, secure, endpoints, routerInfo, true);
+	return create(ident, _instance->getDefaultContext(), facet, mode, secure, endpoints, routerInfo,
+		      _instance->defaultsAndOverrides()->defaultCollocationOptimization);
     }
     else
     {
 	s->read(adapterId);
-	return create(ident, Context(), facet, mode, secure, adapterId, routerInfo, locatorInfo, true);
+	return create(ident, _instance->getDefaultContext(), facet, mode, secure, adapterId, routerInfo,
+		      locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization);
     }
 }
 
@@ -575,8 +610,9 @@ IceInternal::ReferenceFactory::getDefaultLocator() const
     return _defaultLocator;
 }
 
-IceInternal::ReferenceFactory::ReferenceFactory(const InstancePtr& instance) :
-    _instance(instance)
+IceInternal::ReferenceFactory::ReferenceFactory(const InstancePtr& instance, const CommunicatorPtr& communicator) :
+    _instance(instance),
+    _communicator(communicator)
 {
 }
 
@@ -591,6 +627,7 @@ IceInternal::ReferenceFactory::destroy()
     }
 
     _instance = 0;
+    _communicator = 0;
     _defaultRouter = 0;
     _defaultLocator = 0;
 }

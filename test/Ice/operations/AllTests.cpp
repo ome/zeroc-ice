@@ -23,6 +23,10 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     test(base);
     cout << "ok" << endl;
 
+    cout << "testing ice_communicator... " << flush;
+    test(base->ice_communicator() == communicator);
+    cout << "ok" << endl;
+
     cout << "testing checked cast... " << flush;
     Test::MyClassPrx cl = Test::MyClassPrx::checkedCast(base);
     test(cl);
@@ -70,7 +74,7 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     cout << "ok" << endl;
 
     cout << "testing checked cast with context... " << flush;
-    string cref = "test:default -p 12346 -t 10000";
+    string cref = "context:default -p 12345 -t 10000";
     Ice::ObjectPrx cbase = communicator->stringToProxy(cref);
     test(cbase);
 

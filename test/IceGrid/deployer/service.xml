@@ -1,0 +1,23 @@
+<icegrid>
+
+  <service-template id="ServiceTemplate">
+    <parameter name="name"/>
+    <parameter name="NodeVarOverridedByParam"/>
+    <service name="${name}" entry="TestService:create">
+
+      <adapter name="${service}" endpoints="default">
+	<object identity="${server}-${service}" type="::Test"/>
+      </adapter>
+      <property name="${name}.Identity" value="${server}-${name}"/>
+      <property name="${name}.Type" value="standard"/>
+      <property name="${name}.ServiceName" value="${name}"/>
+
+      <include file="varproperties.xml"/>
+
+      <property name="AppVarOverridedByParamProp" value="${AppVarOverridedByParam}"/>
+      <property name="NodeVarOverridedByParamProp" value="${NodeVarOverridedByParam}"/>
+     
+    </service>
+  </service-template>
+
+</icegrid>

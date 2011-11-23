@@ -70,6 +70,7 @@ tests = [ \
     "Ice/gc", \
     "Ice/checksum", \
     "Ice/stream", \
+    "Ice/hold", \
     "IceSSL/configuration", \
     "IceSSL/loadPEM", \
     "IceSSL/certificateAndKeyParsing", \
@@ -83,8 +84,11 @@ tests = [ \
     "IceStorm/federation2", \
     "FreezeScript/dbmap", \
     "FreezeScript/evictor", \
-    "IcePack/simple", \
-    "IcePack/deployer", \
+    "IceGrid/simple", \
+    "IceGrid/deployer", \
+    "IceGrid/session", \
+    "IceGrid/update", \
+    "IceGrid/replication", \
     "Glacier2/router", \
     ]
 

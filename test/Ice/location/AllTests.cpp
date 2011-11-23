@@ -8,11 +8,23 @@
 // **********************************************************************
 
 #include <Ice/Ice.h>
+#include <IceUtil/UUID.h>
 #include <TestCommon.h>
 #include <Test.h>
 
 using namespace std;
 using namespace Test;
+
+class HelloI : virtual public Hello
+{
+public:
+    
+    virtual void
+    sayHello(const Ice::Current& foo)
+    {
+	// Do nothing, this is just a dummy servant.
+    }
+};
 
 void
 allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
@@ -70,8 +82,9 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
 	obj3 = TestIntfPrx::checkedCast(base3);
 	obj3->ice_ping();
     }
-    catch(const Ice::LocalException&)
+    catch(const Ice::LocalException& ex)
     {
+	cerr << ex << endl;
 	test(false);
     }
     try
@@ -229,6 +242,40 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
     catch(const Ice::LocalException&)
     {
     }
+    cout << "ok" << endl;
+
+    cout << "testing indirect references to collocated objects... " << flush;
+    //
+    // Set up test for calling a collocated object through an indirect, adapterless reference.
+    //
+    Ice::PropertiesPtr properties = communicator->getProperties();
+    properties->setProperty("Ice.PrintAdapterReady", "0");
+    properties->setProperty("Hello.Endpoints",
+			    properties->getPropertyWithDefault("Hello.Endpoints",
+							       "default -p 10001"));
+    Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("Hello");
+    Ice::LocatorPrx locator =
+	Ice::LocatorPrx::uncheckedCast(communicator->stringToProxy(properties->getProperty("Ice.Default.Locator")));
+    adapter->setLocator(locator);
+
+    TestLocatorRegistryPrx registry = TestLocatorRegistryPrx::checkedCast(locator->getRegistry());
+    test(registry);
+    
+    Ice::Identity id;
+    id.name = IceUtil::generateUUID();
+    registry->addObject(adapter->add(new HelloI, id));
+    adapter->activate();
+    
+    try
+    {
+	HelloPrx helloPrx = HelloPrx::checkedCast(communicator->stringToProxy(id.name));
+	Ice::ConnectionPtr connection = helloPrx->ice_connection();
+	test(false);
+    }
+    catch(const Ice::CollocationOptimizationException&)
+    {
+    }
+    adapter->deactivate();
     cout << "ok" << endl;
 
     cout << "shutdown server manager... " << flush;

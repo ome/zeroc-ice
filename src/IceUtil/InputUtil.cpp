@@ -11,7 +11,23 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#if defined(_MSC_VER) && (_MSC_VER < 1300) 
+#include <limits.h>
+#endif
+
+#if defined(__hpux)
+#include <inttypes.h>
+#endif
+
 using namespace std;
+
+namespace IceUtil
+{
+
+#if defined(_MSC_VER) && (_MSC_VER < 1300) 
+//
+// The VC60 runtime does not include _strtoi64, so we provide our own implementation
+//
 
 static const string allDigits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -27,17 +43,9 @@ static const char digitVal[] =
     30, 31, 32, 33, 34, 35			// 'U' - 'Z'
 };
 
-namespace IceUtil
+static IceUtil::Int64
+strToInt64Impl(const char* s, char** endptr, int base)
 {
-
-//
-// strToInt64 emulates strtoll() for Windows
-//
-
-Int64
-strToInt64(const char* s, char** endptr, int base)
-{
-#if defined(_WIN32)
     //
     // Assume nothing will be there to convert for now
     //
@@ -76,7 +84,17 @@ strToInt64(const char* s, char** endptr, int base)
 	if(*s == '0')
 	{
 	    base = 8;
-	    if(*++s == 'x' || *s == 'X')
+	    ++s;
+	    
+	    //
+	    // We have at least this zero
+	    //
+	    if(endptr)
+	    {
+		*endptr = const_cast<char *>(s);
+	    }
+	    
+	    if(*s == 'x' || *s == 'X')
 	    {
 		base = 16;
 		++s;
@@ -96,26 +114,31 @@ strToInt64(const char* s, char** endptr, int base)
     //
     // Check that we have something left to parse
     //
-    if(*s == '/0')
+    if(*s == '\0')
     {
+	//
+	// We did not read any new digit so we don't update endptr
+	//
 	return 0;
     }
 
     Int64 result = 0;
     bool overflow = false;
+    bool digitFound = false;
     const string validDigits(allDigits.begin(), allDigits.begin() + base);
     while(*s && validDigits.find_first_of(toupper(*s)) != validDigits.npos)
     {	
+	digitFound = true;
 	if(!overflow)
 	{
 	    int digit = digitVal[toupper(*s) - '0'];
 	    assert(digit != 100);
-	    if(result < Int64Max / base)
+	    if(result < _I64_MAX / base)
 	    {
 		result *= base;
 		result += digit;
 	    }
-	    else if((digit <= Int64Max % base) || (sign == -1 && digit == Int64Max % base + 1))
+	    else if((digit <= _I64_MAX % base) || (sign == -1 && digit == _I64_MAX % base + 1))
 	    {
 		result *= base;
 		result += digit;
@@ -123,7 +146,7 @@ strToInt64(const char* s, char** endptr, int base)
 	    else
 	    {
 		overflow = true;
-		result = sign == -1 ? Int64Min : Int64Max;
+		result = sign == -1 ? _I64_MIN : _I64_MAX;
 	    }
 	}
 	++s;
@@ -138,15 +161,28 @@ strToInt64(const char* s, char** endptr, int base)
 	result *= sign;
     }
 
-    if(endptr)
+    if(digitFound && endptr != 0)
     {
 	*endptr = const_cast<char *>(s);
     }
-
+ 
     return result;
+}
 
-#elif defined(ICE_64)
+#endif
+
+
+Int64
+strToInt64(const char* s, char** endptr, int base)
+{
+#if defined(ICE_64)
     return strtol(s, endptr, base);
+#elif defined(_WIN32)
+#   if defined(_MSC_VER) && (_MSC_VER < 1300) 
+    return strToInt64Impl(s, endptr, base);
+#   else
+    return _strtoi64(s, endptr, base);
+#   endif
 #elif defined(__hpux)
     return __strtoll(s, endptr, base);
 #else
@@ -155,33 +191,13 @@ strToInt64(const char* s, char** endptr, int base)
 }
 
 bool
-stringToInt64(const string& stringToParse, Int64& result, string::size_type& pos)
+stringToInt64(const string& s, Int64& result)
 {
-    string::const_iterator i = stringToParse.begin();
-    while(i != stringToParse.end() && isspace(*i))
-    {
-	++i;
-    }
-    if(i == stringToParse.end())	// String empty or nothing but whitespace
-    {
-	result = 0;
-	pos = string::npos;
-	return false;
-    }
-    string::const_reverse_iterator j = stringToParse.rbegin();
-    while(isspace(*j))
-    {
-	++j;
-    }					// j now points at last non-whitespace char
-
-    string nonWhite(i, j.base());	// nonWhite has trailing whitespace stripped
-
+    const char* start = s.c_str();
+    char* end = 0;
     errno = 0;
-    const char* startp = nonWhite.c_str();
-    char* endp;
-    result = strToInt64(startp, &endp, 0);
-    pos = *endp == '\0' ? string::npos : (i - stringToParse.begin()) + (endp - startp);
-    return startp != endp && errno != ERANGE && errno != EINVAL;
+    result = strToInt64(start, &end, 0);
+    return (errno == 0 && start != end);
 }
 
 }

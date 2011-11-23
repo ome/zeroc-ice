@@ -12,7 +12,7 @@
 
 #include <LibraryI.h>
 
-class BookFactory : virtual public Ice::ObjectFactory
+class BookFactory : public Ice::ObjectFactory
 {
 public:
 

@@ -1,0 +1,605 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>IceSSL</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Glacier2::SessionNotExistException"
+HREF="x14090.html"><LINK
+REL="NEXT"
+TITLE="IceSSL::CertificateException"
+HREF="x14283.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x14090.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x14283.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICESSL"
+><TT
+CLASS="LITERAL"
+>IceSSL</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN14108"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>module <CODE
+CLASS="CLASSNAME"
+>IceSSL</CODE
+></PRE
+></TD
+></TR
+></TABLE
+><P
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+> is a dynamic SSL transport plug-in for the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> core. It
+provides authentication, encryption, and message integrity, using
+the industry-standard SSL protocol.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN14115"
+>Interface Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x14368.html"
+><SPAN
+CLASS="TYPE"
+>CertificateVerifier</SPAN
+></A
+></DT
+><DD
+><P
+>The <A
+HREF="x14368.html"
+><CODE
+CLASS="CLASSNAME"
+>CertificateVerifier</CODE
+></A
+> is the base interface for all classes that define
+additional application-specific certificate verification rules.</P
+></DD
+><DT
+><A
+HREF="x14618.html"
+><SPAN
+CLASS="TYPE"
+>Plugin</SPAN
+></A
+></DT
+><DD
+><P
+>The interface for the SSL plug-in.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN14132"
+>Exception Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x14283.html"
+><CODE
+CLASS="CLASSNAME"
+>CertificateException</CODE
+></A
+></DT
+><DD
+><P
+>A root exception class for all exceptions related to public key
+certificates.</P
+></DD
+><DT
+><A
+HREF="x14306.html"
+><CODE
+CLASS="CLASSNAME"
+>CertificateKeyMatchException</CODE
+></A
+></DT
+><DD
+><P
+>When loading a public and private key pair into a
+<TT
+CLASS="LITERAL"
+>Context</TT
+>, the load succeeded, but the private
+key and public key (certificate) did not match.</P
+></DD
+><DT
+><A
+HREF="x14317.html"
+><CODE
+CLASS="CLASSNAME"
+>CertificateLoadException</CODE
+></A
+></DT
+><DD
+><P
+>Indicates that a problem occurred while loading a certificate
+into a <TT
+CLASS="LITERAL"
+>Context</TT
+> from either a memory buffer
+or from a file.</P
+></DD
+><DT
+><A
+HREF="x14328.html"
+><CODE
+CLASS="CLASSNAME"
+>CertificateParseException</CODE
+></A
+></DT
+><DD
+><P
+>Indicates that IceSSL was unable to parse the provided public key
+certificate into a form usable by the underlying SSL implementation.</P
+></DD
+><DT
+><A
+HREF="x14338.html"
+><CODE
+CLASS="CLASSNAME"
+>CertificateSignatureException</CODE
+></A
+></DT
+><DD
+><P
+>Indicates that the signature verification of a newly signed temporary
+RSA certificate has failed.</P
+></DD
+><DT
+><A
+HREF="x14348.html"
+><CODE
+CLASS="CLASSNAME"
+>CertificateSigningException</CODE
+></A
+></DT
+><DD
+><P
+>Indicates that a problem occurred while signing certificates during
+temporary RSA certificate generation.</P
+></DD
+><DT
+><A
+HREF="x14358.html"
+><CODE
+CLASS="CLASSNAME"
+>CertificateVerificationException</CODE
+></A
+></DT
+><DD
+><P
+>Indicates a problem occurred during the certificate
+verification phase of the SSL handshake.</P
+></DD
+><DT
+><A
+HREF="x14429.html"
+><CODE
+CLASS="CLASSNAME"
+>CertificateVerifierTypeException</CODE
+></A
+></DT
+><DD
+><P
+>This exception indicates that the provided CertificateVerifier was
+not derived from the proper base class, and thus, does not provide
+the appropriate interface.</P
+></DD
+><DT
+><A
+HREF="x14439.html"
+><CODE
+CLASS="CLASSNAME"
+>ConfigParseException</CODE
+></A
+></DT
+><DD
+><P
+>This exception indicates that a problem occurred while parsing the
+SSL configuration file, or while attempting to locate the configuration
+file.</P
+></DD
+><DT
+><A
+HREF="x14455.html"
+><CODE
+CLASS="CLASSNAME"
+>ConfigurationLoadingException</CODE
+></A
+></DT
+><DD
+><P
+>This exception indicates that an attempt was made to load the
+configuration for a <TT
+CLASS="LITERAL"
+>Context</TT
+>, but the
+property specifying the indicated <TT
+CLASS="LITERAL"
+>Context</TT
+>'s 
+SSL configuration file was not set.</P
+></DD
+><DT
+><A
+HREF="x14469.html"
+><CODE
+CLASS="CLASSNAME"
+>ContextException</CODE
+></A
+></DT
+><DD
+><P
+>A problem was encountered while setting up the
+<TT
+CLASS="LITERAL"
+>Context</TT
+>.</P
+></DD
+><DT
+><A
+HREF="x14506.html"
+><CODE
+CLASS="CLASSNAME"
+>ContextInitializationException</CODE
+></A
+></DT
+><DD
+><P
+>Indicates that a problem occurred while initializing the context structure
+of the underlying SSL implementation.</P
+></DD
+><DT
+><A
+HREF="x14516.html"
+><CODE
+CLASS="CLASSNAME"
+>ContextNotConfiguredException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised when an attempt is made to make use of a
+<TT
+CLASS="LITERAL"
+>Context</TT
+> that has not been configured yet.</P
+></DD
+><DT
+><A
+HREF="x14968.html"
+><CODE
+CLASS="CLASSNAME"
+>PrivateKeyException</CODE
+></A
+></DT
+><DD
+><P
+>A root exception class for all exceptions related to private keys.</P
+></DD
+><DT
+><A
+HREF="x14985.html"
+><CODE
+CLASS="CLASSNAME"
+>PrivateKeyLoadException</CODE
+></A
+></DT
+><DD
+><P
+>Indicates that a problem occurred while loading a private key
+into a <TT
+CLASS="LITERAL"
+>Context</TT
+> from either a memory buffer
+or from a file.</P
+></DD
+><DT
+><A
+HREF="x14996.html"
+><CODE
+CLASS="CLASSNAME"
+>PrivateKeyParseException</CODE
+></A
+></DT
+><DD
+><P
+>Indicates that IceSSL was unable to parse the provided private key
+into a form usable by the underlying SSL implementation.</P
+></DD
+><DT
+><A
+HREF="x15006.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+></DT
+><DD
+><P
+>Indicates that a problem occurred that violates the SSL
+protocol, causing the connection to be shutdown.</P
+></DD
+><DT
+><A
+HREF="x15016.html"
+><CODE
+CLASS="CLASSNAME"
+>ShutdownException</CODE
+></A
+></DT
+><DD
+><P
+>This exception generally indicates that a problem occurred
+that caused the shutdown of an SSL connection.</P
+></DD
+><DT
+><A
+HREF="x15036.html"
+><CODE
+CLASS="CLASSNAME"
+>SslException</CODE
+></A
+></DT
+><DD
+><P
+>This exception represents the base of all security related exceptions
+in <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+>.</P
+></DD
+><DT
+><A
+HREF="x15086.html"
+><CODE
+CLASS="CLASSNAME"
+>TrustedCertificateAddException</CODE
+></A
+></DT
+><DD
+><P
+>An attempt to add a certificate to the <TT
+CLASS="LITERAL"
+>Context</TT
+>'s
+trusted certifificate store has failed.</P
+></DD
+><DT
+><A
+HREF="x15097.html"
+><CODE
+CLASS="CLASSNAME"
+>UnsupportedContextException</CODE
+></A
+></DT
+><DD
+><P
+>An attempt was made to call a method that references a
+<A
+HREF="x14527.html"
+><SPAN
+CLASS="TYPE"
+>ContextType</SPAN
+></A
+> that is not supported for that operation.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN14272"
+>Enum Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x14527.html"
+><SPAN
+CLASS="TYPE"
+>ContextType</SPAN
+></A
+></DT
+><DD
+><P
+>A <A
+HREF="x14618.html"
+><CODE
+CLASS="CLASSNAME"
+>Plugin</CODE
+></A
+> may serve as a Client, Server or both (ClientServer).</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x14090.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x14283.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Glacier2::SessionNotExistException</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceSSL::CertificateException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -20,10 +20,6 @@ using namespace IceInternal;
 void IceInternal::incRef(Object* p) { p->__incRef(); }
 void IceInternal::decRef(Object* p) { p->__decRef(); }
 
-Ice::Object::Object()
-{
-}
-
 bool
 Ice::Object::operator==(const Object& r) const
 {
@@ -83,21 +79,10 @@ Ice::Object::ice_staticId()
     return __Ice__Object_ids[0];
 }
 
-void
-Ice::Object::__copyMembers(ObjectPtr to) const
-{
-}
-
 ObjectPtr
 Ice::Object::ice_clone() const
 {
-    ObjectPtr __p = new Ice::Object;
-#ifdef _WIN32
-    Object::__copyMembers(__p);
-#else
-    ::Ice::Object::__copyMembers(__p);
-#endif
-    return __p;
+    throw CloneNotImplementedException(__FILE__, __LINE__);
 }
 
 void
@@ -255,6 +240,42 @@ Ice::__patch__ObjectPtr(void* __addr, ObjectPtr& v)
 {
     ObjectPtr* p = static_cast<ObjectPtr*>(__addr);
     *p = v;
+}
+
+static string
+operationModeToString(OperationMode mode)
+{
+    switch(mode)
+    {
+    case Normal:
+	return "::Ice::Normal";
+
+    case Nonmutating:
+	return "::Ice::Nonmutating";
+
+    case Idempotent:
+	return "::Ice::Idempotent";
+    }
+
+    ostringstream os;
+    os << "unknown value (" << mode << ")";
+    return os.str();
+}
+
+void
+Ice::Object::__checkMode(OperationMode expected, OperationMode received)
+{
+    if(expected != received)
+    {
+	Ice::MarshalException ex(__FILE__, __LINE__);
+	std::ostringstream __reason;
+	__reason << "unexpected operation mode. expected = "
+		 << operationModeToString(expected)
+		 << " received = "
+		 << operationModeToString(received);
+	ex.reason = __reason.str();
+	throw ex;
+    }
 }
 
 DispatchStatus

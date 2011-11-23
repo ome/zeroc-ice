@@ -10,16 +10,16 @@
 #include <BookFactory.h>
 
 using namespace std;
-using namespace Ice;
 
 BookFactory::BookFactory(const LibraryIPtr& library) :
     _library(library)
 {
 }
 
-ObjectPtr
+Ice::ObjectPtr
 BookFactory::create(const string& type)
 {
+    assert(_library);
     assert(type == "::Demo::Book");
     return new BookI(_library);
 }

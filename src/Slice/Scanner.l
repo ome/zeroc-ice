@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 // I get these warnings from some flex versions:
 // warning C4003: not enough actual parameters for macro 'yywrap'
 #   pragma warning( disable : 4003 )
@@ -318,10 +318,9 @@ floating_literal	(({fractional_constant}{exponent_part}?)|((\+|-)?[[:digit:]]+{e
 {integer_constant} {
     IntegerTokPtr itp = new IntegerTok;
     *yylvalp = itp;
-    errno = 0;
-    itp->v = IceUtil::strToInt64(yytext, 0, 0);
-    if(errno == ERANGE && (itp->v == IceUtil::Int64Min || itp->v == IceUtil::Int64Max))
+    if(!IceUtil::stringToInt64(string(yytext), itp->v))
     {
+	assert(itp->v != 0);
 	string msg = "integer constant `";
 	msg += yytext;
 	msg += "' out of range";

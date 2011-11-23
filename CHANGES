@@ -1,3 +1,275 @@
+Changes since version 2.1.2
+---------------------------
+
+- Added support for custom comparison in Freeze Maps. You can now
+  provide your own compare functors for keys and indices. See the
+  slice2freeze usage for the new options. The default behavior is
+  backward compatible, comparing binary strings in the Ice encoding.
+
+  Map have 4 new functions:
+
+    - lower_bound (const and non-const)
+    - upper_bound (const and non-const)
+
+  In addition, the implementation of equal_range is now correct. 
+
+  Generated index classes have 6 new functions:
+
+    - lowerBoundFor<name> (const and non-const)
+    - upperBoundFor<name> (const and non-const)
+    - equalRangeFor<name> (const and non-const)
+
+  The findBy<name> also takes a new bool parameter, "onlyDups"; its
+  default value is true for compatibility with previous releases.
+  When onlyDups is true, findBy<name> returns only the elements that
+  match the given index value; when false, the iterator returns first
+  these elements and then lets you iterate over the remainder of the
+  database (according to the order defined by the index).
+
+- Fixed a deadlock during shutdown that could happen with
+  bi-directional connections.
+
+- Removed ice_default() method from proxies.
+
+- Added downgrade() to IceUtil::RWRecMutex and fixed a bug in
+  upgrade(). Previously, upgrade() was equivalent to calling unlock()
+  followed by writeLock(), which could allow a thread to acquire a
+  write lock while another thread was in the middle of an upgrade.
+  upgrade() is now atomic, so whatever state is protected by a read
+  lock is guaranteed to remain unchanged when upgrade() completes.
+
+- Connection::close(false) (i.e., graceful connection shutdown) now
+  waits until all outstanding requests have completed.
+
+- Added a new object adapter property, <adapter>.ReplicaGroupId, which
+  allows adapters to be replicated. See the IceGrid chapter in the
+  manual for more information.
+
+- Added the following properties:
+
+  IceBox.InstanceName
+  IcePatch2.InstanceName
+  IceStorm.InstanceName
+  Glacier2.InstanceName
+
+  These properties make it more convenient to configure multiple
+  instances of these services by modifying the identity category of
+  their well-known objects. The properties listed below are now
+  deprecated and will be removed in a future release:
+
+  IceBox.ServiceManager.Identity
+  IcePatch2.Identity
+  IcePatch2.AdminIdentity
+  IceStorm.TopicManagerIdentity
+  Glacier2.AdminIdentity
+  Glacier2.RouterIdentity
+
+- Added the proxy method ice_connectionId, which allows an application
+  to control connection reuse.
+
+- Added the new methods Ice::initializeWithLogger() and
+  Ice::initializeWithPropertiesAndLogger(), which ensure that a custom
+  logger is used to record any errors during communicator
+  initialization.
+
+- Ice will now listen on all local interfaces if no -h parameter is
+  present in the endpoint configuration and no default host has been
+  set. It will also listen to all interfaces if the -h parameter is
+  set to 0.0.0.0. In such configurations the endpoints published in
+  proxies will not contain the loopback interface (127.0.0.1) unless
+  it is the only local interface present.
+
+- Fixed a race condition with the object adapter holding state.
+
+- Changed the way servant locators work if a server has a servant
+  locator registered for a specific category, in addition to a default
+  servant locator. Previously, if the locator for the specific
+  category failed to locate the servant, the run time would then call
+  the default locator. With the new behavior, if the locator for the
+  specific category does not return a servant, the default locator is
+  not called.
+
+- Added proxy methods to retrieve the proxy adapter id and endpoints
+  (ice_getAdapterId() and ice_getEndpoints()) and to create a new
+  proxy with a new adapter id or new endpoints (ice_newAdapterId() and
+  ice_newEndpoints()).
+
+- Added Slice Ice::Endpoint local interface in slice/Ice/Endpoint.ice.
+
+- Fixed a bug that would cause UDP server connections to be closed on
+  transient errors, thus preventing the reception of any more UDP
+  messages until a server restart.
+
+- Communicator::setDefaultContext() no longer changes the context
+  information set on existing proxies.
+
+- slice2cpp and slice2freeze now provide the --add-header option. It
+  adds a #include directive for the specified header at the beginning
+  of the generated source file. For example:
+
+      slice2cpp --add-header=precompiled.h x.ice
+
+  adds "#include <precompiled.h> to the beginning of x.cpp (before any
+  other include directives).
+
+  You can specify an optional guard, for example:
+
+      slice2cpp --add-header=precompiled.h,__PRECOMPILED_H__ x.ice
+
+  With this, the beginning of x.cpp contains:
+
+      #ifndef __PRECOMPILED_H__
+      #define __PRECOMPILED_H__
+      #include <precompiled.h>
+      #endif
+
+  You can repeat the --add-header option to include several headers in
+  the generated source.
+
+- Ice::Communicator::createObjectAdapter() throws
+  Ice::AlreadyRegisteredException if it is called with the name of an
+  object adapter that already exists.
+
+- Fixed a bug in the slice2java code generator, which would cause
+  incorrect code to be generated when metadata was used to modify
+  dictionary types used as class or struct members.
+
+- Fixed a bug in the slice2java code generator, which could cause
+  incorrect code to be generated for certain custom sequence types.
+
+- Fixed a bug in the slice2cs code generator: if an operation had a
+  parameter named i or szx, incorrect code was generated in some
+  cases.
+
+- Fixed a bug in the slice2vb code generator: if an operation had a
+  parameter named ix or spx, incorrect code was generated in some
+  cases.
+
+- Added unsupported and untested "support" for Tru64 (with gcc).
+
+- Renamed CompressionNotSupportException to a more general
+  FeatureNotSupportedException.
+
+- Fixed a bug in proxyToString() for bidirectional proxies.
+
+- Added ice_communicator() to proxies. This function returns the
+  communicator that was used to create the proxy.
+
+- Added ice_toString() to proxies. This function returns the
+  stringified proxy. This function can be more convenient to use than
+  communicator->stringToProxy() because you do not need the
+  communicator to stringify a proxy that way.
+
+  operator<< is overloaded for proxies and proxy handles, so you can
+  write:
+
+  Ice::ObjectPrx o = ...;
+  cout << o << endl;		// Print stringified proxy, empty
+				// string if o is null
+  cout << *o << endl;		// Print stringified proxy
+
+- IceUtil/Config.h no longer includes winsock.h under WIN32. Ice can
+  now build with WIN32_LEAN_AND_MEAN.
+
+- Removed operator timeval() from IceUtil::Time for WIN32.
+
+- Parsing a stringified proxy no longer completely fails if the proxy
+  contains an endpoint type that is unknown to the Ice runtime as long
+  as the proxy contains other endpoints that are known. A warning is
+  printed for the unknown types that are encountered.
+
+- Ice::Object is now an abstract class that cannot be instantiated.
+  This change should be transparent to application code.
+
+- For abstract classes, ice_clone() now throws a
+  CloneNotImplementedException if the concrete implementation class
+  does not override ice_clone().  (Previously, ice_clone() incorrectly
+  sliced the cloned abstract class to the most derived- concrete class
+  or Ice::Object.)
+
+- Added new features to the C++ mapping:
+
+  - Classes and exceptions now have one-shot constructors. For
+    example, for a class
+
+      class Example {
+          int i;
+	  string s;
+      };
+
+    the following constructors are generated:
+
+      class Example {
+	  Example();
+	  Example(::Ice::Int, const ::std::string&);
+	  // ...
+      };
+
+    This allows you to construct a class or exception and supply
+    values for the data members in a single statement, instead of
+    having to assign to the members of a default-constructed instance.
+
+    For derived exceptions and classes, the constructor expects values
+    for all data members, including those of base exceptions or
+    classes, in base-to-derived order of declaration.
+
+  - Classes are now copyable and assignable. For example, using the
+    previous Example class, the following statements are now valid
+    (whereas, previously, they would have caused compile-time errors):
+
+      Example e1;
+      Example e2(1, "hello");
+      e1 = e2;
+      ExamplePtr ep1 = new Example();
+      *ep1 = e2;
+
+- Removed IceSSL's internal handshake retry loop, along with the
+  related property IceSSL.Client.Handshake.Retries.
+
+- Added support for OpenSSL 0.98.
+
+Changes since version 2.1.1
+---------------------------
+
+- Fixed a bug in proxyToString() for bidirectional proxies.
+
+- Fixed a bug with dynamic thread pools, where new threads were
+  destroyed immediately after dispatch if <threadpool>.Size=1 and
+  <threadpool>.SizeMax > 1.
+
+- Fixed a few Windows bugs in the Ice::Service class.
+
+- Fixed a bug in the Ice core involving command-line arguments that
+  could result in an array access violation.
+
+- Changed the Ice::Service class on Windows so that service failures
+  do not cause the obscure message "Error1: Incorrect function".
+
+- Removed the 64KB packet size limitation for TCP in Windows.
+
+- Changed the C++ translator so that generated code no longer uses
+  static function data.
+
+- Fixed a bug in IcePack where stopping a server could hang if the
+  server didn't answer the Ice::Process::shutdown() call.
+
+- Changed IceStorm subscriber reaping to release dead subscribers
+  more quickly from memory.
+
+- Fixed a bug in IceStorm where the mode (idempotent or nonmutating)
+  of the request wasn't correctly forwarded to the subscribers.
+
+- Added IcePack.Registry.AdminIdentity, IcePack.Registry.QueryIdentity
+  and IcePack.Registry.LocatorIdentity properties to allow configuring
+  the identities of well-known IcePack registry interfaces.
+
+- Added the configuration property Ice.Compression.Level to provide
+  more control over the bzip2 algorithm used to compress Ice protocol
+  messages.
+
+- Fixed a bug in the Glacier2 router where buffered mode serialized
+  twoway requests when it should not.
+
 Changes since version 2.1.0
 ---------------------------
 
@@ -6,13 +278,15 @@ Changes since version 2.1.0
   by GCC was not being seeded, causing the selection order to always
   be the same.
 
-- Fixed the Slice compilers to permit file names containing whitespace.
+- Fixed Slice compilers to allow file names containing whitespace.
 
 - Fixed a thread pool bug on Win32 in which the file descriptors for
   the pipe were not closed.
 
 - Fixed a bug in Freeze Maps: you can now add an index to an existing
   Freeze Map.
+
+- Added sequences of fixed-length elements to throughput demo.
 
 - Added RTLD_GLOBAL when calling dlopen on Unix platforms.
 
@@ -37,18 +311,41 @@ Changes since version 2.1.0
 - A race condition with Glacier2 detaching the request handler thread
   has been fixed.
 
+- Added -E option to the various Slice compilers to print preprocessor
+  output on stdout.
+
 - Ice::ObjectNotExistException is now retried for invocations made on
   indirect proxies. This allows the transparent migration of objects
   or objects adapters.
 
-- Fixed bug where data transfer statistics were not being reported on
-  outgoing datagram requests.
+- As announced with version 1.5, slice2cpp and slice2freeze now
+  require all Slice definitions to be nested inside a module;
+  definitions at global scope (other than module definitions) now
+  cause a hard error (whereas, previously, they only caused a
+  warning).
+
+- Fixed a bug in the option parsing for Ice tools such as slice2cpp,
+  slice2java, slice2cs, etc. The option parser used to incorrectly
+  complain about repeated options when in fact no option was
+  repeated. Also changed the parser to permit options to follow an
+  argument, so
+
+      slice2cpp -I. x.ice
+
+  and
+
+      slice2cpp x.ice -I.
+
+  are now equivalent.
 
 - Fixed bug where the IcePack node with a collocated registry wouldn't
   terminate after the admin "shutdown" command.
 
 - The Windows demo/IcePatch2/MFC example displays an error dialog when
   the patch client is run without the --IcePatch2.Endpoints option.
+
+- Fixed bug where data transfer statistics were not being reported on
+  outgoing datagram requests.
 
 Changes since version 2.0.0
 ---------------------------

@@ -116,8 +116,8 @@ Slice::VbVisitor::writeInheritedOperations(const ClassDefPtr& p)
 		{
 		    _out << " As " << retS;
 		}
-		_out << " Implements " << fixId(containingClass->scope()) << "_" << containingClass->name()
-		     << "OperationsNC." << fixId(name, DotNet::ICloneable, true);
+		_out << " Implements " << fixId(containingClass->scoped() + "OperationsNC_.")
+		     << fixId(name, DotNet::ICloneable, true);
 		_out.inc();
 		_out << nl;
 		if((*op)->returnType())
@@ -133,15 +133,15 @@ Slice::VbVisitor::writeInheritedOperations(const ClassDefPtr& p)
 		     << spar << params;
 		if(!containingClass->isLocal())
 		{
-		    _out << "ByVal __current As Ice.Current";
+		    _out << "ByVal current__ As Ice.Current";
 		}
 		_out << epar;
 		if(ret)
 		{
 		    _out << " As " << retS;
 		}
-		_out << " Implements " << fixId(containingClass->scope()) << "_" << containingClass->name()
-		     << "Operations." << fixId(name, DotNet::ICloneable, true);
+		_out << " Implements " << fixId(containingClass->scoped() + "Operations_.")
+		     << fixId(name, DotNet::ICloneable, true);
 	    }
 	    else
 	    {
@@ -149,17 +149,17 @@ Slice::VbVisitor::writeInheritedOperations(const ClassDefPtr& p)
 		vector<string> args = getArgsAsync(*op);
 
 		_out << sp << nl << "Public Sub " << ' ' << name << "_async" << spar << params << epar
-		     << " Implements " << fixId(containingClass->scope()) << "_" << containingClass->name()
-		     << "OperationsNC." << name << "_async";
+		     << " Implements " << fixId(containingClass->scoped() + "OperationsNC_.")
+		     << name << "_async";
 		_out.inc();
 		_out << nl << name << "_async" << spar << args << epar;
 		_out.dec();
 		_out << nl << "End Sub";
 
 		_out << sp << nl << "Public MustOverride Sub " << name << "_async"
-		     << spar << params << "ByVal __current As Ice.Current" << epar
-		     << " Implements " << fixId(containingClass->scope()) << "_" << containingClass->name()
-		     << "Operations." << name << "_async";
+		     << spar << params << "ByVal current__ As Ice.Current" << epar
+		     << " Implements " << fixId(containingClass->scoped() + "Operations_.")
+		     << name << "_async";
 	    }
 	}
 
@@ -214,7 +214,7 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
     _out << sp << nl << "#Region \"Slice type-related members\"";
     _out.restoreIndent();
 
-    _out << sp << nl << "Public Shared Shadows __ids As String() = New String() _";
+    _out << sp << nl << "Public Shared Shadows ids__ As String() = New String() _";
     _out.inc();
     _out << nl << "{ _";
     _out.inc();
@@ -235,44 +235,44 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 
     _out << sp << nl << "Public Overloads Overrides Function ice_isA(ByVal s As String) As Boolean";
     _out.inc();
-    _out << nl << "Return _System.Array.BinarySearch(__ids, s, _System.Collections.Comparer.DefaultInvariant) >= 0";
+    _out << nl << "Return _System.Array.BinarySearch(ids__, s, _System.Collections.Comparer.DefaultInvariant) >= 0";
     _out.dec();
     _out << nl << "End Function";
 
-    _out << sp << nl << "Public Overloads Overrides Function ice_isA(ByVal s As String, Byval __current As Ice.Current)"
+    _out << sp << nl << "Public Overloads Overrides Function ice_isA(ByVal s As String, Byval current__ As Ice.Current)"
                         " As Boolean";
     _out.inc();
-    _out << nl << "Return _System.Array.BinarySearch(__ids, s, _System.Collections.Comparer.DefaultInvariant) >= 0";
+    _out << nl << "Return _System.Array.BinarySearch(ids__, s, _System.Collections.Comparer.DefaultInvariant) >= 0";
     _out.dec();
     _out << nl << "End Function";
 
     _out << sp << nl << "Public Overloads Overrides Function ice_ids() As String()";
     _out.inc();
-    _out << nl << "Return __ids";
+    _out << nl << "Return ids__";
     _out.dec();
     _out << nl << "End Function";
 
-    _out << sp << nl << "Public Overloads Overrides Function ice_ids(ByVal __current As Ice.Current) As String()";
+    _out << sp << nl << "Public Overloads Overrides Function ice_ids(ByVal current__ As Ice.Current) As String()";
     _out.inc();
-    _out << nl << "Return __ids";
+    _out << nl << "Return ids__";
     _out.dec();
     _out << nl << "End Function";
 
     _out << sp << nl << "Public Overloads Overrides Function ice_id() As String";
     _out.inc();
-    _out << nl << "Return __ids(" << scopedPos << ")";
+    _out << nl << "Return ids__(" << scopedPos << ")";
     _out.dec();
     _out << nl << "End Function";
 
-    _out << sp << nl << "Public Overloads Overrides Function ice_id(ByVal __current As Ice.Current) As String";
+    _out << sp << nl << "Public Overloads Overrides Function ice_id(ByVal current__ As Ice.Current) As String";
     _out.inc();
-    _out << nl << "Return __ids(" << scopedPos << ")";
+    _out << nl << "Return ids__(" << scopedPos << ")";
     _out.dec();
     _out << nl << "End Function";
 
     _out << sp << nl << "Public Overloads Shared Function ice_staticId() As String";
     _out.inc();
-    _out << nl << "Return __ids(" << scopedPos << ")";
+    _out << nl << "Return ids__(" << scopedPos << ")";
     _out.dec();
     _out << nl << "End Function";
 
@@ -297,12 +297,12 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
         assert(cl);
 
         string opName = op->name();
-        _out << sp << nl << "Public Shared Function ___" << opName << "( _";
+        _out << sp << nl << "Public Shared Function "<< opName << "___( _";
 	_out.inc();
 	_out.inc();
-	_out << nl << "ByVal __obj As _" << p->name() << "Operations, _";
-	_out << nl << "ByVal __inS As IceInternal.Incoming, _";
-	_out << nl << "ByVal __current As Ice.Current) As IceInternal.DispatchStatus";
+	_out << nl << "ByVal obj__ As " << p->name() << "Operations_, _";
+	_out << nl << "ByVal inS__ As IceInternal.Incoming, _";
+	_out << nl << "ByVal current__ As Ice.Current) As IceInternal.DispatchStatus";
         _out.dec();
 
 	bool amd = p->hasMetaData("amd") || op->hasMetaData("amd");
@@ -342,14 +342,14 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 #endif
 
 	    TypeStringList::const_iterator q;
-	    
+   	    _out << nl << "checkMode__(" << sliceModeToIceMode(op) << ", current__.mode)";
 	    if(!inParams.empty())
 	    {
-		_out << nl << "Dim __is As IceInternal.BasicStream = __inS.istr()";
+		_out << nl << "Dim is__ As IceInternal.BasicStream = inS__.istr()";
 	    }
 	    if(!outParams.empty() || ret || !throws.empty())
 	    {
-		_out << nl << "Dim __os As IceInternal.BasicStream = __inS.ostr()";
+		_out << nl << "Dim os__ As IceInternal.BasicStream = inS__.ostr()";
 	    }
 	    
 	    //
@@ -370,16 +370,7 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 	    }
 	    if(op->sendsClasses())
 	    {
-		_out << nl << "__is.readPendingObjects()";
-	    }
-	    for(q = inParams.begin(); q != inParams.end(); ++q)
-	    {
-		StructPtr st = StructPtr::dynamicCast(q->first);
-		bool patchStruct = st && !st->hasMetaData("vb:class") && st->classDataMembers().size() != 0;
-		if(patchStruct)
-		{
-		    _out << nl << fixId(q->second) << ".__patch()";
-		}
+		_out << nl << "is__.readPendingObjects()";
 	    }
 	    
 	    for(q = outParams.begin(); q != outParams.end(); ++q)
@@ -400,9 +391,9 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 	    if(ret)
 	    {
 		string retS = typeToString(ret);
-		_out << "Dim __ret As " << retS << " = ";
+		_out << "Dim ret__ As " << retS << " = ";
 	    }
-	    _out << "__obj." << fixId(opName, DotNet::ICloneable, true) << spar;
+	    _out << "obj__." << fixId(opName, DotNet::ICloneable, true) << spar;
 	    for(q = inParams.begin(); q != inParams.end(); ++q)
 	    {
 		BuiltinPtr builtin = BuiltinPtr::dynamicCast(q->first);
@@ -422,7 +413,7 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 	    {
 		_out << fixId(q->second);
 	    }
-	    _out << "__current" << epar;
+	    _out << "current__" << epar;
 	    
 	    //
 	    // Marshal 'out' parameters and return value.
@@ -433,11 +424,11 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 	    }
 	    if(ret)
 	    {
-		writeMarshalUnmarshalCode(_out, ret, "__ret", true, false, true, "");
+		writeMarshalUnmarshalCode(_out, ret, "ret__", true, false, true, "");
 	    }
 	    if(op->returnsClasses())
 	    {
-		_out << nl << "__os.writePendingObjects()";
+		_out << nl << "os__.writePendingObjects()";
 	    }
 	    _out << nl << "Return IceInternal.DispatchStatus.DispatchOK";
 	    
@@ -453,7 +444,7 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 		    string exS = fixId((*t)->scoped());
 		    _out << nl << "Catch ex As " << exS;
 		    _out.inc();
-		    _out << nl << "__os.writeUserException(ex)";
+		    _out << nl << "os__.writeUserException(ex)";
 		    _out << nl << "Return IceInternal.DispatchStatus.DispatchUserException";
 		    _out.dec();
 		    _out << nl << "End Try";
@@ -476,10 +467,10 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 	    }
 	    
 	    TypeStringList::const_iterator q;
-	    
+	    _out << nl << "checkMode__(" << sliceModeToIceMode(op) << ", current__.mode)";
 	    if(!inParams.empty())
 	    {
-		_out << nl << "Dim __is As IceInternal.BasicStream = __inS.istr()";
+		_out << nl << "Dim is__ As IceInternal.BasicStream = inS__.istr()";
 	    }
 	    
 	    //
@@ -498,27 +489,18 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 	    }
 	    if(op->sendsClasses())
 	    {
-		_out << nl << "__is.readPendingObjects()";
-	    }
-	    for(q = inParams.begin(); q != inParams.end(); ++q)
-	    {
-		StructPtr st = StructPtr::dynamicCast(q->first);
-		bool patchStruct = st && !st->hasMetaData("vb:class") && st->classDataMembers().size() != 0;
-		if(patchStruct)
-		{
-		    _out << nl << fixId(q->second) << ".__patch()";
-		}
+		_out << nl << "is__.readPendingObjects()";
 	    }
 	    
 	    //
 	    // Call on the servant.
 	    //
 	    string classNameAMD = "AMD_" + p->name();
-	    _out << nl << "Dim __cb As " << classNameAMD << '_' << op->name() << " = new _"
-	         << classNameAMD << '_' << op->name() << "(__inS)";
+	    _out << nl << "Dim cb__ As " << classNameAMD << '_' << op->name() << " = new _"
+	         << classNameAMD << '_' << op->name() << "(inS__)";
             _out << nl << "Try";
             _out.inc();
-	    _out << nl << "__obj.";
+	    _out << nl << "obj__.";
 	    if(amd)
 	    {
 		_out << opName << "_async";
@@ -530,7 +512,7 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 	    _out << spar;
 	    if(amd)
 	    {
-	        _out << "__cb";
+	        _out << "cb__";
 	    }
 	    for(q = inParams.begin(); q != inParams.end(); ++q)
 	    {
@@ -546,11 +528,11 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 		    _out << fixId(q->second);
 		}
 	    }
-	    _out << "__current" << epar;
+	    _out << "current__" << epar;
 	    _out.dec();
 	    _out << nl << "Catch ex As _System.Exception";
 	    _out.inc();
-	    _out << nl << "__cb.ice_exception(ex)";
+	    _out << nl << "cb__.ice_exception(ex)";
 	    _out.dec();
 	    _out << nl << "End Try";
 	    _out << nl << "Return IceInternal.DispatchStatus.DispatchAsync";
@@ -591,7 +573,7 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 
 	StringList::const_iterator q;
 
-	_out << sp << nl << "Public Shared Shadows __all As String() = New String() _";
+	_out << sp << nl << "Public Shared Shadows all__ As String() = New String() _";
 	_out.inc();
 	_out << nl << "{ _";
 	_out.inc();
@@ -610,14 +592,14 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 	_out << nl << '}';
 	_out.dec();
 
-	_out << sp << nl << "Public Overloads Overrides Function __dispatch( _";
+	_out << sp << nl << "Public Overloads Overrides Function dispatch__( _";
 	_out.inc();
 	_out.inc();
-	_out << nl << "ByVal __inS As IceInternal.Incoming, _";
-	_out << nl << "ByVal __current As Ice.Current) As IceInternal.DispatchStatus";
+	_out << nl << "ByVal inS__ As IceInternal.Incoming, _";
+	_out << nl << "ByVal current__ As Ice.Current) As IceInternal.DispatchStatus";
 	_out.dec();
 	_out << nl << "Dim pos As Integer";
-	_out << nl << "pos = _System.Array.BinarySearch(__all, __current.operation, "
+	_out << nl << "pos = _System.Array.BinarySearch(all__, current__.operation, "
 	     << "_System.Collections.Comparer.DefaultInvariant)";
 	_out << nl << "If pos < 0 Then";
 	_out.inc();
@@ -635,19 +617,19 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 	    _out.inc();
 	    if(opName == "ice_id")
 	    {
-		_out << nl << "Return ___ice_id(Me, __inS, __current)";
+		_out << nl << "Return ice_id___(Me, inS__, current__)";
 	    }
 	    else if(opName == "ice_ids")
 	    {
-		_out << nl << "Return ___ice_ids(Me, __inS, __current)";
+		_out << nl << "Return ice_ids___(Me, inS__, current__)";
 	    }
 	    else if(opName == "ice_isA")
 	    {
-		_out << nl << "Return ___ice_isA(Me, __inS, __current)";
+		_out << nl << "Return ice_isA___(Me, inS__, current__)";
 	    }
 	    else if(opName == "ice_ping")
 	    {
-		_out << nl << "Return ___ice_ping(Me, __inS, __current)";
+		_out << nl << "Return ice_ping___(Me, inS__, current__)";
 	    }
 	    else
 	    {
@@ -663,19 +645,16 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
 			assert(cl);
 			if(cl->scoped() == p->scoped())
 			{
-			    _out << nl << "Return ___" << opName << "(Me, __inS, __current)";
+			    _out << nl << "Return " << opName << "___(Me, inS__, current__)";
 			}
 			else
 			{
 			    string base = cl->scoped();
 			    if(cl->isInterface())
 			    {
-			        string::size_type pos = base.rfind("::");
-				assert(pos != string::npos);
-				base = base.insert(pos + 2, "_");
-				base += "Disp";
+				base += "Disp_";
 			    }
-			    _out << nl << "Return " << fixId(base) << ".___" << opName << "(Me, __inS, __current)";
+			    _out << nl << "Return " << fixId(base) << "." << opName << "___(Me, inS__, current__)";
 			}
 			break;
 		    }
@@ -699,6 +678,22 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
     }
 }
 
+string
+Slice::VbVisitor::getParamAttributes(const ParamDeclPtr& p)
+{
+    string result;
+    StringList metaData = p->getMetaData();
+    for(StringList::const_iterator i = metaData.begin(); i != metaData.end(); ++i)
+    {
+	static const string prefix = "vb:attribute:";
+        if(i->find(prefix) == 0)
+	{
+	    result += "<" + i->substr(prefix.size()) + "> ";
+	}
+    }
+    return result;
+}
+
 vector<string>
 Slice::VbVisitor::getParams(const OperationPtr& op)
 {
@@ -706,8 +701,9 @@ Slice::VbVisitor::getParams(const OperationPtr& op)
     ParamDeclList paramList = op->parameters();
     for(ParamDeclList::const_iterator q = paramList.begin(); q != paramList.end(); ++q)
     {
-	string param = ((*q)->isOutParam() ? "<_System.Runtime.InteropServices.Out()> ByRef " : "ByVal ")
-	               + fixId((*q)->name()) + " As " + typeToString((*q)->type());
+        string param = getParamAttributes(*q);
+	param += ((*q)->isOutParam() ? "<_System.Runtime.InteropServices.Out()> ByRef " : "ByVal ")
+	         + fixId((*q)->name()) + " As " + typeToString((*q)->type());
 	params.push_back(param);
     }
     return params;
@@ -721,7 +717,7 @@ Slice::VbVisitor::getParamsAsync(const OperationPtr& op, bool amd)
     string name = op->name();
     ContainerPtr container = op->container();
     ClassDefPtr cl = ClassDefPtr::dynamicCast(container); // Get the class containing the op.
-    string param = "ByVal __cb As ";
+    string param = "ByVal cb__ As ";
     string scope = fixId(cl->scope());
     param += scope + (amd ? "AMD_" : "AMI_") + cl->name() + "_" + op->name();
     params.push_back(param);
@@ -731,7 +727,8 @@ Slice::VbVisitor::getParamsAsync(const OperationPtr& op, bool amd)
     {
 	if(!(*q)->isOutParam())
 	{
-	    params.push_back("ByVal " + fixId((*q)->name()) + " As " + typeToString((*q)->type()));
+	    params.push_back(getParamAttributes(*q) + "ByVal " + fixId((*q)->name()) + " As "
+	                     + typeToString((*q)->type()));
 	}
     }
     return params;
@@ -745,7 +742,7 @@ Slice::VbVisitor::getParamsAsyncCB(const OperationPtr& op)
     TypePtr ret = op->returnType();
     if(ret)
     {
-	params.push_back("ByVal __ret As " + typeToString(ret));
+	params.push_back("ByVal ret__ As " + typeToString(ret));
     }
 
     ParamDeclList paramList = op->parameters();
@@ -753,7 +750,8 @@ Slice::VbVisitor::getParamsAsyncCB(const OperationPtr& op)
     {
 	if((*q)->isOutParam())
 	{
-	    params.push_back("ByVal " + fixId((*q)->name()) + " As " + typeToString((*q)->type()));
+	    params.push_back(getParamAttributes(*q) + "ByVal " + fixId((*q)->name()) + " As "
+	                     + typeToString((*q)->type()));
 	}
     }
 
@@ -778,7 +776,7 @@ Slice::VbVisitor::getArgsAsync(const OperationPtr& op)
 {
     vector<string> args;
 
-    args.push_back("__cb");
+    args.push_back("cb__");
 
     ParamDeclList paramList = op->parameters();
     for(ParamDeclList::const_iterator q = paramList.begin(); q != paramList.end(); ++q)
@@ -799,7 +797,7 @@ Slice::VbVisitor::getArgsAsyncCB(const OperationPtr& op)
     TypePtr ret = op->returnType();
     if(ret)
     {
-        args.push_back("__ret");
+        args.push_back("ret__");
     }
 
     ParamDeclList paramList = op->parameters();
@@ -812,6 +810,20 @@ Slice::VbVisitor::getArgsAsyncCB(const OperationPtr& op)
     }
 
     return args;
+}
+
+void
+Slice::VbVisitor::emitAttributes(const ContainedPtr& p)
+{
+    StringList metaData = p->getMetaData();
+    for(StringList::const_iterator i = metaData.begin(); i != metaData.end(); ++i)
+    {
+	static const string prefix = "vb:attribute:";
+        if(i->find(prefix) == 0)
+	{
+	    _out << '<' << i->substr(prefix.size()) << '>' << nl;
+	}
+    }
 }
 
 Slice::Gen::Gen(const string& name, const string& base, const vector<string>& includePaths, const string& dir,
@@ -916,6 +928,9 @@ Slice::Gen::generate(const UnitPtr& p)
 {
 
     VbGenerator::validateMetaData(p);
+
+    UnitVisitor unitVisitor(_out, _stream);
+    p->visit(&unitVisitor, false);
 
     TypesVisitor typesVisitor(_out, _stream);
     p->visit(&typesVisitor, false);
@@ -1032,9 +1047,37 @@ Slice::Gen::printHeader()
     _out << "\n' Ice version " << ICE_STRING_VERSION;
 }
 
-Slice::Gen::OpsVisitor::OpsVisitor(IceUtil::Output& out)
-    : VbVisitor(out)
+Slice::Gen::UnitVisitor::UnitVisitor(IceUtil::Output& out, bool stream)
+    : VbVisitor(out), _stream(stream), _globalMetaDataDone(false)
 {
+}
+
+bool
+Slice::Gen::UnitVisitor::visitModuleStart(const ModulePtr& p)
+{
+    if(!_globalMetaDataDone)
+    {
+	DefinitionContextPtr dc = p->definitionContext();
+	StringList globalMetaData = dc->getMetaData();
+
+	static const string attributePrefix = "vb:attribute:";
+
+	if(!globalMetaData.empty())
+	{
+	    _out << sp;
+	}
+	for(StringList::const_iterator q = globalMetaData.begin(); q != globalMetaData.end(); ++q)
+	{
+	    string::size_type pos = q->find(attributePrefix);
+	    if(pos == 0)
+	    {
+		string attrib = q->substr(pos + attributePrefix.size());
+		_out << nl << '<' << attrib << '>';
+	    }
+	}
+	_globalMetaDataDone = true; // Do this only once per source file.
+    }
+    return false;
 }
 
 Slice::Gen::TypesVisitor::TypesVisitor(IceUtil::Output& out, bool stream)
@@ -1047,7 +1090,9 @@ bool
 Slice::Gen::TypesVisitor::visitModuleStart(const ModulePtr& p)
 {
     string name = fixId(p->name());
-    _out << sp << nl << "Namespace " << name;
+    _out << sp << nl;
+    emitAttributes(p);
+    _out << "Namespace " << name;
 
     _out.inc();
 
@@ -1064,26 +1109,27 @@ Slice::Gen::TypesVisitor::visitModuleEnd(const ModulePtr&)
 bool
 Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
 {
-    string name = fixId(p->name());
+    string name = p->name();
     string scoped = fixId(p->scoped());
     ClassList bases = p->bases();
+    bool hasBaseClass = !bases.empty() && !bases.front()->isInterface();
 
     if(!p->isLocal() && _stream)
     {
         _out << sp << nl << "Public NotInheritable Class " << p->name() << "Helper";
 	_out.inc();
 
-	_out << sp << nl << "Public Sub New(ByVal __inS As Ice.InputStream)";
+	_out << sp << nl << "Public Sub New(ByVal inS__ As Ice.InputStream)";
 	_out.inc();
-	_out << nl << "_in = __inS";
+	_out << nl << "_in = inS__";
 	_out << nl << "_pp = New IceInternal.ParamPatcher(GetType(" << scoped << "))";
 	_out.dec();
 	_out << nl << "End Sub";
 
-	_out << sp << nl << "Public Shared Sub write(ByVal __outS As Ice.OutputStream, ByVal __v As "
+	_out << sp << nl << "Public Shared Sub write(ByVal outS__ As Ice.OutputStream, ByVal v__ As "
 	     << fixId(name) << ')';
 	_out.inc();
-	_out << nl << "__outS.writeObject(__v)";
+	_out << nl << "outS__.writeObject(v__)";
 	_out.dec();
 	_out << nl << "End Sub";
 
@@ -1109,9 +1155,12 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
 	_out.dec();
 	_out << nl << "End Class";
     }
+
+    _out << sp << nl;
+    emitAttributes(p);
     if(p->isInterface())
     {
-        _out << sp << nl << "Public Interface " << name;
+        _out << "Public Interface " << name;
 	_out.inc();
 	if(p->isLocal())
 	{
@@ -1121,12 +1170,12 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
 	{
 	    _out << nl << "Inherits Ice.Object";
 	}
-	_out << ", _" << p->name();
+	_out << ", " << p->name();
 	if(!p->isLocal())
 	{
-	    _out << "Operations, _" << p->name();
+	    _out << "Operations_, " << p->name();
 	}
-	_out << "OperationsNC";
+	_out << "OperationsNC_";
 	if(!bases.empty())
 	{
 	    ClassList::const_iterator q = bases.begin();
@@ -1139,7 +1188,7 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
     }
     else
     {
-	_out << sp << nl << "Public ";
+	_out << "Public ";
 	if(p->isAbstract())
 	{
 	    _out << "MustInherit ";
@@ -1147,7 +1196,7 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
 	_out << "Class " << name;
 	_out.inc();
 
-	if(bases.empty() || bases.front()->isInterface())
+	if(!hasBaseClass)
 	{
 	    if(p->isLocal())
 	    {
@@ -1165,12 +1214,12 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
 	}
 	if(p->isAbstract())
 	{
-	    _out << nl << "Implements _" << p->name();
+	    _out << nl << "Implements " << p->name();
 	    if(!p->isLocal())
 	    {
-	        _out << "Operations, _" << p->name();
+	        _out << "Operations_, " << p->name();
 	    }
-	    _out << "OperationsNC";
+	    _out << "OperationsNC_";
 	}
 	for(ClassList::const_iterator q = bases.begin(); q != bases.end(); ++q)
 	{
@@ -1207,6 +1256,10 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 {
     string name = fixId(p->name());
     DataMemberList dataMembers = p->dataMembers();
+    DataMemberList allDataMembers = p->allDataMembers();
+    ClassList bases = p->bases();
+    bool hasBaseClass = !bases.empty() && !bases.front()->isInterface();
+    DataMemberList::const_iterator d;
 
     if(!p->isInterface())
     {
@@ -1224,6 +1277,60 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	    _out << sp << nl << "#End Region"; // Slice operations
 	}
 	_out.restoreIndent();
+
+	if(!allDataMembers.empty())
+	{
+	    _out.zeroIndent();
+	    _out << sp << nl << "#Region \"Constructors\"";
+	    _out.restoreIndent();
+
+	    _out << sp << nl << "Public Sub New" << spar << epar;
+	    _out.inc();
+	    if(hasBaseClass)
+	    {
+	        _out << nl << "MyBase.New()";
+	    }
+	    _out.dec();
+	    _out << nl << "End Sub";
+
+	    _out << sp << nl << "Public Sub New" << spar;
+	    vector<string> paramDecl;
+	    for(d = allDataMembers.begin(); d != allDataMembers.end(); ++d)
+	    {
+	        string memberName = fixId((*d)->name());
+		string memberType = typeToString((*d)->type());
+		paramDecl.push_back("ByVal " + memberName + " As " + memberType);
+	    }
+	    _out << paramDecl << epar;
+	    _out.inc();
+	    if(hasBaseClass && allDataMembers.size() != dataMembers.size())
+	    {
+		_out << nl << "MyBase.New" << spar;
+		vector<string> baseParamNames;
+		DataMemberList baseDataMembers = bases.front()->allDataMembers();
+		for(d = baseDataMembers.begin(); d != baseDataMembers.end(); ++d)
+		{
+		    baseParamNames.push_back(fixId((*d)->name()));
+		}
+		_out << baseParamNames << epar;
+	    }
+	    vector<string> paramNames;
+	    for(d = dataMembers.begin(); d != dataMembers.end(); ++d)
+	    {
+	        paramNames.push_back(fixId((*d)->name()));
+	    }
+	    for(vector<string>::const_iterator i = paramNames.begin(); i != paramNames.end(); ++i)
+	    {
+	        _out << nl << "Me." << *i << " = " << *i;
+	    }
+	    _out.dec();
+	    _out << nl << "End Sub";
+
+	    _out.zeroIndent();
+	    _out << sp << nl << "#End Region"; // Constructors
+	    _out.restoreIndent();
+	}
+
 	writeInheritedOperations(p);
     }
 
@@ -1238,24 +1345,24 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	_out << sp << nl << "#Region \"Marshaling support\"";
 	_out.restoreIndent();
 
-	_out << sp << nl << "Public Overloads Overrides Sub __write(ByVal __os As IceInternal.BasicStream)";
+	_out << sp << nl << "Public Overloads Overrides Sub write__(ByVal os__ As IceInternal.BasicStream)";
 	_out.inc();
-	_out << nl << "__os.writeTypeId(ice_staticId())";
-	_out << nl << "__os.startWriteSlice()";
+	_out << nl << "os__.writeTypeId(ice_staticId())";
+	_out << nl << "os__.startWriteSlice()";
 	for(d = members.begin(); d != members.end(); ++d)
 	{
 	    StringList metaData = (*d)->getMetaData();
 	    writeMarshalUnmarshalCode(_out, (*d)->type(), fixId((*d)->name(), DotNet::ICloneable, true), true, false, false);
 	}
-	_out << nl << "__os.endWriteSlice()";
-	_out << nl << "MyBase.__write(__os)";
+	_out << nl << "os__.endWriteSlice()";
+	_out << nl << "MyBase.write__(os__)";
 	_out.dec();
 	_out << nl << "End Sub";
 
 	DataMemberList allClassMembers = p->allClassDataMembers();
 	if(allClassMembers.size() != 0)
 	{
-	    _out << sp << nl << "Public NotInheritable Class __Patcher";
+	    _out << sp << nl << "Public NotInheritable Class Patcher__";
 	    _out.inc();
 	    _out << nl << "Inherits IceInternal.Patcher";
 	    _out << sp << nl << "Friend Sub New(ByVal instance As Ice.ObjectImpl";
@@ -1290,7 +1397,7 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 		}
 		string memberName = fixId((*d)->name(), DotNet::ICloneable, true);
 		string memberType = typeToString((*d)->type());
-		_out << nl << "_type = GetType(" << memberType << ')';
+		_out << nl << "type_ = GetType(" << memberType << ')';
 		_out << nl << "_instance." << memberName << " = CType(v, " << memberType << ')';
 		if(allClassMembers.size() > 1)
 		{
@@ -1315,15 +1422,15 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	    _out << nl << "End Class";
 	}
 
-	_out << sp << nl << "Public Overloads Overrides Sub __read(ByVal __is As IceInternal.BasicStream, "
-	                    "ByVal __rid As Boolean)";
+	_out << sp << nl << "Public Overloads Overrides Sub read__(ByVal is__ As IceInternal.BasicStream, "
+	                    "ByVal rid__ As Boolean)";
 	_out.inc();
-	_out << nl << "If __rid Then";
+	_out << nl << "If rid__ Then";
 	_out.inc();
-	_out << nl << "Dim myId As String = __is.readTypeId()";
+	_out << nl << "Dim myId As String = is__.readTypeId()";
 	_out.dec();
 	_out << nl << "End If";
-	_out << nl << "__is.startReadSlice()";
+	_out << nl << "is__.startReadSlice()";
 	DataMemberList classMembers = p->classDataMembers();
 	int classMemberCount = static_cast<int>(allClassMembers.size() - classMembers.size());
 	for(d = members.begin(); d != members.end(); ++d)
@@ -1343,8 +1450,8 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	                              fixId((*d)->name(), DotNet::ICloneable, true),
 				      false, false, false, patchParams.str());
 	}
-	_out << nl << "__is.endReadSlice()";
-	_out << nl << "MyBase.__read(__is, true)";
+	_out << nl << "is__.endReadSlice()";
+	_out << nl << "MyBase.read__(is__, true)";
 	_out.dec();
 	_out << nl << "End Sub";
 
@@ -1353,10 +1460,10 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	//
 	if(_stream)
 	{
-	    _out << sp << nl << "Public Overloads Overrides Sub __write(ByVal __outS As Ice.OutputStream)";
+	    _out << sp << nl << "Public Overloads Overrides Sub write__(ByVal outS__ As Ice.OutputStream)";
 	    _out.inc();
-	    _out << nl << "__outS.writeTypeId(ice_staticId())";
-	    _out << nl << "__outS.startSlice()";
+	    _out << nl << "outS__.writeTypeId(ice_staticId())";
+	    _out << nl << "outS__.startSlice()";
 	    for(d = members.begin(); d != members.end(); ++d)
 	    {
 		StringList metaData = (*d)->getMetaData();
@@ -1364,20 +1471,20 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 					  fixId((*d)->name(), DotNet::ICloneable, true),
 					  true, true, false);
 	    }
-	    _out << nl << "__outS.endSlice()";
-	    _out << nl << "MyBase.__write(__outS)";
+	    _out << nl << "outS__.endSlice()";
+	    _out << nl << "MyBase.write__(outS__)";
 	    _out.dec();
 	    _out << nl << "End Sub";
 
-	    _out << sp << nl << "Public Overloads Overrides Sub __read"
-	         << "(ByVal __inS As Ice.InputStream, ByVal __rid As Boolean)";
+	    _out << sp << nl << "Public Overloads Overrides Sub read__"
+	         << "(ByVal inS__ As Ice.InputStream, ByVal rid__ As Boolean)";
 	    _out.inc();
-	    _out << nl << "If __rid Then";
+	    _out << nl << "If rid__ Then";
 	    _out.inc();
-	    _out << nl << "Dim myId As String = __inS.readTypeId()";
+	    _out << nl << "Dim myId As String = inS__.readTypeId()";
 	    _out.dec();
 	    _out << nl << "End If";
-	    _out << nl << "__inS.startSlice()";
+	    _out << nl << "inS__.startSlice()";
 	    for(d = members.begin(); d != members.end(); ++d)
 	    {
 		StringList metaData = (*d)->getMetaData();
@@ -1395,8 +1502,8 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 					  fixId((*d)->name(), DotNet::ICloneable, true),
 					  false, true, false, patchParams.str());
 	    }
-	    _out << nl << "__inS.endSlice()";
-	    _out << nl << "MyBase.__read(__inS, True)";
+	    _out << nl << "inS__.endSlice()";
+	    _out << nl << "MyBase.read__(inS__, True)";
 	    _out.dec();
 	    _out << nl << "End Sub";
 	}
@@ -1406,7 +1513,7 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	    // Emit placeholder functions to catch errors.
 	    //
             string scoped = p->scoped();
-	    _out << sp << nl << "Public Overloads Overrides Sub __write(ByVal __outS As Ice.OutputStream)";
+	    _out << sp << nl << "Public Overloads Overrides Sub write__(ByVal outS__ As Ice.OutputStream)";
 	    _out.inc();
 	    _out << nl << "Dim ex As Ice.MarshalException = New Ice.MarshalException";
 	    _out << nl << "ex.reason = \"type " << scoped.substr(2) << " was not generated with stream support\"";
@@ -1414,8 +1521,8 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	    _out.dec();
 	    _out << nl << "End Sub";
 
-	    _out << sp << nl << "Public Overloads Overrides Sub __read"
-	         << "(ByVal __inS As Ice.InputStream, ByVal __rid As Boolean)";
+	    _out << sp << nl << "Public Overloads Overrides Sub read__"
+	         << "(ByVal inS__ As Ice.InputStream, ByVal rid__ As Boolean)";
 	    _out.inc();
 	    _out << nl << "Dim ex As Ice.MarshalException = New Ice.MarshalException";
 	    _out << nl << "ex.reason = \"type " << scoped.substr(2) << " was not generated with stream support\"";
@@ -1470,7 +1577,9 @@ Slice::Gen::TypesVisitor::visitOperation(const OperationPtr& p)
 
     string vbOp = ret ? "Function" : "Sub";
 
-    _out << sp << nl << "Public ";
+    _out << sp << nl;
+    emitAttributes(p);
+    _out << "Public ";
     if(isLocal)
     {
         _out << "MustOverride ";
@@ -1480,7 +1589,7 @@ Slice::Gen::TypesVisitor::visitOperation(const OperationPtr& p)
     {
         _out << " As " << retS;
     }
-    _out << " Implements _" << classDef->name() << "OperationsNC." << name;
+    _out << " Implements " << classDef->name() << "OperationsNC_." << name;
     if(!isLocal)
     {
 	_out.inc();
@@ -1497,12 +1606,12 @@ Slice::Gen::TypesVisitor::visitOperation(const OperationPtr& p)
     if(!isLocal)
     {
 	_out << sp << nl << "Public MustOverride " << vbOp << ' ' << name
-	     << spar << params << "ByVal __current As Ice.Current" << epar;
+	     << spar << params << "ByVal current__ As Ice.Current" << epar;
 	if(ret)
 	{
 	    _out << " As " << retS;
 	}
-	_out << " Implements _" << classDef->name() << "Operations." << name;
+	_out << " Implements " << classDef->name() << "Operations_." << name;
     }
 }
 
@@ -1512,7 +1621,7 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
     //
     // No need to generate anything if the sequence is mapped as an array.
     //
-    if(!p->hasMetaData("vb:collection"))
+    if(!p->hasMetaData("clr:collection"))
     {
         return;
     }
@@ -1521,7 +1630,9 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
     string s = typeToString(p->type());
     bool isValue = isValueType(p->type());
 
-    _out << sp << nl << "Public Class " << name;
+    _out << sp << nl;
+    emitAttributes(p);
+    _out << "Public Class " << name;
     _out.inc();
     _out << nl << "Inherits _System.Collections.CollectionBase";
     _out << nl << "Implements _System.ICloneable";
@@ -1539,9 +1650,9 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
     _out.dec();
     _out << nl << "End Sub";
 
-    _out << sp << nl << "Public Sub New(ByVal __a As " << s << "())";
+    _out << sp << nl << "Public Sub New(ByVal a__ As " << s << "())";
     _out.inc();
-    _out << nl << "InnerList.AddRange(__a)";
+    _out << nl << "InnerList.AddRange(a__)";
     _out.dec();
     _out << nl << "End Sub";
 
@@ -1551,48 +1662,211 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
     _out << sp << nl << "#Region \"Array copy and conversion\"";
     _out.restoreIndent();
 
-    _out << sp << nl << "Public Sub CopyTo(ByVal __a As " << s << "())";
+    _out << sp << nl << "Public Sub CopyTo(ByVal a__ As " << s << "())";
     _out.inc();
-    _out << nl << "InnerList.CopyTo(__a)";
+    _out << nl << "InnerList.CopyTo(a__)";
     _out.dec();
     _out << nl << "End Sub";
 
-    _out << sp << nl << "Public Sub CopyTo(ByVal __a As " << s << "(), ByVal __i As Integer)";
+    _out << sp << nl << "Public Sub CopyTo(ByVal a__ As " << s << "(), ByVal i__ As Integer)";
     _out.inc();
-    _out << nl << "InnerList.CopyTo(__a, __i)";
+    _out << nl << "InnerList.CopyTo(a__, i__)";
     _out.dec();
     _out << nl << "End Sub";
 
-    _out << sp << nl << "Public Sub CopyTo(ByVal __i As Integer, ByVal __a As " << s << "(), "
-                        "ByVal __ai As Integer, ByVal __c As Integer)";
+    _out << sp << nl << "Public Sub CopyTo(ByVal i__ As Integer, ByVal a__ As " << s << "(), "
+                        "ByVal ai__ As Integer, ByVal c__ As Integer)";
     _out.inc();
-    _out << nl << "InnerList.CopyTo(__i, __a, __ai, __c)";
+    _out << nl << "InnerList.CopyTo(i__, a__, ai__, c__)";
     _out.dec();
     _out << nl << "End Sub";
 
     _out << sp << nl << "Public Function ToArray() As " << s << "()";
     _out.inc();
-    _out << nl << "Dim __a As " << s << "() = New " << toArrayAlloc(s + "()", "InnerList.Count - 1") << " {}";
-    _out << nl << "InnerList.CopyTo(__a)";
-    _out << nl << "Return __a";
+    _out << nl << "Dim a__ As " << s << "() = New " << toArrayAlloc(s + "()", "InnerList.Count - 1") << " {}";
+    _out << nl << "InnerList.CopyTo(a__)";
+    _out << nl << "Return a__";
     _out.dec();
     _out << nl << "End Function";
 
     _out.zeroIndent();
     _out << sp << nl << "#End Region"; // Array copy and conversion
 
-    _out << sp << nl << "#Region \"AddRange members\"";
+    _out << sp << nl << "#Region \"ArrayList members\"";
     _out.restoreIndent();
 
-    _out << sp << nl << "Public Sub AddRange(ByVal __s As " << name << ')';
+    _out << sp << nl << "Property Capacity As Integer";
     _out.inc();
-    _out << nl << "InnerList.AddRange(__s)";
+    _out << nl << "Get";
+    _out.inc();
+    _out << nl << "Return InnerList.Capacity";
+    _out.dec();
+    _out << nl << "End Get";
+    _out << nl << "Set";
+    _out.inc();
+    _out << nl << "InnerList.Capacity = value";
+    _out.dec();
+    _out << nl << "End Set";
+    _out.dec();
+    _out << nl << "End Property";
+
+    _out << sp << nl << "Public Overridable Sub TrimToSize()";
+    _out.inc();
+    _out << nl << "InnerList.TrimToSize()";
     _out.dec();
     _out << nl << "End Sub";
 
-    _out << sp << nl << "Public Sub AddRange(ByVal __a As " << s << "())";
+    _out << sp << nl << "Public Overloads Overridable Sub Sort()";
     _out.inc();
-    _out << nl << "InnerList.AddRange(__a)";
+    _out << nl << "InnerList.Sort()";
+    _out.dec();
+    _out << nl << "End Sub";
+
+    _out << sp << nl << "Public Overloads Overridable Sub Sort(ByVal comparer As _System.Collections.IComparer)";
+    _out.inc();
+    _out << nl << "InnerList.Sort(comparer)";
+    _out.dec();
+    _out << nl << "End Sub";
+
+    _out << sp << nl << "Public Overloads Overridable Sub Sort(";
+    _out.useCurrentPosAsIndent();
+    _out << "ByVal index As Integer, ByVal count As Integer, _";
+    _out << nl << "ByVal Comparer As _System.Collections.IComparer)";
+    _out.restoreIndent();
+    _out.inc();
+    _out << nl << "InnerList.Sort(index, count, comparer)";
+    _out.dec();
+    _out << nl << "End Sub";
+
+    _out << sp << nl << "Public Sub Reverse()";
+    _out.inc();
+    _out << nl << "InnerList.Reverse()";
+    _out.dec();
+    _out << nl << "End Sub";
+
+    _out << sp << nl << "Public Overridable Sub Reverse(ByVal index As Integer, ByVal count As Integer)";
+    _out.inc();
+    _out << nl << "InnerList.Reverse(index, count)";
+    _out.dec();
+    _out << nl << "End Sub";
+
+    _out << sp << nl << "Public Overridable Function BinarySearch(ByVal value As " << s << ") As Integer";
+    _out.inc();
+    _out << nl << "Return InnerList.BinarySearch(value)";
+    _out.dec();
+    _out << nl << "End Function";
+
+    _out << sp << nl << "Public Overridable Function BinarySearch(";
+    _out.useCurrentPosAsIndent();
+    _out << "ByVal value As " << s << ", _";
+    _out << nl << "ByVal comparer As _System.Collections.IComparer) As Integer";
+    _out.restoreIndent();
+    _out.inc();
+    _out << nl << "Return InnerList.BinarySearch(value, comparer)";
+    _out.dec();
+    _out << nl << "End Function";
+
+    _out << sp << nl << "Public Overridable Function BinarySearch(";
+    _out.useCurrentPosAsIndent();
+    _out << "ByVal index As Integer, _";
+    _out << nl << "ByVal count As Integer, _";
+    _out << nl << "ByVal value As " << s << ", _";
+    _out << nl << "ByVal comparer As _System.Collections.IComparer) As Integer";
+    _out.restoreIndent();
+    _out.inc();
+    _out << nl << "Return InnerList.BinarySearch(index, count, value, comparer)";
+    _out.dec();
+    _out << nl << "End Function";
+
+    _out << sp << nl << "Public Overridable Sub InsertRange(ByVal index As Integer, ByVal c As " << name << ')';
+    _out.inc();
+    _out << nl << "InnerList.InsertRange(index, c)";
+    _out.dec();
+    _out << nl << "End Sub";
+
+    _out << sp << nl << "Public Overridable Sub InsertRange(ByVal index As Integer, ByVal c As " << s << "())";
+    _out.inc();
+    _out << nl << "InnerList.InsertRange(index, c)";
+    _out.dec();
+    _out << nl << "End Sub";
+
+    _out << sp << nl << "Public Overridable Sub RemoveRange(ByVal index As Integer, ByVal count As Integer)";
+    _out.inc();
+    _out << nl << "InnerList.RemoveRange(index, count)";
+    _out.dec();
+    _out << nl << "End Sub";
+
+    _out << sp << nl << "Public Overridable Function GetRange(ByVal index As Integer, ByVal count As Integer) As " << name;
+    _out.inc();
+    _out << nl << "Dim al As _System.Collections.ArrayList = InnerList.GetRange(index, count)";
+    _out << nl << "Dim r As " << name << " = New " << name << "(al.Count)";
+    _out << nl << "r.InnerList.AddRange(al)";
+    _out << nl << "Return r";
+    _out.dec();
+    _out << nl << "End Function";
+
+    _out << sp << nl << "Public Overridable Sub SetRange(ByVal index As Integer, ByVal c As " << name << ')';
+    _out.inc();
+    _out << nl << "InnerList.SetRange(index, c)";
+    _out.dec();
+    _out << nl << "End Sub";
+
+    _out << sp << nl << "Public Overridable Sub SetRange(ByVal index As Integer, ByVal c As " << s << "())";
+    _out.inc();
+    _out << nl << "InnerList.SetRange(index, c)";
+    _out.dec();
+    _out << nl << "End Sub";
+
+    _out << sp << nl << "Public Overridable Function LastIndexOf(ByVal value As " << s << ") As Integer";
+    _out.inc();
+    _out << nl << "Return InnerList.LastIndexOf(value)";
+    _out.dec();
+    _out << nl << "End Function";
+
+    _out << sp << nl << "Public Overridable Function LastIndexOf(ByVal value As " << s << ", ByVal startIndex As Integer) As Integer";
+    _out.inc();
+    _out << nl << "Return InnerList.LastIndexOf(value, startIndex)";
+    _out.dec();
+    _out << nl << "End Function";
+
+    _out << sp << nl << "Public Overridable Function LastIndexOf(";
+    _out.useCurrentPosAsIndent();
+    _out << "ByVal value As " << s << ", _";
+    _out << nl << "ByVal startIndex As Integer, _";
+    _out << nl << "ByVal count As Integer) As Integer";
+    _out.restoreIndent();
+    _out.inc();
+    _out << nl << "Return InnerList.LastIndexOf(value, startIndex, count)";
+    _out.dec();
+    _out << nl << "End Function";
+
+    _out << sp << nl << "Public Shared Function Repeat(ByVal value As " << s << ", ByVal count As Integer) As " << name;
+    _out.inc();
+    _out << nl << "Dim r As " << name << " = New " << name << "()";
+    _out << nl << "For i As Integer = 0 To Count - 1";
+    _out.inc();
+    _out << nl << "r.Add(value)";
+    _out.dec();
+    _out << nl << "Next";
+    _out << nl << "Return r";
+    _out.dec();
+    _out << nl << "End Function";
+
+    _out.zeroIndent();
+    _out << sp << nl << "#End Region"; // ArrayList members
+
+    _out << sp << nl << "#Region \"AddRange members\"";
+    _out.restoreIndent();
+
+    _out << sp << nl << "Public Sub AddRange(ByVal s__ As " << name << ')';
+    _out.inc();
+    _out << nl << "InnerList.AddRange(s__)";
+    _out.dec();
+    _out << nl << "End Sub";
+
+    _out << sp << nl << "Public Sub AddRange(ByVal a__ As " << s << "())";
+    _out.inc();
+    _out << nl << "InnerList.AddRange(a__)";
     _out.dec();
     _out << nl << "End Sub";
 
@@ -1765,17 +2039,17 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
     _out << nl << "Return False";
     _out.dec();
     _out << nl << "End If";
-    _out << nl << "For __i As Integer = 0 To Count - 1";
+    _out << nl << "For i__ As Integer = 0 To Count - 1";
     _out.inc();
     if(!isValue)
     {
-	_out << nl << "If InnerList(__i) Is Nothing And Not CType(other, " << name << ")(__i) Is Nothing Then";
+	_out << nl << "If InnerList(i__) Is Nothing And Not CType(other, " << name << ")(i__) Is Nothing Then";
 	_out.inc();
 	_out << nl << "Return False";
 	_out.dec();
 	_out << nl << "End If";
     }
-    _out << nl << "If Not CType(InnerList(__i), Integer).Equals(CType(other, " << name << ")(__i)) Then";
+    _out << nl << "If Not CType(InnerList(i__), Integer).Equals(CType(other, " << name << ")(i__)) Then";
     _out.inc();
     _out << nl << "Return False";
     _out.dec();
@@ -1788,27 +2062,6 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
 
     _out.zeroIndent();
     _out << sp << nl << "#End Region"; // Object members
-
-    _out << sp << nl << "#Region \"Shared Equals\"";
-    _out.restoreIndent();
-
-    _out << sp << nl << "Public Overloads Shared Function Equals(ByVal __lhs As " << name
-         << ", ByVal __rhs As " << name << ") As Boolean";
-    _out.inc();
-    _out << nl << "If Object.ReferenceEquals(__rhs, Nothing) Then";
-    _out.inc();
-    _out << nl << "Return Object.ReferenceEquals(__rhs, Nothing)";
-    _out.dec();
-    _out << nl << "Else";
-    _out.inc();
-    _out << nl << "Return __lhs.Equals(__rhs)";
-    _out.dec();
-    _out << nl << "End If";
-    _out.dec();
-    _out << nl << "End Function";
-
-    _out.zeroIndent();
-    _out << sp << nl << "#End Region"; // Shared Equals
     _out.restoreIndent();
 
     _out.dec();
@@ -1821,7 +2074,9 @@ Slice::Gen::TypesVisitor::visitExceptionStart(const ExceptionPtr& p)
     string name = fixId(p->name());
     ExceptionPtr base = p->base();
 
-    _out << sp << nl << "Public Class " << name;
+    _out << sp << nl;
+    emitAttributes(p);
+    _out << "Public Class " << name;
     _out.inc();
     if(base)
     {
@@ -1869,21 +2124,21 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
     _out.dec();
     _out << nl << "End Sub";
 
-    _out << sp << nl << "Public Sub New(ByVal __m As String)";
+    _out << sp << nl << "Public Sub New(ByVal m__ As String)";
     _out.inc();
-    _out << nl << "MyBase.New(__m)";
+    _out << nl << "MyBase.New(m__)";
     _out.dec();
     _out << nl << "End Sub";
 
-    _out << sp << nl << "Public Sub New(ByVal __ex As _System.Exception)";
+    _out << sp << nl << "Public Sub New(ByVal ex__ As _System.Exception)";
     _out.inc();
-    _out << nl << "MyBase.New(_dflt, __ex)";
+    _out << nl << "MyBase.New(_dflt, ex__)";
     _out.dec();
     _out << nl << "End Sub";
 
-    _out << sp << nl << "Public Sub New(ByVal __m As String, ByVal __ex As _System.Exception)";
+    _out << sp << nl << "Public Sub New(ByVal m__ As String, ByVal ex__ As _System.Exception)";
     _out.inc();
-    _out << nl << "MyBase.New(__m, __ex)";
+    _out << nl << "MyBase.New(m__, ex__)";
     _out.dec();
     _out << nl << "End Sub";
 
@@ -1895,7 +2150,7 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 
     _out << sp << nl << "Public Overrides Function GetHashCode() As Integer";
     _out.inc();
-    _out << nl << "Dim __h As Integer = 0";
+    _out << nl << "Dim h__ As Integer = 0";
     for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
     {
         string memberName = fixId((*q)->name(), DotNet::ApplicationException);
@@ -1909,17 +2164,17 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	if(cl && cl->isInterface()) // Bug in VB 7.1: cast should not be necessary.
 	{
 	    _out << nl << "' Bug in VB 7.1: cast to Object should not be necessary.";
-	    _out << nl << "__h = 5 * __h + CType(" << memberName << ", Object).GetHashCode()";
+	    _out << nl << "h__ = 5 * h__ + CType(" << memberName << ", Object).GetHashCode()";
 	}
 	else if(ProxyPtr::dynamicCast((*q)->type()))
 	{
 	    _out << nl << "' Bug in VB 7.1: cast should not be necessary.";
-	    _out << nl << "__h = 5 * __h + CType(" << memberName << ", "
+	    _out << nl << "h__ = 5 * h__ + CType(" << memberName << ", "
 		 << typeToString((*q)->type()) << "Helper).GetHashCode()";
 	}
 	else
 	{
-	    _out << nl << "__h = 5 * __h + " << memberName << ".GetHashCode()";
+	    _out << nl << "h__ = 5 * h__ + " << memberName << ".GetHashCode()";
 	}
 	if(!isValue)
 	{
@@ -1927,26 +2182,26 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	    _out << nl << "End If";
 	}
     }
-    _out << nl << "Return __h";
+    _out << nl << "Return h__";
     _out.dec();
     _out << nl << "End Function";
 
-    _out << sp << nl << "Public Overloads Overrides Function Equals(ByVal __other As Object) As Boolean";
+    _out << sp << nl << "Public Overloads Overrides Function Equals(ByVal other__ As Object) As Boolean";
     _out.inc();
-    _out << nl << "If __other Is Nothing Then";
+    _out << nl << "If other__ Is Nothing Then";
     _out.inc();
     _out << nl << "Return False";
     _out.dec();
     _out << nl << "End If";
-    _out << nl << "If Object.ReferenceEquals(Me, __other) Then";
+    _out << nl << "If Object.ReferenceEquals(Me, other__) Then";
     _out.inc();
     _out << nl << "Return True";
     _out.dec();
     _out << nl << "End If";
-    _out << nl << "If Not TypeOf __other Is " << name << " Then";
+    _out << nl << "If Not TypeOf other__ Is " << name << " Then";
     _out.inc();
     _out << nl << "Throw New _System.ArgumentException(\"expected argument of type `" << p->name()
-         << "'\", \"__other\")";
+         << "'\", \"other__\")";
     _out.dec();
     _out << nl << "End If";
     for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
@@ -1957,18 +2212,18 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	if(cl && cl->isInterface()) // Bug in VB 7.1: cast should not be necessary.
 	{
 	    _out << nl << "' Bug in VB 7.1: cast to Object should not be necessary.";
-	    _out << nl << "If Not CType(" << memberName << ", Object).Equals(CType(__other, "
+	    _out << nl << "If Not CType(" << memberName << ", Object).Equals(CType(other__, "
 	         << name << ")." << memberName << ") Then";
 	}
 	else if(ProxyPtr::dynamicCast((*q)->type()))
 	{
 	    _out << nl << "' Bug in VB 7.1: cast should not be necessary.";
 	    _out << nl << "If Not CType(" << memberName << ", " << typeToString((*q)->type())
-	         << "Helper).Equals(CType(__other, " << name << ")." << memberName << ") Then";
+	         << "Helper).Equals(CType(other__, " << name << ")." << memberName << ") Then";
 	}
 	else
 	{
-	    _out << nl << "If Not " << memberName << ".Equals(CType(__other, " << name << ")."
+	    _out << nl << "If Not " << memberName << ".Equals(CType(other__, " << name << ")."
 	         << memberName << ") Then";
 	}
 	_out.inc();
@@ -1982,28 +2237,6 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 
     _out.zeroIndent();
     _out << sp << nl << "#End Region"; // Object members
-
-    _out << sp << nl << "#Region \"Shared Equals\"";
-    _out.restoreIndent();
-
-    _out << sp << nl << "Public Overloads Shared Function Equals(ByVal __lhs As " << name
-         << ", ByVal __rhs As " << name << ") As Boolean";
-
-    _out.inc();
-    _out << nl << "If Object.ReferenceEquals(__rhs, Nothing) Then";
-    _out.inc();
-    _out << nl << "Return Object.ReferenceEquals(__rhs, Nothing)";
-    _out.dec();
-    _out << nl << "Else";
-    _out.inc();
-    _out << nl << "Return __lhs.Equals(__rhs)";
-    _out.dec();
-    _out << nl << "End If";
-    _out.dec();
-    _out << nl << "End Function";
-
-    _out.zeroIndent();
-    _out << sp << nl << "#End Region"; // Comparison members
     _out.restoreIndent();
 
     if(!p->isLocal())
@@ -2016,20 +2249,20 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
         ExceptionPtr base = p->base();
 
 
-        _out << sp << nl << "Public Overloads Overrides Sub __write(ByVal __os As IceInternal.BasicStream)";
+        _out << sp << nl << "Public Overloads Overrides Sub write__(ByVal os__ As IceInternal.BasicStream)";
         _out.inc();
-	_out << nl << "__os.writeString(\"" << scoped << "\")";
-	_out << nl << "__os.startWriteSlice()";
+	_out << nl << "os__.writeString(\"" << scoped << "\")";
+	_out << nl << "os__.startWriteSlice()";
         for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
         {
             writeMarshalUnmarshalCode(_out, (*q)->type(),
 	                              fixId((*q)->name(), DotNet::ApplicationException),
 				      true, false, false);
         }
-	_out << nl << "__os.endWriteSlice()";
+	_out << nl << "os__.endWriteSlice()";
         if(base)
         {
-            _out << nl << "MyBase.__write(__os)";
+            _out << nl << "MyBase.write__(os__)";
         }
 	_out.dec();
 	_out << nl << "End Sub";
@@ -2037,7 +2270,7 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	DataMemberList allClassMembers = p->allClassDataMembers();
 	if(allClassMembers.size() != 0)
 	{
-	    _out << sp << nl << "Public NotInheritable Class __Patcher";
+	    _out << sp << nl << "Public NotInheritable Class Patcher__";
 	    _out.inc();
 	    _out << nl << "Inherits IceInternal.Patcher";
 	    _out << sp << nl << "Friend Sub New(ByVal instance As Ice.Exception";
@@ -2072,7 +2305,7 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 		}
 		string memberName = fixId((*q)->name(), DotNet::ApplicationException);
 		string memberType = typeToString((*q)->type());
-		_out << nl << "_type = GetType(" << memberType << ')';
+		_out << nl << "type_ = GetType(" << memberType << ')';
 		_out << nl << "_instance." << memberName << " = CType(v, " << memberType << ')';
 		if(allClassMembers.size() > 1)
 		{
@@ -2096,15 +2329,15 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	    _out.dec();
 	    _out << nl << "End Class";
 	}
-        _out << sp << nl << "Public Overloads Overrides Sub __read(ByVal __is As IceInternal.BasicStream, "
-	                    "ByVal __rid As Boolean)";
+        _out << sp << nl << "Public Overloads Overrides Sub read__(ByVal is__ As IceInternal.BasicStream, "
+	                    "ByVal rid__ As Boolean)";
         _out.inc();
-	_out << nl << "If __rid Then";
+	_out << nl << "If rid__ Then";
 	_out.inc();
-	_out << nl << "Dim myId As String = __is.readString()";
+	_out << nl << "Dim myId As String = is__.readString()";
 	_out.dec();
 	_out << nl << "End If";
-	_out << nl << "__is.startReadSlice()";
+	_out << nl << "is__.startReadSlice()";
 	DataMemberList classMembers = p->classDataMembers();
 	int classMemberCount = static_cast<int>(allClassMembers.size() - classMembers.size());
         for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
@@ -2123,43 +2356,43 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	                              fixId((*q)->name(), DotNet::ApplicationException),
 	                              false, false, false, patchParams.str());
         }
-	_out << nl << "__is.endReadSlice()";
+	_out << nl << "is__.endReadSlice()";
         if(base)
         {
-            _out << nl << "MyBase.__read(__is, true)";
+            _out << nl << "MyBase.read__(is__, true)";
         }
         _out.dec();
 	_out << nl << "End Sub";
 
 	if(_stream)
 	{
-	    _out << sp << nl << "Public Overloads Overrides Sub __write(ByVal __outS As Ice.OutputStream)";
+	    _out << sp << nl << "Public Overloads Overrides Sub write__(ByVal outS__ As Ice.OutputStream)";
 	    _out.inc();
-	    _out << nl << "__outS.writeString(\"" << scoped << "\")";
-	    _out << nl << "__outS.startSlice()";
+	    _out << nl << "outS__.writeString(\"" << scoped << "\")";
+	    _out << nl << "outS__.startSlice()";
 	    for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
 	    {
 		writeMarshalUnmarshalCode(_out, (*q)->type(),
 					  fixId((*q)->name(), DotNet::ApplicationException),
 					  true, true, false);
 	    }
-	    _out << nl << "__outS.endSlice()";
+	    _out << nl << "outS__.endSlice()";
 	    if(base)
 	    {
-		_out << nl << "MyBase.__write(__outS)";
+		_out << nl << "MyBase.write__(outS__)";
 	    }
 	    _out.dec();
 	    _out << nl << "End Sub";
 
-	    _out << sp << nl << "Public Overloads Overrides Sub __read(ByVal __inS As Ice.InputStream, "
-		 << "ByVal __rid As Boolean)";
+	    _out << sp << nl << "Public Overloads Overrides Sub read__(ByVal inS__ As Ice.InputStream, "
+		 << "ByVal rid__ As Boolean)";
 	    _out.inc();
-	    _out << nl << "If __rid Then";
+	    _out << nl << "If rid__ Then";
 	    _out.inc();
-	    _out << nl << "Dim myId As String = __inS.readString()";
+	    _out << nl << "Dim myId As String = inS__.readString()";
 	    _out.dec();
 	    _out << nl << "End If";
-	    _out << nl << "__inS.startSlice()";
+	    _out << nl << "inS__.startSlice()";
 	    classMemberCount = static_cast<int>(allClassMembers.size() - classMembers.size());
 	    for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
 	    {
@@ -2177,10 +2410,10 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 					  fixId((*q)->name(), DotNet::ApplicationException),
 					  false, true, false, patchParams.str());
 	    }
-	    _out << nl << "__inS.endSlice()";
+	    _out << nl << "inS__.endSlice()";
 	    if(base)
 	    {
-		_out << nl << "MyBase.__read(__inS, true)";
+		_out << nl << "MyBase.read__(inS__, true)";
 	    }
 	    _out.dec();
 	    _out << nl << "End Sub";
@@ -2191,7 +2424,7 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	    // Emit placeholder functions to catch errors.
 	    //
             string scoped = p->scoped();
-	    _out << sp << nl << "Public Overloads Overrides Sub __write(ByVal __outS As Ice.OutputStream)";
+	    _out << sp << nl << "Public Overloads Overrides Sub write__(ByVal outS__ As Ice.OutputStream)";
 	    _out.inc();
 	    _out << nl << "Dim ex As Ice.MarshalException = New Ice.MarshalException";
 	    _out << nl << "ex.reason = \"type " << scoped.substr(2) << " was not generated with stream support\"";
@@ -2199,8 +2432,8 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	    _out.dec();
 	    _out << nl << "End Sub";
 
-	    _out << sp << nl << "Public Overloads Overrides Sub __read"
-	         << "(ByVal __inS As Ice.InputStream, ByVal __rid As Boolean)";
+	    _out << sp << nl << "Public Overloads Overrides Sub read__"
+	         << "(ByVal inS__ As Ice.InputStream, ByVal rid__ As Boolean)";
 	    _out.inc();
 	    _out << nl << "Dim ex As Ice.MarshalException = New Ice.MarshalException";
 	    _out << nl << "ex.reason = \"type " << scoped.substr(2) << " was not generated with stream support\"";
@@ -2211,7 +2444,7 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 
 	if(!base || base && !base->usesClasses())
 	{
-	    _out << sp << nl << "Public Overrides Function __usesClasses() As Boolean";
+	    _out << sp << nl << "Public Overrides Function usesClasses__() As Boolean";
 	    _out.inc();
 	    _out << nl << "Return True";
 	    _out.dec();
@@ -2237,17 +2470,17 @@ Slice::Gen::TypesVisitor::visitStructStart(const StructPtr& p)
         _out << sp << nl << "Public NotInheritable Class " << p->name() << "Helper";
 	_out.inc();
 
-	_out << sp << nl << "Public Shared Sub write(ByVal __outS As Ice.OutputStream, ByVal __v As " << name << ')';
+	_out << sp << nl << "Public Shared Sub write(ByVal outS__ As Ice.OutputStream, ByVal v__ As " << name << ')';
 	_out.inc();
-	_out << nl << "__v.__write(__outS)";
+	_out << nl << "v__.write__(outS__)";
 	_out.dec();
 	_out << nl << "End Sub";
 
-	_out << sp << nl << "Public Shared Function read(ByVal __inS As Ice.InputStream) As " << name;
+	_out << sp << nl << "Public Shared Function read(ByVal inS__ As Ice.InputStream) As " << name;
 	_out.inc();
-	_out << nl << "Dim __v As " << name << " = New " << name;
-	_out << nl << "__v.__read(__inS)";
-	_out << nl << "Return __v";
+	_out << nl << "Dim v__ As " << name << " = New " << name;
+	_out << nl << "v__.read__(inS__)";
+	_out << nl << "Return v__";
 	_out.dec();
 	_out << nl << "End Function";
 
@@ -2255,13 +2488,18 @@ Slice::Gen::TypesVisitor::visitStructStart(const StructPtr& p)
 	_out << nl << "End Class";
     }
 
-    if(p->hasMetaData("vb:class"))
+    _out << sp << nl;
+    emitAttributes(p);
+    if(isValueType(p))
     {
-	_out << sp << nl << "Public Class " << name << " Implements _System.ICloneable";
+	_out << "Public Structure " << name;
     }
     else
     {
-	_out << sp << nl << "Public Structure " << name;
+	_out << "Public Class " << name;
+	_out.inc();
+	_out << nl << " Implements _System.ICloneable";
+	_out.dec();
     }
     _out.inc();
 
@@ -2277,14 +2515,52 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 {
     string name = fixId(p->name());
 
+    DataMemberList classMembers = p->classDataMembers();
     DataMemberList dataMembers = p->dataMembers();
     DataMemberList::const_iterator q;
 
     _out.zeroIndent();
     _out << sp << nl << "#End Region"; // Slice data members
+
+    bool isClass = !isValueType(p);
+
+    _out << sp << nl << "#Region \"Constructor";
+    if(isClass)
+    {
+        _out << "s";
+    }
+    _out << "\"";
     _out.restoreIndent();
 
-    bool isClass = p->hasMetaData("vb:class");
+    if(isClass)
+    {
+        _out << sp << nl << "Public Sub New()";
+	_out << nl << "End Sub";
+    }
+
+    _out << sp << nl << "Public Sub New" << spar;
+    vector<string> paramDecl;
+    vector<string> paramNames;
+    for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+    {
+        string memberName = fixId((*q)->name());
+	string memberType = typeToString((*q)->type());
+	paramDecl.push_back("ByVal " + memberName + " As " + memberType);
+	paramNames.push_back(memberName);
+    }
+    _out << paramDecl << epar;
+    _out.inc();
+    for(vector<string>::const_iterator i = paramNames.begin(); i != paramNames.end(); ++i)
+    {
+        _out << nl << "Me." << *i << " = " << *i;
+    }
+    _out.dec();
+    _out << nl << "End Sub";
+
+    _out.zeroIndent();
+    _out << sp << nl << "#End Region"; // Constructor(s)
+    _out.restoreIndent();
+
     if(isClass)
     {
 	_out.zeroIndent();
@@ -2308,7 +2584,7 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 
     _out << sp << nl << "Public Overrides Function GetHashCode() As Integer";
     _out.inc();
-    _out << nl << "Dim __h As Integer = 0";
+    _out << nl << "Dim h__ As Integer = 0";
     for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
     {
         string memberName = fixId((*q)->name(), isClass ? DotNet::ICloneable : 0);
@@ -2322,17 +2598,17 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 	if(cl && cl->isInterface()) // Bug in VB 7.1: cast should not be necessary.
 	{
 	    _out << nl << "' Bug in VB 7.1: cast to Object should not be necessary.";
-	    _out << nl << "__h = 5 * __h + CType(" << memberName << ", Object).GetHashCode()";
+	    _out << nl << "h__ = 5 * h__ + CType(" << memberName << ", Object).GetHashCode()";
 	}
 	else if(ProxyPtr::dynamicCast((*q)->type()))
 	{
 	    _out << nl << "' Bug in VB 7.1: cast should not be necessary.";
-	    _out << nl << "__h = 5 * __h + CType(" << memberName << ", "
+	    _out << nl << "h__ = 5 * h__ + CType(" << memberName << ", "
 		 << typeToString((*q)->type()) << "Helper).GetHashCode()";
 	}
 	else
 	{
-	    _out << nl << "__h = 5 * __h + " << memberName << ".GetHashCode()";
+	    _out << nl << "h__ = 5 * h__ + " << memberName << ".GetHashCode()";
 	}
 	if(!isValue)
 	{
@@ -2340,22 +2616,40 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 	    _out << nl << "End If";
 	}
     }
-    _out << nl << "Return __h";
+    _out << nl << "Return h__";
     _out.dec();
     _out << nl << "End Function";
 
-    _out << sp << nl << "Public Overloads Overrides Function Equals(ByVal __other As Object) As Boolean";
+    _out << sp << nl << "Public Overloads Overrides Function Equals(ByVal other__ As Object) As Boolean";
     _out.inc();
-    _out << nl << "If Object.ReferenceEquals(Me, __other) Then";
-    _out.inc();
-    _out << nl << "Return True";
-    _out.dec();
-    _out << nl << "End If";
-    _out << nl << "If Not TypeOf __other Is " << name << " Then";
-    _out.inc();
-    _out << nl << "Return False";
-    _out.dec();
-    _out << nl << "End If";
+    if(isClass)
+    {
+	_out << nl << "If Object.ReferenceEquals(Me, other__) Then";
+	_out.inc();
+	_out << nl << "Return True";
+	_out.dec();
+	_out << nl << "End If";
+    }
+    if(isClass)
+    {
+        _out << nl << "If other__ Is Nothing Then";
+	_out.inc();
+	_out << nl << "Return False";
+	_out.dec();
+	_out << nl << "End If";
+    }
+    else
+    {
+	_out << nl << "If Not TypeOf other__ Is " << name << " Then";
+	_out.inc();
+	_out << nl << "Return False";
+	_out.dec();
+	_out << nl << "End If";
+    }
+    if(!dataMembers.empty())
+    {
+        _out << nl << "Dim o__ As " << name << " = CType(other__, " << name << ")";
+    }
     for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
     {
         string memberName = fixId((*q)->name(), isClass ? DotNet::ICloneable : 0);
@@ -2363,7 +2657,7 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 	{
 	    _out << nl << "If " << memberName << " Is Nothing Then";
 	    _out.inc();
-	    _out << nl << "If Not CType(__other, " << name << ")." << memberName << " Is Nothing Then";
+	    _out << nl << "If Not o__." << memberName << " Is Nothing Then";
 	    _out.inc();
 	    _out << nl << "Return False";
 	    _out.dec();
@@ -2375,19 +2669,17 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 	    if(cl && cl->isInterface()) // Bug in VB 7.1: cast should not be necessary.
 	    {
 		_out << nl << "' Bug in VB 7.1: cast to Object should not be necessary.";
-		_out << nl << "If Not CType(" << memberName << ", Object).Equals(CType(__other, "
-		     << name << ")." << memberName << ") Then";
+		_out << nl << "If Not CType(" << memberName << ", Object).Equals(o__." << memberName << ") Then";
 	    }
 	    else if(ProxyPtr::dynamicCast((*q)->type()))
 	    {
 		_out << nl << "' Bug in VB 7.1: cast should not be necessary.";
 		_out << nl << "If Not CType(" << memberName << ", " << typeToString((*q)->type())
-		     << "Helper).Equals(CType(__other, " << name << ")." << memberName << ") Then";
+		     << "Helper).Equals(o__." << memberName << ") Then";
 	    }
 	    else
 	    {
-		_out << nl << "If Not " << memberName << ".Equals(CType(__other, " << name << ")."
-		     << memberName << ") Then";
+		_out << nl << "If Not " << memberName << ".Equals(o__." << memberName << ") Then";
 	    }
 	    _out.inc();
 	    _out << nl << "Return False";
@@ -2398,8 +2690,7 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 	}
 	else
 	{
-	    _out << nl << "If Not " << memberName << ".Equals(CType(__other, " << name << ")."
-	         << memberName << ") Then";
+	    _out << nl << "If Not " << memberName << ".Equals(o__." << memberName << ") Then";
 	    _out.inc();
 	    _out << nl << "Return False";
 	    _out.dec();
@@ -2412,28 +2703,6 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 
     _out.zeroIndent();
     _out << sp << nl << "#End Region"; // Object members
-
-    _out << sp << nl << "#Region \"Shared Equals\"";
-    _out.restoreIndent();
-
-    _out << sp << nl << "Public Overloads Shared Function Equals(ByVal __lhs As " << name
-         << ", ByVal __rhs As " << name << ") As Boolean";
-
-    _out.inc();
-    _out << nl << "If Object.ReferenceEquals(__rhs, Nothing) Then";
-    _out.inc();
-    _out << nl << "Return Object.ReferenceEquals(__rhs, Nothing)";
-    _out.dec();
-    _out << nl << "Else";
-    _out.inc();
-    _out << nl << "Return __lhs.Equals(__rhs)";
-    _out.dec();
-    _out << nl << "End If";
-    _out.dec();
-    _out << nl << "End Function";
-
-    _out.zeroIndent();
-    _out << sp << nl << "#End Region"; // Shared Equals
     _out.restoreIndent();
 
     if(!p->isLocal())
@@ -2442,7 +2711,7 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
         _out << sp << nl << "#Region \"Marshalling support\"";
 	_out.restoreIndent();
 
-        _out << sp << nl << "Public Sub __write(ByVal __os As IceInternal.BasicStream)";
+        _out << sp << nl << "Public Sub write__(ByVal os__ As IceInternal.BasicStream)";
         _out.inc();
 	for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
 	{
@@ -2453,20 +2722,13 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
         _out.dec();
 	_out << nl << "End Sub";
 
-	DataMemberList classMembers = p->classDataMembers();
 
-	bool patchStruct = !p->hasMetaData("vb:class") && classMembers.size() != 0;
-
-	if(classMembers.size() != 0)
+	if(isClass && classMembers.size() != 0)
 	{
-	    _out << sp << nl << "Public NotInheritable Class __Patcher";
+	    _out << sp << nl << "Public NotInheritable Class Patcher__";
 	    _out.inc();
 	    _out << nl << "Inherits IceInternal.Patcher";
 	    _out << sp << nl << "Friend Sub New(ByVal instance As " << name;
-	    if(patchStruct)
-	    {
-	        _out << ".__PatchMembers";
-	    }
 	    if(classMembers.size() > 1)
 	    {
 	    	_out << ", ByVal member As Integer";
@@ -2498,7 +2760,7 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 		}
 		string memberType = typeToString((*q)->type());
 		string memberName = fixId((*q)->name(), isClass ? DotNet::ICloneable : 0);
-		_out << nl << "_type = GetType(" << memberType << ')';
+		_out << nl << "type_ = GetType(" << memberType << ')';
 		_out << nl << "_instance." << memberName << " = CType(v, " << memberType << ')';
 		if(classMembers.size() > 1)
 		{
@@ -2515,59 +2777,21 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 	    _out << nl << "End Sub";
 
 	    _out << sp << nl << "Private _instance As " << name;
-	    if(patchStruct)
-	    {
-	        _out << ".__PatchMembers";
-	    }
 	    if(classMembers.size() > 1)
 	    {
 		_out << nl << "Private _member As Integer";
 	    }
 	    _out.dec();
 	    _out << nl << "End Class";
-
-	    if(patchStruct)
-	    {
-		_out << sp << nl << "Friend Class __PatchMembers";
-		_out.inc();
-		for(q = classMembers.begin(); q != classMembers.end(); ++q)
-		{
-		    string memberType = typeToString((*q)->type());
-		    string memberName = fixId((*q)->name(), isClass ? DotNet::ICloneable : 0);
-		    _out << nl << "Friend " << memberName << " As " << memberType;
-		}
-		_out.dec();
-		_out << nl << "End Class";
-
-		_out << sp << nl << "Private _pm As __PatchMembers";
-
-		_out << sp << nl << "Public Sub __patch()";
-		_out.inc();
-		for(q = classMembers.begin(); q != classMembers.end(); ++q)
-		{
-		    string memberName = fixId((*q)->name(), isClass ? DotNet::ICloneable : 0);
-		    _out << nl << memberName << " = _pm." << memberName;
-		}
-		_out.dec();
-		_out << nl << "End Sub";
-	    }
 	}
 
-        _out << sp << nl << "Public Sub __read(ByVal __is As IceInternal.BasicStream)";
+        _out << sp << nl << "Public Sub read__(ByVal is__ As IceInternal.BasicStream)";
         _out.inc();
-	if(patchStruct)
-	{
-	    _out << nl << "If _pm Is Nothing Then";
-	    _out.inc();
-	    _out << nl << "_pm = new __PatchMembers()";
-	    _out.dec();
-	    _out << nl << "End If";
-	}
 	int classMemberCount = 0;
         for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
         {
 	    ostringstream patchParams;
-	    patchParams << (patchStruct ? "_pm" : "Me");
+	    patchParams << "Me";
 	    BuiltinPtr builtin = BuiltinPtr::dynamicCast((*q)->type());
 	    if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast((*q)->type()))
 	    {
@@ -2585,7 +2809,7 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 
 	if(_stream)
 	{
-	    _out << sp << nl << "Public Sub __write(ByVal __outS As Ice.OutputStream)";
+	    _out << sp << nl << "Public Sub write__(ByVal outS__ As Ice.OutputStream)";
 	    _out.inc();
 	    for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
 	    {
@@ -2596,21 +2820,13 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 	    _out.dec();
 	    _out << nl << "End Sub";
 
-	    _out << sp << nl << "Public Sub __read(ByVal __inS As Ice.InputStream)";
+	    _out << sp << nl << "Public Sub read__(ByVal inS__ As Ice.InputStream)";
 	    _out.inc();
-	    if(patchStruct)
-	    {
-		_out << nl << "If _pm Is Nothing";
-		_out.inc();
-		_out << nl << "_pm = New __PatchMembers";
-		_out.dec();
-		_out << nl << "End If";
-	    }
 	    classMemberCount = 0;
 	    for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
 	    {
 		ostringstream patchParams;
-		patchParams << (patchStruct ? "_pm" : "Me");
+		patchParams << "Me";
 		BuiltinPtr builtin = BuiltinPtr::dynamicCast((*q)->type());
 		if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast((*q)->type()))
 		{
@@ -2633,7 +2849,7 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
     }
 
     _out.dec();
-    _out << sp << nl << "End Structure";
+    _out << sp << nl << "End " << (isClass ? "Class" : "Structure");
 }
 
 void
@@ -2644,7 +2860,9 @@ Slice::Gen::TypesVisitor::visitDictionary(const DictionaryPtr& p)
     string vs = typeToString(p->valueType());
     bool valueIsValue = isValueType(p->valueType());
 
-    _out << sp << nl << "Public Class " << name;
+    _out << sp << nl;
+    emitAttributes(p);
+    _out << "Public Class " << name;
     _out.inc();
     _out << nl << "Inherits _System.Collections.DictionaryBase";
     _out << nl << "Implements _System.ICloneable";
@@ -2653,9 +2871,9 @@ Slice::Gen::TypesVisitor::visitDictionary(const DictionaryPtr& p)
     _out << sp << nl << "#Region \"" << name << " members\"";
     _out.restoreIndent();
 
-    _out << sp << nl << "Public Sub AddRange(ByVal __d As " << name << ')';
+    _out << sp << nl << "Public Sub AddRange(ByVal d__ As " << name << ')';
     _out.inc();
-    _out << nl << "For Each e As _System.Collections.DictionaryEntry in __d";
+    _out << nl << "For Each e As _System.Collections.DictionaryEntry in d__";
     _out.inc();
     _out << nl << "Try";
     _out.inc();
@@ -2843,15 +3061,15 @@ Slice::Gen::TypesVisitor::visitDictionary(const DictionaryPtr& p)
     _out << nl << "Return False";
     _out.dec();
     _out << nl << "End If";
-    _out << nl << "Dim __klhs() As " << ks << " = New " << ks << "(Count - 1) {}";
-    _out << nl << "Keys.CopyTo(__klhs, 0)";
-    _out << nl << "_System.Array.Sort(__klhs)";
-    _out << nl << "Dim __krhs() As " << ks << " = New " << ks << "(CType(other, " << name << ").Count - 1) {}";
-    _out << nl << "CType(other, " << name << ").Keys.CopyTo(__krhs, 0)";
-    _out << nl << "_System.Array.Sort(__krhs)";
+    _out << nl << "Dim klhs__() As " << ks << " = New " << ks << "(Count - 1) {}";
+    _out << nl << "Keys.CopyTo(klhs__, 0)";
+    _out << nl << "_System.Array.Sort(klhs__)";
+    _out << nl << "Dim krsh__() As " << ks << " = New " << ks << "(CType(other, " << name << ").Count - 1) {}";
+    _out << nl << "CType(other, " << name << ").Keys.CopyTo(krsh__, 0)";
+    _out << nl << "_System.Array.Sort(krsh__)";
     _out << nl << "For i As Integer = 0 To Count - 1";
     _out.inc();
-    _out << nl << "If Not __klhs(i).Equals(__krhs(i))";
+    _out << nl << "If Not klhs__(i).Equals(krsh__(i))";
     _out.inc();
     _out << nl << "Return False";
     _out.dec();
@@ -2859,33 +3077,33 @@ Slice::Gen::TypesVisitor::visitDictionary(const DictionaryPtr& p)
     _out.dec();
     _out << nl << "Next";
     SequencePtr seq = SequencePtr::dynamicCast(p->valueType());
-    bool valueIsArray = seq && !seq->hasMetaData("vb:collection");
+    bool valueIsArray = seq && !seq->hasMetaData("clr:collection");
     if(valueIsArray)
     {
-	_out << nl << "Dim __vlhs As " << vs << "() = New " << toArrayAlloc(vs + "()", "Count - 1") << " {}";
+	_out << nl << "Dim vlhs__ As " << vs << "() = New " << toArrayAlloc(vs + "()", "Count - 1") << " {}";
     }
     else
     {
-	_out << nl << "Dim __vlhs As " << vs << "() = New " << vs << "(Count - 1) {}";
+	_out << nl << "Dim vlhs__ As " << vs << "() = New " << vs << "(Count - 1) {}";
     }
-    _out << nl << "Values.CopyTo(__vlhs, 0)";
-    _out << nl << "_System.Array.Sort(__vlhs)";
+    _out << nl << "Values.CopyTo(vlhs__, 0)";
+    _out << nl << "_System.Array.Sort(vlhs__)";
     string vrhsCount = "Ctype(other, " + name + ").Count - 1";
     if(valueIsArray)
     {
-	_out << nl << "Dim __vrhs As " << vs << "() = New " << toArrayAlloc(vs + "()", vrhsCount) << " {}";
+	_out << nl << "Dim vrhs__ As " << vs << "() = New " << toArrayAlloc(vs + "()", vrhsCount) << " {}";
     }
     else
     {
-	_out << nl << "Dim __vrhs As " << vs << "() = New " << vs << '(' << vrhsCount << ") {}";
+	_out << nl << "Dim vrhs__ As " << vs << "() = New " << vs << '(' << vrhsCount << ") {}";
     }
-    _out << nl << "CType(other, " << name << ").Values.CopyTo(__vrhs, 0)";
-    _out << nl << "_System.Array.Sort(__vrhs)";
+    _out << nl << "CType(other, " << name << ").Values.CopyTo(vrhs__, 0)";
+    _out << nl << "_System.Array.Sort(vrhs__)";
     _out << nl << "For i As Integer = 0 To Count - 1";
     _out.inc();
     if(!valueIsValue)
     {
-	_out << nl << "If __vlhs(i) Is Nothing And Not __vrhs(i) Is Nothing";
+	_out << nl << "If vlhs__(i) Is Nothing And Not vrhs__(i) Is Nothing";
 	_out.inc();
 	_out << nl << "Return False";
 	_out.dec();
@@ -2895,16 +3113,16 @@ Slice::Gen::TypesVisitor::visitDictionary(const DictionaryPtr& p)
     if(cl && cl->isInterface()) // Bug in VB 7.1: cast should not be necessary.
     {
 	_out << nl << "' Bug in VB 7.1: cast to Object should not be necessary.";
-        _out << nl << "If Not CType(__vlhs(i), Object).Equals(__vrhs(i))";
+        _out << nl << "If Not CType(vlhs__(i), Object).Equals(vrhs__(i))";
     }
     else if(ProxyPtr::dynamicCast(p->valueType()))
     {
 	_out << nl << "' Bug in VB 7.1: cast should not be necessary.";
-	_out << nl << "If Not CType(__vlhs(i), " << typeToString(p->valueType()) << "Helper).Equals(__vrhs(i))";
+	_out << nl << "If Not CType(vlhs__(i), " << typeToString(p->valueType()) << "Helper).Equals(vrhs__(i))";
     }
     else
     {
-	_out << nl << "If Not __vlhs(i).Equals(__vrhs(i))";
+	_out << nl << "If Not vlhs__(i).Equals(vrhs__(i))";
     }
     _out.inc();
     _out << nl << "Return False";
@@ -2918,27 +3136,6 @@ Slice::Gen::TypesVisitor::visitDictionary(const DictionaryPtr& p)
 
     _out.zeroIndent();
     _out << sp << nl << "#End Region"; // Object members
-
-    _out << sp << nl << "#Region \"Shared Equals\"";
-    _out.restoreIndent();
-
-    _out << sp << nl << "Public Overloads Shared Function Equals(ByVal __lhs As " << name
-         << ", ByVal __rhs As " << name << ") As Boolean";
-    _out.inc();
-    _out << nl << "If Object.ReferenceEquals(__rhs, Nothing) Then";
-    _out.inc();
-    _out << nl << "Return Object.ReferenceEquals(__rhs, Nothing)";
-    _out.dec();
-    _out << nl << "Else";
-    _out.inc();
-    _out << nl << "Return __lhs.Equals(__rhs)";
-    _out.dec();
-    _out << nl << "End If";
-    _out.dec();
-    _out << nl << "End Function";
-
-    _out.zeroIndent();
-    _out << sp << nl << "#End Region"; // Shared Equals
     _out.restoreIndent();
 
     _out.dec();
@@ -2950,7 +3147,9 @@ Slice::Gen::TypesVisitor::visitEnum(const EnumPtr& p)
 {
     string name = fixId(p->name());
     string scoped = fixId(p->scoped());
-    _out << sp << nl << "Public Enum " << name;
+    _out << sp << nl;
+    emitAttributes(p);
+    _out << "Public Enum " << name;
     _out.inc();
     EnumeratorList enumerators = p->getEnumerators();
     for(EnumeratorList::const_iterator en = enumerators.begin(); en != enumerators.end(); ++en)
@@ -2965,17 +3164,17 @@ Slice::Gen::TypesVisitor::visitEnum(const EnumPtr& p)
 	_out << sp << nl << "Public NotInheritable Class " << name << "Helper";
 	_out.inc();
 
-	_out << sp << nl << "Public Shared Sub write(ByVal __outS As Ice.OutputStream, ByVal __v As " << scoped << ')';
+	_out << sp << nl << "Public Shared Sub write(ByVal outS__ As Ice.OutputStream, ByVal v__ As " << scoped << ')';
 	_out.inc();
-	writeMarshalUnmarshalCode(_out, p, "__v", true, true, false);
+	writeMarshalUnmarshalCode(_out, p, "v__", true, true, false);
 	_out.dec();
 	_out << nl << "End Sub";
 
-	_out << sp << nl << "Public Shared Function read(ByVal __inS As Ice.InputStream) As " << scoped;
+	_out << sp << nl << "Public Shared Function read(ByVal inS__ As Ice.InputStream) As " << scoped;
 	_out.inc();
-	_out << nl << "Dim __v As " << scoped;
-	writeMarshalUnmarshalCode(_out, p, "__v", false, true, false);
-	_out << nl << "Return __v";
+	_out << nl << "Dim v__ As " << scoped;
+	writeMarshalUnmarshalCode(_out, p, "v__", false, true, false);
+	_out << nl << "Return v__";
 	_out.dec();
 	_out << nl << "End Function";
 
@@ -2988,7 +3187,9 @@ void
 Slice::Gen::TypesVisitor::visitConst(const ConstPtr& p)
 {
     string name = fixId(p->name());
-    _out << sp << nl << "Public NotInheritable Class " << name;
+    _out << sp << nl;
+    emitAttributes(p);
+    _out << "Public NotInheritable Class " << name;
     _out.inc();
     _out << nl << "Public Const value As " << typeToString(p->type()) << " = ";
     BuiltinPtr bp = BuiltinPtr::dynamicCast(p->type());
@@ -2997,7 +3198,7 @@ Slice::Gen::TypesVisitor::visitConst(const ConstPtr& p)
 	static const string basicStringChars = "abcdefghijklmnopqrstuvwxyz"
 					       "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 					       "0123456789"
-					       "_{}[]#()<>%:;,?*+=/^&|~!=,\\'\" \t";
+					       "_{}[]#()<>%:;.?*+-/^&|~!=,\\\"' ";
     	static const set<char> charSet(basicStringChars.begin(), basicStringChars.end());
 
 	enum Position { Beginning, InString, NotInString };
@@ -3108,7 +3309,7 @@ Slice::Gen::TypesVisitor::visitDataMember(const DataMemberPtr& p)
     bool isClass = false;
     ContainedPtr cont = ContainedPtr::dynamicCast(p->container());
     assert(cont);
-    if(StructPtr::dynamicCast(cont) && cont->hasMetaData("vb:class"))
+    if(StructPtr::dynamicCast(cont) && cont->hasMetaData("clr:class"))
     {
         baseTypes = DotNet::ICloneable;
     }
@@ -3121,7 +3322,9 @@ Slice::Gen::TypesVisitor::visitDataMember(const DataMemberPtr& p)
 	baseTypes = DotNet::ICloneable;
 	isClass = true;
     }
-    _out << sp << nl << "Public " << fixId(p->name(), baseTypes, isClass) << " As " << typeToString(p->type());
+    _out << sp << nl;
+    emitAttributes(p);
+    _out << "Public " << fixId(p->name(), baseTypes, isClass) << " As " << typeToString(p->type());
 }
 
 Slice::Gen::ProxyVisitor::ProxyVisitor(IceUtil::Output& out)
@@ -3137,7 +3340,9 @@ Slice::Gen::ProxyVisitor::visitModuleStart(const ModulePtr& p)
 	return false;
     }
 
-    _out << sp << nl << "Namespace " << fixId(p->name());
+    _out << sp << nl;
+    emitAttributes(p);
+    _out << "Namespace " << fixId(p->name());
     _out.inc();
     return true;
 }
@@ -3206,7 +3411,7 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
         _out << " As " << retS;
     }
 
-    _out << nl << vbOp << ' ' << name << spar << params << "ByVal __context As Ice.Context" << epar; 
+    _out << nl << vbOp << ' ' << name << spar << params << "ByVal context__ As Ice.Context" << epar; 
     if(ret)
     {
         _out << " As " << retS;
@@ -3223,8 +3428,13 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
 	//
 	_out << sp;
 	_out << nl << "Sub " << p->name() << "_async" << spar << paramsAMI << epar;
-	_out << nl << "Sub " << p->name() << "_async" << spar << paramsAMI << "ByVal __ctx As Ice.Context" << epar;
+	_out << nl << "Sub " << p->name() << "_async" << spar << paramsAMI << "ByVal ctx__ As Ice.Context" << epar;
     }
+}
+
+Slice::Gen::OpsVisitor::OpsVisitor(IceUtil::Output& out)
+    : VbVisitor(out)
+{
 }
 
 bool
@@ -3279,7 +3489,7 @@ Slice::Gen::OpsVisitor::writeOperations(const ClassDefPtr& p, bool noCurrent)
         opIntfName += "NC";
     }
 
-    _out << sp << nl << "Public Interface _" << name << opIntfName;
+    _out << sp << nl << "Public Interface " << name << opIntfName << '_';
     _out.inc();
     if((bases.size() == 1 && bases.front()->isAbstract()) || bases.size() > 1)
     {
@@ -3299,14 +3509,12 @@ Slice::Gen::OpsVisitor::writeOperations(const ClassDefPtr& p, bool noCurrent)
 		    first = false;
 		}
 		string s = (*q)->scoped();
-		string::size_type pos = s.rfind("::");
-		assert(pos != string::npos);
-		s.insert(pos + 2, "_");
 		s += "Operations";
 		if(noCurrent)
 		{
 		    s += "NC";
 		}
+		s += "_";
 		_out << fixId(s);
 	    }
 	    ++q;
@@ -3336,10 +3544,12 @@ Slice::Gen::OpsVisitor::writeOperations(const ClassDefPtr& p, bool noCurrent)
 
 	string vbOp = ret ? "Function" : "Sub";
 
-	_out << sp << nl << vbOp << ' ' << name << spar << params;
+	_out << sp << nl;
+	emitAttributes(op);
+	_out << vbOp << ' ' << name << spar << params;
 	if(!noCurrent && !p->isLocal())
 	{
-	    _out << "ByVal __current As Ice.Current";
+	    _out << "ByVal current__ As Ice.Current";
 	}
 	_out << epar;
 	if(ret)
@@ -3425,54 +3635,54 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
 	{
 	    _out << "Return ";
 	}
-	_out << opName << spar << args << "__defaultContext()" << epar;
+	_out << opName << spar << args << "defaultContext__()" << epar;
 	_out.dec();
 	_out << nl << "End " << vbOp;
 
 	_out << sp << nl << "Public " << vbOp << ' ' << opName << spar << params
-	     << "ByVal __context As Ice.Context" << epar;
+	     << "ByVal context__ As Ice.Context" << epar;
 	if(ret)
 	{
 	    _out << " As " << retS;
 	}
 	_out << " Implements " << name << "Prx." << opName; // TODO: should be containing class?
 	_out.inc();
-	_out << nl << "Dim __cnt As Integer = 0";
+	_out << nl << "Dim cnt__ As Integer = 0";
 	_out << nl << "While True";
 	_out.inc();
 	_out << nl << "Try";
 	_out.inc();
 	if(op->returnsData())
 	{
-	    _out << nl << "__checkTwowayOnly(\"" << op->name() << "\")";
+	    _out << nl << "checkTwowayOnly__(\"" << op->name() << "\")";
 	}
-	_out << nl << "Dim __delBase As Ice._ObjectDel = __getDelegate()";
-	_out << nl << "Dim __del As _" << name << "Del = CType(__delBase, _" << name << "Del)";
+	_out << nl << "Dim delBase__ As Ice.ObjectDel_ = getDelegate__()";
+	_out << nl << "Dim del__ As _" << name << "Del = CType(delBase__, _" << name << "Del)";
 	_out << nl;
 	if(ret)
 	{
 	    _out << "Return ";
 	}
-	_out << "__del." << opName << spar << args << "__context" << epar;
+	_out << "del__." << opName << spar << args << "context__" << epar;
 	if(!ret)
 	{
 	    _out << nl << "Return";
 	}
 	_out.dec();
-	_out << nl << "Catch __ex As IceInternal.NonRepeatable";
+	_out << nl << "Catch ex__ As IceInternal.NonRepeatable";
 	_out.inc();
 	if(op->mode() == Operation::Idempotent || op->mode() == Operation::Nonmutating)
 	{
-	    _out << nl << "__cnt = __handleException(__ex.get(), __cnt)";
+	    _out << nl << "cnt__ = handleException__(ex__.get(), cnt__)";
 	}
 	else
 	{
-	    _out << nl << "__rethrowException(__ex.get())";
+	    _out << nl << "rethrowException__(ex__.get())";
 	}
 	_out.dec();
-	_out << nl << "Catch __ex As Ice.LocalException";
+	_out << nl << "Catch ex__ As Ice.LocalException";
 	_out.inc();
-	_out << nl << "__cnt = __handleException(__ex, __cnt)";
+	_out << nl << "cnt__ = handleException__(ex__, cnt__)";
 	_out.dec();
 	_out << nl << "End Try";
 	_out.dec();
@@ -3517,16 +3727,16 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
 	    _out << sp << nl << "Public Sub " << opName << "_async" << spar << paramsAMI << epar
 	         << " Implements " << name << "Prx." << opName << "_async"; // TODO: should be containing class?
 	    _out.inc();
-	    _out << nl << opName << "_async" << spar << argsAMI << "__defaultContext()" << epar;
+	    _out << nl << opName << "_async" << spar << argsAMI << "defaultContext__()" << epar;
 	    _out.dec();
 	    _out << nl << "End Sub";
 
 	    _out << sp << nl << "Public Sub " << opName << "_async" << spar << paramsAMI
-	         << "ByVal __ctx As Ice.Context" << epar
+	         << "ByVal ctx__ As Ice.Context" << epar
 	         << " Implements " << name << "Prx." << opName << "_async"; // TODO: should be containing class?
 	    _out.inc();
-	    _out << nl << "__checkTwowayOnly(\"" << p->name() << "\")";
-	    _out << nl << "__cb.__invoke" << spar << "Me" << argsAMI << "__ctx" << epar;
+	    _out << nl << "checkTwowayOnly__(\"" << p->name() << "\")";
+	    _out << nl << "cb__.invoke__" << spar << "Me" << argsAMI << "ctx__" << epar;
 	    _out.dec();
 	    _out << nl << "End Sub";
 	}
@@ -3558,7 +3768,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << nl << "If b.ice_isA(\"" << p->scoped() << "\") Then";
     _out.inc();
     _out << nl << "Dim h As " << name << "PrxHelper = New " << name << "PrxHelper";
-    _out << nl << "h.__copyFrom(b)";
+    _out << nl << "h.copyFrom__(b)";
     _out << nl << "Return h";
     _out.dec();
     _out << nl << "End If";
@@ -3582,7 +3792,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << nl << "If b.ice_isA(\"" << p->scoped() << "\", ctx) Then";
     _out.inc();
     _out << nl << "Dim h As " << name << "PrxHelper = New " << name << "PrxHelper";
-    _out << nl << "h.__copyFrom(b)";
+    _out << nl << "h.copyFrom__(b)";
     _out << nl << "Return h";
     _out.dec();
     _out << nl << "End If";
@@ -3591,7 +3801,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << nl << "End Function";
 
 
-    _out << sp << nl << "Public Shared Function checkedCast(ByVal B As Ice.ObjectPrx, ByVal f As String) As "
+    _out << sp << nl << "Public Shared Function checkedCast(ByVal b As Ice.ObjectPrx, ByVal f As String) As "
          << name << "Prx";
     _out.inc();
     _out << nl << "If b Is Nothing Then";
@@ -3605,18 +3815,18 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << nl << "If bb.ice_isA(\"" << p->scoped() << "\") Then";
     _out.inc();
     _out << nl << "Dim h As " << name << "PrxHelper = new " << name << "PrxHelper()";
-    _out << nl << "h.__copyFrom(bb)";
+    _out << nl << "h.copyFrom__(bb)";
     _out << nl << "Return h";
     _out.dec();
     _out << nl << "End If";
     _out.dec();
-    _out << nl << "Catch __ex As Ice.FacetNotExistException";
+    _out << nl << "Catch ex__ As Ice.FacetNotExistException";
     _out << nl << "End Try";
     _out << nl << "Return Nothing";
     _out.dec();
     _out << nl << "End Function";
 
-    _out << sp << nl << "Public Shared Function checkedCast(ByVal B As Ice.ObjectPrx, ByVal f As String, "
+    _out << sp << nl << "Public Shared Function checkedCast(ByVal b As Ice.ObjectPrx, ByVal f As String, "
          << "ByVal ctx As Ice.Context) As " << name << "Prx";
     _out.inc();
     _out << nl << "If b Is Nothing Then";
@@ -3630,12 +3840,12 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << nl << "If bb.ice_isA(\"" << p->scoped() << "\", ctx) Then";
     _out.inc();
     _out << nl << "Dim h As " << name << "PrxHelper = new " << name << "PrxHelper()";
-    _out << nl << "h.__copyFrom(bb)";
+    _out << nl << "h.copyFrom__(bb)";
     _out << nl << "Return h";
     _out.dec();
     _out << nl << "End If";
     _out.dec();
-    _out << nl << "Catch __ex As Ice.FacetNotExistException";
+    _out << nl << "Catch ex__ As Ice.FacetNotExistException";
     _out << nl << "End Try";
     _out << nl << "Return Nothing";
     _out.dec();
@@ -3649,7 +3859,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out.dec();
     _out << nl << "End If";
     _out << nl << "Dim h As " << name << "PrxHelper = new " << name << "PrxHelper()";
-    _out << nl << "h.__copyFrom(b)";
+    _out << nl << "h.copyFrom__(b)";
     _out << nl << "Return h";
     _out.dec();
     _out << nl << "End Function";
@@ -3664,7 +3874,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << nl << "End If";
     _out << nl << "Dim bb As Ice.ObjectPrx = b.ice_newFacet(f)";
     _out << nl << "Dim h As " << name << "PrxHelper = new " << name << "PrxHelper()";
-    _out << nl << "h.__copyFrom(bb)";
+    _out << nl << "h.copyFrom__(bb)";
     _out << nl << "Return h";
     _out.dec();
     _out << nl << "End Function";
@@ -3675,32 +3885,32 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << sp << nl << "#Region \"Marshaling support\"";
     _out.restoreIndent();
 
-    _out << sp << nl << "Protected Overrides Function __createDelegateM() As Ice._ObjectDelM";
+    _out << sp << nl << "Protected Overrides Function createDelegateM__() As Ice.ObjectDelM_";
     _out.inc();
     _out << nl << "Return New _" << name << "DelM()";
     _out.dec();
     _out << nl << "End Function";
 
-    _out << sp << nl << "Protected Overrides Function __createDelegateD() As Ice._ObjectDelD";
+    _out << sp << nl << "Protected Overrides Function createDelegateD__() As Ice.ObjectDelD_";
     _out.inc();
     _out << nl << "Return New _" << name << "DelD()";
     _out.dec();
     _out << nl << "End Function";
 
-    _out << sp << nl << "Public Shared Sub __write(ByVal __os As IceInternal.BasicStream, ByVal __v As "
+    _out << sp << nl << "Public Shared Sub write__(ByVal os__ As IceInternal.BasicStream, ByVal v__ As "
          << name << "Prx)";
     _out.inc();
-    _out << nl << "__os.writeProxy(__v)";
+    _out << nl << "os__.writeProxy(v__)";
     _out.dec();
     _out << nl << "End Sub";
 
-    _out << sp << nl << "Public Shared Function __read(ByVal __is As IceInternal.BasicStream) As " << name << "Prx";
+    _out << sp << nl << "Public Shared Function read__(ByVal is__ As IceInternal.BasicStream) As " << name << "Prx";
     _out.inc();
-    _out << nl << "Dim proxy As Ice.ObjectPrx = __is.readProxy()";
+    _out << nl << "Dim proxy As Ice.ObjectPrx = is__.readProxy()";
     _out << nl << "If Not proxy Is Nothing Then";
     _out.inc();
     _out << nl << "Dim result As " << name << "PrxHelper = New " << name << "PrxHelper";
-    _out << nl << "result.__copyFrom(proxy)";
+    _out << nl << "result.copyFrom__(proxy)";
     _out << nl << "Return result";
     _out.dec();
     _out << nl << "End If";
@@ -3710,19 +3920,19 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
 
     if(_stream)
     {
-	_out << sp << nl << "Public Shared Sub write(ByVal __outS As Ice.OutputStream, ByVal __v As " << name << "Prx)";
+	_out << sp << nl << "Public Shared Sub write(ByVal outS__ As Ice.OutputStream, ByVal v__ As " << name << "Prx)";
 	_out.inc();
-	_out << nl << "__outS.writeProxy(__v)";
+	_out << nl << "outS__.writeProxy(v__)";
 	_out.dec();
 	_out << nl << "End Sub";
 
-	_out << sp << nl << "Public Shared Function read(ByVal __inS As Ice.InputStream) As " << name << "Prx";
+	_out << sp << nl << "Public Shared Function read(ByVal inS__ As Ice.InputStream) As " << name << "Prx";
 	_out.inc();
-	_out << nl << "Dim proxy As Ice.ObjectPrx = __inS.readProxy()";
+	_out << nl << "Dim proxy As Ice.ObjectPrx = inS__.readProxy()";
 	_out << nl << "If Not proxy Is Nothing";
 	_out.inc();
 	_out << nl << "Dim result As " << name << "PrxHelper = New " << name << "PrxHelper";
-	_out << nl << "result.__copyFrom(proxy)";
+	_out << nl << "result.copyFrom__(proxy)";
 	_out << nl << "Return result";
 	_out.dec();
 	_out << nl << "End If";
@@ -3762,33 +3972,33 @@ Slice::Gen::HelperVisitor::visitSequence(const SequencePtr& p)
     _out << sp << nl << "Public NotInheritable Class " << p->name() << "Helper";
     _out.inc();
 
-    _out << sp << nl << "Public Shared Sub write(ByVal __os As IceInternal.BasicStream, ByVal __v As " << typeS << ')';
+    _out << sp << nl << "Public Shared Sub write(ByVal os__ As IceInternal.BasicStream, ByVal v__ As " << typeS << ')';
     _out.inc();
-    writeSequenceMarshalUnmarshalCode(_out, p, "__v", true, false);
+    writeSequenceMarshalUnmarshalCode(_out, p, "v__", true, false);
     _out.dec();
     _out << nl << "End Sub";
 
-    _out << sp << nl << "Public Shared Function read(ByVal __is As IceInternal.BasicStream) As " << typeS;
+    _out << sp << nl << "Public Shared Function read(ByVal is__ As IceInternal.BasicStream) As " << typeS;
     _out.inc();
-    _out << nl << "Dim __v As " << typeS;
-    writeSequenceMarshalUnmarshalCode(_out, p, "__v", false, false);
-    _out << nl << "Return __v";
+    _out << nl << "Dim v__ As " << typeS;
+    writeSequenceMarshalUnmarshalCode(_out, p, "v__", false, false);
+    _out << nl << "Return v__";
     _out.dec();
     _out << nl << "End Function";
 
     if(_stream)
     {
-	_out << sp << nl << "Public Shared Sub write(ByVal __outS As Ice.OutputStream, ByVal __v As " << typeS << ')';
+	_out << sp << nl << "Public Shared Sub write(ByVal outS__ As Ice.OutputStream, ByVal v__ As " << typeS << ')';
 	_out.inc();
-	writeSequenceMarshalUnmarshalCode(_out, p, "__v", true, true);
+	writeSequenceMarshalUnmarshalCode(_out, p, "v__", true, true);
 	_out.dec();
 	_out << nl << "End Sub";
 
-	_out << sp << nl << "Public Shared Function read(ByVal __inS As Ice.InputStream) As " << typeS;
+	_out << sp << nl << "Public Shared Function read(ByVal inS__ As Ice.InputStream) As " << typeS;
 	_out.inc();
-	_out << nl << "Dim __v As " << typeS;
-	writeSequenceMarshalUnmarshalCode(_out, p, "__v", false, true);
-	_out << nl << "Return __v";
+	_out << nl << "Dim v__ As " << typeS;
+	writeSequenceMarshalUnmarshalCode(_out, p, "v__", false, true);
+	_out << nl << "Return v__";
 	_out.dec();
 	_out << nl << "End Function";
     }
@@ -3818,21 +4028,21 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
     _out << sp << nl << "Public NotInheritable Class " << p->name() << "Helper";
     _out.inc();
 
-    _out << sp << nl << "Public Shared Sub write(ByVal __os As IceInternal.BasicStream, ByVal __v As "
+    _out << sp << nl << "Public Shared Sub write(ByVal os__ As IceInternal.BasicStream, ByVal v__ As "
          << name << ')';
     _out.inc();
-    _out << nl << "If __v Is Nothing Then";
+    _out << nl << "If v__ Is Nothing Then";
     _out.inc();
-    _out << nl << "__os.writeSize(0)";
+    _out << nl << "os__.writeSize(0)";
     _out.dec();
     _out << nl << "Else";
     _out.inc();
-    _out << nl << "__os.writeSize(__v.Count)";
-    _out << nl << "For Each __e As _System.Collections.DictionaryEntry In __v";
+    _out << nl << "os__.writeSize(v__.Count)";
+    _out << nl << "For Each e__ As _System.Collections.DictionaryEntry In v__";
     _out.inc();
-    string keyArg = "CType(__e.Key, " + keyS + ")";
+    string keyArg = "CType(e__.Key, " + keyS + ")";
     writeMarshalUnmarshalCode(_out, key, keyArg, true, false, false);
-    string valueArg = "__e.Value";
+    string valueArg = "e__.Value";
     writeMarshalUnmarshalCode(_out, value, valueArg, true, false, false);
     _out.dec();
     _out << nl << "Next";
@@ -3845,7 +4055,7 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
     bool hasClassValue = (builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(value);
     if(hasClassValue)
     {
-	_out << sp << nl << "Public NotInheritable Class __Patcher";
+	_out << sp << nl << "Public NotInheritable Class Patcher__";
 	_out.inc();
 	_out << nl << "Inherits IceInternal.Patcher";
 	_out << sp << nl << "Friend Sub New(ByVal m As " << name << ", ByVal key As " << keyS << ')';
@@ -3857,7 +4067,7 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
 
 	_out << sp << nl << "Public Overrides Sub patch(ByVal v As Ice.Object)";
 	_out.inc();
-	_out << nl << "_type = GetType(" << typeToString(p->valueType()) << ')';
+	_out << nl << "type_ = GetType(" << typeToString(p->valueType()) << ')';
 	_out << nl << "_m(_key) = CType(v, " << valueS << ')';
 	_out.dec();
 	_out << nl << "End Sub";
@@ -3868,44 +4078,44 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
 	_out << sp << nl << "End Class";
     }
 
-    _out << sp << nl << "Public Shared Function " << " read(ByVal __is As IceInternal.BasicStream) As " << name;
+    _out << sp << nl << "Public Shared Function " << " read(ByVal is__ As IceInternal.BasicStream) As " << name;
     _out.inc();
 
-    _out << nl << "Dim __sz As Integer = __is.readSize()";
-    _out << nl << "Dim __r As " << name << " = New " << name;
-    _out << nl << "For __i As Integer = 0 To __sz - 1";
+    _out << nl << "Dim sz__ As Integer = is__.readSize()";
+    _out << nl << "Dim r__ As " << name << " = New " << name;
+    _out << nl << "For i__ As Integer = 0 To sz__ - 1";
     _out.inc();
-    _out << nl << "Dim __k As " << keyS;
-    writeMarshalUnmarshalCode(_out, key, "__k", false, false, false);
+    _out << nl << "Dim k__ As " << keyS;
+    writeMarshalUnmarshalCode(_out, key, "k__", false, false, false);
 
     if(!hasClassValue)
     {
-	_out << nl << "Dim __v As " << valueS;
+	_out << nl << "Dim v__ As " << valueS;
     }
-    writeMarshalUnmarshalCode(_out, value, "__v", false, false, false, "__r, __k");
+    writeMarshalUnmarshalCode(_out, value, "v__", false, false, false, "r__, k__");
     if(!hasClassValue)
     {
-	_out << nl << "__r(__k) = __v";
+	_out << nl << "r__(k__) = v__";
     }
     _out.dec();
     _out << nl << "Next";
-    _out << nl << "Return __r";
+    _out << nl << "Return r__";
 
     _out.dec();
     _out << nl << "End Function";
 
     if(_stream)
     {
-	_out << nl << "Public Shared Sub write(ByVal __outS As Ice.OutputStream, ByVal __v As " << name << ')';
+	_out << nl << "Public Shared Sub write(ByVal outS__ As Ice.OutputStream, ByVal v__ As " << name << ')';
 	_out.inc();
-	_out << nl << "If __v Is Nothing Then";
+	_out << nl << "If v__ Is Nothing Then";
 	_out.inc();
-	_out << nl << "__outS.writeSize(0)";
+	_out << nl << "outS__.writeSize(0)";
 	_out.dec();
 	_out << nl << "Else";
 	_out.inc();
-	_out << nl << "__outS.writeSize(__v.Count)";
-	_out << nl << "For Each __e As _System.Collections.DictionaryEntry In __v";
+	_out << nl << "outS__.writeSize(v__.Count)";
+	_out << nl << "For Each e__ As _System.Collections.DictionaryEntry In v__";
 	_out.inc();
 	writeMarshalUnmarshalCode(_out, key, keyArg, true, true, false);
 	writeMarshalUnmarshalCode(_out, value, valueArg, true, true, false);
@@ -3916,26 +4126,26 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
 	_out.dec();
 	_out << nl << "End Sub";
 
-	_out << sp << nl << "Public Shared Function read(ByVal __inS As Ice.InputStream) As " << name;
+	_out << sp << nl << "Public Shared Function read(ByVal inS__ As Ice.InputStream) As " << name;
 	_out.inc();
-	_out << nl << "Dim __sz As Integer = __inS.readSize()";
-	_out << nl << "Dim __r As " << name << " = New " << name;
-	_out << nl << "For __i As Integer = 0 To __sz - 1";
+	_out << nl << "Dim sz__ As Integer = inS__.readSize()";
+	_out << nl << "Dim r__ As " << name << " = New " << name;
+	_out << nl << "For i__ As Integer = 0 To sz__ - 1";
 	_out.inc();
-	_out << nl << "Dim __k As " << keyS;
-	writeMarshalUnmarshalCode(_out, key, "__k", false, true, false);
+	_out << nl << "Dim k__ As " << keyS;
+	writeMarshalUnmarshalCode(_out, key, "k__", false, true, false);
 	if(!hasClassValue)
 	{
-	    _out << nl << "Dim __v As " << valueS;
+	    _out << nl << "Dim v__ As " << valueS;
 	}
-	writeMarshalUnmarshalCode(_out, value, "__v", false, true, false, "__r, __k");
+	writeMarshalUnmarshalCode(_out, value, "v__", false, true, false, "r__, k__");
 	if(!hasClassValue)
 	{
-	    _out << nl << "__r(__k) = __v";
+	    _out << nl << "r__(k__) = v__";
 	}
 	_out.dec();
 	_out << nl << "Next";
-	_out << nl << "Return __r";
+	_out << nl << "Return r__";
 	_out.dec();
 	_out << nl << "End Function";
     }
@@ -3985,7 +4195,7 @@ Slice::Gen::DelegateVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << nl << "Inherits ";
     if(bases.empty())
     {
-	_out << "Ice._ObjectDel";
+	_out << "Ice.ObjectDel_";
     }
     else
     {
@@ -4017,7 +4227,7 @@ Slice::Gen::DelegateVisitor::visitClassDefStart(const ClassDefPtr& p)
 	vector<string> params = getParams(op);
 	string vbOp = ret ? "Function" : "Sub";
 
-	_out << sp << nl << vbOp << ' ' << opName << spar << params << "ByVal __context As Ice.Context" << epar;
+	_out << sp << nl << vbOp << ' ' << opName << spar << params << "ByVal context__ As Ice.Context" << epar;
 	if(ret)
 	{
 	    _out << " As " << retS;
@@ -4072,7 +4282,7 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
 
     _out << sp << nl << "Public NotInheritable class _" << name << "DelM";
     _out.inc();
-    _out << nl << "Inherits Ice._ObjectDelM";
+    _out << nl << "Inherits Ice.ObjectDelM_";
     _out << nl << "Implements _" << name << "Del";
 
     OperationList ops = p->allOperations();
@@ -4123,7 +4333,7 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
 	string vbOp = ret ? "Function" : "Sub";
 
 	_out << sp << nl << "Public " << vbOp << ' ' << opName << spar << params
-	     << "ByVal __context As Ice.Context" << epar;
+	     << "ByVal context__ As Ice.Context" << epar;
 	if(ret)
 	{
 	    _out << " As " << retS;
@@ -4131,65 +4341,58 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
 	_out << " Implements _" << name << "Del." << opName; // TODO: should be containing class?
 	_out.inc();
 
-	_out << nl << "Dim __outS As IceInternal.Outgoing = getOutgoing(\""
-	     << op->name() << "\", " << sliceModeToIceMode(op) << ", __context, __compress)";
+	_out << nl << "Dim og__ As IceInternal.Outgoing = getOutgoing(\""
+	     << op->name() << "\", " << sliceModeToIceMode(op) << ", context__)";
 	_out << nl << "Try";
 	_out.inc();
 	if(!inParams.empty())
 	{
 	    _out << nl << "Try";
 	    _out.inc();
-	    _out << nl << "Dim __os As IceInternal.BasicStream = __outS.ostr()";
+	    _out << nl << "Dim os__ As IceInternal.BasicStream = og__.ostr()";
 	    for(q = inParams.begin(); q != inParams.end(); ++q)
 	    {
 		writeMarshalUnmarshalCode(_out, q->first, fixId(q->second), true, false, false);
 	    }
 	    if(op->sendsClasses())
 	    {
-		_out << nl << "__os.writePendingObjects()";
+		_out << nl << "os__.writePendingObjects()";
 	    }
 	    _out.dec();
-	    _out << nl << "Catch __ex As Ice.LocalException";
+	    _out << nl << "Catch ex__ As Ice.LocalException";
 	    _out.inc();
-	    _out << nl << "__outS.abort(__ex)";
+	    _out << nl << "og__.abort(ex__)";
 	    _out.dec();
 	    _out << nl << "End Try";
 	}
-	if(!outParams.empty() || ret || !throws.empty())
-	{
-	    _out << nl << "Dim __is As IceInternal.BasicStream = __outS.istr()";
-	}
-	_out << nl << "If Not __outS.invoke() Then";
+	_out << nl << "Dim ok__ As Boolean = og__.invoke()";
+	_out << nl << "Try";
 	_out.inc();
-	if(!throws.empty())
+	_out << nl << "Dim is__ As IceInternal.BasicStream = og__.istr()";
+	_out << nl << "If Not ok__ Then";
+	_out.inc();
+	//
+	// The try/catch block is necessary because throwException()
+	// can raise UserException.
+	//
+	_out << nl << "Try";
+	_out.inc();
+	_out << nl << "is__.throwException()";
+	_out.dec();
+	for(ExceptionList::const_iterator t = throws.begin(); t != throws.end(); ++t)
 	{
-            //
-            // The try/catch block is necessary because throwException()
-            // can raise UserException.
-            //
-            _out << nl << "Try";
-            _out.inc();
-            _out << nl << "__is.throwException()";
-            _out.dec();
-            for(ExceptionList::const_iterator t = throws.begin(); t != throws.end(); ++t)
-            {
-                _out << nl << "Catch __ex As " << fixId((*t)->name());
-                _out.inc();
-                _out << nl << "Throw";
-                _out.dec();
-            }
-            _out << nl << "Catch __ex As Ice.UserException";
-	    _out << nl << "' ignore";
-	    _out << nl << "End Try";
+	    _out << nl << "Catch ex__ As " << fixId((*t)->scoped());
+	    _out.inc();
+	    _out << nl << "Throw";
+	    _out.dec();
 	}
-	_out << nl << "Throw New Ice.UnknownUserException()";
+	_out << nl << "Catch ex__ As Ice.UserException";
+	_out.inc();
+	_out << nl << "Throw New Ice.UnknownUserException(ex__)";
+	_out.dec();
+	_out << nl << "End Try";
 	_out.dec();
 	_out << nl << "End If";
-	if(!outParams.empty() || ret)
-	{
-	    _out << nl << "Try";
-	    _out.inc();
-	}
 	for(q = outParams.begin(); q != outParams.end(); ++q)
 	{
 	    writeMarshalUnmarshalCode(_out, q->first, fixId(q->second), false, false, true, "");
@@ -4199,20 +4402,20 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
 	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(ret);
 	    if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(ret))
 	    {
-		_out << nl << "Dim __ret As " << retS;
-		_out << nl << "Dim __ret_PP As IceInternal.ParamPatcher = New IceInternal.ParamPatcher(GetType("
+		_out << nl << "Dim ret__ As " << retS;
+		_out << nl << "Dim ret___PP As IceInternal.ParamPatcher = New IceInternal.ParamPatcher(GetType("
 		     << retS << "))";
-		_out << nl << "__is.readObject(__ret_PP)";
+		_out << nl << "is__.readObject(ret___PP)";
 	    }
 	    else
 	    {
-		_out << nl << "Dim __ret As " << retS;
-		writeMarshalUnmarshalCode(_out, ret, "__ret", false, false, true, "");
+		_out << nl << "Dim ret__ As " << retS;
+		writeMarshalUnmarshalCode(_out, ret, "ret__", false, false, true, "");
 	    }
 	}
 	if(op->returnsClasses())
 	{
-	    _out << nl << "__is.readPendingObjects()";
+	    _out << nl << "is__.readPendingObjects()";
 	    for(q = outParams.begin(); q != outParams.end(); ++q)
 	    {
 		string param = fixId(q->second);
@@ -4222,15 +4425,6 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
 		    string type = typeToString(q->first);
 		    _out << nl << param << " = CType(" << param << "_PP.value, " << type << ')';
 		}
-		else
-		{
-		    StructPtr st = StructPtr::dynamicCast(q->first);
-		    bool patchStruct = st && !st->hasMetaData("vb:class") && st->classDataMembers().size() != 0;
-		    if(patchStruct)
-		    {
-			_out << nl << param << ".__patch()";
-		    }
-		}
 	    }
 	}
 	if(ret)
@@ -4238,32 +4432,20 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
 	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(ret);
 	    if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(ret))
 	    {
-		_out << nl << "__ret = CType(__ret_PP.value, " << retS << ')';
+		_out << nl << "ret__ = CType(ret___PP.value, " << retS << ')';
 	    }
-	    else
-	    {
-		StructPtr st = StructPtr::dynamicCast(ret);
-		bool patchStruct = st && !st->hasMetaData("vb:class") && st->classDataMembers().size() != 0;
-		if(patchStruct)
-		{
-		    _out << nl << "__ret.__patch()";
-		}
-	    }
-	    _out << nl << "Return __ret";
+	    _out << nl << "Return ret__";
 	}
-        if(!outParams.empty() || ret)
-        {
-            _out.dec();
-            _out << nl << "Catch __ex As Ice.LocalException";
-            _out.inc();
-            _out << nl << "throw New IceInternal.NonRepeatable(__ex)";
-	    _out.dec();
-	    _out << nl << "End Try";
-        }
+	_out.dec();
+	_out << nl << "Catch ex__ As Ice.LocalException";
+	_out.inc();
+	_out << nl << "throw New IceInternal.NonRepeatable(ex__)";
+	_out.dec();
+	_out << nl << "End Try";
         _out.dec();
         _out << nl << "Finally";
         _out.inc();
-        _out << nl << "reclaimOutgoing(__outS)";
+        _out << nl << "reclaimOutgoing(og__)";
         _out.dec();
 	_out << nl << "End Try";
 
@@ -4319,7 +4501,7 @@ Slice::Gen::DelegateDVisitor::visitClassDefStart(const ClassDefPtr& p)
 
     _out << sp << nl << "Public NotInheritable class _" << name << "DelD";
     _out.inc();
-    _out << nl << "Inherits Ice._ObjectDelD";
+    _out << nl << "Inherits Ice.ObjectDelD_";
     _out << nl << "Implements _" << name << "Del";
 
     OperationList ops = p->allOperations();
@@ -4338,7 +4520,7 @@ Slice::Gen::DelegateDVisitor::visitClassDefStart(const ClassDefPtr& p)
         vector<string> args = getArgs(op);
 
 	_out << sp;
-        _out << nl << "Public " << vbOp << ' ' << opName << spar << params << "ByVal __context As Ice.Context" << epar;
+        _out << nl << "Public " << vbOp << ' ' << opName << spar << params << "ByVal context__ As Ice.Context" << epar;
 	if(ret)
 	{
 	    _out << " As " << retS;
@@ -4351,14 +4533,14 @@ Slice::Gen::DelegateDVisitor::visitClassDefStart(const ClassDefPtr& p)
 	}
 	else
 	{
-	    _out << nl << "Dim __current As Ice.Current = New Ice.Current";
-	    _out << nl << "__initCurrent(__current, \"" << op->name() << "\", " << sliceModeToIceMode(op)
-		 << ", __context)";
+	    _out << nl << "Dim current__ As Ice.Current = New Ice.Current";
+	    _out << nl << "initCurrent__(current__, \"" << op->name() << "\", " << sliceModeToIceMode(op)
+		 << ", context__)";
 	    _out << nl << "While True";
 	    _out.inc();
-	    _out << nl << "Dim __direct As IceInternal.Direct = New IceInternal.Direct(__current)";
-	    _out << nl << "Dim __servant As Object = __direct.servant()";
-	    _out << nl << "If TypeOf __servant Is " << fixId(name) << " Then";
+	    _out << nl << "Dim direct__ As IceInternal.Direct = New IceInternal.Direct(current__)";
+	    _out << nl << "Dim servant__ As Object = direct__.servant()";
+	    _out << nl << "If TypeOf servant__ Is " << fixId(name) << " Then";
 	    _out.inc();
 	    _out << nl << "Try";
 	    _out.inc();
@@ -4367,32 +4549,31 @@ Slice::Gen::DelegateDVisitor::visitClassDefStart(const ClassDefPtr& p)
 	    {
 		_out << "Return ";
 	    }
-	    _out << "CType(__servant, " << fixId(containingClass->scope())
-	         << '_' << containingClass->name() << "Operations" << ")."
-		 << opName << spar << args << "__current" << epar;
+	    _out << "CType(servant__, " << fixId(containingClass->scoped() + "Operations_")
+	         << ")." << opName << spar << args << "current__" << epar;
 	    if(!ret)
 	    {
 	        _out << nl << "Return";
 	    }
 	    _out.dec();
-	    _out << nl << "Catch __ex As Ice.LocalException";
+	    _out << nl << "Catch ex__ As Ice.LocalException";
 	    _out.inc();
-	    _out << nl << "Throw New IceInternal.NonRepeatable(__ex)";
+	    _out << nl << "Throw New IceInternal.NonRepeatable(ex__)";
 	    _out.dec();
 	    _out << nl << "Finally";
 	    _out.inc();
-	    _out << nl << "__direct.destroy()";
+	    _out << nl << "direct__.destroy()";
 	    _out.dec();
 	    _out << nl << "End Try";
 	    _out.dec();
 	    _out << nl << "Else";
 	    _out.inc();
-	    _out << nl << "__direct.destroy()";
-	    _out << nl << "Dim __opEx As Ice.OperationNotExistException = new Ice.OperationNotExistException()";
-	    _out << nl << "__opEx.id = __current.id";
-	    _out << nl << "__opEx.facet = __current.facet";
-	    _out << nl << "__opEx.operation = __current.operation";
-	    _out << nl << "Throw __opEx";
+	    _out << nl << "direct__.destroy()";
+	    _out << nl << "Dim opEx__ As Ice.OperationNotExistException = new Ice.OperationNotExistException()";
+	    _out << nl << "opEx__.id = current__.id";
+	    _out << nl << "opEx__.facet = current__.facet";
+	    _out << nl << "opEx__.operation = current__.operation";
+	    _out << nl << "Throw opEx__";
 	    _out.dec();
 	    _out << nl << "End If";
 	    _out.dec();
@@ -4445,7 +4626,7 @@ Slice::Gen::DispatcherVisitor::visitClassDefStart(const ClassDefPtr& p)
         return false;
     }
 
-    _out << sp << nl << "Public MustInherit class _" << p->name() << "Disp";
+    _out << sp << nl << "Public MustInherit Class " << p->name() << "Disp_";
     _out.inc();
     _out << nl << "Inherits Ice.ObjectImpl";
     _out << nl << "Implements " << fixId(p->name());
@@ -4488,7 +4669,7 @@ Slice::Gen::DispatcherVisitor::visitClassDefStart(const ClassDefPtr& p)
 	{
 	    _out << " As " << typeToString(ret);
 	}
-	_out << " Implements _" << p->name() << "OperationsNC" << '.' << name; // TODO: should be containing class?
+	_out << " Implements " << p->name() << "OperationsNC_" << '.' << name; // TODO: should be containing class?
 	_out.inc();
 	_out << nl;
 	if(ret)
@@ -4502,14 +4683,14 @@ Slice::Gen::DispatcherVisitor::visitClassDefStart(const ClassDefPtr& p)
 	_out << sp << nl << "Public MustOverride " << vbOp << ' ' << name << spar << params;
 	if(!p->isLocal())
 	{
-	    _out << "ByVal __current As Ice.Current";
+	    _out << "ByVal current__ As Ice.Current";
 	}
 	_out << epar;
 	if(ret)
 	{
 	    _out << " As " << typeToString(ret);
 	}
-	_out << " Implements _" << p->name() << "Operations" << '.' << name; // TODO: should be containing class?
+	_out << " Implements " << p->name() << "Operations_" << '.' << name; // TODO: should be containing class?
     }
 
     if(!ops.empty())
@@ -4628,12 +4809,12 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	_out << sp;
 	_out << nl << "Public MustOverride Sub ice_response" << spar << params << epar;
 	
-	_out << sp << nl << "Public Sub __invoke" << spar << "ByVal __prx As Ice.ObjectPrx"
-	    << paramsInvoke << "ByVal __ctx As Ice.Context" << epar;
+	_out << sp << nl << "Public Sub invoke__" << spar << "ByVal prx__ As Ice.ObjectPrx"
+	    << paramsInvoke << "ByVal ctx__ As Ice.Context" << epar;
 	_out.inc();
 	_out << nl << "Try";
 	_out.inc();
-	_out << nl << "__prepare(__prx, \"" << p->name() << "\", " << sliceModeToIceMode(p) << ", __ctx)";
+	_out << nl << "prepare__(prx__, \"" << p->name() << "\", " << sliceModeToIceMode(p) << ", ctx__)";
 	for(q = inParams.begin(); q != inParams.end(); ++q)
 	{
 	    string typeS = typeToString(q->first);
@@ -4641,21 +4822,21 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	}
 	if(p->sendsClasses())
 	{
-	    _out << nl << "__os.writePendingObjects()";
+	    _out << nl << "os__.writePendingObjects()";
 	}
-	_out << nl << "__os.endWriteEncaps()";
+	_out << nl << "os__.endWriteEncaps()";
 	_out.dec();
-	_out << nl << "Catch __ex As Ice.LocalException";
+	_out << nl << "Catch ex__ As Ice.LocalException";
 	_out.inc();
-	_out << nl << "__finished(__ex)";
+	_out << nl << "finished__(ex__)";
 	_out << nl << "Return";
 	_out.dec();
 	_out << nl << "End Try";
-	_out << nl << "__send()";
+	_out << nl << "send__()";
 	_out.dec();
 	_out << nl << "End Sub";
 
-	_out << sp << nl << "Protected Overrides Sub __response(__ok As Boolean)";
+	_out << sp << nl << "Protected Overrides Sub response__(ok__ As Boolean) As Boolean";
 	_out.inc();
         for(q = outParams.begin(); q != outParams.end(); ++q)
         {
@@ -4663,26 +4844,26 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
         }
         if(ret)
         {
-	    _out << nl << "Dim __ret As " << retS;
+	    _out << nl << "Dim ret__ As " << retS;
         }
 	_out << nl << "Try";
 	_out.inc();
-	_out << nl << "If Not __ok Then";
+	_out << nl << "If Not ok__ Then";
         _out.inc();
 	_out << nl << "Try";
 	_out.inc();
-	_out << nl << "__is.throwException()";
+	_out << nl << "is__.throwException()";
 	_out.dec();
 	for(ExceptionList::const_iterator r = throws.begin(); r != throws.end(); ++r)
 	{
-	    _out << nl << "Catch __ex As " << fixId((*r)->scoped());
+	    _out << nl << "Catch ex__ As " << fixId((*r)->scoped());
 	    _out.inc();
-	    _out << nl << "Throw __ex";
+	    _out << nl << "Throw";
 	    _out.dec();
 	}
-	_out << nl << "Catch __ex As Ice.UserException";
+	_out << nl << "Catch ex__ As Ice.UserException";
 	_out.inc();
-        _out << nl << "Throw New Ice.UnknownUserException()";
+        _out << nl << "Throw New Ice.UnknownUserException(ex__)";
 	_out.dec();
 	_out << nl << "End Try";
 	_out.dec();
@@ -4693,11 +4874,11 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
         }
         if(ret)
         {
-	    writeMarshalUnmarshalCode(_out, ret, "__ret", false, false, true);
+	    writeMarshalUnmarshalCode(_out, ret, "ret__", false, false, true);
         }
 	if(p->returnsClasses())
 	{
-	    _out << nl << "__is.readPendingObjects()";
+	    _out << nl << "is__.readPendingObjects()";
 	}
 	for(q = outParams.begin(); q != outParams.end(); ++q)
 	{
@@ -4708,15 +4889,6 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 		string type = typeToString(q->first);
 		_out << nl << param << " = CType(" << param << "_PP.value, " << type << ')';
 	    }
-	    else
-	    {
-		StructPtr st = StructPtr::dynamicCast(q->first);
-		bool patchStruct = st && !st->hasMetaData("vb:class") && st->classDataMembers().size() != 0;
-		if(patchStruct)
-		{
-		    _out << nl << param << ".__patch()";
-		}
-	    }
 	}
 	if(ret)
 	{
@@ -4724,34 +4896,25 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	    if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(ret))
 	    {
 		string type = typeToString(ret);
-		_out << nl << "__ret = CType(__ret_PP.value, " << retS << ')';
-	    }
-	    else
-	    {
-		StructPtr st = StructPtr::dynamicCast(ret);
-		bool patchStruct = st && !st->hasMetaData("vb:class") && st->classDataMembers().size() != 0;
-		if(patchStruct)
-		{
-		    _out << nl << "__ret.__patch()";
-		}
+		_out << nl << "ret__ = CType(ret___PP.value, " << retS << ')';
 	    }
 	}
    	_out.dec();
-	_out << nl << "Catch __ex As Ice.LocalException";
+	_out << nl << "Catch ex__ As Ice.LocalException";
 	_out.inc();
-	_out << nl << "__finished(__ex)";
-	_out << nl << "Return";
+	_out << nl << "Return finished__(ex__)";
 	_out.dec();
 	if(!throws.empty())
 	{
-	    _out << nl << "Catch __ex As Ice.UserException";
+	    _out << nl << "Catch ex__ As Ice.UserException";
 	    _out.inc();
-	    _out << nl << "ice_exception(__ex)";
-	    _out << nl << "Return";
+	    _out << nl << "ice_exception(ex__)";
+	    _out << nl << "Return False";
 	    _out.dec();
 	}
 	_out << nl << "End Try";
 	_out << nl << "ice_response" << spar << args << epar;
+	_out << nl << "Return False";
 	_out.dec();
 	_out << nl << "End Sub";
 	_out.dec();
@@ -4819,7 +4982,7 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	{
 	    _out << nl << "Try";
 	    _out.inc();
-	    _out << nl << "Dim __os As IceInternal.BasicStream = Me.__os()";
+	    _out << nl << "Dim os__ As IceInternal.BasicStream = Me.os__()";
 	    for(q = outParams.begin(); q != outParams.end(); ++q)
 	    {
 		string typeS = typeToString(q->first);
@@ -4828,20 +4991,20 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	    if(ret)
 	    {
 		string retS = typeToString(ret);
-		writeMarshalUnmarshalCode(_out, ret, "__ret", true, false, false);
+		writeMarshalUnmarshalCode(_out, ret, "ret__", true, false, false);
 	    }
 	    if(p->returnsClasses())
 	    {
-		_out << nl << "__os.writePendingObjects()";
+		_out << nl << "os__.writePendingObjects()";
 	    }
 	    _out.dec();
-	    _out << nl << "Catch __ex As Ice.LocalException";
+	    _out << nl << "Catch ex__ As Ice.LocalException";
 	    _out.inc();
-	    _out << nl << "ice_exception(__ex)";
+	    _out << nl << "ice_exception(ex__)";
 	    _out.dec();
 	    _out << nl << "End Try";
 	}
-	_out << nl << "__response(true)";
+	_out << nl << "response__(true)";
 	_out.dec();
 	_out << nl << "End Sub";
 
@@ -4850,7 +5013,7 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	_out.inc();
 	if(throws.empty())
 	{
-	    _out << nl << "__exception(ex)";
+	    _out << nl << "exception__(ex)";
 	}
 	else
 	{
@@ -4862,15 +5025,15 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	    for(r = throws.begin(); r != throws.end(); ++r)
 	    {
 		string exS = fixId((*r)->scoped());
-		_out << nl << "Catch __ex As " << exS;
+		_out << nl << "Catch ex__ As " << exS;
 		_out.inc();
-		_out << nl << "__os().writeUserException(__ex)";
-		_out << nl << "__response(false)";
+		_out << nl << "os__().writeUserException(ex__)";
+		_out << nl << "response__(false)";
 		_out.dec();
 	    }
-	    _out << nl << "Catch __ex As _System.Exception";
+	    _out << nl << "Catch ex__ As _System.Exception";
 	    _out.inc();
-	    _out << nl << "__exception(__ex)";
+	    _out << nl << "exception__(ex__)";
 	    _out.dec();
 	    _out << nl << "End Try";
 	}
@@ -4923,7 +5086,7 @@ Slice::Gen::TieVisitor::visitClassDefStart(const ClassDefPtr& p)
         opIntfName += "NC";
     }
 
-    _out << sp << nl << "public class _" << name << "Tie";
+    _out << sp << nl << "Public Class " << name << "Tie_";
     _out.inc();
     _out << nl << "Inherits ";
     if(p->isInterface())
@@ -4934,7 +5097,7 @@ Slice::Gen::TieVisitor::visitClassDefStart(const ClassDefPtr& p)
 	}
 	else
 	{
-	    _out << '_' << name << "Disp";
+	    _out << name << "Disp_";
 	}
     }
     else
@@ -4946,7 +5109,7 @@ Slice::Gen::TieVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << sp << nl << "Public Sub New()";
     _out << nl << "End Sub";
 
-    _out << sp << nl << "Public Sub New(ByVal del As _" << name << opIntfName << ")";
+    _out << sp << nl << "Public Sub New(ByVal del As " << name << opIntfName << "_)";
     _out.inc();
     _out << nl << "_ice_delegate = del";
     _out.dec();
@@ -4960,7 +5123,7 @@ Slice::Gen::TieVisitor::visitClassDefStart(const ClassDefPtr& p)
 
     _out << sp << nl << "Public Sub ice_delegate(ByVal del As Object) Implements Ice.TieBase.ice_delegate";
     _out.inc();
-    _out << nl << "_ice_delegate = CType(del, _" << name << opIntfName << ")";
+    _out << nl << "_ice_delegate = CType(del, " << name << opIntfName << "_)";
     _out.dec();
     _out << nl << "End Sub";
 
@@ -4998,18 +5161,18 @@ Slice::Gen::TieVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << nl << "Return true";
     _out.dec();
     _out << nl << "End If";
-    _out << nl << "If Not TypeOf rhs Is _" << name << "Tie Then";
+    _out << nl << "If Not TypeOf rhs Is " << name << "Tie_ Then";
     _out.inc();
     _out << nl << "Return False";
     _out.dec();
     _out << nl << "End If";
     _out << nl << "If _ice_delegate Is Nothing Then";
     _out.inc();
-    _out << nl << "Return CType(rhs, _" << name << "Tie)._ice_delegate Is Nothing";
+    _out << nl << "Return CType(rhs, " << name << "Tie_)._ice_delegate Is Nothing";
     _out.dec();
     _out << nl << "End If";
     _out << nl << "' Bug in VB 7.1: cast to Object should not be necessary.";
-    _out << nl << "Return CType(_ice_delegate, Object).Equals(CType(rhs, _" << name << "Tie)._ice_delegate)";
+    _out << nl << "Return CType(_ice_delegate, Object).Equals(CType(rhs, " << name << "Tie_)._ice_delegate)";
     _out.dec();
     _out << nl << "End Function";
 
@@ -5045,7 +5208,7 @@ Slice::Gen::TieVisitor::visitClassDefStart(const ClassDefPtr& p)
 	_out << vbOp << ' ' << opName << spar << params;
         if(!p->isLocal())
         {
-            _out << "ByVal __current As Ice.Current";
+            _out << "ByVal current__ As Ice.Current";
         }
         _out << epar;
 	if(ret && !hasAMD)
@@ -5061,7 +5224,7 @@ Slice::Gen::TieVisitor::visitClassDefStart(const ClassDefPtr& p)
         _out << "_ice_delegate." << opName << spar << args;
         if(!p->isLocal())
         {
-            _out << "__current";
+            _out << "current__";
         }
         _out << epar;
         _out.dec();
@@ -5075,7 +5238,7 @@ Slice::Gen::TieVisitor::visitClassDefStart(const ClassDefPtr& p)
         writeInheritedOperationsWithOpNames(*i, opNames);
     }
 
-    _out << sp << nl << "Private _ice_delegate As _" << name << opIntfName;
+    _out << sp << nl << "Private _ice_delegate As " << name << opIntfName << '_';
 
     return true;
 }
@@ -5127,7 +5290,7 @@ Slice::Gen::TieVisitor::writeInheritedOperationsWithOpNames(const ClassDefPtr& p
 	_out << vbOp << ' ' << opName << spar << params;
         if(!p->isLocal())
         {
-            _out << "ByVal __current As Ice.Current";
+            _out << "ByVal current__ As Ice.Current";
         }
         _out << epar;
 	if(ret && !hasAMD)
@@ -5143,7 +5306,7 @@ Slice::Gen::TieVisitor::writeInheritedOperationsWithOpNames(const ClassDefPtr& p
         _out << "_ice_delegate." << opName << spar << args;
         if(!p->isLocal())
         {
-            _out << "__current";
+            _out << "current__";
         }
         _out << epar;
 	_out.dec();
@@ -5190,7 +5353,7 @@ Slice::Gen::BaseImplVisitor::writeOperation(const OperationPtr& op, bool comment
 	{
 	    _out << "Overrides ";
 	}
-	_out << "Sub " << opName << "_async" << spar << pDecl << "ByVal __current As Ice.Current" << epar;
+	_out << "Sub " << opName << "_async" << spar << pDecl << "ByVal current__ As Ice.Current" << epar;
 
 	if(comment)
 	{
@@ -5200,14 +5363,14 @@ Slice::Gen::BaseImplVisitor::writeOperation(const OperationPtr& op, bool comment
 	{
 	    if(forTie)
 	    {
-		_out << " Implements _" << cl->name() << "Operations." << opName << "_async"; // TODO: should be containing class?
+		_out << " Implements " << cl->name() << "Operations_." << opName << "_async"; // TODO: should be containing class?
 	    }
 	}
 
 	_out.inc();
 	if(ret)
 	{
-	    _out << nl << "Dim __ret As " << typeToString(ret) << " = " << writeValue(ret);
+	    _out << nl << "Dim ret__ As " << typeToString(ret) << " = " << writeValue(ret);
 	}
 	for(i = params.begin(); i != params.end(); ++i)
 	{
@@ -5218,10 +5381,10 @@ Slice::Gen::BaseImplVisitor::writeOperation(const OperationPtr& op, bool comment
 		_out << nl << "Dim " << name << " As " << typeToString(type) << " = " << writeValue(type);
 	    }
 	}
-	_out << nl << "__cb.ice_response" << spar;
+	_out << nl << "cb__.ice_response" << spar;
 	if(ret)
 	{
-	    _out << "__ret";
+	    _out << "ret__";
 	}
 	for(i = params.begin(); i != params.end(); ++i)
 	{
@@ -5247,7 +5410,7 @@ Slice::Gen::BaseImplVisitor::writeOperation(const OperationPtr& op, bool comment
 	_out << vbOp << ' ' << fixId(opName, DotNet::ICloneable, true) << spar << pDecls;
 	if(!cl->isLocal())
 	{
-	    _out << "ByVal __current As Ice.Current";
+	    _out << "ByVal current__ As Ice.Current";
 	}
 	_out << epar;
 	if(ret)
@@ -5262,7 +5425,7 @@ Slice::Gen::BaseImplVisitor::writeOperation(const OperationPtr& op, bool comment
 	{
 	    if(forTie)
 	    {
-		_out << " Implements _" << cl->name() << "Operations." << fixId(opName, DotNet::ICloneable, true); // TODO: should be containing class?
+		_out << " Implements " << cl->name() << "Operations_." << fixId(opName, DotNet::ICloneable, true); // TODO: should be containing class?
 	    }
 	}
 	_out.inc();
@@ -5334,7 +5497,7 @@ Slice::Gen::BaseImplVisitor::writeValue(const TypePtr& type)
     StructPtr st = StructPtr::dynamicCast(type);
     if(st)
     {
-        return st->hasMetaData("vb:class") ? "Nothing" : "New " + fixId(st->scoped()) + "()";
+        return st->hasMetaData("clr:class") ? "Nothing" : "New " + fixId(st->scoped()) + "()";
     }
 
     return "Nothing";
@@ -5387,7 +5550,7 @@ Slice::Gen::ImplVisitor::visitClassDefStart(const ClassDefPtr& p)
 	}
 	else
 	{
-	    _out << "Inherits _" << name << "Disp";
+	    _out << "Inherits " << name << "Disp_";
 	}
     }
     else
@@ -5472,7 +5635,7 @@ Slice::Gen::ImplTieVisitor::visitClassDefStart(const ClassDefPtr& p)
 	    _out << fixId(bases.front()->name());
 	}
     }
-    _out << nl << "Implements _" << name << "Operations";
+    _out << nl << "Implements " << name << "Operations_";
 
     _out << sp << nl << "Public Sub New()";
     _out << nl << "End Sub";

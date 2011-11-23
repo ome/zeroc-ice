@@ -222,9 +222,11 @@ private:
 #ifdef _WIN32
 
     int runService(int, char*[]);
+    void terminateService(DWORD);
+    bool waitForServiceState(SC_HANDLE, DWORD, SERVICE_STATUS&);
+    void showServiceStatus(const std::string&, SERVICE_STATUS&);
 
     SERVICE_STATUS_HANDLE _statusHandle;
-    SERVICE_STATUS _status;
     std::vector<std::string> _serviceArgs;
 
 public:

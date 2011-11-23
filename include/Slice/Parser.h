@@ -57,6 +57,12 @@ const IceUtil::Int64 Int16Min = -Int16Max - 1;
 const IceUtil::Int64 ByteMax = 0xff;
 const IceUtil::Int64 ByteMin = 0x00;
 
+SLICE_API enum FeatureProfile
+{
+    Ice,
+    IceE
+};
+
 class GrammarBase;
 class SyntaxTreeBase;
 class Type;
@@ -331,6 +337,7 @@ public:
     bool hasMetaData(const std::string&) const;
     std::list<std::string> getMetaData() const;
     void setMetaData(const std::list<std::string>&);
+    void addMetaData(const std::string&); // TODO: remove this method once "cs:" and "vb:" are hard errors.
 
     enum ContainedType
     {
@@ -382,8 +389,7 @@ public:
     virtual void destroy();
     ModulePtr createModule(const std::string&);
     ClassDefPtr createClassDef(const std::string&, bool, const ClassList&, bool);
-    // TODO: remove final (defaulted) bool parameter once deprecated features are outlawed.
-    ClassDeclPtr createClassDecl(const std::string&, bool, bool, bool = false);
+    ClassDeclPtr createClassDecl(const std::string&, bool, bool);
     ExceptionPtr createException(const std::string&, const ExceptionPtr&, bool);
     StructPtr createStruct(const std::string&, bool);
     SequencePtr createSequence(const std::string&, const TypePtr&, bool);
@@ -422,10 +428,8 @@ public:
     void containerRecDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.
 
     bool checkIntroduced(const std::string&, ContainedPtr = 0);
-    // TODO: remove final (defaulted) bool parameter once deprecated features are outlawed.
-    bool nameIsLegal(const std::string&, const char *, bool = false);
-    // TODO: remove final (defaulted) bool parameter once deprecated features are outlawed.
-    bool checkForGlobalDef(const std::string&, const char *, bool = false);
+    bool nameIsLegal(const std::string&, const char *);
+    bool checkForGlobalDef(const std::string&, const char *);
 
 protected:
 
@@ -650,6 +654,7 @@ public:
     virtual void destroy();
     DataMemberPtr createDataMember(const std::string&, const TypePtr&);
     DataMemberList dataMembers() const;
+    DataMemberList allDataMembers() const;
     DataMemberList classDataMembers() const;
     DataMemberList allClassDataMembers() const;
     ExceptionPtr base() const;
@@ -931,11 +936,12 @@ public:
     bool usesProxies() const;
     bool usesNonLocals() const;
     bool usesConsts() const;
-    bool disallowDeprecatedFeatures() const; // TODO: remove this once global definitions are outlawed.
+
+    FeatureProfile profile() const;
 
     StringList includeFiles() const;
-
-    int parse(FILE*, bool, bool = true); // TODO: remove third parameter once global definitions are outlawed.
+    
+    int parse(FILE*, bool, FeatureProfile profile = Ice);
 
     virtual void destroy();
     virtual void visit(ParserVisitor*, bool);
@@ -950,7 +956,6 @@ private:
     bool _all;
     bool _allowIcePrefix;
     bool _caseSensitive;
-    bool _disallowDeprecatedFeatures; // TODO: remove this once global definitions are outlawed.
     int _errors;
     std::string _currentComment;
     int _currentLine;
@@ -962,6 +967,7 @@ private:
     std::stack<ContainerPtr> _containerStack;
     std::map<Builtin::Kind, BuiltinPtr> _builtins;
     std::map<std::string, ContainedList> _contentMap;
+    FeatureProfile _featureProfile;
 };
 
 extern SLICE_API Unit* unit; // The current parser for bison/flex

@@ -36,16 +36,15 @@ Third-party libraries
 
 Ice has dependencies on a number of third-party libraries:
 
-- Berkeley DB 4.2.52 or 4.3.27 configured with --enable-cxx, and built
-  with a C++ compiler compatible with the one you are using.
+- Berkeley DB 4.3.29 configured with --enable-cxx, and built with a
+  C++ compiler compatible with the one you are using.
 
-  Note that Ice for Java is not compatible with version 4.3, therefore
-  if you intend to use Ice for Java with Berkeley DB, you must use
-  version 4.2.52 and the option --enable-java.
+  If you intend to use Ice for Java with Berkeley DB, you must also
+  include the option --enable-java.
 
 - expat 1.9x
 
-- OpenSSL 0.97
+- OpenSSL 0.98
 
 - bzip2 1.0
 
@@ -87,11 +86,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ tar xvfz Ice-2.1.1.tar.gz
+$ tar xvfz Ice-3.0.0.tar.gz
 
-Change the working directory to Ice-2.1.1:
+Change the working directory to Ice-3.0.0:
 
-$ cd Ice-2.1.1
+$ cd Ice-3.0.0
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular

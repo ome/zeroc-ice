@@ -14,6 +14,7 @@
 #include <Ice/TransceiverF.h>
 
 #ifdef _WIN32
+#   include <winsock2.h>
 typedef int ssize_t;
 #else
 #   define SOCKET int
@@ -24,7 +25,7 @@ namespace IceInternal
 
 class Buffer;
 
-class ICE_PROTOCOL_API Transceiver : public ::IceUtil::Shared
+class ICE_API Transceiver : public ::IceUtil::Shared
 {
 public:
     
@@ -36,6 +37,7 @@ public:
     virtual void read(Buffer&, int) = 0;
     virtual std::string type() const = 0;
     virtual std::string toString() const = 0;
+    virtual void initialize(int) = 0;
 };
 
 }

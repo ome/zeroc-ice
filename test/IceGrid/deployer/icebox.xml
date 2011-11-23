@@ -1,0 +1,22 @@
+<icegrid>
+
+  <!-- Include service templates -->
+  <include file="service.xml"/>
+  <include file="freezeservice.xml"/>
+
+  <server-template id="IceBoxTemplate">
+    <parameter name="name"/>
+    <parameter name="AppVarOverridedByParam"/>
+    <icebox id="${name}" exe="${icebox.exe}" activation="on-demand" pwd=".">  
+      <service-instance template="ServiceTemplate" name="Service1" NodeVarOverridedByParam="Overrided"/>
+      <service-instance template="FreezeServiceTemplate" name="Service2"/>
+
+      <target name="moreservices">
+        <service-instance template="ServiceTemplate" name="Service3" NodeVarOverridedByParam="Overrided"/>
+      </target>
+
+      <property name="Ice.Warn.Connections" value="1"/>
+    </icebox>
+  </server-template>
+
+</icegrid>

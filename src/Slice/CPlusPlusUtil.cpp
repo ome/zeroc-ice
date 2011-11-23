@@ -36,6 +36,10 @@ Slice::normalizePath(const string& path)
     {
         result.replace(pos, 2, "/");
     }
+    if(result.size() > 1 && isalpha(result[0]) && result[1] == ':')
+    {
+        result = result.substr(2);
+    }
     return result;
 }
 
@@ -90,8 +94,11 @@ Slice::printVersionCheck(Output& out)
 {
     out << "\n";
     out << "\n#ifndef ICE_IGNORE_VERSION";
-    out << "\n#   if ICE_INT_VERSION != " << ICE_INT_VERSION;
+    out << "\n#   if ICE_INT_VERSION / 100 != " << ICE_INT_VERSION / 100;
     out << "\n#       error Ice version mismatch!";
+    out << "\n#   endif";
+    out << "\n#   if ICE_INT_VERSION % 100 < " << ICE_INT_VERSION % 100;
+    out << "\n#       error Ice patch level mismatch!";
     out << "\n#   endif";
     out << "\n#endif";
 }
@@ -268,6 +275,35 @@ Slice::outputTypeToString(const TypePtr& type)
     }
 
     return "???";
+}
+
+string
+Slice::operationModeToString(Operation::Mode mode)
+{
+    switch(mode)
+    {
+	case Operation::Normal:
+	{
+	    return "::Ice::Normal";
+	}
+	    
+	case Operation::Nonmutating:
+	{
+	    return "::Ice::Nonmutating";
+	}
+
+	case Operation::Idempotent:
+	{
+	    return "::Ice::Idempotent";
+	}
+
+	default:
+	{
+	    assert(false);
+	}
+    }
+    
+    return "???"; 
 }
 
 //

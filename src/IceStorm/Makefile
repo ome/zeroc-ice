@@ -66,11 +66,17 @@ SLICE2FREEZECMD = $(SLICE2FREEZE) --ice --include-dir IceStorm $(ICECPPFLAGS)
 
 include $(top_srcdir)/config/Make.rules
 
-CPPFLAGS	:= $(CPPFLAGS) -I.. -DICE_STORM_API_EXPORTS $(READLINE_FLAGS) 
+CPPFLAGS	:= $(CPPFLAGS) -I.. $(READLINE_FLAGS) 
 ICECPPFLAGS	:= $(ICECPPFLAGS) -I..
 SLICE2CPPFLAGS	:= --checksum --ice --dll-export ICE_STORM_API --include-dir IceStorm $(SLICE2CPPFLAGS)
 LINKWITH	:= -lIce -lIceUtil
-SVCLINKWITH	:= -lFreeze -lIce -lIceUtil
+SVCLINKWITH	:= -lFreeze -lIceBox -lIce -lIceUtil
+
+IceStorm.o: IceStorm.cpp
+	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -DICE_STORM_API_EXPORTS $<
+
+%.o: %.cpp
+	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -DICE_STORM_SERVICE_API_EXPORTS $<
 
 $(libdir)/$(LIBFILENAME): $(OBJS)
 	rm -f $@
@@ -83,7 +89,6 @@ $(libdir)/$(SONAME): $(libdir)/$(LIBFILENAME)
 $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 	rm -f $@
 	ln -s $(SONAME) $@
-
 
 $(libdir)/$(SVCLIBFILENAME): $(SERVICE_OBJS)
 	rm -f $@
@@ -120,6 +125,6 @@ clean::
 install:: all
 	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))
 	$(call installlib,$(install_libdir),$(libdir),$(SVCLIBFILENAME),$(SVCSONAME),$(SVCLIBNAME))
-	$(INSTALL_PROGRAM) $(ADMIN) $(install_bindir)
+	$(call installprogram,$(ADMIN),$(install_bindir))
 
 include .depend

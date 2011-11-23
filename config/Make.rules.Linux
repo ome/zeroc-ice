@@ -18,11 +18,11 @@ MACHINE                 = $(shell uname -m)
 # Default compiler is c++ (aka g++).
 #
 ifeq ($(CXX),)
-   CXX	                := c++
+   CXX			= c++
 endif
 
 ifeq ($(CXX),g++)
-   CXX	                := c++
+   CXX			= c++
 endif
 
 ifeq ($(CXX),c++)
@@ -31,8 +31,8 @@ ifeq ($(CXX),c++)
       #
       # We are an ultra, at least, and so have the atomic instructions
       #
-      USE_SPARC_ASM           = yes
-      CXXARCHFLAGS            := -mcpu=ultrasparc -pipe -Wno-deprecated -DUSE_SPARC_ASM
+      USE_SPARC_ASM	= yes
+      CXXARCHFLAGS	= -mcpu=ultrasparc -pipe -Wno-deprecated -DUSE_SPARC_ASM
    endif
 
    ifeq ($(MACHINE),sparc)
@@ -41,32 +41,42 @@ ifeq ($(CXX),c++)
       # On sun4m, there is a bug in some CPU/kernel/gcc configurations which
       # prevent us from using '-mcpu=v8'
       #
-      USE_SPARC_ASM           = no
-      CXXARCHFLAGS            := -mtune=v8 -pipe -Wno-deprecated -DICE_USE_MUTEX_SHARED
+      USE_SPARC_ASM	= no
+      CXXARCHFLAGS	= -mtune=v8 -pipe -Wno-deprecated -DICE_USE_MUTEX_SHARED
    endif
 
    ifeq ($(MACHINE),x86_64)
       ifeq ($(LP64),yes)
-         CXXARCHFLAGS    := -m64
+         CXXARCHFLAGS	+= -m64
       else
-         CXXARCHFLAGS    := -m32
+         CXXARCHFLAGS	+= -m32
       endif
-      lp64suffix          := 64
+      lp64suffix	= 64
    endif
 
-   CXXFLAGS		= $(CXXARCHFLAGS) -ftemplate-depth-128 -fPIC -Wall -D_REENTRANT
+   CXXFLAGS		= $(CXXARCHFLAGS) -ftemplate-depth-128 -Wall -D_REENTRANT
+
+   ifeq ($(STATICLIBS),)
+      CXXFLAGS		+= -fPIC
+   endif
 
    ifeq ($(OPTIMIZE),yes)
-      CXXFLAGS		:= -O2 -DNDEBUG $(CXXFLAGS)
+      CXXFLAGS		+= -O3 -DNDEBUG
    else
-      CXXFLAGS		:= -g $(CXXFLAGS)
+      CXXFLAGS		+= -g
    endif
 
    ifeq ($(USE_SPARC_ASM),yes)
-      CFLAGS                  := -O3 -mcpu=ultrasparc -pipe -DNDEBUG -fPIC -DUSE_SPARC_ASM
+      CFLAGS		= -O3 -mcpu=ultrasparc -pipe -DNDEBUG -DUSE_SPARC_ASM
+      ifeq ($(STATICLIBS),)
+         CFLAGS		+= -fPIC
+      endif
    endif
    ifeq ($(USE_SPARC_ASM),no)
-      CFLAGS                  := -O3 -mcpu=v8 -pipe -DNDEBUG -fPIC -DICE_USE_MUTEX_SHARED
+      CFLAGS		= -O3 -mcpu=v8 -pipe -DNDEBUG -DICE_USE_MUTEX_SHARED
+      ifeq ($(STATICLIBS),)
+         CFLAGS		+= -fPIC
+      endif
    endif
 
    #
@@ -74,18 +84,26 @@ ifeq ($(CXX),c++)
    #
    CXXLIBS		=
 
-   mkshlib                 = $(CXX) -shared $(LDFLAGS) -o $(1) -Wl,-h,$(2) $(3) $(4) -lpthread
+   mkshlib		= $(CXX) -shared $(LDFLAGS) -o $(1) -Wl,-h,$(2) $(3) $(4) -lpthread
+
+   mklib		= ar cr $(1) $(2)
+
+   LDPLATFORMFLAGS 	= -Xlinker -rpath -Xlinker $(install_libdir)
 
 endif
 
 ifeq ($(CXX),icpc)
 
-   CXXFLAGS		= -fPIC -D_REENTRANT    
+   CXXFLAGS		= -D_REENTRANT    
+
+   ifeq ($(STATICLIBS),)
+      CXXFLAGS		+= -fPIC
+   endif
 
    ifeq ($(OPTIMIZE),yes)
-      CXXFLAGS		:= -O2 -DNDEBUG $(CXXFLAGS)
+      CXXFLAGS		+= -O3 -DNDEBUG
    else
-      CXXFLAGS		:= -g $(CXXFLAGS)
+      CXXFLAGS		+= -g
    endif
 
    #
@@ -93,7 +111,9 @@ ifeq ($(CXX),icpc)
    #
    CXXLIBS		=
 
-   mkshlib                 = $(CXX) -shared $(LDFLAGS) -o $(1) -Wl,-h,$(2) $(3) $(4) -lpthread
+   mkshlib		= $(CXX) -shared $(LDFLAGS) -o $(1) -Wl,-h,$(2) $(3) $(4) -lpthread
+
+   mklib		= ar cr $(1) $(2)
 
 endif
 
@@ -103,6 +123,6 @@ LIBS			= -lIce $(BASELIBS)
 ICEUTIL_OS_LIBS         = 
 ICE_OS_LIBS             = -ldl
 
-PLATFORM_HAS_READLINE   := yes
+PLATFORM_HAS_READLINE   = yes
 
 export LD_LIBRARY_PATH	:= $(libdir):$(LD_LIBRARY_PATH)

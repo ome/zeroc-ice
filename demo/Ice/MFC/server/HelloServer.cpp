@@ -21,6 +21,8 @@ BEGIN_MESSAGE_MAP(CHelloServerApp, CWinApp)
     ON_COMMAND(ID_HELP, CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
+using namespace std;
+
 CHelloServerApp::CHelloServerApp()
 {
     // Place all significant initialization in InitInstance
@@ -59,9 +61,9 @@ BOOL CHelloServerApp::InitInstance()
     }
     catch(const IceUtil::Exception& ex)
     {
-        std::ostringstream ostr;
+        ostringstream ostr;
         ostr << ex;
-        std::string s = ostr.str();
+        string s = ostr.str();
         AfxMessageBox(CString(s.c_str()), MB_OK|MB_ICONEXCLAMATION);
         return FALSE;
     }
@@ -89,7 +91,7 @@ BOOL CHelloServerApp::InitInstance()
     //
     // Edit control no longer exists.
     //
-    log->setControl(0);
+    log->setHandle(0);
 
     //
     // Clean up.

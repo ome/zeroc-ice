@@ -48,6 +48,7 @@ class Instance : public IceUtil::Shared, public IceUtil::RecMutex
 {
 public:
 
+    bool destroyed() const;
     Ice::PropertiesPtr properties() const;
     Ice::LoggerPtr logger() const;
     void logger(const Ice::LoggerPtr&);
@@ -75,17 +76,23 @@ public:
     Ice::Int serverACM() const;
     void flushBatchRequests();
     void setDefaultContext(const ::Ice::Context&);
-    const ::Ice::Context& getDefaultContext() const;
+    ::Ice::Context getDefaultContext() const;
     
 private:
 
-    Instance(const Ice::CommunicatorPtr&, const Ice::PropertiesPtr&);
+    Instance(const Ice::CommunicatorPtr&, const Ice::PropertiesPtr&, const Ice::LoggerPtr&);
     virtual ~Instance();
     void finishSetup(int&, char*[]);
-    void destroy();
+    bool destroy();
     friend class Ice::CommunicatorI;
 
-    bool _destroyed;
+    enum State
+    {
+	StateActive,
+	StateDestroyInProgress,
+	StateDestroyed
+    };
+    State _state;
     const Ice::PropertiesPtr _properties; // Immutable, not reset by destroy().
     Ice::LoggerPtr _logger; // Not reset by destroy().
     Ice::StatsPtr _stats; // Not reset by destroy().

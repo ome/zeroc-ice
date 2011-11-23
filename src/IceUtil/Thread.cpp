@@ -18,15 +18,8 @@ using namespace std;
 IceUtil::ThreadControl::ThreadControl()
 {
     IceUtil::Mutex::Lock lock(_stateMutex);
-    _handle = new HandleWrapper(0);
+    _handle = new HandleWrapper(GetCurrentThread(), false);
     _id = GetCurrentThreadId();
-    HANDLE proc = GetCurrentProcess();
-    HANDLE current = GetCurrentThread();
-    int rc = DuplicateHandle(proc, current, proc, &_handle->handle, SYNCHRONIZE, TRUE, 0);
-    if(rc == 0)
-    {
-	throw ThreadSyscallException(__FILE__, __LINE__, GetLastError());
-    }
 }
 
 IceUtil::ThreadControl::ThreadControl(const HandleWrapperPtr& handle, ThreadId id)
@@ -138,9 +131,7 @@ IceUtil::ThreadControl::isAlive() const
 void
 IceUtil::ThreadControl::sleep(const Time& timeout)
 {
-    timeval tv = timeout;
-    long msec = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
-    Sleep(msec);
+    Sleep(static_cast<long>(timeout.toMilliSeconds()));
 }
 
 void
@@ -177,8 +168,8 @@ IceUtil::Thread::id() const
     return _id;
 }
 
-static void*
-startHook(void* arg)
+static unsigned int
+WINAPI startHook(void* arg)
 {
     try
     {
@@ -189,9 +180,6 @@ startHook(void* arg)
         //
         unsigned int seed = static_cast<unsigned int>(IceUtil::Time::now().toMicroSeconds());
         srand(seed);            
-#ifndef _WIN32
-	srand48(seed);
-#endif
 
 	//
 	// Ensure that the thread doesn't go away until run() has
@@ -241,8 +229,11 @@ IceUtil::Thread::start(size_t stackSize)
     //
     __incRef();
     
-    _handle->handle = (HANDLE)_beginthreadex(
-	0, stackSize, (unsigned int (__stdcall*)(void*))startHook, (LPVOID)this, 0, &_id);
+    _handle->handle = 
+       reinterpret_cast<HANDLE>(
+          _beginthreadex(0, 
+			 static_cast<unsigned int>(stackSize), 
+			 startHook, this, 0, &_id));
 
     if(_handle->handle == 0)
     {

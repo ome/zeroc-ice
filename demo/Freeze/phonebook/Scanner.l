@@ -9,18 +9,16 @@
 //
 // **********************************************************************
 
-#include <Ice/Ice.h>
 #include <Parser.h>
 #include <Grammar.h>
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 // I get these warnings from some flex versions:
 // warning C4003: not enough actual parameters for macro 'yywrap'
 #   pragma warning( disable : 4003 )
 #endif
 
 using namespace std;
-using namespace Ice;
 
 #define YY_INPUT(buf, result, maxSize) parser->getInput(buf, result, maxSize)
 

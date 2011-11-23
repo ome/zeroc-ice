@@ -32,7 +32,7 @@ public:
     // Create a direct reference.
     //
     ReferencePtr create(const ::Ice::Identity&, const ::Ice::Context&, const ::std::string&,
-			Reference::Mode, bool, const ::std::vector<EndpointPtr>&,
+			Reference::Mode, bool, const ::std::vector<EndpointIPtr>&,
 			const RouterInfoPtr&, bool);
     //
     // Create an indirect reference.
@@ -64,11 +64,12 @@ public:
 
 private:
 
-    ReferenceFactory(const InstancePtr&);
+    ReferenceFactory(const InstancePtr&, const ::Ice::CommunicatorPtr&);
     void destroy();
     friend class Instance;
 
     InstancePtr _instance;
+    ::Ice::CommunicatorPtr _communicator;
     ::Ice::RouterPrx _defaultRouter;
     ::Ice::LocatorPrx _defaultLocator;
 };

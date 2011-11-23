@@ -65,6 +65,17 @@ IceInternal::UdpTransceiver::shutdownReadWrite()
 
     assert(_fd != INVALID_SOCKET);
     shutdownSocketReadWrite(_fd);
+
+#if defined(_WIN32) || defined(__sun) || defined(__hppa) || defined(_AIX)
+    //
+    // This is required to unblock the select call when using thread per connection.
+    //
+    SOCKET fd = createSocket(true);
+    setBlock(fd, false);
+    doConnect(fd, _addr, -1);
+    ::send(fd, "", 1, 0);
+    closeSocket(fd);
+#endif
 }
 
 void
@@ -273,6 +284,11 @@ string
 IceInternal::UdpTransceiver::toString() const
 {
     return fdToString(_fd);
+}
+
+void
+IceInternal::UdpTransceiver::initialize(int)
+{
 }
 
 bool

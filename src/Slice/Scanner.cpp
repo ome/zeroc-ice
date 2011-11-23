@@ -467,7 +467,7 @@ char *yytext;
 #include <stdlib.h>
 #include <math.h>
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 // I get these warnings from some flex versions:
 // warning C4003: not enough actual parameters for macro 'yywrap'
 #   pragma warning( disable : 4003 )
@@ -1053,10 +1053,9 @@ YY_RULE_SETUP
 {
     IntegerTokPtr itp = new IntegerTok;
     *yylvalp = itp;
-    errno = 0;
-    itp->v = IceUtil::strToInt64(yytext, 0, 0);
-    if(errno == ERANGE && (itp->v == IceUtil::Int64Min || itp->v == IceUtil::Int64Max))
+    if(!IceUtil::stringToInt64(string(yytext), itp->v))
     {
+	assert(itp->v != 0);
 	string msg = "integer constant `";
 	msg += yytext;
 	msg += "' out of range";
@@ -1067,7 +1066,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 333 "Scanner.l"
+#line 332 "Scanner.l"
 {
     errno = 0;
     FloatingTokPtr ftp = new FloatingTok;
@@ -1098,7 +1097,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 361 "Scanner.l"
+#line 360 "Scanner.l"
 {
     // Igore white-space
     
@@ -1110,17 +1109,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 370 "Scanner.l"
+#line 369 "Scanner.l"
 {
     return yytext[0];
 }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 374 "Scanner.l"
+#line 373 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 1123 "lex.yy.c"
+#line 1122 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2004,7 +2003,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 374 "Scanner.l"
+#line 373 "Scanner.l"
 
 
 namespace Slice {

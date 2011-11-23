@@ -43,8 +43,8 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D "_USRDLL" /D "FREEZE_API_EXPORTS" /D "NDEBUG" /D "_CONSOLE" /FD /c
-# SUBTRACT CPP /Fr /YX
+# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D "_USRDLL" /D "FREEZE_API_EXPORTS" /D "_CONSOLE" /D "NDEBUG" /D "WIN32_LEAN_AND_MEAN" /FD /c
+# SUBTRACT CPP /Z<none> /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -54,12 +54,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 libdb42.lib /nologo /dll /incremental:yes /machine:I386 /out:"Release/freeze21.dll" /implib:"Release/freeze.lib"
+# ADD LINK32 libdb43.lib /nologo /dll /incremental:yes /machine:I386 /out:"Release/freeze30.dll" /implib:"Release/freeze.lib" /FIXED:no
 # SUBTRACT LINK32 /pdb:none /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\freeze.lib ..\..\lib	copy $(OutDir)\freeze21.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\freeze.lib ..\..\lib	copy $(OutDir)\freeze30.dll ..\..\bin
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "freeze - Win32 Debug"
@@ -76,7 +76,7 @@ PostBuild_Cmds=copy $(OutDir)\freeze.lib ..\..\lib	copy $(OutDir)\freeze21.dll .
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "_USRDLL" /D "FREEZE_API_EXPORTS" /D "_DEBUG" /D "_CONSOLE" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "_USRDLL" /D "FREEZE_API_EXPORTS" /D "_CONSOLE" /D "_DEBUG" /D "WIN32_LEAN_AND_MEAN" /FD /GZ /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
@@ -87,12 +87,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386
-# ADD LINK32 libdb42d.lib /nologo /dll /debug /machine:I386 /out:"Debug/freeze21d.dll" /implib:"Debug/freezed.lib"
-# SUBTRACT LINK32 /pdb:none /incremental:no /nodefaultlib
+# ADD LINK32 libdb43d.lib /nologo /dll /debug /machine:I386 /out:"Debug/freeze30d.dll" /implib:"Debug/freezed.lib" /FIXED:no
+# SUBTRACT LINK32 /pdb:none
 # Begin Special Build Tool
 OutDir=.\Debug
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\freezed.lib ..\..\lib	copy $(OutDir)\freeze21d.pdb ..\..\bin	copy $(OutDir)\freeze21d.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\freezed.lib ..\..\lib	copy $(OutDir)\freeze30d.pdb ..\..\bin	copy $(OutDir)\freeze30d.dll ..\..\bin
 # End Special Build Tool
 
 !ENDIF 
@@ -163,6 +163,11 @@ SOURCE=.\MapI.cpp
 # Begin Source File
 
 SOURCE=.\ObjectStore.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\PingObject.cpp
+# ADD CPP /I "."
 # End Source File
 # Begin Source File
 
@@ -274,6 +279,10 @@ SOURCE=.\ObjectStore.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\PingObject.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\include\freeze\Transaction.h
 # End Source File
 # Begin Source File
@@ -298,7 +307,7 @@ SOURCE=..\..\slice\freeze\CatalogData.ice
 
 !IF  "$(CFG)" == "freeze - Win32 Release"
 
-USERDEP__CATAL="..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
+USERDEP__CATAL="..\..\bin\slice2cpp.exe"	"..\..\bin\slice2freeze.exe"	"..\..\lib\slice.lib"	
 # Begin Custom Build
 InputPath=..\..\slice\freeze\CatalogData.ice
 
@@ -324,7 +333,7 @@ BuildCmds= \
 
 !ELSEIF  "$(CFG)" == "freeze - Win32 Debug"
 
-USERDEP__CATAL="..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
+USERDEP__CATAL="..\..\bin\slice2cpp.exe"	"..\..\bin\slice2freeze.exe"	"..\..\lib\sliced.lib"	
 # Begin Custom Build
 InputPath=..\..\slice\freeze\CatalogData.ice
 
@@ -486,7 +495,7 @@ SOURCE=..\..\slice\freeze\Evictor.ice
 
 !IF  "$(CFG)" == "freeze - Win32 Release"
 
-USERDEP__EVICT="..\..\bin\slice2freeze.exe"	"..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
+USERDEP__EVICT="..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
 # Begin Custom Build
 InputPath=..\..\slice\freeze\Evictor.ice
 
@@ -504,7 +513,7 @@ BuildCmds= \
 
 !ELSEIF  "$(CFG)" == "freeze - Win32 Debug"
 
-USERDEP__EVICT="..\..\bin\slice2freeze.exe"	"..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
+USERDEP__EVICT="..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
 # Begin Custom Build
 InputPath=..\..\slice\freeze\Evictor.ice
 
@@ -636,6 +645,43 @@ BuildCmds= \
    $(BuildCmds)
 
 "Exception.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\PingObject.ice
+
+!IF  "$(CFG)" == "freeze - Win32 Release"
+
+# Begin Custom Build
+InputPath=.\PingObject.ice
+
+BuildCmds= \
+	..\..\bin\slice2cpp.exe PingObject.ice
+
+"PingObject.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"PingObject.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "freeze - Win32 Debug"
+
+# Begin Custom Build
+InputPath=.\PingObject.ice
+
+BuildCmds= \
+	..\..\bin\slice2cpp.exe PingObject.ice
+
+"PingObject.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"PingObject.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
 

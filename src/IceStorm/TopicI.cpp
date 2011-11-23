@@ -65,7 +65,7 @@ public:
     {
     }
 
-    virtual void forward(const string&, ::Ice::OperationMode, const ByteSeq&, const ContextData&, const Ice::Current&);
+    virtual void forward(const vector<EventData>&, const Ice::Current&);
 
 private:
 
@@ -196,7 +196,13 @@ IceStorm::TopicSubscribers::publish(const EventPtr& event)
 	{
 	    if((*p)->inactive())
 	    {
-		if((*p)->error())
+		//
+		// NOTE: only persistent subscribers need to be reaped
+		// and copied in the error list. Transient subscribers
+		// can be removed right away, the topic doesn't keep
+		// any reference on them.
+		//
+		if((*p)->error() && (*p)->persistent())
 		{
 		    e.push_back(*p);
 		}
@@ -274,18 +280,20 @@ PublisherProxyI::ice_invoke(const vector< Ice::Byte>& inParams, vector< Ice::Byt
 // Incoming events from linked topics.
 //
 void
-TopicLinkI::forward(const string& op, Ice::OperationMode mode, const ByteSeq& data, const ContextData& context,
-                    const Ice::Current& current)
+TopicLinkI::forward(const vector<EventData>& v, const Ice::Current& current)
 {
-    EventPtr event = new Event;
-    event->forwarded = true;
-    event->cost = 0;
-    event->op = op;
-    event->mode = mode;
-    event->data = data;
-    event->context = context;
-
-    _subscribers->publish(event);
+    for(vector<EventData>::const_iterator p = v.begin(); p != v.end(); ++p)
+    {
+	EventPtr event = new Event;
+	event->forwarded = true;
+	event->cost = 0;
+	event->op = p->op;
+	event->mode = p->mode;
+	event->data = p->data;
+	event->context = p->context;
+	
+	_subscribers->publish(event);
+    }
 }
 
 TopicI::TopicI(const Ice::ObjectAdapterPtr& adapter, const TraceLevelsPtr& traceLevels, const string& name,
@@ -638,25 +646,23 @@ TopicI::reap()
     for(SubscriberList::iterator p = error.begin(); p != error.end(); ++p)
     {
 	SubscriberPtr subscriber = *p;
-	assert(subscriber->error());
-	if(subscriber->persistent())
+	assert(subscriber->error() && subscriber->persistent()); // Only persistent subscribers need to be reaped.
+
+	if(_links.erase(subscriber->id().category) > 0)
 	{
-	    if(_links.erase(subscriber->id().category) > 0)
+	    updated = true;
+	    if(_traceLevels->topic > 0)
 	    {
-		updated = true;
-		if(_traceLevels->topic > 0)
-		{
-		    Ice::Trace out(_traceLevels->logger, _traceLevels->topicCat);
-		    out << "reaping " << subscriber->id();
-		}
+		Ice::Trace out(_traceLevels->logger, _traceLevels->topicCat);
+		out << "reaping " << subscriber->id();
 	    }
-	    else
+	}
+	else
+	{
+	    if(_traceLevels->topic > 0)
 	    {
-		if(_traceLevels->topic > 0)
-		{
-		    Ice::Trace out(_traceLevels->logger, _traceLevels->topicCat);
-		    out << "reaping " << subscriber->id() << " failed - not in database";
-		}
+		Ice::Trace out(_traceLevels->logger, _traceLevels->topicCat);
+		out << "reaping " << subscriber->id() << " failed - not in database";
 	    }
 	}
     }

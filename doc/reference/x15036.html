@@ -1,0 +1,306 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>IceSSL::SslException</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="IceSSL::ShutdownException"
+HREF="x15016.html"><LINK
+REL="NEXT"
+TITLE="IceSSL::TrustedCertificateAddException"
+HREF="x15086.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x15016.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x15086.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICESSL.SSLEXCEPTION"
+><TT
+CLASS="LITERAL"
+>IceSSL::SslException</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN15039"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local exception <CODE
+CLASS="CLASSNAME"
+>SslException</CODE
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>This exception represents the base of all security related exceptions
+in <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+>. It is a local exception because, usually, a problem with security
+precludes a proper secure connection over which to transmit exceptions.
+In addition, many exceptions would contain information that is of no use
+to external clients/servers.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN15045"
+>Derived Exceptions</A
+></H3
+><P
+>	    <A
+HREF="x14283.html"
+><CODE
+CLASS="CLASSNAME"
+>CertificateException</CODE
+></A
+>, <A
+HREF="x14429.html"
+><CODE
+CLASS="CLASSNAME"
+>CertificateVerifierTypeException</CODE
+></A
+>, <A
+HREF="x14439.html"
+><CODE
+CLASS="CLASSNAME"
+>ConfigParseException</CODE
+></A
+>, <A
+HREF="x14455.html"
+><CODE
+CLASS="CLASSNAME"
+>ConfigurationLoadingException</CODE
+></A
+>, <A
+HREF="x14469.html"
+><CODE
+CLASS="CLASSNAME"
+>ContextException</CODE
+></A
+>, <A
+HREF="x14968.html"
+><CODE
+CLASS="CLASSNAME"
+>PrivateKeyException</CODE
+></A
+>, <A
+HREF="x15016.html"
+><CODE
+CLASS="CLASSNAME"
+>ShutdownException</CODE
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN15070"
+>Data Member Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x15036.html#ICESSL.SSLEXCEPTION.MESSAGE"
+><SPAN
+CLASS="TYPE"
+>message</SPAN
+></A
+></DT
+><DD
+><P
+>Contains pertinent information from the security system to help
+explain the nature of the exception in greater detail.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.SSLEXCEPTION.MESSAGE"
+><TT
+CLASS="LITERAL"
+>message</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <CODE
+CLASS="STRUCTFIELD"
+>message</CODE
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Contains pertinent information from the security system to help
+explain the nature of the exception in greater detail. In some
+instances, it contains information from the underlying security
+implementation and/or debugging trace.</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x15016.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x15086.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceSSL::ShutdownException</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceSSL::TrustedCertificateAddException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

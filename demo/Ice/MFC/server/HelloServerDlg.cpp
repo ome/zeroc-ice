@@ -16,6 +16,7 @@
 #define new DEBUG_NEW
 #endif
 
+
 CHelloServerDlg::CHelloServerDlg(const Ice::CommunicatorPtr& communicator, const LogIPtr& log,
                                  CWnd* pParent /*=NULL*/) :
     CDialog(CHelloServerDlg::IDD, pParent), _communicator(communicator), _log(log)
@@ -35,6 +36,7 @@ BEGIN_MESSAGE_MAP(CHelloServerDlg, CDialog)
     //}}AFX_MSG_MAP
     ON_BN_CLICKED(IDC_SHUTDOWN, OnShutdown)
     ON_BN_CLICKED(IDC_CLEAR, OnClear)
+    ON_MESSAGE(WM_USER, OnLog)
 END_MESSAGE_MAP()
 
 BOOL
@@ -51,7 +53,7 @@ CHelloServerDlg::OnInitDialog()
     // Retrieve the edit control.
     //
     _edit = (CEdit*)GetDlgItem(IDC_LOG);
-    _log->setControl(_edit);
+    _log->setHandle(m_hWnd);
 
     //
     // Set the focus to the shutdown button, so that the text in the log
@@ -65,7 +67,7 @@ CHelloServerDlg::OnInitDialog()
 void
 CHelloServerDlg::OnCancel()
 {
-    _log->setControl(0);
+    _log->setHandle(0);
     CDialog::OnCancel();
 }
 
@@ -117,4 +119,17 @@ void
 CHelloServerDlg::OnClear()
 {
     _edit->SetWindowText(CString(""));
+}
+
+LRESULT
+CHelloServerDlg::OnLog(WPARAM wParam, LPARAM lParam)
+{
+    char* text = (char*)lParam;
+
+    _edit->SetSel(-1, -1);
+    _edit->ReplaceSel(CString(text));
+
+    delete[] text;
+
+    return 0;
 }
