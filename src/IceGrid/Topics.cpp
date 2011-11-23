@@ -76,8 +76,14 @@ private:
     const int _serial;
 };
 
-
 NodeObserverTopic::NodeObserverTopic(const IceStorm::TopicManagerPrx& topicManager) : _serial(0)
+#ifdef __BCPLUSPLUS__ // COMPILERFIX
+{
+}
+
+void
+NodeObserverTopic::initialize(const IceStorm::TopicManagerPrx& topicManager)
+#endif
 {
     IceStorm::TopicPrx t;
     try
@@ -245,6 +251,13 @@ NodeObserverTopic::unsubscribe(const NodeObserverPrx& observer)
 }
 
 RegistryObserverTopic::RegistryObserverTopic(const IceStorm::TopicManagerPrx& topicManager) : _serial(0)
+#ifdef __BCPLUSPLUS__ // COMPILERFIX
+{
+}
+
+void
+RegistryObserverTopic::initialize(const IceStorm::TopicManagerPrx& topicManager)
+#endif
 {
     IceStorm::TopicPrx t;
     try

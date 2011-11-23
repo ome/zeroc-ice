@@ -56,7 +56,7 @@ Client::run(int argc, char* argv[])
     vector<string> commands;
     try
     {
-    	commands = opts.parse(argc, argv);
+    	commands = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtil::Options::BadOpt& e)
     {
@@ -83,10 +83,16 @@ Client::run(int argc, char* argv[])
     }
 
     PropertiesPtr properties = communicator()->getProperties();
-    string managerIdentity = properties->getProperty("IceBox.ServiceManager.Identity");
-    if(managerIdentity.empty())
+    Identity managerIdentity;
+    string identity = properties->getProperty("IceBox.ServiceManager.Identity");
+    if(!identity.empty())
     {
-        managerIdentity = properties->getPropertyWithDefault("IceBox.InstanceName", "IceBox") + "/ServiceManager";
+        managerIdentity = communicator()->stringToIdentity(identity);
+    }
+    else
+    {
+        managerIdentity.category = properties->getPropertyWithDefault("IceBox.InstanceName", "IceBox");
+	managerIdentity.name = "ServiceManager";
     }
 
     string managerProxy;
@@ -100,7 +106,7 @@ Client::run(int argc, char* argv[])
 	    return EXIT_FAILURE;
 	}
 
-	managerProxy = managerIdentity + ":" + managerEndpoints;
+	managerProxy = "\"" + communicator()->identityToString(managerIdentity) + "\" :" + managerEndpoints;
     }
     else
     {
@@ -111,7 +117,7 @@ Client::run(int argc, char* argv[])
 	    return EXIT_FAILURE;
 	}
 
-	managerProxy = managerIdentity + "@" + managerAdapterId;
+	managerProxy = "\"" + communicator()->identityToString(managerIdentity) + "\" @" + managerAdapterId;
     }
 
     ObjectPrx base = communicator()->stringToProxy(managerProxy);

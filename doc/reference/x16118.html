@@ -1,0 +1,902 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>IceGrid::Session</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="IceGrid::ServiceInstanceDescriptor"
+HREF="x16045.html"><LINK
+REL="NEXT"
+TITLE="IceGrid::TemplateDescriptor"
+HREF="x16354.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x16045.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x16354.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICEGRID.SESSION"
+><TT
+CLASS="LITERAL"
+>IceGrid::Session</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN16121"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>interface <CODE
+CLASS="CLASSNAME"
+>Session</CODE
+>
+    extends 
+	<A
+HREF="x9065.html"
+><SPAN
+CLASS="TYPE"
+>::Glacier2::Session</SPAN
+></A
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>A session object is used by <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceGrid</SPAN
+></SPAN
+> clients to allocate and
+release objects. Client sessions are either created with the
+<A
+HREF="x14771.html"
+><CODE
+CLASS="CLASSNAME"
+>Registry</CODE
+></A
+> object or the registry client <A
+HREF="x9194.html"
+><CODE
+CLASS="CLASSNAME"
+>::Glacier2::SessionManager</CODE
+></A
+>
+object.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16133"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x14771.html"
+><CODE
+CLASS="CLASSNAME"
+>Registry</CODE
+></A
+>, <A
+HREF="x9194.html"
+><CODE
+CLASS="CLASSNAME"
+>::Glacier2::SessionManager</CODE
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16143"
+>Operation Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x16118.html#ICEGRID.SESSION.KEEPALIVE"
+><TT
+CLASS="FUNCTION"
+>keepAlive</TT
+></A
+></DT
+><DD
+><P
+>Keep the session alive.</P
+></DD
+><DT
+><A
+HREF="x16118.html#ICEGRID.SESSION.ALLOCATEOBJECTBYID"
+><TT
+CLASS="FUNCTION"
+>allocateObjectById</TT
+></A
+></DT
+><DD
+><P
+>Allocate an object.</P
+></DD
+><DT
+><A
+HREF="x16118.html#ICEGRID.SESSION.ALLOCATEOBJECTBYTYPE"
+><TT
+CLASS="FUNCTION"
+>allocateObjectByType</TT
+></A
+></DT
+><DD
+><P
+>Allocate an object with the given type.</P
+></DD
+><DT
+><A
+HREF="x16118.html#ICEGRID.SESSION.RELEASEOBJECT"
+><TT
+CLASS="FUNCTION"
+>releaseObject</TT
+></A
+></DT
+><DD
+><P
+>Release an object.</P
+></DD
+><DT
+><A
+HREF="x16118.html#ICEGRID.SESSION.SETALLOCATIONTIMEOUT"
+><TT
+CLASS="FUNCTION"
+>setAllocationTimeout</TT
+></A
+></DT
+><DD
+><P
+>Set the allocation timeout.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICEGRID.SESSION.KEEPALIVE"
+><TT
+CLASS="LITERAL"
+>keepAlive</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>keepAlive</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Keep the session alive. Clients should call this operation
+regularly to prevent the server from reaping the session.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16183"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x14771.html#ICEGRID.REGISTRY.GETSESSIONTIMEOUT"
+><TT
+CLASS="FUNCTION"
+>Registry::getSessionTimeout</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICEGRID.SESSION.ALLOCATEOBJECTBYID"
+><TT
+CLASS="LITERAL"
+>allocateObjectById</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>[ "ami", "amd" ]
+<SPAN
+CLASS="TYPE"
+>Object*</SPAN
+> <TT
+CLASS="FUNCTION"
+>allocateObjectById</TT
+>(<A
+HREF="x2684.html"
+><CODE
+CLASS="STRUCTNAME"
+>::Ice::Identity</CODE
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+>)
+    throws
+	<A
+HREF="x14384.html"
+><CODE
+CLASS="CLASSNAME"
+>ObjectNotRegisteredException</CODE
+></A
+>,
+	<A
+HREF="x12414.html"
+><CODE
+CLASS="CLASSNAME"
+>AllocationException</CODE
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Allocate an object. Depending on the allocation timeout, this
+operation might hang until the object is available or until the
+timeout is reached.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16204"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the object to allocate.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16212"
+>Return Value</A
+></H3
+><P
+>		The proxy of the allocated object.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16215"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x14384.html"
+><CODE
+CLASS="CLASSNAME"
+>ObjectNotRegisteredException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if the object with
+the given identity is not registered with the registry.</P
+></DD
+><DT
+><A
+HREF="x12414.html"
+><CODE
+CLASS="CLASSNAME"
+>AllocationException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if the object can't be
+allocated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16230"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x16118.html#ICEGRID.SESSION.SETALLOCATIONTIMEOUT"
+><TT
+CLASS="FUNCTION"
+>setAllocationTimeout</TT
+></A
+>, <A
+HREF="x16118.html#ICEGRID.SESSION.RELEASEOBJECT"
+><TT
+CLASS="FUNCTION"
+>releaseObject</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICEGRID.SESSION.ALLOCATEOBJECTBYTYPE"
+><TT
+CLASS="LITERAL"
+>allocateObjectByType</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>[ "ami", "amd" ]
+<SPAN
+CLASS="TYPE"
+>Object*</SPAN
+> <TT
+CLASS="FUNCTION"
+>allocateObjectByType</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>type</I
+></TT
+>)
+    throws
+	<A
+HREF="x12414.html"
+><CODE
+CLASS="CLASSNAME"
+>AllocationException</CODE
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Allocate an object with the given type. Depending on the
+allocation timeout, this operation might hang until an object
+becomes available or until the timeout is reached.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16251"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>type</I
+></TT
+></DT
+><DD
+><P
+>			    The type of the object.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16259"
+>Return Value</A
+></H3
+><P
+>		The proxy of the allocated object.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16262"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="LITERAL"
+>Raised</TT
+></DT
+><DD
+><P
+>			    if no objects with the given type can be
+allocated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16270"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x16118.html#ICEGRID.SESSION.SETALLOCATIONTIMEOUT"
+><TT
+CLASS="FUNCTION"
+>setAllocationTimeout</TT
+></A
+>, <A
+HREF="x16118.html#ICEGRID.SESSION.RELEASEOBJECT"
+><TT
+CLASS="FUNCTION"
+>releaseObject</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICEGRID.SESSION.RELEASEOBJECT"
+><TT
+CLASS="LITERAL"
+>releaseObject</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>releaseObject</TT
+>(<A
+HREF="x2684.html"
+><CODE
+CLASS="STRUCTNAME"
+>::Ice::Identity</CODE
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+>)
+    throws
+	<A
+HREF="x14384.html"
+><CODE
+CLASS="CLASSNAME"
+>ObjectNotRegisteredException</CODE
+></A
+>,
+	<A
+HREF="x12414.html"
+><CODE
+CLASS="CLASSNAME"
+>AllocationException</CODE
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Release an object.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16294"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the object to release.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16302"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x14384.html"
+><CODE
+CLASS="CLASSNAME"
+>ObjectNotRegisteredException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if the object with
+the given identity is not registered with the registry.</P
+></DD
+><DT
+><A
+HREF="x12414.html"
+><CODE
+CLASS="CLASSNAME"
+>AllocationException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if the given object can't be
+released. This might happen if the object isn't allocatable or
+isn't allocated by the session.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16317"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x16118.html#ICEGRID.SESSION.ALLOCATEOBJECTBYID"
+><TT
+CLASS="FUNCTION"
+>allocateObjectById</TT
+></A
+>, <A
+HREF="x16118.html#ICEGRID.SESSION.ALLOCATEOBJECTBYTYPE"
+><TT
+CLASS="FUNCTION"
+>allocateObjectByType</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICEGRID.SESSION.SETALLOCATIONTIMEOUT"
+><TT
+CLASS="LITERAL"
+>setAllocationTimeout</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>setAllocationTimeout</TT
+>(<SPAN
+CLASS="TYPE"
+>int</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>timeout</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Set the allocation timeout. If no objects are available for an
+allocation request, the request will hang for the duration of 
+this timeout.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16336"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>timeout</I
+></TT
+></DT
+><DD
+><P
+>			    The timeout in milliseconds.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16344"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x16118.html#ICEGRID.SESSION.ALLOCATEOBJECTBYID"
+><TT
+CLASS="FUNCTION"
+>allocateObjectById</TT
+></A
+>, <A
+HREF="x16118.html#ICEGRID.SESSION.ALLOCATEOBJECTBYTYPE"
+><TT
+CLASS="FUNCTION"
+>allocateObjectByType</TT
+></A
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x16045.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x16354.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceGrid::ServiceInstanceDescriptor</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceGrid::TemplateDescriptor</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

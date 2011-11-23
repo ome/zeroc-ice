@@ -218,8 +218,24 @@ Ice::CommunicatorI::setDefaultLocator(const LocatorPrx& locator)
 Ice::Context
 Ice::CommunicatorI::getDefaultContext() const
 {
-    return _instance->initializationData().defaultContext;
+    return _instance->getDefaultContext();
 }
+
+void
+Ice::Communicator::setDefaultContext(const Context& ctx)
+{
+    //
+    // We know there is only one Communicator implementation!
+    //
+    dynamic_cast<Ice::CommunicatorI*>(this)->setDefaultContextI(ctx);
+}
+
+void
+Ice::CommunicatorI::setDefaultContextI(const Context& ctx)
+{
+    _instance->setDefaultContext(ctx);
+}
+
 
 PluginManagerPtr
 Ice::CommunicatorI::getPluginManager() const
@@ -269,7 +285,7 @@ Ice::CommunicatorI::CommunicatorI(const InitializationData& initData)
 	    gcTraceLevel = _instance->traceLevels()->gc;
 	    gcTraceCat = _instance->traceLevels()->gcCat;
 	    gcLogger = _instance->initializationData().logger;
-	    gcInterval = initData.properties->getPropertyAsInt("Ice.GC.Interval");
+	    gcInterval = _instance->initializationData().properties->getPropertyAsInt("Ice.GC.Interval");
 	    gcOnce = false;
 	}
 	if(++communicatorCount == 1)

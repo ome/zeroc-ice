@@ -9,7 +9,6 @@
 
 #include <IceUtil/UUID.h>
 #include <Ice/Ice.h>
-#include <Ice/ProtocolPluginFacade.h> // Just to get the hostname
 #include <Ice/Locator.h>
 #include <Ice/Service.h>
 #include <IceGrid/Activator.h>
@@ -19,14 +18,23 @@
 #include <IceGrid/NodeI.h>
 #include <IceGrid/TraceLevels.h>
 #include <IceGrid/DescriptorParser.h>
+#ifdef __BCPLUSPLUS__
+#  include <IceGrid/ServerI.h>
+#  include <IceGrid/AdminSessionI.h>
+#  include <IceGrid/ReapThread.h>
+#  include <IceGrid/Database.h>
+#endif
 #include <IcePatch2/Util.h>
 
 #ifdef _WIN32
 #   include <direct.h>
 #   include <sys/types.h>
 #   include <sys/stat.h>
-#   define S_ISDIR(mode) ((mode) & _S_IFDIR)
-#   define S_ISREG(mode) ((mode) & _S_IFREG)
+#   include <winsock2.h>
+#   ifdef _MSC_VER
+#      define S_ISDIR(mode) ((mode) & _S_IFDIR)
+#      define S_ISREG(mode) ((mode) & _S_IFREG)
+#   endif
 #else
 #   include <sys/stat.h>
 #endif
@@ -302,8 +310,11 @@ NodeService::start(int argc, char* argv[])
         // activator to each activated server).
         //
 	const string instanceNameProperty = "IceGrid.InstanceName";
-	const string locatorId = properties->getPropertyWithDefault(instanceNameProperty, "IceGrid") + "/Locator";
-	string locatorPrx = locatorId + ":" + properties->getProperty("IceGrid.Registry.Client.Endpoints");
+	Identity locatorId;
+	locatorId.category = properties->getPropertyWithDefault(instanceNameProperty, "IceGrid");
+	locatorId.name = "Locator";
+	string locatorPrx = "\"" + communicator()->identityToString(locatorId) + "\" :" + 
+			    properties->getProperty("IceGrid.Registry.Client.Endpoints");
         properties->setProperty("Ice.Default.Locator", locatorPrx);
     }
     else if(properties->getProperty("Ice.Default.Locator").empty())
@@ -375,12 +386,23 @@ NodeService::start(int argc, char* argv[])
     string name = properties->getProperty("IceGrid.Node.Name");
     if(name.empty())
     {
-        string hostname = IceInternal::getProtocolPluginFacade(communicator())->getDefaultHost();
+	char host[1024 + 1];
+	string hostname;
+	if(gethostname(host, 1024) != -1)
+	{
+	    hostname = host;
+	}
+	if(hostname.empty())
+	{
+	    error("property `IceGrid.Node.Name' is not set and hostname is empty");
+	    return false;
+	}
 	if(!nowarn)
         {
             warning("property `IceGrid.Node.Name' is not set, using hostname: " + hostname);
         }
 	properties->setProperty("IceGrid.Node.Name", hostname);
+	name = hostname;
     }
 
     //
@@ -497,8 +519,11 @@ NodeService::start(int argc, char* argv[])
         try
         {
 	    const string instanceNameProperty = "IceGrid.InstanceName";
-	    const string adminId = properties->getPropertyWithDefault(instanceNameProperty, "IceGrid") + "/Admin";
-            admin = AdminPrx::checkedCast(communicator()->stringToProxy(adminId));
+	    Identity adminId;
+	    adminId.category = properties->getPropertyWithDefault(instanceNameProperty, "IceGrid");
+	    adminId.name = "Admin";
+            admin = AdminPrx::checkedCast(
+	    		communicator()->stringToProxy("\"" + communicator()->identityToString(adminId) + "\""));
         }
         catch(const LocalException& ex)
         {

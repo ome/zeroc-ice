@@ -74,7 +74,7 @@ IcePatch2::PatcherService::start(int argc, char* argv[])
     vector<string> args;
     try
     {
-    	args = opts.parse(argc, argv);
+    	args = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtil::Options::BadOpt& e)
     {
@@ -159,24 +159,34 @@ IcePatch2::PatcherService::start(int argc, char* argv[])
     const string instanceNameProperty = "IcePatch2.InstanceName";
     string instanceName = properties->getPropertyWithDefault(instanceNameProperty, "IcePatch2");
 
+    Identity id;
     const string idProperty = "IcePatch2.Identity";
     string idStr = properties->getProperty(idProperty);
-    if(idStr.empty())
+    if(!idStr.empty())
     {
-	idStr = instanceName + "/server";
+        id = communicator()->stringToIdentity(idStr);
     }
-    Identity id = communicator()->stringToIdentity(idStr);
+    else
+    {
+        id.category = instanceName;
+	id.name = "server";
+    }
     adapter->add(new FileServerI(dataDir, infoSeq), id);
 
     if(adminAdapter)
     {
+        Identity adminId;
 	const string adminIdProperty = "IcePatch2.AdminIdentity";
 	string adminIdStr = properties->getProperty(adminIdProperty);
-	if(adminIdStr.empty())
+	if(!adminIdStr.empty())
 	{
-	    adminIdStr = instanceName + "/admin";
+	    adminId = communicator()->stringToIdentity(adminIdStr);
 	}
-	Identity adminId = communicator()->stringToIdentity(adminIdStr);
+	else
+	{
+	    adminId.category = instanceName;
+	    adminId.name = "admin";
+	}
 	adminAdapter->add(new AdminI(communicator()), adminId);
     }
 

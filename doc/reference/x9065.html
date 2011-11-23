@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Glacier2::SessionControl</TITLE
+>Glacier2::Session</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
@@ -13,11 +13,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Glacier2::Session"
-HREF="x9017.html"><LINK
+TITLE="Glacier2::SSLSessionManager"
+HREF="x8995.html"><LINK
 REL="NEXT"
-TITLE="Glacier2::SessionManager"
-HREF="x9146.html"></HEAD
+TITLE="Glacier2::SessionControl"
+HREF="x9113.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -45,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x9017.html"
+HREF="x8995.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -59,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x9146.html"
+HREF="x9113.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -73,10 +73,10 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="GLACIER2.SESSIONCONTROL"
+NAME="GLACIER2.SESSION"
 ><TT
 CLASS="LITERAL"
->Glacier2::SessionControl</TT
+>Glacier2::Session</TT
 ></A
 ></H1
 ><DIV
@@ -97,18 +97,18 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 >interface <CODE
 CLASS="CLASSNAME"
->SessionControl</CODE
+>Session</CODE
 ></PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->An administrative session control object, which is tied to the
-lifecycle of a <A
-HREF="x9017.html"
+>A client-visible session object, which is tied to the lifecycle of
+a <A
+HREF="x8632.html"
 ><CODE
 CLASS="CLASSNAME"
->Session</CODE
+>Router</CODE
 ></A
 >.</P
 ><DIV
@@ -117,14 +117,20 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN9075"
->See Also</A
+>Derived Classes and Interfaces</A
 ></H3
 ><P
 >	    <A
-HREF="x9017.html"
-><CODE
-CLASS="CLASSNAME"
->Session</CODE
+HREF="x12234.html"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::AdminSession</SPAN
+></A
+>, <A
+HREF="x16118.html"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::Session</SPAN
 ></A
 ></P
 ></DIV
@@ -133,7 +139,30 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN9082"
+NAME="AEN9085"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x8632.html"
+><CODE
+CLASS="CLASSNAME"
+>Router</CODE
+></A
+>, <A
+HREF="x9194.html"
+><CODE
+CLASS="CLASSNAME"
+>SessionManager</CODE
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9095"
 >Operation Index</A
 ></H3
 ><P
@@ -143,46 +172,7 @@ CLASS="VARIABLELIST"
 ><DL
 ><DT
 ><A
-HREF="x9065.html#GLACIER2.SESSIONCONTROL.CATEGORIES"
-><TT
-CLASS="FUNCTION"
->categories</TT
-></A
-></DT
-><DD
-><P
->Access the object that manages the allowable categories
-for object identities for this session.</P
-></DD
-><DT
-><A
-HREF="x9065.html#GLACIER2.SESSIONCONTROL.ADAPTERIDS"
-><TT
-CLASS="FUNCTION"
->adapterIds</TT
-></A
-></DT
-><DD
-><P
->Access the object that manages the allowable adapter identities
-for objects for this session.</P
-></DD
-><DT
-><A
-HREF="x9065.html#GLACIER2.SESSIONCONTROL.IDENTITIES"
-><TT
-CLASS="FUNCTION"
->identities</TT
-></A
-></DT
-><DD
-><P
->Access the object that manages the allowable object identities
-for this session.</P
-></DD
-><DT
-><A
-HREF="x9065.html#GLACIER2.SESSIONCONTROL.DESTROY"
+HREF="x9065.html#GLACIER2.SESSION.DESTROY"
 ><TT
 CLASS="FUNCTION"
 >destroy</TT
@@ -190,7 +180,7 @@ CLASS="FUNCTION"
 ></DT
 ><DD
 ><P
->Destroy the associated session.</P
+>Destroy the session.</P
 ></DD
 ></DL
 ></DIV
@@ -201,139 +191,7 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="GLACIER2.SESSIONCONTROL.CATEGORIES"
-><TT
-CLASS="LITERAL"
->categories</TT
-></A
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><CODE
-CLASS="CLASSNAME"
->StringSet*</CODE
-> <TT
-CLASS="FUNCTION"
->categories</TT
->();</PRE
-></TD
-></TR
-></TABLE
-><P
->Access the object that manages the allowable categories
-for object identities for this session.</P
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN9116"
->Return Value</A
-></H3
-><P
->		A StringSet object</P
-></DIV
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="GLACIER2.SESSIONCONTROL.ADAPTERIDS"
-><TT
-CLASS="LITERAL"
->adapterIds</TT
-></A
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><CODE
-CLASS="CLASSNAME"
->StringSet*</CODE
-> <TT
-CLASS="FUNCTION"
->adapterIds</TT
->();</PRE
-></TD
-></TR
-></TABLE
-><P
->Access the object that manages the allowable adapter identities
-for objects for this session.</P
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN9126"
->Return Value</A
-></H3
-><P
->		A StringSet object</P
-></DIV
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="GLACIER2.SESSIONCONTROL.IDENTITIES"
-><TT
-CLASS="LITERAL"
->identities</TT
-></A
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><CODE
-CLASS="CLASSNAME"
->IdentitySet*</CODE
-> <TT
-CLASS="FUNCTION"
->identities</TT
->();</PRE
-></TD
-></TR
-></TABLE
-><P
->Access the object that manages the allowable object identities
-for this session.</P
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN9136"
->Return Value</A
-></H3
-><P
->		An IdentitySet object</P
-></DIV
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="GLACIER2.SESSIONCONTROL.DESTROY"
+NAME="GLACIER2.SESSION.DESTROY"
 ><TT
 CLASS="LITERAL"
 >destroy</TT
@@ -347,8 +205,7 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->[ "ami" ]
-<SPAN
+><SPAN
 CLASS="TYPE"
 >void</SPAN
 > <TT
@@ -359,7 +216,14 @@ CLASS="FUNCTION"
 ></TR
 ></TABLE
 ><P
->Destroy the associated session.</P
+>Destroy the session. This is called automatically when the
+<A
+HREF="x8632.html"
+><CODE
+CLASS="CLASSNAME"
+>Router</CODE
+></A
+> is destroyed.</P
 ></DIV
 ></DIV
 ><DIV
@@ -378,7 +242,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x9017.html"
+HREF="x8995.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -396,7 +260,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x9146.html"
+HREF="x9113.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -408,7 +272,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Glacier2::Session</TT
+>Glacier2::SSLSessionManager</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -425,7 +289,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Glacier2::SessionManager</TT
+>Glacier2::SessionControl</TT
 ></TD
 ></TR
 ></TABLE

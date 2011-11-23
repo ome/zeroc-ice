@@ -340,6 +340,10 @@ ApplicationDescriptorBuilder::addNode(const string& name, const NodeDescriptor& 
 void
 ApplicationDescriptorBuilder::addServerTemplate(const string& id, const TemplateDescriptor& templ)
 {
+    if(!templ.descriptor)
+    {
+	throw "invalid server template `" + id + "': server definition is missing";
+    }
     if(!_descriptor.serverTemplates.insert(make_pair(id, templ)).second)
     {
 	throw "duplicate server template `" + id + "'";
@@ -349,6 +353,10 @@ ApplicationDescriptorBuilder::addServerTemplate(const string& id, const Template
 void
 ApplicationDescriptorBuilder::addServiceTemplate(const string& id, const TemplateDescriptor& templ)
 {
+    if(!templ.descriptor)
+    {
+	throw "invalid service template `" + id + "': service definition is missing";
+    }
     if(!_descriptor.serviceTemplates.insert(make_pair(id, templ)).second)
     {
 	throw "duplicate service template `" + id + "'";
@@ -487,6 +495,12 @@ TemplateDescriptorBuilder::TemplateDescriptorBuilder(ApplicationDescriptorBuilde
 void
 TemplateDescriptorBuilder::addParameter(const XmlAttributesHelper& attrs)
 {
+    if(find(_descriptor.parameters.begin(), _descriptor.parameters.end(), attrs("name")) !=
+       _descriptor.parameters.end())
+    {
+	throw "duplicate parameter `" + attrs("name") + "'"; 
+    }
+
     _descriptor.parameters.push_back(attrs("name"));
     if(attrs.contains("default"))
     {
@@ -827,33 +841,21 @@ IceBoxDescriptorBuilder::addAdapter(const XmlAttributesHelper& attrs)
     {
 	throw "<adapter> element can't be a child of an <icebox> element";
     }
-    
-    AdapterDescriptor& desc = _descriptor->adapters.back();
-    assert(desc.name == "IceBox.ServiceManager");
-    desc.id = attrs("id", desc.id);
-    desc.replicaGroupId = attrs("replica-group", desc.replicaGroupId);
-    desc.registerProcess = attrs.asBool("register-process", desc.registerProcess);
-    if(desc.id == "" && attrs.contains("wait-for-activation"))
+
+    PropertyDescriptorSeq::iterator p = _hiddenProperties.begin();
+    while(p != _hiddenProperties.end())
     {
-	throw "the attribute `wait-for-activation' can only be set if the adapter has an non empty id";
-    }
-    else
-    {
-	desc.waitForActivation = attrs.asBool("wait-for-activation", desc.waitForActivation);
+	if(p->name == "IceBox.ServiceManager.Endpoints" || p->name == "IceBox.ServiceManager.RegisterProcess")
+	{
+	    p = _hiddenProperties.erase(p);
+	}
+	else
+	{
+	    ++p;
+	}
     }
 
-    if(attrs.contains("endpoints"))
-    {
- 	PropertyDescriptorSeq::iterator p;
- 	for(p = _descriptor->propertySet.properties.begin(); p != _descriptor->propertySet.properties.end(); ++p)
- 	{
- 	    if(p->name == "IceBox.ServiceManager.Endpoints")
- 	    {
- 		p->value = attrs("endpoints");
- 		break;
- 	    }
- 	}
-    }
+    ServerDescriptorBuilder::addAdapter(attrs);
 }
 
 void

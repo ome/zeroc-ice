@@ -1,3 +1,85 @@
+Changes since version 3.1.0
+---------------------------
+
+- Fixed a bug in slice2docbook that could cause the "Used By" section
+  of a symbol to list the same operation more than once.
+
+- slice2docbook now adds a "Used By" section for exceptions.
+  (Previously, exceptions did not have this section, only other
+  types.)
+
+- Fixed IceGrid allocation bug that could cause allocation failures
+  when allocating multiple objects by type from allocatable servers
+  and with the same session.
+
+- Fixed the Slice translators to support spaces in paths of the
+  -I option.
+
+- The demos are no longer included in the RPM distribution.
+
+- For object adapters without endpoints, Ice.Trace.Network >= 2 now
+  prints a trace message.
+
+- Unix/Linux: New Make.rules variable: embedded_runpath_prefix. 
+  Defaults to /opt/Ice-3.1 in Ice 3.1.1.
+  This variable allows you to define the root directory for embedded
+  runpath in shared libraries and executables. In prior releases,
+  prefix (the install directory variable) was used instead. 
+
+- Fixed a bug where proxy operator< could return an incorrect result
+  for proxies of different types (e.g., direct vs. indirect proxies).
+
+- Removed obsolete --no-globals option from slice2docbook.
+
+- Fixed a bug in IceStorm where IceStorm stops sending events to
+  linked topics if the linked topic becomes unavailable for any
+  reason.
+
+- Fixed a bug where the number of endpoints returned for a replica
+  group with no load balancing policy was random.
+
+- It's now possible to invoke on the IceGrid::Query object from an
+  IceGrid admin session created through Glacier2.
+
+- Fixed a Glacier2 shutdown bug where active sessions would not be
+  destroyed properly.
+
+- A bug was fixed where the glacier2router would throw a
+  NullHandleException if a permission verifier was used that was not
+  configured.
+
+- Fixed a bug with the IceGrid allocate and sessionAllocation demos 
+  where the session would not be destroyed in the event of an 
+  allocation failure.
+
+- Fixed a bug with config/ca/import.py script when importing
+  certificates without an encrypted private key into a java keystore.
+
+- Added support for Borland C++Builder 2006.
+
+- Fixed a bug where variables from distribution descriptors were not
+  substituted.
+
+- Fixed an assert in the IceGrid locator implementation that could
+  occur when using dynamic adapter registration. The assert was
+  triggered when an adapter was removed and a client was requesting
+  at the same time the adapter endpoints through the locator
+  interface.
+
+- Fixed a bug in the IceGrid replication code that would cause clients
+  to get an Ice::NoEndpointException if the node of a replica was
+  inactive.
+
+- Fixed a bug in the IceGrid XML parser that could cause a crash if
+  the adapter element for the IceBox.ServiceManager adapter was
+  specified in the icebox element.
+
+- Restored Communicator::setDefaultContext.
+
+- Fixed a bug in Ice::initialize() that raised a NullHandleException
+  when the function was called without arguments or when the
+  properties member of InitializationData was null.
+
 Changes since version 3.0.1
 ---------------------------
 

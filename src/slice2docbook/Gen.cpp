@@ -11,14 +11,17 @@
 #include <IceUtil/Functional.h>
 #include <Gen.h>
 
+#ifdef __BCPLUSPLUS__
+#  include <iterator>
+#endif
+
 using namespace std;
 using namespace Slice;
 using namespace IceUtil;
 
-Slice::Gen::Gen(const string& name, const string& file, bool standAlone, bool noGlobals, bool chapter,
+Slice::Gen::Gen(const string& name, const string& file, bool standAlone, bool chapter,
                 bool noIndex, bool sortFields) :
     _standAlone(standAlone),
-    _noGlobals(noGlobals),
     _noIndex(noIndex),
     _sortFields(sortFields)
 {
@@ -76,14 +79,6 @@ Slice::Gen::visitUnitStart(const UnitPtr& p)
     else
     {
 	printHeader();
-    }
-
-    if(!_noGlobals && !_noIndex)
-    {
-	start(_chapter, "Global Module", false);
-//	start("section", "Overview", false);
-	visitContainer(p);
-//	end();
     }
 
     return true;
@@ -513,7 +508,7 @@ Slice::Gen::visitClassDefStart(const ClassDefPtr& p)
 	    O << nl << "<synopsis>";
 	    printMetaData(*q);
 	    TypePtr returnType = (*q)->returnType();
-	    O << (returnType ? toString(returnType, p) : "<type>void</type>") << " <function>" << (*q)->name()
+	    O << (returnType ? toString(returnType, p) : string("<type>void</type>")) << " <function>" << (*q)->name()
 	      << "</function>(";
 	    O.inc();
 	    ParamDeclList paramList = (*q)->parameters();
@@ -1126,21 +1121,38 @@ Slice::Gen::printComment(const ContainedPtr& p, const string& deprecateReason)
     if(ex)
     {
 	derivedExceptions = p->unit()->findDerivedExceptions(ex);
-    }
-    if(!derivedExceptions.empty())
-    {
-	start("section", "Derived Exceptions", false);
-	O << nl << "<para>";
-	start("simplelist type=\"inline\"");
-	for(ExceptionList::const_iterator q = derivedExceptions.begin(); q != derivedExceptions.end(); ++q)
+	if(!derivedExceptions.empty())
 	{
-	    start("member");
-	    O << toString(*q, container);
+	    start("section", "Derived Exceptions", false);
+	    O << nl << "<para>";
+	    start("simplelist type=\"inline\"");
+	    for(ExceptionList::const_iterator q = derivedExceptions.begin(); q != derivedExceptions.end(); ++q)
+	    {
+		start("member");
+		O << toString(*q, container);
+		end();
+	    }
+	    end();
+	    O << "</para>";
 	    end();
 	}
-	end();
-	O << "</para>";
-	end();
+	ContainedList usedBy;
+	usedBy = p->unit()->findUsedBy(ex);
+	if(!usedBy.empty())
+	{
+	    start("section", "Used By", false);
+	    O << nl << "<para>";
+	    start("simplelist type=\"inline\"");
+	    for(ContainedList::const_iterator q = usedBy.begin(); q != usedBy.end(); ++q)
+	    {
+		start("member");
+		O << toString(*q, container);
+		end();
+	    }
+	    end();
+	    O << "</para>";
+	    end();
+	}
     }
 
     ContainedList usedBy;
@@ -1159,13 +1171,28 @@ Slice::Gen::printComment(const ContainedPtr& p, const string& deprecateReason)
     }
     if(!usedBy.empty())
     {
+	//
+	// We first accumulate the strings in a list instead of printing
+	// each stringified entry in the usedBy list. This is necessary because
+	// the usedBy list can contain operations and parameters. But toString()
+	// on a parameter returns the string for the parameter's operation, so
+	// we can end up printing the same operation name more than once.
+	//
+	list<string> strings;
+	for(ContainedList::const_iterator q = usedBy.begin(); q != usedBy.end(); ++q)
+	{
+	    strings.push_back(toString(*q, container));
+	}
+	strings.sort();
+	strings.unique();
+
 	start("section", "Used By", false);
 	O << nl << "<para>";
 	start("simplelist type=\"inline\"");
-	for(ContainedList::const_iterator q = usedBy.begin(); q != usedBy.end(); ++q)
+	for(list<string>::const_iterator p = strings.begin(); p != strings.end(); ++p)
 	{
 	    start("member");
-	    O << toString(*q, container);
+	    O << *p;
 	    end();
 	}
 	end();

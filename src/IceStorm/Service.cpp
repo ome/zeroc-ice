@@ -7,6 +7,9 @@
 //
 // **********************************************************************
 
+#include <IceStorm/SubscriberFactory.h>
+#include <IceStorm/Flusher.h>
+#include <IceStorm/TopicI.h>
 #include <IceStorm/TopicManagerI.h>
 #include <IceStorm/TraceLevels.h>
 #include <IceStorm/Service.h>
@@ -97,10 +100,11 @@ IceStorm::ServiceI::start(const string& name,
     //
     // We use the name of the service for the name of the database environment.
     //
-    string topicManagerId = properties->getPropertyWithDefault(name + ".InstanceName", "IceStorm") + "/TopicManager";
-    Ice::Identity id = communicator->stringToIdentity(topicManagerId);
+    Ice::Identity topicManagerId;
+    topicManagerId.category = properties->getPropertyWithDefault(name + ".InstanceName", "IceStorm");
+    topicManagerId.name = "TopicManager";
     _manager = new TopicManagerI(communicator, _topicAdapter, _publishAdapter, traceLevels, name, "topics");
-    _managerProxy = TopicManagerPrx::uncheckedCast(_topicAdapter->add(_manager, id));
+    _managerProxy = TopicManagerPrx::uncheckedCast(_topicAdapter->add(_manager, topicManagerId));
 
     _topicAdapter->activate();
     _publishAdapter->activate();

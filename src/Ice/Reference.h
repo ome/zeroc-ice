@@ -32,6 +32,13 @@ class Reference : public IceUtil::Shared
 {
 public:
 
+    enum Type
+    {
+	TypeDirect,
+	TypeIndirect,
+	TypeFixed
+    };
+
     enum Mode
     {
 	ModeTwoway,
@@ -55,6 +62,7 @@ public:
     virtual RouterInfoPtr getRouterInfo() const { return 0; }
     virtual LocatorInfoPtr getLocatorInfo() const { return 0; }
 
+    virtual Type getType() const = 0;
     virtual bool getSecure() const = 0;
     virtual std::string getAdapterId() const = 0;
     virtual std::vector<EndpointIPtr> getEndpoints() const = 0;
@@ -139,6 +147,7 @@ public:
 
     const std::vector<Ice::ConnectionIPtr>& getFixedConnections() const;
 
+    virtual Type getType() const;
     virtual bool getSecure() const;
     virtual std::string getAdapterId() const;
     virtual std::vector<EndpointIPtr> getEndpoints() const;
@@ -244,6 +253,7 @@ public:
     DirectReference(const InstancePtr&, const Ice::CommunicatorPtr&, const Ice::Identity&, const Ice::Context&,
 		    const std::string&, Mode, bool, const std::vector<EndpointIPtr>&, const RouterInfoPtr&, bool);
 
+    virtual Type getType() const;
     virtual int getLocatorCacheTimeout() const;
     virtual std::string getAdapterId() const;
     virtual std::vector<EndpointIPtr> getEndpoints() const;
@@ -285,6 +295,7 @@ public:
 
     virtual LocatorInfoPtr getLocatorInfo() const { return _locatorInfo; }
 
+    virtual Type getType() const;
     virtual int getLocatorCacheTimeout() const;
     virtual std::string getAdapterId() const;
     virtual std::vector<EndpointIPtr> getEndpoints() const;

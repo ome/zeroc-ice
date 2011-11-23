@@ -1,0 +1,762 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>IceGrid::AdminSession</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="IceGrid::Admin"
+HREF="x10628.html"><LINK
+REL="NEXT"
+TITLE="IceGrid::AllocationException"
+HREF="x12414.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x10628.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x12414.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICEGRID.ADMINSESSION"
+><TT
+CLASS="LITERAL"
+>IceGrid::AdminSession</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12237"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>interface <CODE
+CLASS="CLASSNAME"
+>AdminSession</CODE
+>
+    extends 
+	<A
+HREF="x9065.html"
+><SPAN
+CLASS="TYPE"
+>::Glacier2::Session</SPAN
+></A
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>An admin session object used by administrative clients to view,
+update and receive observer updates from the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceGrid</SPAN
+></SPAN
+>
+registry. Admin sessions are created either with the <A
+HREF="x14771.html"
+><CODE
+CLASS="CLASSNAME"
+>Registry</CODE
+></A
+>
+object or the registry admin <A
+HREF="x9194.html"
+><CODE
+CLASS="CLASSNAME"
+>::Glacier2::SessionManager</CODE
+></A
+> object.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12249"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x14771.html"
+><CODE
+CLASS="CLASSNAME"
+>Registry</CODE
+></A
+>, <A
+HREF="x9194.html"
+><CODE
+CLASS="CLASSNAME"
+>::Glacier2::SessionManager</CODE
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12259"
+>Operation Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x12234.html#ICEGRID.ADMINSESSION.KEEPALIVE"
+><TT
+CLASS="FUNCTION"
+>keepAlive</TT
+></A
+></DT
+><DD
+><P
+>Keep the session alive.</P
+></DD
+><DT
+><A
+HREF="x12234.html#ICEGRID.ADMINSESSION.GETADMIN"
+><TT
+CLASS="FUNCTION"
+>getAdmin</TT
+></A
+></DT
+><DD
+><P
+>Get the admin interface.</P
+></DD
+><DT
+><A
+HREF="x12234.html#ICEGRID.ADMINSESSION.SETOBSERVERS"
+><TT
+CLASS="FUNCTION"
+>setObservers</TT
+></A
+></DT
+><DD
+><P
+>Set the proxies of the observer objects that will receive
+notifications from the servers when the state of the registry
+or nodes changes.</P
+></DD
+><DT
+><A
+HREF="x12234.html#ICEGRID.ADMINSESSION.SETOBSERVERSBYIDENTITY"
+><TT
+CLASS="FUNCTION"
+>setObserversByIdentity</TT
+></A
+></DT
+><DD
+><P
+>Set the identities of the observer objects that will receive
+notifications from the servers when the state of the registry
+or nodes changes.</P
+></DD
+><DT
+><A
+HREF="x12234.html#ICEGRID.ADMINSESSION.STARTUPDATE"
+><TT
+CLASS="FUNCTION"
+>startUpdate</TT
+></A
+></DT
+><DD
+><P
+>Acquires an exclusive lock to start updating the registry applications.</P
+></DD
+><DT
+><A
+HREF="x12234.html#ICEGRID.ADMINSESSION.FINISHUPDATE"
+><TT
+CLASS="FUNCTION"
+>finishUpdate</TT
+></A
+></DT
+><DD
+><P
+>Finish updating the registry and release the exclusive lock.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICEGRID.ADMINSESSION.KEEPALIVE"
+><TT
+CLASS="LITERAL"
+>keepAlive</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>keepAlive</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Keep the session alive. Clients should call this operation
+regularly to prevent the server from reaping the session.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12305"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x14771.html#ICEGRID.REGISTRY.GETSESSIONTIMEOUT"
+><TT
+CLASS="FUNCTION"
+>Registry::getSessionTimeout</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICEGRID.ADMINSESSION.GETADMIN"
+><TT
+CLASS="LITERAL"
+>getAdmin</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x10628.html"
+><CODE
+CLASS="CLASSNAME"
+>Admin*</CODE
+></A
+> <TT
+CLASS="FUNCTION"
+>getAdmin</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the admin interface. The admin object returned by this
+operation can only be accessed by the session.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12320"
+>Return Value</A
+></H3
+><P
+>		The admin interface proxy.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICEGRID.ADMINSESSION.SETOBSERVERS"
+><TT
+CLASS="LITERAL"
+>setObservers</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>setObservers</TT
+>(<A
+HREF="x15016.html"
+><CODE
+CLASS="CLASSNAME"
+>RegistryObserver*</CODE
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>registryObs</I
+></TT
+>,
+    <A
+HREF="x13869.html"
+><CODE
+CLASS="CLASSNAME"
+>NodeObserver*</CODE
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>nodeObs</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Set the proxies of the observer objects that will receive
+notifications from the servers when the state of the registry
+or nodes changes.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12336"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>registryObs</I
+></TT
+></DT
+><DD
+><P
+>			    The registry observer.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>nodeObs</I
+></TT
+></DT
+><DD
+><P
+>			    The node observer.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICEGRID.ADMINSESSION.SETOBSERVERSBYIDENTITY"
+><TT
+CLASS="LITERAL"
+>setObserversByIdentity</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>setObserversByIdentity</TT
+>(<A
+HREF="x2684.html"
+><CODE
+CLASS="STRUCTNAME"
+>::Ice::Identity</CODE
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>registryObs</I
+></TT
+>,
+    <A
+HREF="x2684.html"
+><CODE
+CLASS="STRUCTNAME"
+>::Ice::Identity</CODE
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>nodeObs</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Set the identities of the observer objects that will receive
+notifications from the servers when the state of the registry
+or nodes changes. This operation should be used by clients that
+are using a bidirectional connection to communicate with the
+session.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12362"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>registryObs</I
+></TT
+></DT
+><DD
+><P
+>			    The registry observer identity.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>nodeObs</I
+></TT
+></DT
+><DD
+><P
+>			    The node observer identity.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICEGRID.ADMINSESSION.STARTUPDATE"
+><TT
+CLASS="LITERAL"
+>startUpdate</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>int</SPAN
+> <TT
+CLASS="FUNCTION"
+>startUpdate</TT
+>()
+    throws
+	<A
+HREF="x10283.html"
+><CODE
+CLASS="CLASSNAME"
+>AccessDeniedException</CODE
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Acquires an exclusive lock to start updating the registry applications.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12384"
+>Return Value</A
+></H3
+><P
+>		The current serial.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12387"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x10283.html"
+><CODE
+CLASS="CLASSNAME"
+>AccessDeniedException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if the exclusive lock can't be
+acquired. This might happen if the lock is currently acquired by
+another session.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICEGRID.ADMINSESSION.FINISHUPDATE"
+><TT
+CLASS="LITERAL"
+>finishUpdate</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>finishUpdate</TT
+>()
+    throws
+	<A
+HREF="x10283.html"
+><CODE
+CLASS="CLASSNAME"
+>AccessDeniedException</CODE
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Finish updating the registry and release the exclusive lock.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12405"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x10283.html"
+><CODE
+CLASS="CLASSNAME"
+>AccessDeniedException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if the session doesn't hold the
+exclusive lock.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x10628.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x12414.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceGrid::Admin</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceGrid::AllocationException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

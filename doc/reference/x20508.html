@@ -1,0 +1,3015 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Glacier2 Properties</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Properties"
+HREF="c17556.html"><LINK
+REL="PREVIOUS"
+TITLE="IceStorm Properties"
+HREF="x20209.html"><LINK
+REL="NEXT"
+TITLE="Freeze Properties"
+HREF="x21032.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x20209.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Properties</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x21032.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="AEN20508"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> Properties</A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2.ADDUSERTOALLOWCATEGORIES"
+>Glacier2.AddUserToAllowCategories</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20513"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.AddUserToAllowCategories=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20517"
+>Description</A
+></H3
+><P
+>Specifies whether to add an authenticated user id to the
+<TT
+CLASS="LITERAL"
+>Glacier2.AllowCategories</TT
+> property upon the
+creation of a new session. The legal values are shown below:
+<DIV
+CLASS="INFORMALTABLE"
+><P
+></P
+><A
+NAME="AEN20521"
+></A
+><TABLE
+BORDER="1"
+BGCOLOR="#E0E0E0"
+CELLSPACING="0"
+CELLPADDING="4"
+CLASS="CALSTABLE"
+><TBODY
+><TR
+><TD
+>0</TD
+><TD
+>Do not add the user id. (default)</TD
+></TR
+><TR
+><TD
+>1</TD
+><TD
+>Add the user id.</TD
+></TR
+><TR
+><TD
+>2</TD
+><TD
+>Add the user id with a leading underscore.</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20533"
+>Glacier2.Admin.Endpoints</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20535"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Admin.Endpoints=<TT
+CLASS="REPLACEABLE"
+><I
+>endpoints</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20539"
+>Description</A
+></H3
+><P
+>Defines the optional administrative endpoints of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> admin
+interface. The administrative endpoints must be accessible to clients
+that are using the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> admin interface.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Allowing access to the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> admin interface is a
+security risk! If this property is not defined, the admin interface
+is disabled.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20547"
+>Glacier2.Admin.PublishedEndpoints</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20549"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Admin.PublishedEndpoints=<TT
+CLASS="REPLACEABLE"
+><I
+>endpoints</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20553"
+>Description</A
+></H3
+><P
+>Defines the optional administrative published endpoints of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> admin
+interface. The administrative endpoints must be accessible to clients
+that are using the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> administrative interface.
+Refer to the description of the object adapter property
+<A
+HREF="x17798.html#ADAPTER.PUBLISHEDENDPOINTS"
+><TT
+CLASS="REPLACEABLE"
+><I
+>adapter</I
+></TT
+>.PublishedEndpoints</A
+>
+for more information.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Allowing access to the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> admin interface is a
+security risk!</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20563"
+>Glacier2.AdminIdentity</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20565"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.AdminIdentity=<TT
+CLASS="REPLACEABLE"
+><I
+>identity</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20569"
+>Description</A
+></H3
+><P
+>The identity of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> admin interface. If not specified, the
+default value <TT
+CLASS="LITERAL"
+>Glacier2/admin</TT
+> is used.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>This property is deprecated and supported only for
+backward-compatibility. New applications should use
+<A
+HREF="x20508.html#GLACIER2.INSTANCENAME"
+>Glacier2.InstanceName</A
+>.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2.ALLOWCATEGORIES"
+>Glacier2.AllowCategories</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20579"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.AllowCategories=<TT
+CLASS="REPLACEABLE"
+><I
+>list</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20583"
+>Description</A
+></H3
+><P
+>Specifies a whitespace-separated list of identity categories.
+If this property is defined, then the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router only
+allows requests to <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> objects with an identity that matches
+one of the categories from this list.
+If <TT
+CLASS="LITERAL"
+>Glacier2.AddUserToAllowCategories</TT
+> is
+defined with a non-zero value, the router automatically adds
+the user id of each session to this list.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>This property is deprecated and supported only for
+backward-compatibility. New applications should use
+<A
+HREF="x20508.html#GLACIER2.FILTER.CATEGORY.ACCEPT"
+>Glacier2.Filter.Category.Accept</A
+>.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20592"
+>Glacier2.Client.AlwaysBatch</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20594"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Client.AlwaysBatch=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20598"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router always batches queued oneway requests from
+clients to servers regardless of the value of their <TT
+CLASS="LITERAL"
+>_fwd</TT
+>
+contexts. This property is only relevant when <TT
+CLASS="LITERAL"
+>Glacier2.Client.Buffered=1</TT
+>.
+The default value is 0.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20605"
+>Glacier2.Client.Endpoints</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20607"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Client.Endpoints=<TT
+CLASS="REPLACEABLE"
+><I
+>endpoints</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20611"
+>Description</A
+></H3
+><P
+>Defines the client endpoints of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router.
+These endpoints must be accessible to router clients.
+Use of a secure transport is highly recommended.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20615"
+>Glacier2.Client.PublishedEndpoints</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20617"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Client.PublishedEndpoints=<TT
+CLASS="REPLACEABLE"
+><I
+>endpoints</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20621"
+>Description</A
+></H3
+><P
+>Defines the published client endpoints of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router.
+These endpoints must be accessible to router clients.
+Use of a secure transport is highly recommended.
+Refer to the description of the object adapter property
+<A
+HREF="x17798.html#ADAPTER.PUBLISHEDENDPOINTS"
+><TT
+CLASS="REPLACEABLE"
+><I
+>adapter</I
+></TT
+>.PublishedEndpoints</A
+>
+for more information.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20627"
+>Glacier2.Client.ForwardContext</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20629"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Client.ForwardContext=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20633"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router includes the context in forwarded requests from
+clients to servers. The default value is 0.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20638"
+>Glacier2.Client.SleepTime</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20640"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Client.SleepTime=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20644"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router sleeps for the specified number of milliseconds
+after forwarding all queued requests from a client. This prevents the
+client from flooding the router with requests.
+This property is only relevant when <TT
+CLASS="LITERAL"
+>Glacier2.Client.Buffered=1</TT
+>.
+The default value is 0.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20650"
+>Glacier2.Client.Trace.Override</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20652"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Client.Trace.Override=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20656"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router logs a trace message whenever a request was
+overridden. The default value is 0.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20661"
+>Glacier2.Client.Trace.Reject</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20663"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Client.Trace.Reject=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20667"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router logs a trace message whenever the router's configured
+filters reject a client's request. The default value is 0.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20672"
+>Glacier2.Client.Trace.Request</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20674"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Client.Trace.Request=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20678"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router logs a trace message for each request that is
+forwarded from a client. The default value is 0.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20683"
+>Glacier2.Client.Buffered</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20685"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Client.Buffered=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20689"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router queues incoming requests from clients and creates
+an extra thread for each client connection that processes the queued
+requests. If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to zero, the router
+operates in unbuffered mode in which a request is forwarded in the
+same thread that received it. The default value is 1.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>In unbuffered mode, twoway requests from a client are
+serialized, and nested twoway requests are not supported.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2CRYPTPASSWORDS"
+>Glacier2.CryptPasswords</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20699"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.CryptPasswords=<TT
+CLASS="REPLACEABLE"
+><I
+>file</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20703"
+>Description</A
+></H3
+><P
+>Specifies the filename of a <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> access control list. Each
+line of the file must contain a username and a password, separated
+by whitespace. The password must be a 13-character, crypt-encoded
+string. This property is ignored if
+<A
+HREF="x20508.html#GLACIER2PERMISSIONSVERIFIER"
+>Glacier2.PermissionsVerifier</A
+>
+is defined.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20708"
+>Glacier2.Filter.AdapterId.Accept</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20710"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Filter.AdapterId.Accept=<TT
+CLASS="REPLACEABLE"
+><I
+>string</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20714"
+>Description</A
+></H3
+><P
+>Specifies a space-separated list of adapter identifiers. If defined, the
+<SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router only allows requests to <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> objects with an adapter identifier
+that matches one of the entries in this list. </P
+><P
+>Identifiers that contain spaces must be enclosed in single or double quotes.
+Single or double quotes that appear within an identifier must be escaped with
+a leading backslash.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2.FILTER.ADDRESS.ACCEPT"
+>Glacier2.Filter.Address.Accept</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20722"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Filter.Address.Accept=<TT
+CLASS="REPLACEABLE"
+><I
+>string</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20726"
+>Description</A
+></H3
+><P
+>Specifies a space-separated list of address-port pairs.
+When defined, the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router only allows requests to <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+>
+objects through proxies that contain network endpoint information that
+matches an address-port pair listed in this property. If not defined,
+the value defaults to <TT
+CLASS="LITERAL"
+>*</TT
+>, which indicates that any
+network address is permitted. Requests accepted by this property may
+be rejected by the
+<A
+HREF="x20508.html#GLACIER2.FILTER.ADDRESS.REJECT"
+>Glacier2.Filter.Address.Reject</A
+>
+property.</P
+><P
+>Each pair is of the form <TT
+CLASS="REPLACEABLE"
+><I
+>address:port</I
+></TT
+>. The
+address or port number portion can include wildcards ('*') or value ranges
+or groups. Ranges and groups are in the form of [value1, value2, value3...]
+and/or [value1-value2]. Wildcards, ranges and groups may appear anywhere in
+the address-port pair string. </P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2.FILTER.ADDRESS.REJECT"
+>Glacier2.Filter.Address.Reject</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20737"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Filter.Address.Reject=<TT
+CLASS="REPLACEABLE"
+><I
+>string</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20741"
+>Description</A
+></H3
+><P
+>Specifies a space-separated list of address-port pairs.
+When defined, the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router rejects requests to <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> objects
+through proxies that contain network endpoint information that matches
+an address-port pair listed in this property. If not set, the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+>
+router allows requests to any network address unless the
+<A
+HREF="x20508.html#GLACIER2.FILTER.ADDRESS.ACCEPT"
+>Glacier2.Filter.Address.Accept</A
+>
+property is set, in which case requests will be accepted or rejected based on the
+<A
+HREF="x20508.html#GLACIER2.FILTER.ADDRESS.ACCEPT"
+>Glacier2.Filter.Address.Accept</A
+>
+property. If both the
+<A
+HREF="x20508.html#GLACIER2.FILTER.ADDRESS.ACCEPT"
+>Glacier2.Filter.Address.Accept</A
+> and
+<TT
+CLASS="LITERAL"
+>Glacier2.Filter.Address.Reject</TT
+> properties are defined,
+the <TT
+CLASS="LITERAL"
+>Glacier2.Filter.Address.Reject</TT
+> property takes
+precedence.</P
+><P
+>Each pair is of the form <TT
+CLASS="REPLACEABLE"
+><I
+>address:port</I
+></TT
+>. The
+address or port number portion can include wildcards ('*') or value ranges
+or groups. Ranges and groups are in the form of [value1, value2, value3...]
+and/or [value1-value2]. Wildcards, ranges and groups may appear anywhere
+in the address-port pair string. </P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2.FILTER.CATEGORY.ACCEPT"
+>Glacier2.Filter.Category.Accept</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20756"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Filter.Category.Accept=<TT
+CLASS="REPLACEABLE"
+><I
+>string</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20760"
+>Description</A
+></H3
+><P
+>Specifies a space-separated list of identity categories. If defined, the
+<SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router only allows requests to <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> objects with an identity
+that matches one of the categories in this list. If
+<A
+HREF="x20508.html#GLACIER2.ADDUSERTOALLOWCATEGORIES"
+>Glacier2.AddUserToAllowCategories</A
+>
+is defined with a non-zero value, the router automatically adds the username of each
+session to this list.</P
+><P
+>Categories that contain spaces must be enclosed in single or double quotes.
+Single or double quotes that appear within a category must be escaped with
+a leading backslash.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20767"
+>Glacier2.Filter.Identity.Accept</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20769"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Filter.Identity.Accept=<TT
+CLASS="REPLACEABLE"
+><I
+>string</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20773"
+>Description</A
+></H3
+><P
+>Specifies a space-separated list of identities. If defined, the
+<SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router only allows requests to <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> objects with an identity
+that matches one of the entries in this list. </P
+><P
+>Identities that contain spaces must be enclosed in single or double quotes.
+Single or double quotes that appear within an identity must be escaped with
+a leading backslash.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20779"
+>Glacier2.Filter.ProxySizeMax</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20781"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Filter.ProxySizeMax=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20785"
+>Description</A
+></H3
+><P
+>&#13;If set, the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router rejects requests whose stringified proxies are
+longer than <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+>. This helps secure the system
+against attack. If unset, <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> will accept requests using proxies of any
+length.&#13;</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2.INSTANCENAME"
+>Glacier2.InstanceName</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20793"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.InstanceName=<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20797"
+>Description</A
+></H3
+><P
+>Specifies a default identity category for the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> objects.
+If defined, the identity of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> admin interface becomes
+<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+><TT
+CLASS="LITERAL"
+>/admin</TT
+> and the
+identity of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router interface becomes
+<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+><TT
+CLASS="LITERAL"
+>/router</TT
+>. The
+deprecated properties <TT
+CLASS="LITERAL"
+>Glacier2.AdminIdentity</TT
+>
+and <TT
+CLASS="LITERAL"
+>Glacier2.RouterIdentity</TT
+> take precedence.</P
+><P
+>If not otherwise defined, the default identities of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+>
+objects are <TT
+CLASS="LITERAL"
+>Glacier2/admin</TT
+> and
+<TT
+CLASS="LITERAL"
+>Glacier2/router</TT
+>.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2PERMISSIONSVERIFIER"
+>Glacier2.PermissionsVerifier</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20815"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.PermissionsVerifier=<TT
+CLASS="REPLACEABLE"
+><I
+>proxy</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20819"
+>Description</A
+></H3
+><P
+>Specifies the proxy of an object that implements the
+<TT
+CLASS="LITERAL"
+>Glacier2::PermissionsVerifier</TT
+> interface.
+The router invokes this proxy to validate the username and
+password of each new session. Sessions created from a secure
+connection are verified by the object specified in
+<A
+HREF="x20508.html#GLACIER2SSLPERMISSIONSVERIFIER"
+>Glacier2.SSLPermissionsVerifier</A
+>.
+For simple configurations, you can specify the name of a
+password file using
+<A
+HREF="x20508.html#GLACIER2CRYPTPASSWORDS"
+>Glacier2.CryptPasswords</A
+>.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20825"
+>Glacier2.RouterIdentity</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20827"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.RouterIdentity=<TT
+CLASS="REPLACEABLE"
+><I
+>identity</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20831"
+>Description</A
+></H3
+><P
+>The identity of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router interface. If not specified, the
+default value <TT
+CLASS="LITERAL"
+>Glacier2/router</TT
+> is used.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>This property is deprecated and supported only for
+backward-compatibility. New applications should use
+<A
+HREF="x20508.html#GLACIER2.INSTANCENAME"
+>Glacier2.InstanceName</A
+>.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2.ROUTINGTABLE.MAXSIZE"
+>Glacier2.RoutingTable.MaxSize</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20841"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.RoutingTable.MaxSize=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20845"
+>Description</A
+></H3
+><P
+>This property sets the size of the router's routing table to
+<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> entries. If more proxies are
+added to the table than this value, proxies are evicted from
+the table on a least-recently used basis.</P
+><P
+>Clients based on Ice version 3.1 and later automatically retry operation calls
+on evicted proxies and transparently re-add such proxies to the table.
+Clients based on Ice versions earlier than 3.1 receive an
+<TT
+CLASS="LITERAL"
+>ObjectNotExistException</TT
+> for invocations on evicted
+proxies. For such older clients, <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> must
+be set to a sufficiently large value to prevent these clients from failing.</P
+><P
+>The default size of the routing table is 1000.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20853"
+>Glacier2.Server.AlwaysBatch</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20855"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Server.AlwaysBatch=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20859"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router always batches queued oneway requests from
+servers to clients regardless of the value of their <TT
+CLASS="LITERAL"
+>_fwd</TT
+>
+contexts. This property is only relevant when <TT
+CLASS="LITERAL"
+>Glacier2.Server.Buffered=1</TT
+>.
+The default value is 0.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20866"
+>Glacier2.Server.Endpoints</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20868"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Server.Endpoints=<TT
+CLASS="REPLACEABLE"
+><I
+>endpoints</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20872"
+>Description</A
+></H3
+><P
+>Defines the server endpoints of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router.
+These endpoints must be accessible to back end servers.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20876"
+>Glacier2.Server.PublishedEndpoints</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20878"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Server.PublishedEndpoints=<TT
+CLASS="REPLACEABLE"
+><I
+>endpoints</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20882"
+>Description</A
+></H3
+><P
+>Defines the published server endpoints of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router.
+These endpoints must be accessible to back end servers.
+Refer to the description of the object adapter property
+<A
+HREF="x17798.html#ADAPTER.PUBLISHEDENDPOINTS"
+><TT
+CLASS="REPLACEABLE"
+><I
+>adapter</I
+></TT
+>.PublishedEndpoints</A
+>
+for more information.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20888"
+>Glacier2.Server.ForwardContext</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20890"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Server.ForwardContext=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20894"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router includes the context in forwarded requests from
+servers to clients. The default value is 0.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20899"
+>Glacier2.Server.SleepTime</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20901"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Server.SleepTime=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20905"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router sleeps for the specified number of milliseconds
+after forwarding all queued requests from a server. This prevents the
+server from flooding the router with requests.
+This property is only relevant when <TT
+CLASS="LITERAL"
+>Glacier2.Server.Buffered=1</TT
+>.
+The default value is 0.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20911"
+>Glacier2.Server.Trace.Override</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20913"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Server.Trace.Override=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20917"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router logs a trace message whenever a request was
+overridden. The default value is 0.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20922"
+>Glacier2.Server.Trace.Request</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20924"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Server.Trace.Request=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20928"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router logs a trace message for each request that is
+forwarded from a server. The default value is 0.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20933"
+>Glacier2.Server.Buffered</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20935"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Server.Buffered=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20939"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router queues incoming requests from servers and creates
+an extra thread for each servers connection that processes the queued
+requests. If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to zero, the router
+operates in unbuffered mode in which a request is forwarded in the
+same thread that received it. The default value is 1.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>In unbuffered mode, twoway requests from a server are
+serialized, and nested twoway requests are not supported.</P
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Unbuffered mode for server requests is susceptible to
+a denial-of-service attack from hostile clients. Use caution!</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20949"
+>Glacier2.SessionManager</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20951"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.SessionManager=<TT
+CLASS="REPLACEABLE"
+><I
+>proxy</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20955"
+>Description</A
+></H3
+><P
+>Specifies the proxy of an object that implements the
+<TT
+CLASS="LITERAL"
+>Glacier2::SessionManager</TT
+> interface.
+The router invokes this proxy to create a new session
+for a client, but only after the router validates the
+client's username and password.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20959"
+>Glacier2.SSLSessionManager</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20961"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.SSLSessionManager=<TT
+CLASS="REPLACEABLE"
+><I
+>proxy</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20965"
+>Description</A
+></H3
+><P
+>Specifies the proxy of an object that implements the
+<TT
+CLASS="LITERAL"
+>Glacier2::SSLSessionManager</TT
+> interface. The router
+invokes this proxy to create a new session for a client that has called
+<TT
+CLASS="LITERAL"
+>createSessionFromSecureConnection</TT
+>.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2SSLPERMISSIONSVERIFIER"
+>Glacier2.SSLPermissionsVerifier</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20972"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.SSLPermissionsVerifier=<TT
+CLASS="REPLACEABLE"
+><I
+>proxy</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20976"
+>Description</A
+></H3
+><P
+>Specifies the proxy of an object that implements the
+<TT
+CLASS="LITERAL"
+>Glacier2::SSLPermissionsVerifier</TT
+> interface.
+The router invokes this proxy to verify the credentials of clients that
+attempt to create a session from a secure connection. Sessions created
+with a username and password are verified by the object specified in
+<A
+HREF="x20508.html#GLACIER2PERMISSIONSVERIFIER"
+>Glacier2.PermissionsVerifier</A
+>.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20981"
+>Glacier2.SessionTimeout</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20983"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.SessionTimeout=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20987"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+a client's session with the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router expires after the specified
+<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> seconds of inactivity.
+The default value is 0, meaning sessions do not expire due to inactivity.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>It is important that <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> be chosen
+so that client sessions do not expire prematurely.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN20996"
+>Glacier2.Trace.RoutingTable</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN20998"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Trace.RoutingTable=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN21002"
+>Description</A
+></H3
+><P
+>The routing table trace level:
+<DIV
+CLASS="INFORMALTABLE"
+><P
+></P
+><A
+NAME="AEN21005"
+></A
+><TABLE
+BORDER="1"
+BGCOLOR="#E0E0E0"
+CELLSPACING="0"
+CELLPADDING="4"
+CLASS="CALSTABLE"
+><TBODY
+><TR
+><TD
+>0</TD
+><TD
+>No routing table trace. (default)</TD
+></TR
+><TR
+><TD
+>1</TD
+><TD
+>Logs a message for each proxy that is added to the routing table.</TD
+></TR
+><TR
+><TD
+>2</TD
+><TD
+>Logs a message for each proxy that is evicted from the routing table (see
+<A
+HREF="x20508.html#GLACIER2.ROUTINGTABLE.MAXSIZE"
+>Glacier2.RoutingTable.MaxSize</A
+>).</TD
+></TR
+><TR
+><TD
+>3</TD
+><TD
+>Combines the output for trace levels 1 and 2.</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN21021"
+>Glacier2.Trace.Session</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN21023"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier2.Trace.Session=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN21027"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> router logs trace messages about session-related activities.
+The default value is 0.</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x20209.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x21032.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceStorm</SPAN
+></SPAN
+> Properties</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c17556.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Freeze</SPAN
+></SPAN
+> Properties</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

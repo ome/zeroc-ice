@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Ice::OperationMode</TITLE
+>Ice::ObjectNotFoundException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
@@ -13,11 +13,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Ice::ObjectNotFoundException"
-HREF="x4791.html"><LINK
+TITLE="Ice::ObjectNotExistException"
+HREF="x4789.html"><LINK
 REL="NEXT"
-TITLE="Ice::OperationNotExistException"
-HREF="x4872.html"></HEAD
+TITLE="Ice::OperationMode"
+HREF="x4814.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -45,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x4791.html"
+HREF="x4789.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -59,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x4872.html"
+HREF="x4814.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -73,10 +73,10 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICE.OPERATIONMODE"
+NAME="ICE.OBJECTNOTFOUNDEXCEPTION"
 ><TT
 CLASS="LITERAL"
->Ice::OperationMode</TT
+>Ice::ObjectNotFoundException</TT
 ></A
 ></H1
 ><DIV
@@ -95,250 +95,32 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->enum <SPAN
-CLASS="TYPE"
->OperationMode</SPAN
+>exception <CODE
+CLASS="CLASSNAME"
+>ObjectNotFoundException</CODE
 ></PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->The <A
-HREF="x4799.html"
-><SPAN
-CLASS="TYPE"
->OperationMode</SPAN
-></A
-> determines the skeleton signature (for C++), as
-well as the retry behavior of the Ice run time for an operation
-invocation in case of a (potentially) recoverable error.</P
+>This exception is raised if an object cannot be found.</P
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN4809"
+NAME="AEN4807"
 >Used By</A
 ></H3
 ><P
 >	    <A
-HREF="x2296.html#ICE.CURRENT.MODE"
-><SPAN
-CLASS="TYPE"
->Current::mode</SPAN
+HREF="x2989.html#ICE.LOCATOR.FINDOBJECTBYID"
+><TT
+CLASS="FUNCTION"
+>Locator::findObjectById</TT
 ></A
 ></P
 ></DIV
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN4816"
->Enumerator Index</A
-></H3
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
-><A
-HREF="x4799.html#ICE.NORMAL"
-><CODE
-CLASS="CONSTANT"
->Normal</CODE
-></A
-></DT
-><DD
-><P
->Ordinary operations have <A
-HREF="x4799.html#ICE.NORMAL"
-><CODE
-CLASS="CONSTANT"
->Normal</CODE
-></A
-> mode.</P
-></DD
-><DT
-><A
-HREF="x4799.html#ICE.NONMUTATING"
-><CODE
-CLASS="CONSTANT"
->Nonmutating</CODE
-></A
-></DT
-><DD
-><P
->Operations that use the Slice <A
-HREF="x4799.html#ICE.NONMUTATING"
-><CODE
-CLASS="CONSTANT"
->Nonmutating</CODE
-></A
-> keyword must not
-modify object state.</P
-></DD
-><DT
-><A
-HREF="x4799.html#ICE.IDEMPOTENT"
-><CODE
-CLASS="CONSTANT"
->Idempotent</CODE
-></A
-></DT
-><DD
-><P
->Operations that use the Slice <A
-HREF="x4799.html#ICE.IDEMPOTENT"
-><CODE
-CLASS="CONSTANT"
->Idempotent</CODE
-></A
-> keyword can modify
-object state, but invoking an operation twice in a row must
-result in the same object state as invoking it once.</P
-></DD
-></DL
-></DIV
-></DIV
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICE.NORMAL"
-><TT
-CLASS="LITERAL"
->Normal</TT
-></A
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><CODE
-CLASS="CONSTANT"
->Normal</CODE
-></PRE
-></TD
-></TR
-></TABLE
-><P
->Ordinary operations have <A
-HREF="x4799.html#ICE.NORMAL"
-><CODE
-CLASS="CONSTANT"
->Normal</CODE
-></A
-> mode.  These operations
-modify object state; invoking such an operation twice in a row
-has different semantics than invoking it once. The Ice run time
-guarantees that it will not violate at-most-once semantics for
-<A
-HREF="x4799.html#ICE.NORMAL"
-><CODE
-CLASS="CONSTANT"
->Normal</CODE
-></A
-> operations.</P
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICE.NONMUTATING"
-><TT
-CLASS="LITERAL"
->Nonmutating</TT
-></A
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><CODE
-CLASS="CONSTANT"
->Nonmutating</CODE
-></PRE
-></TD
-></TR
-></TABLE
-><P
->Operations that use the Slice <A
-HREF="x4799.html#ICE.NONMUTATING"
-><CODE
-CLASS="CONSTANT"
->Nonmutating</CODE
-></A
-> keyword must not
-modify object state. For C++, nonmutating operations generate
-<TT
-CLASS="LITERAL"
->const</TT
-> member functions in the skeleton. In addition, the Ice
-run time will attempt to transparently recover from certain
-run-time errors by re-issuing a failed request and propagate
-the failure to the application only if the second attempt
-fails.</P
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICE.IDEMPOTENT"
-><TT
-CLASS="LITERAL"
->Idempotent</TT
-></A
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><CODE
-CLASS="CONSTANT"
->Idempotent</CODE
-></PRE
-></TD
-></TR
-></TABLE
-><P
->Operations that use the Slice <A
-HREF="x4799.html#ICE.IDEMPOTENT"
-><CODE
-CLASS="CONSTANT"
->Idempotent</CODE
-></A
-> keyword can modify
-object state, but invoking an operation twice in a row must
-result in the same object state as invoking it once.  For
-example, <TT
-CLASS="LITERAL"
->x = 1</TT
-> is an idempotent statement,
-whereas <TT
-CLASS="LITERAL"
->x += 1</TT
-> is not. For idempotent
-operations, the Ice run-time uses the same retry behavior
-as for nonmutating operations in case of a potentially
-recoverable error.</P
 ></DIV
 ></DIV
 ><DIV
@@ -357,7 +139,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x4791.html"
+HREF="x4789.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -375,7 +157,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x4872.html"
+HREF="x4814.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -387,7 +169,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::ObjectNotFoundException</TT
+>Ice::ObjectNotExistException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -404,7 +186,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::OperationNotExistException</TT
+>Ice::OperationMode</TT
 ></TD
 ></TR
 ></TABLE

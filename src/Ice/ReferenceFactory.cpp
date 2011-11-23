@@ -31,7 +31,7 @@ void IceInternal::decRef(::IceInternal::ReferenceFactory* p) { p->__decRef(); }
 ReferencePtr
 IceInternal::ReferenceFactory::copy(const Reference* r) const
 {
-    Mutex::Lock sync(*this);
+    IceUtil::Mutex::Lock sync(*this);
 
     if(!_instance)
     {
@@ -57,7 +57,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
 				      const RouterInfoPtr& routerInfo,
 				      bool collocationOptimization)
 {
-    Mutex::Lock sync(*this);
+    IceUtil::Mutex::Lock sync(*this);
 
     if(!_instance)
     {
@@ -88,7 +88,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
 				      bool collocationOptimization,
 				      int locatorCacheTimeout)
 {
-    Mutex::Lock sync(*this);
+    IceUtil::Mutex::Lock sync(*this);
 
     if(!_instance)
     {
@@ -114,7 +114,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
 				      Reference::Mode mode,
 				      const vector<Ice::ConnectionIPtr>& fixedConnections)
 {
-    Mutex::Lock sync(*this);
+    IceUtil::Mutex::Lock sync(*this);
 
     if(!_instance)
     {
@@ -417,7 +417,7 @@ IceInternal::ReferenceFactory::create(const string& str)
 
     if(beg == string::npos)
     {
-	return create(ident, _instance->initializationData().defaultContext, facet, mode, secure, "", routerInfo,
+	return create(ident, _instance->getDefaultContext(), facet, mode, secure, "", routerInfo,
 		      locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization, 
 		      _instance->defaultsAndOverrides()->defaultLocatorCacheTimeout);
     }
@@ -471,7 +471,7 @@ IceInternal::ReferenceFactory::create(const string& str)
 		}
 	    }
 
-	    return create(ident, _instance->initializationData().defaultContext, facet, mode, secure, endpoints, 
+	    return create(ident, _instance->getDefaultContext(), facet, mode, secure, endpoints, 
 	    		  routerInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization);
 	    break;
 	}
@@ -522,7 +522,7 @@ IceInternal::ReferenceFactory::create(const string& str)
 		adapter = tmpAdapter;
             }
 	    
-	    return create(ident, _instance->initializationData().defaultContext, facet, mode, secure, adapter,
+	    return create(ident, _instance->getDefaultContext(), facet, mode, secure, adapter,
 	    		  routerInfo, locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization,
 			  _instance->defaultsAndOverrides()->defaultLocatorCacheTimeout);
 	    break;
@@ -594,13 +594,13 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
 	    EndpointIPtr endpoint = _instance->endpointFactoryManager()->read(s);
 	    endpoints.push_back(endpoint);
 	}
-	return create(ident, _instance->initializationData().defaultContext, facet, mode, secure, endpoints, 
+	return create(ident, _instance->getDefaultContext(), facet, mode, secure, endpoints, 
 		      routerInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization);
     }
     else
     {
 	s->read(adapterId);
-	return create(ident, _instance->initializationData().defaultContext, facet, mode, secure, adapterId,
+	return create(ident, _instance->getDefaultContext(), facet, mode, secure, adapterId,
 	  	      routerInfo, locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization,
 		      _instance->defaultsAndOverrides()->defaultLocatorCacheTimeout);
     }
@@ -643,7 +643,7 @@ IceInternal::ReferenceFactory::ReferenceFactory(const InstancePtr& instance, con
 void
 IceInternal::ReferenceFactory::destroy()
 {
-    Mutex::Lock sync(*this);
+    IceUtil::Mutex::Lock sync(*this);
 
     if(!_instance)
     {

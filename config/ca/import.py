@@ -22,7 +22,7 @@ import getpass
 # standard tarball installs.
 #
 for bindir in [os.path.dirname(sys.argv[0]), os.path.join(os.getenv("ICE_HOME"), "bin"), ".", "/usr/bin", \
-	       "/opt/Ice-3.1.0/bin"]:
+	       "/opt/Ice-3.1.1/bin"]:
     bindir = os.path.normpath(bindir)
     if os.path.exists(os.path.join(bindir, "cautil.py")):
         break

@@ -140,7 +140,12 @@ public:
     virtual bool
     authorize(string& reason, const Ice::Context& ctx)
     {
-	return _verifier->checkPermissions(_user, _password, reason, ctx);
+	if(_verifier)
+	{
+	    return _verifier->checkPermissions(_user, _password, reason, ctx);
+	}
+	reason = "No PermissionsVerifier is available";
+	return false;
     }
 
 private:
@@ -162,7 +167,13 @@ public:
     virtual bool
     authorize(string& reason, const Ice::Context& ctx)
     {
-	return _verifier->authorize(_info, reason, ctx);
+	if(_verifier)
+	{
+	    return _verifier->authorize(_info, reason, ctx);
+	}
+
+	reason = "No SSLPermissionsVerifier is available";
+	return false;
     }
 
 private:
@@ -245,14 +256,19 @@ Glacier2::SessionRouterI::SessionRouterI(const ObjectAdapterPtr& clientAdapter,
     // This session router is used directly as servant for the main
     // Glacier2 router Ice object.
     //
+    Identity id;
     const char* routerIdProperty = "Glacier2.RouterIdentity";
     string routerId = _properties->getProperty(routerIdProperty);
-    if(routerId.empty())
+    if(!routerId.empty())
+    {
+        id = clientAdapter->getCommunicator()->stringToIdentity(routerId);
+    }
+    else
     {
         const char* instanceNameProperty = "Glacier2.InstanceName";
-        routerId = _properties->getPropertyWithDefault(instanceNameProperty, "Glacier2") + "/router";
+        id.category = _properties->getPropertyWithDefault(instanceNameProperty, "Glacier2");
+	id.name = "router";
     }
-    Identity id = clientAdapter->getCommunicator()->stringToIdentity(routerId);
     _clientAdapter->add(this, id);
 
     //

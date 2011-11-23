@@ -1037,49 +1037,6 @@ BuildCmds= \
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\slice\Ice\Communicator.ice
-
-!IF  "$(CFG)" == "ice - Win32 Release"
-
-USERDEP__COMMU="..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
-# Begin Custom Build
-InputPath=..\..\slice\Ice\Communicator.ice
-
-BuildCmds= \
-	..\..\bin\slice2cpp.exe --ice -DICE_CPP --dll-export ICE_API --include-dir Ice -I../../slice ../../slice/Ice/Communicator.ice \
-	move Communicator.h ..\..\include\ice \
-	
-
-"..\..\include\ice\Communicator.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"Communicator.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-# End Custom Build
-
-!ELSEIF  "$(CFG)" == "ice - Win32 Debug"
-
-USERDEP__COMMU="..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
-# Begin Custom Build
-InputPath=..\..\slice\Ice\Communicator.ice
-
-BuildCmds= \
-	..\..\bin\slice2cpp.exe --ice -DICE_CPP --dll-export ICE_API --include-dir Ice -I../../slice ../../slice/Ice/Communicator.ice \
-	move Communicator.h ..\..\include\ice \
-	
-
-"..\..\include\ice\Communicator.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"Communicator.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-# End Custom Build
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\slice\Ice\CommunicatorF.ice
 
 !IF  "$(CFG)" == "ice - Win32 Release"

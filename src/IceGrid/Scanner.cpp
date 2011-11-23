@@ -540,7 +540,8 @@ using namespace IceGrid;
 
 #define YY_INPUT(buf, result, maxSize) parser->getInput(buf, result, maxSize)
 
-#line 543 "lex.yy.c"
+#define YY_NEVER_INTERACTIVE 1
+#line 544 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -694,10 +695,10 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 37 "Scanner.l"
+#line 38 "Scanner.l"
 
 
-#line 700 "lex.yy.c"
+#line 701 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -786,7 +787,7 @@ case 1:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 39 "Scanner.l"
+#line 40 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
@@ -796,7 +797,7 @@ case 2:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 43 "Scanner.l"
+#line 44 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
@@ -806,7 +807,7 @@ case 3:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 47 "Scanner.l"
+#line 48 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
@@ -816,14 +817,14 @@ case 4:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 51 "Scanner.l"
+#line 52 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 55 "Scanner.l"
+#line 56 "Scanner.l"
 {
     // C++-style comment
     int c;
@@ -840,7 +841,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 69 "Scanner.l"
+#line 70 "Scanner.l"
 {
     // C-style comment
     while(true)
@@ -872,252 +873,252 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 98 "Scanner.l"
+#line 99 "Scanner.l"
 {
     return ICE_GRID_HELP;
 }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 102 "Scanner.l"
+#line 103 "Scanner.l"
 {
     return ICE_GRID_EXIT;
 }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 106 "Scanner.l"
+#line 107 "Scanner.l"
 {
     return ICE_GRID_APPLICATION;
 }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 110 "Scanner.l"
+#line 111 "Scanner.l"
 {
     return ICE_GRID_SERVER;
 }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 114 "Scanner.l"
+#line 115 "Scanner.l"
 {
     return ICE_GRID_ADAPTER;
 }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 118 "Scanner.l"
+#line 119 "Scanner.l"
 {
     return ICE_GRID_ADD;
 }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 122 "Scanner.l"
+#line 123 "Scanner.l"
 {
     return ICE_GRID_REMOVE;
 }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 126 "Scanner.l"
+#line 127 "Scanner.l"
 {
     return ICE_GRID_LIST;
 }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 130 "Scanner.l"
+#line 131 "Scanner.l"
 {
     return ICE_GRID_SHUTDOWN;
 }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 134 "Scanner.l"
+#line 135 "Scanner.l"
 {
     return ICE_GRID_DESCRIBE;
 }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 138 "Scanner.l"
+#line 139 "Scanner.l"
 {
     return ICE_GRID_STATE;
 }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 142 "Scanner.l"
+#line 143 "Scanner.l"
 {
     return ICE_GRID_PID;
 }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 146 "Scanner.l"
+#line 147 "Scanner.l"
 {
     return ICE_GRID_ENDPOINTS;
 }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 150 "Scanner.l"
+#line 151 "Scanner.l"
 {
     return ICE_GRID_START;
 }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 154 "Scanner.l"
+#line 155 "Scanner.l"
 {
     return ICE_GRID_PATCH;
 }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 158 "Scanner.l"
+#line 159 "Scanner.l"
 {
     return ICE_GRID_STOP;
 }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 162 "Scanner.l"
+#line 163 "Scanner.l"
 {
     return ICE_GRID_SIGNAL;
 }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 166 "Scanner.l"
+#line 167 "Scanner.l"
 {
     return ICE_GRID_STDOUT;
 }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 170 "Scanner.l"
+#line 171 "Scanner.l"
 {
     return ICE_GRID_STDERR;
 }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 174 "Scanner.l"
+#line 175 "Scanner.l"
 {
     return ICE_GRID_NODE;
 }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 178 "Scanner.l"
+#line 179 "Scanner.l"
 {
     return ICE_GRID_PING;
 }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 182 "Scanner.l"
+#line 183 "Scanner.l"
 {
     return ICE_GRID_LOAD;
 }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 186 "Scanner.l"
+#line 187 "Scanner.l"
 {
     return ICE_GRID_ACTIVATION;
 }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 190 "Scanner.l"
+#line 191 "Scanner.l"
 {
     return ICE_GRID_OBJECT;
 }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 194 "Scanner.l"
+#line 195 "Scanner.l"
 {
     return ICE_GRID_FIND;
 }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 198 "Scanner.l"
+#line 199 "Scanner.l"
 {
     return ICE_GRID_SHOW;
 }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 202 "Scanner.l"
+#line 203 "Scanner.l"
 {
     return ICE_GRID_COPYING;
 }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 206 "Scanner.l"
+#line 207 "Scanner.l"
 {
     return ICE_GRID_WARRANTY;
 }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 210 "Scanner.l"
+#line 211 "Scanner.l"
 {
     return ICE_GRID_DIFF;
 }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 214 "Scanner.l"
+#line 215 "Scanner.l"
 {
     return ICE_GRID_UPDATE;
 }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 218 "Scanner.l"
+#line 219 "Scanner.l"
 {
     return ICE_GRID_INSTANTIATE;
 }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 222 "Scanner.l"
+#line 223 "Scanner.l"
 {
     return ICE_GRID_TEMPLATE;
 }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 226 "Scanner.l"
+#line 227 "Scanner.l"
 {
     return ICE_GRID_SERVICE;
 }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 230 "Scanner.l"
+#line 231 "Scanner.l"
 {
     return ICE_GRID_ENABLE;
 }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 234 "Scanner.l"
+#line 235 "Scanner.l"
 {
     return ICE_GRID_DISABLE;
 }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 238 "Scanner.l"
+#line 239 "Scanner.l"
 {
     size_t len = strlen(yytext);
     for(size_t i = 0; i < len; ++i)
@@ -1135,7 +1136,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 253 "Scanner.l"
+#line 254 "Scanner.l"
 {
     size_t len = strlen(yytext);
     for(size_t i = 0; i < len; ++i)
@@ -1150,7 +1151,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 265 "Scanner.l"
+#line 266 "Scanner.l"
 {
     // "..."-type strings
     string s;
@@ -1232,7 +1233,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 344 "Scanner.l"
+#line 345 "Scanner.l"
 {
     // '...'-type strings
     string s;
@@ -1265,7 +1266,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 374 "Scanner.l"
+#line 375 "Scanner.l"
 {
     // Simple strings
     string s;
@@ -1292,10 +1293,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 398 "Scanner.l"
+#line 399 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 1298 "lex.yy.c"
+#line 1299 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2179,5 +2180,5 @@ int main()
 	return 0;
 	}
 #endif
-#line 398 "Scanner.l"
+#line 399 "Scanner.l"
 

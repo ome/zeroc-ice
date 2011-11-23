@@ -11,6 +11,7 @@
 #include <IceUtil/UUID.h>
 #include <IceUtil/Options.h>
 #include <Ice/Service.h>
+#include <Glacier2/RouterI.h>
 #include <Glacier2/Session.h>
 #include <Glacier2/SessionRouterI.h>
 #include <Glacier2/CryptPermissionsVerifierI.h>
@@ -78,7 +79,7 @@ Glacier2::RouterService::start(int argc, char* argv[])
     vector<string> args;
     try
     {
-    	args = opts.parse(argc, argv);
+    	args = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtil::Options::BadOpt& e)
     {
@@ -268,14 +269,19 @@ Glacier2::RouterService::start(int argc, char* argv[])
     //
     if(adminAdapter)
     {
+    	Identity id;
 	const string adminIdProperty = "Glacier2.AdminIdentity";
 	string adminId = properties->getProperty(adminIdProperty);
-	if(adminId.empty())
+	if(!adminId.empty())
+	{
+	    id = communicator()->stringToIdentity(adminId);
+	}
+	else
 	{
 	    const string instanceNameProperty = "Glacier2.InstanceName";
-	    adminId = properties->getPropertyWithDefault(instanceNameProperty, "Glacier2") + "/admin";
+	    id.category = properties->getPropertyWithDefault(instanceNameProperty, "Glacier2");
+	    id.name = "admin";
 	}
-	Identity id = communicator()->stringToIdentity(adminId);
 	adminAdapter->add(new AdminI(communicator()), id);
     }
 

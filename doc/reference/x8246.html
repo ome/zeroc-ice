@@ -1,0 +1,500 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Glacier2</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="IceBox::ServiceManager"
+HREF="x8194.html"><LINK
+REL="NEXT"
+TITLE="Glacier2::Admin"
+HREF="x8368.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x8194.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x8368.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="GLACIER2"
+><TT
+CLASS="LITERAL"
+>Glacier2</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN8249"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>module <CODE
+CLASS="CLASSNAME"
+>Glacier2</CODE
+></PRE
+></TD
+></TR
+></TABLE
+><P
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> is a firewall solution for Ice. <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> authenticates
+and filters client requests and allows callbacks to the client in a
+secure fashion. In combination with <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+>, <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> provides a
+security solution that is both non-intrusive and easy to configure.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8258"
+>Interface Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x8368.html"
+><SPAN
+CLASS="TYPE"
+>Admin</SPAN
+></A
+></DT
+><DD
+><P
+>The <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> administrative interface.</P
+></DD
+><DT
+><A
+HREF="x8444.html"
+><SPAN
+CLASS="TYPE"
+>IdentitySet</SPAN
+></A
+></DT
+><DD
+><P
+>An object for managing the set of object identity constraints on a
+<A
+HREF="x9065.html"
+><CODE
+CLASS="CLASSNAME"
+>Session</CODE
+></A
+>.</P
+></DD
+><DT
+><A
+HREF="x8573.html"
+><SPAN
+CLASS="TYPE"
+>PermissionsVerifier</SPAN
+></A
+></DT
+><DD
+><P
+>The <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> permissions verifier.</P
+></DD
+><DT
+><A
+HREF="x8632.html"
+><SPAN
+CLASS="TYPE"
+>Router</SPAN
+></A
+></DT
+><DD
+><P
+>The <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> specialization of the standard <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> router
+interface.</P
+></DD
+><DT
+><A
+HREF="x8935.html"
+><SPAN
+CLASS="TYPE"
+>SSLPermissionsVerifier</SPAN
+></A
+></DT
+><DD
+><P
+>The SSL <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> permissions verifier.</P
+></DD
+><DT
+><A
+HREF="x8995.html"
+><SPAN
+CLASS="TYPE"
+>SSLSessionManager</SPAN
+></A
+></DT
+><DD
+><P
+>The session manager for SSL authenticated users that is
+responsible for managing <A
+HREF="x9065.html"
+><CODE
+CLASS="CLASSNAME"
+>Session</CODE
+></A
+> objects.</P
+></DD
+><DT
+><A
+HREF="x9065.html"
+><SPAN
+CLASS="TYPE"
+>Session</SPAN
+></A
+></DT
+><DD
+><P
+>A client-visible session object, which is tied to the lifecycle of
+a <A
+HREF="x8632.html"
+><CODE
+CLASS="CLASSNAME"
+>Router</CODE
+></A
+>.</P
+></DD
+><DT
+><A
+HREF="x9113.html"
+><SPAN
+CLASS="TYPE"
+>SessionControl</SPAN
+></A
+></DT
+><DD
+><P
+>An administrative session control object, which is tied to the
+lifecycle of a <A
+HREF="x9065.html"
+><CODE
+CLASS="CLASSNAME"
+>Session</CODE
+></A
+>.</P
+></DD
+><DT
+><A
+HREF="x9194.html"
+><SPAN
+CLASS="TYPE"
+>SessionManager</SPAN
+></A
+></DT
+><DD
+><P
+>The session manager for username/password authenticated users that
+is responsible for managing <A
+HREF="x9065.html"
+><CODE
+CLASS="CLASSNAME"
+>Session</CODE
+></A
+> objects.</P
+></DD
+><DT
+><A
+HREF="x9285.html"
+><SPAN
+CLASS="TYPE"
+>StringSet</SPAN
+></A
+></DT
+><DD
+><P
+>An object for managing the set of identity constraints for specific
+parts of object identity on a
+<A
+HREF="x9065.html"
+><CODE
+CLASS="CLASSNAME"
+>Session</CODE
+></A
+>.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8338"
+>Exception Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x8395.html"
+><CODE
+CLASS="CLASSNAME"
+>CannotCreateSessionException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an attempt to create a new session
+failed.</P
+></DD
+><DT
+><A
+HREF="x8532.html"
+><CODE
+CLASS="CLASSNAME"
+>PermissionDeniedException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if a client is denied the ability to create
+a session with the router.</P
+></DD
+><DT
+><A
+HREF="x9263.html"
+><CODE
+CLASS="CLASSNAME"
+>SessionNotExistException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if a client tries to destroy a session
+with a router, but no session exists for the client.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8359"
+>Struct Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x8828.html"
+><CODE
+CLASS="STRUCTNAME"
+>SSLInfo</CODE
+></A
+></DT
+><DD
+><P
+>Information taken from an SSL connection used for permissions
+verification.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x8194.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x8368.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceBox::ServiceManager</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Glacier2::Admin</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

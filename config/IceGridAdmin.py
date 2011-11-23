@@ -11,6 +11,9 @@
 import sys, os, TestUtil
 from threading import Thread
 
+debug = 0
+#debug = 1
+
 for toplevel in [".", "..", "../..", "../../..", "../../../.."]:
     toplevel = os.path.normpath(toplevel)
     if os.path.exists(os.path.join(toplevel, "config", "TestUtil.py")):
@@ -29,7 +32,8 @@ nodeOptions = r' --Ice.Warn.Connections=0' + \
               r' --IceGrid.Node.Trace.Server=0' + \
               r' --IceGrid.Node.PrintServersReady=node' + \
 	      r' --Ice.NullHandleAbort' + \
-              r' --Ice.ThreadPool.Server.Size=0';
+              r' --Ice.ThreadPool.Server.Size=0' + \
+              r' --Ice.ServerIdleTime=0';
 
 registryOptions = r' --Ice.Warn.Connections=0' + \
                   r' --IceGrid.Registry.PermissionsVerifier=IceGrid/NullPermissionsVerifier' + \
@@ -47,7 +51,9 @@ registryOptions = r' --Ice.Warn.Connections=0' + \
                   r' --IceGrid.Registry.Trace.Object=0' + \
                   r' --IceGrid.Registry.Trace.Server=0' + \
                   r' --IceGrid.Registry.Trace.Locator=0' + \
-                  r' --Ice.ThreadPool.Server.Size=0';
+                  r' --Ice.ThreadPool.Client.SizeWarn=10' + \
+                  r' --Ice.ThreadPool.Server.Size=0' + \
+                  r' --Ice.ServerIdleTime=0';
 
 def startIceGridRegistry(testdir, dynamicRegistration = False):
 
@@ -69,6 +75,9 @@ def startIceGridRegistry(testdir, dynamicRegistration = False):
 
     if dynamicRegistration:
         command += ' --IceGrid.Registry.DynamicRegistration'        
+
+    if debug:
+        print command
 
     (stdin, iceGridPipe) = os.popen4(command)
     TestUtil.getServerPid(iceGridPipe)
@@ -97,6 +106,9 @@ def startIceGridNode(testdir):
               r' --IceGrid.Node.Name=localnode' + \
               r' --IceGrid.Node.PropertiesOverride=' + overrideOptions
 
+    if debug:
+        print command
+
     (stdin, iceGridPipe) = os.popen4(command)
     TestUtil.getServerPid(iceGridPipe)
     TestUtil.getAdapterReady(iceGridPipe, False)
@@ -115,6 +127,9 @@ def iceGridAdmin(cmd, ignoreFailure = False):
               r' --Ice.Default.Locator="IceGrid/Locator:default -p ' + iceGridPort + '" ' + \
               r' -e "' + cmd + '" 2>&1'
 
+    if debug:
+        print command
+
     iceGridAdminPipe = os.popen(command)
 
     output = iceGridAdminPipe.readlines()
@@ -122,6 +137,8 @@ def iceGridAdmin(cmd, ignoreFailure = False):
     iceGridAdminStatus = TestUtil.closePipe(iceGridAdminPipe)
     if not ignoreFailure and iceGridAdminStatus:
         print "icegridadmin command failed: " + cmd
+        for line in output:
+            print line
         TestUtil.killServers()
         sys.exit(1)
 
@@ -153,7 +170,12 @@ def iceGridTest(name, application, additionalOptions = "", applicationOptions = 
         print "ok"
 
     print "starting client...",
-    clientPipe = os.popen(client + TestUtil.clientOptions + " " + clientOptions + " 2>&1")
+
+    command = client + TestUtil.clientOptions + " " + clientOptions + " 2>&1"
+    if debug:
+        print command
+
+    clientPipe = os.popen(command)
     print "ok"
 
     TestUtil.printOutputFromPipe(clientPipe)
@@ -206,7 +228,11 @@ def iceGridClientServerTest(name, additionalClientOptions, additionalServerOptio
     print "ok"
 
     print "starting client...",
-    clientPipe = os.popen(client + TestUtil.clientOptions + " " + clientOptions + " 2>&1")
+    command = client + TestUtil.clientOptions + " " + clientOptions + " 2>&1"
+    if debug:
+        print command
+
+    clientPipe = os.popen(command)
     print "ok"
 
     TestUtil.printOutputFromPipe(clientPipe)

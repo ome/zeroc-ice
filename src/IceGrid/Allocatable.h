@@ -97,13 +97,13 @@ protected:
     bool allocateFromChild(const AllocationRequestPtr&, const AllocatablePtr&, bool, bool);
     
     void queueAllocationAttempt(const AllocatablePtr&, const AllocationRequestPtr&, bool);
+    void queueAllocationAttemptFromChild(const AllocatablePtr&);
     AllocatablePtr dequeueAllocationAttempt(AllocationRequestPtr&);
 
     const bool _allocatable;
     const AllocatablePtr _parent;
     
     std::list<std::pair<AllocatablePtr, AllocationRequestPtr> > _requests;
-    std::set<AllocatablePtr> _attempts;
     SessionIPtr _session;
     int _count;
     bool _releasing;

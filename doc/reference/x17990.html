@@ -1,0 +1,468 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Ice Plugin Properties</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Properties"
+HREF="c17556.html"><LINK
+REL="PREVIOUS"
+TITLE="Ice Object Adapter Properties"
+HREF="x17798.html"><LINK
+REL="NEXT"
+TITLE="Ice Thread Pool Properties"
+HREF="x18063.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x17798.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Properties</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x18063.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="AEN17990"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> Plugin Properties</A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN17993"
+>Ice.Plugin.<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+></A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN17996"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.Plugin.<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>=<TT
+CLASS="REPLACEABLE"
+><I
+>entry_point [args]</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18001"
+>Description</A
+></H3
+><P
+>Defines a plugin to be installed during communicator initialization.</P
+><P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><P
+><B
+>Platform Notes</B
+></P
+><DL
+><DT
+>C++</DT
+><DD
+><P
+>The value of <TT
+CLASS="REPLACEABLE"
+><I
+>entry_point</I
+></TT
+> has the form
+<TT
+CLASS="LITERAL"
+>basename[,version]:function</TT
+>. The <TT
+CLASS="LITERAL"
+>basename</TT
+>
+and optional <TT
+CLASS="LITERAL"
+>version</TT
+> components are used to construct
+the name of a DLL or shared library. If no version is supplied, the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> version
+is used. The <TT
+CLASS="LITERAL"
+>function</TT
+> component is the name of a function with
+C linkage. For example, the entry point <TT
+CLASS="LITERAL"
+>MyPlugin,3.1:create</TT
+>
+would imply a shared library name of <TT
+CLASS="LITERAL"
+>libMyPlugin.so.3.1</TT
+>
+on Unix and <TT
+CLASS="LITERAL"
+>MyPlugin31.dll</TT
+> on Windows. Furthermore,
+if <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> is built on Windows with debugging, a <TT
+CLASS="LITERAL"
+>d</TT
+> is
+automatically appended to the version (e.g., <TT
+CLASS="LITERAL"
+>MyPlugin31d.dll</TT
+>).</P
+></DD
+><DT
+>Java</DT
+><DD
+><P
+>The value of <TT
+CLASS="REPLACEABLE"
+><I
+>entry_point</I
+></TT
+> is the name of a class that
+must implement the <TT
+CLASS="LITERAL"
+>Ice.PluginFactory</TT
+> interface. Any
+arguments that follow the class name are passed to the <TT
+CLASS="LITERAL"
+>create</TT
+>
+method.</P
+></DD
+><DT
+>.NET</DT
+><DD
+><P
+>The value of <TT
+CLASS="REPLACEABLE"
+><I
+>entry_point</I
+></TT
+> has the form
+<TT
+CLASS="LITERAL"
+>assembly:class</TT
+>. The assembly can be the full assembly
+name, such as <TT
+CLASS="LITERAL"
+>myplugin, Version=0.0.0.0, Culture=neutral</TT
+>,
+or an assembly DLL name such as <TT
+CLASS="LITERAL"
+>myplugin.dll</TT
+>. The specified
+class must implement the <TT
+CLASS="LITERAL"
+>Ice.PluginFactory</TT
+> interface. Any
+arguments that follow the class name are passed to the <TT
+CLASS="LITERAL"
+>create</TT
+>
+method.</P
+></DD
+></DL
+></DIV
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.PLUGINLOADORDER"
+>Ice.PluginLoadOrder</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18042"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.PluginLoadOrder=<TT
+CLASS="REPLACEABLE"
+><I
+>names</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18046"
+>Description</A
+></H3
+><P
+>Determines the order in which plugins are loaded. The Ice run time
+loads the plugins in the order they appear in
+<TT
+CLASS="REPLACEABLE"
+><I
+>names</I
+></TT
+>, where each plugin name is separated
+by a comma or whitespace. Any plugins not mentioned in
+<TT
+CLASS="REPLACEABLE"
+><I
+>names</I
+></TT
+> are loaded afterward, in an undefined
+order.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.INITPLUGINS"
+>Ice.InitPlugins</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18053"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.InitPlugins=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18057"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is a value greater than zero, the
+Ice run time automatically initializes the plugins it has loaded.
+The order in which plugins are loaded and initialized is determined
+by <A
+HREF="x17990.html#ICE.PLUGINLOADORDER"
+>Ice.PluginLoadOrder</A
+>.
+An application may need to set this property to zero in order to
+interact directly with a plugin after it has been loaded but before
+it is initialized. In this case, the application must invoke
+<TT
+CLASS="LITERAL"
+>initializePlugins</TT
+> on the plugin manager to complete
+the initialization process. If not defined, the default value is 1.</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x17798.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x18063.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> Object Adapter Properties</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c17556.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> Thread Pool Properties</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

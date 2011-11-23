@@ -47,7 +47,7 @@ SubscriberFactory::createLinkSubscriber(const TopicLinkPrx& obj, Ice::Int cost)
     }
     else
     {
-        proxy = new LinkProxy(obj);
+        proxy = new LinkProxy(_traceLevels, _communicator->identityToString(obj->ice_getIdentity()), obj);
         ProxyInfo info;
         info.proxy = proxy;
         info.count = 0;

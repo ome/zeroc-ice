@@ -72,7 +72,7 @@ Client::run(int argc, char* argv[])
     vector<string> args;
     try
     {
-    	args = opts.parse(argc, argv);
+    	args = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtil::Options::BadOpt& e)
     {
@@ -148,16 +148,21 @@ Client::run(int argc, char* argv[])
     Ice::PropertiesPtr properties = communicator()->getProperties();
 
     const string instanceNameProperty = "IceGrid.InstanceName";
-    string instanceName = properties->getPropertyWithDefault(instanceNameProperty, "IceGrid");
+    Identity identity;
+    identity.category = properties->getPropertyWithDefault(instanceNameProperty, "IceGrid");
 
-    AdminPrx admin = AdminPrx::checkedCast(communicator()->stringToProxy(instanceName + "/Admin"));
+    identity.name = "Admin";
+    AdminPrx admin = 
+        AdminPrx::checkedCast(communicator()->stringToProxy("\"" + communicator()->identityToString(identity) + "\""));
     if(!admin)
     {
 	cerr << appName() << ": no valid administrative interface" << endl;
 	return EXIT_FAILURE;
     }
 
-    QueryPrx query = QueryPrx::checkedCast(communicator()->stringToProxy(instanceName + "/Query"));
+    identity.name = "Query";
+    QueryPrx query = 
+        QueryPrx::checkedCast(communicator()->stringToProxy("\"" + communicator()->identityToString(identity) + "\""));
     if(!query)
     {
 	cerr << appName() << ": no valid query interface" << endl;

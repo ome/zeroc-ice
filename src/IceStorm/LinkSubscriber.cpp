@@ -103,13 +103,12 @@ LinkSubscriber::publish(const EventPtr& event)
 	    out << _communicator->identityToString(id()) << ": link topic publish failed: " << e;
 	}
     }
-    catch(const Ice::LocalException& e)
+    catch(const Ice::LocalException&)
     {
-	if(_traceLevels->subscriber > 0)
-	{
-	    Ice::Trace out(_traceLevels->logger, _traceLevels->subscriberCat);
-	    out << _communicator->identityToString(id()) << ": link topic publish failed: " << e;
-	}
+	//
+	// This should be eaten by LinkProxy.
+	//
+    	assert(false);
     }
 }
 

@@ -1,0 +1,806 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Glacier2::Router</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Glacier2::PermissionsVerifier"
+HREF="x8573.html"><LINK
+REL="NEXT"
+TITLE="Glacier2::SSLInfo"
+HREF="x8828.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x8573.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x8828.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="GLACIER2.ROUTER"
+><TT
+CLASS="LITERAL"
+>Glacier2::Router</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN8635"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>interface <CODE
+CLASS="CLASSNAME"
+>Router</CODE
+>
+    extends 
+	<A
+HREF="x5706.html"
+><SPAN
+CLASS="TYPE"
+>::Ice::Router</SPAN
+></A
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>The <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier2</SPAN
+></SPAN
+> specialization of the standard <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> router
+interface.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8644"
+>Operation Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x8632.html#GLACIER2.ROUTER.GETCATEGORYFORCLIENT"
+><TT
+CLASS="FUNCTION"
+>getCategoryForClient</TT
+></A
+></DT
+><DD
+><P
+>This category must be used in the identities of all of the client's
+callback objects.</P
+></DD
+><DT
+><A
+HREF="x8632.html#GLACIER2.ROUTER.CREATESESSION"
+><TT
+CLASS="FUNCTION"
+>createSession</TT
+></A
+></DT
+><DD
+><P
+>Create a per-client session with the router.</P
+></DD
+><DT
+><A
+HREF="x8632.html#ER2.ROUTER.CREATESESSIONFROMSECURECONNECTION"
+><TT
+CLASS="FUNCTION"
+>createSessionFromSecureConnection</TT
+></A
+></DT
+><DD
+><P
+>Create a per-client session with the router.</P
+></DD
+><DT
+><A
+HREF="x8632.html#GLACIER2.ROUTER.DESTROYSESSION"
+><TT
+CLASS="FUNCTION"
+>destroySession</TT
+></A
+></DT
+><DD
+><P
+>Destroy the calling client's session with this router.</P
+></DD
+><DT
+><A
+HREF="x8632.html#GLACIER2.ROUTER.GETSESSIONTIMEOUT"
+><TT
+CLASS="FUNCTION"
+>getSessionTimeout</TT
+></A
+></DT
+><DD
+><P
+>Get the value of the session timeout.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2.ROUTER.GETCATEGORYFORCLIENT"
+><TT
+CLASS="LITERAL"
+>getCategoryForClient</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="FUNCTION"
+>getCategoryForClient</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>This category must be used in the identities of all of the client's
+callback objects. This is necessary in order for the router to
+forward callback requests to the intended client.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8684"
+>Return Value</A
+></H3
+><P
+>		The category.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2.ROUTER.CREATESESSION"
+><TT
+CLASS="LITERAL"
+>createSession</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><CODE
+CLASS="CLASSNAME"
+>Session*</CODE
+> <TT
+CLASS="FUNCTION"
+>createSession</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>userId</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>password</I
+></TT
+>)
+    throws
+	<A
+HREF="x8532.html"
+><CODE
+CLASS="CLASSNAME"
+>PermissionDeniedException</CODE
+></A
+>,
+	<A
+HREF="x8395.html"
+><CODE
+CLASS="CLASSNAME"
+>CannotCreateSessionException</CODE
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Create a per-client session with the router. If a
+<A
+HREF="x9194.html"
+><CODE
+CLASS="CLASSNAME"
+>SessionManager</CODE
+></A
+> has been installed, a proxy to a <A
+HREF="x9065.html"
+><CODE
+CLASS="CLASSNAME"
+>Session</CODE
+></A
+>
+object is returned to the client. Otherwise, null is returned
+and only an internal session (i.e., not visible to the client)
+is created.
+If a session proxy is returned, it must be configured to route
+through the router that created it. This will happen automatically
+if the router is configured as the client's default router at the
+time the session proxy is created in the client process, otherwise
+the client must configure the session proxy explicitly.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8706"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>userId</I
+></TT
+></DT
+><DD
+><P
+>			    The user id for which to check the password.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>password</I
+></TT
+></DT
+><DD
+><P
+>			    The password for the given user id.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8719"
+>Return Value</A
+></H3
+><P
+>		A proxy for the newly created session, or null if no
+<A
+HREF="x9194.html"
+><CODE
+CLASS="CLASSNAME"
+>SessionManager</CODE
+></A
+> has been installed.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8724"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x8532.html"
+><CODE
+CLASS="CLASSNAME"
+>PermissionDeniedException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if the password for
+the given user id is not correct, or if the user is not allowed
+access.</P
+></DD
+><DT
+><A
+HREF="x8395.html"
+><CODE
+CLASS="CLASSNAME"
+>CannotCreateSessionException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if the session
+cannot be created.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8739"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x9065.html"
+><CODE
+CLASS="CLASSNAME"
+>Session</CODE
+></A
+>, <A
+HREF="x9194.html"
+><CODE
+CLASS="CLASSNAME"
+>SessionManager</CODE
+></A
+>, <A
+HREF="x8573.html"
+><CODE
+CLASS="CLASSNAME"
+>PermissionsVerifier</CODE
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ER2.ROUTER.CREATESESSIONFROMSECURECONNECTION"
+><TT
+CLASS="LITERAL"
+>createSessionFromSecureConnection</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><CODE
+CLASS="CLASSNAME"
+>Session*</CODE
+> <TT
+CLASS="FUNCTION"
+>createSessionFromSecureConnection</TT
+>()
+    throws
+	<A
+HREF="x8532.html"
+><CODE
+CLASS="CLASSNAME"
+>PermissionDeniedException</CODE
+></A
+>,
+	<A
+HREF="x8395.html"
+><CODE
+CLASS="CLASSNAME"
+>CannotCreateSessionException</CODE
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Create a per-client session with the router. The user is
+authenticated through the SSL certificates that have been
+associated with the connection. If a <A
+HREF="x9194.html"
+><CODE
+CLASS="CLASSNAME"
+>SessionManager</CODE
+></A
+> has been
+installed, a proxy to a <A
+HREF="x9065.html"
+><CODE
+CLASS="CLASSNAME"
+>Session</CODE
+></A
+> object is returned to the
+client. Otherwise, null is returned and only an internal
+session (i.e., not visible to the client) is created.
+If a session proxy is returned, it must be configured to route
+through the router that created it. This will happen automatically
+if the router is configured as the client's default router at the
+time the session proxy is created in the client process, otherwise
+the client must configure the session proxy explicitly.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8767"
+>Return Value</A
+></H3
+><P
+>		A proxy for the newly created session, or null if no
+<A
+HREF="x9194.html"
+><CODE
+CLASS="CLASSNAME"
+>SessionManager</CODE
+></A
+> has been installed.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8772"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x8532.html"
+><CODE
+CLASS="CLASSNAME"
+>PermissionDeniedException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if the user cannot be
+authenticated or if the user is not allowed access.</P
+></DD
+><DT
+><A
+HREF="x8395.html"
+><CODE
+CLASS="CLASSNAME"
+>CannotCreateSessionException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if the session
+cannot be created.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8787"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x9065.html"
+><CODE
+CLASS="CLASSNAME"
+>Session</CODE
+></A
+>, <A
+HREF="x9194.html"
+><CODE
+CLASS="CLASSNAME"
+>SessionManager</CODE
+></A
+>, <A
+HREF="x8573.html"
+><CODE
+CLASS="CLASSNAME"
+>PermissionsVerifier</CODE
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2.ROUTER.DESTROYSESSION"
+><TT
+CLASS="LITERAL"
+>destroySession</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>destroySession</TT
+>()
+    throws
+	<A
+HREF="x9263.html"
+><CODE
+CLASS="CLASSNAME"
+>SessionNotExistException</CODE
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Destroy the calling client's session with this router.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8809"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x9263.html"
+><CODE
+CLASS="CLASSNAME"
+>SessionNotExistException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if no session exists
+for the calling client.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER2.ROUTER.GETSESSIONTIMEOUT"
+><TT
+CLASS="LITERAL"
+>getSessionTimeout</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>long</SPAN
+> <TT
+CLASS="FUNCTION"
+>getSessionTimeout</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the value of the session timeout. Sessions are destroyed
+if they see no activity for this period of time.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN8825"
+>Return Value</A
+></H3
+><P
+>		The timeout (in seconds).</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x8573.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x8828.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Glacier2::PermissionsVerifier</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Glacier2::SSLInfo</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

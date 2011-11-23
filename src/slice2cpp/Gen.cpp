@@ -1525,13 +1525,14 @@ void
 Slice::Gen::TypesVisitor::emitUpcall(const ExceptionPtr& base, const string& call, bool isLocal)
 {
     C.zeroIndent();
-    C << nl << "#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug"; // COMPILERBUG
+    C << nl << "#if (defined(_MSC_VER) && (_MSC_VER < 1300)) // VC++ 6 compiler bug"; // COMPILERBUG
     C.restoreIndent();
-    C << nl << (base ? fixKwd(base->name()) : (isLocal ? "LocalException" : "UserException")) << call;
+    C << nl << (base ? fixKwd(base->name()) : string(isLocal ? "LocalException" : "UserException")) << call;
     C.zeroIndent();
     C << nl << "#else";
     C.restoreIndent();
-    C << nl << (base ? fixKwd(base->scoped()) : (isLocal ? "::Ice::LocalException" : "::Ice::UserException")) << call;
+    C << nl << (base ? fixKwd(base->scoped()) : string(isLocal ? "::Ice::LocalException" : "::Ice::UserException")) 
+      << call;
     C.zeroIndent();
     C << nl << "#endif";
     C.restoreIndent();
@@ -3622,8 +3623,9 @@ Slice::Gen::ObjectVisitor::emitGCInsertCode(const TypePtr& p, const string& pref
 	}
 	C << eb;
     }
-    else if(StructPtr s = StructPtr::dynamicCast(p))
+    else if(StructPtr::dynamicCast(p))
     {
+        StructPtr s = StructPtr::dynamicCast(p);
 	DataMemberList dml = s->dataMembers();
 	for(DataMemberList::const_iterator i = dml.begin(); i != dml.end(); ++i)
 	{
@@ -3633,8 +3635,9 @@ Slice::Gen::ObjectVisitor::emitGCInsertCode(const TypePtr& p, const string& pref
 	    }
 	}
     }
-    else if(DictionaryPtr d = DictionaryPtr::dynamicCast(p))
+    else if(DictionaryPtr::dynamicCast(p))
     {
+    	DictionaryPtr d = DictionaryPtr::dynamicCast(p);
 	string scoped = fixKwd(d->scoped());
 	ostringstream tmp;
 	tmp << "_i" << level;
@@ -3647,8 +3650,9 @@ Slice::Gen::ObjectVisitor::emitGCInsertCode(const TypePtr& p, const string& pref
 	C << eb;
 	C << eb;
     }
-    else if(SequencePtr s = SequencePtr::dynamicCast(p))
+    else if(SequencePtr::dynamicCast(p))
     {
+    	SequencePtr s = SequencePtr::dynamicCast(p);
 	string scoped = fixKwd(s->scoped());
 	ostringstream tmp;
 	tmp << "_i" << level;
@@ -3693,8 +3697,9 @@ Slice::Gen::ObjectVisitor::emitGCClearCode(const TypePtr& p, const string& prefi
 	C << eb;
 	C << eb;
     }
-    else if(StructPtr s = StructPtr::dynamicCast(p))
+    else if(StructPtr::dynamicCast(p))
     {
+        StructPtr s = StructPtr::dynamicCast(p);
 	DataMemberList dml = s->dataMembers();
 	for(DataMemberList::const_iterator i = dml.begin(); i != dml.end(); ++i)
 	{
@@ -3704,8 +3709,9 @@ Slice::Gen::ObjectVisitor::emitGCClearCode(const TypePtr& p, const string& prefi
 	    }
 	}
     }
-    else if(DictionaryPtr d = DictionaryPtr::dynamicCast(p))
+    else if(DictionaryPtr::dynamicCast(p))
     {
+        DictionaryPtr d = DictionaryPtr::dynamicCast(p);
 	string scoped = fixKwd(d->scoped());
 	ostringstream tmp;
 	tmp << "_i" << level;
@@ -3718,8 +3724,9 @@ Slice::Gen::ObjectVisitor::emitGCClearCode(const TypePtr& p, const string& prefi
 	C << eb;
 	C << eb;
     }
-    else if(SequencePtr s = SequencePtr::dynamicCast(p))
+    else if(SequencePtr::dynamicCast(p))
     {
+        SequencePtr s = SequencePtr::dynamicCast(p);
 	string scoped = fixKwd(s->scoped());
 	ostringstream tmp;
 	tmp << "_i" << level;
@@ -3825,7 +3832,7 @@ Slice::Gen::ObjectVisitor::emitOneShotConstructor(const ClassDefPtr& p)
 		C << ',' << nl;
 	    }
 	    string memberName = fixKwd((*q)->name());
-	    C << memberName << '(' << "__ice_" << memberName << ')';
+	    C << memberName << '(' << "__ice_" << (*q)->name() << ')';
 	}
 
 	C.dec();
@@ -3840,11 +3847,11 @@ Slice::Gen::ObjectVisitor::emitUpcall(const ClassDefPtr& base, const string& cal
     C.zeroIndent();
     C << nl << "#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug"; // COMPILERBUG
     C.restoreIndent();
-    C << nl << (base ? fixKwd(base->name()) : "Object") << call;
+    C << nl << (base ? fixKwd(base->name()) : string("Object")) << call;
     C.zeroIndent();
     C << nl << "#else";
     C.restoreIndent();
-    C << nl << (base ? fixKwd(base->scoped()) : "::Ice::Object") << call;
+    C << nl << (base ? fixKwd(base->scoped()) : string("::Ice::Object")) << call;
     C.zeroIndent();
     C << nl << "#endif";
     C.restoreIndent();
@@ -4901,7 +4908,7 @@ Slice::Gen::AsyncImplVisitor::visitOperation(const OperationPtr& p)
     C << sp << nl << "IceAsync" << classScopedAMD << '_' << name << "::" << classNameAMD << '_' << name
       << "(::IceInternal::Incoming& in) :";
     C.inc();
-    C << nl << "IncomingAsync(in)";
+    C << nl << "::IceInternal::IncomingAsync(in)";
     C.dec();
     C << sb;
     C << eb;

@@ -321,6 +321,33 @@ IceInternal::Instance::flushBatchRequests()
     adapterFactory->flushBatchRequests();
 }
 
+void
+IceInternal::Instance::setDefaultContext(const Context& ctx)
+{
+    IceUtil::RecMutex::Lock sync(*this);
+    
+    if(_state == StateDestroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
+    _defaultContext = ctx;
+}
+
+Context
+IceInternal::Instance::getDefaultContext() const
+{
+    IceUtil::RecMutex::Lock sync(*this);
+    
+    if(_state == StateDestroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
+    return _defaultContext;
+}
+
+
 Identity
 IceInternal::Instance::stringToIdentity(const string& s) const
 {
@@ -431,7 +458,8 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Initi
     _clientACM(0),
     _serverACM(0),
     _threadPerConnection(false),
-    _threadPerConnectionStackSize(0)
+    _threadPerConnectionStackSize(0),
+    _defaultContext(initData.defaultContext)
 {
     try
     {
@@ -742,7 +770,7 @@ IceInternal::Instance::finishSetup(int& argc, char* argv[])
 
     if(printProcessId)
     {
-#ifdef _WIN32
+#ifdef _MSC_VER
 	cout << _getpid() << endl;
 #else
 	cout << getpid() << endl;

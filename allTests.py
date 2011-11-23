@@ -102,9 +102,6 @@ tests = [ \
     "Freeze/dbmap", \
     "Freeze/complex", \
     "Freeze/evictor", \
-    "IceStorm/single", \
-    "IceStorm/federation", \
-    "IceStorm/federation2", \
     "FreezeScript/dbmap", \
     "FreezeScript/evictor", \
     "IceGrid/simple", \
@@ -114,12 +111,15 @@ tests = [ \
     "IceGrid/activation", \
     "IceGrid/replication", \
     "IceGrid/allocation", \
+    "IceStorm/single", \
+    "IceStorm/federation", \
+    "IceStorm/federation2", \
     "Glacier2/router", \
     "Glacier2/attack", \
-    "Glacier2/addressFilter", \
     "Glacier2/sessionControl", \
     "Glacier2/ssl", \
     "Glacier2/filters", \
+    "Glacier2/addressFilter", \
     ]
 
 #

@@ -33,7 +33,12 @@ mksoname           	= $(if $(2),lib$(1).$(2).dylib,lib$(1).dylib)
 
 mklibname           	= lib$(1).dylib
 curdir			= $(shell pwd)
-mkshlib                 = $(CXX) -single_module -dynamiclib $(shlibldflags) -o $(1) -install_name $(install_libdir)/$(2) $(3) $(4)
+ifneq ($(embedded_runpath_prefix),)
+   mkshlib                 = $(CXX) -single_module -dynamiclib $(shlibldflags) -o $(1) -install_name $(runpath_libdir)/$(2) $(3) $(4)
+else
+   mkshlib                 = $(CXX) -single_module -dynamiclib $(shlibldflags) -o $(1) -install_name $(2) $(3) $(4)
+endif
+
 
 BASELIBS		= -lIceUtil -lpthread 
 LIBS			= -lIce $(BASELIBS)

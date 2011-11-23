@@ -8,66 +8,7 @@
 
  **********************************************************************
 -->
-<!-- Ice version 3.1.0 -->
-<section>
-    <title>Global Module</title>
-    <section>
-	<title>Module Index</title>
-	<variablelist>
-	    <varlistentry>
-		<term><link linkend="Ice"><type>Ice</type></link></term>
-		<listitem>
-		    <para>
-The &Ice; core library.</para>
-		</listitem>
-	    </varlistentry>
-	    <varlistentry>
-		<term><link linkend="Freeze"><type>Freeze</type></link></term>
-		<listitem>
-		    <para>
-&Freeze; provides automatic persistence for &Ice; servants.</para>
-		</listitem>
-	    </varlistentry>
-	    <varlistentry>
-		<term><link linkend="IceBox"><type>IceBox</type></link></term>
-		<listitem>
-		    <para>
-&IceBox; is an application server specifically for &Ice;
-applications.</para>
-		</listitem>
-	    </varlistentry>
-	    <varlistentry>
-		<term><link linkend="Glacier2"><type>Glacier2</type></link></term>
-		<listitem>
-		    <para>
-&Glacier2; is a firewall solution for Ice.</para>
-		</listitem>
-	    </varlistentry>
-	    <varlistentry>
-		<term><link linkend="IceGrid"><type>IceGrid</type></link></term>
-		<listitem>
-		    <para>
-&IceGrid; is a server activation and deployment tool.</para>
-		</listitem>
-	    </varlistentry>
-	    <varlistentry>
-		<term><link linkend="IceStorm"><type>IceStorm</type></link></term>
-		<listitem>
-		    <para>
-A messaging service with support for federation.</para>
-		</listitem>
-	    </varlistentry>
-	    <varlistentry>
-		<term><link linkend="IcePatch2"><type>IcePatch2</type></link></term>
-		<listitem>
-		    <para>
-&IcePatch2; can be used to update file hiearchies in a simple and
-efficient manner.</para>
-		</listitem>
-	    </varlistentry>
-	</variablelist>
-    </section>
-</section>
+<!-- Ice version 3.1.1 -->
 <section id="Ice">
     <title><literal>Ice</literal></title>
     <section>
@@ -964,7 +905,6 @@ A sequence of object proxies.</para>
 	    <para>
 	    <simplelist type="inline">
 		<member><link linkend="Ice.Router.addProxies"><function>Router::addProxies</function></link></member>
-		<member><link linkend="Ice.Router.addProxies"><function>Router::addProxies</function></link></member>
 		<member><link linkend="IceGrid.Query.findAllObjectsByType"><function>::IceGrid::Query::findAllObjectsByType</function></link></member>
 	    </simplelist></para></section>
     </section>
@@ -989,28 +929,22 @@ A sequence of strings.</para>
 	    <title>Used By</title>
 	    <para>
 	    <simplelist type="inline">
+		<member><link linkend="ApplicationUpdateDescriptor.removeVariables"><type>::IceGrid::ApplicationUpdateDescriptor::removeVariables</type></link></member>
 		<member><link linkend="Glacier2.SSLInfo.certs"><type>::Glacier2::SSLInfo::certs</type></link></member>
 		<member><link linkend="Glacier2.StringSet.add"><function>::Glacier2::StringSet::add</function></link></member>
 		<member><link linkend="Glacier2.StringSet.get"><function>::Glacier2::StringSet::get</function></link></member>
 		<member><link linkend="Glacier2.StringSet.remove"><function>::Glacier2::StringSet::remove</function></link></member>
+		<member><link linkend="Grid.ApplicationUpdateDescriptor.removeNodes"><type>::IceGrid::ApplicationUpdateDescriptor::removeNodes</type></link></member>
+		<member><link linkend="Grid.NodeUpdateDescriptor.removePropertySets"><type>::IceGrid::NodeUpdateDescriptor::removePropertySets</type></link></member>
 		<member><link linkend="Ice.Properties.getCommandLineOptions"><function>Properties::getCommandLineOptions</function></link></member>
 		<member><link linkend="Ice.Properties.parseCommandLineOptions"><function>Properties::parseCommandLineOptions</function></link></member>
-		<member><link linkend="Ice.Properties.parseCommandLineOptions"><function>Properties::parseCommandLineOptions</function></link></member>
-		<member><link linkend="Ice.Properties.parseIceCommandLineOptions"><function>Properties::parseIceCommandLineOptions</function></link></member>
 		<member><link linkend="Ice.Properties.parseIceCommandLineOptions"><function>Properties::parseIceCommandLineOptions</function></link></member>
 		<member><link linkend="IceBox.Service.start"><function>::IceBox::Service::start</function></link></member>
 		<member><link linkend="IceGrid.Admin.getAllAdapterIds"><function>::IceGrid::Admin::getAllAdapterIds</function></link></member>
 		<member><link linkend="IceGrid.Admin.getAllApplicationNames"><function>::IceGrid::Admin::getAllApplicationNames</function></link></member>
 		<member><link linkend="IceGrid.Admin.getAllNodeNames"><function>::IceGrid::Admin::getAllNodeNames</function></link></member>
 		<member><link linkend="IceGrid.Admin.getAllServerIds"><function>::IceGrid::Admin::getAllServerIds</function></link></member>
-		<member><link linkend="Grid.ApplicationUpdateDescriptor.removeNodes"><type>::IceGrid::ApplicationUpdateDescriptor::removeNodes</type></link></member>
-		<member><link linkend="plicationUpdateDescriptor.removePropertySets"><type>::IceGrid::ApplicationUpdateDescriptor::removePropertySets</type></link></member>
-		<member><link linkend="licationUpdateDescriptor.removeReplicaGroups"><type>::IceGrid::ApplicationUpdateDescriptor::removeReplicaGroups</type></link></member>
-		<member><link linkend="cationUpdateDescriptor.removeServerTemplates"><type>::IceGrid::ApplicationUpdateDescriptor::removeServerTemplates</type></link></member>
-		<member><link linkend="ationUpdateDescriptor.removeServiceTemplates"><type>::IceGrid::ApplicationUpdateDescriptor::removeServiceTemplates</type></link></member>
-		<member><link linkend="ApplicationUpdateDescriptor.removeVariables"><type>::IceGrid::ApplicationUpdateDescriptor::removeVariables</type></link></member>
 		<member><link linkend="IceGrid.DistributionDescriptor.directories"><type>::IceGrid::DistributionDescriptor::directories</type></link></member>
-		<member><link linkend="Grid.NodeUpdateDescriptor.removePropertySets"><type>::IceGrid::NodeUpdateDescriptor::removePropertySets</type></link></member>
 		<member><link linkend="IceGrid.NodeUpdateDescriptor.removeServers"><type>::IceGrid::NodeUpdateDescriptor::removeServers</type></link></member>
 		<member><link linkend="IceGrid.NodeUpdateDescriptor.removeVariables"><type>::IceGrid::NodeUpdateDescriptor::removeVariables</type></link></member>
 		<member><link linkend="IceGrid.PatchException.reasons"><type>::IceGrid::PatchException::reasons</type></link></member>
@@ -1018,6 +952,10 @@ A sequence of strings.</para>
 		<member><link linkend="IceGrid.ServerDescriptor.envs"><type>::IceGrid::ServerDescriptor::envs</type></link></member>
 		<member><link linkend="IceGrid.ServerDescriptor.options"><type>::IceGrid::ServerDescriptor::options</type></link></member>
 		<member><link linkend="IceGrid.TemplateDescriptor.parameters"><type>::IceGrid::TemplateDescriptor::parameters</type></link></member>
+		<member><link linkend="ationUpdateDescriptor.removeServiceTemplates"><type>::IceGrid::ApplicationUpdateDescriptor::removeServiceTemplates</type></link></member>
+		<member><link linkend="cationUpdateDescriptor.removeServerTemplates"><type>::IceGrid::ApplicationUpdateDescriptor::removeServerTemplates</type></link></member>
+		<member><link linkend="licationUpdateDescriptor.removeReplicaGroups"><type>::IceGrid::ApplicationUpdateDescriptor::removeReplicaGroups</type></link></member>
+		<member><link linkend="plicationUpdateDescriptor.removePropertySets"><type>::IceGrid::ApplicationUpdateDescriptor::removePropertySets</type></link></member>
 	    </simplelist></para></section>
     </section>
     <section id="Ice.Context">
@@ -1033,6 +971,7 @@ its implicit final parameter.</para>
 	    <para>
 	    <simplelist type="inline">
 		<member><link linkend="Ice.Communicator.getDefaultContext"><function>Communicator::getDefaultContext</function></link></member>
+		<member><link linkend="Ice.Communicator.setDefaultContext"><function>Communicator::setDefaultContext</function></link></member>
 		<member><link linkend="Ice.Current.ctx"><type>Current::ctx</type></link></member>
 	    </simplelist></para></section>
     </section>
@@ -1096,6 +1035,13 @@ key/value pairs. Both key and value are <type>string</type>s.</para>
 	<para>
 This exception is raised if a server tries to set endpoints for
 an adapter that is already active.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Ice.LocatorRegistry.setAdapterDirectProxy"><function>LocatorRegistry::setAdapterDirectProxy</function></link></member>
+		<member><link linkend="atorRegistry.setReplicatedAdapterDirectProxy"><function>LocatorRegistry::setReplicatedAdapterDirectProxy</function></link></member>
+	    </simplelist></para></section>
     </section>
 </section>
 <section id="Ice.AdapterNotFoundException">
@@ -1105,6 +1051,14 @@ an adapter that is already active.</para>
 <synopsis>exception <classname>AdapterNotFoundException</classname></synopsis>
 	<para>
 This exception is raised if an adapter cannot be found.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Ice.Locator.findAdapterById"><function>Locator::findAdapterById</function></link></member>
+		<member><link linkend="Ice.LocatorRegistry.setAdapterDirectProxy"><function>LocatorRegistry::setAdapterDirectProxy</function></link></member>
+		<member><link linkend="atorRegistry.setReplicatedAdapterDirectProxy"><function>LocatorRegistry::setReplicatedAdapterDirectProxy</function></link></member>
+	    </simplelist></para></section>
     </section>
 </section>
 <section id="Ice.AlreadyRegisteredException">
@@ -1359,6 +1313,13 @@ Find a servant factory registered with this communicator.</para>
 		    <listitem>
 			<para>
 Get the currently-set default context.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Communicator.setDefaultContext"><function>setDefaultContext</function></link></term>
+		    <listitem>
+			<para>
+Set a default context on this communicator.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -1651,6 +1612,10 @@ the property
 <literal><replaceable>name</replaceable>.Endpoints</literal>,
 and then calls <link linkend="Ice.Communicator.createObjectAdapter"><function>createObjectAdapter</function></link>. It is provided as a
 convenience function.</para>
+<para>It is legal to create an object adapter without any endpoints.
+Such an object adapter cannot be accessed remotely and, therefore,
+is accessible only for collocated invocations within a single address
+space.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -1823,6 +1788,40 @@ Get the currently-set default context.</para>
 default context is currently set, <link linkend="Ice.Communicator.getDefaultContext"><function>getDefaultContext</function></link>
 returns an empty context.</para>
 	</section>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Ice.Communicator.setDefaultContext"><function>setDefaultContext</function></link></member>
+	    </simplelist></para></section>
+    </section>
+    <section id="Ice.Communicator.setDefaultContext">
+	<title><literal>setDefaultContext</literal></title>
+<synopsis><type>void</type> <function>setDefaultContext</function>(<link linkend="Ice.Context"><type>Context</type></link> <parameter>ctx</parameter>);</synopsis>
+	<para>
+Set a default context on this communicator. All newly
+created proxies will use this default context. This operation 
+has no effect on existing proxies.
+<note><para> You can also set a context for an individual proxy
+by calling the operation <literal>ice_context</literal> on the proxy.</para></note></para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>ctx</parameter></term>
+		    <listitem>
+			<para>
+			    The default context to be set.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Ice.Communicator.getDefaultContext"><function>getDefaultContext</function></link></member>
+	    </simplelist></para></section>
     </section>
     <section id="Ice.Communicator.getProperties">
 	<title><literal>getProperties</literal></title>
@@ -2794,7 +2793,6 @@ object.</para>
 		<member><link linkend="IceGrid.Admin.getObjectInfo"><function>::IceGrid::Admin::getObjectInfo</function></link></member>
 		<member><link linkend="IceGrid.Admin.removeObject"><function>::IceGrid::Admin::removeObject</function></link></member>
 		<member><link linkend="IceGrid.AdminSession.setObserversByIdentity"><function>::IceGrid::AdminSession::setObserversByIdentity</function></link></member>
-		<member><link linkend="IceGrid.AdminSession.setObserversByIdentity"><function>::IceGrid::AdminSession::setObserversByIdentity</function></link></member>
 		<member><link linkend="IceGrid.ObjectDescriptor.id"><type>::IceGrid::ObjectDescriptor::id</type></link></member>
 		<member><link linkend="IceGrid.ObjectExistsException.id"><type>::IceGrid::ObjectExistsException::id</type></link></member>
 		<member><link linkend="IceGrid.ObjectNotRegisteredException.id"><type>::IceGrid::ObjectNotRegisteredException::id</type></link></member>
@@ -2958,6 +2956,12 @@ The reason for the failure.</para>
 	<para>
 This exception is raised if the replica group provided by the
 server is invalid.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="atorRegistry.setReplicatedAdapterDirectProxy"><function>LocatorRegistry::setReplicatedAdapterDirectProxy</function></link></member>
+	    </simplelist></para></section>
     </section>
 </section>
 <section id="Ice.Locator">
@@ -3614,11 +3618,11 @@ proxies.</para>
 	    <simplelist type="inline">
 		<member><link linkend="Freeze.ServantInitializer.initialize"><function>::Freeze::ServantInitializer::initialize</function></link></member>
 		<member><link linkend="Ice.Communicator.createObjectAdapter"><function>Communicator::createObjectAdapter</function></link></member>
-		<member><link linkend="ommunicator.createObjectAdapterWithEndpoints"><function>Communicator::createObjectAdapterWithEndpoints</function></link></member>
-		<member><link linkend="e.Communicator.createObjectAdapterWithRouter"><function>Communicator::createObjectAdapterWithRouter</function></link></member>
 		<member><link linkend="Ice.Connection.getAdapter"><function>Connection::getAdapter</function></link></member>
 		<member><link linkend="Ice.Connection.setAdapter"><function>Connection::setAdapter</function></link></member>
 		<member><link linkend="Ice.Current.adapter"><type>Current::adapter</type></link></member>
+		<member><link linkend="e.Communicator.createObjectAdapterWithRouter"><function>Communicator::createObjectAdapterWithRouter</function></link></member>
+		<member><link linkend="ommunicator.createObjectAdapterWithEndpoints"><function>Communicator::createObjectAdapterWithEndpoints</function></link></member>
 	    </simplelist></para></section>
 	<section>
 	    <title>See Also</title>
@@ -4820,6 +4824,12 @@ that is, if no facets with the given identity exist.</para>
 <synopsis>exception <classname>ObjectNotFoundException</classname></synopsis>
 	<para>
 This exception is raised if an object cannot be found.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Ice.Locator.findObjectById"><function>Locator::findObjectById</function></link></member>
+	    </simplelist></para></section>
     </section>
 </section>
 <section id="Ice.OperationMode">
@@ -6115,6 +6125,12 @@ is being deactivated.</para>
 <synopsis>exception <classname>ServerNotFoundException</classname></synopsis>
 	<para>
 This exception is raised if a server cannot be found.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Ice.LocatorRegistry.setServerProcessProxy"><function>LocatorRegistry::setServerProcessProxy</function></link></member>
+	    </simplelist></para></section>
     </section>
 </section>
 <section id="Ice.SocketException">
@@ -8663,6 +8679,15 @@ Shut down the &Glacier2; router.</para>
 This exception is raised if an attempt to create a new session
 failed.</para>
 	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Glacier2.Router.createSession"><function>Router::createSession</function></link></member>
+		<member><link linkend="er2.Router.createSessionFromSecureConnection"><function>Router::createSessionFromSecureConnection</function></link></member>
+		<member><link linkend="Glacier2.SSLSessionManager.create"><function>SSLSessionManager::create</function></link></member>
+		<member><link linkend="Glacier2.SessionManager.create"><function>SessionManager::create</function></link></member>
+	    </simplelist></para></section>
+	<section>
 	    <title>See Also</title>
 	    <para>
 	    <simplelist type="inline">
@@ -8791,6 +8816,13 @@ set.</para>
 	<para>
 This exception is raised if a client is denied the ability to create
 a session with the router.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Glacier2.Router.createSession"><function>Router::createSession</function></link></member>
+		<member><link linkend="er2.Router.createSessionFromSecureConnection"><function>Router::createSessionFromSecureConnection</function></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>See Also</title>
 	    <para>
@@ -9584,6 +9616,12 @@ cannot be created.</para>
 	<para>
 This exception is raised if a client tries to destroy a session
 with a router, but no session exists for the client.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Glacier2.Router.destroySession"><function>Router::destroySession</function></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>See Also</title>
 	    <para>
@@ -10552,9 +10590,9 @@ A mapping of property set name to property set descriptor.</para>
 	    <para>
 	    <simplelist type="inline">
 		<member><link linkend="IceGrid.ApplicationDescriptor.propertySets"><type>ApplicationDescriptor::propertySets</type></link></member>
-		<member><link linkend="rid.ApplicationUpdateDescriptor.propertySets"><type>ApplicationUpdateDescriptor::propertySets</type></link></member>
 		<member><link linkend="IceGrid.NodeDescriptor.propertySets"><type>NodeDescriptor::propertySets</type></link></member>
 		<member><link linkend="IceGrid.NodeUpdateDescriptor.propertySets"><type>NodeUpdateDescriptor::propertySets</type></link></member>
+		<member><link linkend="rid.ApplicationUpdateDescriptor.propertySets"><type>ApplicationUpdateDescriptor::propertySets</type></link></member>
 	    </simplelist></para></section>
     </section>
     <section id="IceGrid.StringObjectProxyDict">
@@ -10573,12 +10611,12 @@ A mapping of string to string.</para>
 	    <para>
 	    <simplelist type="inline">
 		<member><link linkend="IceGrid.ApplicationDescriptor.variables"><type>ApplicationDescriptor::variables</type></link></member>
-		<member><link linkend="ceGrid.ApplicationUpdateDescriptor.variables"><type>ApplicationUpdateDescriptor::variables</type></link></member>
 		<member><link linkend="IceGrid.NodeDescriptor.variables"><type>NodeDescriptor::variables</type></link></member>
 		<member><link linkend="IceGrid.NodeUpdateDescriptor.variables"><type>NodeUpdateDescriptor::variables</type></link></member>
-		<member><link linkend="rid.ServerInstanceDescriptor.parameterValues"><type>ServerInstanceDescriptor::parameterValues</type></link></member>
-		<member><link linkend="id.ServiceInstanceDescriptor.parameterValues"><type>ServiceInstanceDescriptor::parameterValues</type></link></member>
 		<member><link linkend="IceGrid.TemplateDescriptor.parameterDefaults"><type>TemplateDescriptor::parameterDefaults</type></link></member>
+		<member><link linkend="ceGrid.ApplicationUpdateDescriptor.variables"><type>ApplicationUpdateDescriptor::variables</type></link></member>
+		<member><link linkend="id.ServiceInstanceDescriptor.parameterValues"><type>ServiceInstanceDescriptor::parameterValues</type></link></member>
+		<member><link linkend="rid.ServerInstanceDescriptor.parameterValues"><type>ServerInstanceDescriptor::parameterValues</type></link></member>
 	    </simplelist></para></section>
     </section>
     <section id="IceGrid.TemplateDescriptorDict">
@@ -10590,10 +10628,10 @@ A mapping of template identifier to template descriptor.</para>
 	    <title>Used By</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="ceGrid.ApplicationDescriptor.serverTemplates"><type>ApplicationDescriptor::serverTemplates</type></link></member>
-		<member><link linkend="eGrid.ApplicationDescriptor.serviceTemplates"><type>ApplicationDescriptor::serviceTemplates</type></link></member>
 		<member><link linkend="ApplicationUpdateDescriptor.serverTemplates"><type>ApplicationUpdateDescriptor::serverTemplates</type></link></member>
 		<member><link linkend="ApplicationUpdateDescriptor.serviceTemplates"><type>ApplicationUpdateDescriptor::serviceTemplates</type></link></member>
+		<member><link linkend="ceGrid.ApplicationDescriptor.serverTemplates"><type>ApplicationDescriptor::serverTemplates</type></link></member>
+		<member><link linkend="eGrid.ApplicationDescriptor.serviceTemplates"><type>ApplicationDescriptor::serviceTemplates</type></link></member>
 	    </simplelist></para></section>
     </section>
 </section>
@@ -10605,6 +10643,18 @@ A mapping of template identifier to template descriptor.</para>
 	<para>
 This exception is raised if an operation can't be performed because
 the registry lock wasn't acquired or is already acquired by a session.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Admin.addApplication"><function>Admin::addApplication</function></link></member>
+		<member><link linkend="IceGrid.Admin.instantiateServer"><function>Admin::instantiateServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.removeApplication"><function>Admin::removeApplication</function></link></member>
+		<member><link linkend="IceGrid.Admin.syncApplication"><function>Admin::syncApplication</function></link></member>
+		<member><link linkend="IceGrid.Admin.updateApplication"><function>Admin::updateApplication</function></link></member>
+		<member><link linkend="IceGrid.AdminSession.finishUpdate"><function>AdminSession::finishUpdate</function></link></member>
+		<member><link linkend="IceGrid.AdminSession.startUpdate"><function>AdminSession::startUpdate</function></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
@@ -10867,6 +10917,13 @@ adapter doesn't belong to a replica group.</para>
 <synopsis>exception <classname>AdapterNotExistException</classname></synopsis>
 	<para>
 This exception is raised if an adapter does not exist.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Admin.getAdapterInfo"><function>Admin::getAdapterInfo</function></link></member>
+		<member><link linkend="IceGrid.Admin.removeAdapter"><function>Admin::removeAdapter</function></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
@@ -13006,6 +13063,14 @@ This exception is raised if the allocation of an object failed.</para>
 		<member><link linkend="IceGrid.AllocationTimeoutException"><classname>AllocationTimeoutException</classname></link></member>
 	    </simplelist></para></section>
 	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Session.allocateObjectById"><function>Session::allocateObjectById</function></link></member>
+		<member><link linkend="IceGrid.Session.allocateObjectByType"><function>Session::allocateObjectByType</function></link></member>
+		<member><link linkend="IceGrid.Session.releaseObject"><function>Session::releaseObject</function></link></member>
+	    </simplelist></para></section>
+	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
@@ -13050,11 +13115,11 @@ An application descriptor.</para>
 	    <simplelist type="inline">
 		<member><link linkend="IceGrid.Admin.addApplication"><function>Admin::addApplication</function></link></member>
 		<member><link linkend="IceGrid.Admin.getApplicationDescriptor"><function>Admin::getApplicationDescriptor</function></link></member>
-		<member><link linkend="ceGrid.Admin.getDefaultApplicationDescriptor"><function>Admin::getDefaultApplicationDescriptor</function></link></member>
 		<member><link linkend="IceGrid.Admin.syncApplication"><function>Admin::syncApplication</function></link></member>
 		<member><link linkend="IceGrid.ApplicationDescriptorSeq"><type>ApplicationDescriptorSeq</type></link></member>
 		<member><link linkend="IceGrid.FileParser.parse"><function>FileParser::parse</function></link></member>
 		<member><link linkend="IceGrid.RegistryObserver.applicationAdded"><function>RegistryObserver::applicationAdded</function></link></member>
+		<member><link linkend="ceGrid.Admin.getDefaultApplicationDescriptor"><function>Admin::getDefaultApplicationDescriptor</function></link></member>
 	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
@@ -13188,6 +13253,17 @@ Property set descriptors.</para>
 <synopsis>exception <classname>ApplicationNotExistException</classname></synopsis>
 	<para>
 This exception is raised if an application does not exist.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Admin.getApplicationDescriptor"><function>Admin::getApplicationDescriptor</function></link></member>
+		<member><link linkend="IceGrid.Admin.instantiateServer"><function>Admin::instantiateServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.patchApplication"><function>Admin::patchApplication</function></link></member>
+		<member><link linkend="IceGrid.Admin.removeApplication"><function>Admin::removeApplication</function></link></member>
+		<member><link linkend="IceGrid.Admin.syncApplication"><function>Admin::syncApplication</function></link></member>
+		<member><link linkend="IceGrid.Admin.updateApplication"><function>Admin::updateApplication</function></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
@@ -13437,6 +13513,12 @@ The nodes to remove.</para>
 This exception is raised if an unknown signal was sent to
 to a server.</para>
 	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Admin.sendSignal"><function>Admin::sendSignal</function></link></member>
+	    </simplelist></para></section>
+	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
@@ -13685,6 +13767,29 @@ The configuration properties of the database environment.</para>
 <synopsis>exception <classname>DeploymentException</classname></synopsis>
 	<para>
 An exception for deployment failure errors.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Admin.addApplication"><function>Admin::addApplication</function></link></member>
+		<member><link linkend="IceGrid.Admin.addObject"><function>Admin::addObject</function></link></member>
+		<member><link linkend="IceGrid.Admin.enableServer"><function>Admin::enableServer</function></link></member>
+		<member><link linkend="ceGrid.Admin.getDefaultApplicationDescriptor"><function>Admin::getDefaultApplicationDescriptor</function></link></member>
+		<member><link linkend="IceGrid.Admin.getServerPid"><function>Admin::getServerPid</function></link></member>
+		<member><link linkend="IceGrid.Admin.getServerState"><function>Admin::getServerState</function></link></member>
+		<member><link linkend="IceGrid.Admin.instantiateServer"><function>Admin::instantiateServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.isServerEnabled"><function>Admin::isServerEnabled</function></link></member>
+		<member><link linkend="IceGrid.Admin.patchServer"><function>Admin::patchServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.removeAdapter"><function>Admin::removeAdapter</function></link></member>
+		<member><link linkend="IceGrid.Admin.removeObject"><function>Admin::removeObject</function></link></member>
+		<member><link linkend="IceGrid.Admin.sendSignal"><function>Admin::sendSignal</function></link></member>
+		<member><link linkend="IceGrid.Admin.startServer"><function>Admin::startServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.stopServer"><function>Admin::stopServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.syncApplication"><function>Admin::syncApplication</function></link></member>
+		<member><link linkend="IceGrid.Admin.updateApplication"><function>Admin::updateApplication</function></link></member>
+		<member><link linkend="IceGrid.Admin.updateObject"><function>Admin::updateObject</function></link></member>
+		<member><link linkend="IceGrid.Admin.writeMessage"><function>Admin::writeMessage</function></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
@@ -14305,6 +14410,16 @@ The path to the node data directory.</para>
 	<para>
 This exception is raised if a node does not exist.</para>
 	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Admin.getNodeHostname"><function>Admin::getNodeHostname</function></link></member>
+		<member><link linkend="IceGrid.Admin.getNodeInfo"><function>Admin::getNodeInfo</function></link></member>
+		<member><link linkend="IceGrid.Admin.getNodeLoad"><function>Admin::getNodeLoad</function></link></member>
+		<member><link linkend="IceGrid.Admin.pingNode"><function>Admin::pingNode</function></link></member>
+		<member><link linkend="IceGrid.Admin.shutdownNode"><function>Admin::shutdownNode</function></link></member>
+	    </simplelist></para></section>
+	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
@@ -14500,6 +14615,24 @@ the state of an adapter changed.</para>
 <synopsis>exception <classname>NodeUnreachableException</classname></synopsis>
 	<para>
 This exception is raised if a node could not be reached.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Admin.enableServer"><function>Admin::enableServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.getNodeHostname"><function>Admin::getNodeHostname</function></link></member>
+		<member><link linkend="IceGrid.Admin.getNodeInfo"><function>Admin::getNodeInfo</function></link></member>
+		<member><link linkend="IceGrid.Admin.getNodeLoad"><function>Admin::getNodeLoad</function></link></member>
+		<member><link linkend="IceGrid.Admin.getServerPid"><function>Admin::getServerPid</function></link></member>
+		<member><link linkend="IceGrid.Admin.getServerState"><function>Admin::getServerState</function></link></member>
+		<member><link linkend="IceGrid.Admin.isServerEnabled"><function>Admin::isServerEnabled</function></link></member>
+		<member><link linkend="IceGrid.Admin.patchServer"><function>Admin::patchServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.sendSignal"><function>Admin::sendSignal</function></link></member>
+		<member><link linkend="IceGrid.Admin.shutdownNode"><function>Admin::shutdownNode</function></link></member>
+		<member><link linkend="IceGrid.Admin.startServer"><function>Admin::startServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.stopServer"><function>Admin::stopServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.writeMessage"><function>Admin::writeMessage</function></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
@@ -14745,6 +14878,13 @@ The object type.</para>
 	<para>
 This exception is raised if an object already exists.</para>
 	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Admin.addObject"><function>Admin::addObject</function></link></member>
+		<member><link linkend="IceGrid.Admin.addObjectWithType"><function>Admin::addObjectWithType</function></link></member>
+	    </simplelist></para></section>
+	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
@@ -14820,6 +14960,16 @@ The type of the object.</para>
 	<para>
 This exception is raised if an object is not registered.</para>
 	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Admin.getObjectInfo"><function>Admin::getObjectInfo</function></link></member>
+		<member><link linkend="IceGrid.Admin.removeObject"><function>Admin::removeObject</function></link></member>
+		<member><link linkend="IceGrid.Admin.updateObject"><function>Admin::updateObject</function></link></member>
+		<member><link linkend="IceGrid.Session.allocateObjectById"><function>Session::allocateObjectById</function></link></member>
+		<member><link linkend="IceGrid.Session.releaseObject"><function>Session::releaseObject</function></link></member>
+	    </simplelist></para></section>
+	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
@@ -14845,6 +14995,12 @@ This exception is raised if an object is not registered.</para>
 <synopsis>exception <classname>ParseException</classname></synopsis>
 	<para>
 This exception is raised if an error occurs during parsing.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.FileParser.parse"><function>FileParser::parse</function></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
@@ -14873,6 +15029,13 @@ The reason for the failure.</para>
 	<para>
 This exception is raised if a patch failed.</para>
 	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Admin.patchApplication"><function>Admin::patchApplication</function></link></member>
+		<member><link linkend="IceGrid.Admin.patchServer"><function>Admin::patchServer</function></link></member>
+	    </simplelist></para></section>
+	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
@@ -14900,6 +15063,15 @@ The reasons why the patch failed.</para>
 	<para>
 This exception is raised if a client is denied the ability to create
 a session with IceGrid.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Registry.createAdminSession"><function>Registry::createAdminSession</function></link></member>
+		<member><link linkend="istry.createAdminSessionFromSecureConnection"><function>Registry::createAdminSessionFromSecureConnection</function></link></member>
+		<member><link linkend="IceGrid.Registry.createSession"><function>Registry::createSession</function></link></member>
+		<member><link linkend="d.Registry.createSessionFromSecureConnection"><function>Registry::createSessionFromSecureConnection</function></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>See Also</title>
 	    <para>
@@ -16201,6 +16373,21 @@ The property set.</para>
 	<para>
 This exception is raised if a server does not exist.</para>
 	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Admin.enableServer"><function>Admin::enableServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.getServerInfo"><function>Admin::getServerInfo</function></link></member>
+		<member><link linkend="IceGrid.Admin.getServerPid"><function>Admin::getServerPid</function></link></member>
+		<member><link linkend="IceGrid.Admin.getServerState"><function>Admin::getServerState</function></link></member>
+		<member><link linkend="IceGrid.Admin.isServerEnabled"><function>Admin::isServerEnabled</function></link></member>
+		<member><link linkend="IceGrid.Admin.patchServer"><function>Admin::patchServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.sendSignal"><function>Admin::sendSignal</function></link></member>
+		<member><link linkend="IceGrid.Admin.startServer"><function>Admin::startServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.stopServer"><function>Admin::stopServer</function></link></member>
+		<member><link linkend="IceGrid.Admin.writeMessage"><function>Admin::writeMessage</function></link></member>
+	    </simplelist></para></section>
+	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
@@ -16227,6 +16414,12 @@ The identifier of the server.</para>
 <synopsis>exception <classname>ServerStartException</classname></synopsis>
 	<para>
 This exception is raised if a server failed to start.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Admin.startServer"><function>Admin::startServer</function></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
@@ -16368,6 +16561,12 @@ The server is destroyed.</para>
 <synopsis>exception <classname>ServerStopException</classname></synopsis>
 	<para>
 This exception is raised if a server failed to stop.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.Admin.stopServer"><function>Admin::stopServer</function></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
@@ -16913,6 +17112,12 @@ is found for the given user.</para>
 	<para>
 This exception is raised if a user account for a given session
 identifier can't be found.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceGrid.UserAccountMapper.getUserAccount"><function>UserAccountMapper::getUserAccount</function></link></member>
+	    </simplelist></para></section>
     </section>
 </section>
 <section id="IceStorm">
@@ -17077,6 +17282,12 @@ Mapping of topic name to topic proxy.</para>
 This exception indicates that an attempt was made to create a link
 that already exists.</para>
 	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceStorm.Topic.link"><function>Topic::link</function></link></member>
+	    </simplelist></para></section>
+	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
@@ -17164,6 +17375,12 @@ The cost of traversing this link.</para>
 This exception indicates that an attempt was made to remove a
 link that does not exist.</para>
 	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceStorm.Topic.unlink"><function>Topic::unlink</function></link></member>
+	    </simplelist></para></section>
+	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
@@ -17191,6 +17408,12 @@ The name of the link that does not exist.</para>
 	<para>
 This exception indicates that an attempt was made to retrieve a
 topic that does not exist.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceStorm.TopicManager.retrieve"><function>TopicManager::retrieve</function></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
@@ -17477,6 +17700,12 @@ Destroy the topic.</para>
 	<para>
 This exception indicates that an attempt was made to create a topic
 that already exists.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IceStorm.TopicManager.create"><function>TopicManager::create</function></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
@@ -17787,6 +18016,12 @@ Shut down the &IcePatch2; server.</para>
 This exception is raised if <literal>getFileCompressed</literal> cannot read the
 contents of a file.</para>
 	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePatch2.FileServer.getFileCompressed"><function>FileServer::getFileCompressed</function></link></member>
+	    </simplelist></para></section>
+	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
@@ -18029,5 +18264,11 @@ the file to be read.</para>
 	<para>
 This exception is raised if the <literal>partition</literal> argument for
 <literal>getFileInfoSeq</literal> is not in the range 0-255.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePatch2.FileServer.getFileInfoSeq"><function>FileServer::getFileInfoSeq</function></link></member>
+	    </simplelist></para></section>
     </section>
 </section>

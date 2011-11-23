@@ -29,11 +29,16 @@
 #include <Ice/Communicator.h>
 #include <Ice/Router.h>
 #include <Ice/DefaultsAndOverrides.h>
+#include <Ice/TraceLevels.h>
 
 #ifdef _WIN32
 #   include <sys/timeb.h>
 #else
 #   include <sys/time.h>
+#endif
+
+#ifdef __BCPLUSPLUS__
+#  include <iterator>
 #endif
 
 using namespace std;
@@ -504,7 +509,7 @@ Ice::ObjectAdapterI::createReverseProxy(const Identity& ident) const
     // Create a reference and return a reverse proxy for this
     // reference.
     //
-    ReferencePtr ref = _instance->referenceFactory()->create(ident, _instance->initializationData().defaultContext, 
+    ReferencePtr ref = _instance->referenceFactory()->create(ident, _instance->getDefaultContext(), 
     							     "", Reference::ModeTwoway, connections);
     return _instance->proxyFactory()->referenceToProxy(ref);
 }
@@ -744,6 +749,15 @@ Ice::ObjectAdapterI::ObjectAdapterI(const InstancePtr& instance, const Communica
     	    {
 	        _incomingConnectionFactories.push_back(new IncomingConnectionFactory(instance, *p, this, _name));
 	    }
+	    if(endpoints.empty())
+	    {
+		TraceLevelsPtr tl = _instance->traceLevels();
+		if(tl->network >= 2)
+		{
+		    Trace out(_instance->initializationData().logger, tl->networkCat);
+		    out << "created adapter `" << name << "' without endpoints";
+		}
+	    }
 
 	    //
 	    // Parse published endpoints. If set, these are used in proxies
@@ -851,7 +865,7 @@ Ice::ObjectAdapterI::newDirectProxy(const Identity& ident, const string& facet) 
     // Create a reference and return a proxy for this reference.
     //
     ReferencePtr ref = _instance->referenceFactory()->create(
-	ident, _instance->initializationData().defaultContext, facet, Reference::ModeTwoway, false, endpoints, 0,
+	ident, _instance->getDefaultContext(), facet, Reference::ModeTwoway, false, endpoints, 0,
 	_instance->defaultsAndOverrides()->defaultCollocationOptimization);
     return _instance->proxyFactory()->referenceToProxy(ref);
 
@@ -864,7 +878,7 @@ Ice::ObjectAdapterI::newIndirectProxy(const Identity& ident, const string& facet
     // Create an indirect reference with the given adapter id.
     //
     ReferencePtr ref = _instance->referenceFactory()->create(
-	ident, _instance->initializationData().defaultContext, facet, Reference::ModeTwoway, false, id, 0, 
+	ident, _instance->getDefaultContext(), facet, Reference::ModeTwoway, false, id, 0, 
 	_locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization,
 	_instance->defaultsAndOverrides()->defaultLocatorCacheTimeout);
     

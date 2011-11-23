@@ -11,6 +11,10 @@
 #include <Slice/Preprocessor.h>
 #include <Slice/JavaUtil.h>
 
+#ifdef __BCPLUSPLUS__
+#  include <iterator>
+#endif
+
 using namespace std;
 using namespace Slice;
 using namespace IceUtil;
@@ -421,7 +425,7 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
 	out << eb;
 	
 	string countMethod = dict.indices[i].member.empty() ?
-	    "valueCount" : dict.indices[i].member + "Count";
+	    string("valueCount") : dict.indices[i].member + "Count";
 	out << sp << nl << "public int";
 	out << nl << countMethod << "("
 	    << typeToString(indexTypes[i], TypeModeIn) << " __index)";
@@ -1103,7 +1107,7 @@ main(int argc, char* argv[])
     vector<string> args;
     try
     {
-        args = opts.parse(argc, argv);
+        args = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtil::Options::BadOpt& e)
     {
@@ -1127,7 +1131,7 @@ main(int argc, char* argv[])
 	vector<string> optargs = opts.argVec("D");
 	for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
 	{
-	    cppArgs += " -D" + *i;
+	    cppArgs += " -D\"" + *i + "\"";
 	}
     }
     if(opts.isSet("U"))
@@ -1135,7 +1139,7 @@ main(int argc, char* argv[])
 	vector<string> optargs = opts.argVec("U");
 	for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
 	{
-	    cppArgs += " -U" + *i;
+	    cppArgs += " -U\"" + *i + "\"";
 	}
     }
     if(opts.isSet("I"))
@@ -1143,7 +1147,7 @@ main(int argc, char* argv[])
 	includePaths = opts.argVec("I");
 	for(vector<string>::const_iterator i = includePaths.begin(); i != includePaths.end(); ++i)
 	{
-	    cppArgs += " -I" + *i;
+	    cppArgs += " -I\"" + *i + "\"";
 	}
     }
     preprocess = opts.isSet("E");

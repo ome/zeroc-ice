@@ -179,7 +179,12 @@ local interface Communicator
      * the property
      * <literal><replaceable>name</replaceable>.Endpoints</literal>,
      * and then calls [createObjectAdapter]. It is provided as a
-     * convenience function.
+     * convenience function.</para>
+     *
+     * <para>It is legal to create an object adapter without any endpoints.
+     * Such an object adapter cannot be accessed remotely and, therefore,
+     * is accessible only for collocated invocations within a single address
+     * space.
      * 
      * @param name The object adapter name.
      *
@@ -271,6 +276,7 @@ local interface Communicator
      **/
     nonmutating ObjectFactory findObjectFactory(string id);
 
+
     /**
      *
      * Get the currently-set default context.
@@ -279,8 +285,24 @@ local interface Communicator
      * default context is currently set, [getDefaultContext]
      * returns an empty context.
      *
+     * @see setDefaultContext
      **/
     nonmutating Context getDefaultContext();
+
+    /**
+     *
+     * Set a default context on this communicator. All newly
+     * created proxies will use this default context. This operation 
+     * has no effect on existing proxies.
+     *
+     * <note><para> You can also set a context for an individual proxy
+     * by calling the operation [ice_context] on the proxy.</para></note>
+     *
+     * @param ctx The default context to be set.
+     * @see getDefaultContext
+     **/
+    void setDefaultContext(Context ctx);
+
 
     /**
      *

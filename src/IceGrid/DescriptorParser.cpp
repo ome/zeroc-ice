@@ -413,7 +413,9 @@ DescriptorHandler::startElement(const string& name, const IceXML::Attributes& at
 	}
 	else if(name == "distrib")
 	{
-	    if(!_currentApplication.get() && (!_currentServer.get() || _currentServer.get() != _currentCommunicator))
+	    if(!_currentApplication.get() ||
+	       (_currentNode.get() || _currentTemplate.get()) && !_currentServer.get() ||
+	       _currentServer.get() != _currentCommunicator)
 	    {
 		error("the <distrib> element can only be a child of an <application>, <server> or <icebox> element");
 	    }
@@ -780,10 +782,10 @@ DescriptorHandler::elementValue()
 bool
 DescriptorHandler::isTargetDeployable(const string& target) const
 {
-    string application = _currentApplication.get() ? _currentApplication->getDescriptor().name : "";
-    string node = _currentNode.get() ? _currentNode->getName() : "";
-    string server = _currentServer.get() ? _currentServer->getDescriptor()->id : "";
-    string service = _currentService.get() ? _currentService->getDescriptor()->name : "";
+    string application = _currentApplication.get() ? _currentApplication->getDescriptor().name : string("");
+    string node = _currentNode.get() ? _currentNode->getName() : string("");
+    string server = _currentServer.get() ? _currentServer->getDescriptor()->id : string("");
+    string service = _currentService.get() ? _currentService->getDescriptor()->name : string("");
 
     //
     // Compute the current fully qualified name of the communicator.

@@ -117,7 +117,6 @@ SRCS		= $(OBJS:.o=.cpp)
 
 SLICE_SRCS	= $(SDIR)/BuiltinSequences.ice \
 		  $(SDIR)/CommunicatorF.ice \
-		  $(SDIR)/Communicator.ice \
 		  $(SDIR)/ConnectionF.ice \
 		  $(SDIR)/Connection.ice \
 		  $(SDIR)/Current.ice \
@@ -151,6 +150,12 @@ HDIR		= $(includedir)/Ice
 SDIR		= $(slicedir)/Ice
 
 include $(top_srcdir)/config/Make.rules
+
+#
+# Disable pattern rule for Communicator.ice
+#
+$(HDIR)/Communicator.h Communicator.cpp: $(SDIR)/Communicator.ice
+	touch -c $(HDIR)/Communicator.h Communicator.cpp
 
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_API_EXPORTS $(BZIP2_FLAGS)
 SLICE2CPPFLAGS	:= --ice --include-dir Ice --dll-export ICE_API $(SLICE2CPPFLAGS)

@@ -1,0 +1,820 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Ice::Connection</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Ice::ConnectTimeoutException"
+HREF="x2046.html"><LINK
+REL="NEXT"
+TITLE="Ice::ConnectionLostException"
+HREF="x2252.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x2046.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x2252.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICE.CONNECTION"
+><TT
+CLASS="LITERAL"
+>Ice::Connection</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN2061"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local interface <CODE
+CLASS="CLASSNAME"
+>Connection</CODE
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>The user-level interface to a connection.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2066"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="x2300.html#ICE.CURRENT.CON"
+><SPAN
+CLASS="TYPE"
+>Current::con</SPAN
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2073"
+>Operation Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x2058.html#ICE.CONNECTION.CLOSE"
+><TT
+CLASS="FUNCTION"
+>close</TT
+></A
+></DT
+><DD
+><P
+>Close a connection, either gracefully or forcefully.</P
+></DD
+><DT
+><A
+HREF="x2058.html#ICE.CONNECTION.CREATEPROXY"
+><TT
+CLASS="FUNCTION"
+>createProxy</TT
+></A
+></DT
+><DD
+><P
+>Create a special proxy that always uses this connection.</P
+></DD
+><DT
+><A
+HREF="x2058.html#ICE.CONNECTION.SETADAPTER"
+><TT
+CLASS="FUNCTION"
+>setAdapter</TT
+></A
+></DT
+><DD
+><P
+>Explicitly set an object adapter that dispatches requests that
+are received over this connection.</P
+></DD
+><DT
+><A
+HREF="x2058.html#ICE.CONNECTION.GETADAPTER"
+><TT
+CLASS="FUNCTION"
+>getAdapter</TT
+></A
+></DT
+><DD
+><P
+>Get the object adapter that dispatches requests for this
+connection.</P
+></DD
+><DT
+><A
+HREF="x2058.html#ICE.CONNECTION.FLUSHBATCHREQUESTS"
+><TT
+CLASS="FUNCTION"
+>flushBatchRequests</TT
+></A
+></DT
+><DD
+><P
+>Flush any pending batch requests for this connection.</P
+></DD
+><DT
+><A
+HREF="x2058.html#ICE.CONNECTION.TYPE"
+><TT
+CLASS="FUNCTION"
+>type</TT
+></A
+></DT
+><DD
+><P
+>Return the connection type.</P
+></DD
+><DT
+><A
+HREF="x2058.html#ICE.CONNECTION.TIMEOUT"
+><TT
+CLASS="FUNCTION"
+>timeout</TT
+></A
+></DT
+><DD
+><P
+>Get the timeout for the connection.</P
+></DD
+><DT
+><A
+HREF="x2058.html#ICE.CONNECTION.TOSTRING"
+><TT
+CLASS="FUNCTION"
+>toString</TT
+></A
+></DT
+><DD
+><P
+>Return a description of the connection as human readable text,
+suitable for logging or error messages.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.CONNECTION.CLOSE"
+><TT
+CLASS="LITERAL"
+>close</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>close</TT
+>(<SPAN
+CLASS="TYPE"
+>bool</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>force</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Close a connection, either gracefully or forcefully. If a
+connection is closed forcefully, it closes immediately, without
+sending the relevant close connection protocol messages to the
+peer and waiting for the peer to acknowledge these protocol
+messages.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2133"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>force</I
+></TT
+></DT
+><DD
+><P
+>			    If true, close forcefully. Otherwise the
+connection is closed gracefully.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.CONNECTION.CREATEPROXY"
+><TT
+CLASS="LITERAL"
+>createProxy</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>Object*</SPAN
+> <TT
+CLASS="FUNCTION"
+>createProxy</TT
+>(<A
+HREF="x2684.html"
+><CODE
+CLASS="STRUCTNAME"
+>Identity</CODE
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Create a special proxy that always uses this connection. This
+can be used for callbacks from a server to a client if the
+server cannot directly establish a connection to the client,
+for example because of firewalls. In this case, the server
+would create a proxy using an already established connection
+from the client.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2151"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+></DT
+><DD
+><P
+>			    The identity for which a proxy is to be created.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2159"
+>Return Value</A
+></H3
+><P
+>		A proxy that matches the given identity and uses this
+connection.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2162"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x2058.html#ICE.CONNECTION.SETADAPTER"
+><TT
+CLASS="FUNCTION"
+>setAdapter</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.CONNECTION.SETADAPTER"
+><TT
+CLASS="LITERAL"
+>setAdapter</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>setAdapter</TT
+>(<A
+HREF="x3556.html"
+><CODE
+CLASS="CLASSNAME"
+>ObjectAdapter</CODE
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>adapter</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Explicitly set an object adapter that dispatches requests that
+are received over this connection. A client can invoke an
+operation on a server using a proxy, and then set an object
+adapter for the outgoing connection that is used by the proxy
+in order to receive callbacks. This is useful if the server
+cannot establish a connection back to the client, for example
+because of firewalls.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2179"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>adapter</I
+></TT
+></DT
+><DD
+><P
+>			    The object adapter that should be used by this
+connection to dispatch requests. The object adapter must be
+activated. When the object adapter is deactivated, it is
+automatically removed from the connection.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2187"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x2058.html#ICE.CONNECTION.CREATEPROXY"
+><TT
+CLASS="FUNCTION"
+>createProxy</TT
+></A
+>, <A
+HREF="x2058.html#ICE.CONNECTION.SETADAPTER"
+><TT
+CLASS="FUNCTION"
+>setAdapter</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.CONNECTION.GETADAPTER"
+><TT
+CLASS="LITERAL"
+>getAdapter</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x3556.html"
+><CODE
+CLASS="CLASSNAME"
+>ObjectAdapter</CODE
+></A
+> <TT
+CLASS="FUNCTION"
+>getAdapter</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the object adapter that dispatches requests for this
+connection.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2205"
+>Return Value</A
+></H3
+><P
+>		The object adapter that dispatches requests for the
+connection, or null if no adapter is set.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2208"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x2058.html#ICE.CONNECTION.SETADAPTER"
+><TT
+CLASS="FUNCTION"
+>setAdapter</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.CONNECTION.FLUSHBATCHREQUESTS"
+><TT
+CLASS="LITERAL"
+>flushBatchRequests</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>flushBatchRequests</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Flush any pending batch requests for this connection. This
+causes all batch requests that were sent via proxies that use
+this connection to be sent to the server.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.CONNECTION.TYPE"
+><TT
+CLASS="LITERAL"
+>type</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="FUNCTION"
+>type</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Return the connection type. This corresponds to the endpoint
+type, i.e., "tcp", "udp", etc.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2229"
+>Return Value</A
+></H3
+><P
+>		The type of the connection.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.CONNECTION.TIMEOUT"
+><TT
+CLASS="LITERAL"
+>timeout</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>int</SPAN
+> <TT
+CLASS="FUNCTION"
+>timeout</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the timeout for the connection.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2239"
+>Return Value</A
+></H3
+><P
+>		The connection's timeout.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.CONNECTION.TOSTRING"
+><TT
+CLASS="LITERAL"
+>toString</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="FUNCTION"
+>toString</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Return a description of the connection as human readable text,
+suitable for logging or error messages.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2249"
+>Return Value</A
+></H3
+><P
+>		The description of the connection as human readable
+text.</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x2046.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x2252.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::ConnectTimeoutException</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::ConnectionLostException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -132,7 +132,7 @@ public:
 
 typedef IceUtil::Handle<AMI_Test_abortI> AMI_Test_abortIPtr;
 
-class AMI_Test_idempotentAbortI : public AMI_TestIntf_idempotentAbort, public AMI_Test_abortI
+class AMI_Test_idempotentAbortI : public AMI_TestIntf_idempotentAbort, public CallbackBase
 {
     virtual void ice_response()
     {
@@ -141,14 +141,31 @@ class AMI_Test_idempotentAbortI : public AMI_TestIntf_idempotentAbort, public AM
 
     virtual void ice_exception(const Ice::Exception& ex)
     {
-	AMI_Test_abortI::ice_exception(ex);
+	try
+	{
+	    ex.ice_throw();
+	}
+	catch(const Ice::ConnectionLostException&)
+	{
+	}
+	catch(const Ice::ConnectFailedException&)
+	{
+	}
+	catch(Ice::Exception& ex)
+	{
+	    cout << ex << endl;
+	    test(false);
+	}
+	called();
     }
 };
 
 typedef IceUtil::Handle<AMI_Test_idempotentAbortI> AMI_Test_idempotentAbortIPtr;
 
-class AMI_Test_nonmutatingAbortI : public AMI_TestIntf_nonmutatingAbort, public AMI_Test_abortI
+class AMI_Test_nonmutatingAbortI : public AMI_TestIntf_nonmutatingAbort, public CallbackBase
 {
+private:
+
     virtual void ice_response()
     {
 	test(false);
@@ -156,7 +173,22 @@ class AMI_Test_nonmutatingAbortI : public AMI_TestIntf_nonmutatingAbort, public 
 
     virtual void ice_exception(const Ice::Exception& ex)
     {
-	AMI_Test_abortI::ice_exception(ex);
+	try
+	{
+	    ex.ice_throw();
+	}
+	catch(const Ice::ConnectionLostException&)
+	{
+	}
+	catch(const Ice::ConnectFailedException&)
+	{
+	}
+	catch(Ice::Exception& ex)
+	{
+	    cout << ex << endl;
+	    test(false);
+	}
+	called();
     }
 };
 

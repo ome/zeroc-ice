@@ -351,7 +351,8 @@ AdminI::patchApplication_async(const AMD_Admin_patchApplicationPtr& amdCB,
 	AMI_Node_patchPtr cb = new PatchCB(aggregator, *p);
 	try
 	{
-	    _database->getNode(*p)->patch_async(cb, name, "", appDistrib, shutdown);
+	    Resolver resolve(*p, _database->getNodeInfo(*p), _database->getCommunicator());
+	    _database->getNode(*p)->patch_async(cb, name, "", resolve(appDistrib), shutdown);
 	}
 	catch(const Ice::Exception& ex)
 	{
@@ -500,7 +501,8 @@ AdminI::patchServer_async(const AMD_Admin_patchServerPtr& amdCB, const string& i
 			  const Current& current)
 {
     ServerInfo info = _database->getServerInfo(id);
-    ApplicationHelper helper(current.adapter->getCommunicator(), _database->getApplicationDescriptor(info.application));
+    ApplicationHelper helper(current.adapter->getCommunicator(), 
+			     _database->getApplicationDescriptor(info.application));
     DistributionDescriptor appDistrib;
     vector<string> nodes;
     helper.getDistributions(appDistrib, nodes, id);
@@ -517,7 +519,8 @@ AdminI::patchServer_async(const AMD_Admin_patchServerPtr& amdCB, const string& i
     AMI_Node_patchPtr amiCB = new ServerPatchCB(amdCB, _traceLevels, id, *p);
     try
     {
-	_database->getNode(*p)->patch_async(amiCB, info.application, id, appDistrib, shutdown);
+	Resolver resolve(*p, _database->getNodeInfo(*p), _database->getCommunicator());
+	_database->getNode(*p)->patch_async(amiCB, info.application, id, resolve(appDistrib), shutdown);
     }
     catch(const Ice::Exception& ex)
     {

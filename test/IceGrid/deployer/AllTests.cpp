@@ -290,6 +290,36 @@ allTests(const Ice::CommunicatorPtr& comm)
     test(obj->getProperty("NodeProperty") == "NodeVar");
 
     cout << "ok" << endl;
+
+    cout << "testing validation... " << flush;
+    TemplateDescriptor templ;
+    templ.parameters.push_back("name");
+    templ.parameters.push_back("nam3");
+    templ.parameters.push_back("nam2");
+    templ.parameters.push_back("nam3");
+    templ.descriptor = new ServerDescriptor();
+    ServerDescriptorPtr server = ServerDescriptorPtr::dynamicCast(templ.descriptor);
+    server->id = "test";
+    server->exe = "${test.dir}/server";
+    ApplicationDescriptor desc;
+    desc.name = "App";
+    desc.serverTemplates["ServerTemplate"] = templ;
+
+    try
+    {
+	admin->addApplication(desc);
+	test(false);
+    }
+    catch(const DeploymentException& ex)
+    {
+ 	test(ex.reason.find("duplicate parameters") != string::npos);
+    }
+    catch(const Ice::Exception& ex)
+    {
+	cerr << ex << endl;
+	test(false);
+    }
+    cout << "ok" << endl;
 }
 
 void

@@ -24,6 +24,9 @@ class NodeObserverTopic : public NodeObserver, public IceUtil::Mutex
 public:
 
     NodeObserverTopic(const IceStorm::TopicManagerPrx&);
+#ifdef __BCPLUSPLUS__ // COMPILERFIX
+    void initialize(const IceStorm::TopicManagerPrx&);
+#endif
 
     virtual void init(const NodeDynamicInfoSeq&, const Ice::Current&);
     virtual void nodeUp(const NodeDynamicInfo&, const Ice::Current&);
@@ -51,9 +54,12 @@ class RegistryObserverTopic : public RegistryObserver, public IceUtil::Monitor<I
 public:
 
     RegistryObserverTopic(const IceStorm::TopicManagerPrx&);
+#ifdef __BCPLUSPLUS__ // COMPILERFIX
+    void initialize(const IceStorm::TopicManagerPrx&);
+#endif
+
     virtual void init(int, const ApplicationDescriptorSeq&, const AdapterInfoSeq&, const ObjectInfoSeq&,
 		      const Ice::Current&);
-
     virtual void applicationAdded(int, const ApplicationDescriptor&, const Ice::Current&);
     virtual void applicationRemoved(int, const std::string&, const Ice::Current&);
     virtual void applicationUpdated(int, const ApplicationUpdateDescriptor&, const Ice::Current&);

@@ -300,12 +300,43 @@ Resolver::Resolver(const ApplicationDescriptor& app, const Ice::CommunicatorPtr&
 	{
 	    exception("empty server template id");
 	}
+	if(!t->second.descriptor)
+	{
+	    exception("invalid server template `" + t->first + "': server definition is empty");
+	}
+
+	Ice::StringSeq params = t->second.parameters;
+	sort(params.begin(), params.end());
+	Ice::StringSeq wdups = params;
+	Ice::StringSeq dups;
+	set_difference(wdups.begin(), wdups.end(), params.begin(), unique(params.begin(), params.end()), 
+		       back_inserter(dups));
+	if(!dups.empty())
+	{
+	    dups.erase(unique(dups.begin(), dups.end()), dups.end());
+	    exception("invalid server template `" + t->first + "': duplicate parameters " + toString(dups));
+	}
     }
     for(t = _application->serviceTemplates.begin(); t != _application->serviceTemplates.end(); ++t)
     {
 	if(t->first == "")
 	{
 	    exception("empty service template id");
+	}
+	if(!t->second.descriptor)
+	{
+	    exception("invalid service template `" + t->first + "': service definition is empty");
+	}
+	Ice::StringSeq params = t->second.parameters;
+	sort(params.begin(), params.end());
+	Ice::StringSeq wdups = params;
+	Ice::StringSeq dups;
+	set_difference(wdups.begin(), wdups.end(), params.begin(), unique(params.begin(), params.end()), 
+		       back_inserter(dups));
+	if(!dups.empty())
+	{
+	    dups.erase(unique(dups.begin(), dups.end()), dups.end());
+	    exception("invalid server template `" + t->first + "': duplicate parameters " + toString(dups));
 	}
     }
 }
@@ -342,23 +373,20 @@ Resolver::Resolver(const Resolver& resolve,
     }
 }
 
-Resolver::Resolver(const string& context, const map<string, string>& values, const Ice::CommunicatorPtr& com) :
+Resolver::Resolver(const string& name, const NodeInfo& info, const Ice::CommunicatorPtr& com) :
     _application(0),
     _communicator(com),
     _escape(true),
-    _context(context),
-    _variables(values),
+    _context("node `" + name + "'"),
     _reserved(getReserved())
 {
-    checkReserved("variable", values);
-
-    for(StringStringDict::const_iterator v = _variables.begin(); v != _variables.end(); ++v)
-    {
-	if(v->first == "")
-	{
-	    exception("empty variable name");
-	}
-    }
+    setReserved("node", name);
+    setReserved("node.os", info.os);
+    setReserved("node.hostname", info.hostname);
+    setReserved("node.release", info.release);
+    setReserved("node.version", info.version);
+    setReserved("node.machine", info.machine);
+    setReserved("node.datadir", info.dataDir);
 }
 
 string 
@@ -421,7 +449,7 @@ Resolver::operator()(const DistributionDescriptor& desc) const
     DistributionDescriptor result;
     result.icepatch = operator()(desc.icepatch, "IcePatch2 server proxy");
     result.directories = operator()(desc.directories, "distribution source directory");
-    return desc;
+    return result;
 }
 
 PropertyDescriptorSeq
@@ -2445,8 +2473,8 @@ ApplicationHelper::update(const ApplicationUpdateDescriptor& updt) const
 	    {
 		resolve.exception("can't remove servers for node `" + p->name + "': node doesn't exist");
 	    }
-	    desc.loadFactor = p->loadFactor ? p->loadFactor->value : "";
-	    desc.description = p->description ? p->description->value : "";
+	    desc.loadFactor = p->loadFactor ? p->loadFactor->value : string("");
+	    desc.description = p->description ? p->description->value : string("");
 	    def.nodes.insert(make_pair(p->name, desc));
 	}
     }

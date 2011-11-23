@@ -14,6 +14,10 @@
 #include <list>
 #include <OS.h>
 
+#ifdef __BCPLUSPLUS__
+#  include <iterator>
+#endif
+
 using namespace std;
 using namespace Ice;
 using namespace IcePatch2;
@@ -159,16 +163,21 @@ IcePatch2::Patcher::Patcher(const CommunicatorPtr& communicator, const PatcherFe
 	throw string("property `") + endpointsProperty + "' is not set";
     }
 
+    Identity id;
     const char* idProperty = "IcePatch2.Identity";
     string idStr = properties->getProperty(idProperty);
-    if(idStr.empty())
+    if(!idStr.empty())
+    {
+        id = communicator->stringToIdentity(idStr);
+    }
+    else
     {
 	const char* instanceProperty = "IcePatch2.InstanceName";
-	idStr = properties->getPropertyWithDefault(instanceProperty, "IcePatch2") + "/server";
+	id.category = properties->getPropertyWithDefault(instanceProperty, "IcePatch2");
+	id.name = "server";
     }
-    const Identity id = communicator->stringToIdentity(idStr);
     
-    ObjectPrx serverBase = communicator->stringToProxy(communicator->identityToString(id) + ':' + endpoints);
+    ObjectPrx serverBase = communicator->stringToProxy("\"" + communicator->identityToString(id) + "\" :" + endpoints);
     FileServerPrx server = FileServerPrx::checkedCast(serverBase);
     if(!server)
     {
@@ -881,7 +890,7 @@ IcePatch2::Patcher::updateFilesInternal(const FileInfoSeq& files, const Decompre
 			}
 			catch(const FileAccessException& ex)
 			{
-			    throw "server error for `" + p->path + "': " + ex.reason;
+			    throw "error from IcePatch2 server for `" + p->path + "': " + ex.reason;
 			}
 
 			if(bytes.empty())

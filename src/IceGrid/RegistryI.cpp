@@ -41,8 +41,10 @@
 
 #ifdef _WIN32
 #   include <direct.h>
-#   define S_ISDIR(mode) ((mode) & _S_IFDIR)
-#   define S_ISREG(mode) ((mode) & _S_IFREG)
+#   ifdef _MSC_VER
+#      define S_ISDIR(mode) ((mode) & _S_IFDIR)
+#      define S_ISREG(mode) ((mode) & _S_IFREG)
+#   endif
 #else
 #   include <unistd.h>
 #endif
@@ -312,10 +314,14 @@ RegistryI::start(bool nowarn)
     // Create the locator registry and locator interfaces.
     //
     bool dynamicReg = properties->getPropertyAsInt("IceGrid.Registry.DynamicRegistration") > 0;
-    Identity locatorRegistryId = _communicator->stringToIdentity(instanceName + "/" + IceUtil::generateUUID());
+    Identity locatorRegistryId;
+    locatorRegistryId.category = instanceName;
+    locatorRegistryId.name = IceUtil::generateUUID();
     ObjectPrx regPrx = serverAdapter->add(new LocatorRegistryI(_database, dynamicReg), locatorRegistryId);
 
-    Identity locatorId = _communicator->stringToIdentity(instanceName + "/Locator");
+    Identity locatorId;
+    locatorId.category = instanceName;
+    locatorId.name = "Locator";
     clientAdapter->add(new LocatorI(_communicator, _database, LocatorRegistryPrx::uncheckedCast(regPrx)), locatorId);
 
     LocatorPrx internalLocatorPrx = LocatorPrx::uncheckedCast(
@@ -326,17 +332,26 @@ RegistryI::start(bool nowarn)
     // Create the internal IceStorm service and the registry and node
     // topics.
     //
+    Identity topicManagerId;
+    topicManagerId.category = instanceName;
+    topicManagerId.name = "TopicManager";
     _iceStorm = IceStorm::Service::create(_communicator, 
 					  registryAdapter, 
 					  registryAdapter, 
 					  "IceGrid.Registry", 
- 					  _communicator->stringToIdentity(instanceName + "/TopicManager"),
+ 					  topicManagerId,
 					  "Registry");
 
     NodeObserverTopicPtr nodeTopic = new NodeObserverTopic(_iceStorm->getTopicManager());
+#ifdef __BCPLUSPLUS__
+    nodeTopic->initialize(_iceStorm->getTopicManager());
+#endif
     NodeObserverPrx nodeObserver = NodeObserverPrx::uncheckedCast(registryAdapter->addWithUUID(nodeTopic));
 
     RegistryObserverTopicPtr regTopic = new RegistryObserverTopic(_iceStorm->getTopicManager());
+#ifdef __BCPLUSPLUS__
+    regTopic->initialize(_iceStorm->getTopicManager());
+#endif
     RegistryObserverPrx registryObserver = RegistryObserverPrx::uncheckedCast(registryAdapter->addWithUUID(regTopic));
 
     _database->setObservers(registryObserver, nodeObserver);
@@ -344,10 +359,14 @@ RegistryI::start(bool nowarn)
     //
     // Register the internal and public registry interfaces.
     //
-    Identity registryId = _communicator->stringToIdentity(instanceName + "/Registry");
+    Identity registryId;
+    registryId.category = instanceName;
+    registryId.name = "Registry";
     clientAdapter->add(this, registryId);
     
-    Identity internalRegistryId = _communicator->stringToIdentity(instanceName + "/InternalRegistry");
+    Identity internalRegistryId;
+    internalRegistryId.category = instanceName;
+    internalRegistryId.name = "InternalRegistry";
     ObjectPtr internalRegistry = new InternalRegistryI(_database, _nodeReaper, nodeObserver, nodeSessionTimeout);
     registryAdapter->add(internalRegistry, internalRegistryId);
 
@@ -358,33 +377,47 @@ RegistryI::start(bool nowarn)
     // sessions (Glacier2 needs access to the admin endpoints to
     // invoke on these interfaces).
     //
-    Identity queryId = _communicator->stringToIdentity(instanceName + "/Query");
+    Identity queryId;
+    queryId.category = instanceName;
+    queryId.name = "Query";
     clientAdapter->add(new QueryI(_communicator, _database), queryId);
 
-    Identity adminId = _communicator->stringToIdentity(instanceName + "/Admin");
+    Identity adminId;
+    adminId.category = instanceName;
+    adminId.name = "Admin";
     ObjectPtr admin = new AdminI(_database, this, 0);
     adminAdapter->add(admin, adminId);
 
     _clientSessionFactory = new ClientSessionFactory(adminAdapter, _database, _waitQueue);
 
-    Identity clientSessionMgrId = _communicator->stringToIdentity(instanceName + "/SessionManager");
+    Identity clientSessionMgrId;
+    clientSessionMgrId.category = instanceName;
+    clientSessionMgrId.name = "SessionManager";
     adminAdapter->add(new ClientSessionManagerI(_clientSessionFactory), clientSessionMgrId);
 
-    Identity sslClientSessionMgrId = _communicator->stringToIdentity(instanceName + "/SSLSessionManager");
+    Identity sslClientSessionMgrId;
+    sslClientSessionMgrId.category = instanceName;
+    sslClientSessionMgrId.name = "SSLSessionManager";
     adminAdapter->add(new ClientSSLSessionManagerI(_clientSessionFactory), sslClientSessionMgrId);
 
     _adminSessionFactory = new AdminSessionFactory(adminAdapter, _database, _sessionTimeout,regTopic, nodeTopic, this);
 
-    Identity adminSessionMgrId = _communicator->stringToIdentity(instanceName + "/AdminSessionManager");
+    Identity adminSessionMgrId;
+    adminSessionMgrId.category = instanceName;
+    adminSessionMgrId.name = "AdminSessionManager";
     adminAdapter->add(new AdminSessionManagerI(_adminSessionFactory), adminSessionMgrId);
 
-    Identity sslAdmSessionMgrId = _communicator->stringToIdentity(instanceName + "/AdminSSLSessionManager");
+    Identity sslAdmSessionMgrId;
+    sslAdmSessionMgrId.category = instanceName;
+    sslAdmSessionMgrId.name = "AdminSSLSessionManager";
     adminAdapter->add(new AdminSSLSessionManagerI(_adminSessionFactory), sslAdmSessionMgrId);
 
     //
     // Setup null permissions verifier object, client and admin permissions verifiers.
     //
-    Identity nullPermVerifId = _communicator->stringToIdentity(instanceName + "/NullPermissionsVerifier");
+    Identity nullPermVerifId;
+    nullPermVerifId.category = instanceName;
+    nullPermVerifId.name = "NullPermissionsVerifier";
     registryAdapter->add(new NullPermissionsVerifierI(), nullPermVerifId);
     addWellKnownObject(registryAdapter->createProxy(nullPermVerifId), Glacier2::PermissionsVerifier::ice_staticId());
 
@@ -414,7 +447,9 @@ RegistryI::start(bool nowarn)
     {
 	try
 	{
-	    Identity mapperId = _communicator->stringToIdentity(instanceName + "/RegistryUserAccountMapper");
+	    Identity mapperId;
+	    mapperId.category = instanceName;
+	    mapperId.name = "RegistryUserAccountMapper";
 	    registryAdapter->add(new FileUserAccountMapperI(userAccountFileProperty), mapperId);
 	    addWellKnownObject(registryAdapter->createProxy(mapperId), UserAccountMapper::ice_staticId());
 	}
@@ -487,6 +522,13 @@ RegistryI::createSession(const string& user, const string& password, const Curre
 	throw ex;
     }
 
+    if(user.empty())
+    {
+        PermissionDeniedException ex;
+	ex.reason = "empty user id";
+	throw ex;
+    }
+
     try
     {
 	string reason;
@@ -526,6 +568,13 @@ RegistryI::createAdminSession(const string& user, const string& password, const 
 	ex.reason = "no admin permissions verifier configured, use the property\n";
 	ex.reason += "`IceGrid.Registry.AdminPermissionsVerifier' to configure\n";
 	ex.reason += "a permissions verifier.";
+	throw ex;
+    }
+
+    if(user.empty())
+    {
+        PermissionDeniedException ex;
+	ex.reason = "empty user id";
 	throw ex;
     }
 
@@ -575,6 +624,13 @@ RegistryI::createSessionFromSecureConnection(const Current& current)
 
     string userDN;
     Glacier2::SSLInfo info = getSSLInfo(current.con, userDN);
+    if(userDN.empty())
+    {
+        PermissionDeniedException ex;
+	ex.reason = "empty user DN";
+	throw ex;
+    }
+
     try
     {
 	string reason;

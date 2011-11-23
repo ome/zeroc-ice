@@ -405,7 +405,8 @@ using namespace Ice;
 
 #define YY_INPUT(buf, result, maxSize) parser->getInput(buf, result, maxSize)
 
-#line 408 "lex.yy.c"
+#define YY_NEVER_INTERACTIVE 1
+#line 409 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -556,10 +557,10 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 38 "Scanner.l"
+#line 39 "Scanner.l"
 
 
-#line 562 "lex.yy.c"
+#line 563 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -644,7 +645,7 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 40 "Scanner.l"
+#line 41 "Scanner.l"
 {
     *yylvalp = new Complex::NumberNodeI(atoi(yytext));
     return TOK_NUMBER;
@@ -652,20 +653,20 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 45 "Scanner.l"
+#line 46 "Scanner.l"
 /* eat whitespace */
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 47 "Scanner.l"
+#line 48 "Scanner.l"
 { return *yytext; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 49 "Scanner.l"
+#line 50 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 668 "lex.yy.c"
+#line 669 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1547,5 +1548,5 @@ int main()
 	return 0;
 	}
 #endif
-#line 49 "Scanner.l"
+#line 50 "Scanner.l"
 

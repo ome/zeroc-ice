@@ -253,11 +253,11 @@ public:
     waitForUpdate(const char* file, int line)
     {
 	Lock sync(*this);
-
+	
 	ostringstream os;
 	os << "wait for update from line " << line << " (serial = " << serial << ")";
 	trace(os.str());
-
+	
 	while(!_updated)
 	{
 	    if(!timedWait(IceUtil::Time::seconds(10)))
@@ -567,6 +567,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    registry1->createSession("client3", "test1");
+	    test(false);
 	}
 	catch(const IceGrid::PermissionDeniedException&)
 	{
@@ -578,6 +579,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    session1->ice_connectionId("")->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -585,6 +587,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    session2->ice_connectionId("")->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -593,6 +596,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    session1->ice_connectionId("reg2")->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -600,6 +604,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    session2->ice_connectionId("reg1")->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -618,6 +623,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    registry1->createAdminSession("admin3", "test1");
+	    test(false);
 	}
 	catch(const IceGrid::PermissionDeniedException&)
 	{
@@ -629,6 +635,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    adminSession1->ice_connectionId("")->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -636,6 +643,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    adminSession2->ice_connectionId("")->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -647,6 +655,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    adminSession1->getAdmin()->ice_connectionId("reg2")->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -654,6 +663,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    adminSession2->getAdmin()->ice_connectionId("reg1")->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -680,6 +690,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    session1->ice_connectionId("")->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -687,6 +698,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    session2->ice_connectionId("")->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -708,6 +720,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    adminSession1->ice_connectionId("")->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -715,6 +728,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    adminSession2->ice_connectionId("")->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -763,6 +777,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    router1->createSession("client3", "test1");
+	    test(false);
 	}
 	catch(const Glacier2::CannotCreateSessionException&)
 	{
@@ -774,6 +789,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    session1->ice_connectionId("router2")->ice_router(router2)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -781,6 +797,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    session2->ice_connectionId("router1")->ice_router(router1)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -794,6 +811,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    obj->ice_connectionId("router1")->ice_router(router1)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -801,6 +819,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    obj->ice_connectionId("router2")->ice_router(router2)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -832,6 +851,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    adminRouter1->createSession("client3", "test1");
+	    test(false);
 	}
 	catch(const Glacier2::CannotCreateSessionException&)
 	{
@@ -849,6 +869,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    admSession1->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -856,6 +877,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    admSession2->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -864,6 +886,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    admin1->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -871,31 +894,21 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    admin2->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
 	}
 
 	obj = communicator->stringToProxy("IceGrid/Query");
-	try
-	{
-	    obj->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
-	}
-	catch(const Ice::ObjectNotExistException&)
-	{
-	}
-	try
-	{
-	    obj->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
-	}
-	catch(const Ice::ObjectNotExistException&)
-	{
-	}
+	obj->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	obj->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
 
 	obj = communicator->stringToProxy("IceGrid/Admin");
 	try
 	{
 	    obj->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -903,6 +916,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    obj->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -933,6 +947,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	SessionPrx session1, session2;
 
 	Glacier2::SessionPrx base;
+	Ice::ObjectPrx obj;
 
 	//
 	// BUGFIX: We can't re-use the same router proxies because of bug 1034.
@@ -952,6 +967,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    session1->ice_connectionId("router21")->ice_router(router2)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -959,12 +975,13 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    session2->ice_connectionId("router11")->ice_router(router1)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
 	}
 
-	Ice::ObjectPrx obj = communicator->stringToProxy("IceGrid/Query");
+	obj = communicator->stringToProxy("IceGrid/Query");
 	obj->ice_connectionId("router11")->ice_router(router1)->ice_ping();
 	obj->ice_connectionId("router21")->ice_router(router2)->ice_ping();
 
@@ -972,6 +989,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    obj->ice_connectionId("router11")->ice_router(router1)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -979,6 +997,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	try
 	{
 	    obj->ice_connectionId("router21")->ice_router(router2)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -1001,31 +1020,39 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
 	AdminSessionPrx admSession1, admSession2;
 
+	//
+	// BUGFIX: We can't re-use the same router proxies because of bug 1034.
+	//
+	adminRouter1 = Glacier2::RouterPrx::uncheckedCast(adminRouter->ice_connectionId("admRouter11"));
+	adminRouter2 = Glacier2::RouterPrx::uncheckedCast(adminRouter->ice_connectionId("admRouter21"));
+
 	base = adminRouter1->createSessionFromSecureConnection();
-	admSession1 = AdminSessionPrx::uncheckedCast(base->ice_connectionId("admRouter1")->ice_router(adminRouter1));
+	admSession1 = AdminSessionPrx::uncheckedCast(base->ice_connectionId("admRouter11")->ice_router(adminRouter1));
 
 	base = adminRouter2->createSessionFromSecureConnection();
-	admSession2 = AdminSessionPrx::uncheckedCast(base->ice_connectionId("admRouter2")->ice_router(adminRouter2));
+	admSession2 = AdminSessionPrx::uncheckedCast(base->ice_connectionId("admRouter21")->ice_router(adminRouter2));
 
 	admSession1->ice_ping();
 	admSession2->ice_ping();
 
-	Ice::ObjectPrx admin1 = admSession1->getAdmin()->ice_router(adminRouter1)->ice_connectionId("admRouter1");
-	Ice::ObjectPrx admin2 = admSession2->getAdmin()->ice_router(adminRouter2)->ice_connectionId("admRouter2");
+	Ice::ObjectPrx admin1 = admSession1->getAdmin()->ice_router(adminRouter1)->ice_connectionId("admRouter11");
+	Ice::ObjectPrx admin2 = admSession2->getAdmin()->ice_router(adminRouter2)->ice_connectionId("admRouter21");
 
 	admin1->ice_ping();
 	admin2->ice_ping();
 
 	try
 	{
-	    admSession1->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	    admSession1->ice_connectionId("admRouter21")->ice_router(adminRouter2)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
 	}
 	try
 	{
-	    admSession2->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	    admSession2->ice_connectionId("admRouter11")->ice_router(adminRouter1)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -1033,46 +1060,38 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
 	try
 	{
-	    admin1->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	    admin1->ice_connectionId("admRouter21")->ice_router(adminRouter2)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
 	}
 	try
 	{
-	    admin2->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	    admin2->ice_connectionId("admRouter11")->ice_router(adminRouter1)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
 	}
 
 	obj = communicator->stringToProxy("IceGrid/Query");
-	try
-	{
-	    obj->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
-	}
-	catch(const Ice::ObjectNotExistException&)
-	{
-	}
-	try
-	{
-	    obj->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
-	}
-	catch(const Ice::ObjectNotExistException&)
-	{
-	}	    
+	obj->ice_connectionId("admRouter11")->ice_router(adminRouter1)->ice_ping();
+	obj->ice_connectionId("admRouter21")->ice_router(adminRouter2)->ice_ping();
 
 	obj = communicator->stringToProxy("IceGrid/Admin");
 	try
 	{
-	    obj->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	    obj->ice_connectionId("admRouter11")->ice_router(adminRouter1)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{ 
 	}
 	try
 	{
-	    obj->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	    obj->ice_connectionId("admRouter21")->ice_router(adminRouter2)->ice_ping();
+	    test(false);
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -1651,6 +1670,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	
 	regObs1->waitForUpdate(__FILE__, __LINE__);
 	nodeObs1->waitForUpdate(__FILE__, __LINE__); // init
+	IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(500));
 
 	test(nodeObs1->nodes.find("localnode") != nodeObs1->nodes.end());
 	test(regObs1->applications.empty());

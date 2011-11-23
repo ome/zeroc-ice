@@ -11,6 +11,7 @@
 #define ICE_OBJECT_F_H
 
 #include <Ice/Handle.h>
+#include <Ice/GCCountMap.h>
 
 namespace Ice
 {
