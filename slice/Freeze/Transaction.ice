@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,9 @@
 
 module Freeze
 {
+
+local interface Connection;
+
 
 /**
  * 
@@ -26,6 +29,8 @@ local interface Transaction
      *
      * Commit this transaction. 
      *
+     * @throws DatabaseException Raised if a database failure occurred.
+     *
      **/
     void commit();
 
@@ -33,8 +38,17 @@ local interface Transaction
      *
      * Roll back this transaction. 
      *
+     * @throws DatabaseException Raised if a database failure occurred.
+     *
      **/
     void rollback();
+
+    /**
+     *
+     * Get the connection associated with this Transaction
+     *
+     **/
+    ["cpp:const"] Connection getConnection();
 }; 
 
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,7 +38,8 @@ interface PermissionsVerifier
      * @return True if access is granted, or false otherwise.
      *
      **/
-    ["nonmutating", "cpp:const"] idempotent bool checkPermissions(string userId, string password, out string reason);
+    ["ami", "nonmutating", "cpp:const"] idempotent bool checkPermissions(string userId, string password, 
+                                                                         out string reason);
 };
 
 /**
@@ -64,7 +65,7 @@ interface SSLPermissionsVerifier
      * @see SSLInfo
      *
      **/
-    ["nonmutating", "cpp:const"] idempotent bool authorize(SSLInfo info, out string reason);
+    ["ami", "nonmutating", "cpp:const"] idempotent bool authorize(SSLInfo info, out string reason);
 };
 
 };

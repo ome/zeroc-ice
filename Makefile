@@ -1,68 +1,65 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
-top_srcdir	= .
+SUBDIRS			= cpp java cs py rb php
+CLEAN_SUBDIRS		= java cs py rb php cpp
+DEPEND_SUBDIRS		= cpp cs py rb php
+INSTALL_SUBDIRS		= cpp java cs py rb php
 
-include $(top_srcdir)/config/Make.rules
-
-SUBDIRS		= config src include test demo slice doc
-
-INSTALL_SUBDIRS	= $(install_bindir) $(install_libdir) $(install_includedir) $(install_slicedir) $(install_docdir)
-
-install::
-	@if test ! -d $(prefix) ; \
-	then \
-	    echo "Creating $(prefix)..." ; \
-	    $(call mkdir,$(prefix)) ; \
-	fi
-ifneq ($(embedded_runpath_prefix),)
-	@if test -h $(embedded_runpath_prefix) ; \
-	then \
-	     if `\rm -f $(embedded_runpath_prefix) 2>/dev/null`; \
-              then echo "Removed symbolic link $(embedded_runpath_prefix)"; fi \
-        fi
-	@if `ln -s $(prefix) $(embedded_runpath_prefix) 2>/dev/null`;\
-         then echo "Created symbolic link $(embedded_runpath_prefix) --> $(prefix)"; fi
-endif
-	@for subdir in $(INSTALL_SUBDIRS); \
-	do \
-	    if test ! -d $$subdir ; \
-	    then \
-		echo "Creating $$subdir..." ; \
-		mkdir -p $$subdir ; \
-		chmod a+rx $$subdir ; \
-	    fi ; \
-	done
-
-$(EVERYTHING)::
+all::
 	@for subdir in $(SUBDIRS); \
 	do \
-	    echo "making $@ in $$subdir"; \
-	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
+	    echo "making all in $$subdir"; \
+	    ( cd $$subdir && $(MAKE) all ) || exit 1; \
 	done
 
-doc::
-	@( cd doc && $(MAKE) ) || exit 1
+clean::
+	@for subdir in $(CLEAN_SUBDIRS); \
+	do \
+	    echo "making clean in $$subdir"; \
+	    ( cd $$subdir && $(MAKE) clean ) || exit 1; \
+	done
+
+depend::
+	@for subdir in $(DEPEND_SUBDIRS); \
+	do \
+	    echo "making depend in $$subdir"; \
+	    ( cd $$subdir && $(MAKE) depend ) || exit 1; \
+	done
 
 install::
-	@if test -d doc ; \
-	then \
-	    ( cd doc && $(MAKE) install ) || exit 1 ; \
-	fi
-	$(call installdata,ICE_LICENSE,$(prefix))
-	$(call installdata,LICENSE,$(prefix))
+	@for subdir in $(INSTALL_SUBDIRS); \
+	do \
+	    echo "making install in $$subdir"; \
+	    ( cd $$subdir && $(MAKE) install ) || exit 1; \
+	done
 
-clean::
-	@if test -d doc ; \
-	then \
-	    ( cd doc && $(MAKE) clean ) || exit 1 ; \
-	fi
+cpp::
+	echo "making all in cpp";
+	( cd cpp && $(MAKE) all ) || exit 1;
 
-test::
-	@python $(top_srcdir)/allTests.py
+java::
+	echo "making all in java";
+	( cd java && $(MAKE) all ) || exit 1;
+
+cs::
+	echo "making all in cs";
+	( cd cs && $(MAKE) all ) || exit 1;
+
+py::
+	echo "making all in py";
+	( cd py && $(MAKE) all ) || exit 1;
+
+rb::
+	echo "making all in rb";
+	( cd rb && $(MAKE) all ) || exit 1;
+
+php::
+	echo "making all in php";
+	( cd php && $(MAKE) all ) || exit 1;

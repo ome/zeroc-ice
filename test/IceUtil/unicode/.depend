@@ -1,1 +1,0 @@
-Client$(OBJEXT): Client.cpp ../../../include/IceUtil/Unicode.h ../../../include/IceUtil/Config.h ../../../include/IceUtil/Exception.h ../../include/TestCommon.h

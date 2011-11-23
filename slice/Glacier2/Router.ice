@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -107,7 +107,7 @@ interface Router extends Ice::Router
      * cannot be created.
      *
      **/
-    Session* createSession(string userId, string password)
+    ["amd"] Session* createSession(string userId, string password)
         throws PermissionDeniedException, CannotCreateSessionException;
 
     /**
@@ -139,7 +139,7 @@ interface Router extends Ice::Router
      * cannot be created.
      *
      **/
-    Session* createSessionFromSecureConnection()
+    ["amd"] Session* createSessionFromSecureConnection()
         throws PermissionDeniedException, CannotCreateSessionException;
 
     /**
@@ -150,7 +150,7 @@ interface Router extends Ice::Router
      * for the calling client.
      *
      **/
-    void destroySession()
+    ["ami"] void destroySession()
         throws SessionNotExistException;
 
     /**

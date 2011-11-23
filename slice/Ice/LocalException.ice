@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -89,12 +89,16 @@ local exception AlreadyRegisteredException
 
 /**
  *
- * An attempt was made to deregister something that is not
- * registered with the Ice run time.
+ * An attempt was made to find or deregister something that is not
+ * registered with the Ice run time or Ice locator.
  *
  * This exception is raised if an attempt is made to remove a servant,
  * facet, object factory, plug-in, object adapter, object, or user
- * exception factory that is not currently registered.
+ * exception factory that is not currently registered. 
+ 
+ * It's also raised if the Ice locator can't find an object or object
+ * adapter when resolving an indirect proxy or when an object adapter
+ * is activated.
  *
  **/
 local exception NotRegisteredException
@@ -825,7 +829,7 @@ local exception UnexpectedObjectException extends MarshalException
 
     /**
      *
-     * The Slice type ID that was excepted by the receiving operation.
+     * The Slice type ID that was expected by the receiving operation.
      *
      **/
     string expectedType;
@@ -915,6 +919,17 @@ local exception SecurityException
 local exception FixedProxyException
 {
 };
+
+/**
+ * 
+ * Indicates that the response to a request has already been sent;
+ * re-dispatching such a request is not possible.
+ *
+ **/
+local exception ResponseSentException
+{
+};
+
 
 };
 

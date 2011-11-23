@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -17,7 +17,7 @@ from threading import Thread
 #nreplicas=0
 nreplicas=1
 
-for toplevel in [".", "..", "../..", "../../..", "../../../.."]:
+for toplevel in [".", "..", "../..", "../../..", "../../../..", "../../../../.."]:
     toplevel = os.path.normpath(toplevel)
     if os.path.exists(os.path.join(toplevel, "config", "TestUtil.py")):
         break
@@ -48,6 +48,7 @@ registryOptions = r' --Ice.Warn.Connections=0' + \
                   r' --IceGrid.Registry.Server.Endpoints=default' + \
                   r' --IceGrid.Registry.Internal.Endpoints=default' + \
                   r' --IceGrid.Registry.SessionManager.Endpoints=default' + \
+                  r' --IceGrid.Registry.AdminSessionManager.Endpoints=default' + \
                   r' --IceGrid.Registry.Trace.Session=0' + \
                   r' --IceGrid.Registry.Trace.Application=0' + \
                   r' --IceGrid.Registry.Trace.Node=0' + \
@@ -60,23 +61,25 @@ registryOptions = r' --Ice.Warn.Connections=0' + \
                   r' --Ice.ThreadPool.Client.SizeWarn=0' + \
                   r' --IceGrid.Registry.Client.ThreadPool.SizeWarn=0' + \
                   r' --Ice.ServerIdleTime=0' + \
-                  r' --IceGrid.Registry.DefaultTemplates=' + os.path.join(toplevel, "config", "templates.xml")
+                  r' --IceGrid.Registry.DefaultTemplates=' + \
+                  os.path.abspath(os.path.join(TestUtil.findTopLevel(), "cpp", "config", "templates.xml"))
 
 def getDefaultLocatorProperty():
 
    i = 0
-   property = '--Ice.Default.Locator=IceGrid/Locator';
+   property = '--Ice.Default.Locator="IceGrid/Locator';
+   objrefs = ""
    while i < nreplicas + 1:
-       property = property + ':default -p ' + str(iceGridPort + i)
+       objrefs = objrefs + ':default -p ' + str(iceGridPort + i)
        i = i + 1
 
-   return '"' + property + '"'
+   return ' %s%s"' % (property, objrefs)
 
 def startIceGridRegistry(testdir, dynamicRegistration = False):
 
-    iceGrid = os.path.join(toplevel, "bin", "icegridregistry")
+    iceGrid = os.path.join(TestUtil.getCppBinDir(), "icegridregistry")
 
-    command = iceGrid + TestUtil.clientServerOptions + ' --nowarn ' + registryOptions
+    command = ' --nowarn ' + registryOptions
     if dynamicRegistration:
         command += r' --IceGrid.Registry.DynamicRegistration'        
 
@@ -103,11 +106,11 @@ def startIceGridRegistry(testdir, dynamicRegistration = False):
         if i > 0:
             cmd += r' --IceGrid.Registry.ReplicaName=' + name + ' ' + getDefaultLocatorProperty()
 
-        if TestUtil.debug:
-            print "(" + cmd + ")",
-
-        pipe = os.popen(cmd + " 2>&1")
-        TestUtil.getServerPid(pipe)
+        driverConfig = TestUtil.DriverConfig("server")
+        driverConfig.lang = "cpp"
+        pipe = TestUtil.startServer(iceGrid, cmd + " 2>&1", driverConfig)
+        if TestUtil.getDefaultMapping() != "java":
+            TestUtil.getServerPid(pipe)
         TestUtil.getAdapterReady(pipe, True, 4)
         print "ok"
 
@@ -128,7 +131,7 @@ def shutdownIceGridRegistry():
 
 def startIceGridNode(testdir):
 
-    iceGrid = os.path.join(toplevel, "bin", "icegridnode")
+    iceGrid = os.path.join(TestUtil.getCppBinDir(), "icegridnode")
 
     dataDir = os.path.join(testdir, "db", "node")
     if not os.path.exists(dataDir):
@@ -136,8 +139,11 @@ def startIceGridNode(testdir):
     else:
         cleanDbDir(dataDir)
 
-    overrideOptions = '"' 
-    for opt in TestUtil.clientServerOptions.split():
+    #
+    # Create property overrides from command line options.
+    #
+    overrideOptions = '"'
+    for opt in TestUtil.getCommandLine("", TestUtil.DriverConfig("server")).split():
         opt = opt.replace("--", "")
         if opt.find("=") == -1:
             opt += "=1"
@@ -145,17 +151,16 @@ def startIceGridNode(testdir):
     overrideOptions += ' Ice.ServerIdleTime=0 Ice.PrintProcessId=0 Ice.PrintAdapterReady=0"'
 
     print "starting icegrid node...",
-    command = iceGrid + TestUtil.clientServerOptions + ' --nowarn ' + nodeOptions + \
-              r' ' + getDefaultLocatorProperty() + \
+    command = r' --nowarn ' + nodeOptions + getDefaultLocatorProperty() + \
               r' --IceGrid.Node.Data=' + dataDir + \
               r' --IceGrid.Node.Name=localnode' + \
               r' --IceGrid.Node.PropertiesOverride=' + overrideOptions
 
-    if TestUtil.debug:
-        print "(" + command + ")",
-
-    iceGridPipe = os.popen(command + " 2>&1")
-    TestUtil.getServerPid(iceGridPipe)
+    driverConfig = TestUtil.DriverConfig("server")
+    driverConfig.lang = "cpp"
+    iceGridPipe = TestUtil.startServer(iceGrid, command + " 2>&1", driverConfig)
+    if TestUtil.getDefaultMapping() != "java":
+        TestUtil.getServerPid(iceGridPipe)
     TestUtil.getAdapterReady(iceGridPipe, False)
     TestUtil.waitServiceReady(iceGridPipe, 'node')
         
@@ -165,19 +170,17 @@ def startIceGridNode(testdir):
 
 def iceGridAdmin(cmd, ignoreFailure = False):
 
-    iceGridAdmin = os.path.join(toplevel, "bin", "icegridadmin")
+    iceGridAdmin = os.path.join(TestUtil.getCppBinDir(), "icegridadmin")
 
     user = r"admin1"
     if cmd == "registry shutdown":
         user = r"shutdown"
-    command = iceGridAdmin + TestUtil.clientOptions + ' ' + getDefaultLocatorProperty() + \
-              r" --IceGridAdmin.Username=" + user + " --IceGridAdmin.Password=test1 " + \
+    command = getDefaultLocatorProperty() + r" --IceGridAdmin.Username=" + user + " --IceGridAdmin.Password=test1 " + \
               r' -e "' + cmd + '"'
 
-    if TestUtil.debug:
-        print "(" + command +")",
-
-    iceGridAdminPipe = os.popen(command + " 2>&1")
+    driverConfig = TestUtil.DriverConfig("client")
+    driverConfig.lang = "cpp"
+    iceGridAdminPipe = TestUtil.startClient(iceGridAdmin, command + " 2>&1", driverConfig)
 
     output = iceGridAdminPipe.readlines()
     iceGridAdminStatus = TestUtil.closePipe(iceGridAdminPipe)
@@ -196,7 +199,7 @@ def killNodeServers():
         iceGridAdmin("server disable " + server, True)
         iceGridAdmin("server signal " + server + " SIGKILL", True)
 
-def iceGridTest(name, application, additionalOptions = "", applicationOptions = ""):
+def iceGridTest(testdir, name, application, additionalOptions = "", applicationOptions = ""):
 
     if not TestUtil.isWin32() and os.getuid() == 0:
         print
@@ -204,8 +207,9 @@ def iceGridTest(name, application, additionalOptions = "", applicationOptions = 
         print
         return
 
-    testdir = os.path.join(toplevel, "test", name)
-    client = os.path.join(testdir, "client")
+    client = TestUtil.getDefaultClientFile()
+    if TestUtil.getDefaultMapping() != "java":
+        client = os.path.join(testdir, client) 
 
     clientOptions = ' ' + getDefaultLocatorProperty() + ' ' + additionalOptions
 
@@ -215,16 +219,11 @@ def iceGridTest(name, application, additionalOptions = "", applicationOptions = 
     if application != "":
         print "adding application...",
         iceGridAdmin('application add ' + os.path.join(testdir, application) + ' ' + \
-                     '"test.dir=' + testdir + '" "ice.dir=' + toplevel + '" ' + applicationOptions)
+                     '"test.dir=' + testdir + '" "ice.bindir=' + TestUtil.getCppBinDir() + '" ' + applicationOptions)
         print "ok"
 
     print "starting client...",
-    command = client + TestUtil.clientOptions + " " + clientOptions
-
-    if TestUtil.debug:
-        print "(" + command +")",
-
-    clientPipe = os.popen(command + " 2>&1")
+    clientPipe = TestUtil.startClient(client, clientOptions + " 2>&1", TestUtil.DriverConfig("client"))
     print "ok"
 
     TestUtil.printOutputFromPipe(clientPipe)
@@ -254,36 +253,28 @@ def iceGridTest(name, application, additionalOptions = "", applicationOptions = 
     if TestUtil.serverStatus():
         sys.exit(1)                
 
-def iceGridClientServerTest(name, additionalClientOptions, additionalServerOptions):
+def iceGridClientServerTest(testdir, name, additionalClientOptions, additionalServerOptions):
 
-    testdir = os.path.join(toplevel, "test", name)
-    server = os.path.join(testdir, "server")
-    client = os.path.join(testdir, "client")
+    server = TestUtil.getDefaultServerFile()
+    client = TestUtil.getDefaultClientFile()
+    if TestUtil.getDefaultMapping() != "java":
+        server = os.path.join(testdir, server) 
+        client = os.path.join(testdir, client) 
 
     clientOptions = getDefaultLocatorProperty() + ' ' + additionalClientOptions
     serverOptions = getDefaultLocatorProperty() + ' ' + additionalServerOptions
     
     startIceGridRegistry(testdir, True)
 
-    print "starting sever...",
-
-    command = server + TestUtil.clientServerOptions + " " + serverOptions
-
-    if TestUtil.debug:
-        print "(" + command +")",
-
-    serverPipe = os.popen(command + " 2>&1")
-    TestUtil.getServerPid(serverPipe)
+    print "starting server...",
+    serverPipe = TestUtil.startServer(server, serverOptions + " 2>&1", TestUtil.DriverConfig("server"))
+    if TestUtil.getDefaultMapping() != "java":
+        TestUtil.getServerPid(serverPipe)
     TestUtil.getAdapterReady(serverPipe)
     print "ok"
 
     print "starting client...",
-    command = client + TestUtil.clientOptions + " " + clientOptions
-
-    if TestUtil.debug:
-        print "(" + command +")",
-
-    clientPipe = os.popen(command + " 2>&1")
+    clientPipe = TestUtil.startClient(client, clientOptions + " 2>&1", TestUtil.DriverConfig("client"))
     print "ok"
 
     TestUtil.printOutputFromPipe(clientPipe)

@@ -1,0 +1,170 @@
+Mono Version
+------------
+
+This version of Ice for .NET requires Mono version 1.2.2 or later
+(1.2.6 or later if you want to use IPv6 multi-cast).
+
+Note that Mono currently does not contain full SSL support and 
+therefore IceSSL is not supported.
+
+
+Operating System
+----------------
+
+Ice for .NET is expected to build and run properly on any recent Linux
+distribution for x86 and x86_64. However, Ice is officially supported
+only on:
+
+ - Novell SuSE Linux Enterprise Server 10 Service Pack 1 for i586 or
+   x86_64 (SLES 10 SP1).
+
+   Note that SLES 10 SP1 includes Mono 1.2.2, which does not support
+   IPv6 multi-cast. If you want to use this feature, you need to upgrade
+   to Mono 1.2.6 or later. To upgrade to a more recent version
+   of Mono please follow the directions at:
+
+   http://www.go-mono.com/mono-downloads/download.html
+
+You need to install the mono-core and the mono-devel RPMs to build Ice 
+for .NET on Linux.
+
+Build instructions
+------------------
+
+Unpack the source archive. The .NET sources will be contained in the 
+Ice-3.3.0/cs subdirectory.
+
+You will need the Slice to C# translator and supporting executables
+and libraries. You can download a binary distribution from the ZeroC
+web site, or you can build Ice for C++ yourself.
+
+Binary distributions for the supported platforms are available at
+
+  http://www.zeroc.com/download.html
+
+To build Ice for .NET, run
+
+$ make
+
+in the cs subdirectory.
+
+If you have not built Ice for C++ from the cpp subdirectory, then
+you need to set (and export) ICE_HOME to the top-level directory of
+an Ice for C++ installation. (The makefiles look there for a bin
+directory that contains slice2cs.)
+
+
+Configuring the bzip library
+----------------------------
+
+The bin directory contains a file Ice.dll.config that specifies
+the bzip2 library. You need to check that the library name specified
+for the target attribute matches the name of the bzip2 library on your
+machine. If the target attribute does not specify the correct name
+or if bzip2 is not installed, the Ice run time silently runs without
+protocol compression.
+
+To test whether you have set the attribute correctly, run the server
+in demo/Ice/minimal as follows:
+
+$ MONO_LOG_LEVEL=info MONO_LOG_MASK=dll mono --debug server.exe
+
+This produces trace that shows whether the bzip2 library could
+be located at run time. If the library could be found, you will
+see a line of trace as follows:
+
+Mono-INFO: Found as 'BZ2_bzlibVersion'.
+
+
+Running Mono applications on Linux
+----------------------------------
+
+Mono binaries are interpreted so, given a binary called "foo", you
+have to run the Mono interpreter with an argument "foo" to execute
+that binary:
+
+$ mono foo
+
+If you want to avoid having to explicitly invoke the Mono interpreter,
+please follow the "Registering .exe as non-native binaries" instructions
+at http://www.mono-project.com/Guide:Running_Mono_Applications.
+
+Running the tests
+-----------------
+
+Some of the Ice for .NET tests employ applications that are part of the
+Ice for C++ distribution. If you have not built Ice for C++ from the cpp
+subdirectory then you need to set the ICE_HOME environment variable to
+the path where these applications are installed for these tests to run 
+properly:
+
+$ export ICE_HOME=/opt/Ice-3.3.0
+
+Python is required to run the test suite:
+
+  http://www.python.org/download
+
+To run the tests, open a command window and change to the top-level
+directory. At the command prompt, execute:
+
+$ python allTests.py
+
+You can also run tests individually by changing to the test directory
+and running this command:
+
+$ python run.py
+
+If everything worked out, you should see lots of "ok" messages. In
+case of a failure, the tests abort with "failed".
+
+
+Running the demos
+-----------------
+
+To run the demos, you need to have Ice-3.3.0/cs/bin in your MONO_PATH
+or install the Ice DLLs in the GAC. See the README file in each
+demo directory for a description of each demo.
+
+
+Installation
+------------
+
+Open config/Make.rules.cs and change the "prefix" variable to hold
+the top-level installation directory. This directory will be
+created automatically if necessary. Also review the comments for the
+"no_gac" variable and decide whether to enable it. Next, run
+
+$ make install
+
+After installation, add the directory containing the libraries to
+your MONO_PATH. When building applications, you need to reference
+the libraries with the -r option to mcs.
+
+Alternatively, you can add the libraries to the global assembly cache.
+To do this, use
+
+$ gacutil -i <library.dll>
+
+Once installed in the cache, the assemblies will always be located
+correctly without having to set environment variables.
+
+Finally, you could also copy the necessary libraries into the
+directory that contains the .exe for your application.
+
+
+Binary compatibility
+--------------------
+
+Patch releases of Ice are binary compatible. For example, version
+3.2.1 is compatible with 3.2.0, so you can run applications
+compiled with 3.2.0 with the 3.2.1 runtime without having to
+recompile.
+
+Ice for .NET includes policy assemblies in Ice-3.3.0/cs/bin that
+supply the Mono run time with the required compatibility information.
+Policy assemblies have names of the form policy.<major>.<minor>.<package>.dll.
+For example, the policy assembly for IceBox 3.2 is called policy.3.2.IceBox.dll.
+
+To upgrade an existing application to a new patch release, the policy
+assemblies must be present in your MONO_PATH, or they must be
+installed into the GAC as described in the previous section.

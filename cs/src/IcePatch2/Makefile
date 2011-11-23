@@ -1,0 +1,45 @@
+# **********************************************************************
+#
+# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+#
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
+#
+# **********************************************************************
+
+top_srcdir	= ../..
+
+PKG		= IcePatch2
+LIBNAME		= $(PKG).dll
+TARGETS		= $(bindir)/$(LIBNAME)
+POLICY_TARGET	= $(POLICY).dll
+
+SRCS		= AssemblyInfo.cs
+
+SLICE_SRCS	= $(SDIR)/FileInfo.ice \
+		  $(SDIR)/FileServer.ice
+
+SDIR		= $(slicedir)/IcePatch2
+GDIR		= generated
+
+include $(top_srcdir)/config/Make.rules.cs
+
+MCSFLAGS	:= $(MCSFLAGS) -target:library -out:$(TARGETS)
+MCSFLAGS	:= $(MCSFLAGS) -keyfile:$(KEYFILE)
+
+SLICE2CSFLAGS	:= $(SLICE2CSFLAGS) -I$(slicedir) --ice
+
+$(TARGETS):: $(SRCS) $(GEN_SRCS)
+	$(MCS) $(MCSFLAGS) $(call ref,Ice) $(subst /,$(DSEP),$^)
+
+install:: all
+	(cd $(bindir); $(call installassembly,$(LIBNAME),$(PKG)); $(call installpolicy,$(POLICY)); \
+	 $(call installmdb,$(LIBNAME).mdb))
+
+ifeq ($(GACINSTALL),yes)
+install:: all
+	$(call installdata,../../lib/pkgconfig/$(PKG).pc,$(install_pkgconfigdir))
+endif
+
+
+include .depend

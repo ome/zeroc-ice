@@ -1,0 +1,67 @@
+This directory contains a PHP/HTML implementation of the Ice hello
+client. The procedure for installing this script depends on your Web
+server environment. For example, if you're using PHP as a Web server
+module, then you'll need to install this script in your document root
+directory.
+
+Alternatively, if you're using CGI, then you will need to make this
+script executable, add a line at the top of the script to indicate the
+path to the PHP CGI binary, and copy the script to your cgi-bin
+directory. On Unix platforms, the line at the top of the file should
+look something like the one below, where /opt/php5 is the PHP5
+installation directory:
+
+#! /opt/php5/bin/php
+
+Next, the PHP configuration must be modified to load the Slice
+definitions required by this example. In php.ini, set this directive:
+
+ice.slice=/opt/icephp/demo/Ice/hello/Hello.ice
+
+For a Linux RPM installation, this directive can be added to
+/etc/php.d/ice.ini.
+
+Finally, start the hello server on the Web server host and try out the
+script. You can use a hello server from any language mapping.
+
+Note that support for secure invocations via SSL are disabled by
+default. If you have configured SSL for the Ice extension, edit
+hello.php and set the have_ssl variable to true.
+
+
+=========================================================================
+SELinux Notes
+=========================================================================
+
+SELinux augments the traditional Unix permissions with a number of
+new features. In particular, SELinux can prevent the httpd daemon from
+opening network connections and reading files without the proper
+SELinux types.
+
+If you suspect that your IcePHP application does not work due to
+SELinux restrictions, we recommend that you first try it with SELinux
+disabled. As root, run:
+
+# setenforce 0
+
+to disable SELinux until the next reboot of your computer.
+
+If you want to run httpd with IcePHP and SELinux enabled, you must do
+the following:
+
+- Allow httpd to open network connections:
+
+  # setsebool httpd_can_network_connect=1 
+
+  (add the -P option to make this setting persistent across reboots)
+
+- Make sure any .ice file used by your PHP scripts can be read by 
+  httpd. The enclosing directory also needs to be accessible. For
+  example:
+
+  # chcon -R -t httpd_sys_content_t /opt/MyApp/slice 
+
+For more information on SELinux in Red Hat Enterprise Linux 4, refer
+to the link below:
+
+  http://www.redhat.com/docs/manuals/enterprise/RHEL-4-Manual/selinux-guide/

@@ -1,0 +1,211 @@
+Build instructions
+------------------
+
+Ice for .NET has been built and tested with:
+
+- Microsoft Visual Studio 2005 Version 8.0.50727.762 and .NET
+  Framework Version 2.0.50727 SP1.
+
+- Microsoft Visual Studio 2008 Version 9.0.21022.8 RTM and .NET
+  Framework Version 3.5.
+
+Unpack the archive. The .NET sources will be contained in the
+Ice-3.3.0\cs subdirectory.
+
+You will need the Slice to C# translator and supporting executables
+and libraries from the Ice for C++ distribution. You can download a
+binary distribution from the ZeroC web site, or you can build Ice for
+C++ yourself.
+
+Binary distributions for the supported platforms are available at
+
+  http://www.zeroc.com/download.html
+
+Follow these steps to build the source:
+
+1) If you have not built Ice for C++ from the cpp subdirectory, set
+   ICE_HOME to the directory of your Ice for C++ installation.
+   For example:
+
+   > set ICE_HOME=C:\Ice-3.3.0
+
+2) Change to the top-level directory of the Ice for .NET source
+   distribution.
+
+   > cd Ice-3.3.0\cs
+
+3) Open config\Make.rules.mak.cs and review the comments that describe
+   the settings you can modify. For example, you may wish to enable
+   optimization.
+
+4) Run nmake:
+
+   > nmake /f Makefile.mak
+
+The tests and sample programs are built automatically. If you modify
+the source code of a sample program, you can rebuild it using nmake,
+or you can open the Visual Studio solution located in demo\demo.sln.
+
+
+SSL Notes
+---------
+
+In order to use SSL with the tests and sample programs, an SSL
+certificate must be installed on your system. The configuration files
+handle this for you, but you will be presented with a confirmation
+dialog the first time you run a test or sample program.
+
+Once you are finished with the tests and sample programs, follow these
+steps to remove the certificate:
+
+1) Start Internet Explorer.
+
+2) Select Internet Options from the Tools menu.
+
+3) Select the Content tab and click the "Certificates" button.
+
+4) Select the Trusted Root Certification Authorities tab.
+
+5) Select the entry for "ZeroC Test CA", click the Remove button, and
+   confirm that you want to remove this certificate.
+
+Note that under Windows Vista, the IceSSL configuration test is
+disabled due to an apparent bug with the .NET framework in which
+obsolete SSL session ids are reused and cause server authentication
+to fail. This bug manifests itself in those applications that
+initialize and destroy multiple IceSSL plug-ins in the same process.
+As this is an unusual use case, we don't believe it will affect most
+Ice applications.
+
+
+Running the tests
+-----------------
+
+Some of the Ice for .NET tests employ applications that are part of the
+Ice for C++ distribution. If you have not built Ice for C++ from the cpp
+subdirectory then you need to set the ICE_HOME environment variable to
+the path where these applications are installed for these tests to run
+properly:
+
+  > set ICE_HOME=c:\Ice-3.3.0
+
+Python is required to run the test suite:
+
+  http://www.python.org/download
+
+To run the tests, open a command window and change to the top-level
+directory. At the command prompt, execute:
+
+  > python allTests.py
+
+You can also run tests individually by changing to the test directory
+and running this command:
+
+  > python run.py
+
+If everything worked out, you should see lots of "ok" messages. In
+case of a failure, the tests abort with "failed".
+
+
+Running the demos
+-----------------
+
+To run the demos, you need to have the Ice bin directory in your PATH.
+See the README file in each demo directory for a description of the
+demo.
+
+Note that in demos that use IceSSL, the IceSSL plugin configuration
+does not contain the fully-qualified name (FQN) for the IceSSL
+assembly. Instead it just contains the partial name:
+
+  Ice.Plugin.IceSSL=IceSSL:IceSSL.PluginFactory
+
+The FQN is found in the *.exe.config files that are generated when the
+demos are built. If you want to run an application using the IceSSL
+assembly installed in the GAC without the use of the *.exe.config
+files, you must add the FQN to the IceSSL plugin configuration, as
+shown below:
+
+  Ice.Plugin.IceSSL=IceSSL, Version=3.3.0.0, Culture=neutral, PublicKeyToken=1f998c50fec78381:IceSSL.PluginFactory
+
+
+Installation
+------------
+
+Simply run "nmake /f Makefile.mak install". This will install Ice for
+.NET in the directory specified by the "prefix" variable in
+config\Make.rules.mak.cs. After installation, make sure that the
+<prefix>\bin directory is in your PATH.
+
+
+GAC Installation
+-----------------
+
+You can add the assemblies to the Global Assembly Cache (GAC). To do
+this, open Windows Explorer and navigate to the directory
+C:\WINDOWS\assembly. Next, drag and drop (or copy and paste) the
+assemblies from IceNET-3.3.0\bin into the right-hand pane to install
+them in the cache.
+
+Or you can use gacutil from the command line to achieve the same
+result:
+
+  > gacutil /i <library.dll>
+
+You can find gacutil.exe in the SDK\Tools\Bin folder of your Visual C#
+installation. For example, if you have installed Visual C# 8.0 in
+C:\Program Files, the path to gacutil is
+
+  C:\Program Files\Microsoft Visual Studio 8\SDK\v2.0\Bin\gacutil.exe
+
+Once installed in the cache, the assemblies will always be located
+correctly without having to set environment variables or copy them
+into the same directory as an executable.
+
+If you want line numbers for stack traces, you must also install the
+PDB (.pdb) files in the GAC. Unfortunately, you cannot do this using
+Explorer, so you have to do it from the command line. Open a command
+shell window and navigate to C:\WINDOWS\assembly\GAC\Ice. (Assuming
+C:\WINDOWS is your system root.) Doing a directory listing there, you
+will find a directory named @dotnetver@__<UUID>, for example:
+
+  @dotnetver@__1f998c50fec78381
+
+Change to that directory (making sure that you use the correct version
+number for this release of Ice). In this directory, you will see a
+file called __AssemblyInfo__.ini and the Ice.dll you installed into
+the GAC in the preceding step. Now copy the Ice.pdb file into this
+directory:
+
+  > copy <path_to_ice.pdb> .
+
+
+Protocol compression with 64-bit Windows
+----------------------------------------
+
+Ice for .NET attempts to dynamically load bzip2.dll to support
+protocol compression. On 64-bit Windows, you have to make sure that
+the 64-bit version of bzip2.dll is found instead of the 32-bit
+version. The bzip2 libraries are installed in <prefix>\bin\x64 and
+<prefix>\bin, respectively. For 64-bit Windows, you need to make sure
+that <prefix>\bin\x64 appears in the application's PATH instead of
+<prefix>\bin. (The Ice run time prints a warning to the console if it
+detects a bzip2.dll format mismatch during start-up.)
+
+
+Binary compatibility of patch releases
+--------------------------------------
+
+Patch releases of Ice are binary compatible. For example, version
+3.2.1 is compatible with 3.2.0, so you can run applications
+compiled with 3.2.0 with the 3.2.1 Ice assemblies without
+having to recompile.
+
+Ice for .NET includes policy assemblies in Ice-3.3.0/cs/bin that
+supply the .NET run time with the required compatibility information.
+Policy assemblies have names of the form policy.<major>.<minor>.<package>.dll.
+For example, the policy assembly for IceBox 3.2 is called policy.3.2.IceBox.dll.
+
+To upgrade an existing application to a new patch release, the policy
+assemblies must be present in your PATH, or they must be
+installed into the GAC as described in the previous section.

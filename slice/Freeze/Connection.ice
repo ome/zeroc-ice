@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -60,6 +60,16 @@ local interface Connection
      *
      **/
     ["cpp:const"] Transaction currentTransaction();
+
+
+    /**
+     *
+     * Remove an old unused Freeze Map index
+     * @throws IndexNotFoundException Raised if this index
+     * does not exist
+     *
+     **/
+    void removeMapIndex(string mapName, string indexName);
 
      
     /**

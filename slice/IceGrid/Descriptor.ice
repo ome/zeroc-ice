@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -317,6 +317,17 @@ class ServerDescriptor extends CommunicatorDescriptor
      *
      **/
     string exe;
+   
+    /**
+     *
+     * The Ice version used by this server. This is only required if
+     * backward compatibility with servers using old Ice versions is
+     * needed (otherwise the registry will assume the server is using
+     * the same Ice version).
+     * For example "3.1.1", "3.2", "3.3.0".
+     *
+     **/
+    string iceVersion;
 
     /**
      *

@@ -1,4 +1,0 @@
-#
-# The server's adapter endpoint.
-#
-Value.Endpoints=tcp -p 10000

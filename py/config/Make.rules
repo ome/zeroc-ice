@@ -1,0 +1,191 @@
+# **********************************************************************
+#
+# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+#
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
+#
+# **********************************************************************
+
+#
+# Select an installation base directory. The directory will be created
+# if it does not exist.
+#
+
+prefix			?= /opt/Ice-$(VERSION)
+
+#
+# The "root directory" for runpath embedded in executables. Can be unset
+# to avoid adding a runpath to Ice executables.
+#
+embedded_runpath_prefix  ?= /opt/Ice-$(VERSION_MAJOR).$(VERSION_MINOR)
+
+#
+# Define OPTIMIZE as yes if you want to build with optimization.
+# Otherwise the Ice extension is built with debug information.
+#
+
+#OPTIMIZE		= yes
+
+#
+# Define LP64 as yes if you want to build in 64 bit mode on a platform
+# that supports both 32 and 64 bit.
+#
+#LP64			:= yes
+
+#
+# The values below can be overridden by defining them as environment
+# variables.
+#
+
+#
+# If you've built Python yourself then set PYTHON_HOME to contain
+# the installation directory; the rest of the Python-related settings
+# should be correct.
+#
+# If you've installed a distribution, or Python was included with
+# your system, then you likely need to review the values of
+# PYTHON_INCLUDE_DIR and PYTHON_LIB_DIR.
+#
+
+ifneq ($(PYTHON_HOME),)
+    PYTHON_VERSION	= $(notdir $(wildcard $(PYTHON_HOME)/include/python2*))
+
+    PYTHON_INCLUDE_DIR	= $(PYTHON_HOME)/include/$(PYTHON_VERSION)
+    #
+    # The Python shared library is installed in $(PYTHON_HOME)/lib on HP-UX
+    # rather than $(PYTHON_HOME)/lib/$(PYTHON_VERSION)/config.
+    #
+    PYTHON_LIB_DIR	= $(PYTHON_HOME)/lib
+else
+    #
+    # If multiple versions of Python are installed and you want a specific
+    # version used for building the Ice extension, then set PYTHON_VERSION
+    # to "python2.3" or "python2.4".
+    #
+    PYTHON_VERSION	?= $(word 1,$(notdir $(wildcard /usr/include/python2.[345]*)))
+    ifeq ($(PYTHON_VERSION),)
+      python_darwin_home = /System/Library/Frameworks/Python.framework/Versions/Current
+      PYTHON_VERSION 	= $(word 1,$(notdir $(wildcard $(python_darwin_home)/include/python2.[345]*)))
+    endif
+    PYTHON_INCLUDE_DIR	= /usr/include/$(PYTHON_VERSION)
+    PYTHON_LIB_DIR	= /usr/lib/$(PYTHON_VERSION)/config
+endif
+
+ifeq ($(PYTHON_VERSION),)
+    ifneq ($(PYTHON_HOME),)
+        $(error Unable to find a Python interpreter at PYTHON_HOME=$(PYTHON_HOME). See config/Make.rules)
+    else
+        $(error Unable to find Python 2.3, 2.4, or 2.5. See config/Make.rules)
+    endif
+endif
+
+PYTHON_FLAGS	?= -I$(PYTHON_INCLUDE_DIR)
+PYTHON_LIBS	?= -L$(PYTHON_LIB_DIR) -l$(PYTHON_VERSION)
+
+
+# ----------------------------------------------------------------------
+# Don't change anything below this line!
+# ----------------------------------------------------------------------
+
+#
+# Common definitions
+#
+ice_language     = py
+ice_require_cpp  = yes
+slice_translator = slice2py
+
+ifeq ($(shell test -f $(top_srcdir)/config/Make.common.rules && echo 0),0)
+    include $(top_srcdir)/config/Make.common.rules
+else
+    include $(top_srcdir)/../config/Make.common.rules
+endif
+
+libdir			= $(top_srcdir)/python
+install_pythondir	= $(prefix)/python
+install_libdir		= $(prefix)/python
+
+#
+# Platform specific definitions
+#
+ifeq ($(shell test -f $(top_srcdir)/config/Make.rules.$(UNAME) && echo 0),0)
+    include $(top_srcdir)/config/Make.rules.$(UNAME)
+
+else
+    include $(top_srcdir)/../cpp/config/Make.rules.$(UNAME)
+endif 
+
+ifdef ice_src_dist
+    ifeq ($(ice_cpp_dir), $(ice_dir)/cpp)
+        ICE_LIB_DIR = -L$(ice_cpp_dir)/lib
+    else
+        ICE_LIB_DIR = -L$(ice_cpp_dir)/$(libsubdir)
+    endif
+    ICE_LIB_DIR = -L$(ice_cpp_dir)/lib
+    ICE_FLAGS 	= -I$(ice_cpp_dir)/include
+endif
+ifdef ice_bin_dist
+    ICE_LIB_DIR = -L$(ice_dir)/$(libsubdir)
+    ICE_FLAGS	= -I$(ice_dir)/include
+endif
+ICE_LIBS = $(ICE_LIB_DIR) -lIce -lSlice -lIceUtil
+
+ifneq ($(embedded_runpath_prefix),)
+   runpath_libdir	:= $(embedded_runpath_prefix)/$(libsubdir)
+endif
+
+CPPFLAGS		=
+ICECPPFLAGS		= -I$(slicedir)
+SLICE2PYFLAGS		= $(ICECPPFLAGS)
+LDFLAGS			= $(LDPLATFORMFLAGS) $(CXXFLAGS) -L$(libdir)
+
+ifdef ice_src_dist
+    ifeq ($(ice_cpp_dir), $(ice_dir)/cpp)
+        SLICE2PY = $(ice_cpp_dir)/bin/slice2py
+    else
+        SLICE2PY = $(ice_cpp_dir)/$(binsubdir)/slice2py
+    endif
+else
+    SLICE2PY = $(ice_dir)/$(binsubdir)/slice2py
+endif
+
+#
+# A Python extension library cannot have a "lib" prefix, so Python-specific
+# functions are defined that strip "lib" from the regular library name.
+#
+mkpylibfilename		= $(subst lib,,$(call mklibfilename,$(1),$(2)))
+mkpysoname		= $(subst lib,,$(call mksoname,$(1),$(2)))
+mkpylibname		= $(subst lib,,$(call mklibname,$(1)))
+
+EVERYTHING		= all depend clean install
+
+.SUFFIXES:
+.SUFFIXES:		.cpp .o .py
+
+all:: $(SRCS)
+
+%_ice.py: $(slicedir)/%.ice
+	rm -f $(*F).py
+	$(SLICE2PY) $(SLICE2PYFLAGS) $<
+
+.cpp.o:
+	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $<
+
+clean::
+	-rm -f $(TARGETS)
+	-rm -f core *.o *.pyc *.bak
+
+all:: $(SRCS) $(TARGETS)
+
+depend:: $(SRCS) $(SLICE_SRCS)
+	-rm -f .depend
+	if test -n "$(SRCS)" ; then \
+	    $(CXX) -DMAKEDEPEND -M $(CXXFLAGS) $(CPPFLAGS) $(SRCS) | $(ice_dir)/config/makedepend.py >> .depend; \
+	fi
+
+ifneq ($(TEMPLATE_REPOSITORY),)
+clean::
+	rm -fr $(TEMPLATE_REPOSITORY)
+endif
+
+install::

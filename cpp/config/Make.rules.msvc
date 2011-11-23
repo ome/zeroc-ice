@@ -1,0 +1,111 @@
+# **********************************************************************
+#
+# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+#
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
+#
+# **********************************************************************
+
+#
+# This file is included by Make.rules.mak when using a Microsoft C++
+# compiler
+#
+
+CXX		= cl.exe
+CC		= cl.exe
+LINK 		= link.exe
+AR 		= lib.exe
+RC		= rc.exe
+
+PREOUT		= /out:
+PRELIBS		=
+
+!if "$(OPTIMIZE)" != "yes" || "$(RELEASEPDBS)" == "yes"
+GENERATE_PDB	= yes
+!endif
+
+!if "$(ice_src_dist)" != ""
+
+# If building a source distribution, use THIRDPARTY_HOME for the 3rd party libraries
+!if "$(THIRDPARTY_HOME)" != ""
+CPPFLAGS        = -I"$(THIRDPARTY_HOME)\include"
+LDFLAGS         = /LIBPATH:"$(THIRDPARTY_HOME)\lib$(x64suffix)"
+
+!if "$(CPP_COMPILER)" == "VC60"
+CPPFLAGS        = -I"$(THIRDPARTY_HOME)\include\stlport" $(CPPFLAGS)
+!endif
+
+!endif
+
+!else
+
+# If building against a binary distribution, the 3rd party headers are located in
+# the same include directory as Ice headers so there's nothing special to do,
+# except for STLport if building w/ VC6.
+!if "$(CPP_COMPILER)" == "VC60"
+CPPFLAGS        = -I"$(ice_dir)\include\stlport" $(CPPFLAGS)
+!endif
+
+!endif
+
+CPPFLAGS	= $(CPPFLAGS) -nologo -W3 -WX -GR -EHsc -FD -D_CONSOLE
+
+!if "$(OPTIMIZE)" == "yes"
+
+CPPFLAGS	= $(CPPFLAGS) -O2 -DNDEBUG
+
+CPPFLAGS	= $(CPPFLAGS) -MD
+
+!else
+
+CPPFLAGS	= $(CPPFLAGS) -Zi -Gm -Od -D_DEBUG
+
+CPPFLAGS	= $(CPPFLAGS) -MDd
+
+!if "$(CPP_COMPILER)" == "VC60" || "$(CPP_COMPILER)" == "VC71"
+CPPFLAGS        = $(CPPFLAGS) -GZ
+!else
+CPPFLAGS        = $(CPPFLAGS) -RTC1
+!endif
+
+!endif
+
+!if "$(STATICLIBS)" == "yes"
+CPPFLAGS        = $(CPPFLAGS) -DICE_STATIC_LIBS
+!endif
+
+!if "$(ice_src_dist)" != ""
+LDFLAGS		= $(LDFLAGS) /LIBPATH:"$(libdir)"
+!else
+LDFLAGS		= $(LDFLAGS) /LIBPATH:"$(ice_dir)\lib$(x64suffix)"
+!endif
+LDFLAGS		= $(LDFLAGS) /nologo /FIXED:no
+
+!if "$(OPTIMIZE)" != "yes"
+
+LDFLAGS		= $(LDFLAGS) /debug /incremental:yes
+
+!else
+
+LDFLAGS         = $(LDFLAGS) /OPT:REF
+!if "$(GENERATE_PDB)" != "yes"
+LDFLAGS         = $(LDFLAGS) /pdb:none
+!else
+LDFLAGS         = $(LDFLAGS) /debug
+!endif
+
+!endif
+
+LD_DLLFLAGS	= $(LDFLAGS) /dll
+LD_EXEFLAGS	= $(LDFLAGS)
+
+ICE_OS_LIBS     = rpcrt4.lib advapi32.lib
+
+BASELIBS	= iceutil$(LIBSUFFIX).lib $(ICE_OS_LIBS)
+LIBS		= ice$(LIBSUFFIX).lib $(BASELIBS)
+
+BZIP2_LIBS      = libbz2$(LIBSUFFIX).lib
+DB_LIBS         = libdb46$(LIBSUFFIX).lib
+MCPP_LIBS       = mcpp$(LIBSUFFIX).lib
+ICONV_LIB       = libiconv.lib

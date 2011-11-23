@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -196,6 +196,29 @@ exception NodeUnreachableException
      **/
     string reason;
 };
+
+/**
+ *
+ * This exception is raised if a server could not be reached.
+ *
+ **/
+exception ServerUnreachableException
+{
+    /**
+     *
+     * The id of the server that is not reachable.
+     *
+     **/
+    string name;
+
+    /**
+     *
+     * The reason why the server couldn't be reached.
+     *
+     **/
+    string reason;
+};
+
 
 /**
  *

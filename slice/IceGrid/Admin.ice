@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,7 @@
 
 #include <Ice/Identity.ice>
 #include <Ice/BuiltinSequences.ice>
+#include <Ice/Properties.ice>
 #include <Ice/SliceChecksumDict.ice>
 #include <Glacier2/Session.ice>
 #include <IceGrid/Exception.ice>
@@ -595,6 +596,39 @@ interface Admin
 
     /**
      *
+     * Get the category for server admin objects. You can manufacture a server admin
+     * proxy from the admin proxy by changing its identity: use the server ID as name
+     * and the returned category as category.
+     *
+     * @return The category for server admin objects.
+     *
+     **/
+    ["cpp:const"] 
+    idempotent string getServerAdminCategory();
+
+    /**
+     *
+     * Get a proxy to the server's admin object
+     *
+     * @param id The server id.
+     *
+     * @return A proxy to the server's admin object
+     *
+     * @throws ServerNotExistException Raised if the server doesn't exist.
+     *
+     * @throws NodeUnreachableException Raised if the node could not
+     * be reached.
+     *
+     * @throws DeploymentException Raised if the server couldn't be
+     * deployed on the node.
+     *
+     **/
+    ["cpp:const"] 
+    idempotent Object* getServerAdmin(string id)
+        throws ServerNotExistException, NodeUnreachableException, DeploymentException;
+
+    /**
+     *
      * Enable or disable a server. A disabled server can't be started
      * on demand or administratively. The enable state of the server
      * is not persistent: if the node is shut down and restarted, the
@@ -657,7 +691,7 @@ interface Admin
      * deployed on the node.
      *
      **/
-    ["ami"] void startServer(string id)
+    ["ami", "amd"] void startServer(string id)
         throws ServerNotExistException, ServerStartException, NodeUnreachableException, DeploymentException;
 
     /**
@@ -679,7 +713,7 @@ interface Admin
      * deployed on the node.
      *
      **/
-    ["ami"] void stopServer(string id)
+    ["ami", "amd"] void stopServer(string id)
         throws ServerNotExistException, ServerStopException, NodeUnreachableException, DeploymentException;
 
     /**
@@ -728,11 +762,13 @@ interface Admin
      *
      **/
     ["ami"] void sendSignal(string id, string signal)
-        throws ServerNotExistException, NodeUnreachableException, DeploymentException, BadSignalException;
+       throws ServerNotExistException, NodeUnreachableException, DeploymentException, BadSignalException;
 
     /**
      *
      * Write message on server stdout or stderr.
+     *
+     * <p class="Deprecated">This operation is deprecated as of version 3.3.
      *
      * @param id The server id.
      *
@@ -750,8 +786,9 @@ interface Admin
      * deployed on the node.
      *
      **/
-    ["ami"] void writeMessage(string id, string message, int fd)
-        throws ServerNotExistException, NodeUnreachableException, DeploymentException;
+     ["ami","deprecate:writeMessage is deprecated, use instead the Process facet of the server Admin object."]
+     void writeMessage(string id, string message, int fd)
+         throws ServerNotExistException, NodeUnreachableException, DeploymentException;
 
     /**
      *
@@ -1158,6 +1195,21 @@ interface AdminSession extends Glacier2::Session
      **/
     ["nonmutating", "cpp:const"] idempotent Admin* getAdmin();
 
+
+    /**
+     *
+     * Get a "template" proxy for admin callback objects.
+     * An Admin client uses this proxy to set the category of its callback
+     * objects, and the published endpoints of the object adapter hosting
+     * the admin callback objects.
+     *
+     * @return A template proxy. The returned proxy is null when the Admin
+     * session was established using Glacier2.
+     *
+     **/
+    ["cpp:const"] idempotent Object* getAdminCallbackTemplate();
+
+
     /**
      *
      * Set the observer proxies that receive
@@ -1434,6 +1486,7 @@ interface AdminSession extends Glacier2::Session
      **/
     FileIterator * openRegistryStdOut(string name, int count)
         throws FileNotAvailableException, RegistryNotExistException, RegistryUnreachableException;
+
 };
 
 };

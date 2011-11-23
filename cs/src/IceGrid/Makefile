@@ -1,0 +1,52 @@
+# **********************************************************************
+#
+# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+#
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
+#
+# **********************************************************************
+
+top_srcdir	= ../..
+
+PKG		= IceGrid
+LIBNAME		= $(PKG).dll
+TARGETS		= $(bindir)/$(LIBNAME)
+POLICY_TARGET	= $(POLICY).dll
+
+SRCS		= AssemblyInfo.cs
+
+SLICE_SRCS	= $(SDIR)/Admin.ice \
+		  $(SDIR)/Observer.ice \
+		  $(SDIR)/Descriptor.ice \
+		  $(SDIR)/Exception.ice \
+		  $(SDIR)/FileParser.ice \
+		  $(SDIR)/Locator.ice \
+		  $(SDIR)/Query.ice \
+		  $(SDIR)/Registry.ice \
+		  $(SDIR)/Session.ice \
+		  $(SDIR)/UserAccountMapper.ice
+
+SDIR		= $(slicedir)/IceGrid
+GDIR		= generated
+
+include $(top_srcdir)/config/Make.rules.cs
+
+MCSFLAGS	:= $(MCSFLAGS) -target:library -out:$(TARGETS) -warnaserror-
+MCSFLAGS	:= $(MCSFLAGS) -keyfile:$(KEYFILE)
+
+SLICE2CSFLAGS	:= $(SLICE2CSFLAGS) --ice -I$(slicedir)
+
+$(TARGETS):: $(SRCS) $(GEN_SRCS)
+	$(MCS) $(MCSFLAGS) $(call ref,Glacier2) $(call ref,Ice) $(subst /,$(DSEP),$^)
+
+install:: all
+	(cd $(bindir); $(call installassembly,$(LIBNAME),$(PKG)); $(call installpolicy,$(POLICY)); \
+	 $(call installmdb,$(LIBNAME).mdb))
+
+ifeq ($(GACINSTALL),yes)
+install:: all
+	$(call installdata,../../lib/pkgconfig/$(PKG).pc,$(install_pkgconfigdir))
+endif
+
+include .depend

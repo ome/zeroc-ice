@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -91,7 +91,7 @@ interface Locator
      * be found.
      *
      **/
-    ["amd", "nonmutating", "cpp:const"] idempotent Object* findObjectById(Ice::Identity id)
+    ["ami", "amd", "nonmutating", "cpp:const"] idempotent Object* findObjectById(Ice::Identity id)
         throws ObjectNotFoundException;
 
     /**
@@ -107,7 +107,7 @@ interface Locator
      * found.
      *
      **/
-    ["amd", "nonmutating", "cpp:const"] idempotent Object* findAdapterById(string id)
+    ["ami", "amd", "nonmutating", "cpp:const"] idempotent Object* findAdapterById(string id)
         throws AdapterNotFoundException;
 
     /**

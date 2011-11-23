@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,7 +12,6 @@
 
 #include <Ice/CommunicatorF.ice>
 #include <Ice/ServantLocatorF.ice>
-#include <Ice/RouterF.ice>
 #include <Ice/LocatorF.ice>
 #include <Ice/Identity.ice>
 #include <Ice/FacetMap.ice>
@@ -520,26 +519,6 @@ local interface ObjectAdapter
     ["cpp:const"] Object* createIndirectProxy(Identity id);
 
     /**
-     *
-     * Create a "reverse proxy" for the object with the given identity.
-     * A reverse proxy uses the incoming connections that have been
-     * established from a client to this object adapter.
-     *
-     * <p class="Note"> This operation is intended to be used by special
-     * services, such as [Router] implementations. Regular user code
-     * should not attempt to use this operation.
-     *
-     * @param id The identity for which a proxy is to be created.
-     *
-     * @return A "reverse proxy" that matches the given identity and
-     * uses the incoming connections of this object adapter.
-     *
-     * @see Identity
-     *
-     **/
-    ["cpp:const"] Object* createReverseProxy(Identity id);
-
-    /**
      * Set an Ice locator for this object adapter. By doing so, the
      * object adapter will register itself with the locator registry
      * when it is activated for the first time. Furthermore, the proxies
@@ -554,6 +533,17 @@ local interface ObjectAdapter
      * 
      **/
     void setLocator(Locator* loc);
+
+    /**
+     * Refresh the set of published endpoints. The run time re-reads
+     * the PublishedEndpoints property if it is set and re-reads the
+     * list of local interfaces if the adapter is configured to listen
+     * on all endpoints. This operation is useful to refresh the endpoint
+     * information that is published in the proxies that are created by
+     * an object adapter if the network interfaces used by a host changes.
+     *
+     **/
+    void refreshPublishedEndpoints();
 };
 
 };

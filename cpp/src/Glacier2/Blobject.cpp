@@ -1,0 +1,391 @@
+// **********************************************************************
+//
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+//
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
+//
+// **********************************************************************
+
+#include <Glacier2/Blobject.h>
+
+using namespace std;
+using namespace Ice;
+using namespace Glacier2;
+
+static const string serverForwardContext = "Glacier2.Server.ForwardContext";
+static const string clientForwardContext = "Glacier2.Client.ForwardContext";
+static const string serverAlwaysBatch = "Glacier2.Server.AlwaysBatch";
+static const string clientAlwaysBatch = "Glacier2.Client.AlwaysBatch";
+static const string serverTraceRequest = "Glacier2.Server.Trace.Request";
+static const string clientTraceRequest = "Glacier2.Client.Trace.Request";
+static const string serverTraceOverride = "Glacier2.Server.Trace.Override";
+static const string clientTraceOverride = "Glacier2.Client.Trace.Override";
+
+namespace
+{
+
+class AMI_Array_Object_ice_invokeTwowayI : public AMI_Array_Object_ice_invoke
+{
+public:
+
+    AMI_Array_Object_ice_invokeTwowayI(const AMD_Array_Object_ice_invokePtr& amdCB) :
+        _amdCB(amdCB)
+    {
+    }
+
+    virtual void
+    ice_response(bool ok, const pair<const Byte*, const Byte*>& outParams)
+    {
+        _amdCB->ice_response(ok, outParams);
+    }
+
+    virtual void
+    ice_exception(const Exception& ex)
+    {
+        _amdCB->ice_exception(ex);
+    }
+
+private:
+
+    const AMD_Array_Object_ice_invokePtr _amdCB;
+};
+
+class AMI_Array_Object_ice_invokeOnewayI : public AMI_Array_Object_ice_invoke, public Ice::AMISentCallback
+{
+public:
+
+    AMI_Array_Object_ice_invokeOnewayI(const AMD_Array_Object_ice_invokePtr& amdCB) :
+        _amdCB(amdCB)
+    {
+    }
+
+    virtual void
+    ice_response(bool, const pair<const Byte*, const Byte*>&)
+    {
+        assert(false);
+    }
+
+    virtual void
+    ice_sent()
+    {
+        _amdCB->ice_response(true, pair<const Byte*, const Byte*>(0, 0));
+    }
+
+    virtual void
+    ice_exception(const Exception& ex)
+    {
+        _amdCB->ice_exception(ex);
+    }
+
+private:
+
+    const AMD_Array_Object_ice_invokePtr _amdCB;
+};
+
+}
+
+Glacier2::Blobject::Blobject(const InstancePtr& instance, bool reverse, const Ice::Context& sslContext) :
+    _instance(instance),
+    _reverse(reverse),
+    _forwardContext(_reverse ?
+                    _instance->properties()->getPropertyAsInt(serverForwardContext) > 0 :
+                    _instance->properties()->getPropertyAsInt(clientForwardContext) > 0),
+    _alwaysBatch(_reverse ?
+                 _instance->properties()->getPropertyAsInt(serverAlwaysBatch) > 0 :
+                 _instance->properties()->getPropertyAsInt(clientAlwaysBatch) > 0),
+    _requestTraceLevel(_reverse ?
+                       _instance->properties()->getPropertyAsInt(serverTraceRequest) :
+                       _instance->properties()->getPropertyAsInt(clientTraceRequest)),
+    _overrideTraceLevel(reverse ?
+                        _instance->properties()->getPropertyAsInt(serverTraceOverride) :
+                        _instance->properties()->getPropertyAsInt(clientTraceOverride)),
+    _sslContext(sslContext)
+{
+    RequestQueueThreadPtr t = _reverse ? _instance->serverRequestQueueThread() : _instance->clientRequestQueueThread();
+    if(t)
+    {
+        if(reverse)
+        {
+            const_cast<RequestQueuePtr&>(_requestQueue) = new RequestQueue(t);
+        }
+        else
+        {
+            const_cast<RequestQueuePtr&>(_requestQueue) = new RequestQueue(t);
+        }
+    }
+}
+
+Glacier2::Blobject::~Blobject()
+{
+}
+
+void
+Glacier2::Blobject::invoke(ObjectPrx& proxy, const AMD_Array_Object_ice_invokePtr& amdCB, 
+                           const std::pair<const Ice::Byte*, const Ice::Byte*>& inParams, const Current& current)
+{
+    //
+    // Set the correct facet on the proxy.
+    //
+    if(!current.facet.empty())
+    {
+        proxy = proxy->ice_facet(current.facet);
+    }
+
+    //
+    // Modify the proxy according to the request id. This can
+    // be overridden by the _fwd context.
+    //
+    if(current.requestId == 0)
+    {
+        if(_alwaysBatch && _requestQueue)
+        {
+            proxy = proxy->ice_batchOneway();
+        }
+        else
+        {
+            proxy = proxy->ice_oneway();
+        }
+    }
+    else if(current.requestId > 0)
+    {
+        proxy = proxy->ice_twoway();
+    }
+
+    //
+    // Modify the proxy according to the _fwd context field.
+    //
+    Context::const_iterator p = current.ctx.find("_fwd");
+    if(p != current.ctx.end())
+    {
+        for(unsigned int i = 0; i < p->second.length(); ++i)
+        {
+            char option = p->second[i];
+            switch(option)
+            {
+                case 't':
+                {
+                    proxy = proxy->ice_twoway();
+                    break;
+                }
+                
+                case 'o':
+                {
+                    if(_alwaysBatch && _requestQueue)
+                    {
+                        proxy = proxy->ice_batchOneway();
+                    }
+                    else
+                    {
+                        proxy = proxy->ice_oneway();
+                    }
+                    break;
+                }
+                
+                case 'd':
+                {
+                    if(_alwaysBatch && _requestQueue)
+                    {
+                        proxy = proxy->ice_batchDatagram();
+                    }
+                    else
+                    {
+                        proxy = proxy->ice_datagram();
+                    }
+                    break;
+                }
+                
+                case 'O':
+                {
+                    if(_requestQueue)
+                    {
+                        proxy = proxy->ice_batchOneway();
+                    }
+                    else
+                    {
+                        proxy = proxy->ice_oneway();
+                    }
+                    break;
+                }
+                
+                case 'D':
+                {
+                    if(_requestQueue)
+                    {
+                        proxy = proxy->ice_batchDatagram();
+                    }
+                    else
+                    {
+                        proxy = proxy->ice_datagram();
+                    }
+                    break;
+                }
+                
+                case 's':
+                {
+                    proxy = proxy->ice_secure(true);
+                    break;
+                }
+                
+                case 'z':
+                {
+                    proxy = proxy->ice_compress(true);
+                    break;
+                }
+                
+                default:
+                {
+                    Warning out(_instance->logger());
+                    out << "unknown forward option `" << option << "'";
+                    break;
+                }
+            }
+        }
+    }
+    
+    if(_requestTraceLevel >= 1)
+    {
+        Trace out(_instance->logger(), "Glacier2");
+        if(_reverse)
+        {
+            out << "reverse ";
+        }
+        out << "routing";
+        if(_requestQueue)
+        {
+            out << " (buffered)";
+        }
+        else
+        {
+            out << " (not buffered)";
+        }
+        if(_reverse)
+        {
+            out << "\nidentity = " << _instance->communicator()->identityToString(proxy->ice_getIdentity());
+        }
+        else
+        {
+            out << "\nproxy = " << _instance->communicator()->proxyToString(proxy);
+        }
+        out << "\noperation = " << current.operation;
+        out << "\ncontext = ";
+        Context::const_iterator q = current.ctx.begin();
+        while(q != current.ctx.end())
+        {
+            out << q->first << '/' << q->second;
+            if(++q != current.ctx.end())
+            {
+                out << ", ";
+            }
+        }
+    }
+
+    if(_requestQueue)
+    {    
+        //
+        // If we are in buffered mode, we create a new request and add
+        // it to the request queue. If the request is twoway, we use
+        // AMI.
+        //
+
+        bool override;
+        try
+        {
+            override = 
+                _requestQueue->addRequest(new Request(proxy, inParams, current, _forwardContext, _sslContext, amdCB));
+        }
+        catch(const ObjectNotExistException& ex)
+        {
+            amdCB->ice_exception(ex);
+            return;
+        }
+
+        if(override && _overrideTraceLevel >= 1)
+        {
+            Trace out(_instance->logger(), "Glacier2");
+            if(_reverse)
+            {
+                out << "reverse ";
+            }
+            out << "routing override";
+            if(_reverse)
+            {
+                out << "\nidentity = " << _instance->communicator()->identityToString(proxy->ice_getIdentity());
+            }
+            else
+            {
+                out << "\nproxy = " << _instance->communicator()->proxyToString(proxy);
+            }
+            out << "\noperation = " << current.operation;
+            out << "\ncontext = ";
+            Context::const_iterator q = current.ctx.begin();
+            while(q != current.ctx.end())
+            {
+                out << q->first << '/' << q->second;
+                if(++q != current.ctx.end())
+                {
+                    out << ", ";
+                }
+            }
+        }
+    }
+    else
+    {
+        //
+        // If we are in not in buffered mode, we send the request
+        // directly.
+        //
+        assert(!proxy->ice_isBatchOneway() && !proxy->ice_isBatchDatagram());
+
+        try
+        {
+            AMI_Array_Object_ice_invokePtr amiCB;
+            Ice::AMISentCallback* sentCB = 0;
+            if(proxy->ice_isTwoway())
+            {
+                amiCB = new AMI_Array_Object_ice_invokeTwowayI(amdCB);
+            }
+            else
+            {
+                AMI_Array_Object_ice_invokeOnewayI* cb = new AMI_Array_Object_ice_invokeOnewayI(amdCB);
+                amiCB = cb;
+                sentCB = cb;
+            }
+
+            bool sent;
+            if(_forwardContext)
+            {
+                if(_sslContext.size() > 0)
+                {
+                    Ice::Context ctx = current.ctx;
+                    ctx.insert(_sslContext.begin(), _sslContext.end());
+                    sent = proxy->ice_invoke_async(amiCB, current.operation, current.mode, inParams);
+                }
+                else
+                {
+                    sent = proxy->ice_invoke_async(amiCB, current.operation, current.mode, inParams, current.ctx);
+                }
+            }
+            else
+            {
+                if(_sslContext.size() > 0)
+                {
+                    sent = proxy->ice_invoke_async(amiCB, current.operation, current.mode, inParams, _sslContext);
+                }
+                else
+                {
+                    sent = proxy->ice_invoke_async(amiCB, current.operation, current.mode, inParams);
+                }
+            }
+
+            if(sent && sentCB)
+            {
+                sentCB->ice_sent();
+            }
+        }
+        catch(const LocalException& ex)
+        {
+            amdCB->ice_exception(ex);
+        }
+    }
+}

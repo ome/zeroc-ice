@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -154,13 +154,26 @@ interface Topic
      *
      * Get a proxy to a publisher object for this topic. To publish
      * data to a topic, the publisher calls [getPublisher] and then
-     * casts to the topic type. An unchecked cast must be used on
-     * this proxy.
+     * casts to the topic type. An unchecked cast must be used on this
+     * proxy. If a replicated IceStorm deployment is used this call
+     * may return a replicated proxy.
      *
      * @return A proxy to publish data on this topic.
      *
      **/
     ["nonmutating", "cpp:const"] idempotent Object* getPublisher();
+
+    /**
+     *
+     * Get a non-replicated proxy to a publisher object for this
+     * topic. To publish data to a topic, the publisher calls
+     * [getPublisher] and then casts to the topic type. An unchecked
+     * cast must be used on this proxy.
+     *
+     * @return A proxy to publish data on this topic.
+     *
+     **/
+    ["nonmutating", "cpp:const"] idempotent Object* getNonReplicatedPublisher();
 
     /**
      *
@@ -186,9 +199,8 @@ interface Topic
 
     /**
      *
-     * Subscribe with the given <tt>qos</tt> to this topic. If the given
-     * <tt>subscriber</tt> proxy has already been registered, it will be
-     * replaced. A per-subscriber publisher object is returned.
+     * Subscribe with the given <tt>qos</tt> to this topic.  A
+     * per-subscriber publisher object is returned.
      *
      * @param qos The quality of service parameters for this
      * subscription.

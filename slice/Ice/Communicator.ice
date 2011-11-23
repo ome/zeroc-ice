@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -469,6 +469,43 @@ local interface Communicator
      *
      **/
     void flushBatchRequests();
+
+    /**
+     *
+     * Get a proxy to the main facet of the Admin object. When Ice.Admin.DelayCreation
+     * is greater than 0, it is necessary to call getAdmin() after the communicator is 
+     * initialized to create the Admin object. Otherwise, the Admin object is created
+     * automatically after all the plugins are initialized.
+     *
+     * @return The main ("") facet of the Admin object; a null proxy if no
+     * Admin object is configured.
+     *
+     **/
+    ["cpp:const"] Object* getAdmin();
+    
+    /**
+     *
+     * Add a new facet to the Admin object.
+     * Adding a servant with a facet that is already registered 
+     * throws [AlreadyRegisteredException].
+     *
+     * @param servant The servant that implements the new Admin facet.
+     * @param facet The new Admin facet.
+     *
+     **/
+    void addAdminFacet(Object servant, string facet);
+    
+    /**
+     *
+     * Remove the following facet to the Admin object.
+     * Removing a facet that was not previously registered throws 
+     * [NotRegisteredException].
+     *
+     * @param facet The Admin facet.
+     * @return The servant associated with this Admin facet
+     *
+     **/
+    Object removeAdminFacet(string facet);
 };
 
 };

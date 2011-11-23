@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,7 @@ module Ice
  * @see Properties::getPropertiesForPrefix
  *
  **/
-local dictionary<string, string> PropertyDict;
+dictionary<string, string> PropertyDict;
 
 /**
  *
@@ -37,7 +37,7 @@ local interface Properties
 {
     /**
      *
-     * Get a property by key. If the property does not exist, an empty
+     * Get a property by key. If the property is not set, an empty
      * string is returned.
      *
      * @param key The property key.
@@ -51,7 +51,7 @@ local interface Properties
 
     /**
      *
-     * Get a property by key. If the property does not exist, the
+     * Get a property by key. If the property is not set, the
      * given default value is returned.
      *
      * @param key The property key.
@@ -68,7 +68,7 @@ local interface Properties
 
     /**
      *
-     * Get a property as an integer. If the property does not exist, 0
+     * Get a property as an integer. If the property is not set, 0
      * is returned.
      *
      * @param key The property key.
@@ -82,7 +82,7 @@ local interface Properties
 
     /**
      *
-     * Get a property as an integer. If the property does not exist, the
+     * Get a property as an integer. If the property is not set, the
      * given default value is returned.
      *
      * @param key The property key.
@@ -97,6 +97,48 @@ local interface Properties
      *
      **/
     int getPropertyAsIntWithDefault(string key, int value);
+
+    
+     /**
+     *
+     * Get a property as a list of strings. If the property is not set,
+     * an empty list is returned. The strings in the list can contain
+     * whitespace if they are enclosed in single or double quotes.
+     * If quotes are mismatched, an empty list is returned.
+     * Within single quotes or double-quotes, you can escape the
+     * quote in question with \, e.g. O'Reilly can be written as
+     * O'Reilly, "O'Reilly" or 'O\'Reilly'.
+     *
+     * @param key The property key.
+     *
+     * @return The property value interpreted as a list of strings.
+     *
+     * @see setProperty
+     *
+     **/
+    StringSeq getPropertyAsList(string key);
+
+    /**
+     *
+     * Get a property as a list of strings. If the property is not set,
+     * the default list is returned. The strings in the list can contain
+     * whitespace if they are enclosed in single or double quotes.
+     * If quotes are mismatched, the default list is returned.
+     * Within single quotes or double-quotes, you can escape the
+     * quote in question with \, e.g. O'Reilly can be written as
+     * O'Reilly, "O'Reilly" or 'O\'Reilly'.
+     *
+     * @param key The property key.
+     *
+     * @param value The default value to use if the property is not set.
+     *
+     * @return The property value interpreted as list of strings, or the
+     * default value.
+     *
+     * @see setProperty
+     *
+     **/
+    StringSeq getPropertyAsListWithDefault(string key, StringSeq value);
 
     /**
      *
@@ -186,6 +228,39 @@ local interface Properties
      *
      **/
     Properties clone();
+};
+
+/**
+ *
+ * The PropertiesAdmin interface provides remote access to the properties
+ * of a communicator.
+ *
+ **/
+interface PropertiesAdmin
+{
+    /**
+     *
+     * Get a property by key. If the property is not set, an empty
+     * string is returned.
+     *
+     * @param key The property key.
+     *
+     * @return The property value.
+     *
+     **/
+    ["ami"] string getProperty(string key);
+
+    /**
+     *
+     * Get all properties whose keys begins with
+     * <em>prefix</em>. If
+     * <em>prefix</em> is an empty string,
+     * then all properties are returned.
+     *
+     * @return The matching property set.
+     *
+     **/
+    ["ami", "java:type:{java.util.TreeMap}"] PropertyDict getPropertiesForPrefix(string prefix);    
 };
 
 };

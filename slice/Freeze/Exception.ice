@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,8 @@
 
 module Freeze
 {
+
+local interface Transaction;
 
 /**
  *
@@ -49,6 +51,7 @@ local exception NotFoundException extends DatabaseException
  **/
 local exception DeadlockException extends DatabaseException
 {
+    Transaction tx;
 };
 
 /**
@@ -61,6 +64,16 @@ local exception InvalidPositionException
 {
 };
 
+/**
+ *
+ * Exception raised when Freeze fails to locate an index
+ *
+ **/
+local exception IndexNotFoundException
+{
+    string mapName;
+    string indexName;
+};
 
 };
 
