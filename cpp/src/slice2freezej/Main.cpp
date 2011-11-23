@@ -16,6 +16,7 @@
 #include <Slice/FileTracker.h>
 #include <Slice/JavaUtil.h>
 #include <Slice/Util.h>
+#include <iterator>
 
 using namespace std;
 using namespace Slice;
@@ -896,7 +897,7 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
             << " v, Ice.Communicator communicator)";
         out << sb;
         out << nl << "IceInternal.BasicStream __os = "
-            << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator));";
+            << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), false, false);";
         if(encaps)
         {
             out << nl << "__os.startWriteEncaps();";
@@ -924,7 +925,7 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
             << "(byte[] b, Ice.Communicator communicator)";
         out << sb;
         out << nl << "IceInternal.BasicStream __is = "
-            << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator));";
+            << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), false, false);";
         if(type->usesClasses())
         {
             out << nl << "__is.sliceObjects(false);";
@@ -1064,7 +1065,7 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
             keyS = objectToVar(indexTypes[i], keyS);
 
             out << nl << "IceInternal.BasicStream __os = "
-                << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator));";
+                << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), false, false);";
             int iter = 0;
             writeMarshalUnmarshalCode(out, "", indexTypes[i], keyS, true, iter, false);
             assert(!indexTypes[i]->usesClasses());
@@ -1092,7 +1093,7 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
         else
         {
             out << nl << "IceInternal.BasicStream __is = "
-                << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator));";
+                << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), false, false);";
             out << nl << "__is.resize(bytes.length, true);";
             out << nl << "IceInternal.Buffer buf = __is.getBuffer();";
             out << nl << "buf.b.position(0);";
@@ -1253,7 +1254,10 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
     //
     // Fields
     //
-    out << sp << nl << "private Freeze.MapIndex[] _indices;";
+    if(!dict.indices.empty())
+    {
+        out << sp << nl << "private Freeze.MapIndex[] _indices;";
+    }
     for(i = 0; i < dict.indices.size(); ++i)
     {
         out << nl << "private " << capitalizedMembers[i] << "Index _" << members[i] << "Index;";
@@ -1399,7 +1403,7 @@ FreezeGenerator::generate(UnitPtr& u, const Index& index)
         << "marshalKey(" << memberTypeString << " __key)";
     out << sb;
     out << nl << "IceInternal.BasicStream __os = "
-        << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator()));";
+        << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator()), false, false);";
     int iter = 0;
     writeMarshalUnmarshalCode(out, "", dataMember->type(), valueS, true, iter, false);
     if(type->usesClasses())
@@ -1453,7 +1457,8 @@ usage(const char* n)
         "--output-dir DIR          Create files in the directory DIR.\n"
         "--depend                  Generate Makefile dependencies.\n"
         "-d, --debug               Print debug messages.\n"
-        "--ice                     Permit `Ice' prefix (for building Ice source code only)\n"
+        "--ice                     Permit `Ice' prefix (for building Ice source code only).\n"
+        "--underscore              Permit underscores in Slice identifiers.\n"
         "--meta META               Define global metadata directive META.\n"
         ;
 }
@@ -1476,6 +1481,7 @@ compile(int argc, char* argv[])
     opts.addOpt("", "depend");
     opts.addOpt("d", "debug");
     opts.addOpt("", "ice");
+    opts.addOpt("", "underscore");
     opts.addOpt("", "meta", IceUtilInternal::Options::NeedArg, "", IceUtilInternal::Options::Repeat);
 
     vector<string> args;
@@ -1733,6 +1739,8 @@ compile(int argc, char* argv[])
 
     bool ice = opts.isSet("ice");
 
+    bool underscore = opts.isSet("underscore");
+
     StringList globalMetadata;
     vector<string> v = opts.argVec("meta");
     copy(v.begin(), v.end(), back_inserter(globalMetadata));
@@ -1744,7 +1752,7 @@ compile(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    UnitPtr u = Unit::createUnit(true, false, ice, globalMetadata);
+    UnitPtr u = Unit::createUnit(true, false, ice, underscore, globalMetadata);
 
     int status = EXIT_SUCCESS;
 

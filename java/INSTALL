@@ -81,7 +81,7 @@ Berkeley DB
 
 "Freeze" is an optional Ice component that provides a persistence
 facility for Ice applications. Freeze uses Berkeley DB as its
-underlying database and currently requires Berkeley DB 4.8.24.
+underlying database and currently requires Berkeley DB 4.8.30.
 
 ZeroC provides Berkeley DB binary distributions (with Java support)
 for many platforms: 
@@ -173,8 +173,8 @@ This source distribution cannot be compiled successfully without the
 Berkeley DB run time for Java (db.jar). On Unix platforms, the build
 system searches for this file in two locations:
 
-  * /usr/share/java/db-4.8.24.jar
-  * /opt/Ice-3.4.0/lib/db.jar
+  * /usr/share/java/db-4.8.30.jar
+  * /opt/Ice-3.4.1/lib/db.jar
 
 If neither of these files is present on your system, or if you are not
 using a Unix platform, you must add db.jar to your CLASSPATH.
@@ -185,11 +185,11 @@ must set the ICE_HOME environment variable with the path name of your
 Ice installation. For example:
 
   # On Unix.
-  $ export ICE_HOME=/opt/Ice-3.4.0  (For local build)
+  $ export ICE_HOME=/opt/Ice-3.4.1  (For local build)
   $ export ICE_HOME=/usr            (For RPM installation)
 
   # On Windows
-  > set ICE_HOME=C:\Ice-3.4.0
+  > set ICE_HOME=C:\Ice-3.4.1
 
 Before building Ice for Java, review the settings in the file
 config/build.properties and edit as necessary.
@@ -266,11 +266,11 @@ this source distribution then you must set the ICE_HOME environment
 variable with the path name of your Ice installation:
 
   # On Unix
-  $ export ICE_HOME=/opt/Ice-3.4.0  (For local build)
+  $ export ICE_HOME=/opt/Ice-3.4.1  (For local build)
   $ export ICE_HOME=/usr            (For RPM installation)
 
   # On Windows
-  > set ICE_HOME=c:\Ice-3.4.0
+  > set ICE_HOME=c:\Ice-3.4.1
 
 Python is required to run the test suite:
 

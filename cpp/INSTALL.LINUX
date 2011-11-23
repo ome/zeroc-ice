@@ -30,7 +30,7 @@ Third-party libraries
 
 Ice has dependencies on a number of third-party libraries:
 
-- Berkeley DB 4.8.24
+- Berkeley DB 4.8.30
 - expat 1.95.8 or 2.0.1
 - OpenSSL 0.9.7 or later (OpenSSL 0.9.8 or later recommended)
 - bzip2 1.0.x
@@ -71,11 +71,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ tar xvfz Ice-3.4.0.tar.gz
+$ tar xvfz Ice-3.4.1.tar.gz
 
-Change the working directory to Ice-3.4.0/cpp:
+Change the working directory to Ice-3.4.1/cpp:
 
-$ cd Ice-3.4.0/cpp
+$ cd Ice-3.4.1/cpp
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular

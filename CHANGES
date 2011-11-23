@@ -1,5 +1,5 @@
 ======================================================================
-CHANGES for Ice 3.4
+CHANGES for Ice 3.4.1
 ======================================================================
 
 The entries below contain brief descriptions of the changes in a
@@ -17,6 +17,107 @@ aspect of Ice.
 Note that this file only includes changes since Ice 3.2.1. For the
 change history of prior releases, refer to the CHANGES file in the
 subdirectory of each language mapping (e.g., cpp/CHANGES).
+
+
+======================================================================
+Changes since version 3.4.0
+======================================================================
+
+
+General Changes
+===============
+
+- Added the new property Freeze.DbEnv.<db>.LockFile and changed the
+  dumpdb and transformdb utilities so that they can be run safely on
+  a database environment that is currently open in another process.
+
+- Changed the Glacier2 helper classes to cache the client category.
+
+- Added the ability to use underscores in Slice identifiers. See the
+  release notes for important information on this change.
+
+- Added the setConnectContext method to Glacier2.SessionFactoryHelper,
+  which allows an application to provide a request context to be used
+  when creating a Glacier2 session. (Java and C#)
+
+- Fixed IceGrid bug where node observers would not be notified when a
+  server is re-enabled after it has been updated and if the server was
+  disabled following an activation failure.
+
+- Fixed a bug in the Glacier2.SessionFactoryHelper class (Java/C#) in
+  which the getPort() method would return an incorrect default port if
+  no port was configured.
+
+
+C++ Changes
+===========
+
+- Fixed a bug in slice2cpp in which streaming code was not generated
+  properly for types in nested modules.
+
+- slice2cpp now generates a "one-shot" constructor for a Slice
+  structure if at least one of its members has a default value.
+
+- Fixed a bug in slice2cpp so that asynchronous "end_op" methods are
+  now exported properly.
+
+- Fixed a bug in slice2cpp that would generate invalid code for a
+  Slice exception when the --stream option was not used.
+
+- Fixed compatibility issues with OpenSSL 1.0.
+
+- Fixed a bug in slice2cpp that would cause invalid code to be
+  generated for a nested Slice definition when the --stream option was
+  used.
+
+- Fixed a bug in Freeze that disabled automatic log deletion.
+
+
+Java Changes
+============
+
+- Fixed an issue in which intensive use of Freeze or the stream API
+  could cause an OutOfMemoryError. Note that Freeze maps must be
+  regenerated with slice2freezej to incorporate this fix.
+
+- Fixed a bug in the Slice2Java ant task in which duplicate Slice
+  files could be passed to slice2java. Also fixed a bug in slice2java
+  that caused the translator to fail if a duplicate file was passed
+  on the command line.
+
+- Fixed race condition which could cause the thread pool selector
+  thread to go away (causing the thread pool to not dispatch further
+  incoming messages).
+
+- Deprecated Ice.AsyncCallback. To use the generic asynchronous
+  callback facility, applications should derive their classes from
+  Ice.Callback.
+
+- The size method on a Freeze.Map and on the value of an indexed 
+  submap now use the current transaction associated with the
+  connection, if any.
+
+
+C# Changes
+==========
+
+- Fixed a bug in the generated code that prevented sequences from
+  being marshaled using the stream API if the sequences used generic
+  collection types.
+
+- Fixed a bug in the IceSSL plug-in that could incorrectly report a
+  certificate verification failure when the IceSSL.CheckCertName
+  property is enabled.
+
+
+Python Changes
+==============
+
+- Fixed a bug in which destroyed Communicator instances were not being
+  garbage collected.
+
+- Fixed a bug in Ice.Application in which the exit status was not
+  properly returned from main().
 
 
 ======================================================================

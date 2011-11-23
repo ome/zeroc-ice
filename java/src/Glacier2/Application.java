@@ -75,7 +75,6 @@ public abstract class Application extends Ice.Application
         super(signalPolicy);
     }
 
-
     /**
      * Called once the communicator has been initialized and the Glacier2 session
      * has been established. A derived class must implement <code>runWithSession</code>,
@@ -169,13 +168,14 @@ public abstract class Application extends Ice.Application
      * @throws SessionNotExistException No session exists.
      **/
     public String
-    categoryForClient() throws SessionNotExistException
+    categoryForClient()
+        throws SessionNotExistException
     {
         if(_router == null)
         {
             throw new SessionNotExistException();
         }
-        return _router.getCategoryForClient();
+        return _category;
     }
 
     /**
@@ -185,7 +185,8 @@ public abstract class Application extends Ice.Application
      * @throws SessionNotExistException No session exists.
      **/
     public Ice.Identity
-    createCallbackIdentity(String name) throws SessionNotExistException
+    createCallbackIdentity(String name)
+        throws SessionNotExistException
     {
         return new Ice.Identity(name, categoryForClient());
     }
@@ -197,7 +198,8 @@ public abstract class Application extends Ice.Application
      * @throws SessionNotExistException No session exists.
      **/
     public Ice.ObjectPrx
-    addWithUUID(Ice.Object servant) throws SessionNotExistException 
+    addWithUUID(Ice.Object servant)
+        throws SessionNotExistException
     {
         return objectAdapter().add(servant, createCallbackIdentity(java.util.UUID.randomUUID().toString()));
     }
@@ -207,17 +209,22 @@ public abstract class Application extends Ice.Application
      * @return The object adapter.
      * @throws SessionNotExistException No session exists.
      */
-    public synchronized Ice.ObjectAdapter
-    objectAdapter() throws SessionNotExistException
+    public Ice.ObjectAdapter
+    objectAdapter()
+        throws SessionNotExistException
     {
-        if(_adapter == null)
+        if(_router == null)
         {
-            if(_router == null)
+            throw new SessionNotExistException();
+        }
+
+        synchronized(this)
+        {
+            if(_adapter == null)
             {
-                throw new SessionNotExistException();
+                _adapter = communicator().createObjectAdapterWithRouter("", _router);
+                _adapter.activate();
             }
-            _adapter = communicator().createObjectAdapterWithRouter("", _router);
-            _adapter.activate();
         }
         return _adapter;
     }
@@ -236,35 +243,45 @@ public abstract class Application extends Ice.Application
         {
             while(true)
             {
-                _router.refreshSession_async(new Glacier2.AMI_Router_refreshSession()
-                    {
-                        public void
-                        ice_response()
+                try
+                {
+                    _router.refreshSession_async(new Glacier2.AMI_Router_refreshSession()
                         {
-                        }
+                            public void
+                            ice_response()
+                            {
+                            }
 
-                        public void
-                        ice_exception(Ice.LocalException ex)
-                        {
-                            // Here the session has gone. The thread
-                            // terminates, and we notify the
-                            // application that the session has been
-                            // destroyed.
-                            done();
-                            sessionDestroyed();
-                        }
+                            public void
+                            ice_exception(Ice.LocalException ex)
+                            {
+                                //
+                                // Here the session has gone. The thread terminates, and we notify the
+                                // application that the session has been destroyed.
+                                //
+                                done();
+                                sessionDestroyed();
+                            }
 
-                        public void
-                        ice_exception(Ice.UserException ex)
-                        {
-                            // Here the session has gone. The thread
-                            // terminates, and we notify the
-                            // application that the session has been
-                            // destroyed.
-                            done();
-                            sessionDestroyed();
-                        }
-                    });
+                            public void
+                            ice_exception(Ice.UserException ex)
+                            {
+                                //
+                                // Here the session has gone. The thread terminates, and we notify the
+                                // application that the session has been destroyed.
+                                //
+                                done();
+                                sessionDestroyed();
+                            }
+                        });
+                }
+                catch(Ice.CommunicatorDestroyedException ex)
+                {
+                    //
+                    // AMI requests can raise CommunicatorDestroyedException directly.
+                    //
+                    break;
+                }
 
                 if(!_done)
                 {
@@ -302,7 +319,9 @@ public abstract class Application extends Ice.Application
     protected int
     doMain(Ice.StringSeqHolder argHolder, Ice.InitializationData initData)
     {
+        //
         // Set the default properties for all Glacier2 applications.
+        //
         initData.properties.setProperty("Ice.ACM.Client", "0");
         initData.properties.setProperty("Ice.RetryIntervals", "-1");
 
@@ -310,9 +329,11 @@ public abstract class Application extends Ice.Application
         Ice.IntHolder ret = new Ice.IntHolder();
         do
         {
-            // A copy of the initialization data and the string seq
+            //
+            // A copy of the initialization data and the string array
             // needs to be passed to doMainInternal, as these can be
             // changed by the application.
+            //
             Ice.InitializationData id = (Ice.InitializationData)initData.clone();
             id.properties = id.properties._clone();
             Ice.StringSeqHolder h = new Ice.StringSeqHolder();
@@ -327,8 +348,10 @@ public abstract class Application extends Ice.Application
     private boolean
     doMain(Ice.StringSeqHolder argHolder, Ice.InitializationData initData, Ice.IntHolder status)
     {
+        //
         // Reset internal state variables from Ice.Application. The
         // remainder are reset at the end of this method.
+        //
         _callbackInProgress = false;
         _destroyed = false;
         _interrupted = false;
@@ -357,7 +380,9 @@ public abstract class Application extends Ice.Application
                     destroyOnInterrupt();
                 }
 
+                //
                 // If createSession throws, we're done.
+                //
                 try
                 {
                     _session = createSession();
@@ -373,14 +398,17 @@ public abstract class Application extends Ice.Application
                 {
                     ping = new SessionPingThread(_router, (_router.getSessionTimeout() * 1000) / 2);
                     ping.start();
+                    _category = _router.getCategoryForClient();
                     status.value = runWithSession(argHolder.value);
                 }
             }
         }
-        // We want to restart on those exceptions which indicate a
+        //
+        // We want to restart on those exceptions that indicate a
         // break down in communications, but not those exceptions that
-        // indicate a programming logic error (ie: marshal, protocol
+        // indicate a programming logic error (i.e., marshal, protocol
         // failure, etc).
+        //
         catch(RestartSessionException ex)
         {
             restart = true;
@@ -429,7 +457,9 @@ public abstract class Application extends Ice.Application
             status.value = 1;
         }
 
+        //
         // This clears any set interrupt.
+        //
         if(_signalPolicy == Ice.SignalPolicy.HandleSignals)
         {
             defaultInterrupt();
@@ -458,7 +488,7 @@ public abstract class Application extends Ice.Application
                 //
                 // And _communicator != null, meaning will be
                 // destroyed next, _destroyed = true also ensures that
-                // any remaining callback won't do anything
+                // any remaining callback won't do anything.
                 //
             }
         }
@@ -488,15 +518,21 @@ public abstract class Application extends Ice.Application
             }
             catch(Ice.ConnectionLostException ex)
             {
+                //
                 // Expected if another thread invoked on an object from the session concurrently.
+                //
             }
             catch(Glacier2.SessionNotExistException ex)
             {
+                //
                 // This can also occur.
+                //
             }
             catch(Throwable ex)
             {
+                //
                 // Not expected.
+                //
                 Ice.Util.getProcessLogger().error("unexpected exception when destroying the session:\n" + 
                                                   IceInternal.Ex.toString(ex));
             }
@@ -530,13 +566,16 @@ public abstract class Application extends Ice.Application
             }
         }
 
+        //
         // Reset internal state. We cannot reset the Application state
         // here, since _destroyed must remain true until we re-run
         // this method.
+        //
         _adapter = null;
         _router = null;
         _session = null;
         _createdSession = false;
+        _category = null;
 
         return restart;
     }
@@ -545,4 +584,5 @@ public abstract class Application extends Ice.Application
     private static Glacier2.RouterPrx _router;
     private static Glacier2.SessionPrx _session;
     private static boolean _createdSession = false;
+    private static String _category;
 }

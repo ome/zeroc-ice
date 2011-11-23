@@ -15,6 +15,7 @@
 #include <Slice/FileTracker.h>
 #include <Slice/Util.h>
 #include <Gen.h>
+#include <iterator>
 
 using namespace std;
 using namespace Slice;
@@ -74,7 +75,8 @@ usage(const char* n)
         "--depend-xml            Generate dependencies in XML format.\n"
         "--list-generated        Emit list of generated files in XML format.\n"
         "-d, --debug             Print debug messages.\n"
-        "--ice                   Permit `Ice' prefix (for building Ice source code only)\n"
+        "--ice                   Permit `Ice' prefix (for building Ice source code only).\n"
+        "--underscore            Permit underscores in Slice identifiers.\n"
         "--checksum CLASS        Generate checksums for Slice definitions into CLASS.\n"
         "--stream                Generate marshaling support for public stream API.\n"
         "--meta META             Define global metadata directive META.\n"
@@ -100,6 +102,7 @@ compile(int argc, char* argv[])
     opts.addOpt("", "list-generated");
     opts.addOpt("d", "debug");
     opts.addOpt("", "ice");
+    opts.addOpt("", "underscore");
     opts.addOpt("", "checksum", IceUtilInternal::Options::NeedArg);
     opts.addOpt("", "stream");
     opts.addOpt("", "meta", IceUtilInternal::Options::NeedArg, "", IceUtilInternal::Options::Repeat);
@@ -165,6 +168,8 @@ compile(int argc, char* argv[])
 
     bool ice = opts.isSet("ice");
 
+    bool underscore = opts.isSet("underscore");
+
     string checksumClass = opts.optArg("checksum");
 
     bool stream = opts.isSet("stream");
@@ -203,6 +208,15 @@ compile(int argc, char* argv[])
 
     for(i = args.begin(); i != args.end(); ++i)
     {
+        //
+        // Ignore duplicates.
+        //
+        vector<string>::iterator p = find(args.begin(), args.end(), *i);
+        if(p != i)
+        {
+            continue;
+        }
+
         if(depend || dependxml)
         {
             PreprocessorPtr icecpp = Preprocessor::create(argv[0], *i, cppArgs);
@@ -213,7 +227,7 @@ compile(int argc, char* argv[])
                 return EXIT_FAILURE;
             }
 
-            UnitPtr u = Unit::createUnit(false, false, ice);
+            UnitPtr u = Unit::createUnit(false, false, ice, underscore);
             int parseStatus = u->parse(*i, cppHandle, debug);
             u->destroy();
 
@@ -272,7 +286,7 @@ compile(int argc, char* argv[])
             }
             else
             {
-                UnitPtr p = Unit::createUnit(false, false, ice, globalMetadata);
+                UnitPtr p = Unit::createUnit(false, false, ice, underscore, globalMetadata);
                 int parseStatus = p->parse(*i, cppHandle, debug, Ice);
 
                 if(!icecpp->close())

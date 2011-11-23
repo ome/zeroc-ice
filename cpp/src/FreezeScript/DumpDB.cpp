@@ -10,6 +10,8 @@
 #include <FreezeScript/DumpDescriptors.h>
 #include <FreezeScript/Util.h>
 #include <FreezeScript/Exception.h>
+#include <Freeze/Initialize.h>
+#include <Freeze/Connection.h>
 #include <IceUtil/OutputUtil.h>
 #include <IceUtil/Options.h>
 #include <IceUtil/FileUtil.h>
@@ -93,7 +95,8 @@ usage(const string& n)
         "-UNAME                Remove any definition for NAME.\n"
         "-IDIR                 Put DIR in the include file search path.\n"
         "-d, --debug           Print debug messages.\n"
-        "--ice                 Permit `Ice' prefix (for building Ice source code only)\n"
+        "--ice                 Permit `Ice' prefix (for building Ice source code only).\n"
+        "--underscore          Permit underscores in Slice identifiers.\n"
         "-o FILE               Output sample descriptors into the file FILE.\n"
         "-f FILE               Execute the descriptors in the file FILE.\n"
         "--load SLICE          Load Slice definitions from the file SLICE.\n"
@@ -128,6 +131,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
     vector<string> cppArgs;
     bool debug;
     bool ice = true; // Needs to be true in order to create default definitions.
+    bool underscore;
     string outputFile;
     string inputFile;
     vector<string> slice;
@@ -145,6 +149,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
     opts.addOpt("I", "", IceUtilInternal::Options::NeedArg, "", IceUtilInternal::Options::Repeat);
     opts.addOpt("d", "debug");
     opts.addOpt("", "ice");
+    opts.addOpt("", "underscore");
     opts.addOpt("o", "", IceUtilInternal::Options::NeedArg);
     opts.addOpt("f", "", IceUtilInternal::Options::NeedArg);
     opts.addOpt("", "load", IceUtilInternal::Options::NeedArg, "", IceUtilInternal::Options::Repeat);
@@ -164,6 +169,26 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         cerr << appName << ": " << e.reason << endl;
         usage(appName);
         return EXIT_FAILURE;
+    }
+
+    //
+    // Freeze creates a lock file by default to prevent multiple processes from opening
+    // the same database environment simultaneously. In the case of a read-only program
+    // such as dumpdb, however, we still want to be able to open the environment despite
+    // the lock. This assumes of course that the other process has opened the environment
+    // with DbPrivate=0. If DbPrivate=0 is also set for dumpdb, we disable the lock.
+    //
+    if(!args.empty())
+    {
+        //
+        // If an argument is present, we assume it is the name of the database environment.
+        //
+        Ice::PropertiesPtr props = communicator->getProperties();
+        string prefix = "Freeze.DbEnv." + args[0];
+        if(props->getPropertyAsIntWithDefault(prefix + ".DbPrivate", 1) == 0)
+        {
+            props->setProperty(prefix + ".LockFile", "0");
+        }
     }
 
     if(opts.isSet("h"))
@@ -258,6 +283,8 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
 
     // No need to set --ice option here -- it is always true.
 
+    underscore = opts.isSet("underscore");
+
     if(opts.isSet("o"))
     {
         outputFile = opts.optArg("o");
@@ -314,7 +341,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         return EXIT_FAILURE;
     }
 
-    Slice::UnitPtr unit = Slice::Unit::createUnit(true, true, ice);
+    Slice::UnitPtr unit = Slice::Unit::createUnit(true, true, ice, underscore);
     FreezeScript::Destroyer<Slice::UnitPtr> unitD(unit);
     if(!FreezeScript::parseSlice(appName, unit, slice, cppArgs, debug))
     {
@@ -439,7 +466,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         while(true)
         {
             in.read(buff, 1024);
-            descriptors.append(buff, in.gcount());
+            descriptors.append(buff, static_cast<size_t>(in.gcount()));
             if(in.gcount() < 1024)
             {
                 break;
@@ -452,6 +479,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
 
     DbEnv dbEnv(0);
     DbTxn* txn = 0;
+    Freeze::ConnectionPtr connection;
     int status = EXIT_SUCCESS;
     try
     {
@@ -466,9 +494,16 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         // Open the database environment and start a transaction.
         //
         {
-            u_int32_t flags = DB_INIT_LOG | DB_INIT_MPOOL | DB_INIT_TXN | DB_RECOVER | DB_CREATE;
+            u_int32_t flags = DB_THREAD | DB_CREATE | DB_INIT_TXN | DB_INIT_MPOOL;
             dbEnv.open(dbEnvName.c_str(), flags, FREEZE_SCRIPT_DB_MODE);
         }
+
+        //
+        // We're creating a connection just to make sure the database environment
+        // isn't locked.
+        //
+        connection = Freeze::createConnection(communicator, dbEnvName, dbEnv);
+
         dbEnv.txn_begin(0, &txn, 0);
 
         FreezeScript::ErrorReporterPtr errorReporter = new FreezeScript::ErrorReporter(cerr, false);
@@ -565,6 +600,11 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         {
             cerr << appName << ": database error: " << ex.what() << endl;
         }
+        if(connection)
+        {
+            connection->close();
+            connection = 0;
+        }
         throw;
     }
 
@@ -573,6 +613,10 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         if(txn)
         {
             txn->abort();
+        }
+        if(connection)
+        {
+            connection->close();
         }
         dbEnv.close(0);
     }
@@ -618,9 +662,14 @@ main(int argc, char* argv[])
         }
         return EXIT_FAILURE;
     }
-    catch(const IceUtil::Exception& ex)
+    catch(const std::exception& ex)
     {
-        cerr << appName << ": " << ex << endl;
+        cerr << appName << ": " << ex.what() << endl;
+        status = EXIT_FAILURE;
+    }
+    catch(...)
+    {
+        cerr << appName << ": unknown error" << endl;
         return EXIT_FAILURE;
     }
 

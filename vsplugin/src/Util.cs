@@ -521,6 +521,9 @@ namespace Ice.VisualStudio
             else
             {
                 iceBinDir = Util.getIceHome(project) + "\\bin";
+#if VS2010
+                iceBinDir += "\\vc100";
+#endif
                 if(x64)
                 {
                     iceBinDir += "\\x64";
@@ -549,6 +552,8 @@ namespace Ice.VisualStudio
         {
             "\\bin",
             "\\bin\\x64",
+            "\\bin\\vc100",
+            "\\bin\\vc100\\x64",
             "\\cpp\\bin",
         };
 
@@ -596,6 +601,9 @@ namespace Ice.VisualStudio
             else
             {
                 iceLibDir = Util.getIceHome(project) + "\\lib";
+#if VS2010
+                iceLibDir += "\\vc100";
+#endif
                 if(x64)
                 {
                     iceLibDir += "\\x64";
@@ -622,6 +630,8 @@ namespace Ice.VisualStudio
         {
             "\\lib",
             "\\lib\\x64",
+            "\\lib\\vc100",
+            "\\lib\\vc100\\x64",
             "\\cpp\\lib",
         };
 
@@ -1192,7 +1202,10 @@ namespace Ice.VisualStudio
             if(update && !String.IsNullOrEmpty(defaultValue))
             {
                 project.Globals[name] = defaultValue;
-                project.Globals.set_VariablePersists(name, true);
+                if(!project.Globals.get_VariablePersists(name))
+                {
+                    project.Globals.set_VariablePersists(name, true);
+                }
             }
             return defaultValue;
         }
@@ -1201,16 +1214,19 @@ namespace Ice.VisualStudio
         {
             if(project == null || String.IsNullOrEmpty(name))
             {
-                return ;
+                return;
             }
 
             if(project.Globals == null)
             {
                 return;
             }
-
-            project.Globals[name] = value;
-            project.Globals.set_VariablePersists(name, true);
+	    
+	    project.Globals[name] = value;
+	    if(!project.Globals.get_VariablePersists(name))
+	    {
+                project.Globals.set_VariablePersists(name, true);
+	    }
         }
         
         public static String getPrecompileHeader(Project project)

@@ -210,11 +210,6 @@ FreezeScript::readCatalog(const Ice::CommunicatorPtr& communicator, const string
     CatalogDataMap result;
 
     DbEnv dbEnv(0);
-#ifdef _WIN32
-    int mode = 0;
-#else
-    int mode = S_IRUSR | S_IWUSR;
-#endif
     try
     {
 #ifdef _WIN32
@@ -228,8 +223,8 @@ FreezeScript::readCatalog(const Ice::CommunicatorPtr& communicator, const string
         // Open the database environment.
         //
         {
-            u_int32_t flags = DB_INIT_LOG | DB_INIT_MPOOL | DB_INIT_TXN | DB_CREATE | DB_THREAD | DB_RECOVER;
-            dbEnv.open(dbEnvName.c_str(), flags, mode);
+            u_int32_t flags = DB_THREAD | DB_CREATE | DB_INIT_TXN | DB_INIT_MPOOL;
+            dbEnv.open(dbEnvName.c_str(), flags, 0);
         }
 
         Freeze::ConnectionPtr connection = Freeze::createConnection(communicator, dbEnvName, dbEnv);
@@ -244,10 +239,15 @@ FreezeScript::readCatalog(const Ice::CommunicatorPtr& communicator, const string
         dbEnv.close(0);
         throw FailureException(__FILE__, __LINE__, string("database error: ") + ex.what());
     }
+    catch(const IceUtil::FileLockException&)
+    {
+        dbEnv.close(0);
+        throw FailureException(__FILE__, __LINE__, "environment `" + dbEnvName + "' is locked");
+    }
     catch(...)
     {
         dbEnv.close(0);
-        throw FailureException(__FILE__, __LINE__, "unknown exception");
+        throw;
     }
 
     dbEnv.close(0);

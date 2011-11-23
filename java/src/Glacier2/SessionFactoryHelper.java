@@ -26,7 +26,8 @@ public class SessionFactoryHelper
      * @throws {@link Ice.InitializationException}
      */
     public
-    SessionFactoryHelper(SessionCallback callback) throws Ice.InitializationException
+    SessionFactoryHelper(SessionCallback callback)
+        throws Ice.InitializationException
     {
         initialize(callback, new Ice.InitializationData(), Ice.Util.createProperties());
     }
@@ -39,7 +40,8 @@ public class SessionFactoryHelper
      * @throws {@link Ice.InitializationException}
      */
     public
-    SessionFactoryHelper(Ice.InitializationData initData, SessionCallback callback) throws Ice.InitializationException
+    SessionFactoryHelper(Ice.InitializationData initData, SessionCallback callback)
+        throws Ice.InitializationException
     {
         initialize(callback, initData, initData.properties);
     }
@@ -52,7 +54,8 @@ public class SessionFactoryHelper
      * @throws {@link Ice.InitializationException}
      */
     public
-    SessionFactoryHelper(Ice.Properties properties, SessionCallback callback) throws Ice.InitializationException
+    SessionFactoryHelper(Ice.Properties properties, SessionCallback callback)
+        throws Ice.InitializationException
     {
         initialize(callback, new Ice.InitializationData(), properties);
     }
@@ -63,8 +66,8 @@ public class SessionFactoryHelper
     {
         if(callback == null)
         {
-            throw new Ice.InitializationException("Attempt to create a SessionFactoryHelper with a null SessionCallback" +
-                                                  "argument");
+            throw new Ice.InitializationException("Attempt to create a SessionFactoryHelper with a null " +
+                                                  "SessionCallback argument");
         }
 
         if(initData == null)
@@ -199,7 +202,7 @@ public class SessionFactoryHelper
     synchronized public int
     getPort()
     {
-        return _port == 0 ? (_secure ? GLACIER2_TCP_PORT : GLACIER2_SSL_PORT) : _port;
+        return _port == 0 ? (_secure ? GLACIER2_SSL_PORT : GLACIER2_TCP_PORT) : _port;
     }
 
     /**
@@ -214,6 +217,17 @@ public class SessionFactoryHelper
     }
 
     /**
+     * Sets the request context to use while establishing a connection to the Glacier2 router.
+     *
+     * @param context The request context.
+     */
+    synchronized public void
+    setConnectContext(final java.util.Map<String, String> context)
+    {
+	_context = context;
+    }
+
+    /**
      * Connects to the Glacier2 router using the associated SSL credentials.
      *
      * Once the connection is established, {@link SessionCallback#connected} is called on the callback object;
@@ -225,7 +239,7 @@ public class SessionFactoryHelper
     connect()
     {
         SessionHelper session = new SessionHelper(_callback, createInitData());
-        session.connect();
+        session.connect(_context);
         return session;
     }
 
@@ -243,14 +257,16 @@ public class SessionFactoryHelper
     connect(final String username, final String password)
     {
         SessionHelper session = new SessionHelper(_callback, createInitData());
-        session.connect(username, password);
+        session.connect(username, password, _context);
         return session;
     }
 
     private Ice.InitializationData
     createInitData()
     {
+        //
         // Clone the initialization data and properties.
+        //
         Ice.InitializationData initData = (Ice.InitializationData)_initData.clone();
         initData.properties = initData.properties._clone();
 
@@ -307,6 +323,7 @@ public class SessionFactoryHelper
     private boolean _secure = true;
     private int _port = 0;
     private int _timeout = 10000;
+    private java.util.Map<String, String> _context;
     private static final int GLACIER2_SSL_PORT = 4064;
     private static final int GLACIER2_TCP_PORT = 4063;
 }

@@ -12,7 +12,7 @@ Requirements
 
     http://www.php.net/downloads.php
 
-- Ice for C++ 3.4.0 development kit
+- Ice for C++ 3.4.1 development kit
 
 
 ======================================================================
@@ -27,7 +27,7 @@ Follow the steps below to build Ice for PHP:
 
 1. Change to Ice for PHP source subdirectory.
 
-   > cd Ice-3.4.0/php
+   > cd Ice-3.4.1/php
 
 2. Edit config/Make.rules and review the build settings. For example,
    you may want to enable OPTIMIZE. If your PHP installation resides
@@ -38,9 +38,9 @@ Follow the steps below to build Ice for PHP:
 3. If you have not built Ice for C++ from the cpp subdirectory, then
    set the ICE_HOME environment variable to the directory containing 
    your Ice installation. For example, if Ice is installed in
-   /opt/Ice-3.4.0, set ICE_HOME as follows:
+   /opt/Ice-3.4.1, set ICE_HOME as follows:
 
-   $ export ICE_HOME=/opt/Ice-3.4.0
+   $ export ICE_HOME=/opt/Ice-3.4.1
 
    If you installed Ice using RPMs, set ICE_HOME as shown below:
 
@@ -95,11 +95,11 @@ Follow these instructions to build the Ice extension:
    you need to set the ICE_HOME environment variable to the location
    of your Ice for C++ installation. For example:
 
-   > set ICE_HOME=C:\Program Files\ZeroC\Ice-3.4.0
+   > set ICE_HOME=C:\Program Files\ZeroC\Ice-3.4.1
 
 5) Change to the Ice for PHP source directory.
 
-  > cd Ice-3.4.0\php
+  > cd Ice-3.4.1\php
 
 6) Open config\Make.rules.mak, review the comments, and make any
    necessary changes. In particular, you may need to change the values
@@ -302,7 +302,7 @@ run-time file. Here is an example that assumes Ice is installed in
 
 // PHP
 ini_set('include_path',
-  ini_get('include_path') . PATH_SEPARATOR . '/opt/Ice-3.4.0/php');
+  ini_get('include_path') . PATH_SEPARATOR . '/opt/Ice-3.4.1/php');
 require 'Ice.php'; // Load the core Ice run time definitions.
 
 

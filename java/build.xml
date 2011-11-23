@@ -303,10 +303,6 @@
             <fileset dir="test/Ice/location">
                 <include name="Test.ice" />
             </fileset>
-            <fileset dir="test/Ice/operations">
-                <include name="Test.ice" />
-                <include name="TestAMD.ice" />
-            </fileset>
             <fileset dir="test/Ice/proxy">
                 <include name="Test.ice" />
                 <include name="TestAMD.ice" />
@@ -365,6 +361,9 @@
 	    <fileset dir="test/Slice/keyword/">
                 <include name="Key.ice" />
             </fileset>
+	    <fileset dir="test/Slice/structure/">
+                <include name="Test.ice" />
+            </fileset>
         </slice2java>
 
         <slice2java tie="on" outputdir="${generated.test.dir}" dependencyfile="${generated.test.dir}/.depend.Test">
@@ -373,6 +372,10 @@
             </includepath>
             <fileset dir="test/Freeze/evictor">
                 <include name="Test.ice" />
+            </fileset>
+            <fileset dir="test/Ice/operations">
+                <include name="Test.ice" />
+                <include name="TestAMD.ice" />
             </fileset>
         </slice2java>
 

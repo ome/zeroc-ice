@@ -89,8 +89,12 @@ interface _a;           // Illegal leading underscore
 interface _true;        // Illegal leading underscore
 interface \_true;       // Illegal leading underscore
 
-interface b_;           // Illegal underscore
-interface tr_ue;        // Illegal underscore
-interface \tr_ue;       // Illegal underscore
+interface b_;           // Illegal trailing underscore
+
+interface b__c;         // Illegal underscores
+interface b___c;        // Illegal underscores
+
+interface a_b;          // Illegal underscore
+interface a_b_c;        // Illegal underscores
 
 };

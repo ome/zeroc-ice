@@ -28,24 +28,35 @@ public class SessionHelper
         {
             while(true)
             {
-                _router.refreshSession_async(new Glacier2.AMI_Router_refreshSession()
+                try
                 {
-                    public void ice_response()
+                    _router.refreshSession_async(new Glacier2.AMI_Router_refreshSession()
                     {
-                    }
+                        public void ice_response()
+                        {
+                        }
 
-                    public void ice_exception(Ice.LocalException ex)
-                    {
-                        done();
-                        SessionHelper.this.destroy();
-                    }
+                        public void ice_exception(Ice.LocalException ex)
+                        {
+                            done();
+                            SessionHelper.this.destroy();
+                        }
 
-                    public void ice_exception(Ice.UserException ex)
-                    {
-                        done();
-                        SessionHelper.this.destroy();
-                    }
-                });
+                        public void ice_exception(Ice.UserException ex)
+                        {
+                            done();
+                            SessionHelper.this.destroy();
+                        }
+                    });
+                }
+                catch(Ice.CommunicatorDestroyedException ex)
+                {
+                    //
+                    // AMI requests can raise CommunicatorDestroyedException directly.
+                    //
+                    break;
+                }
+
                 if(!_done)
                 {
                     try
@@ -56,6 +67,7 @@ public class SessionHelper
                     {
                     }
                 }
+
                 if(_done)
                 {
                     break;
@@ -106,10 +118,12 @@ public class SessionHelper
         _destroy = true;
         if(_refreshThread == null)
         {
+            //
             // In this case a connecting session is being
             // destroyed. The communicator and session will be
             // destroyed when the connection establishment has
             // completed.
+            //
             return;
         }
         _session = null;
@@ -127,8 +141,10 @@ public class SessionHelper
             // Ignore
         }
 
+        //
         // Run the destroyInternal in a thread. This is because it
         // destroyInternal makes remote invocations.
+        //
         new Thread(new Runnable()
         {
             public void run()
@@ -164,7 +180,7 @@ public class SessionHelper
             throw new SessionNotExistException();
         }
         
-        return _router.getCategoryForClient();
+        return _category;
     }
 
     /**
@@ -182,7 +198,7 @@ public class SessionHelper
             throw new SessionNotExistException();
         }
         return internalObjectAdapter().add(servant, new Ice.Identity(java.util.UUID.randomUUID().toString(),
-                                                                     _router.getCategoryForClient()));
+                                                                     _category));
     }
     
     /**
@@ -225,7 +241,9 @@ public class SessionHelper
         return internalObjectAdapter();
     }
 
+    //
     // Only call this method when the calling thread owns the lock
+    //
     private Ice.ObjectAdapter
     internalObjectAdapter()
         throws SessionNotExistException
@@ -254,16 +272,18 @@ public class SessionHelper
      *
      * Once the connection is established, {@link SessionCallback#connected} is called on the callback object;
      * upon failure, {@link SessionCallback#exception} is called with the exception.
+     *
+     * @param context The request context to use when creating the session.
      */
     synchronized protected void
-    connect()
+    connect(final java.util.Map<String, String> context)
     {
         connectImpl(new ConnectStrategy()
                             {
                                 public SessionPrx connect(RouterPrx router)
                                     throws CannotCreateSessionException, PermissionDeniedException
                                 {
-                                    return router.createSessionFromSecureConnection();
+                                    return router.createSessionFromSecureConnection(context);
                                 }
                             });
     }
@@ -276,16 +296,17 @@ public class SessionHelper
      * 
      * @param username The user name.
      * @param password The password.
+     * @param context The request context to use when creating the session.
      */
     synchronized protected void
-    connect(final String username, final String password)
+    connect(final String username, final String password, final java.util.Map<String, String> context)
     {
         connectImpl(new ConnectStrategy()
                             {
                                 public SessionPrx connect(RouterPrx router)
                                     throws CannotCreateSessionException, PermissionDeniedException
                                 {
-                                    return router.createSession(username, password);
+                                    return router.createSession(username, password, context);
                                 }
                             });
     }
@@ -301,7 +322,14 @@ public class SessionHelper
             return;
         }
 
+        //
+        // Cache the category.
+        //
+        _category = _router.getCategoryForClient();
+
+        //
         // Assign the session after _destroy is checked.
+        //
         _session = session;
         _connected = true;
 
@@ -329,8 +357,9 @@ public class SessionHelper
         }
         catch(SecurityException ex)
         {
-            // Ignore. Unsigned applets cannot registered shutdown
-            // hooks.
+            //
+            // Ignore. Unsigned applets cannot registered shutdown hooks.
+            //
         }
 
         dispatchCallback(new Runnable()
@@ -360,15 +389,21 @@ public class SessionHelper
         }
         catch(Ice.ConnectionLostException e)
         {
+            //
             // Expected if another thread invoked on an object from the session concurrently.
+            //
         }
         catch(SessionNotExistException e)
         {
+            //
             // This can also occur.
+            //
         }
         catch(Throwable e)
         {
+            //
             // Not expected.
+            //
             _communicator.getLogger().warning("SessionHelper: unexpected exception when destroying the session:\n" + e);
         }
         _router = null;
@@ -400,7 +435,9 @@ public class SessionHelper
         }
         _communicator = null;
 
+        //
         // Notify the callback that the session is gone.
+        //
         dispatchCallback(new Runnable()
         {
             public void run()
@@ -451,7 +488,7 @@ public class SessionHelper
                     Glacier2.SessionPrx session = factory.connect(routerPrx);
                     connected(routerPrx, session);
                 }
-                catch (final Exception ex)
+                catch(final Exception ex)
                 {
                     try
                     {
@@ -515,6 +552,7 @@ public class SessionHelper
     private Ice.ObjectAdapter _adapter;
     private Glacier2.RouterPrx _router;
     private Glacier2.SessionPrx _session;
+    private String _category;
 
     private SessionRefreshThread _refreshThread;
     private SessionCallback _callback;

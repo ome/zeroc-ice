@@ -53,6 +53,7 @@ usage(const std::string& n)
         "-DNAME=DEF            Define NAME as DEF.\n"
         "-UNAME                Remove any definition for NAME.\n"
         "-d, --debug           Print debug messages.\n"
+        "--underscore          Permit underscores in Slice identifiers.\n"
         "--include-old DIR     Put DIR in the include file search path for old Slice\n"
         "                      definitions.\n"
         "--include-new DIR     Put DIR in the include file search path for new Slice\n"
@@ -217,6 +218,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
     vector<string> newCppArgs;
     bool debug;
     bool ice = true; // Needs to be true in order to create default definitions.
+    bool underscore;
     string outputFile;
     bool ignoreTypeChanges;
     bool purgeObjects;
@@ -237,6 +239,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
     opts.addOpt("D", "", IceUtilInternal::Options::NeedArg, "", IceUtilInternal::Options::Repeat);
     opts.addOpt("U", "", IceUtilInternal::Options::NeedArg, "", IceUtilInternal::Options::Repeat);
     opts.addOpt("d", "debug");
+    opts.addOpt("", "underscore");
     opts.addOpt("o", "", IceUtilInternal::Options::NeedArg);
     opts.addOpt("i");
     opts.addOpt("p");
@@ -294,6 +297,8 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         }
     }
     debug = opts.isSet("debug");
+
+    underscore = opts.isSet("underscore");
 
     if(opts.isSet("o"))
     {
@@ -412,14 +417,31 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         return EXIT_FAILURE;
     }
 
-    Slice::UnitPtr oldUnit = Slice::Unit::createUnit(true, true, ice);
+    //
+    // Freeze creates a lock file by default to prevent multiple processes from opening
+    // the same database environment simultaneously. In the case of a read-only program
+    // such as transformdb, however, we still want to be able to open the environment despite
+    // the lock. This assumes of course that the other process has opened the environment
+    // with DbPrivate=0. If DbPrivate=0 is also set for dumpdb, we disable the lock.
+    //
+    if(!catastrophicRecover && outputFile.empty())
+    {
+        Ice::PropertiesPtr props = communicator->getProperties();
+        string prefix = "Freeze.DbEnv." + args[0];
+        if(props->getPropertyAsIntWithDefault(prefix + ".DbPrivate", 1) == 0)
+        {
+            props->setProperty(prefix + ".LockFile", "0");
+        }
+    }
+
+    Slice::UnitPtr oldUnit = Slice::Unit::createUnit(true, true, ice, underscore);
     FreezeScript::Destroyer<Slice::UnitPtr> oldD(oldUnit);
     if(!FreezeScript::parseSlice(appName, oldUnit, oldSlice, oldCppArgs, debug))
     {
         return EXIT_FAILURE;
     }
 
-    Slice::UnitPtr newUnit = Slice::Unit::createUnit(true, true, ice);
+    Slice::UnitPtr newUnit = Slice::Unit::createUnit(true, true, ice, underscore);
     FreezeScript::Destroyer<Slice::UnitPtr> newD(newUnit);
     if(!FreezeScript::parseSlice(appName, newUnit, newSlice, newCppArgs, debug))
     {
@@ -686,7 +708,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         while(true)
         {
             in.read(buff, 1024);
-            descriptors.append(buff, in.gcount());
+            descriptors.append(buff, static_cast<size_t>(in.gcount()));
             if(in.gcount() < 1024)
             {
                 break;
@@ -709,8 +731,9 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
     //
     DbEnv dbEnv(0);
     DbEnv dbEnvNew(0);
-    Freeze::TransactionPtr txNew = 0;
-    Freeze::ConnectionPtr connectionNew = 0;
+    Freeze::TransactionPtr txNew;
+    Freeze::ConnectionPtr connection;
+    Freeze::ConnectionPtr connectionNew;
     vector<Db*> dbs;
     int status = EXIT_SUCCESS;
     try
@@ -728,18 +751,21 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         // No transaction is created for the old environment.
         //
         // DB_THREAD is for compatibility with Freeze (the catalog)
+        //
         {
-            u_int32_t flags = DB_INIT_LOG | DB_INIT_MPOOL | DB_INIT_TXN | DB_CREATE | DB_THREAD;
+            u_int32_t flags = DB_THREAD | DB_CREATE | DB_INIT_TXN | DB_INIT_MPOOL;
             if(catastrophicRecover)
             {
-                flags |= DB_RECOVER_FATAL;
-            }
-            else
-            {
-                flags |= DB_RECOVER;
+                flags |= DB_INIT_LOG | DB_RECOVER_FATAL;
             }
             dbEnv.open(dbEnvName.c_str(), flags, FREEZE_SCRIPT_DB_MODE);
         }
+
+        //
+        // We're creating a connection just to make sure the database environment
+        // isn't locked.
+        //
+        connection = Freeze::createConnection(communicator, dbEnvName, dbEnv);
 
         //
         // Open the new database environment and start a transaction.
@@ -748,8 +774,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         // DB_THREAD is for compatibility with Freeze (the catalog)
         //
         {
-            u_int32_t flags = DB_INIT_LOG | DB_INIT_MPOOL | DB_INIT_TXN | DB_RECOVER | DB_CREATE
-                | DB_THREAD;
+            u_int32_t flags = DB_INIT_LOG | DB_INIT_MPOOL | DB_INIT_TXN | DB_RECOVER | DB_CREATE | DB_THREAD;
             dbEnvNew.open(dbEnvNameNew.c_str(), flags, FREEZE_SCRIPT_DB_MODE);
         }
 
@@ -786,6 +811,11 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         cerr << appName << ": database error: " << ex.what() << endl;
         status = EXIT_FAILURE;
     }
+    catch(const IceUtil::FileLockException&)
+    {
+        cerr << appName << ": error: database environment is locked" << endl;
+        status = EXIT_FAILURE;
+    }
     catch(...)
     {
         try
@@ -799,6 +829,11 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
             {
                 connectionNew->close();
                 connectionNew = 0;
+            }
+            if(connection)
+            {
+                connection->close();
+                connection = 0;
             }
             for(vector<Db*>::iterator p = dbs.begin(); p != dbs.end(); ++p)
             {
@@ -868,6 +903,12 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         connectionNew = 0;
     }
 
+    if(connection)
+    {
+        connection->close();
+        connection = 0;
+    }
+
     try
     {
         dbEnv.close(0);
@@ -917,11 +958,6 @@ main(int argc, char* argv[])
         {
             cerr << endl;
         }
-        status = EXIT_FAILURE;
-    }
-    catch(const IceUtil::Exception& ex)
-    {
-        cerr << appName << ": " << ex << endl;
         status = EXIT_FAILURE;
     }
     catch(const std::exception& ex)

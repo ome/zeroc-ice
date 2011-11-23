@@ -402,7 +402,7 @@ namespace Ice
             catch(System.Exception ex)
             {
                 //
-                // IceSSL is not supported with Mono 1.2. We avoid throwing an exception in that case,
+                // IceSSL is not yet supported with Mono. We avoid throwing an exception in that case,
                 // so the same configuration can be used with Mono or Visual C#.
                 //
                 if(IceInternal.AssemblyUtil.runtime_ == IceInternal.AssemblyUtil.Runtime.Mono && name == "IceSSL")
@@ -420,16 +420,20 @@ namespace Ice
                 e.reason = err + "unable to load assembly: '" + assemblyName + "': " + ex.ToString();
                 throw e;
             }
-            
+
             //
             // Instantiate the class.
             //
             PluginFactory pluginFactory = null;
             string className = entryPoint.Substring(sepPos + 1);
-            System.Type c = pluginAssembly.GetType(className);
-            if(c == null)
+            System.Type c = null;
+            try
             {
-                PluginInitializationException e = new PluginInitializationException();
+                c = pluginAssembly.GetType(className, true);
+            }
+            catch(System.Exception ex)
+            {
+                PluginInitializationException e = new PluginInitializationException(ex);
                 e.reason = err + "GetType failed for '" + className + "'";
                 throw e;
             }

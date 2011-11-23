@@ -12,7 +12,8 @@ top_srcdir	= ../..
 include $(top_srcdir)/config/Make.rules
 
 SUBDIRS		= keyword \
-		  parser
+		  parser \
+		  structure
 
 $(EVERYTHING)::
 	@for subdir in $(SUBDIRS); \

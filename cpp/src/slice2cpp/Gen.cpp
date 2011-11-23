@@ -354,6 +354,10 @@ Slice::Gen::generate(const UnitPtr& p)
         {
             H << "\n#include <Ice/Stream.h>";
         }
+        else
+        {
+            H << "\n#include <Ice/StreamF.h>";
+        }
     }
 
     if(_checksum)
@@ -1045,44 +1049,6 @@ Slice::Gen::TypesVisitor::visitStructStart(const StructPtr& p)
         {
             H << nl << name << "() {}";
         }
-
-        if(!dataMembers.empty())
-        {
-            DataMemberList::const_iterator q;
-            vector<string> paramDecls;
-            vector<string> types;
-            for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
-            {
-                string typeName = inputTypeToString((*q)->type(), (*q)->getMetaData(), _useWstring);
-                types.push_back(typeName);
-                paramDecls.push_back(typeName + " __ice_" + (*q)->name());
-            }
-
-            H << nl;
-            if(paramDecls.size() == 1)
-            {
-                H << "explicit ";
-            }
-            H << name << spar << types << epar << ';';
-
-            C << sp << nl << fixKwd(p->scoped()).substr(2) << "::"
-              << fixKwd(p->name()) << spar << paramDecls << epar << " :";
-            C.inc();
-
-            for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
-            {
-                if(q != dataMembers.begin())
-                {
-                    C << ',';
-                }
-                string memberName = fixKwd((*q)->name());
-                C << nl << memberName << '(' << "__ice_" << (*q)->name() << ')';
-            }
-
-            C.dec();
-            C << sb;
-            C << eb;
-        }
     }
     else
     {
@@ -1100,6 +1066,50 @@ Slice::Gen::TypesVisitor::visitStructStart(const StructPtr& p)
             C << eb;
         }
     }
+
+    //
+    // Generate a one-shot constructor if the struct uses the class mapping, or if at least
+    // one of its members has a default value.
+    //
+    if(!dataMembers.empty() && (findMetaData(p->getMetaData()) == "class" || p->hasDefaultValues()))
+    {
+        DataMemberList::const_iterator q;
+        vector<string> paramDecls;
+        vector<string> types;
+        for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+        {
+            string typeName = inputTypeToString((*q)->type(), (*q)->getMetaData(), _useWstring);
+            types.push_back(typeName);
+            paramDecls.push_back(typeName + " __ice_" + (*q)->name());
+        }
+
+        H << nl;
+        if(paramDecls.size() == 1)
+        {
+            H << "explicit ";
+        }
+        H << name << spar << types << epar << ';';
+
+        C << sp << nl << fixKwd(p->scoped()).substr(2) << "::"
+          << fixKwd(p->name()) << spar << paramDecls << epar << " :";
+        C.inc();
+
+        for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+        {
+            if(q != dataMembers.begin())
+            {
+                C << ',';
+            }
+            string memberName = fixKwd((*q)->name());
+            C << nl << memberName << '(' << "__ice_" << (*q)->name() << ')';
+        }
+
+        C.dec();
+        C << sb;
+        C << eb;
+    }
+
+    H << sp;
 
     return true;
 }
@@ -2515,7 +2525,7 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
     H << nl << "return begin_" << name << spar << argsAMI << "&__ctx" << "__del" << "__cookie" << epar << ';';
     H << eb;
 
-    H << sp << nl << retS << " end_" << name << spar << outParamsDeclAMI
+    H << sp << nl << _dllExport << retS << " end_" << name << spar << outParamsDeclAMI
       << "const ::Ice::AsyncResultPtr&" << epar << ';';
     if(generatePrivateEnd)
     {
@@ -6621,29 +6631,42 @@ Slice::Gen::StreamVisitor::StreamVisitor(Output& h, Output& c) :
 bool
 Slice::Gen::StreamVisitor::visitModuleStart(const ModulePtr& m)
 {
-    if(!m->hasOtherConstructedOrExceptions())
+    if(!m->hasNonLocalContained(Contained::ContainedTypeStruct) &&
+       !m->hasNonLocalContained(Contained::ContainedTypeEnum) &&
+       !m->hasNonLocalContained(Contained::ContainedTypeException))
     {
         return false;
     }
-    else if(m->structs().empty() && m->enums().empty() && m->exceptions().empty())
+
+    if(UnitPtr::dynamicCast(m->container()))
     {
-        return false;
+        //
+        // Only emit this for the top-level module.
+        //
+        H << sp;
+        H.zeroIndent();
+        H << nl << "#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug"; // COMPILERFIX
+        H << nl << "#else";
+        H.restoreIndent();
+        H << nl << "namespace Ice" << nl << '{';
     }
-    H.zeroIndent();
-    H << nl << "#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug"; // COMPILERFIX
-    H << nl << "#else";
-    H.restoreIndent();
-    H << nl << "namespace Ice" << nl << '{';
+
     return true;
 }
 
 void
-Slice::Gen::StreamVisitor::visitModuleEnd(const ModulePtr&)
+Slice::Gen::StreamVisitor::visitModuleEnd(const ModulePtr& m)
 {
-    H << nl << '}';
-    H.zeroIndent();
-    H << nl << "#endif";
-    H.restoreIndent();
+    if(UnitPtr::dynamicCast(m->container()))
+    {
+        //
+        // Only emit this for the top-level module.
+        //
+        H << nl << '}';
+        H.zeroIndent();
+        H << nl << "#endif";
+        H.restoreIndent();
+    }
 }
 
 bool
@@ -6658,12 +6681,7 @@ Slice::Gen::StreamVisitor::visitExceptionStart(const ExceptionPtr& p)
         H << nl << "static const ::Ice::StreamTraitType type = ::Ice::StreamTraitTypeUserException;";
         H << eb << ";" << nl;
     }
-    return true;
-}
-
-void
-Slice::Gen::StreamVisitor::visitExceptionEnd(const ExceptionPtr&)
-{
+    return false;
 }
 
 bool
@@ -6694,12 +6712,7 @@ Slice::Gen::StreamVisitor::visitStructStart(const StructPtr& p)
         H << nl << "static const int minWireSize = " << p->minWireSize() << ";";
         H << eb << ";" << nl;
     }
-    return true;
-}
-
-void
-Slice::Gen::StreamVisitor::visitStructEnd(const StructPtr&)
-{
+    return false;
 }
 
 void

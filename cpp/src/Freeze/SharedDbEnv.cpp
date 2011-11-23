@@ -69,11 +69,11 @@ operator<(const MapKey& lhs, const MapKey& rhs)
         ((lhs.communicator == rhs.communicator) && (lhs.envName < rhs.envName));
 }
 
-#if DB_VERSION_MAJOR != 4
-#error Freeze requires DB 4.x
+#if DB_VERSION_MAJOR < 4
+#error Freeze requires DB 4.x or greater
 #endif
 
-#if DB_VERSION_MINOR < 3
+#if DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR < 3
 void
 dbErrCallback(const char* prefix, char* msg)
 #else
@@ -484,18 +484,26 @@ Freeze::SharedDbEnv::SharedDbEnv(const std::string& envName,
 
     string propertyPrefix = string("Freeze.DbEnv.") + envName;
     string dbHome = properties->getPropertyWithDefault(propertyPrefix + ".DbHome", envName);
-    
+
     //
-    // File lock to prevent multiple process open the same db env. We create the lock
-    // file in a sub-directory to ensure db_hotbackup won't try to copy the file when
-    // backing up the environment (this would fail on Windows where copying a locked
-    // file isn't possible).
+    // Normally the file lock is necessary, but for read-only situations (such as when
+    // using the FreezeScript utilities) this property allows the file lock to be
+    // disabled.
     //
-    if(!::IceUtilInternal::directoryExists(dbHome + "/__Freeze"))
+    if(properties->getPropertyAsIntWithDefault(propertyPrefix + ".LockFile", 1) > 0)
     {
-        ::IceUtilInternal::mkdir(dbHome + "/__Freeze", 0777);
+        //
+        // Use a file lock to prevent multiple processes from opening the same db env. We
+        // create the lock file in a sub-directory to ensure db_hotbackup won't try to copy
+        // the file when backing up the environment (this would fail on Windows where copying
+        // a locked file isn't possible).
+        //
+        if(!::IceUtilInternal::directoryExists(dbHome + "/__Freeze"))
+        {
+            ::IceUtilInternal::mkdir(dbHome + "/__Freeze", 0777);
+        }
+        _fileLock = new ::IceUtilInternal::FileLock(dbHome + "/__Freeze/lock");
     }
-    _fileLock = new ::IceUtilInternal::FileLock(dbHome + "/__Freeze/lock");
 
     _trace = properties->getPropertyAsInt("Freeze.Trace.DbEnv");
 
@@ -543,21 +551,22 @@ Freeze::SharedDbEnv::SharedDbEnv(const std::string& envName,
             {
                 flags |= DB_PRIVATE;
             }
-                
-                
+
             //
             // Auto delete
             //
-            bool autoDelete = (properties->getPropertyAsIntWithDefault(
-                                   propertyPrefix + ".OldLogsAutoDelete", 1) != 0); 
+            bool autoDelete = (properties->getPropertyAsIntWithDefault(propertyPrefix + ".OldLogsAutoDelete", 1) != 0); 
                 
             if(autoDelete)
             {
-                #ifdef DB_LOG_AUTO_REMOVE //This is the new name for the property from DB 4.7
-                    _env->set_flags(DB_LOG_AUTO_REMOVE, 1);
-                #else
-                    _env->set_flags(DB_LOG_AUTOREMOVE, 1);
-                #endif
+#if (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR < 7)
+                //
+                // Old API
+                //
+                _env->set_flags(DB_LOG_AUTOREMOVE, 1);
+#else
+                _env->log_set_config(DB_LOG_AUTO_REMOVE, 1);
+#endif
             }
             
             //

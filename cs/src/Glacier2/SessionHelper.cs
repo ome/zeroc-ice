@@ -10,13 +10,14 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Collections.Generic;
 
 namespace Glacier2
 {
 
-/// <sumary>
+/// <summary>
 /// A helper class for using Glacier2 with GUI applications.
-/// </sumary>
+/// </summary>
 public class SessionHelper
 {
     private class SessionRefreshThread
@@ -59,7 +60,18 @@ public class SessionHelper
             {
                 while(true)
                 {
-                    _router.refreshSession_async(new RefreshI(_session, this));
+                    try
+                    {
+                        _router.refreshSession_async(new RefreshI(_session, this));
+                    }
+                    catch(Ice.CommunicatorDestroyedException)
+                    {
+                        //
+                        // AMI requests can raise CommunicatorDestroyedException directly.
+                        //
+                        break;
+                    }
+
                     if(!_done)
                     {
                         try
@@ -70,6 +82,7 @@ public class SessionHelper
                         {
                         }
                     }
+
                     if(_done)
                     {
                         break;
@@ -97,9 +110,9 @@ public class SessionHelper
         private bool _done = false;
     }
 
-    /// <sumary>
+    /// <summary>
     /// Creates a Glacier2 session.
-    /// </sumary>
+    /// </summary>
     /// <param name="callback">The callback for notifications about session
     /// establishment.</param>
     /// <param name="initData">The Ice.InitializationData for initializing
@@ -110,12 +123,12 @@ public class SessionHelper
         _initData = initData;
     }
 
-    /// <sumary>
+    /// <summary>
     /// Destroys the Glacier2 session.
-    /// 
+    ///
     /// Once the session has been destroyed, SessionCallback.disconnected is
     /// called on the associated callback object.
-    /// </sumary>
+    /// </summary>
     public void
     destroy()
     {
@@ -129,24 +142,28 @@ public class SessionHelper
 
             if(_sessionRefresh == null)
             {
+                //
                 // In this case a connecting session is being
                 // destroyed. The communicator and session will be
                 // destroyed when the connection establishment has
                 // completed.
+                //
                 return;
             }
             _session = null;
 
+            //
             // Run the destroyInternal in a thread. This is because it
             // destroyInternal makes remote invocations.
+            //
             Thread t = new Thread(new ThreadStart(destroyInternal));
             t.Start();
         }
     }
 
-    /// <sumary>
+    /// <summary>
     /// Returns the session's communicator object.
-    /// </sumary>
+    /// </summary>
     /// <returns>The communicator.</returns>
     public Ice.Communicator
     communicator()
@@ -157,13 +174,13 @@ public class SessionHelper
         }
     }
 
-    /// <sumary>
-    /// Returns the category to be used in the identities of all of 
-    /// the client's callback objects. Clients must use this category 
+    /// <summary>
+    /// Returns the category to be used in the identities of all of
+    /// the client's callback objects. Clients must use this category
     /// for the router to forward callback requests to the intended
     /// client.
-    /// </sumary>
-    /// <returns>The category. Throws SessionNotExistException 
+    /// </summary>
+    /// <returns>The category. Throws SessionNotExistException
     /// No session exists</returns>
     public string
     categoryForClient()
@@ -174,17 +191,17 @@ public class SessionHelper
             {
                 throw new SessionNotExistException();
             }
-            
-            return _router.getCategoryForClient();
+
+            return _category;
         }
     }
 
-    /// <sumary>
-    /// Adds a servant to the callback object adapter's Active Servant 
+    /// <summary>
+    /// Adds a servant to the callback object adapter's Active Servant
     /// Map with a UUID.
-    /// </sumary>
+    /// </summary>
     /// <param name="servant">The servant to add.</param>
-    /// <returns>The proxy for the servant. Throws SessionNotExistException 
+    /// <returns>The proxy for the servant. Throws SessionNotExistException
     /// if no session exists.</returns>
     public Ice.ObjectPrx
     addWithUUID(Ice.Object servant)
@@ -195,18 +212,17 @@ public class SessionHelper
             {
                 throw new SessionNotExistException();
             }
-            
-            return internalObjectAdapter().add(servant, new Ice.Identity(Guid.NewGuid().ToString(),
-                                                                         _router.getCategoryForClient()));
+
+            return internalObjectAdapter().add(servant, new Ice.Identity(Guid.NewGuid().ToString(), _category));
         }
     }
-    
-    /// <sumary>
-    /// Returns the Glacier2 session proxy. If the session hasn't been 
-    /// established yet, or the session has already been destroyed, 
+
+    /// <summary>
+    /// Returns the Glacier2 session proxy. If the session hasn't been
+    /// established yet, or the session has already been destroyed,
     /// throws SessionNotExistException.
-    /// </sumary>
-    /// <returns>The session proxy, or throws SessionNotExistException  
+    /// </summary>
+    /// <returns>The session proxy, or throws SessionNotExistException
     /// if no session exists.</returns>
     public Glacier2.SessionPrx
     session()
@@ -221,9 +237,9 @@ public class SessionHelper
         }
     }
 
-    /// <sumary>
+    /// <summary>
     /// Returns true if there is an active session, otherwise returns false.
-    /// </sumary>
+    /// </summary>
     /// <returns>true if session exists or false if no session exists.</returns>
     public bool
     isConnected()
@@ -234,10 +250,10 @@ public class SessionHelper
         }
     }
 
-    /// <sumary>
-    /// Creates an object adapter for callback objects.
-    /// </sumary>
-    /// <return>The object adapter. throws SessionNotExistException 
+    /// <summary>
+    /// Returns an object adapter for callback objects, creating it if necessary.
+    /// </summary>
+    /// <return>The object adapter. throws SessionNotExistException
     /// if no session exists.</return>
     public Ice.ObjectAdapter
     objectAdapter()
@@ -245,7 +261,9 @@ public class SessionHelper
         return internalObjectAdapter();
     }
 
+    //
     // Only call this method when the calling thread owns the lock
+    //
     private Ice.ObjectAdapter
     internalObjectAdapter()
     {
@@ -263,42 +281,44 @@ public class SessionHelper
             return _adapter;
         }
     }
-    
-    /// <sumary>
+
+    /// <summary>
     /// Connects to the Glacier2 router using the associated SSL credentials.
     ///
-    /// Once the connection is established, SessionCallback.connected} is called on 
+    /// Once the connection is established, SessionCallback.connected is called on
     /// the callback object; upon failure, SessionCallback.exception is called with
     /// the exception.
-    /// </sumary>
+    /// </summary>
+    /// <param name="context">The request context to use when creating the session.</param>
     public void
-    connect()
+    connect(Dictionary<string, string> context)
     {
         lock(this)
         {
             connectImpl(delegate(RouterPrx router)
                             {
-                                return router.createSessionFromSecureConnection();
+                                return router.createSessionFromSecureConnection(context);
                             });
         }
     }
 
-    /// <sumary>
+    /// <summary>
     /// Connects a Glacier2 session using user name and password credentials.
     ///
     /// Once the connection is established, SessionCallback.connected is called on the callback object;
-    /// upon failure SessionCallback.exception is called with the exception. 
-    /// </sumary>
+    /// upon failure SessionCallback.exception is called with the exception.
+    /// </summary>
     /// <param name="username">The user name.</param>
     /// <param name="password">The password.</param>
+    /// <param name="context">The request context to use when creating the session.</param>
     public void
-    connect(string username, string password)
+    connect(string username, string password, Dictionary<string, string> context)
     {
         lock(this)
         {
             connectImpl(delegate(RouterPrx router)
                             {
-                                return router.createSession(username, password);
+                                return router.createSession(username, password, context);
                             });
         }
     }
@@ -316,7 +336,14 @@ public class SessionHelper
                 return;
             }
 
+            //
+            // Cache the category.
+            //
+            _category = _router.getCategoryForClient();
+
+            //
             // Assign the session after _destroy is checked.
+            //
             _session = session;
             _connected = true;
 
@@ -353,15 +380,21 @@ public class SessionHelper
             }
             catch(Ice.ConnectionLostException)
             {
+                //
                 // Expected if another thread invoked on an object from the session concurrently.
+                //
             }
             catch(SessionNotExistException)
             {
+                //
                 // This can also occur.
+                //
             }
             catch(Exception e)
             {
+                //
                 // Not expected.
+                //
                 _communicator.getLogger().warning("SessionHelper: unexpected exception when destroying the session:\n"
                                                   + e);
             }
@@ -401,9 +434,8 @@ public class SessionHelper
                              });
         }
     }
-    
-    delegate Glacier2.SessionPrx
-    ConnectStrategy(Glacier2.RouterPrx router);
+
+    delegate Glacier2.SessionPrx ConnectStrategy(Glacier2.RouterPrx router);
 
     private void
     connectImpl(ConnectStrategy factory)
@@ -494,6 +526,7 @@ public class SessionHelper
     private Glacier2.RouterPrx _router;
     private Glacier2.SessionPrx _session;
     private bool _connected = false;
+    private string _category;
 
     private SessionRefreshThread _sessionRefresh;
     private Thread _refreshThread;

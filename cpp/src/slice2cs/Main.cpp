@@ -72,7 +72,8 @@ usage(const char* n)
         "--impl-tie              Generate sample TIE implementations.\n"
         "--depend                Generate Makefile dependencies.\n"
         "-d, --debug             Print debug messages.\n"
-        "--ice                   Permit `Ice' prefix (for building Ice source code only)\n"
+        "--ice                   Permit `Ice' prefix (for building Ice source code only).\n"
+        "--underscore            Permit underscores in Slice identifiers.\n"
         "--checksum              Generate checksums for Slice definitions.\n"
         "--stream                Generate marshaling support for public stream API.\n"
         ;
@@ -95,6 +96,7 @@ compile(int argc, char* argv[])
     opts.addOpt("", "depend");
     opts.addOpt("d", "debug");
     opts.addOpt("", "ice");
+    opts.addOpt("", "underscore");
     opts.addOpt("", "checksum");
     opts.addOpt("", "stream");
 
@@ -158,6 +160,8 @@ compile(int argc, char* argv[])
 
     bool ice = opts.isSet("ice");
 
+    bool underscore = opts.isSet("underscore");
+
     bool checksum = opts.isSet("checksum");
 
     bool stream = opts.isSet("stream");
@@ -183,6 +187,15 @@ compile(int argc, char* argv[])
 
     for(i = args.begin(); i != args.end(); ++i)
     {
+        //
+        // Ignore duplicates.
+        //
+        vector<string>::iterator p = find(args.begin(), args.end(), *i);
+        if(p != i)
+        {
+            continue;
+        }
+
         if(depend)
         {
             PreprocessorPtr icecpp = Preprocessor::create(argv[0], *i, cppArgs);
@@ -193,7 +206,7 @@ compile(int argc, char* argv[])
                 return EXIT_FAILURE;
             }
 
-            UnitPtr u = Unit::createUnit(false, false, ice);
+            UnitPtr u = Unit::createUnit(false, false, ice, underscore);
             int parseStatus = u->parse(*i, cppHandle, debug);
             u->destroy();
 
@@ -238,7 +251,7 @@ compile(int argc, char* argv[])
             }
             else
             {
-                UnitPtr p = Unit::createUnit(false, false, ice);
+                UnitPtr p = Unit::createUnit(false, false, ice, underscore);
                 int parseStatus = p->parse(*i, cppHandle, debug);
 
                 if(!icecpp->close())
