@@ -597,12 +597,13 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
         }
         else
         {
+	    out << sb;
 	    out << nl << "int sz = " << stream << ".readSize();";
 	    out << nl << stream << ".startSeq(sz, " << static_cast<unsigned>(type->minWireSize()) << ");";
 	    out << nl << param << " = new ";
 	    if(isArray)
 	    {
-	        out << nl << param << " = new " << typeS << "[sz];";
+	        out << typeS << "[sz]";
 	    }
 	    else
 	    {
@@ -616,6 +617,7 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	    out << nl << stream << ".readObject(sp);";
 	    out << nl << stream << ".checkSeq();";
 	    out << nl << stream << ".endElement();";
+	    out << eb;
 	    out << eb;
         }
         return;
@@ -634,6 +636,7 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	}
 	else
 	{
+	    out << sb;
 	    out << nl << "int sz = " << stream << ".readSize();";
 	    out << nl << stream << ".startSeq(sz, " << static_cast<unsigned>(type->minWireSize()) << ");";
 	    out << nl << param << " = new ";
@@ -655,6 +658,7 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 		out << nl << stream << ".endElement();";
 	    }
 	    out << eb;
+	    out << eb;
 	}
 	return;
     }
@@ -673,6 +677,7 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	}
 	else
 	{
+	    out << sb;
 	    out << nl << "int sz = " << stream << ".readSize();";
 	    out << nl << stream << ".startSeq(sz, " << static_cast<unsigned>(type->minWireSize()) << ");";
 	    out << nl << param << " = new ";
@@ -695,6 +700,7 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	    {
 	        out << nl << param << ".Add((" << typeS << ')' << stream << ".readByte());";
 	    }
+	    out << eb;
 	    out << eb;
 	}
         return;

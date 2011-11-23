@@ -3,7 +3,7 @@
 "VSVersion" = "3:700"
 "ProjectType" = "8:{5443560e-dbb4-11d2-8724-00a0c9a8b90c}"
 "IsWebType" = "8:FALSE"
-"ProjectName" = "8:IceCSDemos"
+"ProjectName" = "8:IceCS"
 "LanguageId" = "3:1033"
 "CodePage" = "3:1252"
 "UILanguageId" = "3:1033"
@@ -30,6 +30,12 @@
         "MsmKey" = "8:_031A5ECC266D40A6B424169F359E81A7"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:C:\\BUILDS\\ICECS\\DEMO\\ICE\\VALUE\\DERIVEDPRINTERI.CS"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_05B630DEFC44472E895F48E4C0195E43"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:icecs_a6c123e3446838bc5a5598a24d9177e4"
         }
         "Entry"
         {
@@ -340,6 +346,12 @@
         "Entry"
         {
         "MsmKey" = "8:_E0E23C2D334131D430CCF96B24980A1C"
+        "OwnerKey" = "8:_05B630DEFC44472E895F48E4C0195E43"
+        "MsmSig" = "8:system_af3114d44c876a69868e2d6d41ced2a3"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_E0E23C2D334131D430CCF96B24980A1C"
         "OwnerKey" = "8:_AE337D86066F4B8983EADDCAFEDB8715"
         "MsmSig" = "8:system_af3114d44c876a69868e2d6d41ced2a3"
         }
@@ -375,7 +387,7 @@
         "DisplayName" = "8:Ice"
         "IsDebugOnly" = "11:FALSE"
         "IsReleaseOnly" = "11:FALSE"
-        "OutputFilename" = "8:Ice\\IceCSDemos.msm"
+        "OutputFilename" = "8:..\\MergeModules\\IceCS.msm"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -446,6 +458,37 @@
             "TargetName" = "8:DerivedPrinterI.cs"
             "Tag" = "8:"
             "Folder" = "8:_92BF38DD88C64FC28355E76BE7F5C070"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{C7BF5952-4B9D-11D3-8E24-00C04F6837D0}:_05B630DEFC44472E895F48E4C0195E43"
+            {
+            "AssemblyRegister" = "3:1"
+            "AssemblyIsInGAC" = "11:FALSE"
+            "AssemblyAsmDisplayName" = "8:icecs, Version=1.5.1.0, Culture=neutral, PublicKeyToken=1f998c50fec78381"
+                "ScatterAssemblies"
+                {
+                    "_05B630DEFC44472E895F48E4C0195E43"
+                    {
+                    "Name" = "8:icecs.dll"
+                    "Attributes" = "3:512"
+                    }
+                }
+            "SourcePath" = "8:..\\..\\..\\..\\icecs\\bin\\icecs.dll"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_35813370D74044E5B6B38AC562AE1AC5"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -940,37 +983,6 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{C7BF5952-4B9D-11D3-8E24-00C04F6837D0}:_68BC530B842D49D435340ABD6E8260BA"
-            {
-            "AssemblyRegister" = "3:1"
-            "AssemblyIsInGAC" = "11:TRUE"
-            "AssemblyAsmDisplayName" = "8:System.Xml, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                "ScatterAssemblies"
-                {
-                    "_68BC530B842D49D435340ABD6E8260BA"
-                    {
-                    "Name" = "8:System.Xml.dll"
-                    "Attributes" = "3:512"
-                    }
-                }
-            "SourcePath" = "8:System.Xml.dll"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_2415C5098A704FEFB420A81F05C3B8B9"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
             "{54DA9790-1474-11D3-8E00-00C04F6837D0}:_6E3576A6DE2543ADBC31EDB0EA7AE0EC"
             {
             "SourcePath" = "8:..\\..\\..\\..\\icecs\\demo\\Ice\\hello\\Client.cs"
@@ -1215,7 +1227,7 @@
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:icecs, Version=1.5.0.0, Culture=neutral, PublicKeyToken=1f998c50fec78381"
+            "AssemblyAsmDisplayName" = "8:icecs, Version=1.5.1.0, Culture=neutral, PublicKeyToken=1f998c50fec78381"
                 "ScatterAssemblies"
                 {
                     "_AE337D86066F4B8983EADDCAFEDB8715"
@@ -1227,7 +1239,7 @@
             "SourcePath" = "8:..\\..\\..\\..\\icecs\\bin\\icecs.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
-            "Folder" = "8:_2415C5098A704FEFB420A81F05C3B8B9"
+            "Folder" = "8:_BB40E1547A604CAC8FB6CECEBA417D3D"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1458,7 +1470,7 @@
             "SourcePath" = "8:..\\..\\..\\..\\icecs\\bin\\generate.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
-            "Folder" = "8:_2415C5098A704FEFB420A81F05C3B8B9"
+            "Folder" = "8:_BB40E1547A604CAC8FB6CECEBA417D3D"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1491,37 +1503,6 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            }
-            "{C7BF5952-4B9D-11D3-8E24-00C04F6837D0}:_E0E23C2D334131D430CCF96B24980A1C"
-            {
-            "AssemblyRegister" = "3:1"
-            "AssemblyIsInGAC" = "11:TRUE"
-            "AssemblyAsmDisplayName" = "8:System, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-                "ScatterAssemblies"
-                {
-                    "_E0E23C2D334131D430CCF96B24980A1C"
-                    {
-                    "Name" = "8:System.dll"
-                    "Attributes" = "3:512"
-                    }
-                }
-            "SourcePath" = "8:System.dll"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_2415C5098A704FEFB420A81F05C3B8B9"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
             "{54DA9790-1474-11D3-8E00-00C04F6837D0}:_E32C9BBF808A4F2493F4469C7FD22E40"
@@ -1633,6 +1614,17 @@
             "Property" = "8:NEWRETARGETABLEPROPERTY1"
                 "Folders"
                 {
+                    "{461E96AF-1495-11D3-8D6C-00A0C9CFCEE6}:_BB40E1547A604CAC8FB6CECEBA417D3D"
+                    {
+                    "Name" = "8:bin"
+                    "AlwaysCreate" = "11:FALSE"
+                    "Condition" = "8:"
+                    "Transitive" = "11:FALSE"
+                    "Property" = "8:_50A245DBFD6D4AF1A15A6B04FC5FA912"
+                        "Folders"
+                        {
+                        }
+                    }
                     "{461E96AF-1495-11D3-8D6C-00A0C9CFCEE6}:_EB5BC896EB4E4BC9BE3527BE0E91629F"
                     {
                     "Name" = "8:democs"
@@ -1662,17 +1654,6 @@
                                         {
                                         }
                                     }
-                                }
-                            }
-                            "{461E96AF-1495-11D3-8D6C-00A0C9CFCEE6}:_2415C5098A704FEFB420A81F05C3B8B9"
-                            {
-                            "Name" = "8:bin"
-                            "AlwaysCreate" = "11:FALSE"
-                            "Condition" = "8:"
-                            "Transitive" = "11:FALSE"
-                            "Property" = "8:_793AEFCF6EB04D84BBB53F50E94DD8D1"
-                                "Folders"
-                                {
                                 }
                             }
                             "{461E96AF-1495-11D3-8D6C-00A0C9CFCEE6}:_34CF5D2FBABC4E8F853126544AB385F5"
@@ -1822,6 +1803,17 @@
                     }
                 }
             }
+            "{1AE77DA4-1063-4AB3-BCD2-085B001EFB97}:_35813370D74044E5B6B38AC562AE1AC5"
+            {
+            "Name" = "8:#1927"
+            "AlwaysCreate" = "11:FALSE"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Property" = "8:GAC"
+                "Folders"
+                {
+                }
+            }
         }
         "Shortcut"
         {
@@ -1868,8 +1860,8 @@
         "Module"
         {
         "ModuleSignature" = "8:MergeModule.07D6CA1E9AB141278CD4CB3FFBC0AA6F"
-        "Version" = "8:1.0.0.0"
-        "Title" = "8:IceCSDemos"
+        "Version" = "8:1.5.1.0"
+        "Title" = "8:IceCS"
         "Subject" = "8:"
         "Author" = "8:ZeroC, Inc."
         "Keywords" = "8:"
