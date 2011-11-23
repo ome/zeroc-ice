@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,12 +29,12 @@ class ServiceManagerI : ServiceManagerDisp_
             _serviceManager = serviceManager;
             _observer = observer;
         }
-  
+
         public override void ice_response()
         {
             // ok, success
         }
-        
+
         public override void ice_exception(Ice.Exception ex)
         {
             //
@@ -46,7 +46,7 @@ class ServiceManagerI : ServiceManagerDisp_
         private ServiceManagerI _serviceManager;
         private ServiceObserverPrx _observer;
     }
-    
+
     //
     // TODO: would be nice to avoid the duplication AMIServicesStartedCallback/AMIServicesStoppedCallback
     //
@@ -57,12 +57,12 @@ class ServiceManagerI : ServiceManagerDisp_
             _serviceManager = serviceManager;
             _observer = observer;
         }
-  
+
         public override void ice_response()
         {
             // ok, success
         }
-        
+
         public override void ice_exception(Ice.Exception ex)
         {
             //
@@ -81,7 +81,6 @@ class ServiceManagerI : ServiceManagerDisp_
         _logger = _communicator.getLogger();
         _argv = args;
         _traceServiceObserver = _communicator.getProperties().getPropertyAsInt("IceBox.Trace.ServiceObserver");
-
     }
 
     public override Dictionary<string, string>
@@ -94,7 +93,8 @@ class ServiceManagerI : ServiceManagerDisp_
     startService(string name, Ice.Current current)
     {
         ServiceInfo info = new ServiceInfo();
-        lock(this)
+        _m.Lock();
+        try
         {
             //
             // Search would be more efficient if services were contained in
@@ -121,21 +121,25 @@ class ServiceManagerI : ServiceManagerDisp_
             }
             _pendingStatusChanges = true;
         }
+        finally
+        {
+            _m.Unlock();
+        }
 
         bool started = false;
         try
         {
-            info.service.start(info.name, info.communicator == null ? _sharedCommunicator : info.communicator, 
+            info.service.start(info.name, info.communicator == null ? _sharedCommunicator : info.communicator,
                                info.args);
             started = true;
         }
         catch(Exception e)
         {
-            _logger.warning("ServiceManager: exception in start for service " + info.name + "\n" + 
-                            e.ToString());
+            _logger.warning("ServiceManager: exception while starting service " + info.name + ":\n" + e.ToString());
         }
 
-        lock(this)
+        _m.Lock();
+        try
         {
             int i;
             for(i = 0; i < _services.Count; ++i)
@@ -160,7 +164,11 @@ class ServiceManagerI : ServiceManagerDisp_
                 }
             }
             _pendingStatusChanges = false;
-            Monitor.PulseAll(this);
+            _m.NotifyAll();
+        }
+        finally
+        {
+            _m.Unlock();
         }
     }
 
@@ -168,7 +176,8 @@ class ServiceManagerI : ServiceManagerDisp_
     stopService(string name, Ice.Current current)
     {
         ServiceInfo info = new ServiceInfo();
-        lock(this)
+        _m.Lock();
+        try
         {
             //
             // Search would be more efficient if services were contained in
@@ -195,6 +204,10 @@ class ServiceManagerI : ServiceManagerDisp_
             }
             _pendingStatusChanges = true;
         }
+        finally
+        {
+            _m.Unlock();
+        }
 
         bool stopped = false;
         try
@@ -204,11 +217,11 @@ class ServiceManagerI : ServiceManagerDisp_
         }
         catch(Exception e)
         {
-            _logger.warning("ServiceManager: exception in stop for service " + info.name + "\n" + 
-                            e.ToString());
+            _logger.warning("ServiceManager: exception while stopping service " + info.name + "\n" + e.ToString());
         }
 
-        lock(this)
+        _m.Lock();
+        try
         {
             int i;
             for(i = 0; i < _services.Count; ++i)
@@ -219,7 +232,7 @@ class ServiceManagerI : ServiceManagerDisp_
                     if(stopped)
                     {
                         info.status = ServiceStatus.Stopped;
-                        
+
                         List<string> services = new List<string>();
                         services.Add(name);
                         servicesStopped(services, _observers.Keys);
@@ -233,7 +246,11 @@ class ServiceManagerI : ServiceManagerDisp_
                 }
             }
             _pendingStatusChanges = false;
-            Monitor.PulseAll(this);
+            _m.NotifyAll();
+        }
+        finally
+        {
+            _m.Unlock();
         }
     }
 
@@ -246,7 +263,8 @@ class ServiceManagerI : ServiceManagerDisp_
         // Null observers and duplicate registrations are ignored
         //
 
-        lock(this)
+        _m.Lock();
+        try
         {
             if(observer != null)
             {
@@ -258,12 +276,12 @@ class ServiceManagerI : ServiceManagerDisp_
                 {
                     return;
                 }
-               
+
                 if(_traceServiceObserver >= 1)
                 {
-                    _logger.trace("IceBox.ServiceObserver", 
+                    _logger.trace("IceBox.ServiceObserver",
                                   "Added service observer " + _communicator.proxyToString(observer));
-                } 
+                }
 
                 foreach(ServiceInfo info in _services)
                 {
@@ -274,11 +292,15 @@ class ServiceManagerI : ServiceManagerDisp_
                 }
             }
         }
+        finally
+        {
+            _m.Unlock();
+        }
 
         if(activeServices.Count > 0)
         {
             observer.servicesStarted_async(new AMIServicesStartedCallback(this, observer),
-                                           activeServices.ToArray());          
+                                           activeServices.ToArray());
         }
     }
 
@@ -317,7 +339,7 @@ class ServiceManagerI : ServiceManagerDisp_
             //
             // IceBox.Service.Foo=Package.Foo [args]
             //
-            // We parse the service properties specified in IceBox.LoadOrder 
+            // We parse the service properties specified in IceBox.LoadOrder
             // first, then the ones from remaining services.
             //
             string prefix = "IceBox.Service.";
@@ -383,7 +405,7 @@ class ServiceManagerI : ServiceManagerDisp_
                             initData.properties.setProperty(key, "");
                         }
                     }
-                    
+
                     //
                     // Add the service properties to the shared communicator properties.
                     //
@@ -393,7 +415,7 @@ class ServiceManagerI : ServiceManagerDisp_
                     }
 
                     //
-                    // Parse <service>.* command line options (the Ice command line options 
+                    // Parse <service>.* command line options (the Ice command line options
                     // were parsed by the createProperties above)
                     //
                     service.args = initData.properties.parseCommandLineOptions(service.name, service.args);
@@ -428,7 +450,7 @@ class ServiceManagerI : ServiceManagerDisp_
             // Don't move after the adapter activation. This allows
             // applications to wait for the service manager to be
             // reachable before sending a signal to shutdown the
-            // 
+            //
             //
             Ice.Application.shutdownOnInterrupt();
 
@@ -441,7 +463,7 @@ class ServiceManagerI : ServiceManagerDisp_
 
                 //
                 // Add a Properties facet for each service
-                // 
+                //
                 foreach(ServiceInfo info in _services)
                 {
                     Ice.Communicator communicator = info.communicator != null ? info.communicator : _sharedCommunicator;
@@ -490,15 +512,9 @@ class ServiceManagerI : ServiceManagerDisp_
             stopAll();
             return 1;
         }
-        catch(Ice.LocalException ex)
-        {
-            _logger.error("ServiceManager: " + ex.ToString());
-            stopAll();
-            return 1;
-        }
         catch(Exception ex)
         {
-            _logger.error("ServiceManager: unknown exception\n" + ex.ToString());
+            _logger.error("ServiceManager: caught exception:\n" + ex.ToString());
             stopAll();
             return 1;
         }
@@ -509,11 +525,9 @@ class ServiceManagerI : ServiceManagerDisp_
     private void
     startService(string service, string entryPoint, string[] args)
     {
-        lock(this)
+        _m.Lock();
+        try
         {
-            //
-            // Instantiate the class.
-            //
             ServiceInfo info = new ServiceInfo();
             info.name = service;
             info.status = ServiceStatus.Stopped;
@@ -540,7 +554,7 @@ class ServiceManagerI : ServiceManagerDisp_
                 e.reason = err + "invalid entry point format: " + entryPoint;
                 throw e;
             }
-        
+
             System.Reflection.Assembly serviceAssembly = null;
             string assemblyName = entryPoint.Substring(0, sepPos);
             try
@@ -555,13 +569,13 @@ class ServiceManagerI : ServiceManagerDisp_
                 {
                     serviceAssembly = System.Reflection.Assembly.Load(assemblyName);
                 }
-                catch(System.Exception ex)
+                catch(System.IO.IOException ex)
                 {
                     try
                     {
                         serviceAssembly = System.Reflection.Assembly.LoadFrom(assemblyName);
                     }
-                    catch(System.Exception)
+                    catch(System.IO.IOException)
                     {
                          throw ex;
                     }
@@ -589,33 +603,81 @@ class ServiceManagerI : ServiceManagerDisp_
                 e.reason = err + "GetType failed for '" + className + "'";
                 throw e;
             }
-        
+
             try
             {
-                info.service = (Service)IceInternal.AssemblyUtil.createInstance(c);
-                if(info.service == null)
+                //
+                // If the service class provides a constructor that accepts an Ice.Communicator argument,
+                // use that in preference to the default constructor.
+                //
+                Type[] parameterTypes = new Type[1];
+                parameterTypes[0] = typeof(Ice.Communicator);
+                System.Reflection.ConstructorInfo ci = c.GetConstructor(parameterTypes);
+                if(ci != null)
                 {
-                    FailureException e = new FailureException();
-                    e.reason = err + "Can't find constructor for '" + className + "'";
-                    throw e;
+                    try
+                    {
+                        Object[] parameters = new Object[1];
+                        parameters[0] = _communicator;
+                        info.service = (Service)ci.Invoke(parameters);
+                    }
+                    catch(System.MethodAccessException ex)
+                    {
+                        FailureException e = new FailureException(ex);
+                        e.reason = err + "unable to access service constructor " + className + "(Ice.Communicator)";
+                        throw e;
+                    }
                 }
+                else
+                {
+                    //
+                    // Fall back to the default constructor.
+                    //
+                    try
+                    {
+                        info.service = (Service)IceInternal.AssemblyUtil.createInstance(c);
+                        if(info.service == null)
+                        {
+                            FailureException e = new FailureException();
+                            e.reason = err + "no default constructor for '" + className + "'";
+                            throw e;
+                        }
+                    }
+                    catch(System.UnauthorizedAccessException ex)
+                    {
+                        FailureException e = new FailureException(ex);
+                        e.reason = err + "unauthorized access to default service constructor for " + className;
+                        throw e;
+                    }
+                }
+            }
+            catch(FailureException)
+            {
+                throw;
             }
             catch(System.InvalidCastException ex)
             {
                 FailureException e = new FailureException(ex);
-                e.reason = err + "InvalidCastException to IceBox.Service";
+                e.reason = err + "service does not implement IceBox.Service";
                 throw e;
             }
-            catch(System.UnauthorizedAccessException ex)
+            catch(System.Reflection.TargetInvocationException ex)
             {
-                FailureException e = new FailureException(ex);
-                e.reason = err + "UnauthorizedAccessException";
-                throw e;
+                if(ex.InnerException is IceBox.FailureException)
+                {
+                    throw ex.InnerException;
+                }
+                else
+                {
+                    FailureException e = new FailureException(ex.InnerException);
+                    e.reason = "ServiceManager: exception in service constructor for " + className;
+                    throw e;
+                }
             }
             catch(System.Exception ex)
             {
                 FailureException e = new FailureException(ex);
-                e.reason = err + "System.Exception";
+                e.reason = err + "exception in service constructor " + className;
                 throw e;
             }
 
@@ -654,7 +716,7 @@ class ServiceManagerI : ServiceManagerDisp_
                         initData.properties = Ice.Util.createProperties(ref info.args, initData.properties);
 
                         //
-                        // Next, parse the service "<service>.*" command line options (the Ice command 
+                        // Next, parse the service "<service>.*" command line options (the Ice command
                         // line options were parsed by the createProperties above)
                         //
                         info.args = initData.properties.parseCommandLineOptions(service, info.args);
@@ -664,9 +726,9 @@ class ServiceManagerI : ServiceManagerDisp_
                     // Clone the logger to assign a new prefix.
                     //
                     initData.logger = _logger.cloneWithPrefix(initData.properties.getProperty("Ice.ProgramName"));
-            
+
                     //
-                    // Remaining command line options are passed to the communicator. This is 
+                    // Remaining command line options are passed to the communicator. This is
                     // necessary for Ice plug-in properties (e.g.: IceSSL).
                     //
                     info.communicator = Ice.Util.initialize(ref info.args, initData);
@@ -678,7 +740,7 @@ class ServiceManagerI : ServiceManagerDisp_
                     info.service.start(service, communicator, info.args);
                     info.status = ServiceStatus.Started;
                 }
-                catch(Exception)
+                catch(System.Exception)
                 {
                     if(info.communicator != null)
                     {
@@ -694,19 +756,19 @@ class ServiceManagerI : ServiceManagerDisp_
                             // the communicator for its own reasons.
                             //
                         }
-                        catch(Exception e)
+                        catch(System.Exception e)
                         {
-                            _logger.warning("ServiceManager: exception in shutting down communicator for service "
+                            _logger.warning("ServiceManager: exception while shutting down communicator for service "
                                             + service + "\n" + e.ToString());
                         }
-                    
+
                         try
                         {
                             info.communicator.destroy();
                         }
-                        catch(Exception e)
+                        catch(System.Exception e)
                         {
-                            _logger.warning("ServiceManager: exception in destroying communciator for service"
+                            _logger.warning("ServiceManager: exception while destroying communicator for service "
                                             + service + "\n" + e.ToString());
                         }
                     }
@@ -719,30 +781,35 @@ class ServiceManagerI : ServiceManagerDisp_
             {
                 throw;
             }
-            catch(Exception ex)
+            catch(System.Exception ex)
             {
                 FailureException e = new FailureException(ex);
-                e.reason = "ServiceManager: exception while starting service " + service + ": " + ex;
+                e.reason = "ServiceManager: exception while starting service " + service;
                 throw e;
             }
+        }
+        finally
+        {
+            _m.Unlock();
         }
     }
 
     private void
     stopAll()
     {
-        lock(this)
+        _m.Lock();
+        try
         {
             //
             // First wait for any active startService/stopService calls to complete.
             //
             while(_pendingStatusChanges)
             {
-                Monitor.Wait(this);
+                _m.Wait();
             }
 
             //
-            // First, for each service, we call stop on the service and flush its database environment to 
+            // First, for each service, we call stop on the service and flush its database environment to
             // the disk. Services are stopped in the reverse order of which they were started.
             //
             _services.Reverse();
@@ -756,9 +823,9 @@ class ServiceManagerI : ServiceManagerDisp_
                         info.service.stop();
                         stoppedServices.Add(info.name);
                     }
-                    catch(Exception e)
+                    catch(System.Exception e)
                     {
-                        _logger.warning("IceBox.ServiceManager: exception in stop for service " + info.name + "\n" +
+                        _logger.warning("IceBox.ServiceManager: exception while stopping service " + info.name + ":\n" +
                                         e.ToString());
                     }
                 }
@@ -788,17 +855,17 @@ class ServiceManagerI : ServiceManagerDisp_
                     }
                     catch(Exception e)
                     {
-                        _logger.warning("ServiceManager: exception in stop for service " + info.name + "\n" +
+                        _logger.warning("ServiceManager: exception while stopping service " + info.name + ":\n" +
                                         e.ToString());
                     }
-            
+
                     try
                     {
                         info.communicator.destroy();
                     }
-                    catch(Exception e)
+                    catch(System.Exception e)
                     {
-                        _logger.warning("ServiceManager: exception in stop for service " + info.name + "\n" +
+                        _logger.warning("ServiceManager: exception while stopping service " + info.name + ":\n" +
                                         e.ToString());
                     }
                 }
@@ -810,16 +877,19 @@ class ServiceManagerI : ServiceManagerDisp_
                 {
                     _sharedCommunicator.destroy();
                 }
-                catch(Exception e)
+                catch(System.Exception e)
                 {
-                    _logger.warning("ServiceManager: unknown exception while destroying shared communicator:\n" +
-                                    e.ToString());
+                    _logger.warning("ServiceManager: exception while destroying shared communicator:\n" + e.ToString());
                 }
                 _sharedCommunicator = null;
             }
-            
+
             _services.Clear();
             servicesStopped(stoppedServices, _observers.Keys);
+        }
+        finally
+        {
+            _m.Unlock();
         }
     }
 
@@ -833,7 +903,7 @@ class ServiceManagerI : ServiceManagerDisp_
         if(services.Count > 0)
         {
             string[] servicesArray = services.ToArray();
-          
+
             foreach(ServiceObserverPrx observer in observers)
             {
                 AMI_ServiceObserver_servicesStarted cb = new AMIServicesStartedCallback(this, observer);
@@ -852,7 +922,7 @@ class ServiceManagerI : ServiceManagerDisp_
         if(services.Count > 0)
         {
             string[] servicesArray = services.ToArray();
-            
+
             foreach(ServiceObserverPrx observer in observers)
             {
                 AMI_ServiceObserver_servicesStopped cb = new AMIServicesStoppedCallback(this, observer);
@@ -864,16 +934,21 @@ class ServiceManagerI : ServiceManagerDisp_
     private void
     removeObserver(ServiceObserverPrx observer, Ice.Exception ex)
     {
-        lock(this)
+        _m.Lock();
+        try
         {
             if(_observers.Remove(observer))
             {
                 observerRemoved(observer, ex);
             }
         }
+        finally
+        {
+            _m.Unlock();
+        }
     }
-    
-    private void 
+
+    private void
     observerRemoved(ServiceObserverPrx observer, System.Exception ex)
     {
         if(_traceServiceObserver >= 1)
@@ -889,9 +964,9 @@ class ServiceManagerI : ServiceManagerDisp_
                               "Removed service observer " + _communicator.proxyToString(observer)
                               + "\nafter catching " + ex.ToString());
             }
-        } 
-    } 
-    
+        }
+    }
+
     private enum ServiceStatus
     {
         Stopping,
@@ -943,8 +1018,8 @@ class ServiceManagerI : ServiceManagerDisp_
                     }
                     catch(IceUtilInternal.Options.BadQuote ex)
                     {
-                        FailureException e = new FailureException();
-                        e.reason = "ServiceManager: invalid arguments for service `" + name + "':\n" + ex.ToString();
+                        FailureException e = new FailureException(ex);
+                        e.reason = "ServiceManager: invalid arguments for service `" + name + "'";
                         throw e;
                     }
                 }
@@ -985,13 +1060,13 @@ class ServiceManagerI : ServiceManagerDisp_
         {
             return _properties.getProperty(name);
         }
-        
+
         public override Dictionary<string, string>
         getPropertiesForPrefix(string name, Ice.Current current)
         {
             return _properties.getPropertiesForPrefix(name);
         }
-        
+
         private Ice.Properties _properties;
     }
 
@@ -1030,6 +1105,7 @@ class ServiceManagerI : ServiceManagerDisp_
     private bool _pendingStatusChanges = false;
     private Dictionary<ServiceObserverPrx, bool> _observers = new  Dictionary<ServiceObserverPrx, bool>();
     private int _traceServiceObserver = 0;
+    private readonly IceUtilInternal.Monitor _m = new IceUtilInternal.Monitor();
 }
 
 }

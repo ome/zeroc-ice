@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -60,7 +60,7 @@ public class Client
             {
                 initial.getPrinter(out printer, out printerProxy);
                 Console.Error.WriteLine("Did not get the expected NoObjectFactoryException!");
-                Environment.Exit(1);
+                return 1;
             }
             catch(Ice.NoObjectFactoryException ex)
             {
@@ -165,13 +165,9 @@ public class Client
         }
     }
 
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
         App app = new App();
-        int status = app.main(args, "config.client");
-        if(status != 0)
-        {
-            System.Environment.Exit(status);
-        }
+        return app.main(args, "config.client");
     }
 }

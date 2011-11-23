@@ -1,7 +1,7 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
@@ -12,6 +12,7 @@
 <project name="common" basedir=".">
 
     <property environment="env"/>
+    <property name="build.sysclasspath" value="last"/>
 
     <target name="init" depends="config-init, task-init">
       <!-- Create the time stamp -->

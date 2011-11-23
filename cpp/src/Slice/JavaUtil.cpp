@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -130,10 +130,9 @@ Slice::JavaOutput::openClass(const string& cls, const string& prefix)
     {
         FileTracker::instance()->addFile(path);
         printHeader();
-
+        printGeneratedHeader(*this, file);
         if(!package.empty())
         {
-            separator();
             separator();
             print("package ");
             print(package.c_str());
@@ -154,7 +153,7 @@ Slice::JavaOutput::printHeader()
     static const char* header =
 "// **********************************************************************\n"
 "//\n"
-"// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.\n"
+"// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.\n"
 "//\n"
 "// This copy of Ice is licensed to you under the terms described in the\n"
 "// ICE_LICENSE file included in this distribution.\n"
@@ -163,8 +162,11 @@ Slice::JavaOutput::printHeader()
         ;
 
     print(header);
-    print("\n// Ice version ");
+    print("//\n");
+    print("// Ice version ");
     print(ICE_STRING_VERSION);
+    print("\n");
+    print("//\n");
 }
 
 const string Slice::JavaGenerator::_getSetMetaData = "java:getset";
@@ -195,7 +197,6 @@ Slice::JavaGenerator::open(const string& absolute, const string& file)
     try
     {
         out->openClass(absolute, _dir);
-        printGeneratedHeader(*out, file);
     }
     catch(const FileException&)
     {

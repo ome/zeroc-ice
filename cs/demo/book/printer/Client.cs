@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,7 +19,7 @@ using System.Reflection;
 
 public class Client
 {
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
         int status = 0;
         Ice.Communicator ic = null;
@@ -52,9 +52,6 @@ public class Client
                 status = 1;
             }
         }
-        if(status != 0)
-        {
-            System.Environment.Exit(status);
-        }
+        return status;
     }
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -62,12 +62,14 @@ tests = [
     ("Ice/threadPoolPriority", ["core"]),
     ("Ice/classLoader", ["core"]),
     ("Ice/invoke", ["core"]),
+    ("Ice/properties", ["once"]),
     ("IceBox/configuration", ["core", "noipv6"]),
     ("Freeze/dbmap", ["once"]),
     ("Freeze/complex", ["once"]),
     ("Freeze/evictor", ["core"]),
     ("Freeze/fileLock", ["once"]),
     ("Glacier2/router", ["service"]),
+    ("Glacier2/sessionHelper", ["service"]),
     ("IceGrid/simple", ["service"]),
     ("IceSSL/configuration", ["once"])
     ]

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -102,8 +102,10 @@ Freeze::TransactionalEvictorContext::rollback()
 }
 
 void 
-Freeze::TransactionalEvictorContext::postCompletion(bool committed, bool deadlock)
+Freeze::TransactionalEvictorContext::postCompletion(bool committed, bool deadlock, const SharedDbEnvPtr& dbEnv)
 {
+    dbEnv->setCurrentTransaction(0);
+
     try
     {
         if(committed)

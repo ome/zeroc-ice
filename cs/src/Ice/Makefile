@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -55,6 +55,7 @@ SRCS		= Acceptor.cs \
 		  LocatorInfo.cs \
 		  LoggerI.cs \
 		  LoggerPlugin.cs \
+		  Monitor.cs \
 		  Network.cs \
 		  ObjectAdapterFactory.cs \
 		  ObjectAdapterI.cs \
@@ -172,5 +173,10 @@ install:: all
 
 clean::
 	-rm -f $(bindir)/$(PKG).xml
+
+$(GDIR)/BuiltinSequences.cs: $(SDIR)/BuiltinSequences.ice $(SLICE2CPP) $(SLICEPARSERLIB)
+	rm -f $(GDIR)/BuiltinSequences.cs
+	$(SLICE2CS) $(SLICE2CSFLAGS) --stream $(SDIR)/BuiltinSequences.ice
+	mv BuiltinSequences.cs $(GDIR)
 
 include .depend

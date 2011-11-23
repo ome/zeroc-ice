@@ -1,7 +1,7 @@
 <?
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,8 +17,8 @@ if(!extension_loaded("ice"))
 }
 
 $NS = function_exists("Ice\\initialize");
-require ($NS ? 'Ice_ns.php' : 'Ice.php');
-require 'Test.php';
+require_once ($NS ? 'Ice_ns.php' : 'Ice.php');
+require_once 'Test.php';
 
 function test($b)
 {
@@ -36,6 +36,22 @@ function twoways($communicator, $p)
     $enum1 = $NS ? constant("Test\\MyEnum::enum1") : constant("Test_MyEnum::enum1");
     $enum2 = $NS ? constant("Test\\MyEnum::enum2") : constant("Test_MyEnum::enum2");
     $enum3 = $NS ? constant("Test\\MyEnum::enum3") : constant("Test_MyEnum::enum3");
+
+    {
+        $p->ice_ping();
+    }
+
+    {
+        test($p->ice_isA("::Test::MyClass"));
+    }
+
+    {
+        test(count($p->ice_ids()) == 3);
+    }
+
+    {
+        test($p->ice_id() == "::Test::MyDerivedClass");
+    }
 
     {
         $p->opVoid();
@@ -440,6 +456,14 @@ function twoways($communicator, $p)
                 test($r[$j] == -$j);
             }
         }
+    }
+
+    {
+        $p->opIdempotent();
+    }
+
+    {
+        $p->opNonmutating();
     }
 }
 

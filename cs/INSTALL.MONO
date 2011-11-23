@@ -23,7 +23,7 @@ Build instructions
 ------------------
 
 Unpack the source archive. The .NET sources will be contained in the 
-Ice-3.4.1/cs subdirectory.
+Ice-3.4.2/cs subdirectory.
 
 You will need the Slice to C# translator (slice2cs) and supporting
 executables and libraries. You can download a binary distribution from
@@ -102,7 +102,7 @@ subdirectory then you need to set the ICE_HOME environment variable to
 the path where these applications are installed for these tests to run 
 properly:
 
-$ export ICE_HOME=/opt/Ice-3.4.1
+$ export ICE_HOME=/opt/Ice-3.4.2
 
 Python is required to run the test suite:
 
@@ -125,7 +125,7 @@ case of a failure, the tests abort with "failed".
 Running the demos
 -----------------
 
-To run the demos, you need to have Ice-3.4.1/cs/bin in your MONO_PATH
+To run the demos, you need to have Ice-3.4.2/cs/bin in your MONO_PATH
 or install the Ice DLLs in the GAC. See the README file in each demo
 directory for a description of each demo.
 
@@ -164,5 +164,5 @@ Ice patch releases are binary compatible. For example, Ice version
 against Ice 3.4.0 with Ice 3.4.1 (or later) without having to
 recompile or relink this application.
 
-Please refer to the RELEASE_NOTES file included in this distribution
-for detailed upgrade instructions.
+Please refer to the Ice 3.4.2 Release Notes for detailed upgrade 
+instructions.

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -117,7 +117,7 @@ public class AsyncResult
     {
         synchronized(_monitor)
         {
-            while((_state & (Sent | Done)) == 0)
+            while((_state & Sent) == 0 && _exception == null)
             {
                 try
                 {
@@ -126,6 +126,20 @@ public class AsyncResult
                 catch(InterruptedException ex)
                 {
                 }
+            }
+        }
+    }
+
+    /**
+     * If the invocation failed with a local exception, throws the local exception.
+     **/
+    public final void throwLocalException()
+    {
+        synchronized(_monitor)
+        {
+            if(_exception != null)
+            {
+                throw _exception;
             }
         }
     }
@@ -250,6 +264,14 @@ public class AsyncResult
             {
                 __warning(exc);
             }
+            catch(AssertionError exc)
+            {
+                __error(exc);
+            }
+            catch(OutOfMemoryError exc)
+            {
+                __error(exc);
+            }
         }
     }
 
@@ -269,6 +291,14 @@ public class AsyncResult
             catch(RuntimeException ex)
             {
                 __warning(ex);
+            }
+            catch(AssertionError exc)
+            {
+                __error(exc);
+            }
+            catch(OutOfMemoryError exc)
+            {
+                __error(exc);
             }
         }
     }
@@ -359,6 +389,14 @@ public class AsyncResult
             {
                 __warning(ex);
             }
+            catch(AssertionError exc)
+            {
+                __error(exc);
+            }
+            catch(OutOfMemoryError exc)
+            {
+                __error(exc);
+            }
         }
     }
 
@@ -369,6 +407,12 @@ public class AsyncResult
             String s = "exception raised by AMI callback:\n" + IceInternal.Ex.toString(ex);
             _instance.initializationData().logger.warning(s);
         }
+    }
+
+    protected final void __error(Error error)
+    {
+        String s = "error raised by AMI callback:\n" + IceInternal.Ex.toString(error);
+        _instance.initializationData().logger.error(s);
     }
 
     protected IceInternal.Instance _instance;

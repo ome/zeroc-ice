@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,8 +38,13 @@ namespace IceInternal
                 {
                     if(_traceLevels.network >= 2)
                     {
-                        string s = "failed to establish tcp connection\n" + _desc + "\n" + ex;
-                        _logger.trace(_traceLevels.networkCat, s);
+                        System.Text.StringBuilder s = new System.Text.StringBuilder();
+                        s.Append("failed to establish tcp connection\n");
+                        s.Append(Network.fdLocalAddressToString(_fd));
+                        Debug.Assert(_addr != null);
+                        s.Append("\nremote address = " + _addr.ToString() + "\n");
+                        s.Append(ex.ToString());
+                        _logger.trace(_traceLevels.networkCat, s.ToString());
                     }
                     throw;
                 }
@@ -83,6 +88,14 @@ namespace IceInternal
 
         public bool write(Buffer buf)
         {
+#if COMPACT
+            //
+            // The Compact Framework does not support the use of synchronous socket
+            // operations on a non-blocking socket. Returning false here forces the
+            // caller to schedule an asynchronous operation.
+            //
+            return false;
+#else
             int packetSize = buf.b.remaining();
             if(AssemblyUtil.platform_ == AssemblyUtil.Platform.Windows)
             {
@@ -155,10 +168,18 @@ namespace IceInternal
             }
 
             return true; // No more data to send.
+#endif
         }
 
         public bool read(Buffer buf)
         {
+#if COMPACT
+            //
+            // The .NET Compact Framework does not support the use of synchronous socket
+            // operations on a non-blocking socket.
+            //
+            return false;
+#else
             // COMPILERFIX: Workaround for Mac OS X broken poll(), see Mono bug #470120
             if(AssemblyUtil.osx_)
             {
@@ -242,6 +263,7 @@ namespace IceInternal
             }
 
             return true;
+#endif
         }
 
         public bool startRead(Buffer buf, AsyncCallback callback, object state)

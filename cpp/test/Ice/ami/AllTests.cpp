@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -1975,6 +1975,19 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "testing AsyncResult operations... " << flush;
     {
+        Test::TestIntfPrx indirect = Test::TestIntfPrx::uncheckedCast(p->ice_adapterId("dummy"));
+        Ice::AsyncResultPtr r;
+        r = indirect->begin_op();
+        try
+        {
+            r->waitForCompleted();
+            r->throwLocalException();
+            test(false);
+        }
+        catch(const Ice::NoEndpointException&)
+        {
+        }
+
         testController->holdAdapter();
         Ice::AsyncResultPtr r1;
         Ice::AsyncResultPtr r2;

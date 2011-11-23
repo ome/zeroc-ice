@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,12 +23,12 @@ public abstract class Application
     public interface ServerReadyListener
     {
         void serverReady();
-    };
+    }
 
     public interface CommunicatorListener
     {
         void communicatorInitialized(Communicator c);
-    };
+    }
 
     public
     Application()
@@ -46,8 +46,8 @@ public abstract class Application
     public final int
     main(String appName, String[] args)
     {
-    	Ice.StringSeqHolder argsH = new Ice.StringSeqHolder(args);
-    	Ice.InitializationData initData = getInitData(argsH);
+        Ice.StringSeqHolder argsH = new Ice.StringSeqHolder(args);
+        Ice.InitializationData initData = getInitData(argsH);
         return main(appName, argsH.value, initData);
     }
 
@@ -55,7 +55,7 @@ public abstract class Application
     main(String appName, String[] args, InitializationData initializationData)
     {
         java.io.PrintWriter writer = getWriter();
-		if(_communicator != null)
+        if(_communicator != null)
         {
             writer.println(appName + ": only one instance of the Application class can be used");
             return 1;
@@ -65,13 +65,13 @@ public abstract class Application
 
         //
         // We parse the properties here to extract Ice.ProgramName.
-        // 
+        //
         StringSeqHolder argHolder = new StringSeqHolder(args);
         if(initializationData == null)
         {
             initializationData = getInitData(argHolder);
         }
-        
+
         InitializationData initData;
         if(initializationData != null)
         {
@@ -85,7 +85,7 @@ public abstract class Application
 
         //
         // If the process logger is the default logger, we replace it with a
-        // a logger which is using the program name for the prefix.
+        // a logger that uses the program name as the prefix.
         //
         if(Util.getProcessLogger() instanceof LoggerI)
         {
@@ -167,7 +167,9 @@ public abstract class Application
         }
     }
 
+    //
     // Initialize a new communicator.
+    //
     public Ice.Communicator initialize(InitializationData initData)
     {
         Ice.Communicator communicator = Util.initialize(initData);
@@ -180,9 +182,11 @@ public abstract class Application
 
     public abstract int run(String[] args);
 
+    //
     // Hook to override the initialization data. This hook is
     // necessary because some properties must be set prior to
     // communicator initialization.
+    //
     protected Ice.InitializationData getInitData(Ice.StringSeqHolder argsH)
     {
         return null;

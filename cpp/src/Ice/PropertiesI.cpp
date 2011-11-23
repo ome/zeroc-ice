@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -396,8 +396,24 @@ Ice::PropertiesI::load(const std::string& file)
         }
 
         string line;
+        bool firstLine = true;
         while(getline(in, line))
         {
+            //
+            // Skip UTF8 BOM if present.
+            //
+            if(firstLine)
+            {
+                const unsigned char UTF8_BOM[3] = {0xEF, 0xBB, 0xBF}; 
+                if(line.size() >= 3 &&
+                   static_cast<const unsigned char>(line[0]) == UTF8_BOM[0] &&
+                   static_cast<const unsigned char>(line[1]) == UTF8_BOM[1] && 
+                   static_cast<const unsigned char>(line[2]) == UTF8_BOM[2])
+                {
+                    line = line.substr(3);
+                }
+                firstLine = false;
+            }
             parseLine(line, _converter);
         }
     }

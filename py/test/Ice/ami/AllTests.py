@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -428,6 +428,7 @@ def allTests(communicator):
     r = indirect.begin_op()
     try:
         indirect.end_op(r)
+        test(False)
     except Ice.NoEndpointException:
         pass
 
@@ -827,6 +828,16 @@ def allTests(communicator):
     print "ok"
 
     print "testing AsyncResult operations...",
+
+    indirect = Test.TestIntfPrx.uncheckedCast(p.ice_adapterId("dummy"))
+    r = indirect.begin_op()
+    try:
+        r.waitForCompleted()
+        r.throwLocalException()
+        test(False)
+    except Ice.NoEndpointException:
+        pass
+
     testController.holdAdapter()
     r1 = None
     r2 = None

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -34,6 +34,7 @@ sqlPort = None
 sqlUser = None
 sqlPassword = None
 serviceDir = None
+compact = False
 
 def isCygwin():
     # The substring on sys.platform is required because some cygwin
@@ -312,6 +313,7 @@ def run(tests, root = False):
           --sql-user=<user>       Set SQL user name.
           --sql-passwd=<passwd>   Set SQL password.
           --service-dir=<dir>     Where to locate services for builds without service support.
+          --compact               Ice for .NET uses the Compact Framework.
         """
         sys.exit(2)
 
@@ -321,7 +323,7 @@ def run(tests, root = False):
                                     "debug", "protocol=", "compress", "valgrind", "host=", "serialize", "continue",
                                     "ipv6", "no-ipv6", "ice-home=", "cross=", "x64", "script", "env", "sql-type=",
                                     "sql-db=", "sql-host=", "sql-port=", "sql-user=", "sql-passwd=", "service-dir=",
-                                    "appverifier"])
+                                    "appverifier", "compact"])
     except getopt.GetoptError:
         usage()
 
@@ -335,6 +337,7 @@ def run(tests, root = False):
     arg = ""
     script = False
     noipv6 = False
+    compact = "--compact" in opts
 
     filters = []
     for o, a in opts:
@@ -368,13 +371,17 @@ def run(tests, root = False):
         elif o == "--protocol":
             if a not in ( "ssl", "tcp"):
                 usage()
-            if mono and getDefaultMapping() == "cs" and a == "ssl":
-                print "SSL is not supported with mono"
-                sys.exit(1)
+            if getDefaultMapping() == "cs" and a == "ssl":
+                if mono:
+                    print "SSL is not supported with mono"
+                    sys.exit(1)
+                if compact:
+                    print "SSL is not supported with the Compact Framework"
+                    sys.exit(1)
 
         if o in ( "--cross", "--protocol", "--host", "--debug", "--compress", "--valgrind", "--serialize", "--ipv6", \
                   "--ice-home", "--x64", "--env", "--sql-type", "--sql-db", "--sql-host", "--sql-port", "--sql-user", \
-                  "--sql-passwd", "--service-dir", "--appverifier"):
+                  "--sql-passwd", "--service-dir", "--appverifier", "--compact"):
             arg += " " + o
             if len(a) > 0:
                 arg += " " + a
@@ -432,7 +439,7 @@ def run(tests, root = False):
                 expanded.append([ ( "%s/test/%s" % (lang, test), a, []) for test in crossTests if not (test == "Ice/background" and (lang == "cs" or c == "cs"))])
                 
                 # Add ssl & compress for the operations test.
-                if mono and c == "cs": # Don't add the ssl tests for mono.
+                if (compact or mono) and c == "cs": # Don't add the ssl tests.
                     continue
                 a = "--cross=%s --protocol=ssl --compress" % c
                 expanded.append([("%s/test/Ice/operations" % lang, a, [])])
@@ -481,8 +488,10 @@ def getIceDir(subdir = None):
 def phpCleanup():
     if os.path.exists("tmp.ini"):
         os.remove("tmp.ini")
+    if os.path.exists("ice.profiles"):
+        os.remove("ice.profiles")
 
-def phpSetup():
+def phpSetup(clientConfig = False, iceOptions = None, iceProfile = None):
     extDir = None
     ext = None
     incDir = None
@@ -505,7 +514,11 @@ def phpSetup():
             extDir = os.path.join(iceHome, "bin")
             incDir = os.path.join(iceHome, "php")
     else:
-        ext = "IcePHP.so"
+        ext = "IcePHP"
+        if isDarwin():
+            ext += ".dy"
+        else:
+            ext += ".so"
         if not iceHome:
             extDir = os.path.abspath(os.path.join(toplevel, "php", "lib"))
             incDir = extDir
@@ -543,6 +556,20 @@ def phpSetup():
         tmpini.write("extension=%s\n" % ext)
     if incDir:
         tmpini.write("include_path=\"%s\"\n" % incDir)
+    if iceProfile != None:
+        tmpini.write("ice.profiles=\"ice.profiles\"\n")
+        tmpProfiles = open("ice.profiles", "w")
+        tmpProfiles.write("[%s]\n" % iceProfile)
+        if clientConfig:
+            tmpProfiles.write("ice.config=\"config.client\"\n")
+        if iceOptions != None:
+            tmpProfiles.write("ice.options=\"%s\"\n" % iceOptions)
+        tmpProfiles.close()
+    else:
+        if clientConfig:
+            tmpini.write("ice.config=\"config.client\"\n")
+        if iceOptions != None:
+            tmpini.write("ice.options=\"%s\"\n" % iceOptions)
     tmpini.close()
 
 def getIceVersion():
@@ -731,6 +758,7 @@ class DriverConfig:
         global sqlUser
         global sqlPassword
         global serviceDir
+        global compact
         self.lang = getDefaultMapping()
         self.protocol = protocol
         self.compress = compress
@@ -749,6 +777,7 @@ class DriverConfig:
         self.sqlUser = sqlUser
         self.sqlPassword = sqlPassword
         self.serviceDir = serviceDir
+        self.compact = compact
 
 def argsToDict(argumentString, results):
     """Converts an argument string to dictionary"""
@@ -1062,7 +1091,6 @@ def appVerifierAfterTestEnd(targets, cwd=os.getcwd()):
         verifier = spawn(cmd, cwd=cwd)
         verifier.expect(matchAppVerifierSuccess(), -1)
 
-
 def getMirrorDir(base, mapping):
     """Get the mirror directory for the current test in the given mapping."""
     lang = getDefaultMapping()
@@ -1195,14 +1223,14 @@ def cleanDbDir(path):
     for filename in [ os.path.join(path, f) for f in os.listdir(path) if f != ".gitignore" and f != "DB_CONFIG" ]:
         os.remove(filename)
 
-def startClient(exe, args = "", config=None, env=None, echo = True, startReader = True):
+def startClient(exe, args = "", config=None, env=None, echo = True, startReader = True, clientConfig = False, iceOptions = None, iceProfile = None):
     if config is None:
         config = DriverConfig("client")
     if env is None:
         env = getTestEnv(getDefaultMapping(), os.getcwd())
     cmd = getCommandLine(exe, config) + ' ' + args
     if config.lang == "php":
-        phpSetup()
+        phpSetup(clientConfig, iceOptions, iceProfile)
     return spawnClient(cmd, env = env, echo = echo, startReader = startReader, lang=config.lang)
 
 def startServer(exe, args = "", config=None, env=None, adapter = None, count = 1, echo = True):
@@ -1222,19 +1250,34 @@ def startColloc(exe, args, config=None, env=None):
     cmd = getCommandLine(exe, config) + ' ' + args
     return spawnClient(cmd, env = env, lang=config.lang)
 
-def simpleTest(exe, options = ""):
-    exe = quoteArgument(exe)
+def simpleTest(exe = None, options = ""):
+    if exe is None:
+        exe = getDefaultClientFile()
     if appverifier:
-        setAppVerifierSettings([exe])
+        setAppVerifierSettings([quoteArgument(exe)])
+    lang = getDefaultMapping()
+    config = None
+    if lang != "cpp":
+      config = DriverConfig("client")
+      config.lang = lang
+    
     print "starting client...",
-    command = exe + ' ' + options
-    client = spawnClient(command, startReader = False, lang=getDefaultMapping())
+    command  = exe + ' ' + options
+    if lang != "cpp":
+      command = getCommandLine(exe, config) + ' ' + options
+    client = spawnClient(command, startReader = False, lang = lang)
     print "ok"
     client.startReader()
     client.waitTestSuccess()
     
     if appverifier:
         appVerifierAfterTestEnd([exe])
+              
+def createConfig(path, lines):
+    config = open(path, "w")
+    for l in lines:
+        config.write("%s\n" % l)
+    config.close()
         
 def getCppBinDir():
     binDir = os.path.join(getIceDir("cpp"), "bin")
@@ -1356,6 +1399,7 @@ def processCmdLine():
           --sql-user=<user>       Set SQL user name.
           --sql-passwd=<passwd>   Set SQL password.
           --service-dir=<dir>     Where to locate services for builds without service support.
+          --compact               Ice for .NET uses the Compact Framework.
         """
         sys.exit(2)
 
@@ -1363,7 +1407,7 @@ def processCmdLine():
         opts, args = getopt.getopt(
             sys.argv[1:], "", ["debug", "trace=", "protocol=", "compress", "valgrind", "host=", "serialize", "ipv6", \
                               "ice-home=", "x64", "cross=", "env", "sql-type=", "sql-db=", "sql-host=", "sql-port=", \
-                              "sql-user=", "sql-passwd=", "service-dir=", "appverifier"])
+                              "sql-user=", "sql-passwd=", "service-dir=", "appverifier", "compact"])
     except getopt.GetoptError:
         usage()
 
@@ -1458,6 +1502,9 @@ def processCmdLine():
         elif o == "--service-dir":
             global serviceDir
             serviceDir = a
+        elif o == "--compact":
+            global compact
+            compact = True
 
     if len(args) > 0:
         usage()
@@ -1526,6 +1573,14 @@ def runTests(start, expanded, num = 0, script = False):
 
             if args.find("compress") != -1 and "nocompress" in config:
                 print "%s*** test not supported with compression%s" % (prefix, suffix)
+                continue
+
+            if args.find("compact") != -1 and "nocompact" in config:
+                print "%s*** test not supported with Compact Framework%s" % (prefix, suffix)
+                continue
+
+            if args.find("compact") == -1 and "compact" in config:
+                print "%s*** test requires Compact Framework%s" % (prefix, suffix)
                 continue
 
             if isVista() and "novista" in config:

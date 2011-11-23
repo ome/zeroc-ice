@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -308,6 +308,12 @@ Ice::Application::main(int argc, char* argv[], const char* configFile)
     // We don't call the main below to avoid a deprecated warning
     //
 
+    IceInternal::Application::_appName = "";
+    if(argc > 0)
+    {
+        IceInternal::Application::_appName = argv[0];
+    }
+
     if(argc > 0 && argv[0] && LoggerIPtr::dynamicCast(getProcessLogger()))
     {
         setProcessLogger(new LoggerI(argv[0], ""));
@@ -358,7 +364,7 @@ Ice::Application::main(int argc, wchar_t* argv[], const Ice::InitializationData&
 #endif
 
 int
-Ice::Application::main(int argc, char* argv[], const InitializationData& initData)
+Ice::Application::main(int argc, char* argv[], const InitializationData& initializationData)
 {
     if(argc > 0 && argv[0] && LoggerIPtr::dynamicCast(getProcessLogger()))
     {
@@ -372,6 +378,22 @@ Ice::Application::main(int argc, char* argv[], const InitializationData& initDat
         return EXIT_FAILURE;
     }
     int status;
+    
+    //
+    // We parse the properties here to extract Ice.ProgramName.
+    //
+    InitializationData initData = initializationData;
+    initData.properties = createProperties(argc, argv, initData.properties, initData.stringConverter);
+    
+    IceInternal::Application::_appName = initData.properties->getPropertyWithDefault("Ice.ProgramName", 
+                                                                                 IceInternal::Application::_appName);
+    
+    //
+    // Used by destroyOnInterruptCallback and shutdownOnInterruptCallback.
+    //
+    _nohup = initData.properties->getPropertyAsInt("Ice.Nohup") > 0;
+
+    IceInternal::Application::_application = this;
 
     if(IceInternal::Application::_signalPolicy == HandleSignals)
     {
@@ -606,24 +628,13 @@ Ice::Application::interrupted()
 }
 
 int
-Ice::Application::doMain(int argc, char* argv[], const InitializationData& initializationData)
+Ice::Application::doMain(int argc, char* argv[], const InitializationData& initData)
 {
     int status;
 
     try
     {
         IceInternal::Application::_interrupted = false;
-        IceInternal::Application::_appName = "";
-        if(argc > 0)
-        {
-            IceInternal::Application::_appName = argv[0];
-        }
-
-        //
-        // We parse the properties here to extract Ice.ProgramName.
-        // 
-        InitializationData initData = initializationData;
-        initData.properties = createProperties(argc, argv, initData.properties, initData.stringConverter);
 
         //
         // If the process logger is the default logger, we now replace it with a
@@ -634,14 +645,8 @@ Ice::Application::doMain(int argc, char* argv[], const InitializationData& initi
             setProcessLogger(new LoggerI(initData.properties->getProperty("Ice.ProgramName"), ""));
         }
 
-        IceInternal::Application::_application = this;
         IceInternal::Application::_communicator = initialize(argc, argv, initData);
         IceInternal::Application::_destroyed = false;
-
-        //
-        // Used by destroyOnInterruptCallback and shutdownOnInterruptCallback.
-        //
-        _nohup = (IceInternal::Application::_communicator->getProperties()->getPropertyAsInt("Ice.Nohup") > 0);
     
         //
         // The default is to destroy when a signal is received.

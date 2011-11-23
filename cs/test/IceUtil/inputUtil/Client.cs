@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,7 +22,9 @@ public class Client
 
     public static void Main(string[] argvs)
     {
+#if !COMPACT
         Debug.Listeners.Add(new ConsoleTraceListener());
+#endif
 
         System.Console.Out.Write("testing string to command line arguments... ");
         System.Console.Out.Flush();

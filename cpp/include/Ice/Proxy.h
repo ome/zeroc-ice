@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -2142,8 +2142,7 @@ newCallback_Object_ice_invoke(T* instance,
 
 template<class T, typename CT> Callback_Object_ice_invokePtr
 newCallback_Object_ice_invoke(T* instance,
-                              void (T::*cb)(bool, const std::pair<const Byte*, const Byte*>&, 
-                                            const CT&),
+                              void (T::*cb)(bool, const std::pair<const Byte*, const Byte*>&, const CT&),
                               void (T::*excb)(const ::Ice::Exception&, const CT&),
                               void (T::*sentcb)(bool, const CT&) = 0)
 {

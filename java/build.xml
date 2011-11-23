@@ -1,7 +1,7 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
@@ -349,6 +349,9 @@
 	    <fileset dir="test/Glacier2/router/">
                 <include name="Callback.ice" />
             </fileset>
+        <fileset dir="test/Glacier2/sessionHelper/">
+            <include name="Callback.ice" />
+        </fileset>
 	    <fileset dir="test/IceGrid/simple/">
                 <include name="Test.ice" />
             </fileset>
@@ -492,7 +495,7 @@
         <javac srcdir="${src.dir}" destdir="${lib.dir}"
             source="1.5" debug="${debug}"
             includes="IceGridGUI/**"
-            classpath="${jgoodies.looks}:${jgoodies.forms}"
+            classpath="${jgoodies.looks}:${jgoodies.forms}:${jgoodies.common}"
             deprecation="on">
             <compilerarg value="${javac.lint}"/>
         </javac>
@@ -503,6 +506,7 @@
             <available classname="proguard.ant.ProGuardTask" classpath="${env.CLASSPATH}" />
             <available file="${jgoodies.looks}" />
             <available file="${jgoodies.forms}" />
+            <available file="${jgoodies.common}" />
         </and>
     </condition>
 
@@ -513,7 +517,7 @@
     <target name="icegridadmin-plain-jar" depends="icegridadmin-compile" if="build-icegridadmin-plain-jar" unless="ice.bin.dist">
         <manifest file="${lib.dir}/icegridgui.mf">
             <attribute name="Main-Class" value="IceGridGUI.Main"/>
-            <attribute name="Class-Path" value="Ice.jar ${jgoodies.forms} ${jgoodies.looks} ../resources/ "/>
+            <attribute name="Class-Path" value="Ice.jar ${jgoodies.forms} ${jgoodies.looks} ${jgoodies.common} ../resources/ "/>
         </manifest>
         <jar jarfile="${lib.dir}/IceGridGUI.jar" manifest="${lib.dir}/icegridgui.mf" basedir="${lib.dir}">
             <include name="IceGridGUI/**"/>
@@ -537,14 +541,14 @@
                 </not>
             </and>
         </condition>
-        <condition property="library.jarfiles" value="vm.jar,rt.jar,security.jar,beans.jar,java.util.jar,ibmjssefw.jar,ibmcertpathfw.jar,logging.jar,jlm.jar">
+        <condition property="library.jarfiles" value="vm.jar,rt.jar,security.jar,beans.jar,java.util.jar,ibmjssefw.jar,ibmcertpathfw.jar,logging.jar,jlm.jar,annotation.jar">
             <!-- Library jar files for IBM J9 (from SuSE Linux i586) -->
             <and>
                 <equals arg1="${java.vm.name}" arg2="IBM J9 VM"/>
                 <equals arg1="${os.arch}" arg2="x86"/>
             </and>
         </condition>
-        <condition property="library.jarfiles" value="amd64/default/jclSC160/vm.jar,rt.jar,security.jar,beans.jar,java.util.jar,ibmjssefw.jar,ibmcertpathfw.jar,logging.jar,jlm.jar">
+        <condition property="library.jarfiles" value="amd64/default/jclSC160/vm.jar,rt.jar,security.jar,beans.jar,java.util.jar,ibmjssefw.jar,ibmcertpathfw.jar,logging.jar,jlm.jar,annotation.jar">
             <!-- Library jar files for IBM J9 (from SuSE Linux x86_64) -->
             <and>
                 <equals arg1="${java.vm.name}" arg2="IBM J9 VM"/>
@@ -581,6 +585,7 @@
              -injars "${lib.dir}/Ice.jar"(!META-INF/**)
              -injars "${jgoodies.looks}"(!META-INF/**)
              -injars "${jgoodies.forms}"(!META-INF/**)
+             -injars "${jgoodies.common}"(!META-INF/**)
              -outjars "${lib.dir}/IceGridGUI.jar"
              -libraryjars ${library.jars}
              -include config/icegridgui.pro

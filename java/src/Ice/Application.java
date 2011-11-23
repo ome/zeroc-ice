@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -167,6 +167,8 @@ public abstract class Application
         }
         StringSeqHolder argHolder = new StringSeqHolder(args);
         initData.properties = Util.createProperties(argHolder, initData.properties);
+
+        _appName = initData.properties.getPropertyWithDefault("Ice.ProgramName", _appName);
 
         //
         // If the process logger is the default logger, we replace it with a

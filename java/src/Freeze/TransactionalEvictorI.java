@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -535,7 +535,10 @@ class TransactionalEvictorI extends EvictorI implements TransactionalEvictor
                         {
                             if(ownCtx)
                             {
-                                _dbEnv.setCurrentTransaction(null);
+                                //
+                                // The commit or rollback above must have cleared it
+                                //
+                                assert(_dbEnv.getCurrent() == null);
                             }
                         }
                     } while(tryAgain);

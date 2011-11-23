@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -101,7 +101,7 @@ public:
 
     virtual ~TransactionalEvictorContext();
 
-    virtual void postCompletion(bool, bool);
+    virtual void postCompletion(bool, bool, const SharedDbEnvPtr&);
 
     virtual bool response(bool);
     virtual bool exception(const std::exception&);

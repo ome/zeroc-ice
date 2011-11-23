@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,7 +20,7 @@
 #include <langinfo.h>
 #endif
 
-#if (defined(__APPLE__) && _LIBICONV_VERSION < 0x010B) || (defined(__sun) && !defined(_XPG6))
+#if (defined(__APPLE__) && _LIBICONV_VERSION < 0x010B) || (defined(__sun) && !defined(_XPG6)) || defined(__FreeBSD__)
     //
     // See http://sourceware.org/bugzilla/show_bug.cgi?id=2962
     //

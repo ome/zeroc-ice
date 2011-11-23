@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -81,7 +81,7 @@ Arguments:
 Returns:
     True if the target object supports the interface, or false otherwise.
 '''
-        return id in self.ice_ids()
+        return id in self.ice_ids(current)
 
     def ice_ping(self, current=None):
         '''A reachability test for the target object.'''
@@ -93,7 +93,7 @@ that are supported by the target object.
 Returns:
     A list of type ids.
 '''
-        return [ self.ice_id() ]
+        return [ self.ice_id(current) ]
 
     def ice_id(self, current=None):
         '''Obtains the type id corresponding to the most-derived Slice
@@ -965,7 +965,7 @@ value is an integer representing the exit status.
             status = 0
 
             Application._interrupted = False
-            Application._appName = args[0]
+            Application._appName = initData.properties.getPropertyWithDefault("Ice.ProgramName", args[0])
             Application._application = self
             Application._communicator = initialize(args, initData)
             Application._destroyed = False

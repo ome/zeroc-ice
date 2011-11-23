@@ -10,6 +10,7 @@ Ice for Ruby is expected to build and run properly on any recent Linux
 distribution for x86 and x86_64. However, Ice for Ruby is officially
 supported only on:
 
+ - Red Hat Enterprise Linux 6 for i386 or x86_64 (RHEL 6)
  - Red Hat Enterprise Linux 5 Update 4 for i386 or x86_64 (RHEL 5.4)
  - SuSE Linux Enterprise Server 11 for i386 or x86_64 (SLES 11)
 
@@ -19,7 +20,7 @@ Build Environment
 
 To build Ice for Ruby you must have the following:
 
- - Ice 3.4.1 for C++ development kit
+ - Ice 3.4.2 for C++ development kit
  - Ruby 1.8.1 or later
 
 You can use a source or RPM installation of Ruby. If you prefer to use
@@ -27,7 +28,7 @@ RPMs, the following packages are required:
 
   ruby
   ruby-devel
-  ruby-libs (RHEL 5)
+  ruby-libs (RHEL)
 
 
 ======================================================================
@@ -49,11 +50,11 @@ Follow these steps:
    $ export RUBY_HOME=/opt/ruby-1.8.6
 
 2. If you have not built Ice for C++ from the cpp subdirectory or if
-   you have installed the Ice 3.4.1 for C++ development kit in a
+   you have installed the Ice 3.4.2 for C++ development kit in a
    non-standard location, set the ICE_HOME environment variable to the
    installation directory. For example:
 
-   $ export ICE_HOME=/opt/Ice-3.4.1
+   $ export ICE_HOME=/opt/Ice-3.4.2
 
 3. Review the settings in config/Make.rules and adjust as necessary.
    For example, you may wish to enable OPTIMIZE.
@@ -130,15 +131,15 @@ The Ruby interpreter must be able to locate the Ice extension. If you
 used the automated installation described above, you need to define
 the RUBYLIB environment variable as follows:
 
-  $ export RUBYLIB=/opt/Ice-3.4.1/ruby:$RUBYLIB
+  $ export RUBYLIB=/opt/Ice-3.4.2/ruby:$RUBYLIB
 
 This example assumes that your Ice for Ruby installation is located in
-the /opt/Ice-3.4.1 directory.
+the /opt/Ice-3.4.2 directory.
 
 You must also modify LD_LIBRARY_PATH to include the directory
-/opt/Ice-3.4.1/lib:
+/opt/Ice-3.4.2/lib:
 
-  $ export LD_LIBRARY_PATH=/opt/Ice-3.4.1/lib:LD_LIBRARY_PATH
+  $ export LD_LIBRARY_PATH=/opt/Ice-3.4.2/lib:LD_LIBRARY_PATH
 
 
 Testing your installation
@@ -171,12 +172,12 @@ As an example, let's run the hello application in demo/Ice/hello using
 the C++ server. Assuming that you have already compiled the sample C++
 programs in the cpp subdirectory, we begin by starting the server:
 
-  $ cd Ice-3.4.1/cpp/demo/Ice/hello
+  $ cd Ice-3.4.2/cpp/demo/Ice/hello
   $ server
 
 In a separate window, start the client:
 
-  $ cd Ice-3.4.1/rb/demo/Ice/hello
+  $ cd Ice-3.4.2/rb/demo/Ice/hello
   $ ruby Client.rb
 
 Some demo directories contain README files if additional requirements
@@ -211,16 +212,16 @@ There are two ways to solve this problem:
 - Change the default security context for the Ice extension using the
   following command:
 
-  $ chcon -t texrel_shlib_t /opt/Ice-3.4.1/ruby/IceRuby.so
+  $ chcon -t texrel_shlib_t /opt/Ice-3.4.2/ruby/IceRuby.so
 
-  Replace /opt/Ice-3.4.1 with your installation directory.
+  Replace /opt/Ice-3.4.2 with your installation directory.
 
 - Disable SELinux completely by adding the following line to your
   /etc/sysconfig/selinux file:
 
   SELINUX=disabled
 
-For more information on SELinux in Red Hat Enterprise Linux 5, refer
-to the link below:
+For more information on SELinux in Red Hat Enterprise Linux, refer to
+the link below:
 
-  http://www.redhat.com/docs/manuals/enterprise/RHEL-5-manual/Deployment_Guide-en-US/rhlcommon-chapter-0017.html
+  http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/selg-overview.html

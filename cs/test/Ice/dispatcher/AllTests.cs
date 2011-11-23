@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,13 +33,18 @@ public class AllTests
 
         public void check()
         {
-            lock(this)
+            _m.Lock();
+            try
             {
                 while(!_called)
                 {
-                    Monitor.Wait(this);
+                    _m.Wait();
                 }
                 _called = false;
+            }
+            finally
+            {
+                _m.Unlock();
             }
         }
 
@@ -73,15 +78,21 @@ public class AllTests
 
         protected void called()
         {
-            lock(this)
+            _m.Lock();
+            try
             {
                 Debug.Assert(!_called);
                 _called = true;
-                Monitor.Pulse(this);
+                _m.Notify();
+            }
+            finally
+            {
+                _m.Unlock();
             }
         }
 
         private bool _called;
+        private readonly IceUtilInternal.Monitor _m = new IceUtilInternal.Monitor();
     }
 
     public static void allTests(Ice.Communicator communicator)

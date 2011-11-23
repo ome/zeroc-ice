@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -90,7 +90,7 @@ static const char* _commandsHelp[][3] = {
 "node load NAME            Print the load of the node NAME.\n" 
 },
 { "node", "processors",
-"node processors [NAME]    Print the number of processor socket of the\n"
+"node processors [NAME]    Print the number of processor sockets of the\n"
 "                          node NAME or all the nodes if NAME is omitted.\n" 
 },
 { "node", "show",
@@ -2063,7 +2063,7 @@ Parser::showFile(const string& reader, const list<string>& origArgs)
 void
 Parser::showBanner()
 {
-    cout << "Ice " << ICE_STRING_VERSION << "  Copyright 2003-2010 ZeroC, Inc." << endl;
+    cout << "Ice " << ICE_STRING_VERSION << "  Copyright 2003-2011 ZeroC, Inc." << endl;
 }
 
 void

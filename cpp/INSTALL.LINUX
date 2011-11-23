@@ -12,6 +12,10 @@ only on:
 
  - Red Hat Enterprise Linux 5 Update 4 for i386 or x86_64 (RHEL 5.4)
 
+ - Red Hat Enterprise Linux 6 for i386 or x86_64 (RHEL 6)
+
+ - Amazon Linux 2011.02 (AMZN)
+
  - Novell SuSE Linux Enterprise Server 11 for i586 or x86_64 (SLES 11)
 
 
@@ -22,6 +26,7 @@ Ice is expected to build properly with GCC 3.3 or later. However, only
 the following compilers are officially supported:
 
  - GCC 4.1.2 on RHEL 5.4
+ - GCC 4.4.4 on RHEL 6 and AMZN
  - GCC 4.3.2 on SLES 11
 
 
@@ -35,6 +40,7 @@ Ice has dependencies on a number of third-party libraries:
 - OpenSSL 0.9.7 or later (OpenSSL 0.9.8 or later recommended)
 - bzip2 1.0.x
 - mcpp 2.7.2 (with patches)
+- QT 4.5.3 (optional)
 
 Some of these packages may have been included in your Linux
 distribution. For those packages that are not installed or have an
@@ -47,8 +53,8 @@ This archive contains the source distributions for each of the
 third-party dependencies, as well as required source patches and 
 configuration instructions.
 
-ZeroC also supplies RPMs at the link above for Berkeley DB on RHEL 5
-and SLES 11.
+ZeroC also supplies RPMs at the link above for Berkeley DB on RHEL 5,
+RHEL 6, AMZN and SLES 11.
 
 For more information about these dependencies, please refer to
 the links below:
@@ -58,6 +64,7 @@ expat          http://expat.sourceforge.net
 OpenSSL        http://www.openssl.org
 bzip2          http://sources.redhat.com/bzip2
 mcpp           http://mcpp.sourceforge.net
+QT             http://qt.nokia.com
 
 On RHEL 4, Ice also requires the nptl-devel package, which contains
 the function pthread_condattr_setclock. It is necessary to link with
@@ -71,11 +78,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ tar xvfz Ice-3.4.1.tar.gz
+$ tar xvfz Ice-3.4.2.tar.gz
 
-Change the working directory to Ice-3.4.1/cpp:
+Change the working directory to Ice-3.4.2/cpp:
 
-$ cd Ice-3.4.1/cpp
+$ cd Ice-3.4.2/cpp
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular

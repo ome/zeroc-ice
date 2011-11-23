@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,9 +27,7 @@ final class ThreadPoolWorkQueue extends EventHandler
         }
         catch(java.io.IOException ex)
         {
-            Ice.SyscallException sys = new Ice.SyscallException();
-            sys.initCause(ex);
-            throw sys;
+            throw new Ice.SyscallException(ex);
         }
 
         _selector.initialize(this);
@@ -96,9 +94,7 @@ final class ThreadPoolWorkQueue extends EventHandler
         }
         catch(java.io.IOException ex)
         {
-            Ice.SocketException se = new Ice.SocketException();
-            se.initCause(ex);
-            throw se;
+            throw new Ice.SocketException(ex);
         }
 
         ThreadPoolWorkItem workItem = null;
@@ -163,9 +159,7 @@ final class ThreadPoolWorkQueue extends EventHandler
             }
             catch(java.io.IOException ex)
             {
-                Ice.SocketException se = new Ice.SocketException();
-                se.initCause(ex);
-                throw se;
+                throw new Ice.SocketException(ex);
             }
         }
     }

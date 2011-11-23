@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -74,6 +74,20 @@ public class Client
         }
     }
 
+    public sealed class Test1I : @abstract.System.TestDisp_
+    {
+        public override void op(Ice.Current c)
+        {
+        }
+    }
+
+    public sealed class Test2I : System.TestDisp_
+    {
+        public override void op(Ice.Current c)
+        {
+        }
+    }
+
     static void
     testtypes()
     {
@@ -137,6 +151,8 @@ public class Client
         communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010:udp");
         Ice.ObjectAdapter adapter = communicator.createObjectAdapter("TestAdapter");
         adapter.add(new decimalI(), communicator.stringToIdentity("test"));
+        adapter.add(new Test1I(), communicator.stringToIdentity("test1"));
+        adapter.add(new Test2I(), communicator.stringToIdentity("test2"));
         adapter.activate();
 
         Console.Out.Write("testing operation name... ");
@@ -146,6 +162,18 @@ public class Client
         p.@default();
         Console.Out.WriteLine("ok");
 
+        Console.Out.Write("testing System as module name... ");
+        Console.Out.Flush();
+        @abstract.System.TestPrx t1 = @abstract.System.TestPrxHelper.uncheckedCast(
+                adapter.createProxy(communicator.stringToIdentity("test1")));
+        t1.op();
+
+        System.TestPrx t2 = System.TestPrxHelper.uncheckedCast(
+                adapter.createProxy(communicator.stringToIdentity("test2")));
+
+        t2.op();
+        Console.Out.WriteLine("ok");
+
         Console.Out.Write("testing types... ");
         Console.Out.Flush();
         testtypes();
@@ -153,13 +181,15 @@ public class Client
 
         return 0;
     }
-    
-    public static void Main(string[] args)
+
+    public static int Main(string[] args)
     {
         int status = 0;
         Ice.Communicator communicator = null;
-        
+
+#if !COMPACT
         Debug.Listeners.Add(new ConsoleTraceListener());
+#endif
 
         try
         {
@@ -173,7 +203,7 @@ public class Client
             Console.Error.WriteLine(ex);
             status = 1;
         }
-        
+
         if(communicator != null)
         {
             try
@@ -186,10 +216,7 @@ public class Client
                 status = 1;
             }
         }
-        
-        if(status != 0)
-        {
-            System.Environment.Exit(status);
-        }
+
+        return status;
     }
 }

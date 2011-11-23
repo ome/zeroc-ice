@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -58,6 +58,11 @@ class EvictorIteratorI implements EvictorIterator
     private java.util.Iterator<Ice.Identity>
     nextBatch()
     {
+	if(!_more)
+        {
+	    return null;
+	}
+
         EvictorI.DeactivateController deactivateController = _store.evictor().deactivateController();
         deactivateController.lock();
 
@@ -65,11 +70,6 @@ class EvictorIteratorI implements EvictorIterator
 
         try
         {
-            if(!_more)
-            {
-                return null;
-            }
-
             Ice.Communicator communicator = _store.communicator();
 
             byte[] firstKey = null;
@@ -166,18 +166,13 @@ class EvictorIteratorI implements EvictorIterator
                     }
                     else
                     {
-                        DeadlockException ex = new DeadlockException(
-                            _store.evictor().errorPrefix() + "Db.cursor: " + dx.getMessage(), _tx);
-                        ex.initCause(dx);
-                        throw ex;
+                        throw new DeadlockException(_store.evictor().errorPrefix() + "Db.cursor: " + dx.getMessage(),
+                                                    _tx, dx);
                     }
                 }
                 catch(com.sleepycat.db.DatabaseException dx)
                 {
-                    DatabaseException ex = new DatabaseException();
-                    ex.initCause(dx);
-                    ex.message = _store.evictor().errorPrefix() + "Db.cursor: " + dx.getMessage();
-                    throw ex;
+                    throw new DatabaseException(_store.evictor().errorPrefix() + "Db.cursor: " + dx.getMessage(), dx);
                 }
                 finally
                 {
@@ -191,10 +186,8 @@ class EvictorIteratorI implements EvictorIterator
                         {
                             if(_tx != null)
                             {
-                                DeadlockException ex = new DeadlockException(
-                                    _store.evictor().errorPrefix() + "Db.cursor: " + dx.getMessage(), _tx);
-                                ex.initCause(dx);
-                                throw ex;
+                                throw new DeadlockException(
+                                    _store.evictor().errorPrefix() + "Db.cursor: " + dx.getMessage(), _tx, dx);
                             }
                         }
                         catch(com.sleepycat.db.DatabaseException dx)

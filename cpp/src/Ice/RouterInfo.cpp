@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -336,6 +336,13 @@ IceInternal::RouterInfo::getAdapter() const
 {
     IceUtil::Mutex::Lock sync(*this);
     return _adapter;
+}
+
+void
+IceInternal::RouterInfo::clearCache(const ReferencePtr& ref)
+{
+    IceUtil::Mutex::Lock sync(*this);
+    _identities.erase(ref->getIdentity());
 }
 
 vector<EndpointIPtr>

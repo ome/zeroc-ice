@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -361,34 +361,42 @@ public final class PropertiesI implements Properties
             }
             catch(Exception ex)
             {
-                InitializationException ie = new InitializationException();
-                ie.reason = "Could not read Windows registry key `" + file + "'";
-                ie.initCause(ex); // Exception chaining
-                throw ie;
+                throw new InitializationException("Could not read Windows registry key `" + file + "'", ex);
             }
         }
         else
         {
-            java.io.InputStream is = null;
+            java.io.PushbackInputStream is = null;
             try
             {
-                is = IceInternal.Util.openResource(getClass().getClassLoader(), file);
-                if(is == null)
+                java.io.InputStream f = IceInternal.Util.openResource(getClass().getClassLoader(), file);
+                if(f == null)
                 {
                     FileException fe = new FileException();
                     fe.path = file;
                     throw fe;
                 }
+                //
+                // Skip UTF-8 BOM if present.
+                //
+                byte[] bom = new byte[3];
+                is = new java.io.PushbackInputStream(f, bom.length);
+                int read = is.read(bom, 0, bom.length);
+                if(read < 3 || bom[0] != (byte)0xEF || bom[1] != (byte)0xBB || bom[2] !=  (byte)0xBF)
+                {
+                    if(read > 0)
+                    {
+                        is.unread(bom, 0, read);
+                    }
+                }
+
                 java.io.InputStreamReader isr = new java.io.InputStreamReader(is, "UTF-8");
                 java.io.BufferedReader br = new java.io.BufferedReader(isr);
                 parse(br);
             }
             catch(java.io.IOException ex)
             {
-                FileException fe = new FileException();
-                fe.path = file;
-                fe.initCause(ex); // Exception chaining
-                throw fe;
+                throw new FileException(0, file, ex);
             }
             finally
             {
@@ -505,9 +513,7 @@ public final class PropertiesI implements Properties
         }
         catch(java.io.IOException ex)
         {
-            SyscallException se = new SyscallException();
-            se.initCause(ex); // Exception chaining
-            throw se;
+            throw new SyscallException(ex);
         }
     }
 

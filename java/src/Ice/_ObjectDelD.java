@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -82,7 +82,8 @@ public class _ObjectDelD implements _ObjectDel
         }
         catch(Ice.UserException __ex)
         {
-            throw new IceInternal.LocalExceptionWrapper(new Ice.UnknownUserException(__ex.ice_name()), false);
+            UnknownUserException ex = new UnknownUserException(__ex.ice_name(), __ex);
+            throw new IceInternal.LocalExceptionWrapper(ex, false);
         }
                 
         try

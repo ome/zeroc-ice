@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -24,7 +24,7 @@ propertyClasses = {}
 
 commonPreamble = """// **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -316,8 +316,8 @@ class CppPropertyHandler(PropertyHandler):
                 os.remove(self.className + ".cpp")
 
     def startFiles(self):
-        self.hFile = open(self.className + ".h", "w")
-        self.cppFile = open(self.className + ".cpp", "w")
+        self.hFile = open(self.className + ".h", "wb")
+        self.cppFile = open(self.className + ".cpp", "wb")
         self.hFile.write(cppHeaderPreamble % {'inputfile' : self.inputfile, 'classname' : self.className})
         self.cppFile.write(cppSrcPreamble % {'inputfile' : self.inputfile, 'classname' : self.className})
 
@@ -393,7 +393,7 @@ class JavaPropertyHandler(PropertyHandler):
                 os.remove(self.className + ".java")
 
     def startFiles(self):
-        self.srcFile = file(self.className + ".java", "w")
+        self.srcFile = file(self.className + ".java", "wb")
         self.srcFile.write(javaPreamble % {'inputfile' : self.inputfile, 'classname' : self.className})
 
     def closeFiles(self):
@@ -463,7 +463,7 @@ class CSPropertyHandler(PropertyHandler):
                 os.remove(self.className + ".cs")
 
     def startFiles(self):
-        self.srcFile = file(self.className + ".cs", "w")
+        self.srcFile = file(self.className + ".cs", "wb")
         self.srcFile.write(csPreamble % {'inputfile' : self.inputfile, 'classname' : self.className})
 
     def closeFiles(self):

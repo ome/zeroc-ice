@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -102,7 +102,10 @@ ApplicationsWrapperPtr
 FreezeDatabaseCache::getApplications(const IceDB::DatabaseConnectionPtr& connection)
 {
     FreezeDB::DatabaseConnection* c = dynamic_cast<FreezeDB::DatabaseConnection*>(connection.get());
-    return new FreezeApplicationsWrapper(c->freezeConnection(), "applications");
+    // COMPILERFIX: GCC 4.4 w/ -O2 emits strict aliasing warnings
+    // without the follow temporary.
+    ApplicationsWrapper *w = new FreezeApplicationsWrapper(c->freezeConnection(), "applications");
+    return w;
 }
 
 AdaptersWrapperPtr

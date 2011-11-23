@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -11,7 +11,11 @@ top_srcdir	= ..
 
 !include $(top_srcdir)\config\Make.rules.mak.cs
 
-SUBDIRS		= Slice IceUtil Ice IceBox Glacier2 IceGrid IceSSL
+SUBDIRS		= Slice IceUtil Ice IceBox Glacier2 IceGrid
+!if "$(COMPACT)" == ""
+SUBDIRS		= $(SUBDIRS) IceSSL
+!endif
+
 
 $(EVERYTHING)::
 	@for %i in ( $(SUBDIRS) ) do \

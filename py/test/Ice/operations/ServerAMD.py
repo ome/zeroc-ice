@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -36,6 +36,22 @@ class MyDerivedClassI(Test.MyDerivedClass):
         self.opVoidThread = None
         self.opVoidThreadLock = threading.Lock()
 
+    def ice_isA(self, id, current=None):
+        test(current.mode == Ice.OperationMode.Nonmutating)
+        return Test.MyDerivedClass.ice_isA(self, id, current)
+
+    def ice_ping(self, current=None):
+        test(current.mode == Ice.OperationMode.Nonmutating)
+        Test.MyDerivedClass.ice_ping(self, current)
+
+    def ice_ids(self, current=None):
+        test(current.mode == Ice.OperationMode.Nonmutating)
+        return Test.MyDerivedClass.ice_ids(self, current)
+
+    def ice_id(self, current=None):
+        test(current.mode == Ice.OperationMode.Nonmutating)
+        return Test.MyDerivedClass.ice_id(self, current)
+
     def shutdown_async(self, cb, current=None):
         self.opVoidThreadLock.acquire()
         if self.opVoidThread:
@@ -47,6 +63,8 @@ class MyDerivedClassI(Test.MyDerivedClass):
         cb.ice_response()
 
     def opVoid_async(self, cb, current=None):
+        test(current.mode == Ice.OperationMode.Normal)
+
         self.opVoidThreadLock.acquire()
         if self.opVoidThread:
             self.opVoidThread.join()
@@ -222,6 +240,14 @@ class MyDerivedClassI(Test.MyDerivedClass):
 
     def opContext_async(self, cb, current=None):
         cb.ice_response(current.ctx)
+
+    def opIdempotent_async(self, cb, current=None):
+        test(current.mode == Ice.OperationMode.Idempotent)
+        cb.ice_response()
+
+    def opNonmutating_async(self, cb, current=None):
+        test(current.mode == Ice.OperationMode.Nonmutating)
+        cb.ice_response()
 
     def opDerived_async(self, cb, current=None):
         cb.ice_response()

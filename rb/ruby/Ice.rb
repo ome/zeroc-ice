@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -283,7 +283,7 @@ module Ice
                     initData.properties.load(configFile)
                 end
                 initData.properties = Ice::createProperties(args, initData.properties)
-
+                @@_appName = initData.properties.getPropertyWithDefault("Ice.ProgramName", @@_appName)
                 @@_application = self
                 @@_communicator = Ice::initialize(args, initData)
                 @@_destroyed = false

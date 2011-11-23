@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -287,6 +287,25 @@ TestIntfI::opClassStruct_async(const ::Test::AMD_TestIntf_opClassStructPtr& cb,
                                const ::Ice::Current&)
 {
     cb->ice_response(inS, inS, inSeq);
+}
+
+
+void
+TestIntfI::opOutArrayByteSeq_async(const ::Test::AMD_TestIntf_opOutArrayByteSeqPtr& cb,
+                                   const ::Test::ByteSeq& inS, 
+                                   const ::Ice::Current&)
+{
+    cb->ice_response(std::pair<const ::Ice::Byte*, 
+                               const ::Ice::Byte*>(&inS[0], &inS[0] + inS.size()));
+}
+                                         
+void
+TestIntfI::opOutRangeByteSeq_async(const ::Test::AMD_TestIntf_opOutRangeByteSeqPtr& cb,
+                                   const ::Test::ByteSeq& inS,
+                                   const ::Ice::Current&)
+{
+    cb->ice_response(std::pair< ::Test::ByteSeq::const_iterator, 
+                                ::Test::ByteSeq::const_iterator>(inS.begin(), inS.end()));
 }
 
 void

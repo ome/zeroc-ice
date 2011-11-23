@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -141,11 +141,10 @@ ThreadPriorityTest::ThreadPriorityTest() :
     {
         for(int cont = 1; cont < 10; ++cont)
         {
-            int pri = 10 * cont;
             PriorityTestThreadPtr t1 = new PriorityTestThread();
-            c = t1->start(128, pri);
+            c = t1->start(128, cont);
             c.join();
-            test(t1->getPriority() == pri);
+            test(t1->getPriority() == cont);
         }
     }
     catch(...)

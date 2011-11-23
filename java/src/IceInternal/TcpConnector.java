@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,7 +34,7 @@ final class TcpConnector implements Connector
                     _logger.trace(_traceLevels.networkCat, s);
                 }
             }
-            return new TcpTransceiver(_instance, fd, connected);
+            return new TcpTransceiver(_instance, fd, connected, _addr);
         }
         catch(Ice.LocalException ex)
         {

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -161,10 +161,8 @@ public class Buffer
         }
         catch(OutOfMemoryError ex)
         {
-            Ice.MarshalException e = new Ice.MarshalException();
-            e.reason = "OutOfMemoryError occurred while allocating a ByteBuffer";
-            e.initCause(ex);
-            throw e;
+            _capacity = b.capacity(); // Restore the previous capacity.
+            throw new Ice.MarshalException("OutOfMemoryError occurred while allocating a ByteBuffer", ex);
         }
     }
 

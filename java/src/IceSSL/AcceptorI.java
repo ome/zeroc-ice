@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -74,7 +74,8 @@ final class AcceptorI implements IceInternal.Acceptor
             IceInternal.Network.setBlock(fd, false);
             IceInternal.Network.setTcpBufSize(fd, _instance.communicator().getProperties(), _logger);
 
-            engine = _instance.createSSLEngine(true);
+            java.net.InetSocketAddress peerAddr = (java.net.InetSocketAddress)fd.socket().getRemoteSocketAddress();
+            engine = _instance.createSSLEngine(true, peerAddr);
         }
         catch(RuntimeException ex)
         {
@@ -88,7 +89,7 @@ final class AcceptorI implements IceInternal.Acceptor
                           IceInternal.Network.fdToString(fd));
         }
 
-        return new TransceiverI(_instance, engine, fd, "", true, true, _adapterName);
+        return new TransceiverI(_instance, engine, fd, "", true, true, _adapterName, null);
     }
 
     public String

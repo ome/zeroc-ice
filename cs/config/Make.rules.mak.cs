@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -27,6 +27,21 @@ prefix			= C:\Ice-$(VERSION)
 #MANAGED		= yes
 
 #
+# Enable support for the .NET Compact Framework. This setting disables the
+# following features:
+#
+# - Protocol compression
+# - Signal processing in the Ice.Application class
+# - Dynamic loading of Slice-generated class and exception factories
+# - IceSSL
+# - ICE_CONFIG environment variable
+# - Dynamic loading of Slice checksums
+# - Ice.TCP.SndSize and Ice.TCP.RcvSize
+#
+
+#COMPACT			= yes
+
+#
 # Define DEBUG as yes if you want to build with debug information and
 # assertions enabled.
 #
@@ -38,6 +53,12 @@ DEBUG			= yes
 #
 
 OPTIMIZE		= yes
+
+#
+# Define FRAMEWORK as 3.5 to force a .NET 3.5 build with Visual Studio 2010.
+#
+
+#FRAMEWORK = 3.5
 
 #
 # Set the key file used to sign assemblies.
@@ -96,6 +117,25 @@ MCSFLAGS 		= $(MCSFLAGS) -optimize+
 
 # Define for SupressMessage to work
 #MCSFLAGS		= $(MCSFLAGS) -define:CODE_ANALYSIS
+
+!if "$(FRAMEWORK)" == "3.5"
+MCSFLAGS = $(MCSFLAGS) /noconfig /nostdlib+ 
+MCSFLAGS = $(MCSFLAGS) /reference:"$(FRAMEWORKDIR)\v2.0.50727\mscorlib.dll"
+MCSFLAGS = $(MCSFLAGS) /reference:"$(FRAMEWORKDIR)\v2.0.50727\System.dll"
+MCSFLAGS = $(MCSFLAGS) /reference:"$(FRAMEWORKDIR)\v2.0.50727\System.Data.dll"
+MCSFLAGS = $(MCSFLAGS) /reference:"$(PROGRAMFILES)\Reference Assemblies\Microsoft\Framework\v3.5\System.Core.dll"  
+MCSFLAGS = $(MCSFLAGS) /reference:"$(PROGRAMFILES)\Reference Assemblies\Microsoft\Framework\v3.0\System.Runtime.Serialization.dll"
+!elseif "$(COMPACT)" == "yes"
+!if "$(PROCESSOR_ARCHITECTURE)" == "AMD64" || "$(PROCESSOR_ARCHITECTUREW6432)" == "AMD64"
+NETCF_HOME		= $(PROGRAMFILES) (x86)\Microsoft.NET\SDK\CompactFramework\v3.5\WindowsCE
+!else
+NETCF_HOME		= $(PROGRAMFILES)\Microsoft.NET\SDK\CompactFramework\v3.5\WindowsCE
+!endif
+NETCF_REFS		= "/r:$(NETCF_HOME)\mscorlib.dll" \
+			  "/r:$(NETCF_HOME)\System.dll" \
+			  "/r:$(NETCF_HOME)\System.Runtime.Serialization.dll"
+MCSFLAGS 		= $(MCSFLAGS) -noconfig -nostdlib -define:COMPACT $(NETCF_REFS)
+!endif
 
 !if "$(ice_src_dist)" != ""
 !if "$(ice_cpp_dir)" == "$(ice_dir)\cpp"
@@ -193,7 +233,7 @@ policy:
       <dependentAssembly>
         <assemblyIdentity name="$(PKG)" publicKeyToken="$(publicKeyToken)" culture=""/>
         <publisherPolicy apply="yes"/>
-        <bindingRedirect oldVersion="$(SHORT_VERSION).0.0" newVersion="$(VERSION).0"/>
+        <bindingRedirect oldVersion="$(SHORT_VERSION).0.0 - $(SHORT_VERSION).1.0" newVersion="$(VERSION).0"/>
       </dependentAssembly>
     </assemblyBinding>
   </runtime>

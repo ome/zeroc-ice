@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -98,6 +98,7 @@ connectionClose(ConnectionObject* self, PyObject* args)
     assert(self->connection);
     try
     {
+        AllowThreads allowThreads; // Release Python's global interpreter lock during blocking invocations.
         (*self->connection)->close(force > 0);
     }
     catch(const Ice::Exception& ex)
@@ -209,6 +210,7 @@ connectionFlushBatchRequests(ConnectionObject* self)
     assert(self->connection);
     try
     {
+        AllowThreads allowThreads; // Release Python's global interpreter lock during remote invocations.
         (*self->connection)->flushBatchRequests();
     }
     catch(const Ice::Exception& ex)

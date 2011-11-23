@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -60,9 +60,10 @@ public class LocalExceptionWrapper extends Exception
             {
                 throw new LocalExceptionWrapper((Ice.LocalException)ex, false);
             }
-            throw new LocalExceptionWrapper(new Ice.UnknownLocalException(((Ice.LocalException)ex).ice_name()), false);
+            throw new LocalExceptionWrapper(new Ice.UnknownLocalException(((Ice.LocalException)ex).ice_name(), ex),
+                                            false);
         }
-        throw new LocalExceptionWrapper(new Ice.UnknownException(Ex.toString(ex)), false);
+        throw new LocalExceptionWrapper(new Ice.UnknownException(Ex.toString(ex), ex), false);
     }
 
     private Ice.LocalException _ex;

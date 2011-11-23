@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -191,10 +191,8 @@ class Search
                 {
                     if(connection.dbTxn() != null)
                     {
-                        DeadlockException ex = new DeadlockException(
-                            trace.errorPrefix + dx.getMessage(), connection.currentTransaction());
-                        ex.initCause(dx);
-                        throw ex;
+                        throw new DeadlockException(trace.errorPrefix + dx.getMessage(),
+                                                    connection.currentTransaction(), dx);
                     }
                     else
                     {
@@ -229,10 +227,7 @@ class Search
         }
         catch(com.sleepycat.db.DatabaseException dx)
         {
-            DatabaseException ex = new DatabaseException();
-            ex.initCause(dx);
-            ex.message = trace.errorPrefix + dx.getMessage();
-            throw ex;
+            throw new DatabaseException(trace.errorPrefix + dx.getMessage(), dx);
         }
     }
 }

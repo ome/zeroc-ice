@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -551,6 +551,26 @@ class AMI_MyClass_opContextNotEqualI(CallbackBase):
     def ice_exception(self, ex):
         test(False)
 
+class AMI_MyClass_opIdempotentI(CallbackBase):
+    def __init__(self):
+        CallbackBase.__init__(self)
+
+    def ice_response(self):
+        self.called()
+
+    def ice_exception(self, ex):
+        test(False)
+
+class AMI_MyClass_opNonmutatingI(CallbackBase):
+    def __init__(self):
+        CallbackBase.__init__(self)
+
+    def ice_response(self):
+        self.called()
+
+    def ice_exception(self, ex):
+        test(False)
+
 class AMI_MyDerivedClass_opDerivedI(CallbackBase):
     def __init__(self):
         CallbackBase.__init__(self)
@@ -928,6 +948,20 @@ def twowaysAMI(communicator, p):
         cb.check()
 
         ic.destroy()
+
+    #
+    # opIdempotent
+    #
+    cb = AMI_MyClass_opIdempotentI()
+    p.opIdempotent_async(cb)
+    cb.check()
+
+    #
+    # opNonmutating
+    #
+    cb = AMI_MyClass_opNonmutatingI()
+    p.opNonmutating_async(cb)
+    cb.check()
 
     derived = Test.MyDerivedClassPrx.checkedCast(p)
     test(derived)

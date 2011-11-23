@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -353,7 +353,7 @@ namespace IceUtilInternal
             }
 
             UTF8Encoding utf8 = new UTF8Encoding(false, true);
-            return utf8.GetString(arr); // May raise ArgumentException.
+            return utf8.GetString(arr, 0, arr.Length); // May raise ArgumentException.
         }
 
         //
@@ -453,13 +453,25 @@ namespace IceUtilInternal
             return 0; // Not quoted
         }
 
+#if COMPACT
+        private class OrdinalStringComparerImpl : System.Collections.Generic.IComparer<string>
+        {
+            public int Compare(string l, string r)
+            {
+                return string.CompareOrdinal(l, r);
+            }        
+        }
+        public static System.Collections.Generic.IComparer<string> OrdinalStringComparer =
+            new OrdinalStringComparerImpl();
+#else
         private class OrdinalStringComparerImpl : System.Collections.IComparer
         {
             public int Compare(object l, object r)
             {
                 return string.CompareOrdinal((string)l, (string)r);
-            }        
+            }
         }
         public static System.Collections.IComparer OrdinalStringComparer = new OrdinalStringComparerImpl();
+#endif
     }
 }

@@ -38,6 +38,14 @@
 	<property name="Ice.Warn.Connections" value="1"/>
 
         <property name="PropertyWithSpaces" value="   test   "/>
+	<property name="WindowsPath" value="C:\Program Files (x86)\ZeroC\"/>
+	<property name="UNCPath" value="\\server\foo bar\file"/>
+        <property name="PropertyWith=" value="foo=bar"/>
+        <property name="PropertyWithHash" value="foo#bar"/>
+        <property name="PropertyWithTab" value="foo&#9;bar"/>
+	<property name="PropertyWithEscapeSpace" value="foo\ "/>
+	<property name="PropertyWithProperty"
+                  value="Plugin.EntryPoint=foo:bar --Ice.Config=\\\server\foo bar\file.cfg"/>
 
 	<include file="varproperties.xml"/>
 
@@ -51,6 +59,8 @@
       </properties>
 
       <env>MY_ENV_VARIABLE=12</env>
+      <env>MY_UNIX_COMPOSED_VARIABLE=BAR;$MY_FOO</env>
+      <env>MY_WINDOWS_COMPOSED_VARIABLE=BAR;%MY_FOO%</env>
       <env>MY_ENV_UNICODE_VARIABLE=A Coruña</env>
       <env>MY_ENV_VÄRIABLE=1</env>
       <env>my_env_väriable=2</env>

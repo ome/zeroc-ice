@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -892,7 +892,7 @@ namespace Ice
 
             try
             {
-                result__.prepare__(__ice_isA_name, OperationMode.Normal, context__, explicitContext__);
+                result__.prepare__(__ice_isA_name, OperationMode.Nonmutating, context__, explicitContext__);
                 IceInternal.BasicStream os__ = result__.ostr__;
                 os__.writeString(id);
                 os__.endWriteEncaps();
@@ -1013,7 +1013,7 @@ namespace Ice
 
             try
             {
-                result__.prepare__(__ice_ping_name, OperationMode.Normal, context__, explicitContext__);
+                result__.prepare__(__ice_ping_name, OperationMode.Nonmutating, context__, explicitContext__);
                 IceInternal.BasicStream os__ = result__.ostr__;
                 os__.endWriteEncaps();
                 result__.send__(true);
@@ -1142,7 +1142,7 @@ namespace Ice
 
             try
             {
-                result__.prepare__(__ice_ids_name, OperationMode.Normal, context__, explicitContext__);
+                result__.prepare__(__ice_ids_name, OperationMode.Nonmutating, context__, explicitContext__);
                 IceInternal.BasicStream os__ = result__.ostr__;
                 os__.endWriteEncaps();
                 result__.send__(true);
@@ -1282,7 +1282,7 @@ namespace Ice
 
             try
             {
-                result__.prepare__(__ice_id_name, OperationMode.Normal, context__, explicitContext__);
+                result__.prepare__(__ice_id_name, OperationMode.Nonmutating, context__, explicitContext__);
                 IceInternal.BasicStream os__ = result__.ostr__;
                 os__.endWriteEncaps();
                 result__.send__(true);
@@ -1676,8 +1676,11 @@ namespace Ice
             }
             else
             {
-                ArrayList arr = ArrayList.Adapter(newEndpoints);
-                IceInternal.EndpointI[] endpts = (IceInternal.EndpointI[])arr.ToArray(typeof(IceInternal.EndpointI));
+                IceInternal.EndpointI[] endpts = new IceInternal.EndpointI[newEndpoints.Length];
+                for(int i = 0; i < newEndpoints.Length; ++i)
+                {
+                    endpts[i] = (IceInternal.EndpointI)newEndpoints[i];
+                }
                 return newInstance(_reference.changeEndpoints(endpts));
             }
         }

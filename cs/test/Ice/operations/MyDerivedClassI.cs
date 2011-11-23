@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,6 +20,34 @@ public sealed class MyDerivedClassI : Test.MyDerivedClass
         }
     }
 
+    //
+    // Override the Object "pseudo" operations to verify the operation mode.
+    //
+
+    public override bool ice_isA(String id, Ice.Current current)
+    {
+        test(current.mode == Ice.OperationMode.Nonmutating);
+        return base.ice_isA(id, current);
+    }
+
+    public override void ice_ping(Ice.Current current)
+    {
+        test(current.mode == Ice.OperationMode.Nonmutating);
+        base.ice_ping(current);
+    }
+
+    public override string[] ice_ids(Ice.Current current)
+    {
+        test(current.mode == Ice.OperationMode.Nonmutating);
+        return base.ice_ids(current);
+    }
+
+    public override string ice_id(Ice.Current current)
+    {
+        test(current.mode == Ice.OperationMode.Nonmutating);
+        return base.ice_id(current);
+    }
+
     public override void shutdown(Ice.Current current)
     {
         current.adapter.getCommunicator().shutdown();
@@ -32,6 +60,7 @@ public sealed class MyDerivedClassI : Test.MyDerivedClass
 
     public override void opVoid(Ice.Current current)
     {
+        test(current.mode == Ice.OperationMode.Normal);
     }
 
     public override bool opBool(bool p1, bool p2, out bool p3, Ice.Current current)
@@ -405,6 +434,16 @@ public sealed class MyDerivedClassI : Test.MyDerivedClass
         p3 = p1;
         p3.s.s = "a new string";
         return p2;
+    }
+
+    public override void opIdempotent(Ice.Current current)
+    {
+        test(current.mode == Ice.OperationMode.Idempotent);
+    }
+
+    public override void opNonmutating(Ice.Current current)
+    {
+        test(current.mode == Ice.OperationMode.Nonmutating);
     }
 
     public override void opDerived(Ice.Current current)

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -23,7 +23,7 @@ include $(top_srcdir)/config/Make.rules.cs
 
 MCSFLAGS	:= $(MCSFLAGS) -target:exe
 
-SLICE2CSFLAGS	:= $(SLICE2CSFLAGS) --stream -I.
+SLICE2CSFLAGS	:= $(SLICE2CSFLAGS) --stream -I. -I$(slicedir)
 
 client.exe: $(C_SRCS) $(GEN_SRCS) Serializable.dll
 	$(MCS) $(MCSFLAGS) -out:$@ $(call ref,Ice) -r:Serializable.dll $(C_SRCS) $(GEN_SRCS)

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -68,6 +68,14 @@ def onewaysNewAMI(communicator, proxy):
 
     cb = Callback()
     p.begin_opVoid(None, cb.noException, cb.sent)
+    cb.check()
+
+    cb = Callback()
+    p.begin_opIdempotent(None, cb.noException, cb.sent)
+    cb.check()
+
+    cb = Callback()
+    p.begin_opNonmutating(None, cb.noException, cb.sent)
     cb.check()
 
     try:

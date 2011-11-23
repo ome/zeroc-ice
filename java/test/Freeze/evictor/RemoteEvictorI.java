@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,15 @@ import test.Freeze.evictor.Test.*;
 
 public final class RemoteEvictorI extends _RemoteEvictorDisp
 {
+    private static void
+    test(boolean b)
+    {
+        if(!b)
+        {
+            throw new RuntimeException();
+        }
+    }
+
     static class Initializer implements Freeze.ServantInitializer
     {
         public void
@@ -68,6 +77,12 @@ public final class RemoteEvictorI extends _RemoteEvictorDisp
             _evictor = Freeze.Util.createBackgroundSaveEvictor(_evictorAdapter, envName, category, initializer, null,
                                                                true);
         }
+
+	//
+	// Check that we can get an iterator on a non-existing facet
+	//
+	Freeze.EvictorIterator p = _evictor.getIterator("foo", 1);
+	test(p.hasNext() == false);
 
         initializer.init(this, _evictor);
 

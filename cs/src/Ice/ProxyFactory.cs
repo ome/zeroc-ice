@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -124,6 +124,9 @@ namespace IceInternal
                     // must *always* retry, so that the missing proxy is added
                     // to the router.
                     //
+
+                    @ref.getRouterInfo().clearCache(@ref);
+
                     if(traceLevels.retry >= 1)
                     {
                         string s = "retrying operation call to add proxy to router\n" + ex;

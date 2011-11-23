@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -18,9 +18,24 @@ def oneways(communicator, p):
     p = Test.MyClassPrx.uncheckedCast(p.ice_oneway())
 
     #
+    # ice_ping
+    #
+    p.ice_ping()
+
+    #
     # opVoid
     #
     p.opVoid()
+
+    #
+    # opIdempotent
+    #
+    p.opIdempotent()
+
+    #
+    # opNonmutating
+    #
+    p.opNonmutating()
 
     #
     # opByte

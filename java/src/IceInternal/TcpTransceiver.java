@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,8 +38,15 @@ final class TcpTransceiver implements Transceiver
             {
                 if(_traceLevels.network >= 2)
                 {
-                    String s = "failed to establish tcp connection\n" + _desc + "\n" + ex;
-                    _logger.trace(_traceLevels.networkCat, s);
+                    java.net.Socket fd = (java.net.Socket)_fd.socket();
+                    StringBuilder s = new StringBuilder(128);
+                    s.append("failed to establish tcp connection\n");
+                    s.append("local address = ");
+                    s.append(Network.addrToString(fd.getLocalAddress(), fd.getLocalPort()));
+                    s.append("\nremote address = ");
+                    assert(_connectAddr != null);
+                    s.append(Network.addrToString(_connectAddr));
+                    _logger.trace(_traceLevels.networkCat, s.toString());
                 }
                 throw ex;
             }
@@ -70,9 +77,7 @@ final class TcpTransceiver implements Transceiver
         }
         catch(java.io.IOException ex)
         {
-            Ice.SocketException se = new Ice.SocketException();
-            se.initCause(ex);
-            throw se;
+            throw new Ice.SocketException(ex);
         }
         finally
         {
@@ -147,9 +152,7 @@ final class TcpTransceiver implements Transceiver
             }
             catch(java.io.IOException ex)
             {
-                Ice.SocketException se = new Ice.SocketException();
-                se.initCause(ex);
-                throw se;
+                throw new Ice.SocketException(ex);
             }
         }
         return true;
@@ -200,9 +203,7 @@ final class TcpTransceiver implements Transceiver
             }
             catch(java.io.IOException ex)
             {
-                Ice.ConnectionLostException se = new Ice.ConnectionLostException();
-                se.initCause(ex);
-                throw se;
+                throw new Ice.ConnectionLostException(ex);
             }
         }
 
@@ -254,9 +255,11 @@ final class TcpTransceiver implements Transceiver
     //
     // Only for use by TcpConnector, TcpAcceptor
     //
-    TcpTransceiver(Instance instance, java.nio.channels.SocketChannel fd, boolean connected)
+    TcpTransceiver(Instance instance, java.nio.channels.SocketChannel fd, boolean connected,
+                   java.net.InetSocketAddress connectAddr)
     {
         _fd = fd;
+        _connectAddr = connectAddr;
         _traceLevels = instance.traceLevels();
         _logger = instance.initializationData().logger;
         _stats = instance.initializationData().stats;
@@ -289,6 +292,7 @@ final class TcpTransceiver implements Transceiver
     }
 
     private java.nio.channels.SocketChannel _fd;
+    private java.net.InetSocketAddress _connectAddr;
     private TraceLevels _traceLevels;
     private Ice.Logger _logger;
     private Ice.Stats _stats;

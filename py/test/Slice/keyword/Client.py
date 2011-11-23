@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -73,6 +73,7 @@ def testtypes():
     h._pass = 2
     i = printI()
     j = _and._lambda;
+    en = _and.EnumNone._None
     print "ok"
 
 def run(args, communicator):

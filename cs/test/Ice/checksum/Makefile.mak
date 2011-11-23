@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -27,7 +27,7 @@ GDIR		= generated
 
 MCSFLAGS	= $(MCSFLAGS) -target:exe
 
-SLICE2CSFLAGS	= $(SLICE2CSFLAGS) -I. -I"$(slicedir)"
+SLICE2CSFLAGS	= $(SLICE2CSFLAGS) --checksum -I. -I"$(slicedir)"
 
 client.exe: $(C_SRCS) $(GEN_SRCS)
 	$(MCS) $(MCSFLAGS) -out:$@ -r:"$(refdir)\Ice.dll" $(C_SRCS) $(GEN_SRCS)

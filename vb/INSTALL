@@ -8,7 +8,7 @@ The Visual Basic demos have been built and tested with:
 - Microsoft Visual Studio 2010 and .NET Framework Version 4.0
 
 Unpack the archive. The Visual Basic demo sources will be 
-contained in the Ice-3.4.1\vb subdirectory.
+contained in the Ice-3.4.2\vb subdirectory.
 
 You will need the Slice to C# translator and supporting executables
 and libraries from Ice for C++. You can download a binary distribution
@@ -29,11 +29,11 @@ Follow these steps to build the demos:
    ICE_HOME to the directory of your Ice for C++ installation.
    For example:
 
-   > set ICE_HOME=C:\Ice-3.4.1
+   > set ICE_HOME=C:\Ice-3.4.2
 
 2) Change to the top-level directory of the Visual Basic demos:
 
-   > cd Ice-3.4.1\vb
+   > cd Ice-3.4.2\vb
 
 3) Open config\Make.rules.mak.vb and review the comments that describe
    the settings you can modify. For example, you may wish to enable
@@ -49,9 +49,9 @@ a DLL. That DLL is then referenced from the Visual Basic project.
 
 You can also build the demos using the Visual Studio solution located
 in demo\demo.sln. Note that the demo projects require the Ice Visual
-Studio Extension. The extension is installed automatically when you
-use the Ice installer, or you can install the extension manually by
-following the instructions in ..\vsplugin\INSTALL.txt.
+Studio Add-In. The add-in is installed automatically when you
+use the Ice installer, or you can install the add-in manually by
+following the instructions in ..\vsaddin\INSTALL.txt.
 
 
 Running the demos

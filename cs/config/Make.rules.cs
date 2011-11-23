@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -183,7 +183,7 @@ $(bindir)/$(POLICY_TARGET):
       <dependentAssembly> \n \
         <assemblyIdentity name=\"$(PKG)\" publicKeyToken=\"$(publicKeyToken)\" culture=\"\"/> \n \
         <publisherPolicy apply=\"yes\"/> \n \
-        <bindingRedirect oldVersion=\"$(SHORT_VERSION).0.0\" newVersion=\"$(VERSION).0\"/> \n \
+        <bindingRedirect oldVersion=\"$(SHORT_VERSION).0.0 - $(SHORT_VERSION).1.0\" newVersion=\"$(VERSION).0\"/> \n \
       </dependentAssembly> \n \
     </assemblyBinding> \n \
   </runtime> \n \

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -564,10 +564,7 @@ public final class Instance
                         }
                         catch(java.io.FileNotFoundException ex)
                         {
-                            Ice.FileException fe = new Ice.FileException();
-                            fe.path = stdOut;
-                            fe.initCause(ex);
-                            throw fe;
+                            throw new Ice.FileException(0, stdOut, ex);
                         }
 
                         System.setOut(outStream);
@@ -591,10 +588,7 @@ public final class Instance
                             }
                             catch(java.io.FileNotFoundException ex)
                             {
-                                Ice.FileException fe = new Ice.FileException();
-                                fe.path = stdErr;
-                                fe.initCause(ex);
-                                throw fe;
+                                throw new Ice.FileException(0, stdErr, ex);
                             }
 
                         }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -84,6 +84,12 @@ private:
 
     friend class Thread;
 
+    bool isDestroyed() 
+    {
+        Lock sync(*this);
+        return !_thread;
+    }
+    
     ReplicaSessionPrx createSession(InternalRegistryPrx&, IceUtil::Time&);
     ReplicaSessionPrx createSessionImpl(const InternalRegistryPrx&, IceUtil::Time&);
     void destroySession(const ReplicaSessionPrx&);

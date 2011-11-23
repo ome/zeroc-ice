@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -71,6 +71,7 @@ public:
     string dispatchName;
     bool sendsClasses;
     bool returnsClasses;
+    bool pseudoOp;
 
 private:
 
@@ -887,6 +888,31 @@ asyncResultWaitForSent(AsyncResultObject* self)
 extern "C"
 #endif
 static PyObject*
+asyncResultThrowLocalException(AsyncResultObject* self)
+{
+    try
+    {
+        assert(self->result);
+        (*self->result)->throwLocalException();
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+    catch(...)
+    {
+        assert(false);
+    }
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
 asyncResultSentSynchronously(AsyncResultObject* self)
 {
     bool b = false;
@@ -1030,6 +1056,11 @@ IcePy::Operation::Operation(const char* n, PyObject* m, PyObject* sm, int amdFla
     {
         exceptions.push_back(getException(PyTuple_GET_ITEM(ex, i)));
     }
+
+    //
+    // Does the operation name start with "ice_"?
+    //
+    pseudoOp = name.find("ice_") == 0;
 }
 
 void
@@ -1121,6 +1152,8 @@ static PyMethodDef AsyncResultMethods[] =
       PyDoc_STR(STRCAST("returns true if the request is sent")) },
     { STRCAST("waitForSent"), reinterpret_cast<PyCFunction>(asyncResultWaitForSent), METH_NOARGS,
       PyDoc_STR(STRCAST("blocks until the request is sent")) },
+    { STRCAST("throwLocalException"), reinterpret_cast<PyCFunction>(asyncResultThrowLocalException), METH_NOARGS,
+      PyDoc_STR(STRCAST("throw location exception if the request failed with a local exception")) },
     { STRCAST("sentSynchronously"), reinterpret_cast<PyCFunction>(asyncResultSentSynchronously), METH_NOARGS,
       PyDoc_STR(STRCAST("returns true if the request was sent synchronously")) },
     { STRCAST("getOperation"), reinterpret_cast<PyCFunction>(asyncResultGetOperation), METH_NOARGS,
@@ -1617,7 +1650,7 @@ IcePy::SyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
                 //
                 // Unmarshal a user exception.
                 //
-                pair<const Ice::Byte*, const Ice::Byte*> rb(0, 0);
+                pair<const Ice::Byte*, const Ice::Byte*> rb(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
                 if(!result.empty())
                 {
                     rb.first = &result[0];
@@ -1637,7 +1670,7 @@ IcePy::SyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
                 // Unmarshal the results. If there is more than one value to be returned, then return them
                 // in a tuple of the form (result, outParam1, ...). Otherwise just return the value.
                 //
-                pair<const Ice::Byte*, const Ice::Byte*> rb(0, 0);
+                pair<const Ice::Byte*, const Ice::Byte*> rb(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
                 if(!result.empty())
                 {
                     rb.first = &result[0];
@@ -1777,7 +1810,7 @@ IcePy::AsyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
     try
     {
         checkAsyncTwowayOnly(_prx);
-        pair<const Ice::Byte*, const Ice::Byte*> pparams(0, 0);
+        pair<const Ice::Byte*, const Ice::Byte*> pparams(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
         if(!params.empty())
         {
             pparams.first = &params[0];
@@ -2066,7 +2099,7 @@ IcePy::OldAsyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
     try
     {
         checkTwowayOnly(_prx);
-        pair<const Ice::Byte*, const Ice::Byte*> pparams(0, 0);
+        pair<const Ice::Byte*, const Ice::Byte*> pparams(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
         if(!params.empty())
         {
             pparams.first = &params[0];
@@ -2249,7 +2282,7 @@ IcePy::SyncBlobjectInvocation::invoke(PyObject* args, PyObject* /* kwds */)
 #endif
     Py_ssize_t sz = inParams->ob_type->tp_as_buffer->bf_getcharbuffer(inParams, 0, &charBuf);
     const Ice::Byte* mem = reinterpret_cast<const Ice::Byte*>(charBuf);
-    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(0, 0);
+    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
     if(sz > 0)
     {
         in.first = mem;
@@ -2434,7 +2467,7 @@ IcePy::AsyncBlobjectInvocation::invoke(PyObject* args, PyObject* kwds)
 #endif
     Py_ssize_t sz = inParams->ob_type->tp_as_buffer->bf_getcharbuffer(inParams, 0, &charBuf);
     const Ice::Byte* mem = reinterpret_cast<const Ice::Byte*>(charBuf);
-    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(0, 0);
+    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
     if(sz > 0)
     {
         in.first = mem;
@@ -2708,7 +2741,7 @@ IcePy::OldAsyncBlobjectInvocation::invoke(PyObject* args, PyObject* /* kwds */)
 #endif
     Py_ssize_t sz = inParams->ob_type->tp_as_buffer->bf_getcharbuffer(inParams, 0, &charBuf);
     const Ice::Byte* mem = reinterpret_cast<const Ice::Byte*>(charBuf);
-    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(0, 0);
+    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(static_cast<const Ice::Byte*>(0), static_cast<const Ice::Byte*>(0));
     if(sz > 0)
     {
         in.first = mem;
@@ -3072,7 +3105,7 @@ IcePy::TypedUpcall::response(PyObject* args)
 
             Ice::ByteSeq bytes;
             os->finished(bytes);
-            pair<const Ice::Byte*, const Ice::Byte*> ob(0, 0);
+            pair<const Ice::Byte*, const Ice::Byte*> ob(static_cast<const Ice::Byte*>(0), static_cast<const Ice::Byte*>(0));
             if(!bytes.empty())
             {
                 ob.first = &bytes[0];
@@ -3151,7 +3184,7 @@ IcePy::TypedUpcall::exception(PyException& ex)
 
                     Ice::ByteSeq bytes;
                     os->finished(bytes);
-                    pair<const Ice::Byte*, const Ice::Byte*> ob(0, 0);
+                    pair<const Ice::Byte*, const Ice::Byte*> ob(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
                     if(!bytes.empty())
                     {
                         ob.first = &bytes[0];
@@ -3668,7 +3701,13 @@ IcePy::TypedServantWrapper::ice_invoke_async(const Ice::AMD_Object_ice_invokePtr
             }
         }
 
-        __checkMode(op->mode, current.mode);
+        //
+        // See bug 4976.
+        //
+        if(!op->pseudoOp)
+        {
+            __checkMode(op->mode, current.mode);
+        }
 
         UpcallPtr up = new TypedUpcall(op, cb, current.adapter->getCommunicator());
         up->dispatch(_servant, inParams, current);

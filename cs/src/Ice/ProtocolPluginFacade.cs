@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -47,12 +47,16 @@ namespace IceInternal
         // Get an EndpointFactory.
         //
         EndpointFactory getEndpointFactory(short type);
+
+        //
+        // Obtain the type for a name.
+        //
+        System.Type findType(string name);
     }
 
     public sealed class ProtocolPluginFacadeI : ProtocolPluginFacade
     {
-        public
-        ProtocolPluginFacadeI(Ice.Communicator communicator)
+        public ProtocolPluginFacadeI(Ice.Communicator communicator)
         {
             _communicator = communicator;
             _instance = IceInternal.Util.getInstance(communicator);
@@ -118,6 +122,14 @@ namespace IceInternal
         public EndpointFactory getEndpointFactory(short type)
         {
             return _instance.endpointFactoryManager().get(type);
+        }
+
+        //
+        // Obtain the type for a name.
+        //
+        public System.Type findType(string name)
+        {
+            return AssemblyUtil.findType(_instance, name);
         }
 
         private Instance _instance;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -140,6 +140,16 @@ public:
                                      const ::Test::ClassStructPtr&,
                                      const ::Test::ClassStructSeq&,
                                      const ::Ice::Current&);
+                                     
+                                     
+    virtual void opOutArrayByteSeq_async(const ::Test::AMD_TestIntf_opOutArrayByteSeqPtr&,
+                                         const ::Test::ByteSeq&, 
+                                         const ::Ice::Current&);
+                                         
+
+    virtual void opOutRangeByteSeq_async(const ::Test::AMD_TestIntf_opOutRangeByteSeqPtr&,
+                                         const ::Test::ByteSeq&,
+                                         const ::Ice::Current&);
 
     virtual void shutdown_async(const Test::AMD_TestIntf_shutdownPtr&,
                                 const Ice::Current&);

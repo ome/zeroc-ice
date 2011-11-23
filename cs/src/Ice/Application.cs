@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,14 +18,17 @@ namespace Ice
 
     internal static class NativeMethods
     {
+#if !COMPACT
         //
-        // It's not necessary to wrap DllImport in conditional compilation. The binding occurs
-        // at run time, and it will never be executed on Mono.
+        // Technically it's not necessary to wrap DllImport in conditional compilation because
+        // the binding occurs at run time and it will never be executed on Mono. However, it
+        // causes problems for the Compact Framework.
         //
         [DllImport("kernel32.dll")]
         [return: MarshalAsAttribute(UnmanagedType.Bool)] 
         internal static extern bool 
         SetConsoleCtrlHandler(CtrlCEventHandler eh, [MarshalAsAttribute(UnmanagedType.Bool)]bool add);
+#endif
     }
 
     /// <summary>
@@ -170,10 +173,10 @@ namespace Ice
         /// </summary>
         /// <param name="args">The arguments for the application (as passed to Main(string[])
         /// by the operating system.</param>
-        /// <param name="initData">Additional data used to initialize the communicator.</param>
+        /// <param name="initializationData">Additional data used to initialize the communicator.</param>
         /// <returns>The value returned by run. If run terminates with an exception,
         /// the return value is non-zero.</returns>
-        public int main(string[] args, InitializationData initData)
+        public int main(string[] args, InitializationData initializationData)
         {
             if(Util.getProcessLogger() is ConsoleLoggerI)
             {
@@ -186,7 +189,29 @@ namespace Ice
                 return 1;
             }
 
+            //
+            // We parse the properties here to extract Ice.ProgramName.
+            //
+            InitializationData initData;
+            if(initializationData != null)
+            {
+                initData = (InitializationData)initializationData.Clone();
+            }
+            else
+            {
+                initData = new InitializationData();
+            }
+            initData.properties = Util.createProperties(ref args, initData.properties);
+
+            appName__ = initData.properties.getPropertyWithDefault("Ice.ProgramName", appName__);
+
+            nohup__ = initData.properties.getPropertyAsInt("Ice.Nohup") > 0;
+            _application = this;
+
             int status;
+#if COMPACT
+            status = doMain(args, initData);
+#else
 
             if(signalPolicy__ == SignalPolicy.HandleSignals)
             {
@@ -208,6 +233,7 @@ namespace Ice
             {
                 status = doMain(args, initData);
             }
+#endif
 
             return status;
         }
@@ -243,14 +269,19 @@ namespace Ice
         {
             if(signalPolicy__ == SignalPolicy.HandleSignals)
             {
-                lock(mutex__)
+                mutex__.Lock();
+                try
                 {
                     if(_callback == _holdCallback)
                     {
                         released__ = true;
-                        Monitor.Pulse(mutex__);
+                        mutex__.Notify();
                     }
                     _callback = _destroyCallback;
+                }
+                finally
+                {
+                    mutex__.Unlock();
                 }
             }
             else
@@ -267,14 +298,19 @@ namespace Ice
         {
             if(signalPolicy__ == SignalPolicy.HandleSignals)
             {
-                lock(mutex__)
+                mutex__.Lock();
+                try
                 {
                     if(_callback == _holdCallback)
                     {
                         released__ = true;
-                        Monitor.Pulse(mutex__);
+                        mutex__.Notify();
                     }
                     _callback = _shutdownCallback;
+                }
+                finally
+                {
+                    mutex__.Unlock();
                 }
             }
             else
@@ -291,14 +327,19 @@ namespace Ice
         {
             if(signalPolicy__ == SignalPolicy.HandleSignals)
             {
-                lock(mutex__)
+                mutex__.Lock();
+                try
                 {
                     if(_callback == _holdCallback)
                     {
                         released__ = true;
-                        Monitor.Pulse(mutex__);
+                        mutex__.Notify();
                     }
                     _callback = null;
+                }
+                finally
+                {
+                    mutex__.Unlock();
                 }
             }
             else
@@ -316,14 +357,19 @@ namespace Ice
         {
             if(signalPolicy__ == SignalPolicy.HandleSignals)
             {
-                lock(mutex__)
+                mutex__.Lock();
+                try
                 {
                     if(_callback == _holdCallback)
                     {
                         released__ = true;
-                        Monitor.Pulse(mutex__);
+                        mutex__.Notify();
                     }
                     _callback = _userCallback;
+                }
+                finally
+                {
+                    mutex__.Unlock();
                 }
             }
             else
@@ -340,7 +386,8 @@ namespace Ice
         {
             if(signalPolicy__ == SignalPolicy.HandleSignals)
             {
-                lock(mutex__)
+                mutex__.Lock();
+                try
                 {
                     if(_callback != _holdCallback)
                     {
@@ -349,6 +396,10 @@ namespace Ice
                         _callback = _holdCallback;
                     }
                     // else, we were already holding signals
+                }
+                finally
+                {
+                    mutex__.Unlock();
                 }
             }
             else
@@ -366,7 +417,8 @@ namespace Ice
         {
             if(signalPolicy__ == SignalPolicy.HandleSignals)
             {
-                lock(mutex__)
+                mutex__.Lock();
+                try
                 {
                     if(_callback == _holdCallback)
                     {
@@ -379,9 +431,13 @@ namespace Ice
 
                         released__ = true;
                         _callback = _previousCallback;
-                        Monitor.Pulse(mutex__);
+                        mutex__.Notify();
                     }
                     // Else nothing to release.
+                }
+                finally
+                {
+                    mutex__.Unlock();
                 }
             }
             else
@@ -398,32 +454,23 @@ namespace Ice
         /// <returns>True if a signal caused the communicator to shut down; false otherwise.</returns>
         public static bool interrupted()
         {
-            lock(mutex__)
+            mutex__.Lock();
+            try
             {
                 return interrupted__;
             }
+            finally
+            {
+                mutex__.Unlock();
+            }
         }
 
-        protected virtual int doMain(string[] args, InitializationData initializationData)
+        protected virtual int doMain(string[] args, InitializationData initData)
         {
             int status = 0;
 
             try
             {
-                //
-                // We parse the properties here to extract Ice.ProgramName.
-                //
-                InitializationData initData;
-                if(initializationData != null)
-                {
-                    initData = (InitializationData)initializationData.Clone();
-                }
-                else
-                {
-                    initData = new InitializationData();
-                }
-                initData.properties = Util.createProperties(ref args, initData.properties);
-
                 //
                 // If the process logger is the default logger, we replace it with a
                 // a logger which is using the program name for the prefix.
@@ -434,13 +481,8 @@ namespace Ice
                     Util.setProcessLogger(new ConsoleLoggerI(initData.properties.getProperty("Ice.ProgramName")));
                 }
 
-                _application = this;
                 communicator__ = Util.initialize(ref args, initData);
                 destroyed__ = false;
-
-                Properties props = communicator__.getProperties();
-                nohup__ = props.getPropertyAsInt("Ice.Nohup") > 0;
-                appName__ = props.getPropertyWithDefault("Ice.ProgramName", appName__);
 
                 //
                 // The default is to destroy when a signal is received.
@@ -473,11 +515,12 @@ namespace Ice
                 ignoreInterrupt();
             }
 
-            lock(mutex__)
+            mutex__.Lock();
+            try
             {
                 while(callbackInProgress__)
                 {
-                    Monitor.Wait(mutex__);
+                    mutex__.Wait();
                 }
                 if(destroyed__)
                 {
@@ -493,6 +536,10 @@ namespace Ice
                     //
                 }
                 _application = null;
+            }
+            finally
+            {
+                mutex__.Unlock();
             }
 
             if(communicator__ != null)
@@ -523,10 +570,17 @@ namespace Ice
         private static void signalHandler(int sig)
         {
             Callback callback;
-            lock(mutex__)
+
+            mutex__.Lock();
+            try
             {
                 callback = _callback;
             }
+            finally
+            {
+                mutex__.Unlock();
+            }
+
             if(callback != null)
             {
                 try
@@ -546,11 +600,12 @@ namespace Ice
         private static void holdInterruptCallback(int sig)
         {
             Callback callback = null;
-            lock(mutex__)
+            mutex__.Lock();
+            try
             {
                 while(!released__)
                 {
-                    Monitor.Wait(mutex__);
+                    mutex__.Wait();
                 }
 
                 if(destroyed__)
@@ -562,6 +617,10 @@ namespace Ice
                 }
 
                 callback = _callback;
+            }
+            finally
+            {
+                mutex__.Unlock();
             }
 
             if(callback != null)
@@ -575,7 +634,8 @@ namespace Ice
         //
         private static void destroyOnInterruptCallback(int sig)
         {
-            lock(mutex__)
+            mutex__.Lock();
+            try
             {
                 if(destroyed__)
                 {
@@ -594,6 +654,10 @@ namespace Ice
                 interrupted__ = true;
                 destroyed__ = true;
             }
+            finally
+            {
+                mutex__.Unlock();
+            }
 
             try
             {
@@ -605,16 +669,22 @@ namespace Ice
                 Util.getProcessLogger().error("(while destroying in response to signal " + sig + "):\n" + ex);
             }
 
-            lock(mutex__)
+            mutex__.Lock();
+            try
             {
                 callbackInProgress__ = false;
-                Monitor.Pulse(mutex__);
+                mutex__.Notify();
+            }
+            finally
+            {
+                mutex__.Unlock();
             }
         }
 
         private static void shutdownOnInterruptCallback(int sig)
         {
-            lock(mutex__)
+            mutex__.Lock();
+            try
             {
                 if(destroyed__)
                 {
@@ -632,6 +702,10 @@ namespace Ice
                 callbackInProgress__ = true;
                 interrupted__ = true;
             }
+            finally
+            {
+                mutex__.Unlock();
+            }
 
             try
             {
@@ -643,16 +717,22 @@ namespace Ice
                 Util.getProcessLogger().error("(while shutting down in response to signal " + sig + "):\n" + ex);
             }
 
-            lock(mutex__)
+            mutex__.Lock();
+            try
             {
                 callbackInProgress__ = false;
-                Monitor.Pulse(mutex__);
+                mutex__.Notify();
+            }
+            finally
+            {
+                mutex__.Unlock();
             }
         }
 
         private static void userCallbackOnInterruptCallback(int sig)
         {
-            lock(mutex__)
+            mutex__.Lock();
+            try
             {
                 if(destroyed__)
                 {
@@ -667,6 +747,10 @@ namespace Ice
                 callbackInProgress__ = true;
                 interrupted__ = true;
             }
+            finally
+            {
+                mutex__.Unlock();
+            }
 
             try
             {
@@ -678,14 +762,19 @@ namespace Ice
                 Util.getProcessLogger().error("(while interrupting in response to signal " + sig + "):\n" + ex);
             }
 
-            lock(mutex__)
+            mutex__.Lock();
+            try
             {
                 callbackInProgress__ = false;
-                Monitor.Pulse(mutex__);
+                mutex__.Notify();
+            }
+            finally
+            {
+                mutex__.Unlock();
             }
         }
 
-        protected static readonly object mutex__ = new object();
+        protected static readonly IceUtilInternal.Monitor mutex__ = new IceUtilInternal.Monitor();
 
         protected static bool callbackInProgress__ = false;
         protected static bool destroyed__ = false;
@@ -726,6 +815,7 @@ namespace Ice
 
         private delegate void SignalHandler(int sig);
         private static readonly SignalHandler _handler = new SignalHandler(signalHandler);
+#if !COMPACT
         private Signals _signals;
 
         private interface Signals
@@ -815,9 +905,9 @@ namespace Ice
                 _handler(sig);
                 return true;
             }
-
 #endif
         }
+#endif
     }
     
     delegate bool CtrlCEventHandler(int sig);

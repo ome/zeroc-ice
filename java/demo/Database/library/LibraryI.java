@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -51,10 +51,7 @@ class LibraryI extends _LibraryDisp
             }
             if(next)
             {
-                // The SQLRequestContext is now owned by the query
-                // implementation.
-                context.obtain();
-                BookQueryResultI impl = new BookQueryResultI(context, rs);
+                BookQueryResultI impl = new BookQueryResultI(context, rs, current.adapter);
                 result.value = BookQueryResultPrxHelper.uncheckedCast(current.adapter.addWithUUID(impl));
                 add(result.value, impl);
             }
@@ -133,12 +130,10 @@ class LibraryI extends _LibraryDisp
                 first.value.add(BookI.extractDescription(context, rs, current.adapter));
                 next = rs.next();
             }
+
             if(next)
             {
-                // The SQLRequestContext is now owned by the query
-                // implementation.
-                context.obtain();
-                BookQueryResultI impl = new BookQueryResultI(context, rs);
+                BookQueryResultI impl = new BookQueryResultI(context, rs, current.adapter);
                 result.value = BookQueryResultPrxHelper.uncheckedCast(current.adapter.addWithUUID(impl));
                 add(result.value, impl);
             }
@@ -188,10 +183,7 @@ class LibraryI extends _LibraryDisp
             }
             if(next)
             {
-                // The SQLRequestContext is now owned by the query
-                // implementation.
-                context.obtain();
-                BookQueryResultI impl = new BookQueryResultI(context, rs);
+                BookQueryResultI impl = new BookQueryResultI(context, rs, current.adapter);
                 result.value = BookQueryResultPrxHelper.uncheckedCast(current.adapter.addWithUUID(impl));
                 add(result.value, impl);
             }

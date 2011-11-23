@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -90,7 +90,9 @@ namespace IceInternal
             }
 
             Network.setBlock(_acceptFd, false);
+#if !COMPACT
             Network.setTcpBufSize(_acceptFd, instance_.initializationData().properties, _logger);
+#endif
 
             if(_traceLevels.network >= 1)
             {
@@ -126,7 +128,9 @@ namespace IceInternal
                 _addr = Network.getAddressForServer(host, port, instance_.protocolSupport());
                 _fd = Network.createSocket(false, _addr.AddressFamily);
                 Network.setBlock(_fd, false);
+#if !COMPACT
                 Network.setTcpBufSize(_fd, instance_.initializationData().properties, _logger);
+#endif
                 if(AssemblyUtil.platform_ != AssemblyUtil.Platform.Windows)
                 {
                     //

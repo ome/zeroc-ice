@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,6 +20,7 @@ import test.Ice.ami.Test.Callback_TestIntf_op;
 import test.Ice.ami.Test.Callback_TestIntf_opWithResult;
 import test.Ice.ami.Test.Callback_TestIntf_opWithUE;
 import test.Ice.ami.Test.Callback_TestIntf_opWithPayload;
+import test.Util.Application;
 
 public class AllTests
 {
@@ -548,8 +549,11 @@ public class AllTests
     }
 
     public static void
-    allTests(Ice.Communicator communicator, PrintWriter out)
+    allTests(Application app)
     {
+        Ice.Communicator communicator = app.communicator();
+        PrintWriter out = app.getWriter();
+
         String sref = "test:default -p 12010";
         Ice.ObjectPrx obj = communicator.stringToProxy(sref);
         test(obj != null);
@@ -1029,7 +1033,7 @@ public class AllTests
             //
             Ice.InitializationData initData = new Ice.InitializationData();
             initData.properties = communicator.getProperties()._clone();
-            Ice.Communicator ic = Ice.Util.initialize(initData);
+            Ice.Communicator ic = app.initialize(initData);
             Ice.ObjectPrx o = ic.stringToProxy(p.toString());
             TestIntfPrx p2 = TestIntfPrxHelper.checkedCast(o);
             ic.destroy();
@@ -2086,6 +2090,18 @@ public class AllTests
         out.print("testing AsyncResult operations... ");
         out.flush();
         {
+            TestIntfPrx indirect = TestIntfPrxHelper.uncheckedCast(p.ice_adapterId("dummy"));
+            Ice.AsyncResult r = indirect.begin_op();
+            try
+            {
+                r.waitForCompleted();
+                r.throwLocalException();
+                test(false);
+            }
+            catch(Ice.NoEndpointException ex)
+            {
+            }
+
             testController.holdAdapter();
             Ice.AsyncResult r1;
             Ice.AsyncResult r2;

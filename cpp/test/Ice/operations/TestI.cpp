@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,34 @@
 #include <TestCommon.h>
 #include <functional>
 #include <iterator>
+
+bool
+MyDerivedClassI::ice_isA(const std::string& id, const Ice::Current& current) const
+{
+    test(current.mode == Ice::Nonmutating);
+    return Test::MyDerivedClass::ice_isA(id, current);
+}
+
+void
+MyDerivedClassI::ice_ping(const Ice::Current& current) const
+{
+    test(current.mode == Ice::Nonmutating);
+    Test::MyDerivedClass::ice_ping(current);
+}
+
+std::vector<std::string>
+MyDerivedClassI::ice_ids(const Ice::Current& current) const
+{
+    test(current.mode == Ice::Nonmutating);
+    return Test::MyDerivedClass::ice_ids(current);
+}
+
+const std::string&
+MyDerivedClassI::ice_id(const Ice::Current& current) const
+{
+    test(current.mode == Ice::Nonmutating);
+    return Test::MyDerivedClass::ice_id(current);
+}
 
 void
 MyDerivedClassI::shutdown(const Ice::Current& current)
@@ -27,8 +55,9 @@ MyDerivedClassI::delay(Ice::Int ms, const Ice::Current& current)
 }
 
 void
-MyDerivedClassI::opVoid(const Ice::Current&)
+MyDerivedClassI::opVoid(const Ice::Current& current)
 {
+    test(current.mode == Ice::Normal);
 }
 
 Ice::Byte
@@ -392,6 +421,18 @@ MyDerivedClassI::opDoubleMarshaling(Ice::Double p1, const Test::DoubleS& p2, con
     {
         test(p2[i] == d);
     }
+}
+
+void
+MyDerivedClassI::opIdempotent(const Ice::Current& current)
+{
+    test(current.mode == Ice::Idempotent);
+}
+
+void
+MyDerivedClassI::opNonmutating(const Ice::Current& current)
+{
+    test(current.mode == Ice::Nonmutating);
 }
 
 void

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -337,7 +337,7 @@ namespace Ice
                 {
                     entryPoint = pluginSpec.Substring(0, pos);
                     char[] delims = { ' ', '\t', '\n' };
-                    args = pluginSpec.Substring(pos).Trim().Split(delims, pos);
+                    args = pluginSpec.Substring(pos).Trim().Split(delims);
                 }
             }
             
@@ -387,13 +387,13 @@ namespace Ice
                 {
                     pluginAssembly = System.Reflection.Assembly.Load(assemblyName);
                 }
-                catch(System.Exception ex)
+                catch(System.IO.IOException ex)
                 {
                     try
                     {
                         pluginAssembly = System.Reflection.Assembly.LoadFrom(assemblyName);
                     }
-                    catch(System.Exception)
+                    catch(System.IO.IOException)
                     {
                          throw ex;
                     }
@@ -401,6 +401,21 @@ namespace Ice
             }
             catch(System.Exception ex)
             {
+#if COMPACT
+                //
+                // IceSSL is not supported with the Compact Framework.
+                //
+                if(name == "IceSSL")
+                {
+                    if(!_sslWarnOnce)
+                    {
+                        _communicator.getLogger().warning(
+                            "IceSSL plug-in not loaded: IceSSL is not supported with the .NET Compact Framework");
+                        _sslWarnOnce = true;
+                    }
+                    return;
+                }
+#else
                 //
                 // IceSSL is not yet supported with Mono. We avoid throwing an exception in that case,
                 // so the same configuration can be used with Mono or Visual C#.
@@ -415,6 +430,7 @@ namespace Ice
                     }
                     return;
                 }
+#endif
 
                 PluginInitializationException e = new PluginInitializationException();
                 e.reason = err + "unable to load assembly: '" + assemblyName + "': " + ex.ToString();

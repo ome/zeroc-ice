@@ -1,6 +1,6 @@
 ' **********************************************************************
 '
-' Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+' Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 '
 ' This copy of Ice is licensed to you under the terms described in the
 ' ICE_LICENSE file included in this distribution.
@@ -21,7 +21,7 @@ Module NestedC
                 Return 1
             End If
 
-            Dim nested As NestedPrx = NestedPrxHelper.checkedCast(communicator().propertyToProxy("Nested.NestedServer"))
+            Dim nested As NestedPrx = NestedPrxHelper.checkedCast(communicator().propertyToProxy("Nested.Proxy"))
             If nested Is Nothing Then
                 Console.Error.WriteLine("invalid proxy")
                 Return 1

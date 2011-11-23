@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -70,7 +70,8 @@ protected:
     //
     // Write a constant or default value initializer.
     //
-    void writeConstantValue(::IceUtilInternal::Output&, const TypePtr&, const std::string&, const std::string&);
+    void writeConstantValue(::IceUtilInternal::Output&, const TypePtr&, const SyntaxTreeBasePtr&, const std::string&,
+                            const std::string&);
 
     //
     // Generate assignment statements for those data members that have default values.

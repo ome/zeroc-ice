@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -291,6 +291,18 @@ TestIntfI::opClassStruct(const ::Test::ClassStructPtr& inS,
     outSeq = inSeq;
     out = inS;
     return inS;
+}
+
+void
+TestIntfI::opOutArrayByteSeq(const Test::ByteSeq& data, Test::ByteSeq& copy, const Ice::Current&)
+{
+    copy = data;
+}
+
+void
+TestIntfI::opOutRangeByteSeq(const Test::ByteSeq& data, Test::ByteSeq& copy, const Ice::Current&)
+{
+    copy = data;
 }
 
 void

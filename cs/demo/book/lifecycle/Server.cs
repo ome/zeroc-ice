@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -60,9 +60,9 @@ public class Server
         }
     }
 
-    static public void Main(string[] args)
+    static public int Main(string[] args)
     {
         App app = new App();
-        app.main(args);
+        return app.main(args);
     }
 }

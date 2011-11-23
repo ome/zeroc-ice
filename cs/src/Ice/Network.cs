@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,9 @@ namespace IceInternal
     using System.ComponentModel;
     using System.Diagnostics;
     using System.Net;
+#if !COMPACT
     using System.Net.NetworkInformation;
+#endif
     using System.Net.Sockets;
     using System.Runtime.InteropServices;
     using System.Threading;
@@ -97,7 +99,11 @@ namespace IceInternal
                 {
                 }
 
+#if COMPACT
+                foreach(IPAddress a in Dns.GetHostEntry(host).AddressList)
+#else
                 foreach(IPAddress a in Dns.GetHostAddresses(host))
+#endif
                 {
                     if((a.AddressFamily == AddressFamily.InterNetwork && protocol != EnableIPv6) ||
                        (a.AddressFamily == AddressFamily.InterNetworkV6 && protocol != EnableIPv4))
@@ -270,7 +276,11 @@ namespace IceInternal
 
         public static bool isMulticast(IPEndPoint addr)
         {
+#if COMPACT
+            string ip = addr.Address.ToString().ToUpper();
+#else
             string ip = addr.Address.ToString().ToUpperInvariant();
+#endif
             if(addr.AddressFamily == AddressFamily.InterNetwork)
             {
                 char[] splitChars = { '.' };
@@ -483,10 +493,10 @@ namespace IceInternal
                     IPAddress ifaceAddr = IPAddress.Any;
                     if(iface.Length != 0)
                     {
-                        ifaceAddr = Network.getInterfaceAddress(iface);
+                        ifaceAddr = getInterfaceAddress(iface);
                         if(ifaceAddr == IPAddress.Any)
                         {
-                            ifaceAddr = Network.getAddress(iface, 0, Network.EnableIPv4).Address;
+                            ifaceAddr = getAddress(iface, 0, EnableIPv4).Address;
                         }
                     }
                     socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, 
@@ -816,7 +826,11 @@ namespace IceInternal
                         }
                     }
 
+#if COMPACT
+                    foreach(IPAddress a in Dns.GetHostEntry(host).AddressList)
+#else
                     foreach(IPAddress a in Dns.GetHostAddresses(host))
+#endif
                     {
                         if((a.AddressFamily == AddressFamily.InterNetwork && protocol != EnableIPv6) ||
                            (a.AddressFamily == AddressFamily.InterNetworkV6 && protocol != EnableIPv4))
@@ -866,6 +880,7 @@ namespace IceInternal
             try
             {
                 addresses = new ArrayList();
+#if !COMPACT
                 if(AssemblyUtil.runtime_ != AssemblyUtil.Runtime.Mono)
                 {
                     NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
@@ -887,8 +902,13 @@ namespace IceInternal
                     }
                 }
                 else
+#endif
                 {
+#if COMPACT
+                    foreach(IPAddress a in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
+#else
                     foreach(IPAddress a in Dns.GetHostAddresses(Dns.GetHostName()))
+#endif
                     {
                         if((a.AddressFamily == AddressFamily.InterNetwork && protocol != EnableIPv6) ||
                            (a.AddressFamily == AddressFamily.InterNetworkV6 && protocol != EnableIPv4))
@@ -989,7 +1009,11 @@ namespace IceInternal
                 IPAddress[] addrs = getLocalAddresses(protocol);
                 foreach(IPAddress a in addrs)
                 {
+#if COMPACT
+                    if(!IPAddress.IsLoopback(a))
+#else
                     if(!a.IsIPv6LinkLocal)
+#endif
                     {
                         hosts.Add(a.ToString());
                     }
@@ -1024,6 +1048,23 @@ namespace IceInternal
             {
                 return "<closed>";
             }
+        }
+
+        public static string fdLocalAddressToString(Socket socket)
+        {
+            System.Text.StringBuilder s = new System.Text.StringBuilder();
+            IPEndPoint localEndpoint = getLocalAddress(socket);
+            if(localEndpoint == null)
+            {
+                // This might occur if connect was not called yet, see also comments in doBeginConnectAsync
+                s.Append("local address = <not bound>");
+            }
+            else
+            {
+                s.Append("local address = " + localEndpoint.Address);
+                s.Append(":" + localEndpoint.Port);
+            }
+            return s.ToString();
         }
 
         public static string
@@ -1092,6 +1133,7 @@ namespace IceInternal
         private static int
         getInterfaceIndex(string name)
         {
+#if !COMPACT
             NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
             foreach(NetworkInterface ni in nics)
             {
@@ -1105,12 +1147,14 @@ namespace IceInternal
                     }
                 }
             }
+#endif
             return 0;
         }
 
         private static IPAddress
         getInterfaceAddress(string name)
         {
+#if !COMPACT
             NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
             foreach(NetworkInterface ni in nics)
             {
@@ -1127,6 +1171,7 @@ namespace IceInternal
                     }
                 }
             }
+#endif
             return IPAddress.Any;
         }
     }

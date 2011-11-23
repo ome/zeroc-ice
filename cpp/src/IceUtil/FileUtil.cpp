@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -251,6 +251,9 @@ toFileFlags(ios_base::openmode mode)
 #endif
 
 IceUtilInternal::ifstream::ifstream()
+#ifdef _STLP_BEGIN_NAMESPACE
+    : _fd(-1)
+#endif
 {
 }
 
@@ -309,6 +312,9 @@ IceUtilInternal::ifstream::open(const string& path, ios_base::openmode mode)
 #endif
 
 IceUtilInternal::ofstream::ofstream()
+#ifdef _STLP_BEGIN_NAMESPACE
+    : _fd(-1)
+#endif
 {
 }
 

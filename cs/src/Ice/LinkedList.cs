@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -71,7 +71,11 @@ namespace IceUtilInternal
             }
             if(index < 0)
             {
+#if COMPACT
+                throw new ArgumentOutOfRangeException("index", "index must not be less than zero");
+#else
                 throw new ArgumentOutOfRangeException("index", _count, "index must not be less than zero");
+#endif
             }
             if(index >= array.Length)
             {

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -64,6 +64,8 @@ public:
 
     bool isSent() const;
     void waitForSent();
+
+    void throwLocalException() const;
 
     bool sentSynchronously() const
     {
@@ -358,7 +360,7 @@ public:
         (callback.get()->*completed)(result);
     }
 
-    virtual CallbackBasePtr __verify(::Ice::LocalObjectPtr& cookie)
+    virtual CallbackBasePtr __verify(::Ice::LocalObjectPtr&)
     {
         return this; // Nothing to do, the cookie is not type-safe.
     }

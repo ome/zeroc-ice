@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -76,6 +76,7 @@ public final class TieMyDerivedClassI implements _MyDerivedClassOperations
     public void
     opVoid(Ice.Current current)
     {
+        test(current.mode == Ice.OperationMode.Normal);
     }
 
     public boolean
@@ -454,6 +455,18 @@ public final class TieMyDerivedClassI implements _MyDerivedClassOperations
         p3.value = p1;
         p3.value.s.s = "a new string";
         return p2;
+    }
+
+    public void
+    opIdempotent(Ice.Current current)
+    {
+        test(current.mode == Ice.OperationMode.Idempotent);
+    }
+
+    public void
+    opNonmutating(Ice.Current current)
+    {
+        test(current.mode == Ice.OperationMode.Nonmutating);
     }
 
     public void

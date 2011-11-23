@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -347,10 +347,10 @@ public class Client
                 false
             };
             @out = Ice.Util.createOutputStream(communicator);
-            Test.BoolSHelper.write(@out, arr);
+            Ice.BoolSeqHelper.write(@out, arr);
             byte[] data = @out.finished();
             @in = Ice.Util.createInputStream(communicator, data);
-            bool[] arr2 = Test.BoolSHelper.read(@in);
+            bool[] arr2 = Ice.BoolSeqHelper.read(@in);
             test(Compare(arr2, arr));
             @out.destroy();
             @in.destroy();
@@ -380,10 +380,10 @@ public class Client
                 (byte)0x22
             };
             @out = Ice.Util.createOutputStream(communicator);
-            Test.ByteSHelper.write(@out, arr);
+            Ice.ByteSeqHelper.write(@out, arr);
             byte[] data = @out.finished();
             @in = Ice.Util.createInputStream(communicator, data);
-            byte[] arr2 = Test.ByteSHelper.read(@in);
+            byte[] arr2 = Ice.ByteSeqHelper.read(@in);
             test(Compare(arr2, arr));
             @out.destroy();
             @in.destroy();
@@ -404,6 +404,7 @@ public class Client
             @in.destroy();
         }
 
+#if !COMPACT
         {
             Serialize.Small small = new Serialize.Small();
             small.i = 99;
@@ -416,6 +417,7 @@ public class Client
             @out.destroy();
             @in.destroy();
         }
+#endif
 
         {
             short[] arr =
@@ -426,10 +428,10 @@ public class Client
                 (short)0x22
             };
             @out = Ice.Util.createOutputStream(communicator);
-            Test.ShortSHelper.write(@out, arr);
+            Ice.ShortSeqHelper.write(@out, arr);
             byte[] data = @out.finished();
             @in = Ice.Util.createInputStream(communicator, data);
-            short[] arr2 = Test.ShortSHelper.read(@in);
+            short[] arr2 = Ice.ShortSeqHelper.read(@in);
             test(Compare(arr2, arr));
             @out.destroy();
             @in.destroy();
@@ -459,10 +461,10 @@ public class Client
                 0x22
             };
             @out = Ice.Util.createOutputStream(communicator);
-            Test.IntSHelper.write(@out, arr);
+            Ice.IntSeqHelper.write(@out, arr);
             byte[] data = @out.finished();
             @in = Ice.Util.createInputStream(communicator, data);
-            int[] arr2 = Test.IntSHelper.read(@in);
+            int[] arr2 = Ice.IntSeqHelper.read(@in);
             test(Compare(arr2, arr));
             @out.destroy();
             @in.destroy();
@@ -492,10 +494,10 @@ public class Client
                 0x22
             };
             @out = Ice.Util.createOutputStream(communicator);
-            Test.LongSHelper.write(@out, arr);
+            Ice.LongSeqHelper.write(@out, arr);
             byte[] data = @out.finished();
             @in = Ice.Util.createInputStream(communicator, data);
-            long[] arr2 = Test.LongSHelper.read(@in);
+            long[] arr2 = Ice.LongSeqHelper.read(@in);
             test(Compare(arr2, arr));
             @out.destroy();
             @in.destroy();
@@ -525,10 +527,10 @@ public class Client
                 (float)4
             };
             @out = Ice.Util.createOutputStream(communicator);
-            Test.FloatSHelper.write(@out, arr);
+            Ice.FloatSeqHelper.write(@out, arr);
             byte[] data = @out.finished();
             @in = Ice.Util.createInputStream(communicator, data);
-            float[] arr2 = Test.FloatSHelper.read(@in);
+            float[] arr2 = Ice.FloatSeqHelper.read(@in);
             test(Compare(arr2, arr));
             @out.destroy();
             @in.destroy();
@@ -558,10 +560,10 @@ public class Client
                 (double)4
             };
             @out = Ice.Util.createOutputStream(communicator);
-            Test.DoubleSHelper.write(@out, arr);
+            Ice.DoubleSeqHelper.write(@out, arr);
             byte[] data = @out.finished();
             @in = Ice.Util.createInputStream(communicator, data);
-            double[] arr2 = Test.DoubleSHelper.read(@in);
+            double[] arr2 = Ice.DoubleSeqHelper.read(@in);
             test(Compare(arr2, arr));
             @out.destroy();
             @in.destroy();
@@ -591,10 +593,10 @@ public class Client
                 "string4"
             };
             @out = Ice.Util.createOutputStream(communicator);
-            Test.StringSHelper.write(@out, arr);
+            Ice.StringSeqHelper.write(@out, arr);
             byte[] data = @out.finished();
             @in = Ice.Util.createInputStream(communicator, data);
-            string[] arr2 = Test.StringSHelper.read(@in);
+            string[] arr2 = Ice.StringSeqHelper.read(@in);
             test(Compare(arr2, arr));
             @out.destroy();
             @in.destroy();
@@ -1393,14 +1395,18 @@ public class Client
         }
 
         {
+#if COMPACT
+            SortedList<string, string> dict = new SortedList<string, string>();
+#else
             SortedDictionary<string, string> dict = new SortedDictionary<string, string>();
+#endif
             dict.Add("key1", "value1");
             dict.Add("key2", "value2");
             @out = Ice.Util.createOutputStream(communicator);
             Test.SortedStringStringDHelper.write(@out, dict);
             byte[] data = @out.finished();
             @in = Ice.Util.createInputStream(communicator, data);
-            SortedDictionary<string, string> dict2 = Test.SortedStringStringDHelper.read(@in);
+            IDictionary<string, string> dict2 = Test.SortedStringStringDHelper.read(@in);
             test(Ice.CollectionComparer.Equals(dict2, dict));
         }
 
@@ -1421,16 +1427,27 @@ public class Client
         return 0;
     }
 
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
         int status = 0;
         Ice.Communicator communicator = null;
 
+#if !COMPACT
         Debug.Listeners.Add(new ConsoleTraceListener());
+#endif
 
         try
         {
-            communicator = Ice.Util.initialize(ref args);
+            Ice.InitializationData data = new Ice.InitializationData();
+#if COMPACT
+            //
+            // When using Ice for .NET Compact Framework, we need to specify
+            // the assembly so that Ice can locate classes and exceptions.
+            //
+            data.properties = Ice.Util.createProperties();
+            data.properties.setProperty("Ice.FactoryAssemblies", "client");
+#endif
+            communicator = Ice.Util.initialize(ref args, data);
             status = run(args, communicator);
         }
         catch(System.Exception ex)
@@ -1452,9 +1469,6 @@ public class Client
             }
         }
 
-        if(status != 0)
-        {
-            System.Environment.Exit(status);
-        }
+        return status;
     }
 }

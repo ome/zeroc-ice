@@ -1,12 +1,29 @@
 <?php
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+namespace
+{
+//
+// These symbols are defined by the extension but must be declared global
+// here to ensure they are visible to scripts regardless of the scope in
+// which we are currently executing.
+//
+global $IcePHP__t_bool;
+global $IcePHP__t_byte;
+global $IcePHP__t_short;
+global $IcePHP__t_int;
+global $IcePHP__t_long;
+global $IcePHP__t_float;
+global $IcePHP__t_double;
+global $IcePHP__t_string;
+}
 
 namespace Ice
 {
@@ -107,19 +124,19 @@ namespace
 //
 // Include certain generated files.
 //
-require 'Ice/BuiltinSequences.php';
-require 'Ice/Endpoint.php';
-require 'Ice/EndpointTypes.php';
-require 'Ice/LocalException.php';
-require 'Ice/Locator.php';
-require 'Ice/ObjectFactory.php';
-require 'Ice/Process.php';
-require 'Ice/Router.php';
+require_once 'Ice/BuiltinSequences.php';
+require_once 'Ice/Endpoint.php';
+require_once 'Ice/EndpointTypes.php';
+require_once 'Ice/LocalException.php';
+require_once 'Ice/Locator.php';
+require_once 'Ice/ObjectFactory.php';
+require_once 'Ice/Process.php';
+require_once 'Ice/Router.php';
 
-IcePHP_defineOperation($Ice__t_Object, 'ice_isA', 0, 0, array($IcePHP__t_string), array(), $IcePHP__t_bool, null);
-IcePHP_defineOperation($Ice__t_Object, 'ice_ping', 0, 0, null, null, null, null);
-IcePHP_defineOperation($Ice__t_Object, 'ice_id', 0, 0, null, null, $IcePHP__t_string, null);
-IcePHP_defineOperation($Ice__t_Object, 'ice_ids', 0, 0, null, null, $Ice__t_StringSeq, null);
+IcePHP_defineOperation($Ice__t_Object, 'ice_isA', 2, 1, array($IcePHP__t_string), array(), $IcePHP__t_bool, null);
+IcePHP_defineOperation($Ice__t_Object, 'ice_ping', 2, 1, null, null, null, null);
+IcePHP_defineOperation($Ice__t_Object, 'ice_id', 2, 1, null, null, $IcePHP__t_string, null);
+IcePHP_defineOperation($Ice__t_Object, 'ice_ids', 2, 1, null, null, $Ice__t_StringSeq, null);
 }
 
 namespace Ice

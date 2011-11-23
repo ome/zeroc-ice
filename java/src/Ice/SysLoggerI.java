@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -131,9 +131,7 @@ public final class SysLoggerI implements Logger
         }
         catch(IOException ex)
         {
-            Ice.SocketException se = new Ice.SocketException();
-            se.initCause(ex);
-            throw se;
+            throw new Ice.SocketException(ex);
         }
     }
 
@@ -190,9 +188,7 @@ public final class SysLoggerI implements Logger
         } 
         catch(IOException ex)
         {
-            Ice.SocketException se = new Ice.SocketException();
-            se.initCause(ex);
-            throw se;
+            throw new Ice.SocketException(ex);
         }
     }
 

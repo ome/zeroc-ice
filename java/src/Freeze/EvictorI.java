@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -507,10 +507,7 @@ abstract class EvictorI implements Evictor
         }
         catch(java.io.UnsupportedEncodingException ix)
         {
-            DatabaseException ex = new DatabaseException();
-            ex.initCause(ix);
-            ex.message = _errorPrefix + "cannot decode database names";
-            throw ex;
+            throw new DatabaseException(_errorPrefix + "cannot decode database names", ix);
         }
         catch(java.io.FileNotFoundException ix)
         {
@@ -520,10 +517,7 @@ abstract class EvictorI implements Evictor
         }
         catch(com.sleepycat.db.DatabaseException dx)
         {
-            DatabaseException ex = new DatabaseException();
-            ex.initCause(dx);
-            ex.message = _errorPrefix + "Db.open: " + dx.getMessage();
-            throw ex;
+            throw new DatabaseException(_errorPrefix + "Db.open: " + dx.getMessage(), dx);
         }
         finally
         {

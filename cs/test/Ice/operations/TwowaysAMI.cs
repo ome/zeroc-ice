@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,31 +31,82 @@ public class TwowaysAMI
 
         public virtual void check()
         {
-            lock(this)
+            _m.Lock();
+            try
             {
                 while(!_called)
                 {
-                    Monitor.Wait(this);
+                    _m.Wait();
                 }
 
                 _called = false;
+            }
+            finally
+            {
+                _m.Unlock();
             }
         }
 
         public virtual void called()
         {
-            lock(this)
+            _m.Lock();
+            try
             {
                 Debug.Assert(!_called);
                 _called = true;
-                Monitor.Pulse(this);
+                _m.Notify();
+            }
+            finally
+            {
+                _m.Unlock();
             }
         }
 
         private bool _called;
+        private readonly IceUtilInternal.Monitor _m = new IceUtilInternal.Monitor();
     }
 
     private class AMI_MyClass_opVoidI : Test.AMI_MyClass_opVoid
+    {
+        public override void ice_response()
+        {
+            callback.called();
+        }
+
+        public override void ice_exception(Ice.Exception ex)
+        {
+            test(false);
+        }
+
+        public virtual void check()
+        {
+            callback.check();
+        }
+
+        private Callback callback = new Callback();
+    }
+
+    private class AMI_MyClass_opIdempotentI : Test.AMI_MyClass_opIdempotent
+    {
+        public override void ice_response()
+        {
+            callback.called();
+        }
+
+        public override void ice_exception(Ice.Exception ex)
+        {
+            test(false);
+        }
+
+        public virtual void check()
+        {
+            callback.check();
+        }
+
+        private Callback callback = new Callback();
+    }
+
+    private class AMI_MyClass_opNonmutatingI : Test.AMI_MyClass_opNonmutating
     {
         public override void ice_response()
         {
@@ -1483,6 +1534,18 @@ public class TwowaysAMI
 		ic.getImplicitContext().setContext(null);
                 ic.destroy();
             }
+        }
+
+        {
+            AMI_MyClass_opIdempotentI cb = new AMI_MyClass_opIdempotentI();
+            p.opIdempotent_async(cb);
+            cb.check();
+        }
+
+        {
+            AMI_MyClass_opNonmutatingI cb = new AMI_MyClass_opNonmutatingI();
+            p.opNonmutating_async(cb);
+            cb.check();
         }
 
         {

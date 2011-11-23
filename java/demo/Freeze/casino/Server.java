@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -187,15 +187,21 @@ class Server extends Ice.Application
             //
             // reload existing bets into the bet resolver
             //
-
             _bankPrx.reloadBets();
-
+            
             //
-            // Create players / recreate missing players
+            // Create players / recreate missing players using a transaction
+            // (the transaction is not really necessary here, but a good demo)
             //
 
             String[] players =
                 { "al", "bob", "charlie", "dave", "ed", "fred", "gene", "herb", "irvin", "joe", "ken", "lance" };
+
+            
+            Freeze.Connection connection = Freeze.Util.createConnection(communicator(), _envName);
+            Freeze.Transaction tx = connection.beginTransaction();
+
+            _playerEvictor.setCurrentTransaction(tx);
 
             for(String player : players)
             {
@@ -205,6 +211,11 @@ class Server extends Ice.Application
                     _playerEvictor.add(new PlayerI(), ident);
                 }
             }
+
+            tx.commit();
+            assert(_playerEvictor.getCurrentTransaction() == null);
+            connection.close();
+            
 
             //
             // Everything is ready, activate

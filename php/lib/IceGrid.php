@@ -1,19 +1,19 @@
 <?php
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-require 'IceGrid/Admin.php';
-require 'IceGrid/Descriptor.php';
-require 'IceGrid/FileParser.php';
-require 'IceGrid/Locator.php';
-require 'IceGrid/Observer.php';
-require 'IceGrid/Query.php';
-require 'IceGrid/Registry.php';
-require 'IceGrid/UserAccountMapper.php';
+require_once 'IceGrid/Admin.php';
+require_once 'IceGrid/Descriptor.php';
+require_once 'IceGrid/FileParser.php';
+require_once 'IceGrid/Locator.php';
+require_once 'IceGrid/Observer.php';
+require_once 'IceGrid/Query.php';
+require_once 'IceGrid/Registry.php';
+require_once 'IceGrid/UserAccountMapper.php';
 ?>

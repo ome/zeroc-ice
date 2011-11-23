@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -105,7 +105,7 @@ namespace IceSSL
                     throw e;
                 }
 
-                Type cls = IceInternal.AssemblyUtil.findType(certVerifierClass);
+                Type cls = _facade.findType(certVerifierClass);
                 if(cls == null)
                 {
                     Ice.PluginInitializationException e = new Ice.PluginInitializationException();
@@ -145,7 +145,7 @@ namespace IceSSL
                     throw e;
                 }
 
-                Type cls = IceInternal.AssemblyUtil.findType(passwordCallbackClass);
+                Type cls = _facade.findType(passwordCallbackClass);
                 if(cls == null)
                 {
                     Ice.PluginInitializationException e = new Ice.PluginInitializationException();

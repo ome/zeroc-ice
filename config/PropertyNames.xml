@@ -2,7 +2,7 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
@@ -322,6 +322,7 @@ generated from the section label.
         <property name="IPv4" />
         <property name="IPv6" />
         <property name="EventLog.Source" />
+        <property name="FactoryAssemblies" />
         <property name="GC.Interval" />
         <property name="ImplicitContext" />
         <property name="InitPlugins" />
@@ -470,6 +471,10 @@ generated from the section label.
         <property name="InstanceName" />
         <property name="Remove" />
         <property name="Thorough" />
+    </section>
+    
+    <section name="IcePatch2Client">
+        <property name="Proxy" />
     </section>
 
     <section name="IceSSL">

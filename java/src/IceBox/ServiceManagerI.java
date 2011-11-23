@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -73,7 +73,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
             java.io.PrintWriter pw = new java.io.PrintWriter(sw);
             e.printStackTrace(pw);
             pw.flush();
-            _logger.warning("ServiceManager: exception in start for service " + info.name + "\n" + sw.toString());
+            _logger.warning("ServiceManager: exception while starting service " + info.name + ":\n" + sw.toString());
         }
 
         synchronized(this)
@@ -88,7 +88,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
 
                         java.util.List<String> services = new java.util.ArrayList<String>();
                         services.add(name);
-                        servicesStarted(services, _observers);                        
+                        servicesStarted(services, _observers);
                     }
                     else
                     {
@@ -145,8 +145,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
             java.io.PrintWriter pw = new java.io.PrintWriter(sw);
             e.printStackTrace(pw);
             pw.flush();
-            _logger.warning("ServiceManager: exception in stop for service " + info.name + "\n" +
-                            sw.toString());
+            _logger.warning("ServiceManager: exception while stopping service " + info.name + ":\n" + sw.toString());
         }
 
         synchronized(this)
@@ -228,7 +227,6 @@ public class ServiceManagerI extends _ServiceManagerDisp
         }
     }
 
-
     public void
     shutdown(Ice.Current current)
     {
@@ -264,7 +262,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
             //
             // IceBox.Service.Foo=Package.Foo [args]
             //
-            // We parse the service properties specified in IceBox.LoadOrder 
+            // We parse the service properties specified in IceBox.LoadOrder
             // first, then the ones from remaining services.
             //
             final String prefix = "IceBox.Service.";
@@ -332,7 +330,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
                             initData.properties.setProperty(key, "");
                         }
                     }
-                    
+
                     //
                     // Add the service properties to the shared communicator properties.
                     //
@@ -342,7 +340,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
                     }
 
                     //
-                    // Parse <service>.* command line options (the Ice command line options 
+                    // Parse <service>.* command line options (the Ice command line options
                     // were parsed by the createProperties above)
                     //
                     service.args = initData.properties.parseCommandLineOptions(service.name, service.args);
@@ -444,23 +442,13 @@ public class ServiceManagerI extends _ServiceManagerDisp
             stopAll();
             return 1;
         }
-        catch(Ice.LocalException ex)
+        catch(Throwable ex)
         {
             java.io.StringWriter sw = new java.io.StringWriter();
             java.io.PrintWriter pw = new java.io.PrintWriter(sw);
             ex.printStackTrace(pw);
             pw.flush();
-            _logger.error("ServiceManager: " + ex + "\n" + sw.toString());
-            stopAll();
-            return 1;
-        }
-        catch(java.lang.Exception ex)
-        {
-            java.io.StringWriter sw = new java.io.StringWriter();
-            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
-            ex.printStackTrace(pw);
-            pw.flush();
-            _logger.error("ServiceManager: unknown exception\n" + sw.toString());
+            _logger.error("ServiceManager: caught exception:\n" + sw.toString());
             stopAll();
             return 1;
         }
@@ -479,6 +467,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
         info.name = service;
         info.status = StatusStopped;
         info.args = args;
+
         try
         {
             Class<?> c = IceInternal.Util.findClass(className, null);
@@ -488,31 +477,74 @@ public class ServiceManagerI extends _ServiceManagerDisp
                 e.reason = "ServiceManager: class " + className + " not found";
                 throw e;
             }
-            java.lang.Object obj = c.newInstance();
+
+            //
+            // If the service class provides a constructor that accepts an Ice.Communicator argument,
+            // use that in preference to the default constructor.
+            //
+            java.lang.Object obj = null;
+            try
+            {
+                java.lang.reflect.Constructor<?> con = c.getDeclaredConstructor(Ice.Communicator.class);
+                obj = con.newInstance(_communicator);
+            }
+            catch(IllegalAccessException ex)
+            {
+                throw new FailureException(
+                    "ServiceManager: unable to access service constructor " + className + "(Ice.Communicator)", ex);
+            }
+            catch(NoSuchMethodException ex)
+            {
+                // Ignore.
+            }
+            catch(java.lang.reflect.InvocationTargetException ex)
+            {
+                if(ex.getCause() != null)
+                {
+                    throw ex.getCause();
+                }
+                else
+                {
+                    throw new FailureException("ServiceManager: exception in service constructor for " + className, ex);
+                }
+            }
+
+            if(obj == null)
+            {
+                //
+                // Fall back to the default constructor.
+                //
+                try
+                {
+                    obj = c.newInstance();
+                }
+                catch(IllegalAccessException ex)
+                {
+                    throw new FailureException(
+                        "ServiceManager: unable to access default service constructor in class " + className, ex);
+                }
+            }
+
             try
             {
                 info.service = (Service)obj;
             }
             catch(ClassCastException ex)
             {
-                FailureException e = new FailureException();
-                e.reason = "ServiceManager: class " + className + " does not implement IceBox.Service";
-                throw e;
+                throw new FailureException("ServiceManager: class " + className + " does not implement IceBox.Service");
             }
-        }
-        catch(IllegalAccessException ex)
-        {
-            FailureException e = new FailureException();
-            e.reason = "ServiceManager: unable to access default constructor in class " + className;
-            e.initCause(ex);
-            throw e;
         }
         catch(InstantiationException ex)
         {
-            FailureException e = new FailureException();
-            e.reason = "ServiceManager: unable to instantiate class " + className;
-            e.initCause(ex);
-            throw e;
+            throw new FailureException("ServiceManager: unable to instantiate class " + className, ex);
+        }
+        catch(FailureException ex)
+        {
+            throw ex;
+        }
+        catch(Throwable ex)
+        {
+            throw new FailureException("ServiceManager: exception in service constructor for " + className, ex);
         }
 
         //
@@ -551,19 +583,19 @@ public class ServiceManagerI extends _ServiceManagerDisp
                     initData.properties = Ice.Util.createProperties(serviceArgs, initData.properties);
 
                     //
-                    // Next, parse the service "<service>.*" command line options (the Ice command 
+                    // Next, parse the service "<service>.*" command line options (the Ice command
                     // line options were parsed by the createProperties above)
                     //
                     serviceArgs.value = initData.properties.parseCommandLineOptions(service, serviceArgs.value);
                 }
-            
+
                 //
                 // Clone the logger to assign a new prefix.
                 //
                 initData.logger = _logger.cloneWithPrefix(initData.properties.getProperty("Ice.ProgramName"));
 
                 //
-                // Remaining command line options are passed to the communicator. This is 
+                // Remaining command line options are passed to the communicator. This is
                 // necessary for Ice plug-in properties (e.g.: IceSSL).
                 //
                 info.communicator = Ice.Util.initialize(serviceArgs, initData);
@@ -605,8 +637,8 @@ public class ServiceManagerI extends _ServiceManagerDisp
                         java.io.PrintWriter pw = new java.io.PrintWriter(sw);
                         e.printStackTrace(pw);
                         pw.flush();
-                        _logger.warning("ServiceManager: exception in shutting down communicator for service "
-                                        + service + "\n" + sw.toString());
+                        _logger.warning("ServiceManager: exception while shutting down communicator for service "
+                                        + service + ":\n" + sw.toString());
                     }
 
                     try
@@ -619,8 +651,8 @@ public class ServiceManagerI extends _ServiceManagerDisp
                         java.io.PrintWriter pw = new java.io.PrintWriter(sw);
                         e.printStackTrace(pw);
                         pw.flush();
-                        _logger.warning("ServiceManager: exception in destroying communciator for service"
-                                        + service + "\n" + sw.toString());
+                        _logger.warning("ServiceManager: exception while destroying communicator for service "
+                                        + service + ":\n" + sw.toString());
                     }
                 }
                 throw ex;
@@ -634,10 +666,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
         }
         catch(Throwable ex)
         {
-            FailureException e = new FailureException();
-            e.reason = "ServiceManager: exception while starting service " + service + ": " + ex;
-            e.initCause(ex);
-            throw e;
+            throw new FailureException("ServiceManager: exception while starting service " + service, ex);
         }
     }
 
@@ -675,13 +704,13 @@ public class ServiceManagerI extends _ServiceManagerDisp
                     info.status = StatusStopped;
                     stoppedServices.add(info.name);
                 }
-                catch(java.lang.Exception e)
+                catch(Throwable e)
                 {
                     java.io.StringWriter sw = new java.io.StringWriter();
                     java.io.PrintWriter pw = new java.io.PrintWriter(sw);
                     e.printStackTrace(pw);
                     pw.flush();
-                    _logger.warning("ServiceManager: exception in stop for service " + info.name + "\n" +
+                    _logger.warning("ServiceManager: exception while stopping service " + info.name + ":\n" +
                                     sw.toString());
                 }
             }
@@ -715,7 +744,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
                     java.io.PrintWriter pw = new java.io.PrintWriter(sw);
                     e.printStackTrace(pw);
                     pw.flush();
-                    _logger.warning("ServiceManager: exception in stop for service " + info.name + "\n" +
+                    _logger.warning("ServiceManager: exception while stopping service " + info.name + ":\n" +
                                     sw.toString());
                 }
 
@@ -729,7 +758,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
                     java.io.PrintWriter pw = new java.io.PrintWriter(sw);
                     e.printStackTrace(pw);
                     pw.flush();
-                    _logger.warning("ServiceManager: exception in stop for service " + info.name + "\n" +
+                    _logger.warning("ServiceManager: exception while stopping service " + info.name + ":\n" +
                                     sw.toString());
                 }
             }
@@ -741,14 +770,13 @@ public class ServiceManagerI extends _ServiceManagerDisp
             {
                 _sharedCommunicator.destroy();
             }
-            catch(Exception e)
+            catch(java.lang.Exception e)
             {
                 java.io.StringWriter sw = new java.io.StringWriter();
                 java.io.PrintWriter pw = new java.io.PrintWriter(sw);
                 e.printStackTrace(pw);
                 pw.flush();
-                _logger.warning("ServiceManager: unknown exception while destroying shared communicator:\n" +
-                                sw.toString());
+                _logger.warning("ServiceManager: exception while destroying shared communicator:\n" + sw.toString());
             }
             _sharedCommunicator = null;
         }
@@ -816,7 +844,6 @@ public class ServiceManagerI extends _ServiceManagerDisp
             }
         }
     }
-
 
     private synchronized void
     removeObserver(ServiceObserverPrx observer, Ice.LocalException ex)

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -37,10 +37,17 @@ endif
 
 LDPLATFORMFLAGS		+= -rdynamic
 
-ifdef ice_src_dist
-    shlibldflags	= $(CXXFLAGS) -L$(libdir)
+#
+# Needed to link IcePHP extension.
+#
+ifeq ($(ice_language), php)
+    shlibldflags = ${wl}-flat_namespace ${wl}-undefined ${wl}suppress
 else
-    shlibldflags	= $(CXXFLAGS) -L$(ice_dir)/$(libsubdir)
+    ifdef ice_src_dist
+        shlibldflags    = $(CXXFLAGS) -L$(libdir)
+    else
+        shlibldflags    = $(CXXFLAGS) -L$(ice_dir)/$(libsubdir)
+    endif
 endif
 
 mklibfilename       	= $(if $(2),lib$(1).$(2).dylib,lib$(1).dylib)

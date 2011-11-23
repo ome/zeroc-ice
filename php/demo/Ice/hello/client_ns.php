@@ -9,15 +9,15 @@
 <?php
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-require 'Ice_ns.php';
-require 'Hello.php';
+require_once 'Ice_ns.php';
+require_once 'Hello.php';
 
 $ICE = Ice\initialize();
 

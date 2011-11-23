@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,10 +11,26 @@ package IceUtil;
 
 public class FileLockException extends RuntimeException implements Cloneable
 {
+    public FileLockException()
+    {
+    }
+
     public FileLockException(String path)
     {
         this.path = path;
     }
+
+    public FileLockException(Throwable cause)
+    {
+        super(cause);
+    }
+
+    public FileLockException(String path, Throwable cause)
+    {
+        super(cause);
+        this.path = path;
+    }
+
     public java.lang.Object clone()
     {
         java.lang.Object o = null;

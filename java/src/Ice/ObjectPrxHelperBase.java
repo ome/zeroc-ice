@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -239,7 +239,7 @@ public class ObjectPrxHelperBase implements ObjectPrx, java.io.Serializable
             }
             catch(UserException __ex)
             {
-                throw new UnknownUserException(__ex.ice_name());
+                throw new UnknownUserException(__ex.ice_name(), __ex);
             }
         }
         boolean __ret;
@@ -570,7 +570,7 @@ public class ObjectPrxHelperBase implements ObjectPrx, java.io.Serializable
             }
             catch(UserException __ex)
             {
-                throw new UnknownUserException(__ex.ice_name());
+                throw new UnknownUserException(__ex.ice_name(), __ex);
             }
         }
         String[] __ret = null;
@@ -745,7 +745,7 @@ public class ObjectPrxHelperBase implements ObjectPrx, java.io.Serializable
             }
             catch(UserException __ex)
             {
-                throw new UnknownUserException(__ex.ice_name());
+                throw new UnknownUserException(__ex.ice_name(), __ex);
             }
         }
         String __ret = null;
@@ -2107,7 +2107,7 @@ public class ObjectPrxHelperBase implements ObjectPrx, java.io.Serializable
                 }
                 catch(UserException __ex)
                 {
-                    throw new UnknownUserException(__ex.ice_name());
+                    throw new UnknownUserException(__ex.ice_name(), __ex);
                 }
             }
             IceInternal.BasicStream __is = __result.__is();
@@ -2215,7 +2215,10 @@ public class ObjectPrxHelperBase implements ObjectPrx, java.io.Serializable
         }
         catch(ClassCastException ex)
         {
-            throw new java.io.IOException("Cannot deserialize proxy: Ice.ObjectInputStream not found");
+            java.io.IOException e =
+                new java.io.IOException("Cannot deserialize proxy: Ice.ObjectInputStream not found");
+            e.initCause(ex);
+            throw e;
         }
         catch(LocalException ex)
         {
@@ -2227,6 +2230,6 @@ public class ObjectPrxHelperBase implements ObjectPrx, java.io.Serializable
 
     protected static final java.util.Map<String, String> _emptyContext = new java.util.HashMap<String, String>();
 
-    private IceInternal.Reference _reference;
-    private _ObjectDel _delegate;
+    private transient IceInternal.Reference _reference;
+    private transient _ObjectDel _delegate;
 }

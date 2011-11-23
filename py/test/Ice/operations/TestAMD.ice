@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -162,6 +162,10 @@ dictionary<MyStruct, MyEnum> MyStructMyEnumD;
     StringStringD opContext();
 
     void opDoubleMarshaling(double p1, DoubleS p2);
+
+    idempotent void opIdempotent();
+
+    ["nonmutating"] idempotent void opNonmutating();
 };
 
 ["ami", "amd"] class MyDerivedClass extends MyClass

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -148,6 +148,16 @@ namespace IceInternal
                 output.print("\nidentity: " + instance_.identityToString(current_.id));
                 output.print("\nfacet: " + IceUtilInternal.StringUtil.escapeString(current_.facet, ""));
                 output.print("\noperation: " + current_.operation);
+                if(connection_ != null)
+                {
+                    Ice.ConnectionInfo connInfo = connection_.getInfo();
+                    if(connInfo is Ice.IPConnectionInfo)
+                    {
+                        Ice.IPConnectionInfo ipConnInfo = (Ice.IPConnectionInfo)connInfo;
+                        output.print("\nremote host: " + ipConnInfo.remoteAddress + " remote port: " +
+                                     ipConnInfo.remotePort.ToString());
+                    }
+                }
                 output.print("\n");
                 output.print(ex.ToString());
                 instance_.initializationData().logger.warning(sw.ToString());

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -187,6 +187,10 @@ sequence<ClassStruct> ClassStructSeq;
     CList opCList(CList inSeq, out CList outSeq);
 
     ClassStruct opClassStruct(ClassStruct inS, ClassStructSeq inSeq, out ClassStruct outS, out ClassStructSeq outSeq);
+    
+    void opOutArrayByteSeq(ByteSeq org, out ["cpp:array"] ByteSeq copy);
+    
+    void opOutRangeByteSeq(ByteSeq org, out ["cpp:range"] ByteSeq copy);
 
     void shutdown();
 };

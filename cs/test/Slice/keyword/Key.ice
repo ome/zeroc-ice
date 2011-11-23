@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -82,5 +82,31 @@ local interface implicit
 
 const int protected = 0;
 const int public = 0;
+
+//
+// System as inner module.
+//
+module System
+{
+
+interface Test
+{
+    void op();
+};
+
+};
+
+};
+
+//
+// System as outer module.
+//
+module System
+{
+
+interface Test
+{
+    void op();
+};
 
 };

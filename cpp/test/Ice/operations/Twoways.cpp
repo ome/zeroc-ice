@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -802,4 +802,8 @@ twoways(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
         Test::DoubleS ds(5, d);
         p->opDoubleMarshaling(d, ds);
     }
+
+    p->opIdempotent();
+
+    p->opNonmutating();
 }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -50,8 +50,15 @@ final class TransceiverI implements IceInternal.Transceiver
         {
             if(_instance.networkTraceLevel() >= 2)
             {
-                String s = "failed to establish ssl connection\n" + _desc + "\n" + ex;
-                _logger.trace(_instance.networkTraceCategory(), s);
+                java.net.Socket fd = (java.net.Socket)_fd.socket();
+                StringBuilder s = new StringBuilder(128);
+                s.append("failed to establish ssl connection\n");
+                s.append("local address = ");
+                s.append(IceInternal.Network.addrToString(fd.getLocalAddress(), fd.getLocalPort()));
+                s.append("\nremote address = ");
+                assert(_connectAddr != null);
+                s.append(IceInternal.Network.addrToString(_connectAddr));
+                _logger.trace(_instance.networkTraceCategory(), s.toString());
             }
             throw ex;
         }
@@ -102,10 +109,9 @@ final class TransceiverI implements IceInternal.Transceiver
                 //
                 // We can't throw in close.
                 //
-                // Ice.SecurityException se = new Ice.SecurityException();
-                // se.reason = "IceSSL: SSL failure while shutting down socket";
-                // se.initCause(ex);
-                // throw se;
+                // Ice.SecurityException se = new Ice.SecurityException(
+                //     "IceSSL: SSL failure while shutting down socket", ex);
+                //
             }
 
             try
@@ -249,10 +255,7 @@ final class TransceiverI implements IceInternal.Transceiver
         }
         catch(SSLException ex)
         {
-            Ice.SecurityException e = new Ice.SecurityException();
-            e.reason = "IceSSL: error during read";
-            e.initCause(ex);
-            throw e;
+            throw new Ice.SecurityException("IceSSL: error during read", ex);
         }
 
         //
@@ -293,7 +296,8 @@ final class TransceiverI implements IceInternal.Transceiver
     // Only for use by ConnectorI, AcceptorI.
     //
     TransceiverI(Instance instance, javax.net.ssl.SSLEngine engine, java.nio.channels.SocketChannel fd,
-                 String host, boolean connected, boolean incoming, String adapterName)
+                 String host, boolean connected, boolean incoming, String adapterName,
+                 java.net.InetSocketAddress connectAddr)
     {
         _instance = instance;
         _engine = engine;
@@ -301,6 +305,7 @@ final class TransceiverI implements IceInternal.Transceiver
         _host = host;
         _incoming = incoming;
         _adapterName = adapterName;
+        _connectAddr = connectAddr;
         _state = connected ? StateConnected : StateNeedConnect;
         _logger = instance.communicator().getLogger();
         try
@@ -351,8 +356,21 @@ final class TransceiverI implements IceInternal.Transceiver
 
         NativeConnectionInfo info = new NativeConnectionInfo();
         java.net.Socket socket = _fd.socket();
-        info.localAddress = socket.getLocalAddress().getHostAddress();
-        info.localPort = socket.getLocalPort();
+        if(socket.getLocalAddress() != null)
+        {
+            info.localAddress = socket.getLocalAddress().getHostAddress();
+            info.localPort = socket.getLocalPort();
+        }
+        else
+        {
+            //
+            // On some platforms (e.g., early Android releases), sockets don't
+            // correctly return address information.
+            //
+            info.localAddress = "";
+            info.localPort = -1;
+        }
+
         if(socket.getInetAddress() != null)
         {
             info.remoteAddress = socket.getInetAddress().getHostAddress();
@@ -402,6 +420,7 @@ final class TransceiverI implements IceInternal.Transceiver
                 switch(status)
                 {
                 case FINISHED:
+                case NOT_HANDSHAKING:
                     handshakeCompleted();
                     break;
                 case NEED_TASK:
@@ -470,9 +489,6 @@ final class TransceiverI implements IceInternal.Transceiver
                     status = result.getHandshakeStatus();
                     break;
                 }
-                case NOT_HANDSHAKING:
-                    assert(false);
-                    break;
                 }
 
                 if(result != null)
@@ -496,10 +512,7 @@ final class TransceiverI implements IceInternal.Transceiver
         }
         catch(SSLException ex)
         {
-            Ice.SecurityException e = new Ice.SecurityException();
-            e.reason = "IceSSL: handshake error";
-            e.initCause(ex);
-            throw e;
+            throw new Ice.SecurityException("IceSSL: handshake error", ex);
         }
 
         return IceInternal.SocketOperation.None;
@@ -526,10 +539,7 @@ final class TransceiverI implements IceInternal.Transceiver
                 }
                 catch(javax.net.ssl.SSLPeerUnverifiedException ex)
                 {
-                    Ice.SecurityException e = new Ice.SecurityException();
-                    e.reason = "IceSSL: server did not supply a certificate";
-                    e.initCause(ex);
-                    throw e;
+                    throw new Ice.SecurityException("IceSSL: server did not supply a certificate", ex);
                 }
             }
         }
@@ -633,10 +643,7 @@ final class TransceiverI implements IceInternal.Transceiver
         }
         catch(SSLException ex)
         {
-            Ice.SecurityException e = new Ice.SecurityException();
-            e.reason = "IceSSL: error while encoding message";
-            e.initCause(ex);
-            throw e;
+            throw new Ice.SecurityException("IceSSL: error while encoding message", ex);
         }
 
         assert(_netOutput.position() == 0);
@@ -691,9 +698,7 @@ final class TransceiverI implements IceInternal.Transceiver
             }
             catch(java.io.IOException ex)
             {
-                Ice.ConnectionLostException se = new Ice.ConnectionLostException();
-                se.initCause(ex);
-                throw se;
+                throw new Ice.ConnectionLostException(ex);
             }
         }
 
@@ -737,9 +742,7 @@ final class TransceiverI implements IceInternal.Transceiver
             }
             catch(java.io.IOException ex)
             {
-                Ice.ConnectionLostException se = new Ice.ConnectionLostException();
-                se.initCause(ex);
-                throw se;
+                throw new Ice.ConnectionLostException(ex);
             }
         }
 
@@ -797,6 +800,7 @@ final class TransceiverI implements IceInternal.Transceiver
     private String _host;
     private boolean _incoming;
     private String _adapterName;
+    private java.net.InetSocketAddress _connectAddr;
     private int _state;
     private Ice.Logger _logger;
     private Ice.Stats _stats;

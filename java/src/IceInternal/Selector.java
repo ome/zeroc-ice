@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,9 +26,7 @@ public final class Selector
         }
         catch(java.io.IOException ex)
         {
-            Ice.SyscallException sys = new Ice.SyscallException();
-            sys.initCause(ex);
-            throw sys;
+            throw new Ice.SyscallException(ex);
         }
 
         //
@@ -244,8 +242,14 @@ public final class Selector
                 {
                     if(timeout > 0)
                     {
+                        //
+                        // NOTE: On some platforms, select() sometime returns slightly before
+                        // the timeout (at least according to our monotonic time). To make sure
+                        // timeouts are correctly detected, we wait for a little longer than
+                        // the configured timeout (10ms).
+                        //
                         long before = IceInternal.Time.currentMonotonicTimeMillis();
-                        if(_selector.select(timeout * 1000) == 0)
+                        if(_selector.select(timeout * 1000 + 10) == 0)
                         {
                             if(IceInternal.Time.currentMonotonicTimeMillis() - before >= timeout * 1000)
                             {

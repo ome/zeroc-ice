@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -69,8 +69,8 @@ private:
     
     State _state;
     std::string _desc;
-#ifdef ICE_USE_IOCP
     struct sockaddr_storage _connectAddr;
+#ifdef ICE_USE_IOCP
     AsyncInfo _read;
     AsyncInfo _write;
     int _maxSendPacketSize;

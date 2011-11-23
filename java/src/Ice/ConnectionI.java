@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -1067,6 +1067,15 @@ public final class ConnectionI extends IceInternal.EventHandler implements Conne
                     {
                         info = parseMessage(current.stream); // Optimization: use the thread's stream.
                     }
+
+                    //
+                    // We increment the dispatch count to prevent the
+                    // communicator destruction during the callback.
+                    //
+                    if(sentCBs != null || info != null && info.outAsync != null)
+                    {
+                        ++_dispatchCount;
+                    }
                 }
             }
             catch(DatagramLimitException ex) // Expected.
@@ -1200,6 +1209,35 @@ public final class ConnectionI extends IceInternal.EventHandler implements Conne
                           info.adapter);
             }
         }
+        
+        //
+        // Decrease dispatch count.
+        //
+        if(sentCBs != null || info != null && info.outAsync != null)
+        {
+            synchronized(this)
+            {
+                if(--_dispatchCount == 0)
+                {
+                    if(_state == StateClosing)
+                    {
+                        try
+                        {
+                            initiateShutdown();
+                        }
+                        catch(LocalException ex)
+                        {
+                            setState(StateClosed, ex);
+                        }
+                    }
+                    else if(_state == StateFinished)
+                    {
+                        _reaper.add(this);
+                    }
+                    notifyAll();
+                }
+            }
+        }
     }
 
     public void
@@ -1263,29 +1301,38 @@ public final class ConnectionI extends IceInternal.EventHandler implements Conne
             _startCallback = null;
         }
         
-        //
-        // NOTE: for twoway requests which are not sent, finished can be called twice: the 
-        // first time because the outgoing is in the _sendStreams set and the second time 
-        // because it's either in the _requests/_asyncRequests set. This is fine, only the 
-        // first call should be taken into account by the implementation of finished.
-        //
-        
-        for(OutgoingMessage p : _sendStreams)
+        if(!_sendStreams.isEmpty())
         {
-            if(p.requestId > 0)
+            //
+            // Return the stream to the outgoing call. This is important for 
+            // retriable AMI calls which are not marshalled again.
+            //
+            OutgoingMessage message = _sendStreams.getFirst();
+            _writeStream.swap(message.stream);
+        
+            //
+            // NOTE: for twoway requests which are not sent, finished can be called twice: the 
+            // first time because the outgoing is in the _sendStreams set and the second time 
+            // because it's either in the _requests/_asyncRequests set. This is fine, only the 
+            // first call should be taken into account by the implementation of finished.
+            //
+            for(OutgoingMessage p : _sendStreams)
             {
-                if(p.out != null) // Make sure finished isn't called twice.
+                if(p.requestId > 0)
                 {
-                    _requests.remove(p.requestId);
+                    if(p.out != null) // Make sure finished isn't called twice.
+                    {
+                        _requests.remove(p.requestId);
+                    }
+                    else
+                    {
+                        _asyncRequests.remove(p.requestId);
+                    }
                 }
-                else
-                {
-                    _asyncRequests.remove(p.requestId);
-                }
+                p.finished(_exception);
             }
-            p.finished(_exception);
+            _sendStreams.clear();
         }
-        _sendStreams.clear();
         
         for(IceInternal.Outgoing p : _requests.values())
         {
@@ -1503,9 +1550,7 @@ public final class ConnectionI extends IceInternal.EventHandler implements Conne
         }
         catch(java.lang.Exception ex)
         {
-            Ice.SyscallException e = new Ice.SyscallException();
-            e.initCause(ex);
-            throw e;
+            throw new Ice.SyscallException(ex);
         }
     }
 
@@ -2329,7 +2374,7 @@ public final class ConnectionI extends IceInternal.EventHandler implements Conne
         }
         catch(java.lang.AssertionError ex) // Upon assertion, we print the stack trace.
         {
-            UnknownException uex = new UnknownException();
+            UnknownException uex = new UnknownException(ex);
             java.io.StringWriter sw = new java.io.StringWriter();
             java.io.PrintWriter pw = new java.io.PrintWriter(sw);
             ex.printStackTrace(pw);
@@ -2340,7 +2385,7 @@ public final class ConnectionI extends IceInternal.EventHandler implements Conne
         }
         catch(java.lang.OutOfMemoryError ex)
         {
-            UnknownException uex = new UnknownException();
+            UnknownException uex = new UnknownException(ex);
             java.io.StringWriter sw = new java.io.StringWriter();
             java.io.PrintWriter pw = new java.io.PrintWriter(sw);
             ex.printStackTrace(pw);

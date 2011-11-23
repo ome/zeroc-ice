@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -52,9 +52,7 @@ class TransactionI implements Transaction
                                                              e.getMessage());
             }
 
-            DeadlockException ex = new DeadlockException(_errorPrefix + "DbTxn.commit: " + e.getMessage(), this);
-            ex.initCause(e);
-            throw ex;
+            throw new DeadlockException(_errorPrefix + "DbTxn.commit: " + e.getMessage(), this, e);
         }
         catch(com.sleepycat.db.DatabaseException e)
         {
@@ -65,21 +63,19 @@ class TransactionI implements Transaction
                                                              e.getMessage());
             }
 
-            DatabaseException ex = new DatabaseException();
-            ex.initCause(e);
-            ex.message = _errorPrefix + "DbTxn.commit: " + e.getMessage();
-            throw ex;
+            throw new DatabaseException(_errorPrefix + "DbTxn.commit: " + e.getMessage(), e);
         }
         finally
         {
             _connection.clearTransaction();
+            SharedDbEnv dbEnv = _connection.dbEnv();
             if(_ownConnection)
             {
                 _connection.close();
             }
             _connection = null;
             _txn = null;
-            postCompletion(committed, deadlock);
+            postCompletion(committed, deadlock, dbEnv);
         }
     }
 
@@ -122,9 +118,7 @@ class TransactionI implements Transaction
 
             deadlock = true;
 
-            DeadlockException ex = new DeadlockException(_errorPrefix + "DbTxn.abort: " + e.getMessage(), this);
-            ex.initCause(e);
-            throw ex;
+            throw new DeadlockException(_errorPrefix + "DbTxn.abort: " + e.getMessage(), this, e);
         }
         catch(com.sleepycat.db.DatabaseException e)
         {
@@ -135,21 +129,19 @@ class TransactionI implements Transaction
                                                              e.getMessage());
             }
 
-            DatabaseException ex = new DatabaseException();
-            ex.initCause(e);
-            ex.message = _errorPrefix + "DbTxn.abort: " + e.getMessage();
-            throw ex;
+            throw new DatabaseException(_errorPrefix + "DbTxn.abort: " + e.getMessage(), e);
         }
         finally
         {
             _connection.clearTransaction();
+            SharedDbEnv dbEnv = _connection.dbEnv();
             if(_ownConnection)
             {
                 _connection.close();
             }
             _connection = null;
             _txn = null;
-            postCompletion(false, deadlock);
+            postCompletion(false, deadlock, dbEnv);
         }
     }
 
@@ -185,10 +177,7 @@ class TransactionI implements Transaction
                                                              "failed to start transaction: " + e.getMessage());
             }
 
-            DatabaseException ex = new DatabaseException();
-            ex.initCause(e);
-            ex.message = _errorPrefix + "txn_begin: " + e.getMessage();
-            throw ex;
+            throw new DatabaseException(_errorPrefix + "txn_begin: " + e.getMessage(), e);
         }
     }
 
@@ -217,13 +206,13 @@ class TransactionI implements Transaction
     }
 
     private void
-    postCompletion(boolean committed, boolean deadlock)
+    postCompletion(boolean committed, boolean deadlock, SharedDbEnv dbEnv)
     {
         if(_postCompletionCallback != null)
         {
             try
             {
-                _postCompletionCallback.postCompletion(committed, deadlock);
+                _postCompletionCallback.postCompletion(committed, deadlock, dbEnv);
             }
             finally
             {

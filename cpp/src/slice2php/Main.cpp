@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -102,7 +102,7 @@ private:
     //
     // Write constant value.
     //
-    void writeConstantValue(const TypePtr&, const string&);
+    void writeConstantValue(const TypePtr&, const SyntaxTreeBasePtr&, const string&);
 
     //
     // Write constructor parameters with default values.
@@ -939,8 +939,6 @@ CodeVisitor::visitConst(const ConstPtr& p)
     string name = getName(p);
     string type = getTypeVar(p);
     string abs = getAbsolute(p, _ns);
-    string value = p->value();
-    Slice::TypePtr valueType = p->type();
 
     startNamespace(p);
 
@@ -955,7 +953,7 @@ CodeVisitor::visitConst(const ConstPtr& p)
         _out << sp << nl << "define('" << name << "', ";
     }
 
-    writeConstantValue(valueType, value);
+    writeConstantValue(p->type(), p->valueType(), p->value());
 
     _out << ");";
     _out << eb;
@@ -1168,153 +1166,161 @@ CodeVisitor::writeAssign(const MemberInfo& info)
 }
 
 void
-CodeVisitor::writeConstantValue(const TypePtr& type, const string& value)
+CodeVisitor::writeConstantValue(const TypePtr& type, const SyntaxTreeBasePtr& valueType, const string& value)
 {
-    Slice::BuiltinPtr b = Slice::BuiltinPtr::dynamicCast(type);
-    Slice::EnumPtr en = Slice::EnumPtr::dynamicCast(type);
-    if(b)
+    ConstPtr constant = ConstPtr::dynamicCast(valueType);
+    if(constant)
     {
-        switch(b->kind())
-        {
-        case Slice::Builtin::KindBool:
-        case Slice::Builtin::KindByte:
-        case Slice::Builtin::KindShort:
-        case Slice::Builtin::KindInt:
-        case Slice::Builtin::KindFloat:
-        case Slice::Builtin::KindDouble:
-        {
-            _out << value;
-            break;
-        }
-        case Slice::Builtin::KindLong:
-        {
-            IceUtil::Int64 l;
-            IceUtilInternal::stringToInt64(value, l);
-            //
-            // The platform's 'long' type may not be 64 bits, so we store 64-bit
-            // values as a string.
-            //
-            if(sizeof(IceUtil::Int64) > sizeof(long) && (l < LONG_MIN || l > LONG_MAX))
-            {
-                _out << "'" << value << "'";
-            }
-            else
-            {
-                _out << value;
-            }
-            break;
-        }
-        case Slice::Builtin::KindString:
-        {
-            //
-            // Expand strings into the basic source character set. We can't use isalpha() and the like
-            // here because they are sensitive to the current locale.
-            //
-            static const string basicSourceChars = "abcdefghijklmnopqrstuvwxyz"
-                                                   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                                   "0123456789"
-                                                   "_{}[]#()<>%:;.?*+-/^&|~!=, '";
-            static const set<char> charSet(basicSourceChars.begin(), basicSourceChars.end());
-
-            _out << "\"";                                       // Opening "
-
-            for(string::const_iterator c = value.begin(); c != value.end(); ++c)
-            {
-                switch(*c)
-                {
-                case '$':
-                {
-                    _out << "\\$";
-                    break;
-                }
-                case '"':
-                {
-                    _out << "\\\"";
-                    break;
-                }
-                case '\\':
-                {
-                    _out << "\\\\";
-                    break;
-                }
-                case '\r':
-                {
-                    _out << "\\r";
-                    break;
-                }
-                case '\n':
-                {
-                    _out << "\\n";
-                    break;
-                }
-                case '\t':
-                {
-                    _out << "\\t";
-                    break;
-                }
-                case '\b':
-                {
-                    _out << "\\b";
-                    break;
-                }
-                case '\f':
-                {
-                    _out << "\\f";
-                    break;
-                }
-                default:
-                {
-                    if(charSet.find(*c) == charSet.end())
-                    {
-                        unsigned char uc = *c;                  // Char may be signed, so make it positive.
-                        stringstream s;
-                        s << "\\";                              // Print as octal if not in basic source character set.
-                        s.flags(ios_base::oct);
-                        s.width(3);
-                        s.fill('0');
-                        s << static_cast<unsigned>(uc);
-                        _out << s.str();
-                    }
-                    else
-                    {
-                        _out << *c;                             // Print normally if in basic source character set.
-                    }
-                    break;
-                }
-                }
-            }
-
-            _out << "\"";                                       // Closing "
-            break;
-        }
-        case Slice::Builtin::KindObject:
-        case Slice::Builtin::KindObjectProxy:
-        case Slice::Builtin::KindLocalObject:
-            assert(false);
-        }
-    }
-    else if(en)
-    {
-        string val = value;
-        string::size_type colon = val.rfind(':');
-        if(colon != string::npos)
-        {
-            val = val.substr(colon + 1);
-        }
-        Slice::EnumeratorList l = en->getEnumerators();
-        Slice::EnumeratorList::iterator q;
-        for(q = l.begin(); q != l.end(); ++q)
-        {
-            if((*q)->name() == val)
-            {
-                _out << getAbsolute(en, _ns) << "::" << fixIdent(val);
-                break;
-            }
-        }
+        _out << getAbsolute(constant, _ns);
     }
     else
     {
-        assert(false); // Unknown const type.
+        Slice::BuiltinPtr b = Slice::BuiltinPtr::dynamicCast(type);
+        Slice::EnumPtr en = Slice::EnumPtr::dynamicCast(type);
+        if(b)
+        {
+            switch(b->kind())
+            {
+            case Slice::Builtin::KindBool:
+            case Slice::Builtin::KindByte:
+            case Slice::Builtin::KindShort:
+            case Slice::Builtin::KindInt:
+            case Slice::Builtin::KindFloat:
+            case Slice::Builtin::KindDouble:
+            {
+                _out << value;
+                break;
+            }
+            case Slice::Builtin::KindLong:
+            {
+                IceUtil::Int64 l;
+                IceUtilInternal::stringToInt64(value, l);
+                //
+                // The platform's 'long' type may not be 64 bits, so we store 64-bit
+                // values as a string.
+                //
+                if(sizeof(IceUtil::Int64) > sizeof(long) && (l < LONG_MIN || l > LONG_MAX))
+                {
+                    _out << "'" << value << "'";
+                }
+                else
+                {
+                    _out << value;
+                }
+                break;
+            }
+            case Slice::Builtin::KindString:
+            {
+                //
+                // Expand strings into the basic source character set. We can't use isalpha() and the like
+                // here because they are sensitive to the current locale.
+                //
+                static const string basicSourceChars = "abcdefghijklmnopqrstuvwxyz"
+                                                       "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                                       "0123456789"
+                                                       "_{}[]#()<>%:;.?*+-/^&|~!=, '";
+                static const set<char> charSet(basicSourceChars.begin(), basicSourceChars.end());
+
+                _out << "\"";                                       // Opening "
+
+                for(string::const_iterator c = value.begin(); c != value.end(); ++c)
+                {
+                    switch(*c)
+                    {
+                    case '$':
+                    {
+                        _out << "\\$";
+                        break;
+                    }
+                    case '"':
+                    {
+                        _out << "\\\"";
+                        break;
+                    }
+                    case '\\':
+                    {
+                        _out << "\\\\";
+                        break;
+                    }
+                    case '\r':
+                    {
+                        _out << "\\r";
+                        break;
+                    }
+                    case '\n':
+                    {
+                        _out << "\\n";
+                        break;
+                    }
+                    case '\t':
+                    {
+                        _out << "\\t";
+                        break;
+                    }
+                    case '\b':
+                    {
+                        _out << "\\b";
+                        break;
+                    }
+                    case '\f':
+                    {
+                        _out << "\\f";
+                        break;
+                    }
+                    default:
+                    {
+                        if(charSet.find(*c) == charSet.end())
+                        {
+                            unsigned char uc = *c;              // Char may be signed, so make it positive.
+                            stringstream s;
+                            s << "\\";                          // Print as octal if not in basic source character set.
+                            s.flags(ios_base::oct);
+                            s.width(3);
+                            s.fill('0');
+                            s << static_cast<unsigned>(uc);
+                            _out << s.str();
+                        }
+                        else
+                        {
+                            _out << *c;                         // Print normally if in basic source character set.
+                        }
+                        break;
+                    }
+                    }
+                }
+
+                _out << "\"";                                   // Closing "
+                break;
+            }
+            case Slice::Builtin::KindObject:
+            case Slice::Builtin::KindObjectProxy:
+            case Slice::Builtin::KindLocalObject:
+                assert(false);
+            }
+        }
+        else if(en)
+        {
+            string val = value;
+            string::size_type colon = val.rfind(':');
+            if(colon != string::npos)
+            {
+                val = val.substr(colon + 1);
+            }
+            Slice::EnumeratorList l = en->getEnumerators();
+            Slice::EnumeratorList::iterator q;
+            for(q = l.begin(); q != l.end(); ++q)
+            {
+                if((*q)->name() == val)
+                {
+                    _out << getAbsolute(en, _ns) << "::" << fixIdent(val);
+                    break;
+                }
+            }
+        }
+        else
+        {
+            assert(false); // Unknown const type.
+        }
     }
 }
 
@@ -1329,13 +1335,14 @@ CodeVisitor::writeConstructorParams(const MemberInfoList& members)
         }
         _out << '$' << p->fixedName << "=";
 
-        if(p->dataMember->hasDefaultValue())
+        const DataMemberPtr member = p->dataMember;
+        if(member->defaultValueType())
         {
-            writeConstantValue(p->dataMember->type(), p->dataMember->defaultValue());
+            writeConstantValue(member->type(), member->defaultValueType(), member->defaultValue());
         }
         else
         {
-            writeDefaultValue(p->dataMember->type());
+            writeDefaultValue(member->type());
         }
     }
 }
@@ -1413,7 +1420,7 @@ generate(const UnitPtr& un, bool all, bool checksum, bool ns, const vector<strin
             for(StringList::const_iterator q = includes.begin(); q != includes.end(); ++q)
             {
                 string file = changeInclude(*q, paths);
-                out << nl << "require '" << file << ".php';";
+                out << nl << "require_once '" << file << ".php';";
             }
             if(ns)
             {
@@ -1464,7 +1471,7 @@ printHeader(IceUtilInternal::Output& out)
     static const char* header =
 "// **********************************************************************\n"
 "//\n"
-"// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.\n"
+"// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.\n"
 "//\n"
 "// This copy of Ice is licensed to you under the terms described in the\n"
 "// ICE_LICENSE file included in this distribution.\n"
@@ -1473,7 +1480,9 @@ printHeader(IceUtilInternal::Output& out)
         ;
 
     out << header;
-    out << "\n// Ice version " << ICE_STRING_VERSION;
+    out << "//\n";
+    out << "// Ice version " << ICE_STRING_VERSION << "\n";
+    out << "//\n";
 }
 
 namespace
@@ -1530,7 +1539,7 @@ usage(const char* n)
         "--underscore         Permit underscores in Slice identifiers.\n"
         "--all                Generate code for Slice definitions in included files.\n"
         "--checksum           Generate checksums for Slice definitions.\n"
-        "-n, --namespace      Use PHP namespaces (requires PHP 5.3.0 or later).\n"
+        "-n, --namespace      Use PHP namespaces (requires PHP 5.3 or later).\n"
         ;
 }
 

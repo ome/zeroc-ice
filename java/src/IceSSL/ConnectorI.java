@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,8 +38,8 @@ final class ConnectorI implements IceInternal.Connector
             boolean connected = IceInternal.Network.doConnect(fd, _addr);
             try
             {
-                javax.net.ssl.SSLEngine engine = _instance.createSSLEngine(false);
-                return new TransceiverI(_instance, engine, fd, _host, connected, false, "");
+                javax.net.ssl.SSLEngine engine = _instance.createSSLEngine(false, _addr);
+                return new TransceiverI(_instance, engine, fd, _host, connected, false, "", _addr);
             }
             catch(RuntimeException ex)
             {

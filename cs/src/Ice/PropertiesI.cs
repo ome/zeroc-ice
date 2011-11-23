@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -625,7 +625,8 @@ namespace Ice
         private void loadConfig()
         {
             string val = getProperty("Ice.Config");
-            
+
+#if !COMPACT
             if(val.Length == 0 || val.Equals("1"))
             {
                 string s = System.Environment.GetEnvironmentVariable("ICE_CONFIG");
@@ -634,6 +635,7 @@ namespace Ice
                     val = s;
                 }
             }
+#endif
 
             if(val.Length > 0)
             {

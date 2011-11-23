@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,8 +17,13 @@ package Freeze;
 class TransactionalEvictorContext implements Ice.DispatchInterceptorAsyncCallback, PostCompletionCallback
 {
     public void
-    postCompletion(boolean committed, boolean deadlock)
+    postCompletion(boolean committed, boolean deadlock, SharedDbEnv dbEnv)
     {
+        //
+        // Clear the current context
+        //
+        dbEnv.setCurrentTransaction(null);
+
         try
         {
             if(committed)

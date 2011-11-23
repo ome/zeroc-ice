@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -35,6 +35,7 @@ tests = [
     ("Slice/errorDetection", ["once"]),
     ("Slice/keyword", ["once"]),
     ("Slice/structure", ["once"]),
+    ("Ice/properties", ["once", "novc6", "nobcc"]),
     ("Ice/proxy", ["core"]),
     ("Ice/operations", ["core"]),
     ("Ice/exceptions", ["core"]),
@@ -93,6 +94,7 @@ tests = [
     ("IceGrid/admin", ["service", "novc6"]),
     ("Glacier2/router", ["service", "novc6"]),
     ("Glacier2/attack", ["service", "novc6"]),
+    ("Glacier2/override", ["service", "novc6"]),
     ("Glacier2/sessionControl", ["service", "novc6"]),
     ("Glacier2/ssl", ["service", "novalgrind", "novc6"]), # valgrind doesn't work well with openssl
     ("Glacier2/dynamicFiltering", ["service", "novc6"]),

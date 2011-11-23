@@ -1,7 +1,7 @@
 <?
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,8 +17,8 @@ if(!extension_loaded("ice"))
 }
 
 $NS = function_exists("Ice\\initialize");
-require ($NS ? 'Ice_ns.php' : 'Ice.php');
-require 'Test.php';
+require_once ($NS ? 'Ice_ns.php' : 'Ice.php');
+require_once 'Test.php';
 
 function test($b)
 {
@@ -39,14 +39,18 @@ function allTests($communicator)
     //
     // Define some default values.
     //
-    $def_s2 = new Test_S2(true, 98, 99, 100, 101, 1.0, 2.0, "string", array("one", "two", "three"),
-                          array("abc" => "def"), new Test_S1("name"), new Test_C(5),
-                          $communicator->stringToProxy("test"));
+    $def_s2 = $NS ?
+        eval("new Test\\S2(true, 98, 99, 100, 101, 1.0, 2.0, \"string\", array(\"one\", \"two\", \"three\"),
+                           array(\"abc\" => \"def\"), new Test\\S1(\"name\"), new Test\\C(5),
+                           $communicator->stringToProxy(\"test\"));") :
+        new Test_S2(true, 98, 99, 100, 101, 1.0, 2.0, "string", array("one", "two", "three"),
+                    array("abc" => "def"), new Test_S1("name"), new Test_C(5),
+                    $communicator->stringToProxy("test"));
 
     //
     // Compare default-constructed structures.
     //
-    test(new Test_S2 == new Test_S2);
+    test($NS ? eval("new Test\\S2 == new Test\\S2;") : new Test_S2 == new Test_S2);
 
     //
     // Change one primitive member at a time.
@@ -163,11 +167,11 @@ function allTests($communicator)
     test($v1 == $def_s2);
 
     $v1 = clone $def_s2;
-    $v1->s = new Test_S1("name");
+    $v1->s = $NS ? eval("new Test\\S1(\"name\");") : new Test_S1("name");
     test($v1 == $def_s2);
 
     $v1 = clone $def_s2;
-    $v1->s = new Test_S1("noname");
+    $v1->s = $NS ? eval("new Test\\S1(\"noname\");") : new Test_S1("noname");
     test($v1 != $def_s2);
 
     $v1 = clone $def_s2;

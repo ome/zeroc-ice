@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -495,7 +495,7 @@ NodeService::startImpl(int argc, char* argv[], int& status)
     {
         try
         {
-            communicator()->getDefaultLocator()->ice_timeout(15000)->ice_ping();
+            communicator()->getDefaultLocator()->ice_timeout(1000)->ice_ping();
         }
         catch(const Ice::LocalException& ex)
         {

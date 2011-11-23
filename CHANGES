@@ -1,5 +1,5 @@
 ======================================================================
-CHANGES for Ice 3.4.1
+CHANGES for Ice 3.4.2
 ======================================================================
 
 The entries below contain brief descriptions of the changes in a
@@ -17,6 +17,223 @@ aspect of Ice.
 Note that this file only includes changes since Ice 3.2.1. For the
 change history of prior releases, refer to the CHANGES file in the
 subdirectory of each language mapping (e.g., cpp/CHANGES).
+
+
+======================================================================
+Changes since version 3.4.1
+======================================================================
+
+
+General Changes
+===============
+
+- The operation mode sent over the wire for the Object operations
+  ice_ping, ice_isA, ice_ids, and ice_id should be Nonmutating, but
+  the language mappings were inconsistent in this respect. All
+  language mappings now send the correct mode.
+
+- Fixed a bug where under certain circumstances, Ice would
+  indefinitely re-try to add a proxy to the Glacier2 routing table.
+
+- Improved queuing of Glacier2 requests to the client to not invoke
+  requests if the client connection already has requests pending for
+  send. Instead, Glacier2 waits for the pending requests to be
+  sent. This allow request overriding to occur more often when the
+  client connection is slow.
+
+- Fixed bug where an IceGrid node or registry could hang for a long
+  time on startup if some IceGrid registry replicas weren't reachable.
+
+- Added throwLocalException method to the Ice AsyncResult class. If
+  the request fails with a local exception, this method throws the
+  local exception.
+
+- Fixed a bug that caused a crash if a timeout occurs while sending
+  an AMI request and if automatic retry is enabled (the default).
+
+- It is now possible to use a constant as the default value for a data
+  member. For example:
+
+  // Slice
+  const int MIN = 1;
+
+  struct Info
+  {
+      int size = MIN;
+  };
+
+  It is also possible for a constant to refer to another constant:
+
+  // Slice
+  const int MAXIMUM_SIZE = 100;
+  const int DEFAULT_SIZE = MAXIMUM_SIZE;
+
+
+C++ Changes
+===========
+
+- Fixed a bug in the Linux epoll selector implementation that could
+  cause hangs when using the thread pool serialization mode.
+
+- Fixed a memory leak in IceSSL on Windows.
+
+- Fixed a bug in the generated code for a Slice structure containing
+  at least one data member that declares a default value. The
+  constructors were not being exported correctly in this case.
+
+- Fixed a bug where the IceUtil::Timer thread could die in case very
+  large delays were specified.
+
+- Removed extra include/IceGrid/Perf.h file.
+
+
+Java Changes
+============
+
+- Added support for Android.
+
+- Added overloaded constructors for user and system exceptions that
+  accept a Throwable argument.
+
+- Added an ice_staticId method to generated PrxHelper classes.
+
+- Fixed a bug in slice2java in which a floating point default value
+  could cause a compile error.
+
+- Fixed a bug where Ice.ServerIdleTime wouldn't consistently shutdown
+  servers after the given period of inactivity.
+
+
+C# Changes
+==========
+
+- Added support for the .NET Compact Framework.
+
+- Added demo/Ice/compact, which is a simple graphical client that uses
+  Ice for .NET Compact Framework.
+
+- Fixed bugs in the generated code that caused naming conflicts when
+  using a Slice module named 'System'.
+
+- Added an ice_staticId method to generated PrxHelper classes.
+
+- Fixed a bug in the generated code when a Slice class uses the
+  property mapping and declares default values for its members.
+
+
+Python Changes
+==============
+
+- Fixed bug where None was not recognized as a keyword.
+
+
+Ruby Changes
+============
+
+- Fixed a bug in the Ice extension that would cause an ArgumentError
+  to be raised when attempting to print a byte sequence whose value is
+  a string that contains null bytes.
+
+
+PHP Changes
+===========
+
+- Fixed a bug that caused 'undefined symbol IcePHP__t_XXX' errors when
+  Ice.php or a generated file is included from a non-global scope.
+
+- slice2php now generates 'require_once' statements corresponding to
+  Slice #include directives, replacing the 'require' statements used
+  in previous releases.
+
+- Fixed a bug in the Ice extension that caused Ice-related INI
+  settings to be ignored.
+
+
+Visual Studio Add-in Changes
+============================
+
+- Fixed a bug that prevented the Add-in from automatically compiling
+  Slice files when using a non-English version of Visual Studio.
+
+- Improved the layout and wording of the Ice Configuration dialogs.
+
+- Added $(IceHome) macro to VS 2008 project configurations.
+
+- Changed C++ project configurations to use $(IceHome) macro in
+  configuration settings.
+
+- Removed Ice Home field from "Ice Configuration" dialog. Projects
+  now always use the Ice installation corresponding to the location
+  of the add-in DLL.
+
+- Fixed issues that prevented the use of solution folders in Ice
+  projects.
+
+- Fixed an issue that caused the add-in to not work when using
+  Visual Studio 2010 and "Solution Navigator".
+
+- Added a check to prevent incorrect Runtime library usage in C++
+  projects.
+
+- Added support for .NET Smart Device project types used by the .NET
+  Compact Framework.
+
+- Improved add-in output messages.
+
+- Fixed an issue that produced a deadlock in Visual Studio when
+  Slice compiler output was large enough to fill the output buffer.
+
+- Fixed support for parallel builds. The Slice compiler was run
+  several times, once for each parallel build. Now the Slice
+  compiler is run only once, before all parallel builds begin.
+
+- Fixed an issue that could cause errors with Visual Studio if a
+  Slice file was saved while the project was building.
+
+- Fixed the add-in to work properly when --header-ext and
+  --source-ext are present in Extra Compiler Options.
+
+- Fixed the add-in to support building Freeze demos without the need
+  to set environment variables.
+
+- Fixed the add-in to always open generated files as read only;
+  previously the generated files were not opened read only until the
+  first project build.
+
+- Added support for setting the output directory for generated files,
+  making the add-in more VCS friendly.
+
+- Added support for .NET DEVPATH.
+
+- Added support for canceling changes in configuration dialogs. All
+  the configuration dialogs now have OK, Cancel, Apply buttons with
+  the standard semantics.
+
+- Added warnings to prevent incorrect options from being entered in
+  Extra Compiler Options.
+
+- Added a timestamp to Slice build output, which is only printed when
+  the trace level is Debug.
+
+- The add-in now supports command-line builds.
+
+- The add-in now avoids making extraneous changes to projects that
+  could result in merge issues when projects are in a shared
+  development.
+
+- The add-in no longer overrides the debug environment setting for
+  PATH, but rather appends appropriately.
+
+- On the loss of focus when adding an include directory in the Slice
+  Include Path, the addition is now saved rather than lost.
+
+- Fixed an issue where moving a Slice-generated file to a filter so
+  that it would be ignored by source control did not always work
+  because the generated files could be moved back into the regular
+  Source Files list by a build.
+
+- Improved the tracing output generated by the add-in and changed
+  the tracing options.
 
 
 ======================================================================

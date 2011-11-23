@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -47,14 +47,14 @@ public class Server
         }
     }
 
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
         Ice.InitializationData initData = new Ice.InitializationData();
         initData.properties = Ice.Util.createProperties();
         initData.properties.setProperty("Ice.Admin.DelayCreation", "1");
 
         App server = new App();
-        System.Environment.Exit(server.main(args, initData));
+        return server.main(args, initData);
     }
 }
 }

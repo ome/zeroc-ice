@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -137,39 +137,75 @@ namespace IceInternal
 
         public bool isCompleted_()
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 return (state_ & Done) != 0;
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
         }
 
         public void waitForCompleted()
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 while((state_ & Done) == 0)
                 {
-                    Monitor.Wait(monitor_);
+                    monitor_.Wait();
                 }
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
         }
 
         public bool isSent()
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 return (state_ & Sent) != 0;
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
         }
 
         public void waitForSent()
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
-                while((state_ & (Sent | Done)) == 0)
+                while((state_ & Sent) == 0 && exception_ == null)
                 {
-                    Monitor.Wait(monitor_);
+                    monitor_.Wait();
                 }
+            }
+            finally
+            {
+                monitor_.Unlock();
+            }
+        }
+
+        public void throwLocalException()
+        {
+            monitor_.Lock();
+            try
+            {
+                if(exception_ != null)
+                {
+                    throw exception_;
+                }
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
         }
 
@@ -214,7 +250,8 @@ namespace IceInternal
         {
             get
             {
-                lock(monitor_)
+                monitor_.Lock();
+                try
                 {
                     if(waitHandle_ == null)
                     {
@@ -226,12 +263,17 @@ namespace IceInternal
                     }
                     return waitHandle_;
                 }
+                finally
+                {
+                    monitor_.Unlock();
+                }
             }
         }        
 
         public Ice.AsyncResult whenSent(Ice.AsyncCallback cb)
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 if(cb == null)
                 {
@@ -246,6 +288,10 @@ namespace IceInternal
                 {
                     return this;
                 }
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
 
             if(sentSynchronously_)
@@ -278,7 +324,8 @@ namespace IceInternal
 
         public Ice.AsyncResult whenSent(Ice.SentCallback cb)
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 if(cb == null)
                 {
@@ -296,6 +343,10 @@ namespace IceInternal
                 {
                     return this;
                 }
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
 
             if(sentSynchronously_)
@@ -328,7 +379,8 @@ namespace IceInternal
 
         public Ice.AsyncResult whenCompletedWithAsyncCallback(Ice.AsyncCallback cb)
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 setCompletedCallback(cb);
                 if((state_ & Done) == 0)
@@ -339,6 +391,10 @@ namespace IceInternal
                 {
                     return this;
                 }
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
 
             instance_.clientThreadPool().dispatch(delegate()
@@ -357,7 +413,8 @@ namespace IceInternal
 
         public Ice.AsyncResult whenCompleted(Ice.ExceptionCallback cb)
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 if(cb == null)
                 {
@@ -373,6 +430,10 @@ namespace IceInternal
                 {
                     return this;
                 }
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
 
             instance_.clientThreadPool().dispatch(delegate()
@@ -412,7 +473,8 @@ namespace IceInternal
 
         public bool wait__()
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 if((state_ & EndCalled) != 0)
                 {
@@ -421,13 +483,17 @@ namespace IceInternal
                 state_ |= EndCalled;
                 while((state_ & Done) == 0)
                 {
-                    Monitor.Wait(monitor_);
+                    monitor_.Wait();
                 }
                 if(exception_ != null)
                 {
                     throw exception_;
                 }
                 return (state_ & OK) != 0;
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
         }
 
@@ -600,16 +666,21 @@ namespace IceInternal
         protected void exception__(Ice.Exception ex)
         {
             Ice.AsyncCallback cb;
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 state_ |= Done;
                 exception_ = ex;
-                Monitor.PulseAll(monitor_);
+                monitor_.NotifyAll();
                 if(waitHandle_ != null)
                 {
                     waitHandle_.Set();
                 }
                 cb = completedCallback_;
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
 
             if(cb != null)
@@ -655,7 +726,7 @@ namespace IceInternal
         protected IceInternal.Instance instance_;
         protected string operation_;
 
-        protected object monitor_ = new object();
+        protected readonly IceUtilInternal.Monitor monitor_ = new IceUtilInternal.Monitor();
         protected IceInternal.BasicStream is_;
         protected IceInternal.BasicStream os_;
 
@@ -764,7 +835,8 @@ namespace IceInternal
 
         public Ice.AsyncCallback sent__(Ice.ConnectionI connection)
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 bool alreadySent = (state_ & Sent) != 0;
                 state_ |= Sent;
@@ -792,8 +864,12 @@ namespace IceInternal
                         proxy_.reference__().getInstance().timer().schedule(_timerTask, connection.timeout());
                     }
                 }
-                Monitor.PulseAll(monitor_);
+                monitor_.NotifyAll();
                 return alreadySent ? null : sentCallback_; // Don't call the sent call is already sent.
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
         }
 
@@ -804,7 +880,8 @@ namespace IceInternal
 
         public void finished__(Ice.LocalException exc, bool sent)
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 Debug.Assert((state_ & Done) == 0);
                 if(_timerTaskConnection != null)
@@ -814,6 +891,10 @@ namespace IceInternal
                     _timerTaskConnection = null; // Timer cancelled.
                     _timerTask = null;
                 }
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
 
             //
@@ -873,7 +954,8 @@ namespace IceInternal
             Ice.AsyncCallback cb = null;
             try
             {
-                lock(monitor_)
+                monitor_.Lock();
+                try
                 {
                     Debug.Assert(exception_ == null && (state_ & Done) == 0);
 
@@ -1007,7 +1089,11 @@ namespace IceInternal
                         state_ |= OK;
                     }
                     cb = completedCallback_;
-                    Monitor.PulseAll(monitor_);
+                    monitor_.NotifyAll();
+                }
+                finally
+                {
+                    monitor_.Unlock();
                 }
             }
             catch(Ice.LocalException ex)
@@ -1134,11 +1220,16 @@ namespace IceInternal
         private void runTimerTask__()
         {
             Ice.ConnectionI connection = null;
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 connection = _timerTaskConnection;
                 _timerTaskConnection = null;
                 _timerTask = null;
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
 
             if(connection != null)
@@ -1168,7 +1259,8 @@ namespace IceInternal
 
         new public Ice.AsyncResult<T> whenCompleted(Ice.ExceptionCallback excb)
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 if(excb == null)
                 {
@@ -1184,6 +1276,10 @@ namespace IceInternal
                 {
                     return this;
                 }
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
 
             instance_.clientThreadPool().dispatch(delegate()
@@ -1202,7 +1298,8 @@ namespace IceInternal
 
         virtual public Ice.AsyncResult<T> whenCompleted(T cb, Ice.ExceptionCallback excb)
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 if(cb == null && excb == null)
                 {
@@ -1219,6 +1316,10 @@ namespace IceInternal
                 {
                     return this;
                 }
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
 
             instance_.clientThreadPool().dispatch(delegate()
@@ -1310,16 +1411,21 @@ namespace IceInternal
 
         public Ice.AsyncCallback sent__(Ice.ConnectionI connection)
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 Debug.Assert((state_ & (Done | OK | Sent)) == 0);
                 state_ |= (Done | OK | Sent);
-                Monitor.PulseAll(monitor_);
+                monitor_.NotifyAll();
                 if(waitHandle_ != null)
                 {
                     waitHandle_.Set();
                 }
                 return sentCallback_;
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
         }
 
@@ -1431,9 +1537,14 @@ namespace IceInternal
 
         public void flushConnection(Ice.Connection con)
         {
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 ++_useCount;
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
             Ice.AsyncResult r = con.begin_flushBatchRequests(completed, null);
             r.whenSent((Ice.AsyncCallback)sent);
@@ -1470,7 +1581,8 @@ namespace IceInternal
             bool done = false;
             Ice.AsyncCallback sentCallback = null;
 
-            lock(monitor_)
+            monitor_.Lock();
+            try
             {
                 Debug.Assert(_useCount > 0);
                 --_useCount;
@@ -1489,8 +1601,12 @@ namespace IceInternal
                     done = true;
                     state_ |= Done | OK | Sent;
                     sentCallback = sentCallback_;
-                    Monitor.PulseAll(monitor_);
+                    monitor_.NotifyAll();
                 }
+            }
+            finally
+            {
+                monitor_.Unlock();
             }
 
             if(done)

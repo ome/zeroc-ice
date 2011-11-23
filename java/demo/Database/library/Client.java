@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -48,6 +48,7 @@ public class Client extends Ice.Application
     main(String[] args)
     {
         Client app = new Client();
-        app.main("demo.Database.library.Client", args, "config.client");
+        int status = app.main("demo.Database.library.Client", args, "config.client");
+        System.exit(status);
     }
 }

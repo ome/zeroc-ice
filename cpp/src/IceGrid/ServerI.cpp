@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -300,7 +300,7 @@ struct EnvironmentEval : std::unary_function<string, string>
             }
             string variable = v.substr(beg + 1, end - beg - 1);
             DWORD ret = GetEnvironmentVariableW(IceUtil::stringToWstring(variable).c_str(), &buf[0], static_cast<DWORD>(buf.size()));
-            string valstr = (ret > 0 && ret < sizeof(buf.size())) ? IceUtil::wstringToString(&buf[0]) : string("");
+            string valstr = (ret > 0 && ret < buf.size()) ? IceUtil::wstringToString(&buf[0]) : string("");
             v.replace(beg, end - beg + 1, valstr);
             beg += valstr.size();
         }

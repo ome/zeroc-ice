@@ -6,17 +6,18 @@ Requirements
 
   * 5.2.6 (SLES 11)
   * 5.1.6 (RHEL 5)
+  * 5.3.2 (RHEL 6)
   * 5.2.x or 5.3.x (source builds)
 
   You can download PHP from
 
     http://www.php.net/downloads.php
 
-- Ice for C++ 3.4.1 development kit
+- Ice for C++ 3.4.2 development kit
 
 
 ======================================================================
-Building PHP with the Ice extension (Linux)
+Building the Ice for PHP extension (Linux/Mac OS X)
 ======================================================================
 
 This source distribution only supports building Ice for PHP as a
@@ -27,7 +28,7 @@ Follow the steps below to build Ice for PHP:
 
 1. Change to Ice for PHP source subdirectory.
 
-   > cd Ice-3.4.1/php
+   > cd Ice-3.4.2/php
 
 2. Edit config/Make.rules and review the build settings. For example,
    you may want to enable OPTIMIZE. If your PHP installation resides
@@ -38,9 +39,9 @@ Follow the steps below to build Ice for PHP:
 3. If you have not built Ice for C++ from the cpp subdirectory, then
    set the ICE_HOME environment variable to the directory containing 
    your Ice installation. For example, if Ice is installed in
-   /opt/Ice-3.4.1, set ICE_HOME as follows:
+   /opt/Ice-3.4.2, set ICE_HOME as follows:
 
-   $ export ICE_HOME=/opt/Ice-3.4.1
+   $ export ICE_HOME=/opt/Ice-3.4.2
 
    If you installed Ice using RPMs, set ICE_HOME as shown below:
 
@@ -50,30 +51,26 @@ Follow the steps below to build Ice for PHP:
 
 
 ======================================================================
-Building PHP with the Ice extension (Windows)
+Building the Ice for PHP extension (Windows)
 ======================================================================
 
-Compiling PHP from source code on Windows is a tedious process,
-therefore we recommend that you download a binary distribution of PHP
-and use it along with the precompiled dynamic Ice extension for Visual
-C++ 6.0 that is included in the Ice installer for Windows.
+The Ice installer for Windows includes a precompiled extension for PHP
+5.3.6 compiled with Visual Studio 2008 (Visual C++ 9) and compatible
+with the "Thread-safe VC9" distribution of PHP available on php.net.
+We encourage you to use this extension if possible, together with a
+compatible Web server.
 
-If you prefer to build the Ice extension yourself, you must first
-understand the C run time dependency issues. Specifically, the Ice
-extension must use the same C run time as PHP5. Two compilers are
-supported by the binary distributions of PHP 5.3.x available from
-php.net: Visual C++ 6.0 (VC6) and Visual C++ 9.0 (VC9). The VC6
-distribution is intended to be used with the Apache web server,
-whereas the VC9 distribution is intended to be used with Microsoft
-IIS. You will need to compile the Ice extension using whichever
-compiler is appropriate for your web server.
+Note that the Apache binaries provided by the Apache Software
+Foundation are compiled with Visual C++ 6 and therefore are NOT
+compatible with the Ice for PHP extension included in our Windows
+installer. A VC9 build of Apache is available from alternate sources.
 
-To use a different version of Visual C++, you must obtain (or build)
-PHP5 with the desired compiler, and use the same compiler to build
-the Ice extension. Refer to the PHP documentation for instructions on
-building PHP5 from source.
+The most common motivation for compiling the Ice extension yourself
+is to create an extension that is compatible with your existing
+environment, such as when your Web server or PHP interpreter is
+built with a different compiler.
 
-Follow these instructions to build the Ice extension:
+To build the Ice extension, follow these instructions:
 
 1) Download the PHP5 binary archive or Windows installer and install
    the distribution.
@@ -95,13 +92,13 @@ Follow these instructions to build the Ice extension:
    you need to set the ICE_HOME environment variable to the location
    of your Ice for C++ installation. For example:
 
-   > set ICE_HOME=C:\Program Files\ZeroC\Ice-3.4.1
+   > set ICE_HOME=C:\Program Files\ZeroC\Ice-3.4.2
 
 5) Change to the Ice for PHP source directory.
 
-  > cd Ice-3.4.1\php
+  > cd Ice-3.4.2\php
 
-6) Open config\Make.rules.mak, review the comments, and make any
+6) Open config\Make.rules.mak.php, review the comments, and make any
    necessary changes. In particular, you may need to change the values
    of PHP_HOME and PHP_BIN_HOME to refer to your PHP source and binary
    installations, respectively. If you compiled PHP from source, you
@@ -119,7 +116,7 @@ Follow these instructions to build the Ice extension:
 
 
 ======================================================================
-Installing the Extension (Linux)
+Installing the Extension (Linux/Mac OS X)
 ======================================================================
 
 To install the Ice extension, you must move the extension's shared
@@ -142,18 +139,26 @@ and looking for the presence of --with-config-file-scan-dir in the
 "Configure Command" entry. If present, you can create a file in
 /etc/php.d that contains the directive to load the Ice extension.
 For example, create the file /etc/php.d/ice.ini containing the
-following line:
+following line on Linux:
 
   extension = IcePHP.so
+
+Or on Mac OS X:
+
+  extension = IcePHP.dy
 
 If PHP does not support the /etc/php.d directory, determine the path
 name of PHP's configuration file as reported by the "php -i" command:
 
   Configuration File (php.ini) Path => /etc/php.ini
 
-Open the configuration file and append the following line:
+Open the configuration file and append the following line on Linux:
 
   extension = IcePHP.so
+
+Or on Mac OS X:
+
+  extension = IcePHP.dy
 
 You can verify that PHP is loading the Ice extension by running the
 command shown below:
@@ -161,8 +166,8 @@ command shown below:
   php -m
 
 Look for "ice" among the installed modules. Note that your library
-search path (LD_LIBRARY_PATH) must include the directory containing
-the Ice shared libraries.
+search path (LD_LIBRARY_PATH on Linux or DYLD_LIBRARY_PATH on Mac OS
+X) must include the directory containing the Ice shared libraries.
 
 Read the "Dependencies" and "Source Files" sections below for more
 information about installing the Ice extension.
@@ -302,7 +307,7 @@ run-time file. Here is an example that assumes Ice is installed in
 
 // PHP
 ini_set('include_path',
-  ini_get('include_path') . PATH_SEPARATOR . '/opt/Ice-3.4.1/php');
+  ini_get('include_path') . PATH_SEPARATOR . '/opt/Ice-3.4.2/php');
 require 'Ice.php'; // Load the core Ice run time definitions.
 
 
@@ -368,10 +373,10 @@ do the following:
 
   # chcon -R -t httpd_sys_content_t /opt/MyApp/slice 
 
-For more information on SELinux in Red Hat Enterprise Linux 4, refer
-to the link below:
+For more information on SELinux in Red Hat Enterprise Linux, refer to
+the link below:
 
-  http://www.redhat.com/docs/manuals/enterprise/RHEL-4-Manual/selinux-guide/
+  http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/selg-overview.html
 
 
 ======================================================================

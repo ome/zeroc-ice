@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -34,6 +34,7 @@ tests = [
     ("Ice/location", ["core"]),
     ("Ice/objects", ["core"]),
     ("Ice/proxy", ["core"]),
+    ("Ice/properties", ["once"]),
     ("Ice/operations", ["core"]),
     ("Ice/retry", ["core"]),
     ("Ice/timeout", ["core"]),

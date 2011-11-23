@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -56,7 +56,8 @@ public class SessionHelper
         public void
         run()
         {
-            lock(this)
+            _m.Lock();
+            try
             {
                 while(true)
                 {
@@ -74,13 +75,17 @@ public class SessionHelper
 
                     if(!_done)
                     {
+#if COMPACT
+                        _m.TimedWait(_period);
+#else
                         try
                         {
-                            System.Threading.Monitor.Wait(this, _period);
+                            _m.TimedWait(_period);
                         }
                         catch(ThreadInterruptedException)
                         {
                         }
+#endif
                     }
 
                     if(_done)
@@ -89,18 +94,27 @@ public class SessionHelper
                     }
                 }
             }
+            finally
+            {
+                _m.Unlock();
+            }
         }
 
         public void
         done()
         {
-            lock(this)
+            _m.Lock();
+            try
             {
                 if(!_done)
                 {
                     _done = true;
-                    System.Threading.Monitor.Pulse(this);
+                    _m.Notify();
                 }
+            }
+            finally
+            {
+                _m.Unlock();
             }
         }
 
@@ -108,6 +122,8 @@ public class SessionHelper
         private Glacier2.RouterPrx _router;
         private int _period;
         private bool _done = false;
+
+        private readonly IceUtilInternal.Monitor _m = new IceUtilInternal.Monitor();
     }
 
     /// <summary>
@@ -139,8 +155,7 @@ public class SessionHelper
                 return;
             }
             _destroy = true;
-
-            if(_sessionRefresh == null)
+            if(!_connected)
             {
                 //
                 // In this case a connecting session is being
@@ -326,20 +341,28 @@ public class SessionHelper
     private void
     connected(RouterPrx router, SessionPrx session)
     {
+        string category = router.getCategoryForClient();
+        long timeout = router.getSessionTimeout();
+        Ice.Connection conn = router.ice_getCachedConnection();
         lock(this)
         {
             _router = router;
 
             if(_destroy)
             {
-                destroyInternal();
+                //
+                // Run the destroyInternal in a thread. This is because it
+                // destroyInternal makes remote invocations.
+                //
+                Thread t = new Thread(new ThreadStart(destroyInternal));
+                t.Start();
                 return;
             }
 
             //
             // Cache the category.
             //
-            _category = _router.getCategoryForClient();
+            _category = category;
 
             //
             // Assign the session after _destroy is checked.
@@ -348,91 +371,112 @@ public class SessionHelper
             _connected = true;
 
             Debug.Assert(_sessionRefresh == null);
-            _sessionRefresh = new SessionRefreshThread(this, _router, (int)(_router.getSessionTimeout() * 1000)/2);
-            _refreshThread = new Thread(new ThreadStart(_sessionRefresh.run));
-            _refreshThread.Start();
-
-
-            dispatchCallback(delegate()
-                             {
-                                 try
-                                 {
-                                     _callback.connected(this);
-                                 }
-                                 catch(Glacier2.SessionNotExistException)
-                                 {
-                                     destroy();
-                                 }
-                             });
+            if(timeout > 0)
+            {
+                _sessionRefresh = new SessionRefreshThread(this, _router, (int)(timeout * 1000)/2);
+                _refreshThread = new Thread(new ThreadStart(_sessionRefresh.run));
+                _refreshThread.Start();
+            }
         }
+
+        dispatchCallback(delegate()
+                         {
+                             try
+                             {
+                                 _callback.connected(this);
+                             }
+                             catch(Glacier2.SessionNotExistException)
+                             {
+                                 destroy();
+                             }
+                         }, conn);
     }
 
     private void
     destroyInternal()
     {
+        Glacier2.RouterPrx router;
+        Ice.Communicator communicator;
+        SessionRefreshThread sessionRefresh;
         lock(this)
         {
             Debug.Assert(_destroy);
-
-            try
+            if(_router == null)
             {
-                _router.destroySession();
+                return;
             }
-            catch(Ice.ConnectionLostException)
-            {
-                //
-                // Expected if another thread invoked on an object from the session concurrently.
-                //
-            }
-            catch(SessionNotExistException)
-            {
-                //
-                // This can also occur.
-                //
-            }
-            catch(Exception e)
-            {
-                //
-                // Not expected.
-                //
-                _communicator.getLogger().warning("SessionHelper: unexpected exception when destroying the session:\n"
-                                                  + e);
-            }
+            router = _router;
             _router = null;
-            _connected = false;
-            if(_sessionRefresh != null)
-            {
-                _sessionRefresh.done();
-                while(true)
-                {
-                    try
-                    {
-                        _refreshThread.Join();
-                        break;
-                    }
-                    catch(ThreadInterruptedException)
-                    {
-                    }
-                }
-                _sessionRefresh = null;
-                _refreshThread = null;
-            }
 
-            try
-            {
-                _communicator.destroy();
-            }
-            catch(Exception)
-            {
-            }
+            communicator = _communicator;
             _communicator = null;
 
-            // Notify the callback that the session is gone.
-            dispatchCallback(delegate()
-                             {
-                                 _callback.disconnected(this);
-                             });
+            Debug.Assert(communicator != null);
+
+            sessionRefresh = _sessionRefresh;
+            _sessionRefresh = null;
         }
+
+        try
+        {
+            router.destroySession();
+        }
+        catch(Ice.ConnectionLostException)
+        {
+            //
+            // Expected if another thread invoked on an object from the session concurrently.
+            //
+        }
+        catch(SessionNotExistException)
+        {
+            //
+            // This can also occur.
+            //
+        }
+        catch(Exception e)
+        {
+            //
+            // Not expected.
+            //
+            communicator.getLogger().warning("SessionHelper: unexpected exception when destroying the session:\n" + e);
+        }
+        _connected = false;
+        if(sessionRefresh != null)
+        {
+            sessionRefresh.done();
+            while(true)
+            {
+#if COMPACT
+                _refreshThread.Join();
+                break;
+#else
+                try
+                {
+                    _refreshThread.Join();
+                    break;
+                }
+                catch(ThreadInterruptedException)
+                {
+                }
+#endif
+            }
+            _refreshThread = null;
+        }
+
+
+        try
+        {
+            communicator.destroy();
+        }
+        catch(Exception)
+        {
+        }
+
+        // Notify the callback that the session is gone.
+        dispatchCallback(delegate()
+                         {
+                             _callback.disconnected(this);
+                         }, null);
     }
 
     delegate Glacier2.SessionPrx ConnectStrategy(Glacier2.RouterPrx router);
@@ -452,7 +496,7 @@ public class SessionHelper
             dispatchCallback(delegate()
                              {
                                  _callback.connectFailed(this, ex);
-                             });
+                             }, null);
             return;
         }
 
@@ -479,21 +523,26 @@ public class SessionHelper
                     catch(Exception)
                     {
                     }
-
+                    _communicator = null;
                     dispatchCallback(delegate()
                                      {
                                          _callback.connectFailed(this, ex);
-                                     });
+                                     }, null);
                 }
         })).Start();
     }
 
+#if COMPACT
     private void
-    dispatchCallback(System.Action callback)
+    dispatchCallback(Ice.VoidAction callback, Ice.Connection conn)
+#else
+    private void
+    dispatchCallback(System.Action callback, Ice.Connection conn)
+#endif
     {
         if(_initData.dispatcher != null)
         {
-            _initData.dispatcher(callback, null);
+            _initData.dispatcher(callback, conn);
         }
         else
         {
@@ -501,8 +550,13 @@ public class SessionHelper
         }
     }
 
+#if COMPACT
+    private void
+    dispatchCallbackAndWait(Ice.VoidAction callback)
+#else
     private void
     dispatchCallbackAndWait(System.Action callback)
+#endif
     {
         if(_initData.dispatcher != null)
         {

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -273,7 +273,7 @@ Freeze::TransactionI::postCompletion(bool committed, bool deadlock)
         PostCompletionCallbackPtr cb = _postCompletionCallback;
         _postCompletionCallback = 0;
         
-        cb->postCompletion(committed, deadlock);
+        cb->postCompletion(committed, deadlock, _connection->dbEnv());
     }
 
     ConnectionIPtr connection = _connection;

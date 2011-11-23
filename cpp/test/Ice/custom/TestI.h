@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -143,6 +143,11 @@ public:
                                                  ::Test::ClassStructPtr& out,
                                                  ::Test::ClassStructSeq& outSeq,
                                                  const Ice::Current&);
+                                                 
+                                                 
+    virtual void opOutArrayByteSeq(const Test::ByteSeq&, Test::ByteSeq&, const Ice::Current&);
+    
+    virtual void opOutRangeByteSeq(const Test::ByteSeq&, Test::ByteSeq&, const Ice::Current&);
 
     virtual void shutdown(const Ice::Current&);
 

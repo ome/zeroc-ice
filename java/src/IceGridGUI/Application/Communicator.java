@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -699,14 +699,24 @@ abstract class Communicator extends TreeNode implements DescriptorHolder
                     TemplateDescriptor templateDescriptor
                         = getRoot().findServiceTemplateDescriptor(descriptor.template);
 
-                    assert templateDescriptor != null;
+		    if(templateDescriptor == null)
+		    {
+			throw new UpdateFailedException("Cannot find template descriptor '" +
+							descriptor.template + 
+							"' referenced by service-instance");
+		    }
 
                     serviceResolver = new Utils.Resolver(getResolver(),
                                                          descriptor.parameterValues,
                                                          templateDescriptor.parameterDefaults);
 
                     ServiceDescriptor serviceDescriptor = (ServiceDescriptor)templateDescriptor.descriptor;
-                    assert serviceDescriptor != null;
+		    
+		    //
+		    // If it's not null, it's a bug in the provider of this descriptor, e.g.
+		    // the icegridadmin parsing code. 
+		    //
+		    assert serviceDescriptor != null;
 
                     serviceName = serviceResolver.substitute(serviceDescriptor.name);
                     serviceResolver.put("service", serviceName);

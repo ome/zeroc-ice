@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -83,6 +83,8 @@ public:
 
     void setAdapter(const Ice::ObjectAdapterPtr&);
     Ice::ObjectAdapterPtr getAdapter() const;
+
+    void clearCache(const ReferencePtr&);
 
     //
     // The following methods need to be public for access by AMI callbacks.

@@ -37,6 +37,7 @@ Ice has dependencies on a number of third-party libraries:
 - bzip2 1.0.x
 - mcpp 2.7.2 (with patches)
 - libiconv 1.13.1 (x86/x64 only)
+- QT 4.5.3 (optional)
 
 We recommend downloading the Ice third-party source archive from
 
@@ -55,6 +56,7 @@ OpenSSL        http://www.openssl.org
 bzip2          http://sources.redhat.com/bzip2
 mcpp           http://mcpp.sourceforge.net
 libiconv       http://www.gnu.org/software/libiconv
+QT             http://qt.nokia.com
 
 
 GNU Make 3.80
@@ -73,11 +75,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ gtar xvfz Ice-3.4.1.tar.gz
+$ gtar xvfz Ice-3.4.2.tar.gz
 
-Change the working directory to Ice-3.4.1/cpp:
+Change the working directory to Ice-3.4.2/cpp:
 
-$ cd Ice-3.4.1/cpp
+$ cd Ice-3.4.2/cpp
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular

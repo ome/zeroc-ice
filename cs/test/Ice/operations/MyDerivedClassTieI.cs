@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -39,6 +39,7 @@ public sealed class MyDerivedClassTieI : Test.MyDerivedClassOperations_
 
     public void opVoid(Ice.Current current)
     {
+        test(current.mode == Ice.OperationMode.Normal);
     }
 
     public bool opBool(bool p1, bool p2, out bool p3, Ice.Current current)
@@ -411,6 +412,16 @@ public sealed class MyDerivedClassTieI : Test.MyDerivedClassOperations_
         p3 = p1;
         p3.s.s = "a new string";
         return p2;
+    }
+
+    public void opIdempotent(Ice.Current current)
+    {
+        test(current.mode == Ice.OperationMode.Idempotent);
+    }
+
+    public void opNonmutating(Ice.Current current)
+    {
+        test(current.mode == Ice.OperationMode.Nonmutating);
     }
 
     public void opDerived(Ice.Current current)

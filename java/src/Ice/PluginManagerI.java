@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -315,25 +315,17 @@ public final class PluginManagerI implements PluginManager
             }
             catch(ClassCastException ex)
             {
-                PluginInitializationException e = new PluginInitializationException();
-                e.reason = "class " + className + " does not implement Ice.PluginFactory";
-                e.initCause(ex);
-                throw e;
+                throw new PluginInitializationException(
+                    "class " + className + " does not implement Ice.PluginFactory", ex);
             }
         }
         catch(IllegalAccessException ex)
         {
-            PluginInitializationException e = new PluginInitializationException();
-            e.reason = "unable to access default constructor in class " + className;
-            e.initCause(ex);
-            throw e;
+            throw new PluginInitializationException("unable to access default constructor in class " + className, ex);
         }
         catch(InstantiationException ex)
         {
-            PluginInitializationException e = new PluginInitializationException();
-            e.reason = "unable to instantiate class " + className;
-            e.initCause(ex);
-            throw e;
+            throw new PluginInitializationException("unable to instantiate class " + className, ex);
         }
 
         //
@@ -350,17 +342,12 @@ public final class PluginManagerI implements PluginManager
         }
         catch(Throwable ex)
         {
-            PluginInitializationException e = new PluginInitializationException();
-            e.reason = "exception in factory " + className;
-            e.initCause(ex);
-            throw e;
+            throw new PluginInitializationException("exception in factory " + className, ex);
         }
    
         if(plugin == null)
         {
-            PluginInitializationException e = new PluginInitializationException();
-            e.reason = "failure in factory " + className;
-            throw e;
+            throw new PluginInitializationException("failure in factory " + className);
         }
 
         _plugins.put(name, plugin);

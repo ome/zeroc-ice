@@ -2,7 +2,7 @@
 Requirements
 ======================================================================
 
-- Ice 3.4.1
+- Ice 3.4.2
 - Python 2.3, 2.4, 2.5 or 2.6 built with a C++ compiler compatible 
   with the C++ compiler used to build Ice for C++.
 
@@ -22,13 +22,13 @@ Follow these steps to build the Ice extension for Python:
 
 1) Change to Ice for Python source subdirectory.
 
-   > cd Ice-3.4.1/py
+   > cd Ice-3.4.2/py
 
 2) If you have not built Ice for C++ in the cpp subdirectory, set
    ICE_HOME to the directory of your Ice for C++ installation.
    For example:
 
-   > export ICE_HOME=/opt/Ice-3.4.1
+   > export ICE_HOME=/opt/Ice-3.4.2
 
 3) Edit config/Make.rules and do the following:
 
@@ -79,13 +79,13 @@ Follow these steps to build the Ice extension for Python:
 
 2) Change to the Ice for Python source subdirectory.
 
-  > cd Ice-3.4.1\py
+  > cd Ice-3.4.2\py
 
 3) If you have not built Ice for C++ from the cpp subdirectory, set
    ICE_HOME to the directory of your Ice for C++ installation.
    For example:
 
-   > set ICE_HOME=C:\Ice-3.4.1
+   > set ICE_HOME=C:\Ice-3.4.2
 
 4) Edit config\Make.rules.mak and review the settings. In particular
    you must set CPP_COMPILER to the appropriate compiler.
@@ -114,10 +114,10 @@ Unix:
 
   Modify your PYTHONPATH environment variable to include the Ice 
   extension for Python. Assuming you installed the extension in the
-  default directory (/opt/Ice-3.4.1), you would modify your
+  default directory (/opt/Ice-3.4.2), you would modify your
   environment as shown below:
 
-  $ export ICEPY_HOME=/opt/Ice-3.4.1
+  $ export ICEPY_HOME=/opt/Ice-3.4.2
   $ export PYTHONPATH=$ICEPY_HOME/python:$PYTHONPATH
 
 Windows:
@@ -127,10 +127,10 @@ Windows:
   DLL as well as the Python source files in the "python" subdirectory.
   This is normally accomplished by setting the PYTHONPATH environment
   variable to contain the necessary subdirectory. For example, if
-  the Ice for Python extension is installed in C:\Ice-3.4.1, you
+  the Ice for Python extension is installed in C:\Ice-3.4.2, you
   could configure your environment as follows:
 
-  > set ICEPY_HOME=C:\Ice-3.4.1
+  > set ICEPY_HOME=C:\Ice-3.4.2
   > set PYTHONPATH=%ICEPY_HOME%\python
 
 

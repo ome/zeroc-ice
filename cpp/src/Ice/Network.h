@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -36,7 +36,7 @@ typedef int ssize_t;
 
 #if defined(__linux) && !defined(ICE_NO_EPOLL)
 #   define ICE_USE_EPOLL 1
-#elif defined(__APPLE__) && !defined(ICE_NO_KQUEUE)
+#elif (defined(__APPLE__) || defined(__FreeBSD__)) && !defined(ICE_NO_KQUEUE)
 #   define ICE_USE_KQUEUE 1
 #elif defined(_WIN32)
 #  if !defined(ICE_NO_IOCP)

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -162,9 +162,19 @@ void
 Ice::AsyncResult::waitForSent()
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_monitor);
-    while(!(_state & (Sent | Done)))
+    while(!(_state & Sent) && !_exception.get())
     {
         _monitor.wait();
+    }
+}
+
+void
+Ice::AsyncResult::throwLocalException() const
+{
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_monitor);
+    if(_exception.get())
+    {
+        _exception.get()->ice_throw();
     }
 }
 

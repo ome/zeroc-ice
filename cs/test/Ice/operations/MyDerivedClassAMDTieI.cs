@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -81,6 +81,8 @@ public sealed class MyDerivedClassTieI : Test.MyDerivedClassOperations_
 
     public void opVoid_async(Test.AMD_MyClass_opVoid cb, Ice.Current current)
     {
+        test(current.mode == Ice.OperationMode.Normal);
+
         while(_opVoidThread != null)
         {
             _opVoidThread.Join();
@@ -446,6 +448,18 @@ public sealed class MyDerivedClassTieI : Test.MyDerivedClassOperations_
         Test.Structure p3 = p1;
         p3.s.s = "a new string";
         cb.ice_response(p2, p3);
+    }
+
+    public void opIdempotent_async(Test.AMD_MyClass_opIdempotent cb, Ice.Current current)
+    {
+        test(current.mode == Ice.OperationMode.Idempotent);
+        cb.ice_response();
+    }
+
+    public void opNonmutating_async(Test.AMD_MyClass_opNonmutating cb, Ice.Current current)
+    {
+        test(current.mode == Ice.OperationMode.Nonmutating);
+        cb.ice_response();
     }
 
     public void opDerived_async(Test.AMD_MyDerivedClass_opDerived cb, Ice.Current current)

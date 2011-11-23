@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -322,6 +322,10 @@ public class SessionFactoryHelper
     {
         _initData.properties.setProperty("Ice.ACM.Client", "0");
         _initData.properties.setProperty("Ice.RetryIntervals", "-1");
+        if(_secure)
+        {
+            _initData.properties.setProperty("Ice.Plugin.IceSSL", "IceSSL:IceSSL.PluginFactory");
+        }
     }
 
     private SessionCallback _callback;

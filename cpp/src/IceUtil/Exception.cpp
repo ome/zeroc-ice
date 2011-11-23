@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,7 +14,7 @@
 #include <ostream>
 #include <cstdlib>
 
-#if defined(__GNUC__) && !defined(__sun)
+#if defined(__GNUC__) && !defined(__sun) && !defined(__FreeBSD__)
 #  include <execinfo.h>
 #  include <cxxabi.h>
 #endif
@@ -52,7 +52,7 @@ public:
 
 Init init;
 
-#if defined(__GNUC__) && !defined(__sun)
+#if defined(__GNUC__) && !defined(__sun) && !defined(__FreeBSD__)
 string
 getStackTrace()
 {
@@ -183,7 +183,7 @@ getStackTrace()
 IceUtil::Exception::Exception() :
     _file(0),
     _line(0)
-#if defined(__GNUC__) && !defined(__sun)
+#if defined(__GNUC__) && !defined(__sun) && !defined(__FreeBSD__)
     , _stackTrace(getStackTrace())
 #endif
 {
@@ -192,7 +192,7 @@ IceUtil::Exception::Exception() :
 IceUtil::Exception::Exception(const char* file, int line) :
     _file(file),
     _line(line)
-#if defined(__GNUC__) && !defined(__sun)
+#if defined(__GNUC__) && !defined(__sun) && !defined(__FreeBSD__)
     , _stackTrace(getStackTrace())
 #endif
 {

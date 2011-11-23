@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -41,7 +41,7 @@ USE_NAMESPACES		= no
 # Set PHP_HOME to your PHP source directory.
 #
 !if "$(PHP_HOME)" == ""
-PHP_HOME		= C:\php-5.3.1
+PHP_HOME		= C:\php-5.3.6
 !endif
 
 #
@@ -105,7 +105,7 @@ install_libdir		= $(prefix)\php
 !error Invalid setting for CPP_COMPILER: $(CPP_COMPILER)
 !endif
 
-!if "$(ice_src_dist)" != ""
+!if exist ($(top_srcdir)\..\cpp\config\Make.rules.msvc)
 !include $(top_srcdir)\..\cpp\config\Make.rules.msvc
 !else
 !include $(top_srcdir)\config\Make.rules.msvc

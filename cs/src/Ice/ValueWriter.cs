@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -57,9 +57,9 @@ namespace IceInternal
                         writeValue(elem, i.Current, objectTable, output);
                     }
                 }
-                else if(val is DictionaryBase)
+                else if(val is IDictionary)
                 {
-                    foreach(DictionaryEntry entry in (Hashtable)val)
+                    foreach(DictionaryEntry entry in (IDictionary)val)
                     {
                         string elem = name != null ? name + "." : "";
                         writeValue(elem + "key", entry.Key, objectTable, output);

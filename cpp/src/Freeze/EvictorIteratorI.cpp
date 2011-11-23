@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -60,15 +60,15 @@ Freeze::EvictorIteratorI::next()
 vector<Identity>::const_iterator
 Freeze::EvictorIteratorI::nextBatch()
 {
-    DeactivateController::Guard 
-        deactivateGuard(_store->evictor()->deactivateController());
-
     _batch.clear();
 
     if(!_more)
     {
         return _batch.end();
     }
+
+    DeactivateController::Guard 
+        deactivateGuard(_store->evictor()->deactivateController());
      
     Key firstKey = _key;
 
