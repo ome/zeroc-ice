@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -73,12 +68,13 @@ run(const Ice::CommunicatorPtr& communicator, const string& envName, const strin
     Ice::ObjectFactoryPtr factory = new Factory;
     communicator->addObjectFactory(factory, "");
 
-    Freeze::EvictorPtr evictor = Freeze::createEvictor(communicator, envName, dbName);
+    Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("test");
+
+    Freeze::EvictorPtr evictor = Freeze::createEvictor(adapter, envName, dbName);
 
     for(int i = 0; i < 10; ++i)
     {
-        Ice::FacetPath path;
-        path.push_back("theFacet");
+	string facetName = "theFacet";
 
         Ice::Identity id;
         ostringstream ostr;
@@ -97,10 +93,10 @@ run(const Ice::CommunicatorPtr& communicator, const string& envName, const strin
             obj->doubleToFloat = 8765.4;
             obj->stringToEnum = "E1";
             obj->renamed = E2;
-            evictor->createObject(id, obj);
+            evictor->add(obj, id);
             FacetObjectPtr facet = new FacetObjectI;
             facet->doubleToString = 901234.5;
-            evictor->addFacet(id, path, facet);
+            evictor->addFacet(facet, id, facetName);
         }
         else
         {
@@ -115,11 +111,11 @@ run(const Ice::CommunicatorPtr& communicator, const string& envName, const strin
             obj->stringToEnum = "E3";
             obj->renamed = E1;
             obj->name = id.name;
-            evictor->createObject(id, obj);
+            evictor->add(obj, id);
             DerivedFacetObjectPtr facet = new DerivedFacetObjectI;
             facet->doubleToString = -901234.5;
             facet->count = i;
-            evictor->addFacet(id, path, facet);
+            evictor->addFacet(facet, id, facetName);
         }
     }
 

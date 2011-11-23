@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -203,7 +198,7 @@ TestApp::IntIntMapTest()
     _watch.start();
     for(i = 0; i < _repetitions; ++i)
     {
-	IntIntMap::const_iterator p = m.find(i);
+	IntIntMap::iterator p = m.find(i);
 	test(p != m.end());
 	test(p->second == i);
     }
@@ -239,7 +234,7 @@ TestApp::generatedRead(IntIntMap& m, int reads , const GeneratorPtr& gen)
     for(int i = 0; i < reads; ++i)
     {
 	int key = gen->next();
-	IntIntMap::const_iterator p = m.find(key);
+	IntIntMap::iterator p = m.find(key);
 	test(p != m.end());
 	test(p->second == key);
     }
@@ -346,7 +341,7 @@ TestApp::Struct1Struct2MapTest()
     for(i = 0; i < _repetitions; ++i)
     {
 	s1.l = i;
-	Struct1Struct2Map::const_iterator p = m.find(s1);
+	Struct1Struct2Map::iterator p = m.find(s1);
 	test(p != m.end());
 	ostringstream os;
 	os << i;
@@ -414,7 +409,7 @@ TestApp::Struct1Class1MapTest()
     for(i = 0; i < _repetitions; ++i)
     {
 	s1.l = i;
-	Struct1Class1Map::const_iterator p = m.find(s1);
+	Struct1Class1Map::iterator p = m.find(s1);
 	test(p != m.end());
 	ostringstream os;
 	os << i;
@@ -495,7 +490,7 @@ TestApp::Struct1ObjectMapTest()
     for(i = 0; i < _repetitions; ++i)
     {
 	s1.l = i;
-	Struct1ObjectMap::const_iterator p = m.find(s1);
+	Struct1ObjectMap::iterator p = m.find(s1);
 	test(p != m.end());
 	Ice::ObjectPtr o = p->second;
 	Class1Ptr nc1;

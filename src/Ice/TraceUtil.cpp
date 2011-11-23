@@ -1,18 +1,14 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
 #include <IceUtil/StaticMutex.h>
+#include <IceUtil/StringUtil.h>
 #include <Ice/TraceUtil.h>
 #include <Ice/Instance.h>
 #include <Ice/Object.h>
@@ -38,17 +34,9 @@ printIdentityFacetOperation(ostream& s, BasicStream& stream)
     vector<string> facet;
     stream.read(facet);
     s << "\nfacet = ";
-    vector<string>::const_iterator p = facet.begin();
-    while(p != facet.end())
+    if(!facet.empty())
     {
-	//
-	// TODO: Escape for whitespace and slashes.
-	//
-	s << *p++;
-	if(p != facet.end())
-	{
-	    s << '/';
-	}
+        s << IceUtil::escapeString(facet[0], "");
     }
 
     string operation;

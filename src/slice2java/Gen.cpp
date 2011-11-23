@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -214,7 +209,7 @@ void
 Slice::JavaVisitor::writeThrowsClause(const string& package, const ExceptionList& throws)
 {
     //
-    // Don't include local exceptions in the throws clause
+    // Don't include local exceptions in the throws clause.
     //
     ExceptionList::size_type localCount = ice_count_if(throws.begin(), throws.end(),
 						       IceUtil::constMemFun(&Exception::isLocal));
@@ -479,6 +474,18 @@ Slice::JavaVisitor::writeDispatch(Output& out, const ClassDefPtr& p)
 	    throws.unique();
 	    remove_if(throws.begin(), throws.end(), IceUtil::constMemFun(&Exception::isLocal));
 
+	    //
+	    // Arrange exceptions into most-derived to least-derived order. If we don't
+	    // do this, a base exception handler can appear before a derived exception
+	    // handler, causing compiler warnings and resulting in the base exception
+	    // being marshaled instead of the derived exception.
+	    //
+#if defined(__SUNPRO_CC)
+	    throws.sort(Slice::derivedToBaseCompare);
+#else
+	    throws.sort(Slice::DerivedToBaseCompare());
+#endif
+
 	    TypeStringList::const_iterator q;
 	    int iter;
 	    
@@ -674,7 +681,6 @@ Slice::JavaVisitor::writeDispatch(Output& out, const ClassDefPtr& p)
     {
         StringList allOpNames;
         transform(allOps.begin(), allOps.end(), back_inserter(allOpNames), ::IceUtil::constMemFun(&Contained::name));
-        allOpNames.push_back("ice_facets");
         allOpNames.push_back("ice_id");
         allOpNames.push_back("ice_ids");
         allOpNames.push_back("ice_isA");
@@ -714,11 +720,7 @@ Slice::JavaVisitor::writeDispatch(Output& out, const ClassDefPtr& p)
 
             out << nl << "case " << i++ << ':';
             out << sb;
-            if(opName == "ice_facets")
-            {
-                out << nl << "return ___ice_facets(this, in, __current);";
-            }
-            else if(opName == "ice_id")
+            if(opName == "ice_id")
             {
                 out << nl << "return ___ice_id(this, in, __current);";
             }
@@ -737,7 +739,7 @@ Slice::JavaVisitor::writeDispatch(Output& out, const ClassDefPtr& p)
             else
             {
                 //
-                // There's probably a better way to do this
+                // There's probably a better way to do this.
                 //
                 for(OperationList::const_iterator t = allOps.begin(); t != allOps.end(); ++t)
                 {
@@ -1262,7 +1264,7 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
         DataMemberList::const_iterator d;
         int iter;
 
-        out << sp << nl << "public void" << nl << "__write(IceInternal.BasicStream __os, boolean __marshalFacets)";
+        out << sp << nl << "public void" << nl << "__write(IceInternal.BasicStream __os)";
         out << sb;
 	out << nl << "__os.writeTypeId(ice_staticId());";
 	out << nl << "__os.startWriteSlice();";
@@ -1273,7 +1275,7 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
             writeMarshalUnmarshalCode(out, package, (*d)->type(), fixKwd((*d)->name()), true, iter, false, metaData);
         }
 	out << nl << "__os.endWriteSlice();";
-        out << nl << "super.__write(__os, __marshalFacets);";
+        out << nl << "super.__write(__os);";
         out << eb;
 
 	DataMemberList allClassMembers = p->allClassDataMembers();
@@ -1968,9 +1970,9 @@ Slice::Gen::TypesVisitor::visitConst(const ConstPtr& p)
 	{
 	    case Builtin::KindString:
 	    {
-		out << "\"";					// Opening "
+		out << "\"";
 
-		ios_base::fmtflags originalFlags = out.flags();	// Save stream state
+		ios_base::fmtflags originalFlags = out.flags();
 		streamsize originalWidth = out.width();
 		ostream::char_type originalFill = out.fill();
 
@@ -1981,33 +1983,33 @@ Slice::Gen::TypesVisitor::visitConst(const ConstPtr& p)
 		    {
 			switch(*c)
 			{
-			    case '\\':				// Take care of \ and "
+			    case '\\':
 			    case '"':
 			    {
 				out << "\\";
 				break;
 			    }
 			}
-			out << *c;				// Print normally if printable
+			out << *c;
 		    }
 		    else
 		    {
 			switch(*c)
 			{
-			    case '\r':				// CR can't be written as a universal char name in Java
+			    case '\r':
 			    {
 				out << "\\r";
 				break;
 			    }
-			    case '\n':				// Ditto for NL
+			    case '\n':
 			    {
 				out << "\\n";
 				break;
 			    }
 			    default:
 			    {
-				unsigned char uc = *c;		// char may be signed, so make it positive
-				out << "\\u";    		// Print as universal character name if non-printable
+				unsigned char uc = *c;
+				out << "\\u";
 				out.flags(ios_base::hex);
 				out.width(4);
 				out.fill('0');
@@ -2018,21 +2020,21 @@ Slice::Gen::TypesVisitor::visitConst(const ConstPtr& p)
 		    }
 		}
 
-		out.fill(originalFill);				// Restore stream state
+		out.fill(originalFill);
 		out.width(originalWidth);
 		out.flags(originalFlags);
 
-		out << "\"";					// Closing "
+		out << "\"";
 		break;
 	    }
 	    case Builtin::KindByte:
 	    {
-		out << p->value() << " - 128";	// Slice byte runs from 0-255, Java byte runs from -128 - 127
+		out << p->value() << " -128"; // Slice byte runs from 0-255, Java byte runs from -128 - 127.
 		break;
 	    }
 	    case Builtin::KindLong:
 	    {
-		out << p->value() << "L";	// Need to append "L" modifier for long constants
+		out << p->value() << "L"; // Need to append "L" modifier for long constants.
 		break;
 	    }
             case Builtin::KindBool:
@@ -2217,7 +2219,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     // proxy interface, and provides static helper methods for use
     // by applications (e.g., checkedCast, etc.)
     //
-    out << sp << nl << "public final class " << name << "PrxHelper extends Ice.ObjectPrxHelper implements " << name
+    out << sp << nl << "public final class " << name << "PrxHelper extends Ice.ObjectPrxHelperBase implements " << name
         << "Prx";
 
     out << sb;
@@ -2320,7 +2322,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
 	    out << sb;
 	    // Async requests may only be sent twoway.
 	    out << nl << "__checkTwowayOnly(\"" << p->name() << "\");";
-	    out << nl << "__cb.__invoke" << spar << "__reference()" << argsAMI << "__ctx" << epar << ';';
+	    out << nl << "__cb.__invoke" << spar << "this" << argsAMI << "__ctx" << epar << ';';
 	    out << eb;
 	}
     }
@@ -2352,7 +2354,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     out << nl << name << "Prx d = null;";
     out << nl << "if(b != null)";
     out << sb;
-    out << nl << "Ice.ObjectPrx bb = b.ice_appendFacet(f);";
+    out << nl << "Ice.ObjectPrx bb = b.ice_newFacet(f);";
     out << nl << "try";
     out << sb;
     out << nl << "if(bb.ice_isA(\"" << scoped << "\"))";
@@ -2386,7 +2388,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     out << nl << name << "Prx d = null;";
     out << nl << "if(b != null)";
     out << sb;
-    out << nl << "Ice.ObjectPrx bb = b.ice_appendFacet(f);";
+    out << nl << "Ice.ObjectPrx bb = b.ice_newFacet(f);";
     out << nl << name << "PrxHelper h = new " << name << "PrxHelper();";
     out << nl << "h.__copyFrom(bb);";
     out << nl << "d = h;";
@@ -3025,6 +3027,18 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
         throws.unique();
         throws.erase(remove_if(throws.begin(), throws.end(), IceUtil::constMemFun(&Exception::isLocal)), throws.end());
 
+	//
+	// Arrange exceptions into most-derived to least-derived order. If we don't
+	// do this, a base exception handler can appear before a derived exception
+	// handler, causing compiler warnings and resulting in the base exception
+	// being marshaled instead of the derived exception.
+	//
+#if defined(__SUNPRO_CC)
+	throws.sort(Slice::derivedToBaseCompare);
+#else
+	throws.sort(Slice::DerivedToBaseCompare());
+#endif
+
         vector<string> params = getParams(op, package);
 
         out << sp;
@@ -3192,7 +3206,7 @@ Slice::Gen::DelegateDVisitor::visitClassDefStart(const ClassDefPtr& p)
 	    out << nl << name << " __servant = null;";
 	    out << nl << "try";
 	    out << sb;
-	    out << nl << "__servant = (" << name << ")__direct.facetServant();";
+	    out << nl << "__servant = (" << name << ")__direct.servant();";
 	    out << eb;
 	    out << nl << "catch(ClassCastException __ex)";
 	    out << sb;
@@ -3719,12 +3733,12 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	    out << nl << "public abstract void ice_exception(Ice.UserException ex);";
 	}
 	
-	out << sp << nl << "public final void" << nl << "__invoke" << spar << "IceInternal.Reference __ref"
+	out << sp << nl << "public final void" << nl << "__invoke" << spar << "Ice.ObjectPrx __prx"
 	    << paramsInvoke << "java.util.Map __ctx" << epar;
 	out << sb;
 	out << nl << "try";
 	out << sb;
-	out << nl << "__prepare(__ref, \"" << p->name() << "\", " << sliceModeToIceMode(p) << ", __ctx);";
+	out << nl << "__prepare(__prx, \"" << p->name() << "\", " << sliceModeToIceMode(p) << ", __ctx);";
 	for(q = inParams.begin(); q != inParams.end(); ++q)
 	{
 	    string typeS = typeToString(q->first, TypeModeIn, classPkg);

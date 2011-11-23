@@ -1,14 +1,9 @@
-#**********************************************************************
+# **********************************************************************
 #
-# Copyright (c) 2003
-# ZeroC, Inc.
-# Billerica, MA, USA
+# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 #
-# All Rights Reserved.
-#
-# Ice is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License version 2 as published by
-# the Free Software Foundation.
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
@@ -56,7 +51,6 @@ OBJS		= Initialize.o \
 		  ReferenceFactory.o \
 		  Identity.o \
 		  IdentityUtil.o \
-		  Facet.o \
 		  Current.o \
 		  Router.o \
 		  RouterInfo.o \
@@ -89,11 +83,11 @@ OBJS		= Initialize.o \
 		  ProtocolPluginFacade.o \
 		  Locator.o \
 		  LocatorInfo.o \
-		  StringUtil.o \
 		  FactoryTableDef.o \
 		  FactoryTable.o \
 		  Service.o \
-		  Process.o
+		  Process.o \
+		  FacetMap.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
@@ -112,7 +106,6 @@ SLICE_SRCS	= $(SDIR)/LocalException.ice \
 		  $(SDIR)/ObjectFactory.ice \
 		  $(SDIR)/ObjectFactoryF.ice \
 		  $(SDIR)/Identity.ice \
-		  $(SDIR)/Facet.ice \
 		  $(SDIR)/Current.ice \
 		  $(SDIR)/Router.ice \
 		  $(SDIR)/RouterF.ice \
@@ -123,7 +116,8 @@ SLICE_SRCS	= $(SDIR)/LocalException.ice \
                   $(SDIR)/StatsF.ice \
                   $(SDIR)/Stats.ice \
                   $(SDIR)/Process.ice \
-                  $(SDIR)/ProcessF.ice
+                  $(SDIR)/ProcessF.ice \
+		  $(SDIR)/FacetMap.ice
 
 HDIR		= $(includedir)/Ice
 SDIR		= $(slicedir)/Ice

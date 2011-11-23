@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -20,15 +15,16 @@ using namespace std;
 using namespace Ice;
 using namespace IcePatch;
 
-IcePatch::FileLocator::FileLocator(const Ice::ObjectAdapterPtr& adapter) :
-    _directory(new DirectoryI(adapter)),
-    _regular(new RegularI(adapter)),
+IcePatch::FileLocator::FileLocator(const Ice::ObjectAdapterPtr& adapter, const string& dir) :
+    _directory(new DirectoryI(adapter, dir)),
+    _regular(new RegularI(adapter, dir)),
     _logger(adapter->getCommunicator()->getLogger()),
     _fileTraceLogger(adapter->getCommunicator()->getProperties()->getPropertyAsInt("IcePatch.Trace.Files") > 0 ?
 		     _logger : LoggerPtr()),
-    _dir(adapter->getCommunicator()->getProperties()->getProperty("IcePatch.Directory"))
+    _dir(dir)
 {
-    if(!_dir.empty() && _dir[_dir.length() - 1] != '/')
+    assert(!_dir.empty());
+    if(_dir[_dir.length() - 1] != '/')
     {
 	const_cast<string&>(_dir) += '/';
     }

@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -70,7 +65,18 @@ public:
 
 	b.resize(sz);
     }
+
     void reserve(Container::size_type);
+
+    void startSeq(int, int);
+    void checkSeq();
+    void checkSeq(int);
+    void endElement()
+    {
+	assert(_seqDataStack);
+	--_seqDataStack->numElements;
+    }
+    void endSeq(int);
 
     void startWriteEncaps();
     void endWriteEncaps();
@@ -155,6 +161,15 @@ public:
     void read(Ice::Double&);
     void read(std::vector<Ice::Double>&);
 
+    //
+    // NOTE: This function is not implemented. It is declared here to
+    // catch programming errors that assume a call such as write("")
+    // will invoke write(const std::string&), when in fact the compiler
+    // will silently select a different overloading. A link error is the
+    // intended result.
+    //
+    void write(const char*);
+
     void write(const std::string&);
     void write(const std::vector<std::string>&);
     void read(std::string&);
@@ -172,7 +187,6 @@ public:
     void writePendingObjects();
     void readPendingObjects();
 
-    void marshalFacets(bool);
     void sliceObjects(bool);
 
     struct PatchEntry 
@@ -258,10 +272,18 @@ private:
     int _traceSlicing;
     const char* _slicingCat;
 
-    bool _marshalFacets;
     bool _sliceObjects;
 
     const Container::size_type _messageSizeMax;
+
+    struct SeqData
+    {
+	SeqData(int, int);
+	int numElements;
+	int minSize;
+	SeqData* previous;
+    };
+    SeqData* _seqDataStack;
 
     ObjectList* _objectList;
 };

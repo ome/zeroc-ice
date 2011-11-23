@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -23,13 +18,13 @@
 #include <Ice/Router.h>
 #include <Ice/LocatorInfo.h>
 #include <Ice/Locator.h>
-#include <Ice/StringUtil.h>
 #include <Ice/Functional.h>
 #include <Ice/ObjectAdapterI.h> // For getIncomingConnections().
 #include <Ice/Connection.h>
 #include <Ice/ConnectionFactory.h>
 #include <Ice/LoggerUtil.h>
 #include <Ice/TraceLevels.h>
+#include <IceUtil/StringUtil.h>
 
 using namespace std;
 using namespace Ice;
@@ -228,7 +223,19 @@ IceInternal::Reference::streamWrite(BasicStream* s) const
     // write the identity.
     //
 
-    s->write(facet);
+    //
+    // For compatibility with the old FacetPath.
+    //
+    if(facet.empty())
+    {
+	s->write(vector<string>());
+    }
+    else
+    {
+	vector<string> facetPath;
+	facetPath.push_back(facet);
+	s->write(facetPath);
+    }
     
     s->write(static_cast<Byte>(mode));
     
@@ -275,32 +282,22 @@ IceInternal::Reference::toString() const
 
     if(!facet.empty())
     {
-        ostringstream f;
-        FacetPath::const_iterator p = facet.begin();
-        while(p != facet.end())
-        {
-            f << encodeString(*p++, "/");
-            if(p != facet.end())
-            {
-                f << '/';
-            }
-        }
-
-        //
-        // If the encoded facet string contains characters which
-        // the reference parser uses as separators, then we enclose
-        // the facet string in quotes.
-        //
         s << " -f ";
-        const string& fs = f.str();
-        if(fs.find_first_of(" \t\n\r:@") != string::npos)
-        {
-            s << '"' << fs << '"';
-        }
-        else
-        {
-            s << fs;
-        }
+
+	//  
+	// If the encoded facet string contains characters which
+	// the reference parser uses as separators, then we enclose
+	// the facet string in quotes.
+	//
+	string fs = IceUtil::escapeString(facet, "");
+	if(fs.find_first_of(" \t\n\r:@") != string::npos)
+	{
+	    s << '"' << fs << '"';
+	}
+	else
+	{
+	    s << fs;
+	}
     }
 
     switch(mode)
@@ -357,7 +354,7 @@ IceInternal::Reference::toString() const
     }
     else if(!adapterId.empty())
     {
-        string a = encodeString(adapterId, "");
+        string a = IceUtil::escapeString(adapterId, "");
         //
         // If the encoded adapter id string contains characters which
         // the reference parser uses as separators, then we enclose
@@ -408,7 +405,7 @@ IceInternal::Reference::changeContext(const Context& newContext) const
 }
 
 ReferencePtr
-IceInternal::Reference::changeFacet(const FacetPath& newFacet) const
+IceInternal::Reference::changeFacet(const string& newFacet) const
 {
     if(newFacet == facet)
     {
@@ -639,7 +636,7 @@ IceInternal::Reference::changeDefault() const
     LocatorInfoPtr defaultLocatorInfo = instance->locatorManager()->
 	get(instance->referenceFactory()->getDefaultLocator());
 
-    return instance->referenceFactory()->create(identity, context, FacetPath(), ModeTwoway, false, adapterId,
+    return instance->referenceFactory()->create(identity, context, "", ModeTwoway, false, adapterId,
 						endpoints, defaultRouterInfo, defaultLocatorInfo, 0, true);
 }
 
@@ -836,7 +833,7 @@ IceInternal::Reference::filterEndpoints(const vector<EndpointPtr>& allEndpoints)
 IceInternal::Reference::Reference(const InstancePtr& inst,
 				  const Identity& ident,
 				  const Context& ctx,
-				  const FacetPath& facPath,
+				  const string& fs,
 				  Mode md,
 				  bool sec,
 				  const string& adptid,
@@ -848,7 +845,7 @@ IceInternal::Reference::Reference(const InstancePtr& inst,
     instance(inst),
     identity(ident),
     context(ctx),
-    facet(facPath),
+    facet(fs),
     mode(md),
     secure(sec),
     adapterId(adptid),
@@ -868,7 +865,6 @@ IceInternal::Reference::Reference(const InstancePtr& inst,
 	
     string::const_iterator p;
     Context::const_iterator q;
-    FacetPath::const_iterator r;
 
     for(p = identity.name.begin(); p != identity.name.end(); ++p)
     {
@@ -892,12 +888,9 @@ IceInternal::Reference::Reference(const InstancePtr& inst,
 	}
     }
 
-    for(r = facet.begin(); r != facet.end(); ++r)
+    for(p = facet.begin(); p != facet.end(); ++p)
     {
-	for(p = r->begin(); p != r->end(); ++p)
-	{
-	    h = 5 * h + *p;
-	}
+	h = 5 * h + *p;
     }
 
     h = 5 * h + static_cast<Int>(mode);

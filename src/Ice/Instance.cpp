@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -16,7 +11,9 @@
 #include <Ice/TraceLevels.h>
 #include <Ice/DefaultsAndOverrides.h>
 #include <Ice/RouterInfo.h>
+#include <Ice/Router.h>
 #include <Ice/LocatorInfo.h>
+#include <Ice/Locator.h>
 #include <Ice/ReferenceFactory.h>
 #include <Ice/ProxyFactory.h>
 #include <Ice/ThreadPool.h>
@@ -54,7 +51,9 @@ using namespace Ice;
 using namespace IceInternal;
 
 int Instance::_globalStateCounter = 0;
+
 IceUtil::Mutex* Instance::_globalStateMutex = new IceUtil::Mutex;
+
 #ifndef _WIN32
 string Instance::_identForOpenlog;
 #endif

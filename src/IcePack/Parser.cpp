@@ -1,19 +1,18 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
 #include <Ice/Ice.h>
 #include <IcePack/Parser.h>
+
+#ifdef GPL_BUILD
+#   include <IcePack/GPL.h>
+#endif
 
 #ifdef HAVE_READLINE
 #   include <readline/readline.h>
@@ -77,18 +76,24 @@ IcePack::Parser::usage()
 	"server stderr NAME MESSAGE  Write MESSAGE on server NAME's stderr.\n"
 	"server activation NAME [on-demand | manual] \n"
 	"                            Set the server activation mode to on-demand or\n"
-	"                            manual activation."
+	"                            manual."
 	"\n"
         "adapter list                List all registered adapters.\n"
-	"adapter endpoints NAME      Get adapter NAME endpoints.\n"
+	"adapter endpoints NAME      Get endpoints of adapter NAME.\n"
 	"\n"
 	"object add PROXY [TYPE]     Add an object to the object registry,\n"
-	"                            optionally specifies its  type.\n"
+	"                            optionally specifying its type.\n"
 	"object remove IDENTITY      Remove an object from the object registry.\n"
 	"object find TYPE            Find all objects with the type TYPE.\n"
 	"\n"
-        "shutdown                    Shut the IcePack registry down.\n";
+        "shutdown                    Shut the IcePack registry down.\n"
+#ifdef GPL_BUILD
+	"show copying                Show conditions for redistributing copies of this program.\n"
+	"show warranty               Show the warranty for this program.\n"
+#endif
+	;
 }
+
 
 void
 IcePack::Parser::addApplication(const list<string>& args)
@@ -701,6 +706,36 @@ IcePack::Parser::shutdown()
 	error(s.str());
     }
 }
+
+void
+IcePack::Parser::showBanner()
+{
+    cout << "Ice " << ICE_STRING_VERSION << "  Copyright 2003-2004 ZeroC, Inc." << endl;
+#ifdef GPL_BUILD
+    cout << gplBanner << endl;
+#endif
+}
+
+void
+IcePack::Parser::showCopying()
+{
+#if defined(GPL_BUILD)
+    cout << gplCopying << endl;
+#else
+    cout << "This command is not implemented yet." << endl;
+#endif
+}
+
+void
+IcePack::Parser::showWarranty()
+{
+#if defined(GPL_BUILD)
+    cout << gplWarranty << endl;
+#else
+    cout << "This command is not implemented yet." << endl;
+#endif
+}
+
 
 void
 IcePack::Parser::getInput(char* buf, int& result, int maxSize)

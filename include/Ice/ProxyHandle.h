@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -20,6 +15,73 @@
 
 namespace IceInternal
 {
+
+template<typename T> class ProxyHandle;
+
+}
+
+namespace IceProxy 
+{ 
+namespace Ice
+{
+
+class Object;
+
+}
+}
+
+namespace Ice
+{
+
+typedef ::IceInternal::ProxyHandle< ::IceProxy::Ice::Object> ObjectPrx;
+
+}
+
+namespace IceInternal
+{
+
+template<typename P> P 
+checkedCastImpl(const ::Ice::ObjectPrx&);
+
+template<typename P> P 
+uncheckedCastImpl(const ::Ice::ObjectPrx&);
+
+template<typename P> P 
+checkedCastImpl(const ::Ice::ObjectPrx&, const std::string&);
+
+template<typename P> P
+uncheckedCastImpl(const ::Ice::ObjectPrx&, const std::string&);
+
+//
+// Upcast
+//
+template<typename T, typename Y> inline ProxyHandle<T> 
+checkedCastHelper(const ::IceInternal::ProxyHandle<Y>& b, T*)
+{
+    return b;
+}
+
+template<typename T, typename Y> inline ProxyHandle<T> 
+uncheckedCastHelper(const ::IceInternal::ProxyHandle<Y>& b, T*)
+{
+    return b;
+}
+
+//
+// Downcast
+//
+template<typename T, typename Y> inline ProxyHandle<T> 
+checkedCastHelper(const ::IceInternal::ProxyHandle<Y>& b, void*)
+{
+    return checkedCastImpl<ProxyHandle<T> >(b);
+}
+
+template<typename T, typename Y> inline ProxyHandle<T> 
+uncheckedCastHelper(const ::IceInternal::ProxyHandle<Y>& b, void*)
+{
+    return uncheckedCastImpl<ProxyHandle<T> >(b);
+}
+
 
 //
 // Like IceInternal::Handle, but specifically for proxies, with
@@ -172,33 +234,27 @@ public:
     template<class Y>
     static ProxyHandle checkedCast(const ProxyHandle<Y>& r)
     {
-	ProxyHandle p;
-	::IceInternal::checkedCast(r, p);
-	return p;
+	Y* tag = 0;
+	return ::IceInternal::checkedCastHelper<T>(r, tag);
     }
 
     template<class Y>
     static ProxyHandle checkedCast(const ProxyHandle<Y>& r, const std::string& f)
     {
-	ProxyHandle p;
-	::IceInternal::checkedCast(r, f, p);
-	return p;
+	return ::IceInternal::checkedCastImpl<ProxyHandle>(r, f);
     }
 
     template<class Y>
     static ProxyHandle uncheckedCast(const ProxyHandle<Y>& r)
     {
-	ProxyHandle p;
-	::IceInternal::uncheckedCast(r, p);
-	return p;
+	Y* tag = 0;
+	return::IceInternal::uncheckedCastHelper<T>(r, tag);
     }
 
     template<class Y>
     static ProxyHandle uncheckedCast(const ProxyHandle<Y>& r, const std::string& f)
     {
-	ProxyHandle p;
-	::IceInternal::uncheckedCast(r, f, p);
-	return p;
+	return ::IceInternal::uncheckedCastImpl<ProxyHandle>(r, f);
     }
 };
 

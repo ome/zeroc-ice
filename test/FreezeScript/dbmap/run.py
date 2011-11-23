@@ -1,15 +1,10 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003
-# ZeroC, Inc.
-# Billerica, MA, USA
+# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 #
-# All Rights Reserved.
-#
-# Ice is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License version 2 as published by
-# the Free Software Foundation.
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
@@ -89,26 +84,44 @@ for oldfile in files:
 
 print "ok"
 
-print "testing default transformations... ",
+print "creating test database... ",
 sys.stdout.flush()
 
 makedb = os.path.join(directory, "makedb") + " " + directory
-os.system(makedb)
+if os.system(makedb) != 0:
+    sys.exit(1)
+
+print "ok"
 
 testold = os.path.join(directory, "TestOld.ice")
 testnew = os.path.join(directory, "TestNew.ice")
 initxml = os.path.join(directory, "init.xml")
 checkxml = os.path.join(directory, "check.xml")
 
+print "initializing test database... ",
+sys.stdout.flush()
+
 command = transformdb + " --old " + testold + " --new " + testold + " -f " + initxml + " " + dbdir + " default.db " + init_dbdir
-os.system(command)
+if os.system(command) != 0:
+    sys.exit(1)
+
+print "ok"
+
+print "executing default transformations... ",
+sys.stdout.flush()
 
 command = transformdb + " --old " + testold + " --new " + testnew + " --key int --value ::S " + init_dbdir + " default.db " + check_dbdir
 stdin, stdout, stderr = os.popen3(command)
-
 stderr.readlines()
+
+print "ok"
+
+print "validating database... ",
+sys.stdout.flush()
+
 command = transformdb + " --old " + testnew + " --new " + testnew + " -f " + checkxml + " " + check_dbdir + " default.db " + tmp_dbdir
-os.system(command)
+if os.system(command) != 0:
+    sys.exit(1)
 
 print "ok"
 

@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -236,6 +231,33 @@ Slice::Builtin::usesClasses() const
     return _kind == KindObject;
 }
 
+size_t
+Slice::Builtin::minWireSize() const
+{
+    static size_t minWireSizeTable[] =
+    {
+	1, // KindByte
+	1, // KindBool
+	2, // KindShort
+	4, // KindInt
+	8, // KindLong
+	4, // KindFloat
+	8, // KindDouble
+	1, // KindString: at least one byte for an empty string.
+	4, // KindObject: at least 4 bytes (to marshal an index instead of an instance).
+	2  // KindObjectProxy: at least an empty identity for a nil proxy, that is, 2 bytes.
+    };
+
+    assert(_kind != KindLocalObject);
+    return minWireSizeTable[_kind];
+}
+
+bool
+Slice::Builtin::isVariableLength() const
+{
+    return _kind == KindString || _kind == KindObject || _kind == KindObjectProxy;
+}
+
 Builtin::Kind
 Slice::Builtin::kind() const
 {
@@ -264,8 +286,8 @@ const char* Slice::Builtin::builtinTable[] =
     };
 
 Slice::Builtin::Builtin(const UnitPtr& unit, Kind kind) :
-    Type(unit),
     SyntaxTreeBase(unit),
+    Type(unit),
     _kind(kind)
 {
     //
@@ -1768,9 +1790,9 @@ Slice::Module::visit(ParserVisitor* visitor)
 }
 
 Slice::Module::Module(const ContainerPtr& container, const string& name) :
-    Contained(container, name),
+    SyntaxTreeBase(container->unit()),
     Container(container->unit()),
-    SyntaxTreeBase(container->unit())
+    Contained(container, name)
 {
 }
 
@@ -1811,9 +1833,9 @@ Slice::Constructed::dependencies()
 }
 
 Slice::Constructed::Constructed(const ContainerPtr& container, const string& name, bool local) :
+    SyntaxTreeBase(container->unit()),
     Type(container->unit()),
     Contained(container, name),
-    SyntaxTreeBase(container->unit()),
     _local(local)
 {
 }
@@ -1856,7 +1878,19 @@ Slice::ClassDecl::uses(const ContainedPtr&) const
 bool
 Slice::ClassDecl::usesClasses() const
 {
-    return !isLocal() && !_interface;
+    return !_interface;
+}
+
+size_t
+Slice::ClassDecl::minWireSize() const
+{
+    return 4; // At least four bytes for an instance, if the instance is marshaled as an index.
+}
+
+bool
+Slice::ClassDecl::isVariableLength() const
+{
+    return true;
 }
 
 string
@@ -1949,10 +1983,10 @@ Slice::ClassDecl::checkBasesAreLegal(const string& name, bool local, const Class
 }
 
 Slice::ClassDecl::ClassDecl(const ContainerPtr& container, const string& name, bool intf, bool local) :
-    Constructed(container, name, local),
+    SyntaxTreeBase(container->unit()),
     Type(container->unit()),
     Contained(container, name),
-    SyntaxTreeBase(container->unit()),
+    Constructed(container, name, local),
     _interface(intf)
 {
 }
@@ -2203,6 +2237,7 @@ Slice::ClassDef::createOperation(const string& name,
 	_unit->error(msg);
     }
     
+    _hasOperations = true;
     OperationPtr op = new Operation(this, name, returnType, mode);
     _contents.push_back(op);
     return op;
@@ -2438,28 +2473,36 @@ Slice::ClassDef::allClassDataMembers() const
     // Check if we have a base class. If so, recursively
     // get the class data members of the base(s).
     //
-    ClassList::const_iterator p = _bases.begin();
-    if(p != _bases.end() && !(*p)->isInterface())
+    if(!_bases.empty() && !_bases.front()->isInterface())
     {
-	result = (*p)->allClassDataMembers();
+	result = _bases.front()->allClassDataMembers();
     }
 
     //
     // Append this class's class members.
     //
-    for(ContainedList::const_iterator it = _contents.begin(); it != _contents.end(); ++it)
+    DataMemberList myMembers = classDataMembers();
+    result.splice(result.end(), myMembers);
+
+    return result;
+}
+
+bool
+Slice::ClassDef::canBeCyclic() const
+{
+    if(!_bases.empty() && !_bases.front()->isInterface() && _bases.front()->canBeCyclic())
     {
-	DataMemberPtr q = DataMemberPtr::dynamicCast(*it);
-	if(q)
+	return true;
+    }
+    DataMemberList dml = dataMembers();
+    for(DataMemberList::const_iterator i = dml.begin(); i != dml.end(); ++i)
+    {
+	if((*i)->type()->usesClasses())
 	{
-	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(q->type());
-	    if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(q->type()))
-	    {
-		result.push_back(q);
-	    }
+	    return true;
 	}
     }
-    return result;
+    return false;
 }
 
 bool
@@ -2521,6 +2564,12 @@ Slice::ClassDef::hasDataMembers() const
     return _hasDataMembers;
 }
 
+bool
+Slice::ClassDef::hasOperations() const
+{
+    return _hasOperations;
+}
+
 Contained::ContainedType
 Slice::ClassDef::containedType() const
 {
@@ -2559,11 +2608,12 @@ Slice::ClassDef::visit(ParserVisitor* visitor)
 
 Slice::ClassDef::ClassDef(const ContainerPtr& container, const string& name, bool intf, const ClassList& bases,
 			  bool local) :
-    Contained(container, name),
-    Container(container->unit()),
     SyntaxTreeBase(container->unit()),
+    Container(container->unit()),
+    Contained(container, name),
     _interface(intf),
     _hasDataMembers(false),
+    _hasOperations(false),
     _bases(bases),
     _local(local)
 {
@@ -2601,6 +2651,18 @@ Slice::Proxy::usesClasses() const
     return false;
 }
 
+size_t
+Slice::Proxy::minWireSize() const
+{
+    return 2; // At least two bytes for a nil proxy (empty name and empty category strings).
+}
+
+bool
+Slice::Proxy::isVariableLength() const
+{
+    return true;
+}
+
 ClassDeclPtr
 Slice::Proxy::_class() const
 {
@@ -2608,8 +2670,8 @@ Slice::Proxy::_class() const
 }
 
 Slice::Proxy::Proxy(const ClassDeclPtr& cl) :
-    Type(cl->unit()),
-    SyntaxTreeBase(cl->unit()),
+     SyntaxTreeBase(cl->unit()),
+     Type(cl->unit()),
     __class(cl)
 {
 }
@@ -2813,6 +2875,24 @@ Slice::Exception::allBases() const
 }
 
 bool
+Slice::Exception::isBaseOf(const ExceptionPtr& other) const
+{
+    if(this->scoped() == other->scoped())
+    {
+	return false;
+    }
+    ExceptionList bases = other->allBases();
+    for(ExceptionList::const_iterator i = bases.begin(); i != bases.end(); ++i)
+    {
+	if((*i)->scoped() == scoped())
+	{
+	    return true;
+	}
+    }
+    return false;
+}
+
+bool
 Slice::Exception::isLocal() const
 {
     return _local;
@@ -2866,9 +2946,9 @@ Slice::Exception::visit(ParserVisitor* visitor)
 }
 
 Slice::Exception::Exception(const ContainerPtr& container, const string& name, const ExceptionPtr& base, bool local) :
+    SyntaxTreeBase(container->unit()),
     Container(container->unit()),
     Contained(container, name),
-    SyntaxTreeBase(container->unit()),
     _base(base),
     _local(local)
 {
@@ -3024,6 +3104,35 @@ Slice::Struct::usesClasses() const
     return false;
 }
 
+size_t
+Slice::Struct::minWireSize() const
+{
+    //
+    // At least the sum of the minimum member sizes.
+    //
+    size_t sz = 0;
+    DataMemberList dml = dataMembers();
+    for(DataMemberList::const_iterator i = dml.begin(); i != dml.end(); ++i)
+    {
+	sz += (*i)->type()->minWireSize();
+    }
+    return sz;
+}
+
+bool
+Slice::Struct::isVariableLength() const
+{
+    DataMemberList dml = dataMembers();
+    for(DataMemberList::const_iterator i = dml.begin(); i != dml.end(); ++i)
+    {
+	if((*i)->type()->isVariableLength())
+	{
+	    return true;
+	}
+    }
+    return false;
+}
+
 string
 Slice::Struct::kindOf() const
 {
@@ -3047,11 +3156,11 @@ Slice::Struct::recDependencies(set<ConstructedPtr>& dependencies)
 }
 
 Slice::Struct::Struct(const ContainerPtr& container, const string& name, bool local) :
+    SyntaxTreeBase(container->unit()),
     Container(container->unit()),
-    Constructed(container, name, local),
     Type(container->unit()),
     Contained(container, name),
-    SyntaxTreeBase(container->unit())
+    Constructed(container, name, local)
 {
 }
 
@@ -3089,6 +3198,18 @@ Slice::Sequence::usesClasses() const
     return _type->usesClasses();
 }
 
+size_t
+Slice::Sequence::minWireSize() const
+{
+    return 1; // An empty sequence.
+}
+
+bool
+Slice::Sequence::isVariableLength() const
+{
+    return true;
+}
+
 string
 Slice::Sequence::kindOf() const
 {
@@ -3113,10 +3234,10 @@ Slice::Sequence::recDependencies(set<ConstructedPtr>& dependencies)
 }
 
 Slice::Sequence::Sequence(const ContainerPtr& container, const string& name, const TypePtr& type, bool local) :
-    Constructed(container, name, local),
+    SyntaxTreeBase(container->unit()),
     Type(container->unit()),
     Contained(container, name),
-    SyntaxTreeBase(container->unit()),
+    Constructed(container, name, local),
     _type(type)
 {
 }
@@ -3169,6 +3290,18 @@ bool
 Slice::Dictionary::usesClasses() const
 {
     return _valueType->usesClasses();
+}
+
+size_t
+Slice::Dictionary::minWireSize() const
+{
+    return 1; // An empty dictionary.
+}
+
+bool
+Slice::Dictionary::isVariableLength() const
+{
+    return true;
 }
 
 string
@@ -3272,10 +3405,10 @@ Slice::Dictionary::legalKeyType(const TypePtr& type)
 
 Slice::Dictionary::Dictionary(const ContainerPtr& container, const string& name, const TypePtr& keyType,
 			      const TypePtr& valueType, bool local) :
-    Constructed(container, name, local),
+    SyntaxTreeBase(container->unit()),
     Type(container->unit()),
     Contained(container, name),
-    SyntaxTreeBase(container->unit()),
+    Constructed(container, name, local),
     _keyType(keyType),
     _valueType(valueType)
 {
@@ -3326,6 +3459,27 @@ Slice::Enum::usesClasses() const
     return false;
 }
 
+size_t
+Slice::Enum::minWireSize() const
+{
+    size_t sz = _enumerators.size();
+    if(sz <= 0x7f)
+    {
+	return 1;
+    }
+    if(sz <= 0x7fff)
+    {
+	return 2;
+    }
+    return 4;
+}
+
+bool
+Slice::Enum::isVariableLength() const
+{
+    return false;
+}
+
 string
 Slice::Enum::kindOf() const
 {
@@ -3345,10 +3499,10 @@ Slice::Enum::recDependencies(set<ConstructedPtr>&)
 }
 
 Slice::Enum::Enum(const ContainerPtr& container, const string& name, bool local) :
-    Constructed(container, name, local),
+    SyntaxTreeBase(container->unit()),
     Type(container->unit()),
     Contained(container, name),
-    SyntaxTreeBase(container->unit())
+    Constructed(container, name, local)
 {
 }
 
@@ -3381,8 +3535,8 @@ Slice::Enumerator::kindOf() const
 }
 
 Slice::Enumerator::Enumerator(const ContainerPtr& container, const string& name) :
-    Contained(container, name),
-    SyntaxTreeBase(container->unit())
+    SyntaxTreeBase(container->unit()),
+    Contained(container, name)
 {
 }
 
@@ -3626,8 +3780,10 @@ Slice::Const::isInRange(const string& name, const TypePtr& constType, const stri
 
 Slice::Const::Const(const ContainerPtr& container, const string& name,
 	                  const TypePtr& type, const string& value) :
+    SyntaxTreeBase(container->unit()), 
     Contained(container, name),
-    SyntaxTreeBase(container->unit()), _type(type), _value(value)
+    _type(type), 
+    _value(value)
 {
 }
 
@@ -3932,9 +4088,9 @@ Slice::Operation::Operation(const ContainerPtr& container,
 	                    const string& name,
 			    const TypePtr& returnType,
 			    Mode mode) :
+    SyntaxTreeBase(container->unit()),
     Contained(container, name),
     Container(container->unit()),
-    SyntaxTreeBase(container->unit()),
     _returnType(returnType),
     _mode(mode)
 {
@@ -3987,8 +4143,8 @@ Slice::ParamDecl::visit(ParserVisitor* visitor)
 }
 
 Slice::ParamDecl::ParamDecl(const ContainerPtr& container, const string& name, const TypePtr& type, bool isOutParam) :
-    Contained(container, name),
     SyntaxTreeBase(container->unit()),
+    Contained(container, name),
     _type(type),
     _isOutParam(isOutParam)
 {
@@ -4035,8 +4191,8 @@ Slice::DataMember::visit(ParserVisitor* visitor)
 }
 
 Slice::DataMember::DataMember(const ContainerPtr& container, const string& name, const TypePtr& type) :
-    Contained(container, name),
     SyntaxTreeBase(container->unit()),
+    Contained(container, name),
     _type(type)
 {
 }
@@ -4653,4 +4809,32 @@ Slice::CICompare::operator()(const string& s1, const string& s2) const
     {
 	return ::tolower(*p1) < ::tolower(*p2);
     }
-};
+}
+
+#if defined(__SUNPRO_CC)
+bool 
+Slice::cICompare(const std::string& s1, const std::string& s2)
+{
+    CICompare c;
+    return c(s1, s2);
+}
+#endif
+
+
+// ----------------------------------------------------------------------
+// DerivedToBaseCompare
+// ----------------------------------------------------------------------
+
+bool
+Slice::DerivedToBaseCompare::operator()(const ExceptionPtr& e1, const ExceptionPtr& e2) const
+{
+    return e2->isBaseOf(e1);
+}
+
+#if defined(__SUNPRO_CC)
+bool 
+Slice::derivedToBaseCompare(const ExceptionPtr& e1, const ExceptionPtr& e2)
+{
+    return e2->isBaseOf(e1);
+}
+#endif

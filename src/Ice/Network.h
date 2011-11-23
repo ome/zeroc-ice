@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -79,6 +74,7 @@ ICE_PROTOCOL_API bool acceptInterrupted();
 ICE_PROTOCOL_API bool noBuffers();
 ICE_PROTOCOL_API bool wouldBlock();
 ICE_PROTOCOL_API bool connectFailed();
+ICE_PROTOCOL_API bool connectionRefused();
 ICE_PROTOCOL_API bool connectInProgress();
 ICE_PROTOCOL_API bool connectionLost();
 ICE_PROTOCOL_API bool notConnected();

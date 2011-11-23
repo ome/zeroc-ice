@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -23,7 +18,7 @@ namespace Freeze
 {
 
 class IndexI;
-class EvictorI;
+class ObjectStore;
 
 class FREEZE_API Index : public IceUtil::Shared
 {
@@ -31,29 +26,30 @@ public:
     
     virtual ~Index();
 
+    const std::string& name() const;
+    const std::string& facet() const;
+
 protected:
     
-    Index(const std::string&);
+    Index(const std::string&, const std::string&);
   
-    virtual bool
-    marshalKey(const Ice::ObjectPtr&, Freeze::Key&) const = 0;
+    virtual bool marshalKey(const Ice::ObjectPtr&, Freeze::Key&) const = 0;
     
-    std::vector<Ice::Identity>
-    untypedFindFirst(const Freeze::Key&, Ice::Int) const;
+    std::vector<Ice::Identity> untypedFindFirst(const Freeze::Key&, Ice::Int) const;
     
-    std::vector<Ice::Identity>
-    untypedFind(const Freeze::Key&) const;
+    std::vector<Ice::Identity> untypedFind(const Freeze::Key&) const;
     
-    Ice::Int
-    untypedCount(const Freeze::Key&) const;
-
-    friend class IndexI;
-
+    Ice::Int untypedCount(const Freeze::Key&) const;
+    
     Ice::CommunicatorPtr _communicator;
 
 private:
 
-    friend class EvictorI;
+    friend class IndexI;
+    friend class ObjectStore;
+    
+    std::string _name;
+    std::string _facet;
     IndexI* _impl;
 };
 

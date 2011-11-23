@@ -29,6 +29,9 @@
 # define	ICE_PACK_ACTIVATION	278
 # define	ICE_PACK_OBJECT	279
 # define	ICE_PACK_FIND	280
+# define	ICE_PACK_SHOW	281
+# define	ICE_PACK_COPYING	282
+# define	ICE_PACK_WARRANTY	283
 
 
 #endif /* not BISON_GRAMMAR_TAB_H */

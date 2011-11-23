@@ -1,15 +1,10 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003
-# ZeroC, Inc.
-# Billerica, MA, USA
+# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 #
-# All Rights Reserved.
-#
-# Ice is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License version 2 as published by
-# the Free Software Foundation.
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
@@ -41,23 +36,35 @@ if os.path.exists(tmp_dbdir):
     shutil.rmtree(tmp_dbdir)
 os.mkdir(tmp_dbdir)
 
-print "testing evictor transformations... ",
+print "creating test database... ",
 sys.stdout.flush()
 
 makedb = os.path.join(directory, "makedb") + " " + directory
-os.system(makedb)
+if os.system(makedb) != 0:
+    sys.exit(1)
+
+print "ok"
 
 testold = os.path.join(directory, "TestOld.ice")
 testnew = os.path.join(directory, "TestNew.ice")
 transformxml = os.path.join(directory, "transform.xml")
 checkxml = os.path.join(directory, "check.xml")
 
-command = transformdb + " -p --old " + testold + " --new " + testnew + " -f " + transformxml + " " + dbdir + " evictor.db " + check_dbdir
+print "executing evictor transformations... ",
+sys.stdout.flush()
+
+command = transformdb + " -e -p --old " + testold + " --new " + testnew + " -f " + transformxml + " " + dbdir + " evictor.db " + check_dbdir
 stdin, stdout, stderr = os.popen3(command)
 stderr.readlines()
 
-command = transformdb + " --old " + testnew + " --new " + testnew + " -f " + checkxml + " " + check_dbdir + " evictor.db " + tmp_dbdir
-os.system(command)
+print "ok"
+
+print "validating database... ",
+sys.stdout.flush()
+
+command = transformdb + " -e --old " + testnew + " --new " + testnew + " -f " + checkxml + " " + check_dbdir + " evictor.db " + tmp_dbdir
+if os.system(command) != 0:
+    sys.exit(1)
 
 print "ok"
 

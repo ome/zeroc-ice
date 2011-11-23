@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -125,6 +120,11 @@ public:
 				      const Test::StringSS&,
 				      Test::StringSS&,
 				      const Ice::Current&);
+
+    virtual Test::StringSSS opStringSSS(const Test::StringSSS&,
+	                                const Test::StringSSS&,
+					Test::StringSSS&,
+					const ::Ice::Current&);
 
     virtual Test::ByteBoolD opByteBoolD(const Test::ByteBoolD&, const Test::ByteBoolD&, 
 					Test::ByteBoolD&,

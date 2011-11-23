@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -67,7 +62,7 @@ public:
     const InstancePtr instance;
     const Ice::Identity identity;
     const Ice::Context context;
-    const Ice::FacetPath facet;
+    const std::string facet;
     const Mode mode;
     const bool secure;
     const std::string adapterId;
@@ -84,7 +79,7 @@ public:
     //
     ReferencePtr changeIdentity(const Ice::Identity&) const;
     ReferencePtr changeContext(const Ice::Context&) const;
-    ReferencePtr changeFacet(const Ice::FacetPath&) const;
+    ReferencePtr changeFacet(const std::string&) const;
     ReferencePtr changeTimeout(int) const;
     ReferencePtr changeMode(Mode) const;
     ReferencePtr changeSecure(bool) const;
@@ -108,7 +103,7 @@ public:
 
 private:
 
-    Reference(const InstancePtr&, const Ice::Identity&, const Ice::Context&, const Ice::FacetPath&, Mode, bool,
+    Reference(const InstancePtr&, const Ice::Identity&, const Ice::Context&, const std::string&, Mode, bool,
 	      const std::string&, const std::vector<EndpointPtr>&,
 	      const RouterInfoPtr&, const LocatorInfoPtr&, const Ice::ObjectAdapterPtr&, bool);
     friend class ReferenceFactory;

@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -48,18 +43,8 @@ namespace IceInternal
 ICE_API void incRef(::IceProxy::Ice::Router*);
 ICE_API void decRef(::IceProxy::Ice::Router*);
 
-ICE_API void checkedCast(const ::Ice::ObjectPrx&, ProxyHandle< ::IceProxy::Ice::Router>&);
-ICE_API void checkedCast(const ::Ice::ObjectPrx&, const ::std::string&, ProxyHandle< ::IceProxy::Ice::Router>&);
-ICE_API void uncheckedCast(const ::Ice::ObjectPrx&, ProxyHandle< ::IceProxy::Ice::Router>&);
-ICE_API void uncheckedCast(const ::Ice::ObjectPrx&, const ::std::string&, ProxyHandle< ::IceProxy::Ice::Router>&);
-
 ICE_API void incRef(::IceProxy::Ice::Locator*);
 ICE_API void decRef(::IceProxy::Ice::Locator*);
-
-ICE_API void checkedCast(const ::Ice::ObjectPrx&, ProxyHandle< ::IceProxy::Ice::Locator>&);
-ICE_API void checkedCast(const ::Ice::ObjectPrx&, const ::std::string&, ProxyHandle< ::IceProxy::Ice::Locator>&);
-ICE_API void uncheckedCast(const ::Ice::ObjectPrx&, ProxyHandle< ::IceProxy::Ice::Locator>&);
-ICE_API void uncheckedCast(const ::Ice::ObjectPrx&, const ::std::string&, ProxyHandle< ::IceProxy::Ice::Locator>&);
 
 }
 
@@ -98,8 +83,6 @@ public:
     ::std::vector< ::std::string> ice_ids(const ::Ice::Context&);
     ::std::string ice_id();
     ::std::string ice_id(const ::Ice::Context&);
-    ::Ice::FacetPath ice_facets();
-    ::Ice::FacetPath ice_facets(const ::Ice::Context&);
     bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 	            ::std::vector< ::Ice::Byte>&); // Returns true if ok, false if user exception.
     bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
@@ -117,9 +100,8 @@ public:
     ::Ice::Context ice_getContext() const;
     ::Ice::ObjectPrx ice_newContext(const ::Ice::Context&) const;
 
-    ::Ice::FacetPath ice_getFacet() const;
-    ::Ice::ObjectPrx ice_newFacet(const ::Ice::FacetPath&) const;
-    ::Ice::ObjectPrx ice_appendFacet(const ::std::string&) const;
+    const ::std::string& ice_getFacet() const;
+    ::Ice::ObjectPrx ice_newFacet(const ::std::string&) const;
 
     ::Ice::ObjectPrx ice_twoway() const;
     bool ice_isTwoway() const;
@@ -177,7 +159,6 @@ public:
     virtual void ice_ping(const ::Ice::Context&) = 0;
     virtual ::std::vector< ::std::string> ice_ids(const ::Ice::Context&) = 0;
     virtual ::std::string ice_id(const ::Ice::Context&) = 0;
-    virtual ::Ice::FacetPath ice_facets(const ::Ice::Context&) = 0;
     virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 			    ::std::vector< ::Ice::Byte>&, const ::Ice::Context&) = 0;
 };
@@ -197,7 +178,6 @@ public:
     virtual void ice_ping(const ::Ice::Context&);
     virtual ::std::vector< ::std::string> ice_ids(const ::Ice::Context&);
     virtual ::std::string ice_id(const ::Ice::Context&);
-    virtual ::Ice::FacetPath ice_facets(const ::Ice::Context&);
     virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 			    ::std::vector< ::Ice::Byte>&, const ::Ice::Context&);
 
@@ -227,7 +207,6 @@ public:
     virtual void ice_ping(const ::Ice::Context&);
     virtual ::std::vector< ::std::string> ice_ids(const ::Ice::Context&);
     virtual ::std::string ice_id(const ::Ice::Context&);
-    virtual ::Ice::FacetPath ice_facets(const ::Ice::Context&);
     virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 			    ::std::vector< ::Ice::Byte>&, const ::Ice::Context&);
     void __copyFrom(const ::IceInternal::Handle< ::IceDelegateD::Ice::Object>&);
@@ -288,6 +267,153 @@ struct ProxyIdentityAndFacetEqual : std::binary_function<bool, ObjectPrx&, Objec
     }
 };
 
+}
+
+namespace IceInternal
+{
+
+//
+// checkedCast and uncheckedCast functions without facet:
+//
+
+//
+// Out of line implementations
+//
+template<typename P> P 
+checkedCastImpl(const ::Ice::ObjectPrx& b)
+{
+    P d = 0;
+    if(b.get())
+    {
+	typedef typename P::element_type T;
+
+	d = dynamic_cast<T*>(b.get());
+	if(!d && b->ice_isA(T::ice_staticId()))
+	{
+	    d = new T;
+	    d->__copyFrom(b);
+	}
+    }
+    return d;
+}
+
+template<typename P> P 
+uncheckedCastImpl(const ::Ice::ObjectPrx& b)
+{
+    P d = 0;
+    if(b)
+    {
+	typedef typename P::element_type T;
+
+	d = dynamic_cast<T*>(b.get());
+	if(!d)
+	{
+	    d = new T;
+	    d->__copyFrom(b);
+	}
+    }
+    return d;
+}
+
+// 
+// checkedCast and uncheckedCast with facet:
+//
+
+//
+// Helper; last parameter = typeId
+//
+ICE_API ::Ice::ObjectPrx checkedCastImpl(const ::Ice::ObjectPrx&, const std::string&, const std::string&);
+
+//
+// Specializations for P = ::Ice::ObjectPrx
+// We have to use inline functions for broken compilers such as VC7.
+//
+
+template<> inline ::Ice::ObjectPrx 
+checkedCastImpl< ::Ice::ObjectPrx>(const ::Ice::ObjectPrx& b, const std::string& f)
+{
+    return checkedCastImpl(b, f, "::Ice::Object");
+}
+
+template<> inline ::Ice::ObjectPrx 
+uncheckedCastImpl< ::Ice::ObjectPrx>(const ::Ice::ObjectPrx& b, const std::string& f)
+{
+    ::Ice::ObjectPrx d = 0;
+    if(b)
+    {
+	d = b->ice_newFacet(f);
+    }
+    return d;
+}
+
+template<typename P> P 
+checkedCastImpl(const ::Ice::ObjectPrx& b, const std::string& f)
+{
+    P d = 0;
+
+    typedef typename P::element_type T;
+    ::Ice::ObjectPrx bb = checkedCastImpl(b, f, T::ice_staticId());
+
+    if(bb)
+    {
+	d = new T;
+	d->__copyFrom(bb);
+    }
+    return d;
+}
+
+template<typename P> P 
+uncheckedCastImpl(const ::Ice::ObjectPrx& b, const std::string& f)
+{
+    P d = 0;
+    if(b)
+    {
+	typedef typename P::element_type T;
+
+	::Ice::ObjectPrx bb = b->ice_newFacet(f);
+	d = new T;
+	d->__copyFrom(bb);
+    }
+    return d;
+}
+}
+
+//
+// checkedCast and uncheckedCast functions provided in the global namespace
+// 
+
+template<typename P, typename Y> inline P 
+checkedCast(const ::IceInternal::ProxyHandle<Y>& b)
+{
+    Y* tag = 0;
+#if defined(_MSC_VER) && (_MSC_VER < 1300)
+    return ::IceInternal::checkedCastHelper<P::element_type>(b, tag);
+#else
+    return ::IceInternal::checkedCastHelper<typename P::element_type>(b, tag);
+#endif
+
+}
+template<typename P, typename Y> inline P
+uncheckedCast(const ::IceInternal::ProxyHandle<Y>& b)
+{
+    Y* tag = 0;
+#if defined(_MSC_VER) && (_MSC_VER < 1300)
+    return ::IceInternal::uncheckedCastHelper<P::element_type>(b, tag);
+#else
+    return ::IceInternal::uncheckedCastHelper<typename P::element_type>(b, tag);
+#endif
+}
+
+template<typename P> inline P 
+checkedCast(const ::Ice::ObjectPrx& b, const std::string& f)
+{
+    return ::IceInternal::checkedCastImpl<P>(b, f);
+}
+
+template<typename P> inline P 
+uncheckedCast(const ::Ice::ObjectPrx& b, const std::string& f)
+{
+    return ::IceInternal::checkedCastImpl<P>(b, f);
 }
 
 #endif

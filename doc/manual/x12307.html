@@ -1,0 +1,1240 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Ice Miscellaneous Properties</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Properties"
+HREF="c11815.html"><LINK
+REL="PREVIOUS"
+TITLE="Ice Default and Override Properties"
+HREF="x12219.html"><LINK
+REL="NEXT"
+TITLE="IceSSL Properties"
+HREF="x12524.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x12219.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Properties</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x12524.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="AEN12307"
+></A
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> Miscellaneous Properties</H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12310"
+></A
+>Ice.GC.Interval</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12312"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.GC.Interval=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12316"
+></A
+>Description</H3
+><P
+>This property determines the frequency with which the class garbage
+collector runs. If the interval is set to zero (the default), no
+collector thread is created. Otherwise, the collector thread runs
+every <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> seconds.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12320"
+></A
+>Ice.RetryIntervals</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12322"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.RetryIntervals=<TT
+CLASS="REPLACEABLE"
+><I
+>num [num ...]</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12326"
+></A
+>Description</H3
+><P
+>This property defines the number of times an operation is re-tried and
+the delay between each retry. For example, if the property is set to
+<TT
+CLASS="REPLACEABLE"
+><I
+>0 100 500</I
+></TT
+>, the operation will be re-tried 3
+times: immediately re-tried upon the first failure, after waiting 100
+(ms) upon the second failure, after waiting 500 (ms) upon the third
+failure. The default value is to retry once immediately (0). If set to
+-1, no retry will occur.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12330"
+></A
+>Ice.MessageSizeMax</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12332"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.MessageSizeMax=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12336"
+></A
+>Description</H3
+><P
+>This property controls the maximum size (in kilobytes) of a protocol
+message that will be accepted or sent by the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> run time.
+The size includes the size of the Ice protocol header. Messages larger
+than this size cause a [MemoryLimitException].
+The default size is 1024 (1 Megabyte).
+Settings with a value less than 1 are ignored.</P
+><P
+>This property adjusts the value of <TT
+CLASS="LITERAL"
+>Ice.UDP.RcvSize</TT
+> and <TT
+CLASS="LITERAL"
+>Ice.UDP.SndSize</TT
+>, that
+is, if <TT
+CLASS="LITERAL"
+>Ice.UDP.RcvSize</TT
+> or <TT
+CLASS="LITERAL"
+>Ice.UDP.SndSize</TT
+> are larger than
+<TT
+CLASS="LITERAL"
+>Ice.MessageSizeMax * 1024 + 28</TT
+>, they are adjusted to
+<TT
+CLASS="LITERAL"
+>Ice.MessageSizeMax * 1024 + 28</TT
+>.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12347"
+></A
+>Ice.ChangeUser</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12349"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.ChangeUser=<TT
+CLASS="REPLACEABLE"
+><I
+>user</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12353"
+></A
+>Description</H3
+><P
+>If set, <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> will change the user and group id to the respective ids
+of <TT
+CLASS="REPLACEABLE"
+><I
+>user</I
+></TT
+> in
+<TT
+CLASS="LITERAL"
+>/etc/passwd</TT
+>. This only works if the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+>
+application is executed by the super-user. (Unix only.)</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12360"
+></A
+>Ice.ConnectionIdleTime</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12362"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.ConnectionIdleTime=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12366"
+></A
+>Description</H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+ACM (Active Connection Management) is enabled. This means that
+connections are automatically closed after they have been idle for
+<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> seconds. This is transparent to user
+code, i.e., closed connections are automatically reestablished in case
+they are needed again. The default value is 60, meaning that idle
+connections are automatically closed after one minute.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12371"
+></A
+>Ice.MonitorConnections</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12373"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.MonitorConnections=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12377"
+></A
+>Description</H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+<SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> will start a thread that monitors connections. This thread is
+responsible for shutting down idle connections (see
+<TT
+CLASS="LITERAL"
+>Ice.ConnectionIdleTime</TT
+>), as well as for enforcing
+AMI timeouts. The default value is the value of
+<TT
+CLASS="LITERAL"
+>Ice.ConnectionIdleTime</TT
+>.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12384"
+></A
+>Ice.PrintProcessId</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12386"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.PrintProcessId=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12390"
+></A
+>Description</H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the process ID is printed on standard output upon startup.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12394"
+></A
+>Ice.ProgramName</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12396"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.ProgramName=<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12400"
+></A
+>Description</H3
+><P
+><TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+> is the program name, which is set
+automatically from <TT
+CLASS="LITERAL"
+>argv[0]</TT
+> (C++) and from
+<TT
+CLASS="LITERAL"
+>AppDomain.CurrentDomain.FriendlyName</TT
+> (C#) during
+initialization. (For Java, <TT
+CLASS="LITERAL"
+>Ice.ProgramName</TT
+> is initialized to the empty string.)
+For all languages, the default name can be overridden by setting this property.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12407"
+></A
+>Ice.ServerId</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12409"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.ServerId=<TT
+CLASS="REPLACEABLE"
+><I
+>id</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12413"
+></A
+>Description</H3
+><P
+>The value <TT
+CLASS="REPLACEABLE"
+><I
+>id</I
+></TT
+> is used as the server id when
+an object adapter registers the server with the locator registry.
+Refer to the description of the object adapter property
+<TT
+CLASS="LITERAL"
+><TT
+CLASS="REPLACEABLE"
+><I
+>adapter</I
+></TT
+>.RegisterProcess</TT
+>
+for more information.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12419"
+></A
+>Ice.ServerIdleTime</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12421"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.ServerIdleTime=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12425"
+></A
+>Description</H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+<SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> will automatically call
+<TT
+CLASS="LITERAL"
+>Communicator::shutdown</TT
+> after the Communicator has
+been idle for <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> seconds. This will shut
+down the Communicator's server side, and all threads waiting in
+<TT
+CLASS="LITERAL"
+>Communicator::waitForShutdown</TT
+> will return. After
+that, a server will typically do some cleanup work, and then exit. The
+default value is zero, meaning that the server will not shut down
+automatically.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12433"
+></A
+>Ice.UseEventLog</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12435"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.UseEventLog=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12439"
+></A
+>Description</H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+a special logger is installed that logs to the Windows Event Log
+instead of standard error. The event source name is the
+value of <TT
+CLASS="LITERAL"
+>Ice.ProgramName</TT
+>. (Windows 2000/XP only.)</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12444"
+></A
+>Ice.UseSyslog</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12446"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.UseSyslog=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12450"
+></A
+>Description</H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+a special logger is installed that logs to the syslog facility
+instead of standard error. The identifier for syslog is the
+value of <TT
+CLASS="LITERAL"
+>Ice.ProgramName</TT
+>. (Unix only.)</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12455"
+></A
+>Ice.Logger.Timestamp</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12457"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.Logger.Timestamp=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12461"
+></A
+>Description</H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the output of the default logger will include timestamps.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12465"
+></A
+>Ice.NullHandleAbort</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12467"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.NullHandleAbort=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12471"
+></A
+>Description</H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+invoking an operation using a null smart pointer (i.e., a handle)
+causes the program to abort immediately instead of raising
+<TT
+CLASS="LITERAL"
+>IceUtil::NullHandleException</TT
+>. (C++ only.)</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12476"
+></A
+>Ice.Nohup</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12478"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.Nohup=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12482"
+></A
+>Description</H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+the C++ classes <TT
+CLASS="LITERAL"
+>Ice::Application</TT
+> and
+<TT
+CLASS="LITERAL"
+>Ice::Service</TT
+> ignore <TT
+CLASS="LITERAL"
+>SIGHUP</TT
+>
+(for UNIX) and <TT
+CLASS="LITERAL"
+>CTRL_LOGOFF_EVENT</TT
+> (for Windows). As a
+result, an application that sets <TT
+CLASS="LITERAL"
+>Ice.Nohup</TT
+> continues
+to run if the user that started the application logs off. The default
+value for <TT
+CLASS="LITERAL"
+>Ice::Application</TT
+> is <TT
+CLASS="LITERAL"
+>0</TT
+>,
+and the default value for <TT
+CLASS="LITERAL"
+>Ice::Service</TT
+> is
+<TT
+CLASS="LITERAL"
+>1</TT
+> (C++ only.)</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12495"
+></A
+>Ice.UDP.RcvSize, Ice.UDP.SndSize</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12497"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.UDP.RcvSize=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+>
+Ice.UDP.SndSize=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12502"
+></A
+>Description</H3
+><P
+>These properties set the UDP receive and send buffer sizes to the specified value
+in bytes. Ice messages larger than <TT
+CLASS="LITERAL"
+><TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> - 28</TT
+> bytes
+cause a <TT
+CLASS="LITERAL"
+>DatagramLimitException</TT
+>. The default value depends on the configuration
+of the local UDP stack. (Common default values are <TT
+CLASS="LITERAL"
+>65535</TT
+> and <TT
+CLASS="LITERAL"
+>8192</TT
+> bytes.)</P
+><P
+>The OS may impose lower and upper limits on the receive and send buffer sizes or otherwise adjust the buffer sizes.
+If a limit is requested that is lower than the OS-imposed minimum, the value is silently adjusted to the
+OS-imposed minimum. If a limit is requested that is larger than the OS-imposed maximum, the value is adjusted
+to the OS-imposed maximum; in addition, <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> logs a warning showing the requested size and the adjusted size.</P
+><P
+>Settings of these properties less than <TT
+CLASS="LITERAL"
+>28</TT
+> are ignored.</P
+><P
+>Note that, on many operating systems, it is possible to set buffer sizes greater than <TT
+CLASS="LITERAL"
+>65535</TT
+>.
+Such settings do not change the hard limit of <TT
+CLASS="LITERAL"
+>65507</TT
+> bytes for the payload of a UDP packet,
+but merely affect how much data can be buffered by the kernel.</P
+><P
+>Settings less than <TT
+CLASS="LITERAL"
+>65535</TT
+> limit the size of <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> datagrams as well as adjust the kernel
+buffer sizes.</P
+><P
+>If <TT
+CLASS="LITERAL"
+>Ice.MessageSizeMax</TT
+> is set and <TT
+CLASS="LITERAL"
+>Ice.MessageSizeMax * 1024 + 28</TT
+>
+is smaller than the UDP receive or send buffer size, the corresponding UDP buffer size is reduced to
+<TT
+CLASS="LITERAL"
+>Ice.MessageSizeMax * 1024 + 28</TT
+>.</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x12219.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x12524.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> Default and Override Properties</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c11815.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+> Properties</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

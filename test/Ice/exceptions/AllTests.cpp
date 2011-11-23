@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -156,8 +151,7 @@ public:
 	}
 	catch(const Ice::FacetNotExistException& ex)
 	{
-	    test(ex.facet.size() == 1);
-	    test(ex.facet[0] == "no such facet");
+	    test(ex.facet == "no such facet");
 	}
 	catch(...)
 	{
@@ -168,37 +162,6 @@ public:
 };
 
 typedef IceUtil::Handle<AMI_Thrower_throwAasAFacetNotExistI> AMI_Thrower_throwAasAFacetNotExistIPtr;
-
-class AMI_Thrower_throwAasAFacetNotExist2I : public AMI_Thrower_throwAasA, public CallbackBase
-{
-public:
-
-    virtual void ice_response()
-    {
-	test(false);
-    }
-
-    virtual void ice_exception(const Ice::Exception& exc)
-    {
-	try
-	{
-	    exc.ice_throw();
-	}
-	catch(const Ice::FacetNotExistException& ex)
-	{
-	    test(ex.facet.size() == 2);
-	    test(ex.facet[0] == "no such facet");
-	    test(ex.facet[1] == "no such facet either");
-	}
-	catch(...)
-	{
-	    test(false);
-	}
-	called();
-    }
-};
-
-typedef IceUtil::Handle<AMI_Thrower_throwAasAFacetNotExist2I> AMI_Thrower_throwAasAFacetNotExist2IPtr;
 
 class AMI_Thrower_throwAorDasAorDI : public AMI_Thrower_throwAorDasAorD, public CallbackBase
 {
@@ -407,6 +370,12 @@ public:
 	    test(ex.aMem == 1);
 	    test(ex.a2Mem == 2);
 	}
+        catch(const Ice::OperationNotExistException&)
+        {
+            //
+            // This operation is not supported in Java.
+            //
+        }
 	catch(...)
 	{
 	    test(false);
@@ -778,6 +747,12 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 	test(ex.aMem == 1);
 	test(ex.a2Mem == 2);
     }
+    catch(const Ice::OperationNotExistException&)
+    {
+	//
+        // This operation is not supported in Java.
+        //
+    }
     catch(...)
     {
 	test(false);
@@ -829,6 +804,12 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     catch(const A& ex)
     {
 	test(ex.aMem == 1);
+    }
+    catch(const Ice::OperationNotExistException&)
+    {
+	//
+        // This operation is not supported in Java.
+        //
     }
     catch(...)
     {
@@ -1013,21 +994,7 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 	}
 	catch(const Ice::FacetNotExistException& ex)
 	{
-	    test(ex.facet.size() == 1);
-	    test(ex.facet[0] == "no such facet");
-	}
-
-	ThrowerPrx thrower3 = ThrowerPrx::uncheckedCast(thrower2, "no such facet either");
-	try
-	{
-	    thrower3->ice_ping();
-	    test(false);
-	}
-	catch(const Ice::FacetNotExistException& ex)
-	{
-	    test(ex.facet.size() == 2);
-	    test(ex.facet[0] == "no such facet");
-	    test(ex.facet[1] == "no such facet either");
+	    test(ex.facet == "no such facet");
 	}
     }
     catch(...)
@@ -1230,13 +1197,6 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 	{
 	    AMI_Thrower_throwAasAFacetNotExistIPtr cb = new AMI_Thrower_throwAasAFacetNotExistI;
 	    thrower2->throwAasA_async(cb, 1);
-	    test(cb->check());
-	}
-
-	ThrowerPrx thrower3 = ThrowerPrx::uncheckedCast(thrower2, "no such facet either");
-	{
-	    AMI_Thrower_throwAasAFacetNotExist2IPtr cb = new AMI_Thrower_throwAasAFacetNotExist2I;
-	    thrower3->throwAasA_async(cb, 1);
 	    test(cb->check());
 	}
 

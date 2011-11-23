@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -235,8 +230,11 @@ IceSSL::RSACertificateGen::generate(const RSACertificateGenContext& context)
     assert(x509SelfSigned != 0);
 
     // Set version to V3.
-    int setVersionReturn = X509_set_version(x509SelfSigned, 2);
-    assert(setVersionReturn != 0);
+#ifdef NDEBUG // Avoid compiler warnings when compiling with optimization.
+    X509_set_version(x509SelfSigned, 2);
+#else
+    assert(X509_set_version(x509SelfSigned, 2) != 0);
+#endif
 
     ASN1_INTEGER_set(X509_get_serialNumber(x509SelfSigned), 0);
 

@@ -416,15 +416,10 @@ char *yytext;
 
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -443,7 +438,7 @@ using namespace Ice;
 
 #define YY_INPUT(buf, result, maxSize) parser->getInput(buf, result, maxSize)
 
-#line 446 "lex.yy.c"
+#line 441 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -594,10 +589,10 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 39 "Scanner.l"
+#line 34 "Scanner.l"
 
 
-#line 600 "lex.yy.c"
+#line 595 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -682,7 +677,7 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 41 "Scanner.l"
+#line 36 "Scanner.l"
 {
     // C++-style comment
     int c;
@@ -699,7 +694,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 55 "Scanner.l"
+#line 50 "Scanner.l"
 {
     // C-style comment
     while(true)
@@ -731,91 +726,91 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 84 "Scanner.l"
+#line 79 "Scanner.l"
 {
     return TOK_HELP;
 }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 88 "Scanner.l"
+#line 83 "Scanner.l"
 {
     return TOK_EXIT;
 }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 92 "Scanner.l"
+#line 87 "Scanner.l"
 {
     return TOK_ADD_CONTACTS;
 }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 96 "Scanner.l"
+#line 91 "Scanner.l"
 {
     return TOK_FIND_CONTACTS;
 }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 100 "Scanner.l"
+#line 95 "Scanner.l"
 {
     return TOK_NEXT_FOUND_CONTACT;
 }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 104 "Scanner.l"
+#line 99 "Scanner.l"
 {
     return TOK_PRINT_CURRENT;
 }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 108 "Scanner.l"
+#line 103 "Scanner.l"
 {
     return TOK_SET_CURRENT_NAME;
 }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 112 "Scanner.l"
+#line 107 "Scanner.l"
 {
     return TOK_SET_CURRENT_ADDRESS;
 }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 116 "Scanner.l"
+#line 111 "Scanner.l"
 {
     return TOK_SET_CURRENT_PHONE;
 }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 120 "Scanner.l"
+#line 115 "Scanner.l"
 {
     return TOK_REMOVE_CURRENT;
 }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 124 "Scanner.l"
+#line 119 "Scanner.l"
 {
     return TOK_SET_EVICTOR_SIZE;
 }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 128 "Scanner.l"
+#line 123 "Scanner.l"
 {
     return TOK_SHUTDOWN;
 }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 132 "Scanner.l"
+#line 127 "Scanner.l"
 {
     size_t len = strlen(yytext);
     for(size_t i = 0; i < len; ++i)
@@ -833,7 +828,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 147 "Scanner.l"
+#line 142 "Scanner.l"
 {
     size_t len = strlen(yytext);
     for(size_t i = 0; i < len; ++i)
@@ -848,7 +843,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 159 "Scanner.l"
+#line 154 "Scanner.l"
 {
     // "..."-type strings
     string s;
@@ -930,7 +925,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 238 "Scanner.l"
+#line 233 "Scanner.l"
 {
     // '...'-type strings
     string s;
@@ -963,7 +958,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 268 "Scanner.l"
+#line 263 "Scanner.l"
 {
     // Simple strings
     string s;
@@ -990,10 +985,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 292 "Scanner.l"
+#line 287 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 996 "lex.yy.c"
+#line 991 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1875,5 +1870,5 @@ int main()
 	return 0;
 	}
 #endif
-#line 292 "Scanner.l"
+#line 287 "Scanner.l"
 

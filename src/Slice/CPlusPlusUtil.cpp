@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -64,21 +59,16 @@ Slice::changeInclude(const string& orig, const vector<string>& includePaths)
 void
 Slice::printHeader(Output& out)
 {
-    static const char* header = 
+    static const char* header =
 "// **********************************************************************\n"
 "//\n"
-"// Copyright (c) 2003\n"
-"// ZeroC, Inc.\n"
-"// Billerica, MA, USA\n"
+"// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.\n"
 "//\n"
-"// All Rights Reserved.\n"
-"//\n"
-"// Ice is free software; you can redistribute it and/or modify it under\n"
-"// the terms of the GNU General Public License version 2 as published by\n"
-"// the Free Software Foundation.\n"
+"// This copy of Ice is licensed to you under the terms described in the\n"
+"// ICE_LICENSE file included in this distribution.\n"
 "//\n"
 "// **********************************************************************\n"
-	;
+        ;
 
     out << header;
     out << "\n// Ice version " << ICE_STRING_VERSION;

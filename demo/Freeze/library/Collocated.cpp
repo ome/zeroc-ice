@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -47,13 +42,16 @@ int
 LibraryCollocated::run(int argc, char* argv[])
 {
     PropertiesPtr properties = communicator()->getProperties();
-    string value;
     
     //
-    // Create an Evictor for books.
-    //    
-    Freeze::EvictorPtr evictor = Freeze::createEvictor(communicator(), _envName, "books");
+    // Create an object adapter
+    //
+    ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Library");
 
+    //
+    // Create an evictor for books.
+    //
+    Freeze::EvictorPtr evictor = Freeze::createEvictor(adapter, _envName, "books");
     Int evictorSize = properties->getPropertyAsInt("Library.EvictorSize");
     if(evictorSize > 0)
     {
@@ -61,9 +59,8 @@ LibraryCollocated::run(int argc, char* argv[])
     }
     
     //
-    // Create an Object Adapter, use the Evictor as Servant Locator.
+    // Use the evictor as servant Locator.
     //
-    ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Library");
     adapter->addServantLocator(evictor, "book");
     
     //
@@ -73,7 +70,7 @@ LibraryCollocated::run(int argc, char* argv[])
     adapter->add(library, stringToIdentity("library"));
     
     //
-    // Create and install a factory and initializer for books.
+    // Create and install a factory for books.
     //
     ObjectFactoryPtr bookFactory = new BookFactory(library);
     communicator()->addObjectFactory(bookFactory, "::Book");

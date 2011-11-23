@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -58,6 +53,25 @@ ICE_PATCH_API Ice::ByteSeq calcPartialMD5(const std::string&, Ice::Int, const Ic
 
 ICE_PATCH_API Ice::ByteSeq getBZ2(const std::string&, Ice::Int, Ice::Int);
 ICE_PATCH_API void createBZ2(const std::string&, const Ice::LoggerPtr&);
+
+typedef std::map<Ice::ByteSeq, Ice::Long> TotalMap;
+
+ICE_PATCH_API TotalMap getTotalMap(const Ice::CommunicatorPtr&, const std::string&);
+ICE_PATCH_API void putTotalMap(const Ice::CommunicatorPtr&, const std::string&, const TotalMap&);
+
+#ifdef _WIN32
+
+//
+// Function object to do case-insensitive string comparison.
+//
+class ICE_PATCH_API CICompare : public std::binary_function<std::string, std::string, bool>
+{
+public:
+
+    bool operator()(const std::string&, const std::string&) const;
+};
+
+#endif
 
 }
 

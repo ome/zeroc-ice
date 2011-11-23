@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -262,6 +257,20 @@ MyDerivedClassI::opStringSS(const Test::StringSS& p1,
     p3 = p1;
     std::copy(p2.begin(), p2.end(), std::back_inserter(p3));
     Test::StringSS r;
+    r.resize(p2.size());
+    std::reverse_copy(p2.begin(), p2.end(), r.begin());
+    return r;
+}
+
+Test::StringSSS
+MyDerivedClassI::opStringSSS(const Test::StringSSS& p1,
+			     const Test::StringSSS& p2,
+			     Test::StringSSS& p3,
+			     const ::Ice::Current&)
+{
+    p3 = p1;
+    std::copy(p2.begin(), p2.end(), std::back_inserter(p3));
+    Test::StringSSS r;
     r.resize(p2.size());
     std::reverse_copy(p2.begin(), p2.end(), r.begin());
     return r;

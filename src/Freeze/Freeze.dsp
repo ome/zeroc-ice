@@ -54,12 +54,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 libdb42.lib /nologo /dll /machine:I386 /out:"Release/freeze13.dll" /implib:"Release/freeze.lib"
+# ADD LINK32 libdb42.lib /nologo /dll /machine:I386 /out:"Release/freeze14.dll" /implib:"Release/freeze.lib"
 # SUBTRACT LINK32 /pdb:none /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\freeze.lib ..\..\lib	copy $(OutDir)\freeze13.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\freeze.lib ..\..\lib	copy $(OutDir)\freeze14.dll ..\..\bin
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Freeze - Win32 Debug"
@@ -87,12 +87,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386
-# ADD LINK32 libdb42d.lib /nologo /dll /debug /machine:I386 /out:"Debug/freeze13d.dll" /implib:"Debug/freezed.lib"
+# ADD LINK32 libdb42d.lib /nologo /dll /debug /machine:I386 /out:"Debug/freeze14d.dll" /implib:"Debug/freezed.lib"
 # SUBTRACT LINK32 /pdb:none /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Debug
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\freezed.lib ..\..\lib	copy $(OutDir)\freeze13d.pdb ..\..\bin	copy $(OutDir)\freeze13d.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\freezed.lib ..\..\lib	copy $(OutDir)\freeze14d.pdb ..\..\bin	copy $(OutDir)\freeze14d.dll ..\..\bin
 # End Special Build Tool
 
 !ENDIF 
@@ -127,6 +127,10 @@ SOURCE=.\Transaction.cpp
 # Begin Source File
 
 SOURCE=.\Evictor.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ObjectStore.cpp
 # End Source File
 # Begin Source File
 
@@ -231,6 +235,10 @@ SOURCE=..\..\include\Freeze\EvictorF.h
 # Begin Source File
 
 SOURCE=..\..\include\Freeze\Index.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ObjectStore.h
 # End Source File
 # Begin Source File
 
@@ -489,7 +497,7 @@ SOURCE=..\..\slice\Freeze\Evictor.ice
 
 !IF  "$(CFG)" == "Freeze - Win32 Release"
 
-USERDEP__EVICT="..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
+USERDEP__EVICT="..\..\bin\slice2freeze.exe" "..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
 # Begin Custom Build
 InputPath=..\..\slice\Freeze\Evictor.ice
 
@@ -503,11 +511,13 @@ BuildCmds= \
 
 "Evictor.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
+
+
 # End Custom Build
 
 !ELSEIF  "$(CFG)" == "Freeze - Win32 Debug"
 
-USERDEP__EVICT="..\..\bin\slice2cpp.exe"	
+USERDEP__EVICT="..\..\bin\slice2freeze.exe" "..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
 # Begin Custom Build
 InputPath=..\..\slice\Freeze\Evictor.ice
 
@@ -521,6 +531,7 @@ BuildCmds= \
 
 "Evictor.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
+
 # End Custom Build
 
 !ENDIF 

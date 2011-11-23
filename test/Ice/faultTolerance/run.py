@@ -1,15 +1,10 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003
-# ZeroC, Inc.
-# Billerica, MA, USA
+# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 #
-# All Rights Reserved.
-#
-# Ice is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License version 2 as published by
-# the Free Software Foundation.
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
@@ -37,7 +32,7 @@ base = 12340
 serverPipes = { }
 for i in range(0, num):
     print "starting server #%d..." % (i + 1),
-    serverPipes[i] = os.popen(server + TestUtil.serverOptions + " %d" % (base + i))
+    serverPipes[i] = os.popen(server + TestUtil.serverOptions + " %d" % (base + i) + " 2>&1")
     TestUtil.getServerPid(serverPipes[i])
     TestUtil.getAdapterReady(serverPipes[i])
     print "ok"
@@ -46,7 +41,7 @@ ports = ""
 for i in range(0, num):
     ports = "%s %d" % (ports, base + i)
 print "starting client...",
-clientPipe = os.popen(client + TestUtil.clientOptions + " " + ports)
+clientPipe = os.popen(client + TestUtil.clientOptions + " " + ports + " 2>&1")
 print "ok"
 
 TestUtil.printOutputFromPipe(clientPipe)

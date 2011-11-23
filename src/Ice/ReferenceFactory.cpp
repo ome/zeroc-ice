@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -21,7 +16,7 @@
 #include <Ice/EndpointFactoryManager.h>
 #include <Ice/RouterInfo.h>
 #include <Ice/LocatorInfo.h>
-#include <Ice/StringUtil.h>
+#include <IceUtil/StringUtil.h>
 
 using namespace std;
 using namespace Ice;
@@ -33,7 +28,7 @@ void IceInternal::decRef(::IceInternal::ReferenceFactory* p) { p->__decRef(); }
 ReferencePtr
 IceInternal::ReferenceFactory::create(const Identity& ident,
 				      const Context& context,
-				      const vector<string>& facet,
+				      const string& facet,
 				      Reference::Mode mode,
 				      bool secure,
 				      const string& adapterId,
@@ -150,7 +145,7 @@ IceInternal::ReferenceFactory::create(const string& str)
     // or double quotation marks.
     //
     string idstr;
-    end = checkQuote(s, beg);
+    end = IceUtil::checkQuote(s, beg);
     if(end == string::npos)
     {
 	ProxyParseException ex(__FILE__, __LINE__);
@@ -215,7 +210,7 @@ IceInternal::ReferenceFactory::create(const string& str)
         }
     }
 
-    vector<string> facet;
+    string facet;
     Reference::Mode mode = Reference::ModeTwoway;
     bool secure = false;
     string adapter;
@@ -264,7 +259,7 @@ IceInternal::ReferenceFactory::create(const string& str)
             if(s[argumentBeg] != '@' && s[argumentBeg] != ':' && s[argumentBeg] != '-')
             {
                 beg = argumentBeg;
-                end = checkQuote(s, beg);
+                end = IceUtil::checkQuote(s, beg);
                 if(end == string::npos)
                 {
 		    ProxyParseException ex(__FILE__, __LINE__);
@@ -304,55 +299,12 @@ IceInternal::ReferenceFactory::create(const string& str)
 		    throw ex;
 		}
 
-                const string::size_type argLen = argument.size();
-
-                string::size_type argBeg = 0;
-                while(argBeg < argLen)
-                {
-                    //
-                    // Skip slashes
-                    //
-                    argBeg = argument.find_first_not_of("/", argBeg);
-                    if(argBeg == string::npos)
-                    {
-                        break;
-                    }
-
-                    //
-                    // Find unescaped slash
-                    //
-                    string::size_type argEnd = argBeg;
-                    while((argEnd = argument.find('/', argEnd)) != string::npos)
-                    {
-                        if(argument[argEnd - 1] != '\\')
-                        {
-                            break;
-                        }
-                        argEnd++;
-                    }
-
-                    if(argEnd == string::npos)
-                    {
-                        argEnd = argLen;
-                    }
-
-                    string token;
-                    if(!decodeString(argument, argBeg, argEnd, token))
-                    {
-			ProxyParseException ex(__FILE__, __LINE__);
-			ex.str = str;
-			throw ex;
-                    }
-                    facet.push_back(token);
-                    argBeg = argEnd + 1;
-                }
-
-                if(facet.size() == 0)
-                {
+		if(!IceUtil::unescapeString(argument, 0, argument.size(), facet))
+		{
 		    ProxyParseException ex(__FILE__, __LINE__);
 		    ex.str = str;
 		    throw ex;
-                }
+		}
 
 		break;
 	    }
@@ -470,7 +422,7 @@ IceInternal::ReferenceFactory::create(const string& str)
 		throw ex;
 	    }
 
-            end = checkQuote(s, beg);
+            end = IceUtil::checkQuote(s, beg);
             if(end == string::npos)
             {
 		ProxyParseException ex(__FILE__, __LINE__);
@@ -490,7 +442,7 @@ IceInternal::ReferenceFactory::create(const string& str)
                 beg++; // Skip leading quote
             }
 
-            if(!decodeString(s, beg, end, adapter) || adapter.size() == 0)
+            if(!IceUtil::unescapeString(s, beg, end, adapter) || adapter.size() == 0)
             {
 		ProxyParseException ex(__FILE__, __LINE__);
 		ex.str = str;
@@ -517,8 +469,20 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
 	return 0;
     }
 
-    vector<string> facet;
-    s->read(facet);
+    //
+    // For compatibility with the old FacetPath.
+    //
+    vector<string> facetPath;
+    s->read(facetPath);
+    string facet;
+    if(!facetPath.empty())
+    {
+	if(facetPath.size() > 1)
+	{
+	    throw ProxyUnmarshalException(__FILE__, __LINE__);
+	}
+	facet.swap(facetPath[0]);
+    }
 
     Byte modeAsByte;
     s->read(modeAsByte);

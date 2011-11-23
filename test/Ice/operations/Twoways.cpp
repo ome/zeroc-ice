@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -444,6 +439,63 @@ twoways(const Test::MyClassPrx& p)
 	test(rso[0][0] == "xyz");
 	test(rso[1].size() == 0);
 	test(rso[2].size() == 0);
+    }
+
+    {
+	Test::StringSSS sssi1;
+	sssi1.resize(2);
+	sssi1[0].resize(2);
+	sssi1[0][0].push_back("abc");
+	sssi1[0][0].push_back("de");
+	sssi1[0][1].push_back("xyz");
+	sssi1[1].resize(1);
+	sssi1[1][0].push_back("hello");
+
+	Test::StringSSS sssi2;
+	sssi2.resize(3);
+	sssi2[0].resize(2);
+	sssi2[0][0].push_back("");
+	sssi2[0][0].push_back("");
+	sssi2[0][1].push_back("abcd");
+	sssi2[1].resize(1);
+	sssi2[1][0].push_back("");
+
+	Test::StringSSS ssso;
+	Test::StringSSS rsso;
+
+	rsso = p->opStringSSS(sssi1, sssi2, ssso);
+	test(ssso.size() == 5);
+	test(ssso[0].size() == 2);
+	test(ssso[0][0].size() == 2);
+	test(ssso[0][1].size() == 1);
+	test(ssso[1].size() == 1);
+	test(ssso[1][0].size() == 1);
+	test(ssso[2].size() == 2);
+	test(ssso[2][0].size() == 2);
+	test(ssso[2][1].size() == 1);
+	test(ssso[3].size() == 1);
+	test(ssso[3][0].size() == 1);
+	test(ssso[4].size() == 0);
+	test(ssso[0][0][0] == "abc");
+	test(ssso[0][0][1] == "de");
+	test(ssso[0][1][0] == "xyz");
+	test(ssso[1][0][0] == "hello");
+	test(ssso[2][0][0] == "");
+	test(ssso[2][0][1] == "");
+	test(ssso[2][1][0] == "abcd");
+	test(ssso[3][0][0] == "");
+
+	test(rsso.size() == 3);
+	test(rsso[0].size() == 0);
+	test(rsso[1].size() == 1);
+	test(rsso[1][0].size() == 1);
+	test(rsso[2].size() == 2);
+	test(rsso[2][0].size() == 2);
+	test(rsso[2][1].size() == 1);
+	test(rsso[1][0][0] == "");
+	test(rsso[2][0][0] == "");
+	test(rsso[2][0][1] == "");
+	test(rsso[2][1][0] == "abcd");
     }
 
     {

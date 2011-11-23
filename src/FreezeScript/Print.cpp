@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2004
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -195,14 +190,11 @@ FreezeScript::PrintVisitor::visitObject(const ObjectRefPtr& data)
             _objectCount++;
             _out << sb;
 
-            //
-            // Print Ice::Object members.
-            //
             DataMemberMap members = value->getMembers();
-            DataMemberMap::const_iterator q = members.find("ice_facets");
-            assert(q != members.end());
-            _out << nl << q->first << " = ";
-            q->second->visit(*this);
+
+            //
+            // If Ice::Object had any members, this is where we would print them.
+            //
 
             if(decl)
             {

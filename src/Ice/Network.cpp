@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -97,6 +92,17 @@ IceInternal::connectFailed()
            errno == ECONNRESET ||
            errno == ESHUTDOWN ||
            errno == ECONNABORTED;
+#endif
+}
+
+bool
+IceInternal::connectionRefused()
+{
+#ifdef _WIN32
+    int error = WSAGetLastError();
+    return error == WSAECONNREFUSED;
+#else
+    return errno == ECONNREFUSED;
 #endif
 }
 
@@ -484,7 +490,13 @@ repeatConnect:
 #else
 		errno = val;
 #endif
-		if(connectFailed())
+		if(connectionRefused())
+		{
+		    ConnectionRefusedException ex(__FILE__, __LINE__);
+		    ex.error = getSocketErrno();
+		    throw ex;
+		}
+		else if(connectFailed())
 		{
 		    ConnectFailedException ex(__FILE__, __LINE__);
 		    ex.error = getSocketErrno();
@@ -502,7 +514,13 @@ repeatConnect:
 	}
     
 	closeSocket(fd);
-	if(connectFailed())
+	if(connectionRefused())
+	{
+	    ConnectionRefusedException ex(__FILE__, __LINE__);
+	    ex.error = getSocketErrno();
+	    throw ex;
+	}
+	else if(connectFailed())
 	{
 	    ConnectFailedException ex(__FILE__, __LINE__);
 	    ex.error = getSocketErrno();
@@ -774,28 +792,38 @@ IceInternal::createPipe(SOCKET fds[2])
     try
     {
 	fds[0] = createSocket(false);
-	setBlock(fds[0], true);
     }
     catch(...)
     {
-	closeSocket(fd);
+	::closesocket(fd);
 	throw;
     }
 
     try
     {
+	setBlock(fds[0], true);
 	doConnect(fds[0], addr, -1);
 	fds[1] = doAccept(fd, -1);
+    }
+    catch(...)
+    {
+	::closesocket(fd);
+	::closesocket(fds[0]);
+	throw;
+    }
+
+    ::closesocket(fd);
+	
+    try
+    {
 	setBlock(fds[1], true);
     }
     catch(...)
     {
-	closeSocket(fd);
-	closeSocket(fds[0]);
+	::closesocket(fds[0]);
+	::closesocket(fds[1]);
 	throw;
     }
-
-    closeSocket(fd);
 
 #else
 
@@ -806,8 +834,17 @@ IceInternal::createPipe(SOCKET fds[2])
 	throw ex;
     }
 
-    setBlock(fds[0], true);
-    setBlock(fds[1], true);
+    try
+    {
+	setBlock(fds[0], true);
+	setBlock(fds[1], true);
+    }
+    catch(...)
+    {
+	close(fds[0]);
+	close(fds[1]);
+	throw;
+    }
 
 #endif
 }

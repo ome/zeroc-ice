@@ -1,14 +1,9 @@
-#**********************************************************************
+# **********************************************************************
 #
-# Copyright (c) 2003
-# ZeroC, Inc.
-# Billerica, MA, USA
+# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 #
-# All Rights Reserved.
-#
-# Ice is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License version 2 as published by
-# the Free Software Foundation.
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
@@ -73,7 +68,8 @@ include $(top_srcdir)/config/Make.rules
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_STORM_API_EXPORTS $(READLINE_FLAGS) 
 ICECPPFLAGS	:= -I.. $(ICECPPFLAGS)
 SLICE2CPPFLAGS	:= --ice --dll-export ICE_STORM_API --include-dir IceStorm $(SLICE2CPPFLAGS)
-LINKWITH	:= -lFreeze -lIce -lIceUtil
+LINKWITH	:= -lIce -lIceUtil
+SVCLINKWITH	:= -lFreeze -lIce -lIceUtil
 
 $(libdir)/$(LIBFILENAME): $(OBJS)
 	rm -f $@
@@ -90,7 +86,7 @@ $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 
 $(libdir)/$(SVCLIBFILENAME): $(SERVICE_OBJS)
 	rm -f $@
-	$(call mkshlib,$@,$(SVCSONAME),$(SERVICE_OBJS),$(LINKWITH))
+	$(call mkshlib,$@,$(SVCSONAME),$(SERVICE_OBJS),$(SVCLINKWITH))
 
 $(libdir)/$(SVCSONAME): $(libdir)/$(SVCLIBFILENAME)
 	rm -f $@
@@ -103,9 +99,7 @@ $(libdir)/$(SVCLIBNAME): $(libdir)/$(SVCSONAME)
 
 $(ADMIN): $(AOBJS) $(libdir)/$(LIBNAME)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(AOBJS) -lIceStorm -lIceXML $(READLINE_LIBS) $(LIBS)
-
-
+	$(CXX) $(LDFLAGS) -o $@ $(AOBJS) -lIceStorm -lIceXML $(READLINE_LIBS) $(LIBS) $(EXPAT_LIBS)
 
 PersistentTopicMap.h PersistentTopicMap.cpp: ../IceStorm/LinkRecord.ice $(slicedir)/Ice/Identity.ice $(SLICE2FREEZE)
 	rm -f PersistentTopicMap.h PersistentTopicMap.cpp

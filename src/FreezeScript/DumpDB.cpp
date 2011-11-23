@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2004
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -331,7 +326,6 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
         return EXIT_FAILURE;
     }
 
-    FreezeScript::createCoreSliceTypes(unit);
     FreezeScript::createEvictorSliceTypes(unit);
 
     //
@@ -342,7 +336,7 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
     {
         if(evictor)
         {
-            keyTypeName = "::Freeze::EvictorStorageKey";
+            keyTypeName = "::Ice::Identity";
             valueTypeName = "::Freeze::ObjectRecord";
         }
         else if(keyTypeName.empty() || valueTypeName.empty())
@@ -413,7 +407,6 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
 
     DbEnv dbEnv(0);
     DbTxn* txn = 0;
-    Db* db = 0;
     int status = EXIT_SUCCESS;
     try
     {
@@ -425,33 +418,83 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
 #endif
 
         //
-        // Open the database environment.
+        // Open the database environment and start a transaction.
         //
         {
             u_int32_t flags = DB_INIT_LOG | DB_INIT_MPOOL | DB_INIT_TXN | DB_RECOVER | DB_CREATE;
             dbEnv.open(dbEnvName.c_str(), flags, FREEZE_SCRIPT_DB_MODE);
         }
-
-        //
-        // Open the database in a transaction.
-        //
-        db = new Db(&dbEnv, 0);
         dbEnv.txn_begin(0, &txn, 0);
-        db->open(txn, dbName.c_str(), 0, DB_BTREE, DB_RDONLY, FREEZE_SCRIPT_DB_MODE);
-
-        istringstream istr(descriptors);
 
         FreezeScript::ErrorReporterPtr errorReporter = new FreezeScript::ErrorReporter(cerr, false);
-
         try
         {
             FreezeScript::DataFactoryPtr factory = new FreezeScript::DataFactory(communicator, unit, errorReporter);
             FreezeScript::DescriptorHandler dh(factory, unit, errorReporter);
+
+            istringstream istr(descriptors);
             IceXML::Parser::parse(istr, dh);
 
             FreezeScript::DumpDBDescriptorPtr descriptor = dh.descriptor();
             descriptor->validate();
-            descriptor->dump(communicator, db, txn);
+
+            if(evictor)
+            {
+                //
+                // The evictor database file contains multiple databases. We must first
+                // determine the names of those databases, ignoring any whose names
+                // begin with "$index:". Each database represents a separate facet, with
+                // the facet name used as the database name. The database named "$default"
+                // represents the main object.
+                //
+                vector<string> dbNames;
+                {
+                    Db db(&dbEnv, 0);
+                    db.open(txn, dbName.c_str(), 0, DB_UNKNOWN, DB_RDONLY, 0);
+                    Dbt dbKey, dbValue;
+                    dbKey.set_flags(DB_DBT_MALLOC);
+                    dbValue.set_flags(DB_DBT_USERMEM | DB_DBT_PARTIAL);
+
+                    Dbc* dbc = 0;
+                    db.cursor(0, &dbc, 0);
+
+                    while(dbc->get(&dbKey, &dbValue, DB_NEXT) == 0)
+                    {
+                        string s(static_cast<char*>(dbKey.get_data()), dbKey.get_size());
+                        if(s.find("$index:") != 0)
+                        {
+                            dbNames.push_back(s);
+                        }
+                        free(dbKey.get_data());
+                    }
+
+                    dbc->close();
+                    db.close(0);
+                }
+
+                //
+                // Dump each database.
+                //
+                for(vector<string>::iterator p = dbNames.begin(); p != dbNames.end(); ++p)
+                {
+                    string name = *p;
+                    string facet = (name == "$default" ? "" : name);
+                    Db db(&dbEnv, 0);
+                    db.open(txn, dbName.c_str(), name.c_str(), DB_BTREE, DB_RDONLY, FREEZE_SCRIPT_DB_MODE);
+                    descriptor->dump(communicator, &db, txn, facet);
+                    db.close(0);
+                }
+            }
+            else
+            {
+                //
+                // Dump a map database.
+                //
+                Db db(&dbEnv, 0);
+                db.open(txn, dbName.c_str(), 0, DB_BTREE, DB_RDONLY, FREEZE_SCRIPT_DB_MODE);
+                descriptor->dump(communicator, &db, txn, "");
+                db.close(0);
+            }
         }
         catch(const IceXML::ParserException& ex)
         {
@@ -465,29 +508,34 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
     }
     catch(...)
     {
+        try
+        {
+            if(txn)
+            {
+                txn->abort();
+            }
+            dbEnv.close(0);
+        }
+        catch(const DbException& ex)
+        {
+            cerr << argv[0] << ": database error: " << ex.what() << endl;
+        }
+        throw;
+    }
+
+    try
+    {
         if(txn)
         {
             txn->abort();
         }
-        if(db)
-        {
-            db->close(0);
-            delete db;
-        }
         dbEnv.close(0);
-        throw;
     }
-
-    if(txn)
+    catch(const DbException& ex)
     {
-        txn->abort();
+        cerr << argv[0] << ": database error: " << ex.what() << endl;
+        status = EXIT_FAILURE;
     }
-    if(db)
-    {
-        db->close(0);
-        delete db;
-    }
-    dbEnv.close(0);
 
     return status;
 }

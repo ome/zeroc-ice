@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -29,22 +24,22 @@ allTests(const Ice::CommunicatorPtr& communicator)
     Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("FacetExceptionTestAdapter");
     Ice::ObjectPtr obj = new EmptyI;
     adapter->add(obj, Ice::stringToIdentity("d"));
-    obj->ice_addFacet(obj, "facetABCD");
+    adapter->addFacet(obj, Ice::stringToIdentity("d"), "facetABCD");
     bool gotException = false;
     try
     {
-	obj->ice_addFacet(obj, "facetABCD");
+	adapter->addFacet(obj, Ice::stringToIdentity("d"), "facetABCD");
     }
     catch(Ice::AlreadyRegisteredException&)
     {
 	gotException = true;
     }
     test(gotException);
-    obj->ice_removeFacet("facetABCD");
+    adapter->removeFacet(Ice::stringToIdentity("d"), "facetABCD");
     gotException = false;
     try
     {
-	obj->ice_removeFacet("facetABCD");
+	adapter->removeFacet(Ice::stringToIdentity("d"), "facetABCD");
     }
     catch(Ice::NotRegisteredException&)
     {
@@ -53,7 +48,36 @@ allTests(const Ice::CommunicatorPtr& communicator)
     test(gotException);
     cout << "ok" << endl;
 
-    obj->ice_removeAllFacets();
+    cout << "testing removeAllFacets..." << flush;
+    Ice::ObjectPtr obj1 = new EmptyI;
+    Ice::ObjectPtr obj2 = new EmptyI;
+    adapter->addFacet(obj1, Ice::stringToIdentity("id1"), "f1");
+    adapter->addFacet(obj2, Ice::stringToIdentity("id1"), "f2");
+    Ice::ObjectPtr obj3 = new EmptyI;
+    adapter->addFacet(obj1, Ice::stringToIdentity("id2"), "f1");
+    adapter->addFacet(obj2, Ice::stringToIdentity("id2"), "f2");
+    adapter->addFacet(obj3, Ice::stringToIdentity("id2"), "");
+    Ice::FacetMap fm = adapter->removeAllFacets(Ice::stringToIdentity("id1"));
+    test(fm.size() == 2);
+    test(fm["f1"] == obj1);
+    test(fm["f2"] == obj2);
+    gotException = false;
+    try
+    {
+	adapter->removeAllFacets(Ice::stringToIdentity("id1"));
+    }
+    catch(Ice::NotRegisteredException&)
+    {
+	gotException = true;
+    }
+    test(gotException);
+    fm = adapter->removeAllFacets(Ice::stringToIdentity("id2"));
+    test(fm.size() == 3);
+    test(fm["f1"] == obj1);
+    test(fm["f2"] == obj2);
+    test(fm[""] == obj3);
+    cout << "ok" << endl;
+
     adapter->deactivate();
 
     cout << "testing stringToProxy... " << flush;
@@ -91,7 +115,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
     test(ff->callF() == "F");
     cout << "ok" << endl;
 
-    cout << "testing facet G, which is a sub-facet of E and F... " << flush;
+    cout << "testing facet G... " << flush;
     GPrx gf = GPrx::checkedCast(ff, "facetGH");
     test(gf);
     test(gf->callG() == "G");

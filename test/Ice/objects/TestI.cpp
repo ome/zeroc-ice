@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -110,24 +105,6 @@ void
 InitialI::shutdown(const Ice::Current&)
 {
     _adapter->getCommunicator()->shutdown();
-
-    //
-    // Break cyclic dependencies
-    //
-    _b1->theA = 0;
-    _b1->theB = 0;
-    _b1->theC = 0;
-    _b1->ice_removeAllFacets();
-    _b2->theA = 0;
-    _b2->theB = 0;
-    _b2->theC = 0;
-    _b2->ice_removeAllFacets();
-    _c->theB = 0;
-    _c->ice_removeAllFacets();
-    _d->theA = 0;
-    _d->theB = 0;
-    _d->theC = 0;
-    _d->ice_removeAllFacets();
 }
 
 BPtr
@@ -178,13 +155,4 @@ InitialI::getAll(BPtr& b1, BPtr& b2, CPtr& c, DPtr& d, const Ice::Current&)
     b2 = _b2;
     c = _c;
     d = _d;
-}
-
-void
-InitialI::addFacetsToB1(const Ice::Current&)
-{
-    _b1->ice_addFacet(_b1, "b1");
-    _b1->ice_addFacet(_b2, "b2");
-    _b2->ice_addFacet(_c, "c");
-    _b2->ice_addFacet(_d, "d");
 }

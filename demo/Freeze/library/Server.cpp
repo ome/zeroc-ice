@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -49,10 +44,14 @@ LibraryServer::run(int argc, char* argv[])
     PropertiesPtr properties = communicator()->getProperties();
 
     //
+    // Create an object adapter
+    //
+    ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Library");
+
+    //
     // Create an evictor for books.
     //
-    Freeze::EvictorPtr evictor = Freeze::createEvictor(communicator(), _envName, "books");
-
+    Freeze::EvictorPtr evictor = Freeze::createEvictor(adapter, _envName, "books");
     Int evictorSize = properties->getPropertyAsInt("Library.EvictorSize");
     if(evictorSize > 0)
     {
@@ -60,10 +59,10 @@ LibraryServer::run(int argc, char* argv[])
     }
     
     //
-    // Create an object adapter, use the evictor as servant Locator.
+    // Use the evictor as servant Locator.
     //
-    ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Library");
     adapter->addServantLocator(evictor, "book");
+
     
     //
     // Create the library, and add it to the object adapter.

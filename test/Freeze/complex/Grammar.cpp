@@ -10,15 +10,10 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -107,7 +102,7 @@ static const short yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined. */
 static const short yyrline[] =
 {
-       0,    47,    54,    58,    62,    66
+       0,    42,    49,    53,    57,    61
 };
 #endif
 
@@ -884,31 +879,31 @@ yyreduce:
   switch (yyn) {
 
 case 1:
-#line 48 "Grammar.y"
+#line 43 "Grammar.y"
 {
     parser->setResult(yyval);
 ;
     break;}
 case 2:
-#line 55 "Grammar.y"
+#line 50 "Grammar.y"
 {
     yyval = yyvsp[0];
 ;
     break;}
 case 3:
-#line 59 "Grammar.y"
+#line 54 "Grammar.y"
 {
     yyval = new Complex::AddNodeI(yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 4:
-#line 63 "Grammar.y"
+#line 58 "Grammar.y"
 {
     yyval = yyvsp[-1];
 ;
     break;}
 case 5:
-#line 67 "Grammar.y"
+#line 62 "Grammar.y"
 {
     yyval = new Complex::MultiplyNodeI(yyvsp[-2], yyvsp[0]);
 ;
@@ -1146,5 +1141,5 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 72 "Grammar.y"
+#line 67 "Grammar.y"
 

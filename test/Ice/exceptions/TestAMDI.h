@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -27,6 +22,8 @@ public:
 				const Ice::Current&);
     virtual void supportsUndeclaredExceptions_async(const AMD_Thrower_supportsUndeclaredExceptionsPtr&,
 						    const Ice::Current&);
+    virtual void supportsAssertException_async(const AMD_Thrower_supportsAssertExceptionPtr&,
+					       const Ice::Current&);
 
     virtual void throwAasA_async(const AMD_Thrower_throwAasAPtr&,
 				 Ice::Int, const Ice::Current&);
@@ -55,6 +52,8 @@ public:
     virtual void throwLocalException_async(const AMD_Thrower_throwLocalExceptionPtr&,
 					   const Ice::Current&);
     virtual void throwNonIceException_async(const AMD_Thrower_throwNonIceExceptionPtr&,
+					    const Ice::Current&);
+    virtual void throwAssertException_async(const AMD_Thrower_throwAssertExceptionPtr&,
 					    const Ice::Current&);
 
 private:

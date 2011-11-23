@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -66,9 +61,25 @@ IceInternal::Outgoing::Outgoing(Connection* connection, Reference* ref, const st
     }
 
     _reference->identity.__write(&_os);
-    _os.write(_reference->facet);
+
+    //
+    // For compatibility with the old FacetPath.
+    //
+    if(_reference->facet.empty())
+    {
+	_os.write(vector<string>());
+    }
+    else
+    {
+	vector<string> facetPath;
+	facetPath.push_back(_reference->facet);
+	_os.write(facetPath);
+    }
+
     _os.write(operation);
+
     _os.write(static_cast<Byte>(mode));
+
     _os.writeSize(Int(context.size()));
     Context::const_iterator p;
     for(p = context.begin(); p != context.end(); ++p)
@@ -163,8 +174,6 @@ IceInternal::Outgoing::invoke()
 		    {
 			wait();
 		    }
-
-		    assert(_exception.get());
 		}
 	    }
 
@@ -178,7 +187,7 @@ IceInternal::Outgoing::invoke()
 		// guarantees that all outstanding requests can safely
 		// be repeated.
 		//
-		if(dynamic_cast<const CloseConnectionException*>(_exception.get()))
+		if(dynamic_cast<CloseConnectionException*>(_exception.get()))
 		{
 		    _exception->ice_throw();
 		}
@@ -254,7 +263,7 @@ IceInternal::Outgoing::finished(BasicStream& is)
 	    // oneway requests as blobs.
 	    //
 	    _is.startReadEncaps();
-	    _state = StateOK;
+	    _state = StateOK; // The state must be set last, in case there is an exception.
 	    break;
 	}
 	
@@ -266,7 +275,7 @@ IceInternal::Outgoing::finished(BasicStream& is)
 	    // oneway requests as blobs.
 	    //
 	    _is.startReadEncaps();
-	    _state = StateUserException;
+	    _state = StateUserException; // The state must be set last, in case there is an exception.
 	    break;
 	}
 	
@@ -274,14 +283,29 @@ IceInternal::Outgoing::finished(BasicStream& is)
 	case DispatchFacetNotExist:
 	case DispatchOperationNotExist:
 	{
-	    _state = StateLocalException;
+	    //
 	    // Don't read the exception members directly into the
 	    // exception. Otherwise if reading fails and raises an
 	    // exception, you will have a memory leak.
+	    //
 	    Identity ident;
 	    ident.__read(&_is);
-	    vector<string> facet;
-	    _is.read(facet);
+
+	    //
+	    // For compatibility with the old FacetPath.
+	    //
+	    vector<string> facetPath;
+	    _is.read(facetPath);
+	    string facet;
+	    if(!facetPath.empty())
+	    {
+		if(facetPath.size() > 1)
+		{
+		    throw MarshalException(__FILE__, __LINE__);
+		}
+		facet.swap(facetPath[0]);
+	    }
+
 	    string operation;
 	    _is.read(operation);
 	    
@@ -318,6 +342,8 @@ IceInternal::Outgoing::finished(BasicStream& is)
 	    ex->facet = facet;
 	    ex->operation = operation;
 	    _exception = auto_ptr<LocalException>(ex);
+
+	    _state = StateLocalException; // The state must be set last, in case there is an exception.
 	    break;
 	}
 	
@@ -325,10 +351,11 @@ IceInternal::Outgoing::finished(BasicStream& is)
 	case DispatchUnknownLocalException:
 	case DispatchUnknownUserException:
 	{
-	    _state = StateLocalException;
+	    //
 	    // Don't read the exception members directly into the
 	    // exception. Otherwise if reading fails and raises an
 	    // exception, you will have a memory leak.
+	    //
 	    string unknown;
 	    _is.read(unknown);
 	    
@@ -363,13 +390,15 @@ IceInternal::Outgoing::finished(BasicStream& is)
 	    
 	    ex->unknown = unknown;
 	    _exception = auto_ptr<LocalException>(ex);
+
+	    _state = StateLocalException; // The state must be set last, in case there is an exception.
 	    break;
 	}
 	
 	default:
 	{
-	    _state = StateLocalException;
 	    _exception = auto_ptr<LocalException>(new UnknownReplyStatusException(__FILE__, __LINE__));
+	    _state = StateLocalException;
 	    break;
 	}
     }

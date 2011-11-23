@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -62,7 +57,7 @@ lookupKwd(const string& name)
 	"IsSynchronized", "Item", "Keys", "List", "MemberWiseClone", "Message", "OnClear", "OnClearComplete",
 	"OnGet", "OnInsert", "OnInsertComplete", "OnRemove", "OnRemoveComplete", "OnSet", "OnSetComplete",
 	"OnValidate", "ReferenceEquals", "Remove", "RemoveAt", "Source", "StackTrace", "SyncRoot", "TargetSite",
-	"ToString", "Values",
+	"ToString", "Values", "checked_cast", "unchecked_cast"
     };
     found = binary_search(&memberList[0],
                            &memberList[sizeof(memberList) / sizeof(*memberList)],
@@ -172,6 +167,12 @@ Slice::CsGenerator::typeToString(const TypePtr& type)
         return fixId(proxy->_class()->scoped() + "Prx");
     }
 
+    SequencePtr seq = SequencePtr::dynamicCast(type);
+    if(seq && seq->hasMetaData("cs:array"))
+    {
+	return typeToString(seq->type()) + "[]";
+    }
+
     ContainedPtr contained = ContainedPtr::dynamicCast(type);
     if(contained)
     {
@@ -215,9 +216,25 @@ void
 Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
 					      const TypePtr& type,
 					      const string& param,
-					      bool marshal)
+					      bool marshal,
+					      bool isSeq,
+					      bool isOutParam,
+					      const string& patchParams)
 {
     string stream = marshal ? "__os" : "__is";
+
+    string startAssign;
+    string endAssign;
+    if(isSeq)
+    {
+        startAssign = ".Add(";
+        endAssign = ")";
+    }
+    else
+    {
+	startAssign = " = ";
+	endAssign = "";
+    }
 
     BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
     if(builtin)
@@ -232,7 +249,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
                 }
                 else
                 {
-                    out << nl << param << " = " << stream << ".readByte();";
+                    out << nl << param << startAssign << stream << ".readByte()" << endAssign << ";";
                 }
                 break;
             }
@@ -244,7 +261,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
                 }
                 else
                 {
-                    out << nl << param << " = " << stream << ".readBool();";
+                    out << nl << param << startAssign << stream << ".readBool()" << endAssign << ";";
                 }
                 break;
             }
@@ -256,7 +273,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
                 }
                 else
                 {
-                    out << nl << param << " = " << stream << ".readShort();";
+                    out << nl << param << startAssign << stream << ".readShort()" << endAssign << ";";
                 }
                 break;
             }
@@ -268,7 +285,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
                 }
                 else
                 {
-                    out << nl << param << " = " << stream << ".readInt();";
+                    out << nl << param << startAssign << stream << ".readInt()" << endAssign << ";";
                 }
                 break;
             }
@@ -280,7 +297,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
                 }
                 else
                 {
-                    out << nl << param << " = " << stream << ".readLong();";
+                    out << nl << param << startAssign << stream << ".readLong()" << endAssign << ";";
                 }
                 break;
             }
@@ -292,7 +309,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
                 }
                 else
                 {
-                    out << nl << param << " = " << stream << ".readFloat();";
+                    out << nl << param << startAssign << stream << ".readFloat()" << endAssign << ";";
                 }
                 break;
             }
@@ -304,7 +321,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
                 }
                 else
                 {
-                    out << nl << param << " = " << stream << ".readDouble();";
+                    out << nl << param << startAssign << stream << ".readDouble()" << endAssign << ";";
                 }
                 break;
             }
@@ -316,11 +333,10 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
                 }
                 else
                 {
-                    out << nl << param << " = " << stream << ".readString();";
+                    out << nl << param << startAssign << stream << ".readString()" << endAssign << ";";
                 }
                 break;
             }
-#if 0
             case Builtin::KindObject:
             {
                 if(marshal)
@@ -329,34 +345,29 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
                 }
                 else
                 {
-		    if(holder)
+		    if(isOutParam)
 		    {
-			out << nl << stream << ".readObject(" << param << ".getPatcher());";
+			out << nl << "IceInternal.ParamPatcher " << param
+			    << "_PP = new IceInternal.ParamPatcher(typeof(Ice.Object));";
+			out << nl << stream << ".readObject(" << param << "_PP);";
 		    }
 		    else
 		    {
-                        if(patchParams.empty())
-                        {
-                            out << nl << stream << ".readObject(new Patcher());";
-                        }
-                        else
-                        {
-                            out << nl << stream << ".readObject(" << patchParams << ");";
-                        }
+			out << nl << stream << ".readObject(new __Patcher(" << patchParams << "));";
 		    }
                 }
                 break;
             }
-#endif
             case Builtin::KindObjectProxy:
             {
+		string typeS = typeToString(type);
                 if(marshal)
                 {
                     out << nl << stream << ".writeProxy(" << param << ");";
                 }
                 else
                 {
-                    out << nl << param << " = " << stream << ".readProxy();";
+                    out << nl << param << startAssign << stream << ".readProxy()" << endAssign << ";";
                 }
                 break;
             }
@@ -379,12 +390,11 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
         }
         else
         {
-            out << nl << param << " = " << typeS << "Helper.__read(" << stream << ");";
+            out << nl << param << startAssign << typeS << "Helper.__read(" << stream << ")" << endAssign << ";";
         }
         return;
     }
 
-#if 0
     ClassDeclPtr cl = ClassDeclPtr::dynamicCast(type);
     if(cl)
     {
@@ -394,26 +404,19 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
         }
         else
         {
-            string typeS = typeToString(type);
-	    if(holder)
+	    if(isOutParam)
 	    {
-		out << nl << stream << ".readObject(" << param << ".getPatcher());";
+		out << nl << "IceInternal.ParamPatcher " << param
+		    << "_PP = new IceInternal.ParamPatcher(typeof(" << typeToString(type) << "));";
+		out << nl << stream << ".readObject(" << param << "_PP);";
 	    }
 	    else
 	    {
-                if(patchParams.empty())
-                {
-                    out << nl << stream << ".readObject(new Patcher());";
-                }
-                else
-                {
-                    out << nl << stream << ".readObject(" << patchParams << ");";
-                }
+		out << nl << stream << ".readObject(new __Patcher(" << patchParams << "));";
 	    }
         }
         return;
     }
-#endif
 
     StructPtr st = StructPtr::dynamicCast(type);
     if(st)
@@ -436,7 +439,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
     {
 	string func;
 	string cast;
-	int sz = en->getEnumerators().size();
+	size_t sz = en->getEnumerators().size();
 	if(sz <= 0x7f)
 	{
 	    func = marshal ? "writeByte" : "readByte";
@@ -458,7 +461,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
 	}
 	else
 	{
-	    out << nl << param << " = " << cast << stream << "." << func << "();";
+	    out << nl << param << startAssign << cast << stream << "." << func << "()" << endAssign << ";";
 	}
         return;
     }
@@ -466,7 +469,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
     SequencePtr seq = SequencePtr::dynamicCast(type);
     if(seq)
     {
-        writeSequenceMarshalUnmarshalCode(out, seq, param, marshal);
+        writeSequenceMarshalUnmarshalCode(out, seq, param, marshal, isSeq);
         return;
     }
 
@@ -479,17 +482,31 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
     }
     else
     {
-        out << nl << param << " = " << typeS << "Helper.read(" << stream << ");";
+        out << nl << param << startAssign << typeS << "Helper.read(" << stream << ")" << endAssign << ";";
     }
 }
 
 void
 Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
-                                                        const SequencePtr& seq,
-                                                        const string& param,
-                                                        bool marshal)
+                                                      const SequencePtr& seq,
+                                                      const string& param,
+                                                      bool marshal,
+						      bool isSeq)
 {
     string stream = marshal ? "__os" : "__is";
+
+    string startAssign;
+    string endAssign;
+    if(isSeq)
+    {
+        startAssign = ".Add(";
+	endAssign = ")";
+    }
+    else
+    {
+        startAssign = " = ";
+	endAssign = "";
+    }
 
     TypePtr type = seq->type();
     BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
@@ -502,41 +519,44 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	    {
 	        if(marshal)
 		{
-		    out << nl << "if(__v == null)";
+		    out << nl << "if(" << param << " == null)";
 		    out << sb;
-		    out << nl << "__os.writeSize(0);";
+		    out << nl << stream << ".writeSize(0);";
 		    out << eb;
 		    out << nl << "else";
 		    out << sb;
-		    out << nl << "__os.writeSize(" << param << ".Count);";
+		    out << nl << stream << ".writeSize(" << param << ".Count);";
 		    out << nl << "for(int __i = 0; __i < " << param << ".Count; ++__i)";
 		    out << sb;
 		    string func = builtin->kind() == Builtin::KindObject ? "writeObject" : "writeProxy";
-		    out << nl << "__os." << func << "(__v[__i]);";
+		    out << nl << stream << "." << func << "(" << param << "[__i]);";
 		    out << eb;
 		    out << eb;
 		}
 		else
 		{
-		   if(builtin->kind() == Builtin::KindObject)
-		   {
-		       out << nl << "__v = new Ice.ObjectSeq();";
-		       out << nl << "int __len = __is.readSize();";
-		       out << nl << "for(int __i = 0; __i < __len; ++__i)";
-		       out << sb;
-		       out << nl << "__is.readObject(new IceInternal.SequencePatcher("
-		           << "__v, Ice.Object.GetType(), Ice.ObjectImpl.ice_staticId(), __i));";
-		       out << eb;
-		   }
-		   else
-		   {
-		       out << nl << "__v = new Ice.ObjectProxySeq();";
-		       out << nl << "int __len = __is.readSize();";
-		       out << nl << "for(int __i = 0; __i < __len; ++__i)";
-		       out << sb;
-		       out << nl << "__v.Add(__is.readProxy());";
-		       out << eb;
-		   }
+		    if(builtin->kind() == Builtin::KindObject)
+		    {
+			out << nl << param << " = new Ice.ObjectSeq();";
+			out << nl << "int __len = " << stream << ".readSize();";
+			out << nl << stream << ".startSeq(__len, " << static_cast<unsigned>(builtin->minWireSize()) << ");";
+			out << nl << "for(int __i = 0; __i < __len; ++__i)";
+			out << sb;
+			out << nl << stream << ".readObject(new IceInternal.SequencePatcher("
+			    << param << ", typeof(Ice.Object), __i));";
+		    }
+		    else
+		    {
+			out << nl << param << " = new Ice.ObjectProxySeq();";
+			out << nl << "int __len = " << stream << ".readSize();";
+			out << nl << stream << ".startSeq(__len, " << static_cast<unsigned>(builtin->minWireSize()) << ");";
+			out << nl << "for(int __i = 0; __i < __len; ++__i)";
+			out << sb;
+			out << nl << param << ".Add(" << stream << ".readProxy());";
+		    }
+		    out << nl << stream << ".checkSeq();";
+		    out << nl << stream << ".endElement();";
+		    out << eb;
 		}
 	        break;
 	    }
@@ -544,28 +564,303 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	    {
 		string typeS = typeToString(type);
 		typeS[0] = toupper(typeS[0]);
+		bool isArray = seq->hasMetaData("cs:array");
 		if(marshal)
 		{
-		    out << nl << "__os.write" << typeS << "Seq(" << param << ".ToArray());";
+		    out << nl << stream << ".write" << typeS << "Seq(" << param;
+		    if(!isArray)
+		    {
+		        out << ".ToArray()";
+		    }
+		    out << ");";
 		}
 		else
 		{
-		    out << nl << param << " = new " << fixId(seq->scoped()) << "(__is.read" << typeS << "Seq());";
+		    out << nl << param << startAssign;
+		    if(!isArray)
+		    {
+			out << "new " << fixId(seq->scoped()) << "(" << stream << ".read" << typeS << "Seq())";
+		    }
+		    else
+		    {
+		        out << stream << ".read" << typeS << "Seq()";
+		    }
+		    out << endAssign << ";";
 		}
 		break;
 	    }
 	}
+	return;
     }
-    else
+
+    ClassDeclPtr cl = ClassDeclPtr::dynamicCast(type);
+    if(cl)
     {
-	if(marshal)
+        if(marshal)
+        {
+	    out << nl << stream << ".writeSize(" << param << ".Count);";
+	    out << nl << "for(int __i = 0; __i < " << param << ".Count; ++__i)";
+	    out << sb;
+            out << nl << stream << ".writeObject(" << param << "[__i]);";
+	    out << eb;
+        }
+        else
+        {
+	    out << nl << "int sz = " << stream << ".readSize();";
+	    out << nl << stream << ".startSeq(sz, " << static_cast<unsigned>(type->minWireSize()) << ");";
+	    out << nl << param << " = new " << fixId(seq->scoped()) << "(sz);";
+	    out << nl << "for(int i = 0; i < sz; ++i)";
+	    out << sb;
+	    out << nl << "IceInternal.SequencePatcher sp = new IceInternal.SequencePatcher("
+		<< param << ", " << "typeof(" << typeToString(type) << "), i);";
+	    out << nl << stream << ".readObject(sp);";
+	    out << nl << stream << ".checkSeq();";
+	    out << nl << stream << ".endElement();";
+	    out << eb;
+        }
+        return;
+    }
+
+    StructPtr st = StructPtr::dynamicCast(type);
+    if(st)
+    {
+        if(marshal)
 	{
-	    out << nl << fixId(seq->scoped()) << "Helper.write(__os, " << param << ");";
+	    out << nl << stream << ".writeSize(" << param << ".Count);";
+	    out << nl << "for(int __i = 0; __i < " << param << ".Count; ++__i)";
+	    out << sb;
+	    out << nl << param << "[__i].__write(" << stream << ");";
+	    out << eb;
 	}
 	else
 	{
-	    out << nl << param << " = " << fixId(seq->scoped()) << "Helper.read(__is);";
+	    out << nl << "int sz = " << stream << ".readSize();";
+	    out << nl << stream << ".startSeq(sz, " << static_cast<unsigned>(type->minWireSize()) << ");";
+	    out << nl << "for(int __i = 0; __i < " << param << ".Count; ++__i)";
+	    out << sb;
+	    string typeS = typeToString(st);
+	    out << nl << param << ".Add(new " << typeS << "());";
+	    out << nl << param << "[__i].__read(" << stream << ");";
+	    if(st->isVariableLength())
+	    {
+		out << nl << stream << ".checkSeq();";
+		out << nl << stream << ".endElement();";
+	    }
+	    out << eb;
 	}
+	return;
     }
+
+
+    EnumPtr en = EnumPtr::dynamicCast(type);
+    if(en)
+    {
+	if(marshal)
+	{
+	    out << nl << stream << ".writeSize(" << param << ".Count);";
+	    out << nl << "for(int __i = 0; __i < " << param << ".Count; ++__i)";
+	    out << sb;
+	    writeMarshalUnmarshalCode(out, type, param + "[__i]", marshal, true);
+	    out << eb;
+	}
+	else
+	{
+	    out << nl << param << startAssign << "new " << fixId(seq->scoped()) << "()" << endAssign << ";";
+	    out << nl << "int sz = " << stream << ".readSize();";
+	    out << nl << stream << ".startSeq(sz, " << static_cast<unsigned>(type->minWireSize()) << ");";
+	    out << nl << "for(int __i = 0; __i < sz; ++__i)";
+	    out << sb;
+	    writeMarshalUnmarshalCode(out, type, param, marshal, true);
+	    out << eb;
+	}
+        return;
+    }
+
+    string typeS = typeToString(type);
+    bool seqIsArray = seq->hasMetaData("cs:array");
+    if(marshal)
+    {
+        string func = ProxyPtr::dynamicCast(type) ? "__write" : "write";
+	out << nl << stream << ".writeSize(" << param << (seqIsArray ? ".Length);" : ".Count);");
+	out << nl << "for(int __i = 0; __i < " << param << (seqIsArray ? ".Length" : ".Count") << "; ++__i)";
+	out << sb;
+	out << nl << typeS << "Helper." << func << "(" << stream << ", " << param << "[__i]);";
+	out << eb;
+    }
+    else
+    {
+        string func = ProxyPtr::dynamicCast(type) ? "__read" : "read";
+	if(!seqIsArray)
+	{
+	    out << nl << param << startAssign << "new " << fixId(seq->scoped()) << "()" << endAssign << ";";
+	}
+	out << sb;
+	out << nl << "int sz = " << stream << ".readSize();";
+	out << nl << stream << ".startSeq(sz, " << static_cast<unsigned>(type->minWireSize()) << ");";
+	if(seqIsArray)
+	{
+	    out << nl << param << " = new " << typeS << "[sz];";
+	}
+	out << nl << "for(int __i = 0; __i < sz; ++__i)";
+	out << sb;
+	if(!seqIsArray)
+	{
+	    out << nl << param << ".Add(" << typeS << "Helper." << func << "(" << stream << "));";
+	}
+	else
+	{
+	    out << nl << param << "[__i]" << startAssign << typeS << "Helper." << func << "(" << stream << ")"
+	        << endAssign << ";";
+	}
+	if(type->isVariableLength())
+	{
+	    if(!SequencePtr::dynamicCast(type))
+	    {
+		out << nl << stream << ".checkSeq();";
+	    }
+	    out << nl << stream << ".endElement();";
+	}
+	out << eb;
+	out << eb;
+    }
+
     return;
+}
+
+void
+Slice::CsGenerator::validateMetaData(const UnitPtr& unit)
+{
+    MetaDataVisitor visitor;
+    unit->visit(&visitor);
+}
+
+bool
+Slice::CsGenerator::MetaDataVisitor::visitModuleStart(const ModulePtr& p)
+{
+    validate(p);
+    return false;
+}
+
+void
+Slice::CsGenerator::MetaDataVisitor::visitClassDecl(const ClassDeclPtr& p)
+{
+    validate(p);
+}
+
+bool
+Slice::CsGenerator::MetaDataVisitor::visitClassDefStart(const ClassDefPtr& p)
+{
+    validate(p);
+    return false;
+}
+
+bool
+Slice::CsGenerator::MetaDataVisitor::visitExceptionStart(const ExceptionPtr& p)
+{
+    validate(p);
+    return false;
+}
+
+bool
+Slice::CsGenerator::MetaDataVisitor::visitStructStart(const StructPtr& p)
+{
+    validate(p);
+    return false;
+}
+
+void
+Slice::CsGenerator::MetaDataVisitor::visitOperation(const OperationPtr& p)
+{
+    validate(p);
+}
+
+void
+Slice::CsGenerator::MetaDataVisitor::visitParamDecl(const ParamDeclPtr& p)
+{
+    validate(p);
+}
+
+void
+Slice::CsGenerator::MetaDataVisitor::visitDataMember(const DataMemberPtr& p)
+{
+    validate(p);
+}
+
+void
+Slice::CsGenerator::MetaDataVisitor::visitSequence(const SequencePtr& p)
+{
+    validate(p);
+}
+
+void
+Slice::CsGenerator::MetaDataVisitor::visitDictionary(const DictionaryPtr& p)
+{
+    validate(p);
+}
+
+void
+Slice::CsGenerator::MetaDataVisitor::visitEnum(const EnumPtr& p)
+{
+    validate(p);
+}
+
+void
+Slice::CsGenerator::MetaDataVisitor::visitConst(const ConstPtr& p)
+{
+    validate(p);
+}
+
+void
+Slice::CsGenerator::MetaDataVisitor::validate(const ContainedPtr& cont)
+{
+    DefinitionContextPtr dc = cont->definitionContext();
+    assert(dc);
+    StringList globalMetaData = dc->getMetaData();
+    string file = dc->filename();
+
+    StringList localMetaData = cont->getMetaData();
+
+    StringList::const_iterator p;
+    static const string prefix = "cs:";
+
+    for(p = globalMetaData.begin(); p != globalMetaData.end(); ++p)
+    {
+        string s = *p;
+        if(_history.count(s) == 0)
+        {
+            if(s.find(prefix) == 0)
+            {
+		cout << file << ": warning: ignoring invalid global metadata `" << s << "'" << endl;
+            }
+            _history.insert(s);
+        }
+    }
+
+    for(p = localMetaData.begin(); p != localMetaData.end(); ++p)
+    {
+	string s = *p;
+        if(_history.count(s) == 0)
+        {
+	    bool valid = true;
+            if(s.find(prefix) == 0)
+            {
+	    	if(SequencePtr::dynamicCast(cont))
+		{
+		    if(s.substr(prefix.size()) != "array")
+		    {
+			valid = false;
+		    }
+		}
+		else
+		{
+		    valid = false;
+		}
+            }
+	    if(!valid)
+	    {
+		cout << file << ": warning: ignoring invalid metadata `" << s << "'" << endl;
+	    }
+            _history.insert(s);
+        }
+    }
 }

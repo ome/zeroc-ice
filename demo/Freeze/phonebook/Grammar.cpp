@@ -22,15 +22,10 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -126,9 +121,9 @@ static const short yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined. */
 static const short yyrline[] =
 {
-       0,    60,    63,    71,    74,    82,    86,    90,    94,    98,
-     102,   106,   110,   114,   118,   122,   126,   130,   134,   142,
-     147
+       0,    55,    58,    66,    69,    77,    81,    85,    89,    93,
+      97,   101,   105,   109,   113,   117,   121,   125,   129,   137,
+     142
 };
 #endif
 
@@ -927,117 +922,117 @@ yyreduce:
   switch (yyn) {
 
 case 1:
-#line 61 "Grammar.y"
+#line 56 "Grammar.y"
 {
 ;
     break;}
 case 2:
-#line 64 "Grammar.y"
+#line 59 "Grammar.y"
 {
 ;
     break;}
 case 3:
-#line 72 "Grammar.y"
+#line 67 "Grammar.y"
 {
 ;
     break;}
 case 4:
-#line 75 "Grammar.y"
+#line 70 "Grammar.y"
 {
 ;
     break;}
 case 5:
-#line 83 "Grammar.y"
+#line 78 "Grammar.y"
 {
     parser->usage();
 ;
     break;}
 case 6:
-#line 87 "Grammar.y"
+#line 82 "Grammar.y"
 {
     return 0;
 ;
     break;}
 case 7:
-#line 91 "Grammar.y"
+#line 86 "Grammar.y"
 {
     parser->addContacts(yyvsp[-1]);
 ;
     break;}
 case 8:
-#line 95 "Grammar.y"
+#line 90 "Grammar.y"
 {
     parser->findContacts(yyvsp[-1]);
 ;
     break;}
 case 9:
-#line 99 "Grammar.y"
+#line 94 "Grammar.y"
 {
     parser->nextFoundContact();
 ;
     break;}
 case 10:
-#line 103 "Grammar.y"
+#line 98 "Grammar.y"
 {
     parser->printCurrent();
 ;
     break;}
 case 11:
-#line 107 "Grammar.y"
+#line 102 "Grammar.y"
 {
     parser->setCurrentName(yyvsp[-1]);
 ;
     break;}
 case 12:
-#line 111 "Grammar.y"
+#line 106 "Grammar.y"
 {
     parser->setCurrentAddress(yyvsp[-1]);
 ;
     break;}
 case 13:
-#line 115 "Grammar.y"
+#line 110 "Grammar.y"
 {
     parser->setCurrentPhone(yyvsp[-1]);
 ;
     break;}
 case 14:
-#line 119 "Grammar.y"
+#line 114 "Grammar.y"
 {
     parser->removeCurrent();
 ;
     break;}
 case 15:
-#line 123 "Grammar.y"
+#line 118 "Grammar.y"
 {
     parser->setEvictorSize(yyvsp[-1]);
 ;
     break;}
 case 16:
-#line 127 "Grammar.y"
+#line 122 "Grammar.y"
 {
     parser->shutdown();
 ;
     break;}
 case 17:
-#line 131 "Grammar.y"
+#line 126 "Grammar.y"
 {
     yyerrok;
 ;
     break;}
 case 18:
-#line 135 "Grammar.y"
+#line 130 "Grammar.y"
 {
 ;
     break;}
 case 19:
-#line 143 "Grammar.y"
+#line 138 "Grammar.y"
 {
     yyval = yyvsp[0];
     yyval.push_front(yyvsp[-1].front());
 ;
     break;}
 case 20:
-#line 148 "Grammar.y"
+#line 143 "Grammar.y"
 {
     yyval = yyvsp[0];
 ;
@@ -1275,5 +1270,5 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 153 "Grammar.y"
+#line 148 "Grammar.y"
 

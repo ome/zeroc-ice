@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -24,9 +19,23 @@ Freeze::Index::~Index()
     delete _impl;
 }
 
-Freeze::Index::Index(const string& name) :
-    _impl(new IndexI(*this, name))
+Freeze::Index::Index(const string& name, const string& facet) :
+    _name(name),
+    _facet(facet),
+    _impl(new IndexI(*this))
 {
+}
+
+const string&
+Freeze::Index::name() const
+{
+    return _name;
+}
+
+const string&
+Freeze::Index::facet() const
+{
+    return _facet;
 }
   
 vector<Identity>

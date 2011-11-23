@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -16,7 +11,6 @@
 #define ICE_LOCAL_EXCEPTION_ICE
 
 #include <Ice/Identity.ice>
-#include <Ice/Facet.ice>
 #include <Ice/BuiltinSequences.ice>
 
 module Ice
@@ -227,7 +221,7 @@ local exception RequestFailedException
     Identity id;
 
     /** The facet to which the request was sent. */
-    FacetPath facet;
+    string facet;
 
     /** The operation name of the request. */
     string operation;
@@ -235,7 +229,8 @@ local exception RequestFailedException
 
 /**
  *
- * This exception is raised if an object does not exist on the server.
+ * This exception is raised if an object does not exist on the server,
+ * that is, if no facets with the given identity exist.
  *
  **/
 local exception ObjectNotExistException extends RequestFailedException
@@ -244,8 +239,8 @@ local exception ObjectNotExistException extends RequestFailedException
 
 /**
  *
- * This exception is raised if an object does not implement a given
- * facet path.
+ * This exception is raised if no facet with the given name exists,
+ * but at least one facet with the given identity exists.
  *
  **/
 local exception FacetNotExistException extends RequestFailedException
@@ -302,6 +297,17 @@ local exception SocketException extends SyscallException
  *
  **/
 local exception ConnectFailedException extends SocketException
+{
+};
+
+/**
+ *
+ * This exception is a specialization of [ConnectFailedException] for
+ * connection failures, where the server host actively refuses a
+ * connection.
+ *
+ **/
+local exception ConnectionRefusedException extends ConnectFailedException
 {
 };
 

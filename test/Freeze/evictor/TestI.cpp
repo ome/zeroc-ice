@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -18,12 +13,39 @@
 
 using namespace std;
 using namespace Ice;
+using namespace IceUtil;
 
-Test::ServantI::ServantI()
+
+class DelayedResponse : public Thread
+{
+public:
+
+    DelayedResponse(const Test::AMD_Servant_slowGetValuePtr& cb, int val) :
+	_cb(cb),
+	_val(val)
+    {
+    }
+    
+    virtual void
+    run()
+    {
+	ThreadControl::sleep(Time::milliSeconds(500));
+	_cb->ice_response(_val);
+    }
+
+private:
+    Test::AMD_Servant_slowGetValuePtr _cb;
+    int _val;
+};
+
+
+Test::ServantI::ServantI() :
+    _transientValue(-1)
 {
 }
 
 Test::ServantI::ServantI(const RemoteEvictorIPtr& remoteEvictor, const Freeze::EvictorPtr& evictor, Ice::Int val) :
+    _transientValue(-1),
     _remoteEvictor(remoteEvictor),
     _evictor(evictor)
 {
@@ -35,12 +57,6 @@ Test::ServantI::init(const RemoteEvictorIPtr& remoteEvictor, const Freeze::Evict
 {
     _remoteEvictor = remoteEvictor;
     _evictor = evictor;
-
-    vector<string> facets = ice_facets();
-    for(size_t i = 0; i < facets.size(); i++)
-    {
-	dynamic_cast<Test::ServantI*>(ice_findFacet(facets[i]).get())->init(remoteEvictor, evictor);
-    }
 }
 
 Int
@@ -49,6 +65,24 @@ Test::ServantI::getValue(const Current&) const
     Lock sync(*this);
     return value;
 }
+
+Int
+Test::ServantI::slowGetValue(const Current&) const
+{
+    IceUtil::ThreadControl::sleep(IceUtil::Time::seconds(1));
+    Lock sync(*this);
+    return value;
+}
+
+void
+Test::ServantI::slowGetValue_async(const AMD_Servant_slowGetValuePtr& cb,
+				   const Current&) const
+{
+    IceUtil::ThreadControl::sleep(IceUtil::Time::seconds(1));
+    Lock sync(*this);
+    (new DelayedResponse(cb, value))->start().detach();
+}
+
 
 void
 Test::ServantI::setValue(Int val, const Current&)
@@ -81,14 +115,11 @@ Test::ServantI::releaseAsync(const Current& current) const
 void
 Test::ServantI::addFacet(const string& name, const string& data, const Current& current) const
 {
-    FacetPath facetPath(current.facet);
-    facetPath.push_back(name);
-
     FacetPtr facet = new FacetI(_remoteEvictor, _evictor, value, data);
 
     try
     {
-	_evictor->addFacet(current.id, facetPath, facet);
+	_evictor->addFacet(facet, current.id, name);
     }
     catch(const Ice::AlreadyRegisteredException&)
     {
@@ -99,29 +130,61 @@ Test::ServantI::addFacet(const string& name, const string& data, const Current& 
 void
 Test::ServantI::removeFacet(const string& name, const Current& current) const
 {
-    FacetPath facetPath(current.facet);
-    facetPath.push_back(name);
     try
     {
-	_evictor->removeFacet(current.id, facetPath);
+	_evictor->removeFacet(current.id, name);
     }
-     catch(const Ice::NotRegisteredException&)
+    catch(const Ice::NotRegisteredException&)
     {
 	throw Test::NotRegisteredException();
     }
-   
+}
+
+
+Ice::Int
+Test::ServantI::getTransientValue(const Current& current) const
+{
+    Lock sync(*this);
+    return _transientValue;
 }
 
 void
-Test::ServantI::removeAllFacets(const Current& current) const
+Test::ServantI::setTransientValue(Ice::Int val, const Current& current)
 {
-    _evictor->removeAllFacets(current.id);
+    Lock sync(*this);
+    _transientValue = val;
+}
+
+void
+Test::ServantI::keepInCache(const Current& current)
+{
+    _evictor->keep(current.id);
+}
+
+void
+Test::ServantI::release(const Current& current)
+{
+    try
+    {
+	_evictor->release(current.id);
+    }
+    catch(const Ice::NotRegisteredException&)
+    {
+	throw NotRegisteredException();
+    }
 }
 
 void
 Test::ServantI::destroy(const Current& current)
 {
-    _evictor->destroyObject(current.id);
+    try
+    {
+	_evictor->remove(current.id);
+    }
+    catch(const Ice::NotRegisteredException&)
+    {
+	throw Ice::ObjectNotExistException(__FILE__, __LINE__);
+    }
 }
 
 
@@ -150,18 +213,47 @@ Test::FacetI::setData(const string& d, const Current&)
     data = d;
 }
 
-Test::RemoteEvictorI::RemoteEvictorI(const ObjectAdapterPtr& adapter, const string& category,
-				     const Freeze::EvictorPtr& evictor) :
+
+class Initializer : public Freeze::ServantInitializer
+{
+public:
+
+    void init(const Test::RemoteEvictorIPtr& remoteEvictor, const Freeze::EvictorPtr& evictor)
+    {
+        _remoteEvictor = remoteEvictor;
+	_evictor = evictor;
+    }
+    
+    virtual void
+    initialize(const ObjectAdapterPtr& adapter, const Identity& ident, const string& facet, const ObjectPtr& servant)
+    {
+        Test::ServantI* servantI = dynamic_cast<Test::ServantI*>(servant.get());
+        servantI->init(_remoteEvictor, _evictor);
+    }
+
+private:
+
+    Test::RemoteEvictorIPtr _remoteEvictor;
+    Freeze::EvictorPtr _evictor;
+};
+
+
+Test::RemoteEvictorI::RemoteEvictorI(const ObjectAdapterPtr& adapter, const string& envName,
+				     const string& category) :
     _adapter(adapter),
-    _category(category),
-    _evictor(evictor)
+    _category(category)
 {
     CommunicatorPtr communicator = adapter->getCommunicator();
     _evictorAdapter = communicator->createObjectAdapterWithEndpoints(IceUtil::generateUUID(), "default");
-    _evictorAdapter->addServantLocator(evictor, category);
+ 
+    Initializer* initializer = new Initializer;
+    
+    _evictor = Freeze::createEvictor(_evictorAdapter, envName, category, initializer);
+    initializer->init(this, _evictor);
+
+    _evictorAdapter->addServantLocator(_evictor, category);
     _evictorAdapter->activate();
 }
-
 
 
 void
@@ -179,8 +271,23 @@ Test::RemoteEvictorI::createServant(Int id, Int value, const Current&)
     ostr << id;
     ident.name = ostr.str();
     ServantPtr servant = new ServantI(this, _evictor, value);
-    _evictor->createObject(ident, servant);
-    return ServantPrx::uncheckedCast(_evictorAdapter->createProxy(ident));
+    try
+    {
+	return ServantPrx::uncheckedCast(_evictor->add(servant, ident));
+    }
+    catch(const Ice::AlreadyRegisteredException&)
+    {
+	throw AlreadyRegisteredException();
+    }
+    catch(const Ice::ObjectAdapterDeactivatedException&)
+    {
+	throw EvictorDeactivatedException();
+    }
+    catch(const Freeze::EvictorDeactivatedException&)
+    {
+	throw EvictorDeactivatedException();
+    }
+
 }
 
 Test::ServantPrx
@@ -196,6 +303,12 @@ Test::RemoteEvictorI::getServant(Int id, const Current&)
 
 
 void
+Test::RemoteEvictorI::saveNow(const Current& current)
+{
+    _evictor->getIterator("", 1);
+}
+
+void
 Test::RemoteEvictorI::deactivate(const Current& current)
 {
     _evictorAdapter->deactivate();
@@ -203,43 +316,22 @@ Test::RemoteEvictorI::deactivate(const Current& current)
     _adapter->remove(stringToIdentity(_category));
 }
 
+
 void
-Test::RemoteEvictorI::destroyAllServants(const Current&)
+Test::RemoteEvictorI::destroyAllServants(const string& facetName, const Current&)
 {
     //
     // Don't use such a small value in real applications!
     //
     Ice::Int batchSize = 1;
 
-    Freeze::EvictorIteratorPtr p = _evictor->getIterator(batchSize, true);
+    Freeze::EvictorIteratorPtr p = _evictor->getIterator(facetName, batchSize);
     while(p->hasNext())
     {
-	_evictor->destroyObject(p->next());
+	_evictor->remove(p->next());
     }
 }
 
-class Initializer : public Freeze::ServantInitializer
-{
-public:
-
-    Initializer(const Test::RemoteEvictorIPtr& remoteEvictor, const Freeze::EvictorPtr& evictor) :
-        _remoteEvictor(remoteEvictor),
-        _evictor(evictor)
-    {
-    }
-
-    virtual void
-    initialize(const ObjectAdapterPtr& adapter, const Identity& ident, const ObjectPtr& servant)
-    {
-        Test::ServantI* servantI = dynamic_cast<Test::ServantI*>(servant.get());
-        servantI->init(_remoteEvictor, _evictor);
-    }
-
-private:
-
-    Test::RemoteEvictorIPtr _remoteEvictor;
-    Freeze::EvictorPtr _evictor;
-};
 
 Test::RemoteEvictorFactoryI::RemoteEvictorFactoryI(const ObjectAdapterPtr& adapter,
                                                    const std::string& envName) :
@@ -251,11 +343,7 @@ Test::RemoteEvictorFactoryI::RemoteEvictorFactoryI(const ObjectAdapterPtr& adapt
 ::Test::RemoteEvictorPrx
 Test::RemoteEvictorFactoryI::createEvictor(const string& name, const Current& current)
 {
-    Freeze::EvictorPtr evictor = Freeze::createEvictor(_adapter->getCommunicator(), _envName, name);
-
-    RemoteEvictorIPtr remoteEvictor = new RemoteEvictorI(_adapter, name, evictor);
-    Freeze::ServantInitializerPtr initializer = new Initializer(remoteEvictor, evictor);
-    evictor->installServantInitializer(initializer);
+    RemoteEvictorIPtr remoteEvictor = new RemoteEvictorI(_adapter, _envName, name);  
     return RemoteEvictorPrx::uncheckedCast(_adapter->add(remoteEvictor, stringToIdentity(name)));
 }
 

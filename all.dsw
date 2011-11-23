@@ -351,6 +351,27 @@ Package=<4>
 
 ###############################################################################
 
+Project: "IcePatchCalc"=.\src\IcePatch\IcePatchCalc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IcePatch
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "IcePatchS"=.\src\IcePatch\IcePatchS.dsp - Package Owner=<4>
 
 Package=<5>
@@ -780,9 +801,6 @@ Package=<4>
     Project_Dep_Name unicode
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name slice2wsdl
-    End Project Dependency
-    Begin Project Dependency
     Project_Dep_Name Glacier
     End Project Dependency
     Begin Project Dependency
@@ -991,6 +1009,12 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name simpleIcePackSvc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IcePatchCalc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name slice2cs
     End Project Dependency
 }}}
 
@@ -2180,6 +2204,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name slice2java
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IcePatchCalc
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -2619,6 +2646,24 @@ Package=<4>
 
 ###############################################################################
 
+Project: "slice2cs"=.\src\slice2cs\slice2cs.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Slice
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "slice2docbook"=.\src\slice2docbook\slice2docbook.dsp - Package Owner=<4>
 
 Package=<5>
@@ -2686,24 +2731,6 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name IceUtil
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "slice2wsdl"=.\src\slice2wsdl\slice2wsdl.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name IceUtil
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name Slice
     End Project Dependency
 }}}
 

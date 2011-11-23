@@ -451,15 +451,10 @@ char *yytext;
 
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -497,7 +492,7 @@ int checkKeyword(string&);
 #define	YY_USER_INIT initScanner();
 
 #define YY_NEVER_INTERACTIVE 1
-#line 500 "lex.yy.c"
+#line 495 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -651,10 +646,10 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 63 "Scanner.l"
+#line 58 "Scanner.l"
 
 
-#line 657 "lex.yy.c"
+#line 652 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -743,7 +738,7 @@ case 1:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 65 "Scanner.l"
+#line 60 "Scanner.l"
 {
     unit->scanPosition(yytext);
 }
@@ -753,7 +748,7 @@ case 2:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 69 "Scanner.l"
+#line 64 "Scanner.l"
 {
     unit->scanPosition(yytext);
 }
@@ -763,7 +758,7 @@ case 3:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 73 "Scanner.l"
+#line 68 "Scanner.l"
 {
     unit->scanPosition(yytext);
 }
@@ -773,14 +768,14 @@ case 4:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 77 "Scanner.l"
+#line 72 "Scanner.l"
 {
     unit->scanPosition(yytext);
 }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 81 "Scanner.l"
+#line 76 "Scanner.l"
 {
     // C++-style comment
     int c;
@@ -797,7 +792,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 95 "Scanner.l"
+#line 90 "Scanner.l"
 {
     // C-style comment
     string comment = yytext + 2;
@@ -840,14 +835,14 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 135 "Scanner.l"
+#line 130 "Scanner.l"
 {
     return ICE_SCOPE_DELIMITER;
 }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 139 "Scanner.l"
+#line 134 "Scanner.l"
 {
     StringTokPtr ident = new StringTok;
     ident->v = *yytext == '\\' ? yytext + 1 : yytext;
@@ -863,7 +858,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 152 "Scanner.l"
+#line 147 "Scanner.l"
 {
     StringTokPtr ident = new StringTok;
     ident->v = *yytext == '\\' ? yytext + 1 : yytext;
@@ -874,7 +869,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 160 "Scanner.l"
+#line 155 "Scanner.l"
 {
     StringTokPtr str = new StringTok;
     while(true)
@@ -1024,7 +1019,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 307 "Scanner.l"
+#line 302 "Scanner.l"
 {
     IntegerTokPtr itp = new IntegerTok;
     *yylvalp = itp;
@@ -1042,7 +1037,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 322 "Scanner.l"
+#line 317 "Scanner.l"
 {
     errno = 0;
     FloatingTokPtr ftp = new FloatingTok;
@@ -1073,7 +1068,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 350 "Scanner.l"
+#line 345 "Scanner.l"
 {
     // Igore white-space
     
@@ -1085,17 +1080,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 359 "Scanner.l"
+#line 354 "Scanner.l"
 {
     return yytext[0];
 }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 363 "Scanner.l"
+#line 358 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 1098 "lex.yy.c"
+#line 1093 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1979,7 +1974,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 363 "Scanner.l"
+#line 358 "Scanner.l"
 
 
 namespace Slice {

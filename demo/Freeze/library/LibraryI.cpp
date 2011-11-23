@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -175,7 +170,17 @@ LibraryI::createBook(const ::BookDescription& description, const Ice::Current& c
 {
     IceUtil::RWRecMutex::WLock sync(*this);
 
+#if defined(__SUNPRO_CC)
+    //
+    // Strange CC bug (only when optimizing and raising BookExistsException)
+    //
+    BookPrx book;
+    {
+	book = IsbnToBook(c.adapter)(description.isbn);
+    }
+#else
     BookPrx book = IsbnToBook(c.adapter)(description.isbn);
+#endif
     try
     {
 	book->ice_ping();
@@ -203,7 +208,7 @@ LibraryI::createBook(const ::BookDescription& description, const Ice::Current& c
     // internal error). The exception is currently ignored.
     //
     Ice::Identity ident = createBookIdentity(description.isbn);
-    _evictor->createObject(ident, bookI);
+    _evictor->add(bookI, ident);
 
     //
     // Add the isbn number to the authors map.
@@ -328,7 +333,7 @@ LibraryI::remove(const BookDescription& description)
 	// This can throw EvictorDeactivatedException (which indicates
 	// an internal error). The exception is currently ignored.
 	//
-	_evictor->destroyObject(createBookIdentity(description.isbn));
+	_evictor->remove(createBookIdentity(description.isbn));
     }
     catch(const Freeze::DatabaseException& ex)
     {

@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -401,15 +396,6 @@ Slice::Gen::TypesVisitor::visitExceptionStart(const ExceptionPtr& p)
 
     if(!p->isLocal())
     {
-	H << sp;
-	H.dec();
-	H << sp << "private:";
-	H.inc();
-	H << sp << nl << "static ::IceInternal::UserExceptionFactoryPtr _factory;";
-	H << sp;
-	H.dec();
-	H << sp << "public:";
-	H.inc();
 	H << sp << nl << "static const ::IceInternal::UserExceptionFactoryPtr& ice_factory();";
 
 	C << sp << nl << "const ::IceInternal::UserExceptionFactoryPtr&";
@@ -442,7 +428,7 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	ExceptionPtr base = p->base();
     
 	H << sp << nl << "virtual void __write(::IceInternal::BasicStream*) const;";
-	H << nl << "virtual void __read(::IceInternal::BasicStream*, bool = true);";
+	H << nl << "virtual void __read(::IceInternal::BasicStream*, bool);";
 
 	TypeStringList memberList;
 	for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
@@ -455,7 +441,20 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	C << nl << "__os->startWriteSlice();";
 	writeMarshalCode(C, memberList, 0);
 	C << nl << "__os->endWriteSlice();";
-	emitExceptionBase(base, "__write(__os)");
+	if(base)
+	{
+	    C.zeroIndent();
+	    C << nl << "#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug"; // COMPILERBUG
+	    C.restoreIndent();
+	    C << nl << fixKwd(base->name()) << "::__write(__os);";
+	    C.zeroIndent();
+	    C << nl << "#else";
+	    C.restoreIndent();
+	    C << nl << fixKwd(base->scoped()) << "::__write(__os);";
+	    C.zeroIndent();
+	    C << nl << "#endif";
+	    C.restoreIndent();
+	}
 	C << eb;
 
 	C << sp << nl << "void" << nl << scoped.substr(2) << "::__read(::IceInternal::BasicStream* __is, bool __rid)";
@@ -468,7 +467,20 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	C << nl << "__is->startReadSlice();";
 	writeUnmarshalCode(C, memberList, 0);
 	C << nl << "__is->endReadSlice();";
-	emitExceptionBase(base, "__read(__is)");
+	if(base)
+	{
+	    C.zeroIndent();
+	    C << nl << "#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug"; // COMPILERBUG
+	    C.restoreIndent();
+	    C << nl << fixKwd(base->name()) << "::__read(__is, true);";
+	    C.zeroIndent();
+	    C << nl << "#else";
+	    C.restoreIndent();
+	    C << nl << fixKwd(base->scoped()) << "::__read(__is, true);";
+	    C.zeroIndent();
+	    C << nl << "#endif";
+	    C.restoreIndent();
+	}
 	C << eb;
 
 	if(p->usesClasses())
@@ -528,6 +540,10 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
     H.dec();
     H << sp << nl << "private:";
     H.inc();
+    if(!p->isLocal())
+    {
+	H << sp << nl << "static ::IceInternal::UserExceptionFactoryPtr _factory;";
+    }
     H << sp << nl << "static const ::std::string _name;";
 
     H << eb << ';';
@@ -672,30 +688,35 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
 	C << sb;
 	C << nl << "::Ice::Int sz;";
 	C << nl << "__is->readSize(sz);";
-	//
-	// TODO:
-	//
-	// ML: Don't use v.resize(sz) or v.reserve(sz) here, as it
-	// cannot be checked whether sz is a reasonable value.
-	//
-	// Michi: I don't think it matters -- if the size is
-	// unreasonable, we just fall over after having unmarshaled a
-	// whole lot of stuff instead of falling over straight away. I
-	// need to preallocate space for the entire sequence up-front
-	// because, otherwise, resizing the sequence may move it in
-	// memory and cause the wrong locations to be patched for
-	// classes. Also, doing a single large allocation up-front
-	// will be faster the repeatedly growing the vector.
-	//
-	// ML: It does matter. If we resize to a huge number, the
-	// program will crash. If we don't, but just loop, then we
-	// will eventually get an UnmarshalOutOfBoundsException.
-	//
+	C << nl << "__is->startSeq(sz, " << type->minWireSize() << ");"; // Protect against bogus sequence sizes.
 	C << nl << "v.resize(sz);";
 	C << nl << "for(int i = 0; i < sz; ++i)";
 	C << sb;
 	writeMarshalUnmarshalCode(C, type, "v[i]", false);
+
+	//
+	// After unmarshaling each element, check that there are still enough bytes left in the stream
+	// to unmarshal the remainder of the sequence, and decrement the count of elements
+	// yet to be unmarshaled for sequences with variable-length element type (that is, for sequences
+	// of classes, structs, dictionaries, sequences, strings, or proxies). This allows us to
+	// abort unmarshaling for bogus sequence sizes at the earliest possible moment.
+	// (For fixed-length sequences, we don't need to do this because the prediction of how many
+	// bytes will be taken up by the sequence is accurate.)
+	//
+	if(type->isVariableLength())
+	{
+	    if(!SequencePtr::dynamicCast(type))
+	    {
+		//
+		// No need to check for directly nested sequences because, at the at start of each
+		// sequence, we check anyway.
+		//
+		C << nl << "__is->checkSeq();";
+	    }
+	    C << nl << "__is->endElement();";
+	}
 	C << eb;
+	C << nl << "__is->endSeq(sz);";
 	C << eb;
     }
 }
@@ -894,25 +915,6 @@ Slice::Gen::TypesVisitor::visitConst(const ConstPtr& p)
     H << ';';
 }
 
-void
-Slice::Gen::TypesVisitor::emitExceptionBase(const ExceptionPtr& base, const std::string& call)
-{
-    if(base)
-    {
-	C.zeroIndent();
-	C << nl << "#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug"; // COMPILERBUG
-	C.restoreIndent();
-	C << nl << fixKwd(base->name()) << "::" << call << ';';
-	C.zeroIndent();
-	C << nl << "#else";
-	C.restoreIndent();
-	C << nl << fixKwd(base->scoped()) << "::" << call << ';';
-	C.zeroIndent();
-	C << nl << "#endif";
-	C.restoreIndent();
-    }
-}
-
 Slice::Gen::ProxyDeclVisitor::ProxyDeclVisitor(Output& h, Output& c, const string& dllExport) :
     H(h), C(c), _dllExport(dllExport)
 {
@@ -1065,12 +1067,20 @@ Slice::Gen::ProxyVisitor::visitClassDefEnd(const ClassDefPtr& p)
     string scoped = fixKwd(p->scoped());
     string scope = fixKwd(p->scope());
     
+    H << nl << nl << "static const ::std::string& ice_staticId();";
+    
     H.dec();
     H << sp << nl << "private: ";
     H.inc();
     H << sp << nl << "virtual ::IceInternal::Handle< ::IceDelegateM::Ice::Object> __createDelegateM();";
     H << nl << "virtual ::IceInternal::Handle< ::IceDelegateD::Ice::Object> __createDelegateD();";
     H << eb << ';';
+
+    C << sp;
+    C << nl << "const ::std::string&" << nl << "IceProxy" << scoped << "::ice_staticId()";
+    C << sb;
+    C << nl << "return "<< scoped << "::ice_staticId();";
+    C << eb;
 
     C << sp << nl << "::IceInternal::Handle< ::IceDelegateM::Ice::Object>";
     C << nl << "IceProxy" << scoped << "::__createDelegateM()";
@@ -1244,7 +1254,7 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
 	C << sb;
 	// Async requests may only be sent twoway.
 	C << nl << "__checkTwowayOnly(\"" << p->name() << "\");";
-	C << nl << "__cb->__invoke" << spar << "__reference()" << argsAMI << "__ctx" << epar << ';';
+	C << nl << "__cb->__invoke" << spar << "this" << argsAMI << "__ctx" << epar << ';';
 	C << eb;
     }
 }
@@ -1707,7 +1717,7 @@ Slice::Gen::DelegateDVisitor::visitOperation(const OperationPtr& p)
 	C << nl << "while(true)";
 	C << sb;
 	C << nl << "::IceInternal::Direct __direct(__current);";
-	C << nl << thisPointer << " __servant = dynamic_cast< " << thisPointer << ">(__direct.facetServant().get());";
+	C << nl << thisPointer << " __servant = dynamic_cast< " << thisPointer << ">(__direct.servant().get());";
 	C << nl << "if(!__servant)";
 	C << sb;
 	C << nl << "::Ice::OperationNotExistException __opEx(__FILE__, __LINE__);";
@@ -1843,7 +1853,7 @@ Slice::Gen::ObjectVisitor::visitClassDefStart(const ClassDefPtr& p)
 
     if(!p->isAbstract())
     {
-	H << nl << "void __copyMembers(" << scoped << "Ptr) const;";
+	H << sp << nl << "void __copyMembers(" << scoped << "Ptr) const;";
 
 	C << sp;
 	C << nl << "void ";
@@ -1928,18 +1938,6 @@ Slice::Gen::ObjectVisitor::visitClassDefStart(const ClassDefPtr& p)
 	H << nl << "virtual const ::std::string& ice_id(const ::Ice::Current& = ::Ice::Current()) const;";
 	H << nl << "static const ::std::string& ice_staticId();";
 
-	if(!p->isAbstract())
-	{
-	    H.dec();
-	    H << sp << nl << "private:";
-	    H.inc();
-	    H << sp << nl << "static ::Ice::ObjectFactoryPtr _factory;";
-	    H.dec();
-	    H << sp << nl << "public:";
-	    H.inc();
-	    H << sp << nl << "static const ::Ice::ObjectFactoryPtr& ice_factory();";
-	}
-
 	C << sp;
 	C << nl << "const ::std::string " << scoped.substr(2) << "::__ids[" << ids.size() << "] =";
 	C << sb;
@@ -2007,7 +2005,6 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	    StringList allOpNames;
 	    transform(allOps.begin(), allOps.end(), back_inserter(allOpNames),
 		      ::IceUtil::constMemFun(&Contained::name));
-	    allOpNames.push_back("ice_facets");
 	    allOpNames.push_back("ice_id");
 	    allOpNames.push_back("ice_ids");
 	    allOpNames.push_back("ice_isA");
@@ -2064,8 +2061,8 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	}
 	
 	H << sp;
-	H << nl << "virtual void __write(::IceInternal::BasicStream*, bool) const;";
-	H << nl << "virtual void __read(::IceInternal::BasicStream*, bool = true);";
+	H << nl << "virtual void __write(::IceInternal::BasicStream*) const;";
+	H << nl << "virtual void __read(::IceInternal::BasicStream*, bool);";
 
 	TypeStringList memberList;
 	DataMemberList dataMembers = p->dataMembers();
@@ -2075,13 +2072,23 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	}
 	C << sp;
 	C << nl << "void" << nl << scoped.substr(2)
-          << "::__write(::IceInternal::BasicStream* __os, bool __marshalFacets) const";
+          << "::__write(::IceInternal::BasicStream* __os) const";
 	C << sb;
 	C << nl << "__os->writeTypeId(ice_staticId());";
 	C << nl << "__os->startWriteSlice();";
 	writeMarshalCode(C, memberList, 0);
 	C << nl << "__os->endWriteSlice();";
-	emitClassBase(base, "__os", "__write", ", __marshalFacets");
+	C.zeroIndent();
+	C << nl << "#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug"; // COMPILERBUG
+	C.restoreIndent();
+	C << nl << (base ? fixKwd(base->name()) : "Object") << "::__write(__os);";
+	C.zeroIndent();
+	C << nl << "#else";
+	C.restoreIndent();
+	C << nl << (base ? fixKwd(base->scoped()) : "::Ice::Object") << "::__write(__os);";
+	C.zeroIndent();
+	C << nl << "#endif";
+	C.restoreIndent();
 	C << eb;
 	C << sp;
 	C << nl << "void" << nl << scoped.substr(2) << "::__read(::IceInternal::BasicStream* __is, bool __rid)";
@@ -2094,11 +2101,23 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	C << nl << "__is->startReadSlice();";
 	writeUnmarshalCode(C, memberList, 0);
 	C << nl << "__is->endReadSlice();";
-	emitClassBase(base, "__is", "__read");
+	C.zeroIndent();
+	C << nl << "#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug"; // COMPILERBUG
+	C.restoreIndent();
+	C << nl << (base ? fixKwd(base->name()) : "Object") << "::__read(__is, true);";
+	C.zeroIndent();
+	C << nl << "#else";
+	C.restoreIndent();
+	C << nl << (base ? fixKwd(base->scoped()) : "::Ice::Object") << "::__read(__is, true);";
+	C.zeroIndent();
+	C << nl << "#endif";
+	C.restoreIndent();
 	C << eb;
 
 	if(!p->isAbstract())
 	{
+	    H << sp << nl << "static const ::Ice::ObjectFactoryPtr& ice_factory();";
+
 	    string name = fixKwd(p->name());
 	    string factoryName = "__F__";
 	    factoryName += name;
@@ -2148,13 +2167,18 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	    C << nl << "static " << factoryName << "__Init " << factoryName << "__i;";
 	    C << sp << nl << "#ifdef __APPLE__";
 	    std::string initfuncname = "__F";
-	    for(std::string::const_iterator p = scope.begin(); p != scope.end(); ++p)
+	    for(std::string::const_iterator q = scope.begin(); q != scope.end(); ++q)
 	    {
-		initfuncname += ((*p) == ':') ? '_' : *p;
+		initfuncname += ((*q) == ':') ? '_' : *q;
 	    }
 	    initfuncname += name + "__initializer";
 	    C << nl << "extern \"C\" { void " << initfuncname << "() {} }";
 	    C << nl << "#endif";
+
+	    H.dec();
+	    H << sp << nl << "private:";
+	    H.inc();
+	    H << sp << nl << "static ::Ice::ObjectFactoryPtr _factory;";
 	}
     }
 
@@ -2357,6 +2381,20 @@ Slice::Gen::ObjectVisitor::visitOperation(const OperationPtr& p)
 	    ExceptionList throws = p->throws();
 	    throws.sort();
 	    throws.unique();
+
+	    //
+	    // Arrange exceptions into most-derived to least-derived order. If we don't
+	    // do this, a base exception handler can appear before a derived exception
+	    // handler, causing compiler warnings and resulting in the base exception
+	    // being marshaled instead of the derived exception.
+	    //
+
+#if defined(__SUNPRO_CC)
+	    throws.sort(derivedToBaseCompare);
+#else
+	    throws.sort(Slice::DerivedToBaseCompare());
+#endif
+
 	    if(!inParams.empty())
 	    {
 		C << nl << "::IceInternal::BasicStream* __is = __in.is();";
@@ -2449,91 +2487,156 @@ Slice::Gen::ObjectVisitor::visitDataMember(const DataMemberPtr& p)
 }
 
 void
-Slice::Gen::ObjectVisitor::emitClassBase(const ClassDefPtr& base, const string& stream, const string& call,
-                                         const string& args)
-{
-    string winName = base ? fixKwd(base->name()) : "Object";
-    string unixName = base ? fixKwd(base->scoped()) : "::Ice::Object";
-
-    C.zeroIndent();
-    C << nl << "#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug"; // COMPILERBUG
-    C.restoreIndent();
-    C << nl << winName << "::" << call << "(" << stream << args << ");";
-    C.zeroIndent();
-    C << nl << "#else";
-    C.restoreIndent();
-    C << nl << unixName << "::" << call << "(" << stream << args << ");";
-    C.zeroIndent();
-    C << nl << "#endif";
-    C.restoreIndent();
-}
-
-void
 Slice::Gen::ObjectVisitor::emitGCFunctions(const ClassDefPtr& p)
 {
     string scoped = fixKwd(p->scoped());
-    string vc6Prefix;
-    string otherPrefix;
     ClassList bases = p->bases();
     DataMemberList dataMembers = p->dataMembers();
 
-    H << nl << "virtual void __gcReachable(::IceUtil::GCObjectMultiSet&) const;";
+    //
+    // A class can potentially be part of a cycle if it (recursively) contains class
+    // members. If so, we override __incRef() and __decRef() and, hence, consider instances
+    // of the class as candidates for collection by the garbage collector.
+    // We override __incRef() and __decRef() only once, in the basemost potentially cyclic class
+    // in an inheritance hierarchy.
+    //
+    bool hasBaseClass = !bases.empty() && !bases.front()->isInterface();
+    bool canBeCyclic = p->canBeCyclic();
+    bool override = canBeCyclic && (!hasBaseClass || !bases.front()->canBeCyclic());
 
-    C << sp << nl << "void" << nl << scoped.substr(2) << "::__gcReachable(::IceUtil::GCObjectMultiSet& _c) const";
-    C << sb;
-    if(bases.empty() || bases.front()->isInterface())
+    if(override)
     {
-	vc6Prefix = "Object";
-	otherPrefix = "::Ice::Object";
+	H << nl << "virtual void __incRef();";
+
+	C << sp << nl << "void" << nl << scoped.substr(2) << "::__incRef()";
+	C << sb;
+	C << nl << "IceUtil::gcRecMutex._m->lock();";
+	C << nl << "assert(_ref >= 0);";
+        C << nl << "if(_ref == 0)";
+	C << sb;
+	C.zeroIndent();
+	C << nl << "#ifdef NDEBUG // To avoid annoying warnings about variables that are not used...";
+	C.restoreIndent();
+	C << nl << "IceUtil::gcObjects.insert(this);";
+	C.zeroIndent();
+	C << nl << "#else";
+	C.restoreIndent();
+	C << nl << "std::pair<IceUtil::GCObjectSet::iterator, bool> rc = IceUtil::gcObjects.insert(this);";
+	C << nl << "assert(rc.second);";
+	C.zeroIndent();
+	C << nl << "#endif";
+	C.restoreIndent();
+	C << eb;
+	C << nl << "++_ref;";
+	C << nl << "IceUtil::gcRecMutex._m->unlock();";
+	C << eb;
+
+	H << nl << "virtual void __decRef();";
+
+	C << sp << nl << "void" << nl << scoped.substr(2) << "::__decRef()";
+	C << sb;
+	C << nl << "IceUtil::gcRecMutex._m->lock();";
+	C << nl << "bool doDelete = false;";
+	C << nl << "assert(_ref > 0);";
+	C << nl << "if(--_ref == 0)";
+	C << sb;
+	C << nl << "doDelete = !_noDelete;";
+	C << nl << "_noDelete = true;";
+        C.zeroIndent();
+	C << nl << "#ifdef NDEBUG // To avoid annoying warnings about variables that are not used...";
+	C.restoreIndent();
+	C << nl << "IceUtil::gcObjects.erase(this);";
+        C.zeroIndent();
+	C << nl << "#else";
+	C.restoreIndent();
+	C << nl << "IceUtil::GCObjectSet::size_type num = IceUtil::gcObjects.erase(this);";
+	C << nl << "assert(num == 1);";
+        C.zeroIndent();
+	C << nl << "#endif";
+	C.restoreIndent();
+	C << eb;
+	C << nl << "IceUtil::gcRecMutex._m->unlock();";
+	C << sp << nl << "if(doDelete) // Outside the lock to avoid deadlock.";
+	C << sb;
+	C << nl << "delete this;";
+	C << eb;
+	C << eb;
     }
-    else
+
+    //
+    // __gcReachable() and __gcClear() are overridden by the basemost class that
+    // can be cyclic, plus all classes derived from that class.
+    //
+    if(canBeCyclic)
     {
-	vc6Prefix = bases.front()->name();
-	otherPrefix = bases.front()->scoped();
-    }
-    C.zeroIndent();
-    C << nl << "#if defined(_MSC_VER) && (MSC_VER < 1300) // VC++ 6 compiler bug";
-    C.restoreIndent();
-    C << nl << vc6Prefix<< "::__gcReachable(_c);";
-    C.zeroIndent();
-    C << nl << "#else";
-    C.restoreIndent();
-    C << nl << otherPrefix << "::__gcReachable(_c);";
-    C.zeroIndent();
-    C << nl << "#endif";
-    C.restoreIndent();
-    for(DataMemberList::const_iterator i = dataMembers.begin(); i != dataMembers.end(); ++i)
-    {
-	if((*i)->type()->usesClasses())
+	H << nl << "virtual void __gcReachable(::IceUtil::GCObjectMultiSet&) const;";
+
+	C << sp << nl << "void" << nl << scoped.substr(2) << "::__gcReachable(::IceUtil::GCObjectMultiSet& _c) const";
+	C << sb;
+
+	string vc6Prefix;
+	string otherPrefix;
+
+	bool hasCyclicBase = hasBaseClass && bases.front()->canBeCyclic();
+	if(hasCyclicBase)
 	{
-	    emitGCInsertCode((*i)->type(), fixKwd((*i)->name()), "", 0);
+	    vc6Prefix = bases.front()->name();
+	    otherPrefix = bases.front()->scoped();
+
+	    //
+	    // Up-call to the base's __gcReachable() member function.
+	    //
+	    C.zeroIndent();
+	    C << nl << "#if defined(_MSC_VER) && (MSC_VER < 1300) // VC++ 6 compiler bug";
+	    C.restoreIndent();
+	    C << nl << vc6Prefix << "::__gcReachable(_c);";
+	    C.zeroIndent();
+	    C << nl << "#else";
+	    C.restoreIndent();
+	    C << nl << otherPrefix << "::__gcReachable(_c);";
+	    C.zeroIndent();
+	    C << nl << "#endif";
+	    C.restoreIndent();
 	}
-    }
-    C << eb;
-
-    H << nl << "virtual void __gcClear();";
-
-    C << sp << nl << "void" << nl << scoped.substr(2) << "::__gcClear()";
-    C << sb;
-    C.zeroIndent();
-    C << nl << "#if defined(_MSC_VER) && (MSC_VER < 1300) // VC++ 6 compiler bug";
-    C.restoreIndent();
-    C << nl << vc6Prefix<< "::__gcClear();";
-    C.zeroIndent();
-    C << nl << "#else";
-    C.restoreIndent();
-    C << nl << otherPrefix << "::__gcClear();";
-    C.zeroIndent();
-    C << nl << "#endif";
-    C.restoreIndent();
-    for(DataMemberList::const_iterator j = dataMembers.begin(); j != dataMembers.end(); ++j)
-    {
-	if((*j)->type()->usesClasses())
+	for(DataMemberList::const_iterator i = dataMembers.begin(); i != dataMembers.end(); ++i)
 	{
-	    emitGCClearCode((*j)->type(), fixKwd((*j)->name()), "", 0);
+	    if((*i)->type()->usesClasses())
+	    {
+		emitGCInsertCode((*i)->type(), fixKwd((*i)->name()), "", 0);
+	    }
 	}
+	C << eb;
+
+	H << nl << "virtual void __gcClear();";
+
+	C << sp << nl << "void" << nl << scoped.substr(2) << "::__gcClear()";
+	C << sb;
+	if(hasCyclicBase)
+	{
+	    //
+	    // Up-call to the base's __gcClear() member function.
+	    //
+	    C.zeroIndent();
+	    C << nl << "#if defined(_MSC_VER) && (MSC_VER < 1300) // VC++ 6 compiler bug";
+	    C.restoreIndent();
+	    C << nl << vc6Prefix<< "::__gcClear();";
+	    C.zeroIndent();
+	    C << nl << "#else";
+	    C.restoreIndent();
+	    C << nl << otherPrefix << "::__gcClear();";
+	    C.zeroIndent();
+	    C << nl << "#endif";
+	    C.restoreIndent();
+	}
+	for(DataMemberList::const_iterator j = dataMembers.begin(); j != dataMembers.end(); ++j)
+	{
+	    if((*j)->type()->usesClasses())
+	    {
+		emitGCClearCode((*j)->type(), fixKwd((*j)->name()), "", 0);
+	    }
+	}
+	C << eb;
     }
-    C << eb;
 }
 
 void
@@ -2677,16 +2780,6 @@ Slice::Gen::IceInternalVisitor::visitClassDecl(const ClassDeclPtr& p)
 	H << sp;
 	H << nl << _dllExport << "void incRef(::IceProxy" << scoped << "*);";
 	H << nl << _dllExport << "void decRef(::IceProxy" << scoped << "*);";
-
-	H << sp;
-	H << nl << _dllExport << "void checkedCast(const ::Ice::ObjectPrx&, "
-	  << "ProxyHandle< ::IceProxy" << scoped << ">&);";
-	H << nl << _dllExport << "void checkedCast(const ::Ice::ObjectPrx&, const ::std::string&, "
-	  << "ProxyHandle< ::IceProxy" << scoped << ">&);";
-	H << nl << _dllExport << "void uncheckedCast(const ::Ice::ObjectPrx&, "
-	  << "ProxyHandle< ::IceProxy" << scoped << ">&);";
-	H << nl << _dllExport << "void uncheckedCast(const ::Ice::ObjectPrx&, const ::std::string&, "
-	  << "ProxyHandle< ::IceProxy" << scoped << ">&);";
     }
 }
 
@@ -2719,73 +2812,6 @@ Slice::Gen::IceInternalVisitor::visitClassDefStart(const ClassDefPtr& p)
 	C << nl << "void" << nl << "IceInternal::decRef(::IceProxy" << scoped << "* p)";
 	C << sb;
 	C << nl << "p->__decRef();";
-	C << eb;
-
-	C << sp;
-	C << nl << "void" << nl << "IceInternal::checkedCast(const ::Ice::ObjectPrx& b, "
-	  << scoped << "Prx& d)";
-	C << sb;
-	C << nl << "d = 0;";
-	C << nl << "if(b.get())"; // COMPILERFIX: 'if(b)' doesn't work for GCC 2.95.3.
-	C << sb;
-	C << nl << "d = dynamic_cast< ::IceProxy" << scoped << "*>(b.get());";
-	C << nl << "if(!d && b->ice_isA(\"" << p->scoped() << "\"))";
-	C << sb;
-	C << nl << "d = new ::IceProxy" << scoped << ';';
-	C << nl << "d->__copyFrom(b);";
-	C << eb;
-	C << eb;
-	C << eb;
-
-	C << sp;
-	C << nl << "void" << nl << "IceInternal::checkedCast(const ::Ice::ObjectPrx& b, const ::std::string& f, "
-	  << scoped << "Prx& d)";
-	C << sb;
-	C << nl << "d = 0;";
-	C << nl << "if(b)";
-	C << sb;
-	C << nl << "::Ice::ObjectPrx bb = b->ice_appendFacet(f);";
-	C << nl << "try";
-	C << sb;
-	C << nl << "if(bb->ice_isA(\"" << p->scoped() << "\"))";
-	C << sb;
-	C << nl << "d = new ::IceProxy" << scoped << ';';
-	C << nl << "d->__copyFrom(bb);";
-	C << eb;
-	C << eb;
-	C << nl << "catch(const ::Ice::FacetNotExistException&)";
-	C << sb;
-	C << eb;
-	C << eb;
-	C << eb;
-
-	C << sp;
-	C << nl << "void" << nl << "IceInternal::uncheckedCast(const ::Ice::ObjectPrx& b, "
-	  << scoped << "Prx& d)";
-	C << sb;
-	C << nl << "d = 0;";
-	C << nl << "if(b)";
-	C << sb;
-	C << nl << "d = dynamic_cast< ::IceProxy" << scoped << "*>(b.get());";
-	C << nl << "if(!d)";
-	C << sb;
-	C << nl << "d = new ::IceProxy" << scoped << ';';
-	C << nl << "d->__copyFrom(b);";
-	C << eb;
-	C << eb;
-	C << eb;
-
-	C << sp;
-	C << nl << "void" << nl << "IceInternal::uncheckedCast(const ::Ice::ObjectPrx& b, const ::std::string& f, "
-	  << scoped << "Prx& d)";
-	C << sb;
-	C << nl << "d = 0;";
-	C << nl << "if(b)";
-	C << sb;
-	C << nl << "::Ice::ObjectPrx bb = b->ice_appendFacet(f);";
-	C << nl << "d = new ::IceProxy" << scoped << ';';
-	C << nl << "d->__copyFrom(bb);";
-	C << eb;
 	C << eb;
     }
 
@@ -3326,11 +3352,13 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 
     string name = fixKwd(p->name());
     
-    string classNameAMI = "AMI_" + fixKwd(cl->name());
-    string classNameAMD = "AMD_" + fixKwd(cl->name());
+    string className = fixKwd(cl->name());
+    string classNameAMI = "AMI_" + className;
+    string classNameAMD = "AMD_" + className;
     string classScope = fixKwd(cl->scope());
     string classScopedAMI = classScope + classNameAMI;
     string classScopedAMD = classScope + classNameAMD;
+    string proxyName = classScope + className + "Prx";
     
     vector<string> params;
     vector<string> paramsDecl;
@@ -3339,8 +3367,8 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
     vector<string> paramsInvoke;
     vector<string> paramsDeclInvoke;
 
-    paramsInvoke.push_back("const ::IceInternal::ReferencePtr&");
-    paramsDeclInvoke.push_back("const ::IceInternal::ReferencePtr& __ref");
+    paramsInvoke.push_back("const " + proxyName + "&");
+    paramsDeclInvoke.push_back("const " + proxyName + "& __prx");
 
     TypePtr ret = p->returnType();
     string retS = inputTypeToString(ret);
@@ -3410,7 +3438,7 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	C << nl << "try";
 	C << sb;
 	C << nl << "static const ::std::string __operation(\"" << p->name() << "\");";
-	C << nl << "__prepare(__ref, __operation, static_cast< ::Ice::OperationMode>(" << p->mode() << "), __ctx);";
+	C << nl << "__prepare(__prx, __operation, static_cast< ::Ice::OperationMode>(" << p->mode() << "), __ctx);";
 	writeMarshalCode(C, inParams, 0);
 	if(p->sendsClasses())
 	{
@@ -3544,6 +3572,18 @@ Slice::Gen::AsyncImplVisitor::visitOperation(const OperationPtr& p)
     throws.sort();
     throws.unique();
     
+    //
+    // Arrange exceptions into most-derived to least-derived order. If we don't
+    // do this, a base exception handler can appear before a derived exception
+    // handler, causing compiler warnings and resulting in the base exception
+    // being marshaled instead of the derived exception.
+    //
+#if defined(__SUNPRO_CC)
+    throws.sort(derivedToBaseCompare);
+#else
+    throws.sort(Slice::DerivedToBaseCompare());
+#endif
+
     TypePtr ret = p->returnType();
     string retS = inputTypeToString(ret);
     

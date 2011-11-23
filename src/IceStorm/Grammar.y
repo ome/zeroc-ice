@@ -2,15 +2,10 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -48,6 +43,9 @@ yyerror(const char* s)
 %token ICE_STORM_UNLINK
 %token ICE_STORM_GRAPH
 %token ICE_STORM_STRING
+%token ICE_STORM_SHOW
+%token ICE_STORM_COPYING
+%token ICE_STORM_WARRANTY
 
 %%
 
@@ -112,6 +110,14 @@ command
 | ICE_STORM_LIST strings ';'
 {
     parser->dolist($2);
+}
+| ICE_STORM_SHOW ICE_STORM_COPYING ';'
+{
+    parser->showCopying();
+}
+| ICE_STORM_SHOW ICE_STORM_WARRANTY ';'
+{
+    parser->showWarranty();
 }
 | error ';'
 {

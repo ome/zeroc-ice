@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2004
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -88,6 +83,7 @@ struct ExecuteInfo
     Ice::CommunicatorPtr communicator;
     Db* db;
     DbTxn* txn;
+    string facet;
     SymbolTablePtr symbolTable;
     DumpMap dumpMap;
     Slice::TypePtr keyType;
@@ -968,8 +964,9 @@ FreezeScript::ExecutableContainerDescriptor::execute(const SymbolTablePtr& sym, 
 FreezeScript::IfDescriptor::IfDescriptor(const DescriptorPtr& parent, int line, const DataFactoryPtr& factory,
                                          const ErrorReporterPtr& errorReporter,
                                          const IceXML::Attributes& attributes) :
-    ExecutableContainerDescriptor(parent, line, factory, errorReporter, attributes, "if"),
-    Descriptor(parent, line, factory, errorReporter)
+    Descriptor(parent, line, factory, errorReporter),
+    ExecutableContainerDescriptor(parent, line, factory, errorReporter, attributes, "if")
+   
 {
     DescriptorErrorContext ctx(_errorReporter, "if", _line);
 
@@ -1014,8 +1011,9 @@ FreezeScript::IterateDescriptor::IterateDescriptor(const DescriptorPtr& parent, 
                                                    const DataFactoryPtr& factory,
                                                    const ErrorReporterPtr& errorReporter,
                                                    const IceXML::Attributes& attributes) :
-    ExecutableContainerDescriptor(parent, line, factory, errorReporter, attributes, "iterate"),
-    Descriptor(parent, line, factory, errorReporter)
+    Descriptor(parent, line, factory, errorReporter),
+    ExecutableContainerDescriptor(parent, line, factory, errorReporter, attributes, "iterate")
+  
 {
     DescriptorErrorContext ctx(_errorReporter, "iterate", _line);
 
@@ -1156,8 +1154,10 @@ FreezeScript::DumpDescriptor::DumpDescriptor(const DescriptorPtr& parent, int li
                                              const ErrorReporterPtr& errorReporter,
                                              const IceXML::Attributes& attributes,
                                              const Slice::UnitPtr& unit) :
+    Descriptor(parent, line, factory, errorReporter),
     ExecutableContainerDescriptor(parent, line, factory, errorReporter, attributes, "dump"),
-    Descriptor(parent, line, factory, errorReporter), _base(true), _contents(true)
+    _base(true), 
+    _contents(true)
 {
     DescriptorErrorContext ctx(_errorReporter, "dump", _line);
 
@@ -1237,8 +1237,9 @@ FreezeScript::RecordDescriptor::RecordDescriptor(const DescriptorPtr& parent, in
                                                  const ErrorReporterPtr& errorReporter,
                                                  const IceXML::Attributes& attributes,
                                                  const Slice::UnitPtr& unit) :
+    Descriptor(parent, line, factory, errorReporter), 
     ExecutableContainerDescriptor(parent, line, factory, errorReporter, attributes, "record"),
-    Descriptor(parent, line, factory, errorReporter), _unit(unit)
+    _unit(unit)
 {
 }
 
@@ -1283,6 +1284,8 @@ FreezeScript::RecordDescriptor::execute(const SymbolTablePtr& sym, ExecuteInfo* 
             Destroyer<DataPtr> keyDataDestroyer(keyData);
             DataPtr valueData = _factory->create(info->valueType, true);
             Destroyer<DataPtr> valueDataDestroyer(valueData);
+            DataPtr facetData = _factory->createString(info->facet, true);
+            Destroyer<DataPtr> facetDataDestroyer(facetData);
 
             //
             // Unmarshal the key and value.
@@ -1309,6 +1312,7 @@ FreezeScript::RecordDescriptor::execute(const SymbolTablePtr& sym, ExecuteInfo* 
                 SymbolTablePtr st = new SymbolTableI(_factory, _unit, _errorReporter, info, info->symbolTable);
                 st->add("key", keyData);
                 st->add("value", valueData);
+                st->add("facet", facetData);
                 ExecutableContainerDescriptor::execute(st, info);
             }
         }
@@ -1339,8 +1343,9 @@ FreezeScript::DatabaseDescriptor::DatabaseDescriptor(const DescriptorPtr& parent
                                                      const ErrorReporterPtr& errorReporter,
                                                      const IceXML::Attributes& attributes,
                                                      const Slice::UnitPtr& unit) :
+    Descriptor(parent, line, factory, errorReporter), 
     ExecutableContainerDescriptor(parent, line, factory, errorReporter, attributes, "database"),
-    Descriptor(parent, line, factory, errorReporter), _unit(unit)
+    _unit(unit)
 {
     DescriptorErrorContext ctx(_errorReporter, "database", _line);
 
@@ -1466,11 +1471,12 @@ FreezeScript::DumpDBDescriptor::execute(const SymbolTablePtr&, ExecuteInfo*)
 }
 
 void
-FreezeScript::DumpDBDescriptor::dump(const Ice::CommunicatorPtr& communicator, Db* db, DbTxn* txn)
+FreezeScript::DumpDBDescriptor::dump(const Ice::CommunicatorPtr& communicator, Db* db, DbTxn* txn, const string& facet)
 {
     _info->communicator = communicator;
     _info->db = db;
     _info->txn = txn;
+    _info->facet = facet;
 
     try
     {

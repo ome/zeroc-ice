@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -29,7 +24,9 @@ public:
 
     void add(const ::Ice::ObjectFactoryPtr&, const std::string&);
     void remove(const std::string&);
-    ::Ice::ObjectFactoryPtr find(const std::string&);
+    ::Ice::ObjectFactoryPtr find(const std::string&) const;
+
+    typedef std::map<std::string, ::Ice::ObjectFactoryPtr> FactoryMap;
 
 private:
 
@@ -37,9 +34,8 @@ private:
     void destroy();
     friend class Instance;
 
-    std::map<std::string, ::Ice::ObjectFactoryPtr> _factoryMap;
-    std::map<std::string, ::Ice::ObjectFactoryPtr>::iterator _factoryMapHint;
-    static const char * const _kindOfObject;
+    FactoryMap _factoryMap;
+    mutable FactoryMap::iterator _factoryMapHint;
 };
 
 }

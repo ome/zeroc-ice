@@ -1,15 +1,10 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003
-# ZeroC, Inc.
-# Billerica, MA, USA
+# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 #
-# All Rights Reserved.
-#
-# Ice is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License version 2 as published by
-# the Free Software Foundation.
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
@@ -128,7 +123,7 @@ def shutdownIcePackRegistry():
     print "shutting down icepack registry...",
     command = icePackAdmin + TestUtil.clientOptions + \
               r' "--Ice.Default.Locator=IcePack/Locator:default -p ' + icePackPort + '" ' + \
-              r' -e "shutdown" '
+              r' -e "shutdown" ' + " 2>&1"
 
     icePackAdminPipe = os.popen(command)
     TestUtil.printOutputFromPipe(icePackAdminPipe)
@@ -146,7 +141,7 @@ def shutdownIcePackNode():
     print "shutting down icepack node...",
     command = icePackAdmin + TestUtil.clientOptions + \
               r' "--Ice.Default.Locator=IcePack/Locator:default -p ' + icePackPort + '" ' + \
-              r' -e "node shutdown localnode" '
+              r' -e "node shutdown localnode" ' + " 2>&1"
 
     icePackAdminPipe = os.popen(command)
     TestUtil.printOutputFromPipe(icePackAdminPipe)
@@ -164,7 +159,7 @@ def addApplication(descriptor, targets):
     descriptor = descriptor.replace("\\", "/")
     command = icePackAdmin + TestUtil.clientOptions + \
               r' "--Ice.Default.Locator=IcePack/Locator:default -p ' + icePackPort + '" ' + \
-              r' -e "application add \"' + descriptor + '\\" ' + targets + ' \"'
+              r' -e "application add \"' + descriptor + '\\" ' + targets + ' \"' + " 2>&1"
 
     icePackAdminPipe = os.popen(command)
     icePackAdminStatus = icePackAdminPipe.close()
@@ -180,7 +175,7 @@ def removeApplication(descriptor):
     descriptor = descriptor.replace("\\", "/")
     command = icePackAdmin + TestUtil.clientOptions + \
               r' "--Ice.Default.Locator=IcePack/Locator:default -p ' + icePackPort + '" ' + \
-              r' -e "application remove \"' + descriptor + '\\" \"'
+              r' -e "application remove \"' + descriptor + '\\" \"' + " 2>&1"
 
     icePackAdminPipe = os.popen(command)
     TestUtil.printOutputFromPipe(icePackAdminPipe)
@@ -200,7 +195,7 @@ def addServer(name, serverDescriptor, server, libpath, targets):
     command = icePackAdmin + TestUtil.clientOptions + \
               r' "--Ice.Default.Locator=IcePack/Locator:default -p ' + icePackPort + '" ' + \
               r' -e "server add localnode \"' + name + '\\" \\"' + serverDescriptor + '\\" ' + \
-              r' \"' + server + '\\" \\"' + libpath + '\\" ' + targets + '\"'
+              r' \"' + server + '\\" \\"' + libpath + '\\" ' + targets + '\"' + " 2>&1"
 
     icePackAdminPipe = os.popen(command)
     icePackAdminStatus = icePackAdminPipe.close()
@@ -216,7 +211,7 @@ def removeServer(name):
 
     command = icePackAdmin + TestUtil.clientOptions + \
               r' "--Ice.Default.Locator=IcePack/Locator:default -p ' + icePackPort + '" ' + \
-              r' -e "server remove \"' + name + '\\" \"'
+              r' -e "server remove \"' + name + '\\" \"' + " 2>&1"
 
     icePackAdminPipe = os.popen(command)
     icePackAdminStatus = icePackAdminPipe.close()
@@ -231,7 +226,7 @@ def startServer(name):
 
     command = icePackAdmin + TestUtil.clientOptions + \
               r' "--Ice.Default.Locator=IcePack/Locator:default -p ' + icePackPort + '" ' + \
-              r' -e "server start \"' + name + '\\""'
+              r' -e "server start \"' + name + '\\""' + " 2>&1"
 
     icePackAdminPipe = os.popen(command)
     icePackAdminStatus = icePackAdminPipe.close()
@@ -246,7 +241,7 @@ def listAdapters():
 
     command = icePackAdmin + TestUtil.clientOptions + \
               r' "--Ice.Default.Locator=IcePack/Locator:default -p ' + icePackPort + '" ' + \
-              r' -e "adapter list"'
+              r' -e "adapter list"' + " 2>&1"
 
     icePackAdminPipe = os.popen(command)
     return icePackAdminPipe

@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -54,14 +49,19 @@ public:
     virtual void waitForDeactivate();
 
     virtual ObjectPrx add(const ObjectPtr&, const Identity&);
+    virtual ObjectPrx addFacet(const ObjectPtr&, const Identity&, const std::string&);
     virtual ObjectPrx addWithUUID(const ObjectPtr&);
-    virtual void remove(const Identity&);
+    virtual ObjectPrx addFacetWithUUID(const ObjectPtr&, const std::string&);
+    virtual ObjectPtr remove(const Identity&);
+    virtual ObjectPtr removeFacet(const Identity&, const std::string&);
+    virtual FacetMap removeAllFacets(const Identity&);
+    virtual ObjectPtr find(const Identity&);
+    virtual ObjectPtr findFacet(const Identity&, const std::string&);
+    virtual FacetMap findAllFacets(const Identity&);
+    virtual ObjectPtr findByProxy(const ObjectPrx&);
 
     virtual void addServantLocator(const ServantLocatorPtr&, const std::string&);
     virtual ServantLocatorPtr findServantLocator(const std::string&);
-
-    virtual ObjectPtr identityToServant(const Identity&);
-    virtual ObjectPtr proxyToServant(const ObjectPrx&);
 
     virtual ObjectPrx createProxy(const Identity&);
     virtual ObjectPrx createDirectProxy(const Identity&);

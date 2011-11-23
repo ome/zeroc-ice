@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -31,6 +26,7 @@
 #include <Ice/LoggerUtil.h>
 #include <Ice/ThreadPool.h>
 #include <Ice/Communicator.h>
+#include <Ice/Router.h>
 
 #ifdef _WIN32
 #   include <sys/timeb.h>
@@ -189,25 +185,43 @@ Ice::ObjectAdapterI::waitForHold()
 void
 Ice::ObjectAdapterI::deactivate()
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-    
-    //
-    // Ignore deactivation requests if the object adapter has already
-    // been deactivated.
-    //
-    if(_deactivated)
+    vector<IncomingConnectionFactoryPtr> incomingConnectionFactories;
+    OutgoingConnectionFactoryPtr outgoingConnectionFactory;
+
     {
-	return;
-    }
+	IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+	
+	//
+	// Ignore deactivation requests if the object adapter has already
+	// been deactivated.
+	//
+	if(_deactivated)
+	{
+	    return;
+	}
+
+        incomingConnectionFactories = _incomingConnectionFactories;
+	outgoingConnectionFactory = _instance->outgoingConnectionFactory();
     
-    for_each(_incomingConnectionFactories.begin(), _incomingConnectionFactories.end(),
+	_deactivated = true;
+	
+	notifyAll();
+    }
+
+    //
+    // Must be called outside the thread synchronization, because
+    // Connection::destroy() might block when sending a CloseConnection
+    // message.
+    //
+    for_each(incomingConnectionFactories.begin(), incomingConnectionFactories.end(),
 	     Ice::voidMemFun(&IncomingConnectionFactory::destroy));
     
-    _instance->outgoingConnectionFactory()->removeAdapter(this);
-
-    _deactivated = true;
-    
-    notifyAll();
+    //
+    // Must be called outside the thread synchronization, because
+    // changing the object adapter might block if there are still
+    // requests being dispatched.
+    //
+    outgoingConnectionFactory->removeAdapter(this);
 }
 
 void
@@ -289,12 +303,18 @@ Ice::ObjectAdapterI::waitForDeactivate()
 ObjectPrx
 Ice::ObjectAdapterI::add(const ObjectPtr& object, const Identity& ident)
 {
+    return addFacet(object, ident, "");
+}
+
+ObjectPrx
+Ice::ObjectAdapterI::addFacet(const ObjectPtr& object, const Identity& ident, const string& facet)
+{
     IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
 
     checkForDeactivation();
     checkIdentity(ident);
 
-    _servantManager->addServant(object, ident);
+    _servantManager->addServant(object, ident, facet);
 
     return newProxy(ident);
 }
@@ -302,20 +322,82 @@ Ice::ObjectAdapterI::add(const ObjectPtr& object, const Identity& ident)
 ObjectPrx
 Ice::ObjectAdapterI::addWithUUID(const ObjectPtr& object)
 {
-    Identity ident;
-    ident.name = IceUtil::generateUUID();
-    return add(object, ident);
+    return addFacetWithUUID(object, "");
 }
 
-void
+ObjectPrx
+Ice::ObjectAdapterI::addFacetWithUUID(const ObjectPtr& object, const string& facet)
+{
+    Identity ident;
+    ident.name = IceUtil::generateUUID();
+    return addFacet(object, ident, facet);
+}
+
+ObjectPtr
 Ice::ObjectAdapterI::remove(const Identity& ident)
+{
+    return removeFacet(ident, "");
+}
+
+ObjectPtr
+Ice::ObjectAdapterI::removeFacet(const Identity& ident, const string& facet)
 {
     IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
 
     checkForDeactivation();
     checkIdentity(ident);
 
-    _servantManager->removeServant(ident);
+    return _servantManager->removeServant(ident, facet);
+}
+
+FacetMap
+Ice::ObjectAdapterI::removeAllFacets(const Identity& ident)
+{
+    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+
+    checkForDeactivation();
+    checkIdentity(ident);
+
+    return _servantManager->removeAllFacets(ident);
+}
+
+ObjectPtr
+Ice::ObjectAdapterI::find(const Identity& ident)
+{
+    return findFacet(ident, "");
+}
+
+ObjectPtr
+Ice::ObjectAdapterI::findFacet(const Identity& ident, const string& facet)
+{
+    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+
+    checkForDeactivation();
+    checkIdentity(ident);
+
+    return _servantManager->findServant(ident, facet);
+}
+
+FacetMap
+Ice::ObjectAdapterI::findAllFacets(const Identity& ident)
+{
+    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+
+    checkForDeactivation();
+    checkIdentity(ident);
+
+    return _servantManager->findAllFacets(ident);
+}
+
+ObjectPtr
+Ice::ObjectAdapterI::findByProxy(const ObjectPrx& proxy)
+{
+    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+
+    checkForDeactivation();
+
+    ReferencePtr ref = proxy->__reference();
+    return findFacet(ref->identity, ref->facet);
 }
 
 void
@@ -336,28 +418,6 @@ Ice::ObjectAdapterI::findServantLocator(const string& prefix)
     checkForDeactivation();
 
     return _servantManager->findServantLocator(prefix);
-}
-
-ObjectPtr
-Ice::ObjectAdapterI::identityToServant(const Identity& ident)
-{
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-
-    checkForDeactivation();
-    checkIdentity(ident);
-
-    return _servantManager->findServant(ident);
-}
-
-ObjectPtr
-Ice::ObjectAdapterI::proxyToServant(const ObjectPrx& proxy)
-{
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-
-    checkForDeactivation();
-
-    ReferencePtr ref = proxy->__reference();
-    return identityToServant(ref->identity);
 }
 
 ObjectPrx
@@ -395,7 +455,7 @@ Ice::ObjectAdapterI::createReverseProxy(const Identity& ident)
     // reference.
     //
     vector<EndpointPtr> endpoints;
-    ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), vector<string>(), Reference::ModeTwoway,
+    ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), "", Reference::ModeTwoway,
 							     false, "", endpoints, 0, 0, this, true);
     return _instance->proxyFactory()->referenceToProxy(ref);
 }
@@ -535,7 +595,7 @@ Ice::ObjectAdapterI::getIncomingConnections() const
 void
 Ice::ObjectAdapterI::flushBatchRequests()
 {
-    std::vector<IceInternal::IncomingConnectionFactoryPtr> f;
+    vector<IncomingConnectionFactoryPtr> f;
     {
 	IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
 	f = _incomingConnectionFactories;
@@ -730,7 +790,7 @@ Ice::ObjectAdapterI::newProxy(const Identity& ident) const
 	// Create a reference with the adapter id.
 	//
 	vector<EndpointPtr> endpoints;
-	ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), vector<string>(),
+	ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), "",
 								 Reference::ModeTwoway, false, _id,
 								 endpoints, 0, _locatorInfo, 0, true);
 
@@ -763,7 +823,7 @@ Ice::ObjectAdapterI::newDirectProxy(const Identity& ident) const
     //
     // Create a reference and return a proxy for this reference.
     //
-    ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), vector<string>(), Reference::ModeTwoway,
+    ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), "", Reference::ModeTwoway,
 							     false, "", endpoints, 0, _locatorInfo, 0, true);
     return _instance->proxyFactory()->referenceToProxy(ref);
 

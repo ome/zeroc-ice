@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -101,6 +96,10 @@ public:
     virtual void opStringSS_async(const Test::AMD_MyClass_opStringSSPtr&,
 				  const Test::StringSS&, const Test::StringSS&,
 				  const Ice::Current&);
+
+    virtual void opStringSSS_async(const Test::AMD_MyClass_opStringSSSPtr&,
+				   const Test::StringSSS&, const Test::StringSSS&,
+				   const Ice::Current&);
 
     virtual void opByteBoolD_async(const Test::AMD_MyClass_opByteBoolDPtr&,
 				   const Test::ByteBoolD&, const Test::ByteBoolD&, 

@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -21,6 +16,7 @@
 #include <Ice/InstanceF.h>
 #include <Ice/ServantLocatorF.h>
 #include <Ice/Identity.h>
+#include <Ice/FacetMap.h>
 
 namespace Ice
 {
@@ -36,9 +32,12 @@ class ServantManager : public IceUtil::Shared, public IceUtil::Mutex
 {
 public:
 
-    void addServant(const Ice::ObjectPtr&, const Ice::Identity&);
-    void removeServant(const Ice::Identity&);
-    Ice::ObjectPtr findServant(const Ice::Identity&) const;
+    void addServant(const Ice::ObjectPtr&, const Ice::Identity&, const std::string&);
+    Ice::ObjectPtr removeServant(const Ice::Identity&, const std::string&);
+    Ice::FacetMap removeAllFacets(const Ice::Identity&);
+    Ice::ObjectPtr findServant(const Ice::Identity&, const std::string&) const;
+    Ice::FacetMap findAllFacets(const Ice::Identity&) const;
+    bool hasServant(const Ice::Identity&) const;
 
     void addServantLocator(const Ice::ServantLocatorPtr& locator, const std::string&);
     Ice::ServantLocatorPtr findServantLocator(const std::string&) const;
@@ -54,8 +53,10 @@ private:
 
     const std::string _adapterName;
 
-    Ice::ObjectDict _servantMap;
-    mutable Ice::ObjectDict::iterator _servantMapHint;
+    typedef std::map<Ice::Identity, Ice::FacetMap> ServantMapMap;
+
+    ServantMapMap _servantMapMap;
+    mutable ServantMapMap::iterator _servantMapMapHint;
 
     std::map<std::string, Ice::ServantLocatorPtr> _locatorMap;
     mutable std::map<std::string, Ice::ServantLocatorPtr>::iterator _locatorMapHint;

@@ -1,14 +1,9 @@
 # **********************************************************************
 #
-# Copyright (c) 2004
-# ZeroC, Inc.
-# Billerica, MA, USA
+# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 #
-# All Rights Reserved.
-#
-# Ice is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License version 2 as published by
-# the Free Software Foundation.
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
@@ -49,11 +44,11 @@ BISONFLAGS	:= --name-prefix "freeze_script_" $(BISONFLAGS)
 
 $(TRANSFORMDB): $(TRANSFORM_OBJS) $(COMMON_OBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(TRANSFORM_OBJS) $(COMMON_OBJS) -lSlice -lIceXML $(LIBS) $(DB_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(TRANSFORM_OBJS) $(COMMON_OBJS) -lSlice -lIceXML $(LIBS) $(DB_LIBS) $(EXPAT_LIBS)
 
 $(DUMPDB): $(DUMP_OBJS) $(COMMON_OBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(DUMP_OBJS) $(COMMON_OBJS) -lSlice -lIceXML $(LIBS) $(DB_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(DUMP_OBJS) $(COMMON_OBJS) -lSlice -lIceXML $(LIBS) $(DB_LIBS) $(EXPAT_LIBS)
 
 clean::
 #	rm -f Grammar.cpp Grammar.h

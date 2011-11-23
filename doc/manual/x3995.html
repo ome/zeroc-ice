@@ -1,0 +1,461 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Ice::ObjectFactory</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Ice::ObjectAdapterIdInUseException"
+HREF="x3965.html"><LINK
+REL="NEXT"
+TITLE="Ice::ObjectNotExistException"
+HREF="x4082.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x3965.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x4082.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTFACTORY"
+></A
+><TT
+CLASS="LITERAL"
+>Ice::ObjectFactory</TT
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN3998"
+></A
+>Overview</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local interface <TT
+CLASS="CLASSNAME"
+>ObjectFactory</TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>A factory for objects. Object factories are used in several
+places, for example, when receiving "objects by value" and
+when <A
+HREF="x5629.html"
+><SPAN
+CLASS="TYPE"
+>::Freeze</SPAN
+></A
+> restores a persistent object. Object factories
+must be implemented by the application writer, and registered
+with the communicator.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4005"
+></A
+>Used By</H3
+><P
+>	    <A
+HREF="x1089.html#ICE.COMMUNICATOR.ADDOBJECTFACTORY"
+><TT
+CLASS="FUNCTION"
+>Communicator::addObjectFactory</TT
+></A
+>, <A
+HREF="x1089.html#ICE.COMMUNICATOR.FINDOBJECTFACTORY"
+><TT
+CLASS="FUNCTION"
+>Communicator::findObjectFactory</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4015"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x5629.html"
+><SPAN
+CLASS="TYPE"
+>::Freeze</SPAN
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4022"
+></A
+>Operation Index</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x3995.html#ICE.OBJECTFACTORY.CREATE"
+><TT
+CLASS="FUNCTION"
+>create</TT
+></A
+></DT
+><DD
+><P
+>Create a new object for a given object type.</P
+></DD
+><DT
+><A
+HREF="x3995.html#ICE.OBJECTFACTORY.DESTROY"
+><TT
+CLASS="FUNCTION"
+>destroy</TT
+></A
+></DT
+><DD
+><P
+>Called when the factory is removed from the communicator, or if
+the communicator is destroyed.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTFACTORY.CREATE"
+></A
+><TT
+CLASS="LITERAL"
+>create</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="FUNCTION"
+>create</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>type</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Create a new object for a given object type. The type is the
+absolute <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Slice</SPAN
+></SPAN
+> type name, i.e., the name relative to the
+unnamed top-level Slice module. For example, the absolute
+<SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Slice</SPAN
+></SPAN
+> type name for interfaces of type <TT
+CLASS="LITERAL"
+>Bar</TT
+> in the module
+<TT
+CLASS="LITERAL"
+>Foo</TT
+> is <TT
+CLASS="LITERAL"
+>::Foo::Bar</TT
+>.
+<DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>The leading "<TT
+CLASS="LITERAL"
+>::</TT
+>" is required.</P
+></TD
+></TR
+></TABLE
+></DIV
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4054"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>type</I
+></TT
+></DT
+><DD
+><P
+>			    The object type.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4062"
+></A
+>Return Value</H3
+><P
+>		The object created for the given type, or nil if the
+factory is unable to create the object.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTFACTORY.DESTROY"
+></A
+><TT
+CLASS="LITERAL"
+>destroy</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>destroy</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Called when the factory is removed from the communicator, or if
+the communicator is destroyed.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4072"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1089.html#ICE.COMMUNICATOR.REMOVEOBJECTFACTORY"
+><TT
+CLASS="FUNCTION"
+>Communicator::removeObjectFactory</TT
+></A
+>, <A
+HREF="x1089.html#ICE.COMMUNICATOR.DESTROY"
+><TT
+CLASS="FUNCTION"
+>Communicator::destroy</TT
+></A
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x3965.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x4082.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::ObjectAdapterIdInUseException</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::ObjectNotExistException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

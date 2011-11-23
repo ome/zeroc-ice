@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -469,11 +464,16 @@ FreezeGenerator::generate(UnitPtr& u, const Index& index)
     out << sb;
 
     //
-    // Constructor
+    // Constructors
     //
+    out << sp << nl << "public" << nl << name << "(String __indexName, String __facet)";
+    out << sb;
+    out << nl << "super(__indexName, __facet);";
+    out << eb;
+
     out << sp << nl << "public" << nl << name << "(String __indexName)";
     out << sb;
-    out << nl << "super(__indexName);";
+    out << nl << "super(__indexName, \"\");";
     out << eb;
 
     //

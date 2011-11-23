@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -16,21 +11,9 @@
 #define FREEZE_EVICTOR_STORAGE_ICE
 
 #include <Ice/Identity.ice>
-#include <Ice/Facet.ice>
 
 module Freeze
 {
-
-/**
- *
- * The key of the Evictor persistent map.
- *
- **/
-struct EvictorStorageKey
-{
-    Ice::Identity identity;
-    Ice::FacetPath facet;
-};
 
 /**
  *
@@ -63,7 +46,7 @@ struct Statistics
 
 /**
  *
- * The evictor uses a map of [EvictorStorageKey] to [ObjectRecord] as its
+ * The evictor uses a number of maps [Ice::Identity] to [ObjectRecord] as its
  * persistent storage.
  *
  **/

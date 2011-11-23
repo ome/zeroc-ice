@@ -1,21 +1,20 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
 #include <IceUtil/IceUtil.h>
-#include <Ice/Application.h>
+#include <Ice/Service.h>
 #include <IcePatch/FileLocator.h>
 #include <IcePatch/IcePatchI.h>
+#include <IcePatch/Util.h>
+#ifdef _WIN32
+#   include <direct.h>
+#endif
 
 using namespace std;
 using namespace Ice;
@@ -24,157 +23,204 @@ using namespace IcePatch;
 namespace IcePatch
 {
 
-class Server : public Application
+class IcePatchService : public Service
 {
 public:
 
-    void usage();
-    virtual int run(int, char*[]);
-};
+    IcePatchService();
 
-class Updater : public IceUtil::Thread, public IceUtil::Monitor<IceUtil::Mutex>
-{
-public:
-
-    Updater(const ObjectAdapterPtr&, const IceUtil::Time&);
-
-    virtual void run();
-    void destroy();
+    void usage(const string&);
 
 protected:
 
-    const ObjectAdapterPtr _adapter;
-    const LoggerPtr _logger;
-    const IceUtil::Time _updatePeriod;
-    bool _destroy;
+    virtual bool start(int, char*[]);
+    virtual bool stop();
 
-    void cleanup(const FileDescSeq&);
+private:
+
+    void runUpdater();
+    void cleanup();
+    void cleanupRec(const FileDescSeq&);
+
+    IceUtil::Monitor<IceUtil::Mutex> _monitor;
+    IceUtil::ThreadPtr _thread;
+    bool _shutdown;
+    ObjectAdapterPtr _adapter;
+    IceUtil::Time _updatePeriod;
+
+    class UpdaterThread : public IceUtil::Thread
+    {
+    public:
+
+        UpdaterThread(IcePatchService*);
+
+        virtual void run();
+
+    protected:
+
+        IcePatchService* _service;
+    };
+    friend class UpdaterThread;
 };
 
-typedef IceUtil::Handle<Updater> UpdaterPtr;
-
-};
-
-void
-IcePatch::Server::usage()
-{
-    cerr << "Usage: " << appName() << " [options]\n";
-    cerr <<     
-        "Options:\n"
-        "-h, --help           Show this message.\n"
-        "-v, --version        Display the Ice version.\n"
-        ;
 }
 
-int
-IcePatch::Server::run(int argc, char* argv[])
+IcePatch::IcePatchService::IcePatchService() :
+    _shutdown(false)
+{
+}
+
+void
+IcePatch::IcePatchService::usage(const string& name)
+{
+    string options =
+        "Options:\n"
+        "-h, --help           Show this message.\n"
+        "-v, --version        Display the Ice version.";
+#ifdef _WIN32
+    if(checkSystem())
+    {
+        options.append(
+        "\n"
+        "\n"
+        "--service NAME       Run as the Windows service NAME.\n"
+        "\n"
+        "--install NAME [--display DISP] [--executable EXEC] [args]\n"
+        "                     Install as Windows service NAME. If DISP is\n"
+        "                     provided, use it as the display name,\n"
+        "                     otherwise NAME is used. If EXEC is provided,\n"
+        "                     use it as the service executable, otherwise\n"
+        "                     this executable is used. Any additional\n"
+        "                     arguments are passed unchanged to the\n"
+        "                     service at startup.\n"
+        "--uninstall NAME     Uninstall Windows service NAME.\n"
+        "--start NAME [args]  Start Windows service NAME. Any additional\n"
+        "                     arguments are passed unchanged to the\n"
+        "                     service.\n"
+        "--stop NAME          Stop Windows service NAME."
+        );
+    }
+#else
+    options.append(
+        "\n"
+        "\n"
+        "--daemon             Run as a daemon.\n"
+        "--noclose            Do not close open file descriptors.\n"
+        "--nochdir            Do not change the current working directory."
+    );
+#endif
+    cerr << "Usage: " << name << " [options]" << endl;
+    cerr << options << endl;
+}
+
+bool
+IcePatch::IcePatchService::start(int argc, char* argv[])
 {
     for(int i = 1; i < argc; ++i)
     {
 	if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
 	{
-	    usage();
-	    return EXIT_SUCCESS;
+	    usage(argv[0]);
+	    return false;
 	}
 	else if(strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0)
 	{
-	    cout << ICE_STRING_VERSION << endl;
-	    return EXIT_SUCCESS;
+	    trace(ICE_STRING_VERSION);
+	    return false;
 	}
 	else
 	{
-	    cerr << appName() << ": unknown option `" << argv[i] << "'" << endl;
-	    usage();
-	    return EXIT_FAILURE;
+	    error(string(argv[0]) + ": unknown option `" + string(argv[i]) + "'");
+	    usage(argv[0]);
+	    return false;
 	}
     }
-    
+
     PropertiesPtr properties = communicator()->getProperties();
-    
+
     //
     // Get the IcePatch endpoints.
     //
     const char* endpointsProperty = "IcePatch.Endpoints";
     if(properties->getProperty(endpointsProperty).empty())
     {
-	cerr << appName() << ": property `" << endpointsProperty << "' is not set" << endl;
-	return EXIT_FAILURE;
+	error(string(argv[0]) + ": property `" + endpointsProperty + "' is not set");
+	return false;
     }
-    
+
     //
     // Create and initialize the object adapter and the file locator.
     //
-    ObjectAdapterPtr adapter = communicator()->createObjectAdapter("IcePatch");
-    ServantLocatorPtr fileLocator = new FileLocator(adapter);
-    adapter->addServantLocator(fileLocator, "IcePatch");
+    string dataDir = properties->getProperty("IcePatch.Directory");
+    if(dataDir.empty())
+    {
+#ifdef _WIN32
+        char cwd[_MAX_PATH];
+        _getcwd(cwd, _MAX_PATH);
+#else
+        char cwd[PATH_MAX];
+        getcwd(cwd, PATH_MAX);
+#endif
+        dataDir = cwd;
+    }
+    _adapter = communicator()->createObjectAdapter("IcePatch");
+    ServantLocatorPtr fileLocator = new FileLocator(_adapter, dataDir);
+    _adapter->addServantLocator(fileLocator, "IcePatch");
 
     //
-    // Start the updater if an update period is set.
+    // Start the updater thread if an update period is set.
     //
-    UpdaterPtr updater;
-    IceUtil::Time updatePeriod = IceUtil::Time::seconds(
-	properties->getPropertyAsIntWithDefault("IcePatch.UpdatePeriod", 60));
-    if(updatePeriod != IceUtil::Time())
+    _updatePeriod = IceUtil::Time::seconds(properties->getPropertyAsIntWithDefault("IcePatch.UpdatePeriod", 60));
+    if(_updatePeriod != IceUtil::Time())
     {
-	if(updatePeriod < IceUtil::Time::seconds(1))
+	if(_updatePeriod < IceUtil::Time::seconds(1))
 	{
-	    updatePeriod = IceUtil::Time::seconds(1);
+	    _updatePeriod = IceUtil::Time::seconds(1);
 	}
-	updater = new Updater(adapter, updatePeriod);
-	updater->start();
+	_thread = new UpdaterThread(this);
+	_thread->start();
     }
 
     //
     // Everything ok, let's go.
     //
-    shutdownOnInterrupt();
-    adapter->activate();
-    communicator()->waitForShutdown();
-    ignoreInterrupt();
+    _adapter->activate();
 
-    //
-    // Destroy and join with the updater, if there is one.
-    //
-    if(updater)
-    {
-	updater->destroy();
-	updater->getThreadControl().join();
-    }
-
-    return EXIT_SUCCESS;
+    return true;
 }
 
-IcePatch::Updater::Updater(const ObjectAdapterPtr& adapter, const IceUtil::Time& updatePeriod) :
-    _adapter(adapter),
-    _logger(_adapter->getCommunicator()->getLogger()),
-    _updatePeriod(updatePeriod),
-    _destroy(false)
+bool
+IcePatch::IcePatchService::stop()
 {
+    if(_thread)
+    {
+        {
+            IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_monitor);
+            _shutdown = true;
+            _monitor.notify();
+        }
+        _thread->getThreadControl().join();
+        _thread = 0;
+    }
+    return true;
 }
 
 void
-IcePatch::Updater::run()
+IcePatch::IcePatchService::runUpdater()
 {
-    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_monitor);
 
-    while(!_destroy && !Application::interrupted())
+    while(!_shutdown)
     {
 	try
 	{
-	    Identity ident;
-	    ident.category = "IcePatch";
-	    ident.name = ".";
-	    ObjectPrx topObj = _adapter->createProxy(ident);
-	    FilePrx top = FilePrx::checkedCast(topObj);
-	    assert(top);
-	    DirectoryDescPtr topDesc = DirectoryDescPtr::dynamicCast(top->describe());
-	    assert(topDesc);
-	    cleanup(topDesc->dir->getContents());
+	    cleanup();
 	}
 	catch(const FileAccessException& ex)
 	{
-	    Error out(_logger);
-	    out << "exception during update:\n" << ex << ":\n" << ex.reason;
+            ostringstream ostr;
+	    ostr << "exception during update:\n" << ex << ":\n" << ex.reason;
+            error(ostr.str());
 	}
 	catch(const BusyException&)
 	{
@@ -185,39 +231,46 @@ IcePatch::Updater::run()
 	catch(const Exception& ex)
 	{
 	    //
-	    // Log other exceptions only if we are not destroyed and
-	    // if we were not interrupted.
+	    // Log other exceptions only if we are not destroyed.
 	    //
-	    if(!_destroy && !Application::interrupted())
+	    if(!_shutdown)
 	    {
-		Error out(_logger);
-		out << "exception during update:\n" << ex;
+                ostringstream ostr;
+		ostr << "exception during update:\n" << ex;
+                error(ostr.str());
 	    }
 	}
 
-	if(_destroy || Application::interrupted())
+	if(_shutdown)
 	{
 	    break;
 	}
 
-	timedWait(_updatePeriod);
+	_monitor.timedWait(_updatePeriod);
     }
 }
 
 void
-IcePatch::Updater::destroy()
+IcePatch::IcePatchService::cleanup()
 {
-    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-    _destroy = true;
-    notify();
+    Identity ident;
+    ident.category = "IcePatch";
+    ident.name = ".";
+    ObjectPrx topObj = _adapter->createProxy(ident);
+    FilePrx top = FilePrx::checkedCast(topObj);
+    assert(top);
+    DirectoryDescPtr topDesc = DirectoryDescPtr::dynamicCast(top->describe());
+    assert(topDesc);
+    cleanupRec(topDesc->dir->getContents());
+    topDesc->dir->describe(); // Refresh the top-level MD5 file.
 }
 
 void
-IcePatch::Updater::cleanup(const FileDescSeq& fileDescSeq)
+IcePatch::IcePatchService::cleanupRec(const FileDescSeq& fileDescSeq)
 {
     for(FileDescSeq::const_iterator p = fileDescSeq.begin(); p != fileDescSeq.end(); ++p)
     {
-	if(_destroy)
+	if(_shutdown)
 	{
 	    return;
 	}
@@ -229,7 +282,7 @@ IcePatch::Updater::cleanup(const FileDescSeq& fileDescSeq)
 	    // Force MD5 files to be created and orphaned files to be
 	    // removed. Then recurse into subdirectories.
 	    //
-	    cleanup(directoryDesc->dir->getContents());
+	    cleanupRec(directoryDesc->dir->getContents());
 
 	    //
 	    // Call describe(), because BZ2 and MD5 files in the
@@ -251,9 +304,20 @@ IcePatch::Updater::cleanup(const FileDescSeq& fileDescSeq)
     }
 }
 
+IcePatch::IcePatchService::UpdaterThread::UpdaterThread(IcePatchService* service) :
+    _service(service)
+{
+}
+
+void
+IcePatch::IcePatchService::UpdaterThread::run()
+{
+    _service->runUpdater();
+}
+
 int
 main(int argc, char* argv[])
 {
-    Server app;
-    return app.main(argc, argv);
+    IcePatchService svc;
+    return svc.main(argc, argv);
 }

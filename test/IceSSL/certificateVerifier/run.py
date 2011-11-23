@@ -1,15 +1,10 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003
-# ZeroC, Inc.
-# Billerica, MA, USA
+# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 #
-# All Rights Reserved.
-#
-# Ice is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License version 2 as published by
-# the Free Software Foundation.
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
@@ -36,7 +31,7 @@ client = os.path.join(testdir, "certificateVerifier")
 
 localClientOptions = TestUtil.clientServerProtocol + TestUtil.defaultHost
 print "starting certificateVerifier...",
-clientPipe = os.popen(client + localClientOptions)
+clientPipe = os.popen(client + localClientOptions + " 2>&1")
 print "ok"
 
 TestUtil.printOutputFromPipe(clientPipe)

@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -264,7 +259,7 @@ writeIndexH(const string& memberTypeString, const string& name, Output& H, const
     H << sp;
     H.inc();
     
-    H << nl << name << "(const std::string&);";
+    H << nl << name << "(const std::string&, const std::string& = \"\");";
     H << sp << nl << "std::vector<Ice::Identity>";
     H << nl << "findFirst(" << memberTypeString << ", Ice::Int) const;";
 
@@ -295,9 +290,10 @@ writeIndexC(const TypePtr& type, const TypePtr& memberType, const string& member
 {
     string inputType = inputTypeToString(memberType);
 
-    C << sp << nl << fullName << "::" << name << "(const ::std::string& __name)";
+    C << sp << nl << fullName << "::" << name 
+      << "(const ::std::string& __name, const ::std::string& __facet)";
     C.inc();
-    C << nl << ": Freeze::Index(__name)";
+    C << nl << ": Freeze::Index(__name, __facet)";
     C.dec();
     C << sb;
     C << eb;

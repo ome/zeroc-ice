@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -22,6 +17,7 @@
 #include <Ice/LoggerUtil.h>
 #include <Ice/LocatorInfo.h>
 #include <Ice/ProxyFactory.h>
+#include <Ice/RouterInfo.h>
 
 using namespace std;
 using namespace Ice;
@@ -70,51 +66,101 @@ IceInternal::OutgoingAsync::__finished(BasicStream& is)
 	    }
 	    
 	    case DispatchObjectNotExist:
-	    {
-		ObjectNotExistException ex(__FILE__, __LINE__);
-		ex.id.__read(__is);
-		__is->read(ex.facet);
-		__is->read(ex.operation);
-		throw ex;
-	    }
-	    
 	    case DispatchFacetNotExist:
-	    {
-		FacetNotExistException ex(__FILE__, __LINE__);
-		ex.id.__read(__is);
-		__is->read(ex.facet);
-		__is->read(ex.operation);
-		throw ex;
-	    }
-	    
 	    case DispatchOperationNotExist:
 	    {
-		OperationNotExistException ex(__FILE__, __LINE__);
-		ex.id.__read(__is);
-		__is->read(ex.facet);
-		__is->read(ex.operation);
-		throw ex;
+		Identity ident;
+		ident.__read(__is);
+		
+		//
+		// For compatibility with the old FacetPath.
+		//
+		vector<string> facetPath;
+		__is->read(facetPath);
+		string facet;
+		if(!facetPath.empty())
+		{
+		    if(facetPath.size() > 1)
+		    {
+			throw MarshalException(__FILE__, __LINE__);
+		    }
+		    facet.swap(facetPath[0]);
+		}
+		
+		string operation;
+		__is->read(operation);
+		
+		auto_ptr<RequestFailedException> ex = auto_ptr<RequestFailedException>(0);
+		switch(static_cast<DispatchStatus>(status))
+		{
+		    case DispatchObjectNotExist:
+		    {
+			ex = auto_ptr<RequestFailedException>(new ObjectNotExistException(__FILE__, __LINE__));
+			break;
+		    }
+		    
+		    case DispatchFacetNotExist:
+		    {
+			ex = auto_ptr<RequestFailedException>(new FacetNotExistException(__FILE__, __LINE__));
+			break;
+		    }
+		    
+		    case DispatchOperationNotExist:
+		    {
+			ex = auto_ptr<RequestFailedException>(new OperationNotExistException(__FILE__, __LINE__));
+			break;
+		    }
+		    
+		    default:
+		    {
+			assert(false);
+			break;
+		    }
+		}
+
+		ex->id = ident;
+		ex->facet = facet;
+		ex->operation = operation;
+		ex->ice_throw();
 	    }
 	    
 	    case DispatchUnknownException:
-	    {
-		UnknownException ex(__FILE__, __LINE__);
-		__is->read(ex.unknown);
-		throw ex;
-	    }
-	    
 	    case DispatchUnknownLocalException:
-	    {
-		UnknownLocalException ex(__FILE__, __LINE__);
-		__is->read(ex.unknown);
-		throw ex;
-	    }
-	    
 	    case DispatchUnknownUserException:
 	    {
-		UnknownUserException ex(__FILE__, __LINE__);
-		__is->read(ex.unknown);
-		throw ex;
+		string unknown;
+		__is->read(unknown);
+		
+		auto_ptr<UnknownException> ex = auto_ptr<UnknownException>(0);
+		switch(static_cast<DispatchStatus>(status))
+		{
+		    case DispatchUnknownException:
+		    {
+			ex = auto_ptr<UnknownException>(new UnknownException(__FILE__, __LINE__));
+			break;
+		    }
+		    
+		    case DispatchUnknownLocalException:
+		    {
+			ex = auto_ptr<UnknownException>(new UnknownLocalException(__FILE__, __LINE__));
+			break;
+		    }
+		    
+		    case DispatchUnknownUserException:
+		    {
+			ex = auto_ptr<UnknownException>(new UnknownUserException(__FILE__, __LINE__));
+			break;
+		    }
+		    
+		    default:
+		    {
+			assert(false);
+			break;
+		    }
+		}
+		
+		ex->unknown = unknown;
+		ex->ice_throw();
 	    }
 	    
 	    default:
@@ -156,47 +202,51 @@ IceInternal::OutgoingAsync::__finished(const LocalException& exc)
 {
     IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(_monitor);
 
-    if(_reference->locatorInfo)
+    if(_reference)
     {
-	_reference->locatorInfo->clearObjectCache(_reference);
-    }
-    
-    bool doRetry = false;
-
-    //
-    // A CloseConnectionException indicates graceful server shutdown,
-    // and is therefore always repeatable without violating
-    // "at-most-once". That's because by sending a close connection
-    // message, the server guarantees that all outstanding requests
-    // can safely be repeated. Otherwise, we can also retry if the
-    // operation mode Nonmutating or Idempotent.
-    //
-    if(_mode == Nonmutating || _mode == Idempotent || dynamic_cast<const CloseConnectionException*>(&exc))
-    {
-	try
+	if(_reference->locatorInfo)
 	{
-	    ProxyFactoryPtr proxyFactory = _reference->instance->proxyFactory();
-	    if(proxyFactory)
-	    {
-		proxyFactory->checkRetryAfterException(exc, _cnt);
-	    }
-	    else
-	    {
-		exc.ice_throw(); // The communicator is already destroyed, so we cannot retry.
-	    }
-
-	    doRetry = true;
+	    _reference->locatorInfo->clearObjectCache(_reference);
 	}
-	catch(const LocalException&)
+	
+	bool doRetry = false;
+	
+	//
+	// A CloseConnectionException indicates graceful server
+	// shutdown, and is therefore always repeatable without
+	// violating "at-most-once". That's because by sending a close
+	// connection message, the server guarantees that all
+	// outstanding requests can safely be repeated. Otherwise, we
+	// can also retry if the operation mode is Nonmutating or
+	// Idempotent.
+	//
+	if(_mode == Nonmutating || _mode == Idempotent || dynamic_cast<const CloseConnectionException*>(&exc))
 	{
+	    try
+	    {
+		ProxyFactoryPtr proxyFactory = _reference->instance->proxyFactory();
+		if(proxyFactory)
+		{
+		    proxyFactory->checkRetryAfterException(exc, _cnt);
+		}
+		else
+		{
+		    exc.ice_throw(); // The communicator is already destroyed, so we cannot retry.
+		}
+		
+		doRetry = true;
+	    }
+	    catch(const LocalException&)
+	    {
+	    }
 	}
-    }
-
-    if(doRetry)
-    {
-	_connection = 0;
-	__send();
-	return;
+	
+	if(doRetry)
+	{
+	    _connection = 0;
+	    __send();
+	    return;
+	}
     }
     
     try
@@ -220,7 +270,7 @@ IceInternal::OutgoingAsync::__finished(const LocalException& exc)
 }
 
 void
-IceInternal::OutgoingAsync::__prepare(const ReferencePtr& ref, const string& operation, OperationMode mode,
+IceInternal::OutgoingAsync::__prepare(const ObjectPrx& prx, const string& operation, OperationMode mode,
 				      const Context& context)
 {
     IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(_monitor);
@@ -235,7 +285,7 @@ IceInternal::OutgoingAsync::__prepare(const ReferencePtr& ref, const string& ope
 	    _monitor.wait();
 	}
 	
-	_reference = ref;
+	_reference = prx->__reference();
 	assert(!_connection);
 	_connection = _reference->getConnection();
 	_cnt = 0;
@@ -245,12 +295,36 @@ IceInternal::OutgoingAsync::__prepare(const ReferencePtr& ref, const string& ope
 	assert(!__os);
 	__os = new BasicStream(_reference->instance.get());
 	
+	//
+	// If we are using a router, then add the proxy to the router info object.
+	//
+	if(_reference->routerInfo)
+	{
+	    _reference->routerInfo->addProxy(prx);
+	}
+
 	_connection->prepareRequest(__os);
 
 	_reference->identity.__write(__os);
-	__os->write(_reference->facet);
+
+	//
+	// For compatibility with the old FacetPath.
+	//
+	if(_reference->facet.empty())
+	{
+	    __os->write(vector<string>());
+	}
+	else
+	{
+	    vector<string> facetPath;
+	    facetPath.push_back(_reference->facet);
+	    __os->write(facetPath);
+	}
+
 	__os->write(operation);
+
 	__os->write(static_cast<Byte>(_mode));
+
 	__os->writeSize(Int(context.size()));
 	Context::const_iterator p;
 	for(p = context.begin(); p != context.end(); ++p)
@@ -381,12 +455,12 @@ IceInternal::OutgoingAsync::cleanup()
 }
 
 void
-Ice::AMI_Object_ice_invoke::__invoke(const IceInternal::ReferencePtr& ref, const string& operation, OperationMode mode,
+Ice::AMI_Object_ice_invoke::__invoke(const ObjectPrx& prx, const string& operation, OperationMode mode,
 				     const vector<Byte>& inParams, const Context& context)
 {
     try
     {
-	__prepare(ref, operation, mode, context);
+	__prepare(prx, operation, mode, context);
 	__os->writeBlob(inParams);
 	__os->endWriteEncaps();
     }

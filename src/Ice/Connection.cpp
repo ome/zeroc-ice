@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -1030,6 +1025,15 @@ IceInternal::Connection::setAdapter(const ObjectAdapterPtr& adapter)
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 
     //
+    // Before we set an adapter (or reset it) we wait until the
+    // dispatch count with any old adapter is zero.
+    //
+    while(_dispatchCount > 0)
+    {
+	wait();
+    }
+
+    //
     // We never change the thread pool with which we were initially
     // registered, even if we add or remove an object adapter.
     //
@@ -1079,6 +1083,7 @@ IceInternal::Connection::read(BasicStream& stream)
 void
 IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threadPool)
 {
+    ServantManagerPtr servantManager;
     OutgoingAsyncPtr outAsync;
     Int invoke = 0;
     Int requestId = 0;
@@ -1303,7 +1308,7 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
     //
     try
     {
-	while(invoke-- > 0)
+	while(invoke > 0)
 	{
 	    //
 	    // Prepare the invocation.
@@ -1319,7 +1324,7 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 	    //
 	    if(response)
 	    {
-		assert(invoke == 0); // No further invocations if a response is expected.
+		assert(invoke == 1); // No further invocations if a response is expected.
 		os->writeBlob(_replyHdr);
 		
 		//
@@ -1333,7 +1338,7 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 	    //
 	    // If there are more invocations, we need the stream back.
 	    //
-	    if(invoke > 0)
+	    if(--invoke > 0)
 	    {
 		stream.swap(*is);
 	    }
@@ -1343,6 +1348,20 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
     {
 	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 	setState(StateClosed, ex);
+
+	//
+	// If invoke() above raised an exception, and therefore
+	// neither sendResponse() nor sendNoResponse() has been
+	// called, then we must decrement _dispatchCount here.
+	//
+	assert(invoke > 0);
+	assert(_dispatchCount > 0);
+	_dispatchCount -= invoke;
+	assert(_dispatchCount >= 0);
+	if(_dispatchCount == 0)
+	{
+	    notifyAll();
+	}
     }
 }
 

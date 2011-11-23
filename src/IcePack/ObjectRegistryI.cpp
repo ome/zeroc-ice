@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -158,7 +153,7 @@ IcePack::ObjectRegistryI::getObjectDescription(const Ice::Identity& id, const Ic
     Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
     IdentityObjectDescDict objects(connection, _objectsDbName);
 
-    IdentityObjectDescDict::const_iterator p = objects.find(id);
+    IdentityObjectDescDict::iterator p = objects.find(id);
     if(p == objects.end())
     {
 	throw ObjectNotExistException();
@@ -173,7 +168,7 @@ IcePack::ObjectRegistryI::findById(const Ice::Identity& id, const Ice::Current&)
     Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
     IdentityObjectDescDict objects(connection, _objectsDbName);
 
-    IdentityObjectDescDict::const_iterator p = objects.find(id);
+    IdentityObjectDescDict::iterator p = objects.find(id);
     if(p == objects.end())
     {
 	throw ObjectNotExistException();
@@ -188,7 +183,7 @@ IcePack::ObjectRegistryI::findByType(const string& type, const Ice::Current&) co
     Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
     StringObjectProxySeqDict types(connection, _typesDbName);
 
-    StringObjectProxySeqDict::const_iterator p = types.find(type);
+    StringObjectProxySeqDict::iterator p = types.find(type);
     if(p == types.end())
     {
 	throw ObjectNotExistException();
@@ -204,7 +199,7 @@ IcePack::ObjectRegistryI::findAllWithType(const string& type, const Ice::Current
     Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
     StringObjectProxySeqDict types(connection, _typesDbName);
 
-    StringObjectProxySeqDict::const_iterator p = types.find(type);
+    StringObjectProxySeqDict::iterator p = types.find(type);
     if(p == types.end())
     {
 	throw ObjectNotExistException();

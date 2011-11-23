@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2004
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -372,11 +367,9 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
     }
 
     //
-    // Install the core types in the Slice units.
+    // Install the evictor types in the Slice units.
     //
-    FreezeScript::createCoreSliceTypes(oldUnit);
     FreezeScript::createEvictorSliceTypes(oldUnit);
-    FreezeScript::createCoreSliceTypes(newUnit);
     FreezeScript::createEvictorSliceTypes(newUnit);
 
     //
@@ -392,7 +385,7 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
         string oldKeyName, newKeyName, oldValueName, newValueName;
         if(evictor)
         {
-            oldKeyName = newKeyName = "::Freeze::EvictorStorageKey";
+            oldKeyName = newKeyName = "::Ice::Identity";
             oldValueName = newValueName = "::Freeze::ObjectRecord";
         }
         else
@@ -525,10 +518,8 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
     //
     DbEnv dbEnv(0);
     DbEnv dbEnvNew(0);
-    DbTxn* txn = 0;
     DbTxn* txnNew = 0;
-    Db* db = 0;
-    Db* dbNew = 0;
+    vector<Db*> dbs;
     int status = EXIT_SUCCESS;
     try
     {
@@ -542,6 +533,7 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
 
         //
         // Open the old database environment. Use DB_RECOVER_FATAL if -c is specified.
+        // No transaction is created for the old environment.
         //
         {
             u_int32_t flags = DB_INIT_LOG | DB_INIT_MPOOL | DB_INIT_TXN | DB_CREATE;
@@ -557,38 +549,97 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
         }
 
         //
-        // Open the new database environment.
+        // Open the new database environment and start a transaction.
         //
         {
             u_int32_t flags = DB_INIT_LOG | DB_INIT_MPOOL | DB_INIT_TXN | DB_RECOVER | DB_CREATE;
             dbEnvNew.open(dbEnvNameNew.c_str(), flags, FREEZE_SCRIPT_DB_MODE);
         }
-
-        //
-        // Open the old database in a transaction.
-        //
-        db = new Db(&dbEnv, 0);
-        dbEnv.txn_begin(0, &txn, 0);
-        db->open(txn, dbName.c_str(), 0, DB_BTREE, DB_RDONLY, FREEZE_SCRIPT_DB_MODE);
-
-        //
-        // Open the new database in a transaction.
-        //
-        dbNew = new Db(&dbEnvNew, 0);
         dbEnvNew.txn_begin(0, &txnNew, 0);
-        dbNew->open(txnNew, dbName.c_str(), 0, DB_BTREE, DB_CREATE | DB_EXCL, FREEZE_SCRIPT_DB_MODE);
 
-        //
-        // Execute the transformation descriptors.
-        //
-        istringstream istr(descriptors);
-        FreezeScript::transformDatabase(communicator, oldUnit, newUnit, db, txn, dbNew, txnNew, purgeObjects, cerr,
-                                        suppress, istr);
+        if(evictor)
+        {
+            //
+            // The evictor database file contains multiple databases. We must first
+            // determine the names of those databases, ignoring any whose names
+            // begin with "$index:". Each database represents a separate facet, with
+            // the facet name used as the database name. The database named "$default"
+            // represents the main object.
+            //
+            vector<string> dbNames;
+            {
+                Db db(&dbEnv, 0);
+                db.open(0, dbName.c_str(), 0, DB_UNKNOWN, DB_RDONLY, 0);
+                Dbt dbKey, dbValue;
+                dbKey.set_flags(DB_DBT_MALLOC);
+                dbValue.set_flags(DB_DBT_USERMEM | DB_DBT_PARTIAL);
 
-        //
-        // Checkpoint to migrate changes from the log to the database.
-        //
-        dbEnvNew.txn_checkpoint(0, 0, DB_FORCE);
+                Dbc* dbc = 0;
+                db.cursor(0, &dbc, 0);
+
+                while(dbc->get(&dbKey, &dbValue, DB_NEXT) == 0)
+                {
+                    string s(static_cast<char*>(dbKey.get_data()), dbKey.get_size());
+                    if(s.find("$index:") != 0)
+                    {
+                        dbNames.push_back(s);
+                    }
+                    free(dbKey.get_data());
+                }
+
+                dbc->close();
+                db.close(0);
+            }
+
+            //
+            // Transform each database. We must delay closing the new databases
+            // until after the transaction is committed or aborted.
+            //
+            for(vector<string>::iterator p = dbNames.begin(); p != dbNames.end(); ++p)
+            {
+                string name = p->c_str();
+
+                Db db(&dbEnv, 0);
+                db.open(0, dbName.c_str(), name.c_str(), DB_BTREE, DB_RDONLY, FREEZE_SCRIPT_DB_MODE);
+
+                Db* dbNew = new Db(&dbEnvNew, 0);
+                dbs.push_back(dbNew);
+                dbNew->open(txnNew, dbName.c_str(), name.c_str(), DB_BTREE, DB_CREATE | DB_EXCL, FREEZE_SCRIPT_DB_MODE);
+
+                //
+                // Execute the transformation descriptors.
+                //
+                istringstream istr(descriptors);
+                string facet = (name == "$default" ? "" : name);
+                FreezeScript::transformDatabase(communicator, oldUnit, newUnit, &db, dbNew, txnNew, facet,
+                                                purgeObjects, cerr, suppress, istr);
+
+                db.close(0);
+            }
+        }
+        else
+        {
+            //
+            // Transform a map database. To workaround a bug in BerkeleyDB, we
+            // delay closing the new database until after the transaction is
+            // aborted or committed.
+            //
+            Db db(&dbEnv, 0);
+            db.open(0, dbName.c_str(), 0, DB_BTREE, DB_RDONLY, FREEZE_SCRIPT_DB_MODE);
+
+            Db* dbNew = new Db(&dbEnvNew, 0);
+            dbs.push_back(dbNew);
+            dbNew->open(txnNew, dbName.c_str(), 0, DB_BTREE, DB_CREATE | DB_EXCL, FREEZE_SCRIPT_DB_MODE);
+
+            //
+            // Execute the transformation descriptors.
+            //
+            istringstream istr(descriptors);
+            FreezeScript::transformDatabase(communicator, oldUnit, newUnit, &db, dbNew, txnNew, "", purgeObjects, cerr,
+                                            suppress, istr);
+
+            db.close(0);
+        }
     }
     catch(const DbException& ex)
     {
@@ -597,53 +648,58 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
     }
     catch(...)
     {
-        if(txn)
+        try
         {
-            txn->abort();
+            if(txnNew)
+            {
+                txnNew->abort();
+            }
+            for(vector<Db*>::iterator p = dbs.begin(); p != dbs.end(); ++p)
+            {
+                Db* db = *p;
+                db->close(0);
+                delete db;
+            }
+            dbEnv.close(0);
+            dbEnvNew.close(0);
         }
-        if(db)
+        catch(const DbException& ex)
         {
-            db->close(0);
-            delete db;
+            cerr << argv[0] << ": database error: " << ex.what() << endl;
         }
-        if(txnNew)
-        {
-            txnNew->abort();
-        }
-        if(dbNew)
-        {
-            dbNew->close(0);
-            delete dbNew;
-        }
-        dbEnv.close(0);
-        dbEnvNew.close(0);
         throw;
     }
 
-    if(txn)
-    {
-        txn->abort();
-    }
-    if(db)
-    {
-        db->close(0);
-        delete db;
-    }
     if(txnNew)
     {
-        if(status == EXIT_FAILURE)
+        try
         {
-            txnNew->abort();
+            if(status == EXIT_FAILURE)
+            {
+                txnNew->abort();
+            }
+            else
+            {
+                txnNew->commit(0);
+
+                //
+                // Checkpoint to migrate changes from the log to the database(s).
+                //
+                dbEnvNew.txn_checkpoint(0, 0, DB_FORCE);
+
+                for(vector<Db*>::iterator p = dbs.begin(); p != dbs.end(); ++p)
+                {
+                    Db* db = *p;
+                    db->close(0);
+                    delete db;
+                }
+            }
         }
-        else
+        catch(const DbException& ex)
         {
-            txnNew->commit(0);
+            cerr << argv[0] << ": database error: " << ex.what() << endl;
+            status = EXIT_FAILURE;
         }
-    }
-    if(dbNew)
-    {
-        dbNew->close(0);
-        delete dbNew;
     }
     dbEnv.close(0);
     dbEnvNew.close(0);

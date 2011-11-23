@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -59,6 +54,10 @@ IceInternal::IncomingAsync::__response(bool ok)
 	}
     }
 
+    //
+    // Must be called last, so that if an exception is raised,
+    // this function is definitely *not* called.
+    //
     __finishInvoke();
 }
 
@@ -114,8 +113,23 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 	    {
 		assert(false);
 	    }
+
 	    ex.id.__write(&_os);
-	    _os.write(ex.facet);
+
+	    //
+	    // For compatibility with the old FacetPath.
+	    //
+	    if(ex.facet.empty())
+	    {
+		_os.write(vector<string>());
+	    }
+	    else
+	    {
+		vector<string> facetPath;
+		facetPath.push_back(ex.facet);
+		_os.write(facetPath);
+	    }
+
 	    _os.write(ex.operation);
 	}
     }
@@ -171,6 +185,10 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 	}
     }
 
+    //
+    // Must be called last, so that if an exception is raised,
+    // this function is definitely *not* called.
+    //
     __finishInvoke();
 }
 
@@ -195,6 +213,10 @@ IceInternal::IncomingAsync::__exception(const std::exception& ex)
 	_os.write(str.str());
     }
 
+    //
+    // Must be called last, so that if an exception is raised,
+    // this function is definitely *not* called.
+    //
     __finishInvoke();
 }
 
@@ -218,6 +240,10 @@ IceInternal::IncomingAsync::__exception()
 	_os.write(reason);
     }
 
+    //
+    // Must be called last, so that if an exception is raised,
+    // this function is definitely *not* called.
+    //
     __finishInvoke();
 }
 

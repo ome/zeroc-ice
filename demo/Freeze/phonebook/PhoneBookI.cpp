@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -71,7 +66,7 @@ ContactI::destroy(const Ice::Current& c)
     IceUtil::RWRecMutex::RLock sync(*this);
     try
     {
-	_factory->getEvictor()->destroyObject(c.id);
+	_factory->getEvictor()->remove(c.id);
     }
     catch(const Freeze::DatabaseException& ex)
     {
@@ -127,7 +122,7 @@ PhoneBookI::createContact(const Ice::Current& c)
     // Create a new Ice Object in the evictor, using the new identity
     // and the new Servant.
     //
-    _evictor->createObject(ident, contact);
+    _evictor->add(contact, ident);
 
     
     //

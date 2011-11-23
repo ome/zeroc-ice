@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -41,13 +36,13 @@ public:
 
 private:
 
-    void patch(const DirectoryDescPtr&, const string&) const;
+    void patch(const DirectoryDescPtr&, const string&, Long&, Long) const;
 
     bool _remove;
     bool _thorough;
 };
 
-};
+}
 
 void
 IcePatch::Client::usage()
@@ -91,7 +86,7 @@ IcePatch::Client::run(int argc, char* argv[])
 		++idx;
 	    }
 	}
-	
+
 	vector<string> subdirs;
 	if(argc > 1)
 	{
@@ -200,20 +195,21 @@ IcePatch::Client::run(int argc, char* argv[])
 		return EXIT_FAILURE;
 	    }
         }
-        
+
+#ifdef _WIN32
+        char cwd[_MAX_PATH];
+        _getcwd(cwd, _MAX_PATH);
+#else
+        char cwd[PATH_MAX];
+        getcwd(cwd, PATH_MAX);
+#endif
+
 	//
 	// Check whether we want to remove orphaned files.
 	//
 	_remove = properties->getPropertyAsInt("IcePatch.RemoveOrphaned") > 0;
 	if(_remove)
 	{
-#ifdef _WIN32
-	    char cwd[_MAX_PATH];
-	    _getcwd(cwd, _MAX_PATH);
-#else
-	    char cwd[PATH_MAX];
-	    getcwd(cwd, PATH_MAX);
-#endif
 	    cout << "WARNING: All orphaned files in `" << cwd << "' will be removed." << endl;
 	    string answer;
 	    do
@@ -230,12 +226,12 @@ IcePatch::Client::run(int argc, char* argv[])
 	}	
 
 	//
-	// Check whether we want to do a through check.
+	// Check whether we want to do a thorough check.
 	//
 	_thorough = properties->getPropertyAsInt("IcePatch.Thorough") > 0;
 
         //
-        // Create and install the node description factory.
+        // Create and install the node description factories.
         //
         ObjectFactoryPtr factory = new FileDescFactory;
         communicator()->addObjectFactory(factory, "::IcePatch::DirectoryDesc");
@@ -290,8 +286,28 @@ IcePatch::Client::run(int argc, char* argv[])
 	    }
 
 	    cout << pathToName(*p) << endl;
-	    
-	    patch(topDesc, "");
+
+            string dir = *p;
+            if(dir == ".")
+            {
+                dir = cwd;
+            }
+
+            Long total = 0;
+            ByteSeq md5;
+            try
+            {
+                md5 = getMD5(dir);
+            }
+            catch(const FileAccessException&)
+            {
+            }
+            total = topDesc->dir->getTotal(md5);
+
+            Long runningTotal = 0;
+	    patch(topDesc, "", runningTotal, total);
+
+            createMD5(dir);
 	}
     }
     catch(const FileAccessException& ex)
@@ -336,10 +352,16 @@ class MyProgressCB : public ProgressCB
 {
 public:
 
+    MyProgressCB(Long runningTotal, Long patchTotal) :
+        _runningTotal(runningTotal), _patchTotal(patchTotal)
+    {
+    }
+
     virtual void startDownload(Int total, Int pos)
     {
 	Ice::Int percent = pos * 100 / total;
 	cout << " download " << setw(3) << percent << "%" << flush;
+        _fileTotal = 0;
     }
 
     virtual void updateDownload(Int total, Int pos)
@@ -351,6 +373,7 @@ public:
     virtual void finishedDownload(Int total)
     {
 	updateDownload(total, total);
+        _fileTotal = total;
     }
 
     virtual void startUncompress(Int total, Int pos)
@@ -368,46 +391,26 @@ public:
     virtual void finishedUncompress(Int total)
     {
 	finishedDownload(total);
+        if(_patchTotal > 0)
+        {
+            Long percent = ((_runningTotal + _fileTotal) * 100) / _patchTotal;
+            if(percent > 100)
+            {
+                percent = 100;
+            }
+            cout << " (" << static_cast<Int>(percent) << "% complete)";
+        }
 	cout << endl;
     }
+
+private:
+
+    Long _runningTotal;
+    Long _patchTotal;
+    Int _fileTotal;
 };
 
 #ifdef _WIN32
-
-//
-// Function object to do case-insensitive string comparison.
-//
-class CICompare : public std::binary_function<std::string, std::string, bool>
-{
-public:
-
-    bool operator()(const string& s1, const string& s2) const
-    {
-	string::const_iterator p1 = s1.begin();
-	string::const_iterator p2 = s2.begin();
-	while(p1 != s1.end() && p2 != s2.end() && ::tolower(*p1) == ::tolower(*p2))
-	{
-	    ++p1;
-	    ++p2;
-	}
-	if(p1 == s1.end() && p2 == s2.end())
-	{
-	    return false;
-	}
-	else if(p1 == s1.end())
-	{
-	    return true;
-	}
-	else if(p2 == s2.end())
-	{
-	    return false;
-	}
-	else
-	{
-	    return ::tolower(*p1) < ::tolower(*p2);
-	}
-    }
-};
 
 typedef set<string, CICompare> OrphanedSet;
 
@@ -418,7 +421,8 @@ typedef set<string> OrphanedSet;
 #endif
 
 void
-IcePatch::Client::patch(const DirectoryDescPtr& dirDesc, const string& indent) const
+IcePatch::Client::patch(const DirectoryDescPtr& dirDesc, const string& indent, Long& runningTotal,
+                        Long patchTotal) const
 {
     OrphanedSet orphaned;
 
@@ -514,7 +518,7 @@ IcePatch::Client::patch(const DirectoryDescPtr& dirDesc, const string& indent) c
 		newIndent = indent + "| ";
 	    }
 
-	    patch(subDirDesc, newIndent);
+	    patch(subDirDesc, newIndent, runningTotal, patchTotal);
 
 	    if(!subDirDesc->md5.empty())
 	    {
@@ -526,7 +530,7 @@ IcePatch::Client::patch(const DirectoryDescPtr& dirDesc, const string& indent) c
 	    assert(regDesc);
 	    cout << indent << "+-" << pathToName(path) << ":";
 
-	    MyProgressCB progressCB;
+	    MyProgressCB progressCB(runningTotal, patchTotal);
 
 	    bool update = false;
 
@@ -619,6 +623,7 @@ IcePatch::Client::patch(const DirectoryDescPtr& dirDesc, const string& indent) c
 
 		    if(regDesc->md5 == md5)
 		    {
+                        runningTotal += regDesc->reg->getBZ2Size();
 			break;
 		    }
 		    else if(retries < 3)
@@ -630,7 +635,15 @@ IcePatch::Client::patch(const DirectoryDescPtr& dirDesc, const string& indent) c
 			removeRecursive(path);
 
 			FileAccessException ex;
-			ex.reason = "Error patching `" + path + "'.";
+			ex.reason = "Retry count exceeded while patching `" + path + "':\n";
+                        if(infoMD5.type == FileTypeRegular)
+                        {
+                            ex.reason += "MD5 mismatch";
+                        }
+                        else
+                        {
+                            ex.reason += "MD5 file not found";
+                        }
 			throw ex;
 		    }
 		}

@@ -1,19 +1,16 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
 #ifndef TEST_ICE
 #define TEST_ICE
+
+#include <Ice/Current.ice>
 
 module Test
 {
@@ -60,6 +57,8 @@ sequence<DoubleS> DoubleSS;
 sequence<StringS> StringSS;
 sequence<MyEnumS> MyEnumSS;
 sequence<MyClassS> MyClassSS;
+
+sequence<StringSS> StringSSS;
 
 dictionary<byte, bool> ByteBoolD;
 dictionary<short, int> ShortIntD;
@@ -126,6 +125,9 @@ dictionary<string, MyEnum> StringMyEnumD;
     StringSS opStringSS(StringSS p1, StringSS p2,
 			out StringSS p3);
 
+    StringSSS opStringSSS(StringSSS p1, StringSSS p2,
+    			  out StringSSS p3);
+
     ByteBoolD opByteBoolD(ByteBoolD p1, ByteBoolD p2,
 			  out ByteBoolD p3);
 
@@ -143,7 +145,7 @@ dictionary<string, MyEnum> StringMyEnumD;
 
     IntS opIntS(IntS s);
 
-    StringStringD opContext();
+    Ice::Context opContext();
 
 };
 

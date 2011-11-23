@@ -371,15 +371,10 @@ char *yytext;
 
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -399,7 +394,7 @@ using namespace Ice;
 
 #define YY_INPUT(buf, result, maxSize) parser->getInput(buf, result, maxSize)
 
-#line 402 "lex.yy.c"
+#line 397 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -550,10 +545,10 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 41 "Scanner.l"
+#line 36 "Scanner.l"
 
 
-#line 556 "lex.yy.c"
+#line 551 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -638,7 +633,7 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 43 "Scanner.l"
+#line 38 "Scanner.l"
 {
     *yylvalp = new Complex::NumberNodeI(atoi(yytext));
     return TOK_NUMBER;
@@ -646,20 +641,20 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 48 "Scanner.l"
+#line 43 "Scanner.l"
 /* eat whitespace */
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 50 "Scanner.l"
+#line 45 "Scanner.l"
 { return *yytext; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 52 "Scanner.l"
+#line 47 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 662 "lex.yy.c"
+#line 657 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1541,5 +1536,5 @@ int main()
 	return 0;
 	}
 #endif
-#line 52 "Scanner.l"
+#line 47 "Scanner.l"
 

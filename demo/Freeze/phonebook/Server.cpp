@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -62,24 +57,23 @@ PhoneBookServer::run(int argc, char* argv[])
     indices.push_back(index);
 
     //
+    // Create an object adapter, use the evictor as servant locator.
+    //
+    ObjectAdapterPtr adapter = communicator()->createObjectAdapter("PhoneBook");
+
+    //
     // Create an evictor for contacts.
     //
-    Freeze::EvictorPtr evictor = Freeze::createEvictor(communicator(), _envName, "contacts", indices);
+    Freeze::EvictorPtr evictor = Freeze::createEvictor(adapter, _envName, "contacts", 0, indices);
+    adapter->addServantLocator(evictor, "contact");
 
     Int evictorSize = properties->getPropertyAsInt("PhoneBook.EvictorSize");
     if(evictorSize > 0)
     {
 	evictor->setSize(evictorSize);
     }
-
     contactFactory->setEvictor(evictor);
-    
-    //
-    // Create an object adapter, use the evictor as servant locator.
-    //
-    ObjectAdapterPtr adapter = communicator()->createObjectAdapter("PhoneBook");
-    adapter->addServantLocator(evictor, "contact");
-    
+        
     //
     // Create the phonebook, and add it to the object adapter.
     //

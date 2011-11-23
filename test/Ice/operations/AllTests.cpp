@@ -1,18 +1,14 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
 #include <Ice/Ice.h>
+#include <Ice/Locator.h>
 #include <TestCommon.h>
 #include <Test.h>
 
@@ -30,11 +26,47 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     cout << "testing checked cast... " << flush;
     Test::MyClassPrx cl = Test::MyClassPrx::checkedCast(base);
     test(cl);
+    
     Test::MyDerivedClassPrx derived = Test::MyDerivedClassPrx::checkedCast(cl);
     test(derived);
     test(cl == base);
     test(derived == base);
     test(cl == derived);
+    
+    Ice::LocatorPrx loc = Ice::LocatorPrx::checkedCast(base);
+    test(loc == 0);
+
+    //
+    // Upcasting
+    //
+    Test::MyClassPrx cl2 = Test::MyClassPrx::checkedCast(derived);
+    Ice::ObjectPrx obj = Ice::ObjectPrx::checkedCast(derived);
+    test(cl2);
+    test(obj);
+    test(cl2 == obj);
+    test(cl2 == derived);
+
+    //
+    // Now with alternate API
+    //
+    cl = checkedCast<Test::MyClassPrx>(base);
+    test(cl);
+    derived = checkedCast<Test::MyDerivedClassPrx>(cl);
+    test(derived);
+    test(cl == base);
+    test(derived == base);
+    test(cl == derived);
+    
+    loc = checkedCast<Ice::LocatorPrx>(base);
+    test(loc == 0);
+
+    cl2 = checkedCast<Test::MyClassPrx>(derived);
+    obj = checkedCast<Ice::ObjectPrx>(derived);
+    test(cl2);
+    test(obj);
+    test(cl2 == obj);
+    test(cl2 == derived);
+
     cout << "ok" << endl;
 
     cout << "testing twoway operations... " << flush;

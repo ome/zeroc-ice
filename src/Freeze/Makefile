@@ -1,14 +1,9 @@
 # **********************************************************************
 #
-# Copyright (c) 2003
-# ZeroC, Inc.
-# Billerica, MA, USA
+# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 #
-# All Rights Reserved.
-#
-# Ice is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License version 2 as published by
-# the Free Software Foundation.
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
@@ -34,6 +29,7 @@ OBJS		= DB.o \
                   SharedDb.o \
 	  	  MapI.o \
                   Util.o \
+                  ObjectStore.o \
 		  EvictorI.o \
                   EvictorIteratorI.o \
                   Index.o \
@@ -59,6 +55,7 @@ include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DFREEZE_API_EXPORTS $(DB_FLAGS) 
 SLICE2CPPFLAGS	:= --ice --include-dir Freeze --dll-export FREEZE_API $(SLICE2CPPFLAGS)
+SLICE2FREEZECMD := $(SLICE2FREEZE) --ice --include-dir Freeze $(ICECPPFLAGS)
 LINKWITH	:= -lIce -lIceUtil $(DB_LIBS)
 
 $(libdir)/$(LIBFILENAME): $(OBJS)

@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -85,6 +80,7 @@ class Enumerator;
 class Const;
 class Unit;
 class CICompare;
+class DerivedToBaseCompare;
 
 typedef ::IceUtil::Handle<GrammarBase> GrammarBasePtr;
 typedef ::IceUtil::Handle<SyntaxTreeBase> SyntaxTreeBasePtr;
@@ -134,12 +130,33 @@ typedef std::pair<SyntaxTreeBasePtr, std::string> SyntaxTreeBaseString;
 // CICompare -- function object to do case-insensitive string comparison.
 // ----------------------------------------------------------------------
 
-class CICompare : public std::binary_function<std::string, std::string, bool>
+class SLICE_API CICompare : public std::binary_function<std::string, std::string, bool>
 {
 public:
 
     bool operator()(const std::string&, const std::string&) const;
 };
+
+#if defined(__SUNPRO_CC)
+SLICE_API bool cICompare(const std::string&, const std::string&);
+#endif
+
+// ----------------------------------------------------------------------
+// DerivedToBaseCompare -- function object to do sort exceptions into
+// most-derived to least-derived order.
+// ----------------------------------------------------------------------
+
+class SLICE_API DerivedToBaseCompare : public std::binary_function<std::string, std::string, bool>
+{
+public:
+
+    bool operator()(const ExceptionPtr&, const ExceptionPtr&) const;
+};
+
+#if defined(__SUNPRO_CC)
+SLICE_API bool derivedToBaseCompare(const ExceptionPtr&, const ExceptionPtr&);
+#endif
+
 
 // ----------------------------------------------------------------------
 // ParserVisitor
@@ -241,6 +258,8 @@ public:
     virtual bool isLocal() const = 0;
     virtual std::string typeId() const = 0;
     virtual bool usesClasses() const = 0;
+    virtual size_t minWireSize() const = 0;
+    virtual bool isVariableLength() const = 0;
 
 protected:
 
@@ -273,6 +292,8 @@ public:
     virtual bool isLocal() const;
     virtual std::string typeId() const;
     virtual bool usesClasses() const;
+    virtual size_t minWireSize() const;
+    virtual bool isVariableLength() const;
 
     Kind kind() const;
     std::string kindAsString() const;
@@ -433,6 +454,7 @@ public:
 
     virtual bool isLocal() const;
     virtual std::string typeId() const;
+    virtual bool isVariableLength() const = 0;
     ConstructedList dependencies();
     virtual void recDependencies(std::set<ConstructedPtr>&) = 0; // Internal operation, don't use directly.
 
@@ -457,6 +479,8 @@ public:
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual bool usesClasses() const;
+    virtual size_t minWireSize() const;
+    virtual bool isVariableLength() const;
     virtual void visit(ParserVisitor*);
     virtual std::string kindOf() const;
     virtual void recDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.
@@ -553,11 +577,13 @@ public:
     DataMemberList allDataMembers() const;
     DataMemberList classDataMembers() const;
     DataMemberList allClassDataMembers() const;
+    bool canBeCyclic() const;
     bool isAbstract() const;
     bool isInterface() const;
     bool isA(const std::string&) const;
     virtual bool isLocal() const;
     bool hasDataMembers() const;
+    bool hasOperations() const;
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual std::string kindOf() const;
@@ -571,6 +597,7 @@ protected:
     ClassDeclPtr _declaration;
     bool _interface;
     bool _hasDataMembers;
+    bool _hasOperations;
     ClassList _bases;
     bool _local;
 };
@@ -586,6 +613,8 @@ public:
     virtual bool isLocal() const;
     virtual std::string typeId() const;
     virtual bool usesClasses() const;
+    virtual size_t minWireSize() const;
+    virtual bool isVariableLength() const;
 
     ClassDeclPtr _class() const;
 
@@ -612,6 +641,7 @@ public:
     DataMemberList allClassDataMembers() const;
     ExceptionPtr base() const;
     ExceptionList allBases() const;
+    virtual bool isBaseOf(const ExceptionPtr&) const;
     virtual bool isLocal() const;
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
@@ -642,6 +672,8 @@ public:
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual bool usesClasses() const;
+    virtual size_t minWireSize() const;
+    virtual bool isVariableLength() const;
     virtual std::string kindOf() const;
     virtual void visit(ParserVisitor*);
     virtual void recDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.
@@ -664,6 +696,8 @@ public:
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual bool usesClasses() const;
+    virtual size_t minWireSize() const;
+    virtual bool isVariableLength() const;
     virtual std::string kindOf() const;
     virtual void visit(ParserVisitor*);
     virtual void recDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.
@@ -689,6 +723,8 @@ public:
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual bool usesClasses() const;
+    virtual size_t minWireSize() const;
+    virtual bool isVariableLength() const;
     virtual std::string kindOf() const;
     virtual void visit(ParserVisitor*);
     virtual void recDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.
@@ -718,6 +754,8 @@ public:
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual bool usesClasses() const;
+    virtual size_t minWireSize() const;
+    virtual bool isVariableLength() const;
     virtual std::string kindOf() const;
     virtual void visit(ParserVisitor*);
     virtual void recDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.

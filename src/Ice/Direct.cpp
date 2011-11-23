@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -44,7 +39,7 @@ IceInternal::Direct::Direct(const Current& current) :
 
     try
     {
-	_servant = servantManager->findServant(_current.id);
+	_servant = servantManager->findServant(_current.id, _current.facet);
 	
 	if(!_servant && !_current.id.category.empty())
 	{
@@ -66,19 +61,17 @@ IceInternal::Direct::Direct(const Current& current) :
 	
 	if(!_servant)
 	{
-	    ObjectNotExistException ex(__FILE__, __LINE__);
-	    ex.id = _current.id;
-	    ex.facet = _current.facet;
-	    ex.operation = _current.operation;
-	    throw ex;
-	}
-
-	if(!_current.facet.empty())
-	{
-	    _facetServant = _servant->ice_findFacetPath(_current.facet, 0);
-	    if(!_facetServant)
+	    if(servantManager->hasServant(_current.id))
 	    {
 		FacetNotExistException ex(__FILE__, __LINE__);
+		ex.id = _current.id;
+		ex.facet = _current.facet;
+		ex.operation = _current.operation;
+		throw ex;
+	    }
+	    else
+	    {
+		ObjectNotExistException ex(__FILE__, __LINE__);
 		ex.id = _current.id;
 		ex.facet = _current.facet;
 		ex.operation = _current.operation;
@@ -128,14 +121,7 @@ IceInternal::Direct::~Direct()
 }
 
 const ObjectPtr&
-IceInternal::Direct::facetServant()
+IceInternal::Direct::servant()
 {
-    if(_facetServant)
-    {
-	return _facetServant;
-    }
-    else
-    {
-	return _servant;
-    }
+    return _servant;
 }

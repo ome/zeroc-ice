@@ -1,0 +1,1182 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Glacier Router Starter Properties</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Properties"
+HREF="c11815.html"><LINK
+REL="PREVIOUS"
+TITLE="Glacier Router Properties"
+HREF="x13215.html"><LINK
+REL="NEXT"
+TITLE="Freeze Properties"
+HREF="x13605.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x13215.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Properties</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x13605.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="AEN13406"
+></A
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier</SPAN
+></SPAN
+> Router Starter Properties</H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13409"
+></A
+>Glacier.Starter.Endpoints</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13411"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.Endpoints=<TT
+CLASS="REPLACEABLE"
+><I
+>endpoints</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13415"
+></A
+>Description</H3
+><P
+>Defines the endpoints of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier</SPAN
+></SPAN
+> router starter. (Unix only.)</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13419"
+></A
+>Glacier.Starter.PasswordVerifier</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13421"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.PasswordVerifier=<TT
+CLASS="REPLACEABLE"
+><I
+>proxy</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13425"
+></A
+>Description</H3
+><P
+>If set, the specified password verifier will be used. If not set, a
+built-in <TT
+CLASS="LITERAL"
+>crypt</TT
+>-based password verifier will be used.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13429"
+></A
+>Glacier.Starter.CryptPasswords</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13431"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.CryptPasswords=<TT
+CLASS="REPLACEABLE"
+><I
+>file</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13435"
+></A
+>Description</H3
+><P
+>The pathname of the file that contains user-id / password pairs, with
+the passwords being encrypted by the <TT
+CLASS="LITERAL"
+>crypt</TT
+>
+algorithm. The default pathname is
+"<TT
+CLASS="LITERAL"
+>passwords</TT
+>". This file is only used for the
+built-in <TT
+CLASS="LITERAL"
+>crypt</TT
+>-based password verifier, meaning
+that the property is ignored if
+<TT
+CLASS="LITERAL"
+>Glacier.Starter.PasswordVerifier</TT
+> is set.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13442"
+></A
+>Glacier.Starter.RouterPath</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13444"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.RouterPath=<TT
+CLASS="REPLACEABLE"
+><I
+>path</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13448"
+></A
+>Description</H3
+><P
+>Sets the path of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier</SPAN
+></SPAN
+> router executable to be started. The
+default is <TT
+CLASS="LITERAL"
+>glacier</TT
+>. (Unix only.)</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13453"
+></A
+>Glacier.Starter.PropertiesOverride</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13455"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.PropertiesOverride=<TT
+CLASS="REPLACEABLE"
+><I
+>overrides</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13459"
+></A
+>Description</H3
+><P
+>By default, the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier</SPAN
+></SPAN
+> router starter starts new routers with the
+exact same property set as for the router
+starter. <TT
+CLASS="REPLACEABLE"
+><I
+>overrides</I
+></TT
+> can contain a list
+of properties for the router, which are used in addition to the router
+starter's properties, or which override the router starter's properties.
+The property definitions should be separated by white space.</P
+><P
+>For example, in many cases it is desirable to set the property
+<TT
+CLASS="LITERAL"
+>Ice.ServerIdleTime</TT
+> for the router, but not for the
+router starter. For an idle time of 60 seconds, this can be done by setting
+<TT
+CLASS="LITERAL"
+>Glacier.Starter.PropertiesOverride=Ice.ServerIdleTime=60</TT
+>.
+(Unix only.)</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13467"
+></A
+>Glacier.Starter.StartupTimeout</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13469"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.StartupTimeout=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13473"
+></A
+>Description</H3
+><P
+><TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is the number of seconds the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier</SPAN
+></SPAN
+>
+router starter will wait for the router to start up. If this timeout
+expires, a <TT
+CLASS="LITERAL"
+>Glacier::CannotStartRouterException</TT
+> is
+returned to the caller. The default value is 10 seconds. Timeout
+values smaller than one second are silently changed to 1 second. (Unix
+only.)</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13479"
+></A
+>Glacier.Starter.AddUserToAllowCategories</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13481"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.AddUserToAllowCategories=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13485"
+></A
+>Description</H3
+><P
+>Control the addition of the user id authenticated by the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier</SPAN
+></SPAN
+> router
+starter to the <TT
+CLASS="LITERAL"
+>Glacier.Router.AllowCategories</TT
+> property 
+upon router startup:
+<DIV
+CLASS="INFORMALTABLE"
+><A
+NAME="AEN13490"
+></A
+><P
+></P
+><TABLE
+BORDER="1"
+BGCOLOR="#E0E0E0"
+CELLSPACING="0"
+CELLPADDING="4"
+CLASS="CALSTABLE"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Do not add user id. (default)</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>1</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Add user id.</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>2</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Add user id with prepended underscore.</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13502"
+></A
+>Glacier.Starter.Trace</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13504"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.Trace=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13508"
+></A
+>Description</H3
+><P
+>The router starter trace level: (Unix only.)
+<DIV
+CLASS="INFORMALTABLE"
+><A
+NAME="AEN13511"
+></A
+><P
+></P
+><TABLE
+BORDER="1"
+BGCOLOR="#E0E0E0"
+CELLSPACING="0"
+CELLPADDING="4"
+CLASS="CALSTABLE"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>No router starter trace. (default)</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>1</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Trace router startup exceptions.</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>2</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Also trace each successful router startup.</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13523"
+></A
+>Glacier.Starter.Certificate.Country</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13525"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.Certificate.Country=<TT
+CLASS="REPLACEABLE"
+><I
+>country code</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13529"
+></A
+>Description</H3
+><P
+>This property specifies the country code portion of the Distinguished Name
+(DN) values that will be present in certificates generated by the Glacier
+Router Starter for client applications and the Glacier Router itself.
+Examples of valid values for this field are "US" for the United States and
+"CA" for Canada. The default value is "US".</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13532"
+></A
+>Glacier.Starter.Certificate.StateProvince</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13534"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.Certificate.StateProvince=<TT
+CLASS="REPLACEABLE"
+><I
+>state/province code</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13538"
+></A
+>Description</H3
+><P
+>This property specifies the state or province code portion of the
+Distinguished Name (DN) values that will be present in certificates generated
+by the Glacier Router Starter for client applications and the Glacier Router
+itself. Examples of valid values for this field are "CA" for California and
+"British Columbia" for British Columbia, Canada. The default value is "DC".</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13541"
+></A
+>Glacier.Starter.Certificate.Locality</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13543"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.Certificate.Locality=<TT
+CLASS="REPLACEABLE"
+><I
+>city or town name</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13547"
+></A
+>Description</H3
+><P
+>This property specifies the locality portion of the Distinguished Name (DN)
+values that will be present in certificates generated by the Glacier Router
+Starter for client applications and the Glacier Router itself. The locality
+is usually the name of the city or town. The default value is "Washington".</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13550"
+></A
+>Glacier.Starter.Certificate.Organization</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13552"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.Certificate.Organization=<TT
+CLASS="REPLACEABLE"
+><I
+>organization or company name</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13556"
+></A
+>Description</H3
+><P
+>This property specifies the organization portion of the Distinguished Name
+(DN) values that will be present in certificates generated by the Glacier
+Router Starter for client applications and the Glacier Router itself. The
+organization is usually the name of the company or organization to which
+the certificate has been granted. The default value is "Some Company Inc.".</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13559"
+></A
+>Glacier.Starter.Certificate.OrganizationalUnit</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13561"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.Certificate.OrganizationalUnit=<TT
+CLASS="REPLACEABLE"
+><I
+>department</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13565"
+></A
+>Description</H3
+><P
+>This property specifies the organizational unit portion of the Distinguished
+Name (DN) values that will be present in certificates generated by the
+Glacier Router Starter for client applications and the Glacier Router itself.
+The organization unit is usually the name of the department within the
+company or organization structure to which the certificate has been
+granted. The default value is "Sales".</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13568"
+></A
+>Glacier.Starter.Certificate.CommonName</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13570"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.Certificate.CommonName=<TT
+CLASS="REPLACEABLE"
+><I
+>contact name</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13574"
+></A
+>Description</H3
+><P
+>This property specifies the common name portion of the Distinguished Name
+(DN) values that will be present in certificates generated by the Glacier
+Router Starter for client applications and the Glacier Router itself. The
+common name is usually the name of the contact (a person's name) within
+the company and department to which the certificate has been granted. The
+default value is "John Doe".</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13577"
+></A
+>Glacier.Starter.Certificate.BitStrength</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13579"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.Certificate.BitStrength=<TT
+CLASS="REPLACEABLE"
+><I
+>number of bits</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13583"
+></A
+>Description</H3
+><P
+>This property specifies the bit strength which will be used in the generation
+of certificates by the Glacier Router Starter for client applications and the
+Glacier Router itself. This value is the modulus size of the RSA key.</P
+><P
+>Although modulus size is determined by the needs of the particular application,
+care should be taken not to specify a size that is too large, as certificate
+generation is an expensive operation. Sizes less than 512 bits are not
+supported, and sizes that exceed 2048 bits should be chosen with generation
+times in mind. The default value is 1024 bits.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13587"
+></A
+>Glacier.Starter.Certificate.SecondsValid</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13589"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.Certificate.SecondsValid=<TT
+CLASS="REPLACEABLE"
+><I
+>seconds</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13593"
+></A
+>Description</H3
+><P
+>This property specifies the number of seconds that certificates generated
+by the Glacier Router Starter are valid before they will expire. The default
+value of 1 day (86,400 seconds).</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13596"
+></A
+>Glacier.Starter.Certificate.IssuedAdjust</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13598"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Glacier.Starter.Certificate.IssuedAdjust=<TT
+CLASS="REPLACEABLE"
+><I
+>(+/-) seconds</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13602"
+></A
+>Description</H3
+><P
+>This property adjusts the issued timestamp on dynamically generated
+certificates for the Glacier Router. The default value is 0, which
+sets the issued time based on the system time when the certificate is
+actually created. Positive adjustments will adjust the timestamp into the
+future, and negative adjustments will cause the timestamp to be in the past
+by the number of seconds indicated. This adjustment is relative to server
+time.</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x13215.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x13605.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Glacier</SPAN
+></SPAN
+> Router Properties</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c11815.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Freeze</SPAN
+></SPAN
+> Properties</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

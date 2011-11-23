@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -28,16 +23,18 @@ class DbEnv;
 namespace Freeze
 {
 
-FREEZE_API EvictorPtr createEvictor(const Ice::CommunicatorPtr& communicator,
+FREEZE_API EvictorPtr createEvictor(const Ice::ObjectAdapterPtr& adapter,
 				    const std::string& envName, 
-				    const std::string& dbName,
+				    const std::string& filename,
+				    const ServantInitializerPtr& initializer = 0,
 				    const std::vector<Freeze::IndexPtr>& indices = std::vector<Freeze::IndexPtr>(),
 				    bool createDb = true);
 
-FREEZE_API EvictorPtr createEvictor(const Ice::CommunicatorPtr& communicator,
+FREEZE_API EvictorPtr createEvictor(const Ice::ObjectAdapterPtr& adapter,
 				    const std::string& envName,
 				    DbEnv& dbEnv, 
-				    const std::string& dbName, 
+				    const std::string& filename,
+				    const ServantInitializerPtr& initializer = 0,
 				    const std::vector<Freeze::IndexPtr>& indices = std::vector<Freeze::IndexPtr>(),
 				    bool createDb = true);
 
@@ -48,6 +45,10 @@ FREEZE_API ConnectionPtr createConnection(const Ice::CommunicatorPtr& communicat
 FREEZE_API ConnectionPtr createConnection(const Ice::CommunicatorPtr& communicator,
 					  const std::string& envName, 
 					  DbEnv& dbEnv);
+
+
+typedef void (*FatalErrorCallback)(const EvictorPtr&, const Ice::CommunicatorPtr&);
+FREEZE_API FatalErrorCallback registerFatalErrorCallback(FatalErrorCallback);
 
 }
 

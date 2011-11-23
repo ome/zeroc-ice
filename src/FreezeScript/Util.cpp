@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2004
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -49,39 +44,12 @@ FreezeScript::ignoreType(const string& type)
     //
     static const string ignoreTypeList[] =
     {
-        "::Freeze::EvictorStorageKey",
         "::Freeze::ObjectRecord",
         "::Freeze::Statistics",
-        "::Ice::FacetPath",
-        "::Ice::Identity",
-        "::_FacetMap"
+        "::Ice::Identity"
     };
 
     return binary_search(&ignoreTypeList[0], &ignoreTypeList[sizeof(ignoreTypeList) / sizeof(*ignoreTypeList)], type);
-}
-
-void
-FreezeScript::createCoreSliceTypes(const Slice::UnitPtr& unit)
-{
-    string scoped;
-    Slice::TypeList l;
-    Slice::ContainedList c;
-
-    //
-    // Create the Slice definition for _FacetMap if it doesn't exist. This type is
-    // necessary for marshaling an object's facet map.
-    //
-    l = unit->lookupTypeNoBuiltin("::_FacetMap", false);
-    if(l.empty())
-    {
-        Slice::TypePtr str = unit->builtin(Slice::Builtin::KindString);
-        Slice::TypePtr obj = unit->builtin(Slice::Builtin::KindObject);
-        unit->createDictionary("_FacetMap", str, obj, false);
-    }
-    else
-    {
-        assert(Slice::DictionaryPtr::dynamicCast(l.front()));
-    }
 }
 
 void
@@ -119,8 +87,8 @@ FreezeScript::createEvictorSliceTypes(const Slice::UnitPtr& unit)
     {
         identity = ice->createStruct("Identity", false);
         Slice::TypePtr str = unit->builtin(Slice::Builtin::KindString);
-        identity->createDataMember("category", str);
         identity->createDataMember("name", str);
+        identity->createDataMember("category", str);
     }
     else
     {
@@ -129,27 +97,6 @@ FreezeScript::createEvictorSliceTypes(const Slice::UnitPtr& unit)
         {
             throw FailureException(__FILE__, __LINE__,
                                    "the symbol `::Ice::Identity' is defined in Slice but is not a struct");
-        }
-    }
-
-    //
-    // Create the Slice definition for Ice::FacetPath if it doesn't exist.
-    //
-    scoped = "::Ice::FacetPath";
-    l = unit->lookupTypeNoBuiltin(scoped, false);
-    Slice::SequencePtr facetPath;
-    if(l.empty())
-    {
-        Slice::TypePtr str = unit->builtin(Slice::Builtin::KindString);
-        facetPath = ice->createSequence("FacetPath", str, false);
-    }
-    else
-    {
-        facetPath = Slice::SequencePtr::dynamicCast(l.front());
-        if(!facetPath)
-        {
-            throw FailureException(__FILE__, __LINE__,
-                                   "the symbol `::Ice::FacetPath' is defined in Slice but is not a sequence");
         }
     }
 
@@ -169,26 +116,6 @@ FreezeScript::createEvictorSliceTypes(const Slice::UnitPtr& unit)
         {
             throw FailureException(__FILE__, __LINE__,
                                    "the symbol `::Freeze' is defined in Slice but is not a module");
-        }
-    }
-
-    //
-    // Create the Slice definition for Freeze::EvictorStorageKey if it doesn't exist.
-    //
-    scoped = "::Freeze::EvictorStorageKey";
-    l = unit->lookupTypeNoBuiltin(scoped, false);
-    if(l.empty())
-    {
-        Slice::StructPtr esk = freeze->createStruct("EvictorStorageKey", false);
-        esk->createDataMember("identity", identity);
-        esk->createDataMember("facet", facetPath);
-    }
-    else
-    {
-        if(!Slice::StructPtr::dynamicCast(l.front()))
-        {
-            throw FailureException(__FILE__, __LINE__, "the symbol `::Freeze::EvictorStorageKey' is defined in "
-                                   "Slice but is not a struct");
         }
     }
 

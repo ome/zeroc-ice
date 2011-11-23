@@ -1,14 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -23,8 +18,8 @@
 #include <Ice/Properties.h>
 #include <Ice/IdentityUtil.h>
 #include <Ice/LoggerUtil.h>
-#include <Ice/StringUtil.h>
 #include <Ice/Protocol.h>
+#include <IceUtil/StringUtil.h>
 
 using namespace std;
 using namespace Ice;
@@ -92,16 +87,7 @@ IceInternal::IncomingBase::__warning(const string& msg) const
     
     out << "dispatch exception: " << msg;
     out << "\nidentity: " << _current.id;
-    out << "\nfacet: ";
-    vector<string>::const_iterator p = _current.facet.begin();
-    while(p != _current.facet.end())
-    {
-	out << encodeString(*p++, "/");
-	if(p != _current.facet.end())
-	{
-	    out << '/';
-	}
-    }
+    out << "\nfacet: " << IceUtil::escapeString(_current.facet, "");
     out << "\noperation: " << _current.operation;
 }
 
@@ -120,11 +106,29 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     // Read the current.
     //
     _current.id.__read(&_is);
-    _is.read(_current.facet);
+
+    //
+    // For compatibility with the old FacetPath.
+    //
+    vector<string> facetPath;
+    _is.read(facetPath);
+    string facet;
+    if(!facetPath.empty())
+    {
+	if(facetPath.size() > 1)
+	{
+	    throw MarshalException(__FILE__, __LINE__);
+	}
+	facet.swap(facetPath[0]);
+    }
+    _current.facet.swap(facet);
+
     _is.read(_current.operation);
+
     Byte b;
     _is.read(b);
     _current.mode = static_cast<OperationMode>(b);
+
     Int sz;
     _is.readSize(sz);
     while(sz--)
@@ -156,7 +160,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     {
 	if(servantManager)
 	{
-	    _servant = servantManager->findServant(_current.id);
+	    _servant = servantManager->findServant(_current.id, _current.facet);
 	    
 	    if(!_servant && !_current.id.category.empty())
 	    {
@@ -179,30 +183,24 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    
 	if(!_servant)
 	{
-	    status = DispatchObjectNotExist;
-	}
-	else
-	{
-	    if(!_current.facet.empty())
+	    if(servantManager->hasServant(_current.id))
 	    {
-		ObjectPtr facetServant = _servant->ice_findFacetPath(_current.facet, 0);
-		if(!facetServant)
-		{
-		    status = DispatchFacetNotExist;
-		}
-		else
-		{
-		    status = facetServant->__dispatch(*this, _current);
-		}
+		status = DispatchFacetNotExist;
 	    }
 	    else
 	    {
-		status = _servant->__dispatch(*this, _current);
+		status = DispatchObjectNotExist;
 	    }
+	}
+	else
+	{
+	    status = _servant->__dispatch(*this, _current);
 	}
     }
     catch(RequestFailedException& ex)
     {
+	_is.endReadEncaps();
+
 	if(ex.id.name.empty())
 	{
 	    ex.id = _current.id;
@@ -243,17 +241,37 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    {
 		assert(false);
 	    }
+
 	    ex.id.__write(&_os);
-	    _os.write(ex.facet);
+
+	    //
+	    // For compatibility with the old FacetPath.
+	    //
+	    if(ex.facet.empty())
+	    {
+		_os.write(vector<string>());
+	    }
+	    else
+	    {
+		vector<string> facetPath;
+		facetPath.push_back(ex.facet);
+		_os.write(facetPath);
+	    }
+
 	    _os.write(ex.operation);
 	}
 
+	//
+	// Must be called last, so that if an exception is raised,
+	// this function is definitely *not* called.
+	//
 	__finishInvoke();
-	_is.endReadEncaps();
 	return;
     }
     catch(const LocalException& ex)
     {
+	_is.endReadEncaps();
+
 	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning(ex);
@@ -269,12 +287,17 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(str.str());
 	}
 
+	//
+	// Must be called last, so that if an exception is raised,
+	// this function is definitely *not* called.
+	//
 	__finishInvoke();
-	_is.endReadEncaps();
 	return;
     }
     catch(const UserException& ex)
     {
+	_is.endReadEncaps();
+
 	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning(ex);
@@ -290,12 +313,17 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(str.str());
 	}
 
+	//
+	// Must be called last, so that if an exception is raised,
+	// this function is definitely *not* called.
+	//
 	__finishInvoke();
-	_is.endReadEncaps();
 	return;
     }
     catch(const Exception& ex)
     {
+	_is.endReadEncaps();
+
 	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning(ex);
@@ -311,12 +339,17 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(str.str());
 	}
 
+	//
+	// Must be called last, so that if an exception is raised,
+	// this function is definitely *not* called.
+	//
 	__finishInvoke();
-	_is.endReadEncaps();
 	return;
     }
     catch(const std::exception& ex)
     {
+	_is.endReadEncaps();
+
 	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning(string("std::exception: ") + ex.what());
@@ -332,12 +365,17 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(str.str());
 	}
 
+	//
+	// Must be called last, so that if an exception is raised,
+	// this function is definitely *not* called.
+	//
 	__finishInvoke();
-	_is.endReadEncaps();
 	return;
     }
     catch(...)
     {
+	_is.endReadEncaps();
+
 	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning("unknown c++ exception");
@@ -352,8 +390,11 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(reason);
 	}
 
+	//
+	// Must be called last, so that if an exception is raised,
+	// this function is definitely *not* called.
+	//
 	__finishInvoke();
-	_is.endReadEncaps();
 	return;
     }
 
@@ -363,6 +404,8 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     // the caller of this operation.
     //
     
+    _is.endReadEncaps();
+
     //
     // DispatchAsync is "pseudo dispatch status", used internally only
     // to indicate async dispatch.
@@ -374,7 +417,6 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	// do *not* call __finishInvoke(), because the call is not
 	// finished yet.
 	//
-	_is.endReadEncaps();
 	return;
     }
 
@@ -392,7 +434,21 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(static_cast<Byte>(status));
 	    
 	    _current.id.__write(&_os);
-	    _os.write(_current.facet);
+
+	    //
+	    // For compatibility with the old FacetPath.
+	    //
+	    if(_current.facet.empty())
+	    {
+		_os.write(vector<string>());
+	    }
+	    else
+	    {
+		vector<string> facetPath;
+		facetPath.push_back(_current.facet);
+		_os.write(facetPath);
+	    }
+
 	    _os.write(_current.operation);
 	}
 	else
@@ -401,6 +457,9 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	}
     }
 
+    //
+    // Must be called last, so that if an exception is raised,
+    // this function is definitely *not* called.
+    //
     __finishInvoke();
-    _is.endReadEncaps();
 }

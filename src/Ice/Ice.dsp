@@ -54,12 +54,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 ws2_32.lib libbz2.lib advapi32.lib /nologo /entry:"Ice_DLL_Main" /dll /machine:I386 /out:"Release/ice13.dll" /implib:"Release/ice.lib"
+# ADD LINK32 ws2_32.lib libbz2.lib advapi32.lib /nologo /entry:"Ice_DLL_Main" /dll /machine:I386 /out:"Release/ice14.dll" /implib:"Release/ice.lib"
 # SUBTRACT LINK32 /pdb:none /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\ice.lib ..\..\lib	copy $(OutDir)\ice13.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\ice.lib ..\..\lib	copy $(OutDir)\ice14.dll ..\..\bin
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Ice - Win32 Debug"
@@ -87,12 +87,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386
-# ADD LINK32 ws2_32.lib libbz2d.lib advapi32.lib /nologo /entry:"Ice_DLL_Main" /dll /debug /machine:I386 /out:"Debug/ice13d.dll" /implib:"Debug/iced.lib"
+# ADD LINK32 ws2_32.lib libbz2d.lib advapi32.lib /nologo /entry:"Ice_DLL_Main" /dll /debug /machine:I386 /out:"Debug/ice14d.dll" /implib:"Debug/iced.lib"
 # SUBTRACT LINK32 /pdb:none /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Debug
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\iced.lib ..\..\lib	copy $(OutDir)\ice13d.pdb ..\..\bin	copy $(OutDir)\ice13d.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\iced.lib ..\..\lib	copy $(OutDir)\ice14d.pdb ..\..\bin	copy $(OutDir)\ice14d.dll ..\..\bin
 # End Special Build Tool
 
 !ENDIF 
@@ -195,10 +195,6 @@ SOURCE=.\EventLoggerMsg.res
 # Begin Source File
 
 SOURCE=.\Exception.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Facet.cpp
 # End Source File
 # Begin Source File
 
@@ -363,10 +359,6 @@ SOURCE=.\Service.cpp
 # Begin Source File
 
 SOURCE=.\Stats.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\StringUtil.cpp
 # End Source File
 # Begin Source File
 
@@ -547,10 +539,6 @@ SOURCE=.\EventLoggerMsg.h
 # Begin Source File
 
 SOURCE=..\..\include\Ice\Exception.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\include\Ice\Facet.h
 # End Source File
 # Begin Source File
 
@@ -858,10 +846,6 @@ SOURCE=.\StreamI.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\StringUtil.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\TcpAcceptor.h
 # End Source File
 # Begin Source File
@@ -1135,49 +1119,6 @@ BuildCmds= \
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\slice\Ice\Facet.ice
-
-!IF  "$(CFG)" == "Ice - Win32 Release"
-
-USERDEP__FACET="..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
-# Begin Custom Build
-InputPath=..\..\slice\Ice\Facet.ice
-
-BuildCmds= \
-	..\..\bin\slice2cpp.exe --ice --dll-export ICE_API --include-dir Ice -I../../slice ../../slice/Ice/Facet.ice \
-	move Facet.h ..\..\include\Ice \
-	
-
-"..\..\include\Ice\Facet.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"Facet.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-# End Custom Build
-
-!ELSEIF  "$(CFG)" == "Ice - Win32 Debug"
-
-USERDEP__FACET="..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
-# Begin Custom Build
-InputPath=..\..\slice\Ice\Facet.ice
-
-BuildCmds= \
-	..\..\bin\slice2cpp.exe --ice --dll-export ICE_API --include-dir Ice -I../../slice ../../slice/Ice/Facet.ice \
-	move Facet.h ..\..\include\Ice \
-	
-
-"..\..\include\Ice\Facet.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"Facet.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-# End Custom Build
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\slice\Ice\Identity.ice
 
 !IF  "$(CFG)" == "Ice - Win32 Release"
@@ -1213,6 +1154,49 @@ BuildCmds= \
    $(BuildCmds)
 
 "Identity.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\slice\Ice\FacetMap.ice
+
+!IF  "$(CFG)" == "Ice - Win32 Release"
+
+USERDEP__IDENT="..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
+# Begin Custom Build
+InputPath=..\..\slice\Ice\FacetMap.ice
+
+BuildCmds= \
+	..\..\bin\slice2cpp.exe --ice --dll-export ICE_API --include-dir Ice -I../../slice ../../slice/Ice/FacetMap.ice \
+	move FacetMap.h ..\..\include\Ice \
+	
+
+"..\..\include\Ice\FacetMap.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"FacetMap.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "Ice - Win32 Debug"
+
+USERDEP__IDENT="..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
+# Begin Custom Build
+InputPath=..\..\slice\Ice\FacetMap.ice
+
+BuildCmds= \
+	..\..\bin\slice2cpp.exe --ice --dll-export ICE_API --include-dir Ice -I../../slice ../../slice/Ice/FacetMap.ice \
+	move FacetMap.h ..\..\include\Ice \
+	
+
+"..\..\include\Ice\FacetMap.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"FacetMap.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
 

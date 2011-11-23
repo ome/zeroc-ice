@@ -1,18 +1,12 @@
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#include <IceUtil/GCRecMutex.h>
 #include <IceUtil/GCShared.h>
 
 namespace IceUtil
@@ -22,32 +16,11 @@ GCObjectSet gcObjects;
 
 using namespace IceUtil;
 
-IceUtil::GCShared::GCShared()
-    : _ref(0), _noDelete(false)
-{
-}
-
-IceUtil::GCShared::~GCShared()
-{
-    gcRecMutex._m->lock();
-    gcObjects.erase(this);
-    gcRecMutex._m->unlock();
-}
-
 void
 IceUtil::GCShared::__incRef()
 {
     gcRecMutex._m->lock();
     assert(_ref >= 0);
-    if(_ref == 0)
-    {
-#ifdef NDEBUG // To avoid annoying warnings about variables that are not used...
-	gcObjects.insert(this);
-#else
-	std::pair<GCObjectSet::iterator, bool> rc = gcObjects.insert(this);
-	assert(rc.second);
-#endif
-    }
     ++_ref;
     gcRecMutex._m->unlock();
 }
@@ -62,12 +35,6 @@ IceUtil::GCShared::__decRef()
     {
 	doDelete = !_noDelete;
 	_noDelete = true;
-#ifdef NDEBUG // To avoid annoying warnings about variables that are not used...
-	gcObjects.erase(this);
-#else
-	GCObjectSet::size_type num = gcObjects.erase(this);
-	assert(num == 1);
-#endif
     }
     gcRecMutex._m->unlock();
 
@@ -92,12 +59,6 @@ IceUtil::GCShared::__setNoDelete(bool b)
     gcRecMutex._m->lock();
     _noDelete = b;
     gcRecMutex._m->unlock();
-}
-
-void
-IceUtil::GCShared::__decRefUnsafe()
-{
-    --_ref;
 }
 
 void

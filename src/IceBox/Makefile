@@ -1,14 +1,9 @@
-#**********************************************************************
+# **********************************************************************
 #
-# Copyright (c) 2003
-# ZeroC, Inc.
-# Billerica, MA, USA
+# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 #
-# All Rights Reserved.
-#
-# Ice is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License version 2 as published by
-# the Free Software Foundation.
+# This copy of Ice is licensed to you under the terms described in the
+# ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
@@ -62,7 +57,7 @@ $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 
 $(SERVER): $(SOBJS) $(libdir)/$(LIBNAME)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) -lIceBox -lFreeze $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) -lIceBox -lFreeze $(DB_LIBS) $(LIBS)
 
 $(ADMIN): $(AOBJS) $(libdir)/$(LIBNAME)
 	rm -f $@

@@ -43,15 +43,10 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2004
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -165,10 +160,10 @@ static const short yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined. */
 static const short yyrline[] =
 {
-       0,    89,    98,   107,   111,   115,   119,   123,   127,   131,
-     135,   139,   143,   147,   151,   155,   159,   168,   172,   176,
-     180,   186,   192,   198,   202,   206,   210,   214,   223,   227,
-     238,   245,   254,   265,   278,   285,   291,   300,   309
+       0,    84,    93,   102,   106,   110,   114,   118,   122,   126,
+     130,   134,   138,   142,   146,   150,   154,   163,   167,   171,
+     175,   181,   187,   193,   197,   201,   205,   209,   218,   222,
+     233,   240,   249,   260,   273,   280,   286,   295,   304
 };
 #endif
 
@@ -987,121 +982,121 @@ yyreduce:
   switch (yyn) {
 
 case 1:
-#line 90 "Grammar.y"
+#line 85 "Grammar.y"
 {
     parseResult = yyvsp[0];
 ;
     break;}
 case 2:
-#line 99 "Grammar.y"
+#line 94 "Grammar.y"
 {
     yyval = yyvsp[0];
 ;
     break;}
 case 3:
-#line 108 "Grammar.y"
+#line 103 "Grammar.y"
 {
     yyval = new BinaryNode(BinOpLess, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 4:
-#line 112 "Grammar.y"
+#line 107 "Grammar.y"
 {
     yyval = new BinaryNode(BinOpGreater, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 5:
-#line 116 "Grammar.y"
+#line 111 "Grammar.y"
 {
     yyval = new BinaryNode(BinOpLessEq, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 6:
-#line 120 "Grammar.y"
+#line 115 "Grammar.y"
 {
     yyval = new BinaryNode(BinOpGrEq, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 7:
-#line 124 "Grammar.y"
+#line 119 "Grammar.y"
 {
     yyval = new BinaryNode(BinOpEq, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 8:
-#line 128 "Grammar.y"
+#line 123 "Grammar.y"
 {
     yyval = new BinaryNode(BinOpNotEq, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 9:
-#line 132 "Grammar.y"
+#line 127 "Grammar.y"
 {
     yyval = new BinaryNode(BinOpOr, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 10:
-#line 136 "Grammar.y"
+#line 131 "Grammar.y"
 {
     yyval = new BinaryNode(BinOpAnd, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 11:
-#line 140 "Grammar.y"
+#line 135 "Grammar.y"
 {
     yyval = new BinaryNode(BinOpMul, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 12:
-#line 144 "Grammar.y"
+#line 139 "Grammar.y"
 {
     yyval = new BinaryNode(BinOpDiv, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 13:
-#line 148 "Grammar.y"
+#line 143 "Grammar.y"
 {
     yyval = new BinaryNode(BinOpMod, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 14:
-#line 152 "Grammar.y"
+#line 147 "Grammar.y"
 {
     yyval = new BinaryNode(BinOpAdd, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 15:
-#line 156 "Grammar.y"
+#line 151 "Grammar.y"
 {
     yyval = new BinaryNode(BinOpSub, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;
     break;}
 case 16:
-#line 160 "Grammar.y"
+#line 155 "Grammar.y"
 {
     yyval = yyvsp[0];
 ;
     break;}
 case 17:
-#line 169 "Grammar.y"
+#line 164 "Grammar.y"
 {
     yyval = yyvsp[-1];
 ;
     break;}
 case 18:
-#line 173 "Grammar.y"
+#line 168 "Grammar.y"
 {
     yyval = new UnaryNode(UnaryOpNeg, parseDataFactory, yyvsp[0]);
 ;
     break;}
 case 19:
-#line 177 "Grammar.y"
+#line 172 "Grammar.y"
 {
     yyval = new UnaryNode(UnaryOpNot, parseDataFactory, yyvsp[0]);
 ;
     break;}
 case 20:
-#line 181 "Grammar.y"
+#line 176 "Grammar.y"
 {
     IntegerTokPtr intVal = IntegerTokPtr::dynamicCast(yyvsp[0]);
     assert(intVal);
@@ -1109,7 +1104,7 @@ case 20:
 ;
     break;}
 case 21:
-#line 187 "Grammar.y"
+#line 182 "Grammar.y"
 {
     FloatingTokPtr floatVal = FloatingTokPtr::dynamicCast(yyvsp[0]);
     assert(floatVal);
@@ -1117,7 +1112,7 @@ case 21:
 ;
     break;}
 case 22:
-#line 193 "Grammar.y"
+#line 188 "Grammar.y"
 {
     StringTokPtr stringVal = StringTokPtr::dynamicCast(yyvsp[0]);
     assert(stringVal);
@@ -1125,31 +1120,31 @@ case 22:
 ;
     break;}
 case 23:
-#line 199 "Grammar.y"
+#line 194 "Grammar.y"
 {
     yyval = new DataNode(parseDataFactory->createBoolean(true, true));
 ;
     break;}
 case 24:
-#line 203 "Grammar.y"
+#line 198 "Grammar.y"
 {
     yyval = new DataNode(parseDataFactory->createBoolean(false, true));
 ;
     break;}
 case 25:
-#line 207 "Grammar.y"
+#line 202 "Grammar.y"
 {
     yyval = new DataNode(parseDataFactory->createNil(true));
 ;
     break;}
 case 26:
-#line 211 "Grammar.y"
+#line 206 "Grammar.y"
 {
     yyval = yyvsp[0];
 ;
     break;}
 case 27:
-#line 215 "Grammar.y"
+#line 210 "Grammar.y"
 {
     EntityNodePtr entity = EntityNodePtr::dynamicCast(yyvsp[-2]);
     assert(entity);
@@ -1160,13 +1155,13 @@ case 27:
 ;
     break;}
 case 28:
-#line 224 "Grammar.y"
+#line 219 "Grammar.y"
 {
     yyval = yyvsp[0];
 ;
     break;}
 case 29:
-#line 228 "Grammar.y"
+#line 223 "Grammar.y"
 {
     StringTokPtr stringVal = StringTokPtr::dynamicCast(yyvsp[0]);
     assert(stringVal);
@@ -1174,7 +1169,7 @@ case 29:
 ;
     break;}
 case 30:
-#line 239 "Grammar.y"
+#line 234 "Grammar.y"
 {
     EntityNodePtr entity = EntityNodePtr::dynamicCast(yyvsp[-3]);
     assert(entity);
@@ -1183,7 +1178,7 @@ case 30:
 ;
     break;}
 case 31:
-#line 246 "Grammar.y"
+#line 241 "Grammar.y"
 {
     StringTokPtr stringVal = StringTokPtr::dynamicCast(yyvsp[0]);
     assert(stringVal);
@@ -1194,7 +1189,7 @@ case 31:
 ;
     break;}
 case 32:
-#line 255 "Grammar.y"
+#line 250 "Grammar.y"
 {
     StringTokPtr stringVal = StringTokPtr::dynamicCast(yyvsp[0]);
     assert(stringVal);
@@ -1202,7 +1197,7 @@ case 32:
 ;
     break;}
 case 33:
-#line 266 "Grammar.y"
+#line 261 "Grammar.y"
 {
     StringTokPtr func = StringTokPtr::dynamicCast(yyvsp[-3]);
     assert(func);
@@ -1212,7 +1207,7 @@ case 33:
 ;
     break;}
 case 34:
-#line 279 "Grammar.y"
+#line 274 "Grammar.y"
 {
     NodeListTokPtr l = NodeListTokPtr::dynamicCast(yyvsp[-2]);
     assert(l);
@@ -1221,7 +1216,7 @@ case 34:
 ;
     break;}
 case 35:
-#line 286 "Grammar.y"
+#line 281 "Grammar.y"
 {
     NodeListTokPtr result = new NodeListTok;
     result->v.push_back(yyvsp[0]);
@@ -1229,13 +1224,13 @@ case 35:
 ;
     break;}
 case 36:
-#line 292 "Grammar.y"
+#line 287 "Grammar.y"
 {
     yyval = new NodeListTok;
 ;
     break;}
 case 37:
-#line 301 "Grammar.y"
+#line 296 "Grammar.y"
 {
     StringTokPtr stringVal = StringTokPtr::dynamicCast(yyvsp[-2]);
     assert(stringVal);
@@ -1246,7 +1241,7 @@ case 37:
 ;
     break;}
 case 38:
-#line 310 "Grammar.y"
+#line 305 "Grammar.y"
 {
     StringTokPtr idVal = StringTokPtr::dynamicCast(yyvsp[0]);
     assert(idVal);
@@ -1488,5 +1483,5 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 319 "Grammar.y"
+#line 314 "Grammar.y"
 

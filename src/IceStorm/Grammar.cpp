@@ -12,21 +12,19 @@
 # define	ICE_STORM_UNLINK	263
 # define	ICE_STORM_GRAPH	264
 # define	ICE_STORM_STRING	265
+# define	ICE_STORM_SHOW	266
+# define	ICE_STORM_COPYING	267
+# define	ICE_STORM_WARRANTY	268
 
 #line 1 "Grammar.y"
 
 
 // **********************************************************************
 //
-// Copyright (c) 2003
-// ZeroC, Inc.
-// Billerica, MA, USA
+// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
 //
-// All Rights Reserved.
-//
-// Ice is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License version 2 as published by
-// the Free Software Foundation.
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -61,12 +59,12 @@ yyerror(const char* s)
 
 
 
-#define	YYFINAL		34
+#define	YYFINAL		39
 #define	YYFLAG		-32768
-#define	YYNTBASE	13
+#define	YYNTBASE	16
 
 /* YYTRANSLATE(YYLEX) -- Bison token number corresponding to YYLEX. */
-#define YYTRANSLATE(x) ((unsigned)(x) <= 265 ? yytranslate[x] : 17)
+#define YYTRANSLATE(x) ((unsigned)(x) <= 268 ? yytranslate[x] : 20)
 
 /* YYTRANSLATE[YYLEX] -- Bison token number corresponding to YYLEX. */
 static const char yytranslate[] =
@@ -76,7 +74,7 @@ static const char yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,    12,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,    15,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -97,23 +95,23 @@ static const char yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     3,     4,     5,
-       6,     7,     8,     9,    10,    11
+       6,     7,     8,     9,    10,    11,    12,    13,    14
 };
 
 #if YYDEBUG
 static const short yyprhs[] =
 {
        0,     0,     2,     3,     6,     8,    11,    14,    18,    22,
-      26,    30,    34,    37,    41,    44,    46,    49
+      26,    30,    34,    37,    41,    45,    49,    52,    54,    57
 };
 static const short yyrhs[] =
 {
-      14,     0,     0,    14,    15,     0,    15,     0,     3,    12,
-       0,     4,    12,     0,     5,    16,    12,     0,     6,    16,
-      12,     0,     8,    16,    12,     0,     9,    16,    12,     0,
-      10,    16,    12,     0,     7,    12,     0,     7,    16,    12,
-       0,     1,    12,     0,    12,     0,    11,    16,     0,    11,
-       0
+      17,     0,     0,    17,    18,     0,    18,     0,     3,    15,
+       0,     4,    15,     0,     5,    19,    15,     0,     6,    19,
+      15,     0,     8,    19,    15,     0,     9,    19,    15,     0,
+      10,    19,    15,     0,     7,    15,     0,     7,    19,    15,
+       0,    12,    13,    15,     0,    12,    14,    15,     0,     1,
+      15,     0,    15,     0,    11,    19,     0,    11,     0
 };
 
 #endif
@@ -122,8 +120,8 @@ static const short yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined. */
 static const short yyrline[] =
 {
-       0,    57,    60,    68,    71,    79,    83,    87,    91,    95,
-      99,   103,   107,   112,   116,   120,   128,   133
+       0,    55,    58,    66,    69,    77,    81,    85,    89,    93,
+      97,   101,   105,   110,   114,   118,   122,   126,   134,   139
 };
 #endif
 
@@ -136,22 +134,23 @@ static const char *const yytname[] =
   "$", "error", "$undefined.", "ICE_STORM_HELP", "ICE_STORM_EXIT", 
   "ICE_STORM_CREATE", "ICE_STORM_DESTROY", "ICE_STORM_LIST", 
   "ICE_STORM_LINK", "ICE_STORM_UNLINK", "ICE_STORM_GRAPH", 
-  "ICE_STORM_STRING", "';'", "start", "commands", "command", "strings", 0
+  "ICE_STORM_STRING", "ICE_STORM_SHOW", "ICE_STORM_COPYING", 
+  "ICE_STORM_WARRANTY", "';'", "start", "commands", "command", "strings", 0
 };
 #endif
 
 /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives. */
 static const short yyr1[] =
 {
-       0,    13,    13,    14,    14,    15,    15,    15,    15,    15,
-      15,    15,    15,    15,    15,    15,    16,    16
+       0,    16,    16,    17,    17,    18,    18,    18,    18,    18,
+      18,    18,    18,    18,    18,    18,    18,    18,    19,    19
 };
 
 /* YYR2[YYN] -- Number of symbols composing right hand side of rule YYN. */
 static const short yyr2[] =
 {
        0,     1,     0,     2,     1,     2,     2,     3,     3,     3,
-       3,     3,     2,     3,     2,     1,     2,     1
+       3,     3,     2,     3,     3,     3,     2,     1,     2,     1
 };
 
 /* YYDEFACT[S] -- default rule to reduce with in state S when YYTABLE
@@ -160,49 +159,49 @@ static const short yyr2[] =
 static const short yydefact[] =
 {
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-      15,     0,     4,    14,     5,     6,    17,     0,     0,    12,
-       0,     0,     0,     0,     3,    16,     7,     8,    13,     9,
-      10,    11,     0,     0,     0
+       0,    17,     0,     4,    16,     5,     6,    19,     0,     0,
+      12,     0,     0,     0,     0,     0,     0,     3,    18,     7,
+       8,    13,     9,    10,    11,    14,    15,     0,     0,     0
 };
 
 static const short yydefgoto[] =
 {
-      32,    11,    12,    17
+      37,    12,    13,    18
 };
 
 static const short yypact[] =
 {
-       0,   -10,    -1,     3,    22,    22,    20,    22,    22,    22,
-  -32768,    13,-32768,-32768,-32768,-32768,    22,    12,    23,-32768,
-      24,    26,    27,    28,-32768,-32768,-32768,-32768,-32768,-32768,
-  -32768,-32768,    34,    41,-32768
+       0,   -13,    -4,     9,    15,    15,    23,    15,    15,    15,
+      22,-32768,    13,-32768,-32768,-32768,-32768,    15,    12,    25,
+  -32768,    27,    28,    29,    30,    31,    32,-32768,-32768,-32768,
+  -32768,-32768,-32768,-32768,-32768,-32768,-32768,    37,    39,-32768
 };
 
 static const short yypgoto[] =
 {
-  -32768,-32768,    31,    21
+  -32768,-32768,    36,    24
 };
 
 
-#define	YYLAST		42
+#define	YYLAST		48
 
 
 static const short yytable[] =
 {
-      -2,     1,    13,     2,     3,     4,     5,     6,     7,     8,
-       9,    14,    10,    -1,     1,    15,     2,     3,     4,     5,
-       6,     7,     8,     9,    26,    10,    18,    20,    21,    22,
-      23,    16,    19,    16,    33,    27,    28,    25,    29,    30,
-      31,    34,    24
+      -2,     1,    14,     2,     3,     4,     5,     6,     7,     8,
+       9,    15,    10,    -1,     1,    11,     2,     3,     4,     5,
+       6,     7,     8,     9,    16,    10,    17,    29,    11,    19,
+      21,    22,    23,    24,    17,    25,    26,    38,    20,    39,
+      30,    28,    31,    32,    33,    34,    35,    36,    27
 };
 
 static const short yycheck[] =
 {
-       0,     1,    12,     3,     4,     5,     6,     7,     8,     9,
-      10,    12,    12,     0,     1,    12,     3,     4,     5,     6,
-       7,     8,     9,    10,    12,    12,     5,     6,     7,     8,
-       9,    11,    12,    11,     0,    12,    12,    16,    12,    12,
-      12,     0,    11
+       0,     1,    15,     3,     4,     5,     6,     7,     8,     9,
+      10,    15,    12,     0,     1,    15,     3,     4,     5,     6,
+       7,     8,     9,    10,    15,    12,    11,    15,    15,     5,
+       6,     7,     8,     9,    11,    13,    14,     0,    15,     0,
+      15,    17,    15,    15,    15,    15,    15,    15,    12
 };
 #define YYPURE 1
 
@@ -914,100 +913,112 @@ yyreduce:
   switch (yyn) {
 
 case 1:
-#line 58 "Grammar.y"
+#line 56 "Grammar.y"
 {
 ;
     break;}
 case 2:
-#line 61 "Grammar.y"
+#line 59 "Grammar.y"
 {
 ;
     break;}
 case 3:
-#line 69 "Grammar.y"
+#line 67 "Grammar.y"
 {
 ;
     break;}
 case 4:
-#line 72 "Grammar.y"
+#line 70 "Grammar.y"
 {
 ;
     break;}
 case 5:
-#line 80 "Grammar.y"
+#line 78 "Grammar.y"
 {
     parser->usage();
 ;
     break;}
 case 6:
-#line 84 "Grammar.y"
+#line 82 "Grammar.y"
 {
     return 0;
 ;
     break;}
 case 7:
-#line 88 "Grammar.y"
+#line 86 "Grammar.y"
 {
     parser->create(yyvsp[-1]);
 ;
     break;}
 case 8:
-#line 92 "Grammar.y"
+#line 90 "Grammar.y"
 {
     parser->destroy(yyvsp[-1]);
 ;
     break;}
 case 9:
-#line 96 "Grammar.y"
+#line 94 "Grammar.y"
 {
     parser->link(yyvsp[-1]);
 ;
     break;}
 case 10:
-#line 100 "Grammar.y"
+#line 98 "Grammar.y"
 {
     parser->unlink(yyvsp[-1]);
 ;
     break;}
 case 11:
-#line 104 "Grammar.y"
+#line 102 "Grammar.y"
 {
     parser->graph(yyvsp[-1]);
 ;
     break;}
 case 12:
-#line 108 "Grammar.y"
+#line 106 "Grammar.y"
 {
     std::list<std::string> args;
     parser->dolist(args);
 ;
     break;}
 case 13:
-#line 113 "Grammar.y"
+#line 111 "Grammar.y"
 {
     parser->dolist(yyvsp[-1]);
 ;
     break;}
 case 14:
-#line 117 "Grammar.y"
+#line 115 "Grammar.y"
+{
+    parser->showCopying();
+;
+    break;}
+case 15:
+#line 119 "Grammar.y"
+{
+    parser->showWarranty();
+;
+    break;}
+case 16:
+#line 123 "Grammar.y"
 {
     yyerrok;
 ;
     break;}
-case 15:
-#line 121 "Grammar.y"
+case 17:
+#line 127 "Grammar.y"
 {
 ;
     break;}
-case 16:
-#line 129 "Grammar.y"
+case 18:
+#line 135 "Grammar.y"
 {
     yyval = yyvsp[0];
     yyval.push_front(yyvsp[-1].front());
 ;
     break;}
-case 17:
-#line 134 "Grammar.y"
+case 19:
+#line 140 "Grammar.y"
 {
     yyval = yyvsp[0];
 ;
@@ -1245,5 +1256,5 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 139 "Grammar.y"
+#line 145 "Grammar.y"
 
