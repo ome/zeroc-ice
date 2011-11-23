@@ -420,9 +420,9 @@ IceSSL::SslTransceiver::initialize(int timeout)
 	    //
 	    // Init finished, look at the connection information.
 	    //
-	    if((_traceLevels->security >= IceSSL::SECURITY_PROTOCOL_DEBUG) && 0)
+#ifdef ICE_SSL_EXTRA_TRACING	
+	    if(_traceLevels->security >= IceSSL::SECURITY_PROTOCOL_DEBUG)
 	    {
-#ifdef ICE_SSL_EXTRA_TRACING
 		//
 		// Only in extreme cases do we enable this, partially because it doesn't use the Logger.
 		//
@@ -440,8 +440,8 @@ IceSSL::SslTransceiver::initialize(int timeout)
 		showHandshakeStats(bio);
 		
 		showSessionInfo(bio);
-#endif
 	    }
+#endif
 	    return;
 	}
 
@@ -756,22 +756,22 @@ IceSSL::SslTransceiver::select(int timeout, bool write)
         {
             if(write)
             {
-                ret = ::select(fd + 1, 0, &rwFdSet, 0, &tv);
+                ret = ::select(static_cast<int>(fd + 1), 0, &rwFdSet, 0, &tv);
             }
             else
             {
-                ret = ::select(fd + 1, &rwFdSet, 0, 0, &tv);
+                ret = ::select(static_cast<int>(fd + 1), &rwFdSet, 0, 0, &tv);
             }
         }
         else
         {
             if(write)
             {
-                ret = ::select(fd + 1, 0, &rwFdSet, 0, 0);
+                ret = ::select(static_cast<int>(fd + 1), 0, &rwFdSet, 0, 0);
             }
             else
             {
-                ret = ::select(fd + 1, &rwFdSet, 0, 0, 0);
+                ret = ::select(static_cast<int>(fd + 1), &rwFdSet, 0, 0, 0);
             }
         }
     }
@@ -822,6 +822,8 @@ IceSSL::SslTransceiver::removeTransceiver(SSL* sslPtr)
     IceUtil::StaticMutex::Lock sync(_transceiverRepositoryMutex);
     _transceiverMap.erase(sslPtr);
 }
+
+#ifdef ICE_SSL_EXTRA_TRACING
 
 void
 IceSSL::SslTransceiver::showCertificateChain(BIO* bio)
@@ -1001,6 +1003,7 @@ IceSSL::SslTransceiver::showClientCAList(BIO* bio, const char* connType)
     }
 }
 
+#endif
 
 //
 // Private Methods

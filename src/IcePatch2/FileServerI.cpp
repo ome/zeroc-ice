@@ -7,10 +7,10 @@
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
+#include <IceUtil/Unicode.h>
 #include <IcePatch2/FileServerI.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <OS.h>
 
 #ifdef _WIN32
 #   include <io.h>
@@ -85,11 +85,7 @@ IcePatch2::FileServerI::getFileCompressed(const string& pa, Int pos, Int num, co
 	return ByteSeq();
     }
 
-#ifdef _WIN32
-    int fd = open((_dataDir + '/' + path + ".bz2").c_str(), _O_RDONLY | _O_BINARY);
-#else
-    int fd = open((_dataDir + '/' + path + ".bz2").c_str(), O_RDONLY);
-#endif
+    int fd = OS::open(_dataDir + '/' + path + ".bz2", O_RDONLY|O_BINARY);
     if(fd == -1)
     {
 	FileAccessException ex;
@@ -111,11 +107,12 @@ IcePatch2::FileServerI::getFileCompressed(const string& pa, Int pos, Int num, co
 
     ByteSeq bytes(num);
 #ifdef _WIN32
-    long r;
+    int r;
+    if((r = read(fd, &bytes[0], static_cast<unsigned int>(num))) == -1)
 #else
     ssize_t r;
-#endif
     if((r = read(fd, &bytes[0], static_cast<size_t>(num))) == -1)
+#endif
     {
 	close(fd);
 

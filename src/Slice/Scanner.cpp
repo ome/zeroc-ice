@@ -467,10 +467,17 @@ char *yytext;
 #include <stdlib.h>
 #include <math.h>
 
-#ifdef _MSC_VER
-// I get these warnings from some flex versions:
-// warning C4003: not enough actual parameters for macro 'yywrap'
-#   pragma warning( disable : 4003 )
+#if defined(_MSC_VER) && defined(ICE_64)
+//
+// '=' : conversion from 'size_t' to 'int', possible loss of data
+// The result of fread() is a size_t and gets inserted into an int
+//
+#   pragma warning( 4 : 4267 )
+//
+// 'initializing' : conversion from '__int64' to 'int', possible loss of data
+// Puts a pointer-difference into an int
+//
+#   pragma warning( 4 : 4244 )
 #endif
 
 using namespace std;
@@ -494,7 +501,7 @@ int checkKeyword(string&);
 #define	YY_USER_INIT initScanner();
 
 #define YY_NEVER_INTERACTIVE 1
-#line 497 "lex.yy.c"
+#line 504 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -648,10 +655,10 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 58 "Scanner.l"
+#line 65 "Scanner.l"
 
 
-#line 654 "lex.yy.c"
+#line 661 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -740,7 +747,7 @@ case 1:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 60 "Scanner.l"
+#line 67 "Scanner.l"
 {
     unit->scanPosition(yytext);
 }
@@ -750,7 +757,7 @@ case 2:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 64 "Scanner.l"
+#line 71 "Scanner.l"
 {
     unit->scanPosition(yytext);
 }
@@ -760,7 +767,7 @@ case 3:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 68 "Scanner.l"
+#line 75 "Scanner.l"
 {
     unit->scanPosition(yytext);
 }
@@ -770,14 +777,14 @@ case 4:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 72 "Scanner.l"
+#line 79 "Scanner.l"
 {
     unit->scanPosition(yytext);
 }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 76 "Scanner.l"
+#line 83 "Scanner.l"
 {
     // C++-style comment
     int c;
@@ -794,7 +801,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 90 "Scanner.l"
+#line 97 "Scanner.l"
 {
     // C-style comment
     string comment = yytext + 2;
@@ -837,42 +844,42 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 130 "Scanner.l"
+#line 137 "Scanner.l"
 {
     return ICE_SCOPE_DELIMITER;
 }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 134 "Scanner.l"
+#line 141 "Scanner.l"
 {
     return ICE_METADATA_OPEN;
 }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 138 "Scanner.l"
+#line 145 "Scanner.l"
 {
     return ICE_METADATA_CLOSE;
 }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 142 "Scanner.l"
+#line 149 "Scanner.l"
 {
     return ICE_GLOBAL_METADATA_OPEN;
 }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 146 "Scanner.l"
+#line 153 "Scanner.l"
 {
     return ICE_GLOBAL_METADATA_CLOSE;
 }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 150 "Scanner.l"
+#line 157 "Scanner.l"
 {
     StringTokPtr ident = new StringTok;
     ident->v = *yytext == '\\' ? yytext + 1 : yytext;
@@ -888,7 +895,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 163 "Scanner.l"
+#line 170 "Scanner.l"
 {
     StringTokPtr ident = new StringTok;
     ident->v = *yytext == '\\' ? yytext + 1 : yytext;
@@ -899,7 +906,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 171 "Scanner.l"
+#line 178 "Scanner.l"
 {
     StringTokPtr str = new StringTok;
     while(true)
@@ -1049,7 +1056,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 318 "Scanner.l"
+#line 325 "Scanner.l"
 {
     IntegerTokPtr itp = new IntegerTok;
     *yylvalp = itp;
@@ -1066,7 +1073,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 332 "Scanner.l"
+#line 339 "Scanner.l"
 {
     errno = 0;
     FloatingTokPtr ftp = new FloatingTok;
@@ -1097,7 +1104,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 360 "Scanner.l"
+#line 367 "Scanner.l"
 {
     // Igore white-space
     
@@ -1109,17 +1116,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 369 "Scanner.l"
+#line 376 "Scanner.l"
 {
     return yytext[0];
 }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 373 "Scanner.l"
+#line 380 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 1122 "lex.yy.c"
+#line 1129 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2003,7 +2010,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 373 "Scanner.l"
+#line 380 "Scanner.l"
 
 
 namespace Slice {

@@ -445,10 +445,12 @@ char *yytext;
 
 #include <map>
 
-#ifdef _MSC_VER
-    // I get these warnings from some flex versions:
-    // warning C4003: not enough actual parameters for macro 'yywrap'
-#   pragma warning( disable : 4003 )
+#if defined(_MSC_VER) && defined(ICE_64)
+//
+// 'initializing' : conversion from '__int64' to 'int', possible loss of data
+// Puts a pointer-difference into an int
+//
+#   pragma warning( 4 : 4244 )
 #endif
 
 using namespace std;
@@ -470,7 +472,7 @@ StringTokPtr parseString(char);
 
 #define        YY_INPUT(buf, result, max_size) { result = getInput(buf, max_size); }
 #define YY_NEVER_INTERACTIVE 1
-#line 473 "lex.yy.c"
+#line 475 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -621,10 +623,10 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 58 "Scanner.l"
+#line 60 "Scanner.l"
 
 
-#line 627 "lex.yy.c"
+#line 629 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -709,7 +711,7 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 60 "Scanner.l"
+#line 62 "Scanner.l"
 {
     // C++-style comment
     int c;
@@ -726,7 +728,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 74 "Scanner.l"
+#line 76 "Scanner.l"
 {
     // C-style comment
     while(true)
@@ -758,7 +760,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 103 "Scanner.l"
+#line 105 "Scanner.l"
 {
     StringTokPtr ident = new StringTok;
     ident->v = yytext;
@@ -768,7 +770,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 110 "Scanner.l"
+#line 112 "Scanner.l"
 {
     StringTokPtr str = parseString('"');
     *yylvalp = str;
@@ -777,7 +779,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 116 "Scanner.l"
+#line 118 "Scanner.l"
 {
     StringTokPtr str = parseString('\'');
     *yylvalp = str;
@@ -786,7 +788,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 122 "Scanner.l"
+#line 124 "Scanner.l"
 {
     IntegerTokPtr itp = new IntegerTok;
     *yylvalp = itp;
@@ -803,7 +805,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 136 "Scanner.l"
+#line 138 "Scanner.l"
 {
     errno = 0;
     FloatingTokPtr ftp = new FloatingTok;
@@ -834,7 +836,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 164 "Scanner.l"
+#line 166 "Scanner.l"
 {
     // Igore white-space
     
@@ -846,97 +848,97 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 173 "Scanner.l"
+#line 175 "Scanner.l"
 return TOK_LESS_THAN;
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 174 "Scanner.l"
+#line 176 "Scanner.l"
 return TOK_GREATER_THAN;
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 175 "Scanner.l"
+#line 177 "Scanner.l"
 return TOK_LESS_EQUAL;
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 176 "Scanner.l"
+#line 178 "Scanner.l"
 return TOK_GREATER_EQUAL;
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 177 "Scanner.l"
+#line 179 "Scanner.l"
 return TOK_EQUAL;
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 178 "Scanner.l"
+#line 180 "Scanner.l"
 return TOK_NEQ;
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 179 "Scanner.l"
+#line 181 "Scanner.l"
 return TOK_ADD;
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 180 "Scanner.l"
+#line 182 "Scanner.l"
 return TOK_SUB;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 181 "Scanner.l"
+#line 183 "Scanner.l"
 return TOK_MUL;
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 182 "Scanner.l"
+#line 184 "Scanner.l"
 return TOK_DIV;
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 183 "Scanner.l"
+#line 185 "Scanner.l"
 return TOK_MOD;
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 184 "Scanner.l"
+#line 186 "Scanner.l"
 return TOK_LPAREN;
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 185 "Scanner.l"
+#line 187 "Scanner.l"
 return TOK_RPAREN;
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 186 "Scanner.l"
+#line 188 "Scanner.l"
 return TOK_LBRACKET;
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 187 "Scanner.l"
+#line 189 "Scanner.l"
 return TOK_RBRACKET;
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 188 "Scanner.l"
+#line 190 "Scanner.l"
 return TOK_SCOPE_DELIMITER;
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 190 "Scanner.l"
+#line 192 "Scanner.l"
 {
     return yytext[0];
 }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 194 "Scanner.l"
+#line 196 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 939 "lex.yy.c"
+#line 941 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1818,7 +1820,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 194 "Scanner.l"
+#line 196 "Scanner.l"
 
 
 namespace FreezeScript

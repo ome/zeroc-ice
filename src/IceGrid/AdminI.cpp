@@ -321,7 +321,7 @@ AdminI::patchApplication_async(const AMD_Admin_patchApplicationPtr& amdCB,
 	return;
     }
 
-    PatchAggregatorPtr aggregator = new PatchAggregator(amdCB, _traceLevels, name, nodes.size());
+    PatchAggregatorPtr aggregator = new PatchAggregator(amdCB, _traceLevels, name, static_cast<int>(nodes.size()));
     for(vector<string>::const_iterator p = nodes.begin(); p != nodes.end(); ++p)
     {
 	if(_traceLevels->patch > 0)
@@ -711,6 +711,7 @@ AdminI::getNodeLoad(const string& name, const Current&) const
 	os << ex;
 	throw NodeUnreachableException(name, os.str());
     }    
+    return LoadInfo(); // Keep the compiler happy.
 }
 
 void
@@ -750,6 +751,7 @@ AdminI::getNodeHostname(const string& name, const Current&) const
 	ostringstream os;
 	os << ex;
 	throw NodeUnreachableException(name, os.str());
+	return ""; // Keep the compiler happy.
     }
 }
 

@@ -120,13 +120,6 @@
 #      pragma warning( disable : 4275 )
 //      ...: decorated name length exceeded, name was truncated
 #      pragma warning( disable : 4503 )  
-//
-//
-//     TEMPORARY: move deprecated warning on VC8 to level 4
-#      if _MSC_VER==1400
-#         pragma warning( 4 : 4996 )   
-#      endif
-
 #   endif
 #endif
 
@@ -178,10 +171,13 @@ private:
 //
 // Int64 typedef
 //
-#if defined(ICE_64)
-typedef long Int64;
-#elif defined(_MSC_VER)
+#if defined(_MSC_VER)
+//
+// On Windows, long is always 32-bit
+//
 typedef __int64 Int64;
+#elif defined(ICE_64)
+typedef long Int64;
 #else
 typedef long long Int64;
 #endif
@@ -191,10 +187,10 @@ typedef long long Int64;
 //
 // ICE_INT64: macro for Int64 literal values
 //
-#if defined(ICE_64)
-#   define ICE_INT64(n) n##L
-#elif defined(_MSC_VER)
+#if defined(_MSC_VER)
 #   define ICE_INT64(n) n##i64
+#elif defined(ICE_64)
+#   define ICE_INT64(n) n##L
 #else
 #   define ICE_INT64(n) n##LL
 #endif
@@ -202,7 +198,7 @@ typedef long long Int64;
 //
 // The Ice version.
 //
-#define ICE_STRING_VERSION "3.0.0" // "A.B.C", with A=major, B=minor, C=patch
-#define ICE_INT_VERSION 30000      // AABBCC, with AA=major, BB=minor, CC=patch
+#define ICE_STRING_VERSION "3.0.1" // "A.B.C", with A=major, B=minor, C=patch
+#define ICE_INT_VERSION 30001      // AABBCC, with AA=major, BB=minor, CC=patch
 
 #endif

@@ -184,13 +184,18 @@ NodeI::NodeI(const Ice::ObjectAdapterPtr& adapter,
     _traceLevels(traceLevels),
     _name(name),
     _proxy(proxy),
-    _waitTime(adapter->getCommunicator()->getProperties()->getPropertyAsIntWithDefault("IceGrid.Node.WaitTime", 60)),
+    _waitTime(0),
     _serial(1),
     _platform(adapter->getCommunicator(), _traceLevels)
 {
     _dataDir = _platform.getDataDir();
     _serversDir = _dataDir + "/servers";
     _tmpDir = _dataDir + "/tmp";
+
+    Ice::PropertiesPtr properties = getCommunicator()->getProperties();
+    const string instanceNameProperty = "IceGrid.InstanceName";
+    const_cast<string&>(_instName) = properties->getPropertyWithDefault(instanceNameProperty, "IceGrid");
+    const_cast<Ice::Int&>(_waitTime) = properties->getPropertyAsIntWithDefault("IceGrid.Node.WaitTime", 60);
 }
 
 NodeI::~NodeI()
@@ -540,10 +545,7 @@ NodeI::keepAlive()
     {
 	try
 	{
-	    Ice::PropertiesPtr properties = getCommunicator()->getProperties();
-	    const string instanceNameProperty = "IceGrid.InstanceName";
-	    string instName = properties->getPropertyWithDefault(instanceNameProperty, "IceGrid");
-	    Ice::ObjectPrx obj = getCommunicator()->stringToProxy(instName + "/Registry@IceGrid.Registry.Internal");
+	    Ice::ObjectPrx obj = getCommunicator()->stringToProxy(_instName + "/Registry@IceGrid.Registry.Internal");
 	    RegistryPrx registry = RegistryPrx::uncheckedCast(obj);
 	    NodeObserverPrx observer;
 	    setSession(registry->registerNode(_name, _proxy, _platform.getNodeInfo(), observer), observer);
@@ -612,6 +614,7 @@ NodeI::checkConsistency()
 	}
 	session = getSession();
 	servers = session ? session->getServers() : Ice::StringSeq();
+	sort(servers.begin(), servers.end());
     }
     while(session);
 }
@@ -657,27 +660,26 @@ NodeI::checkConsistencyNoSync(const Ice::StringSeq& servers)
 		}
 	    }
 	    
-	    if(canRemoveServerDirectory(*p))
+	    try
 	    {
-		//
-		// If the server directory can be removed and we
-		// either remove it or back it up before to remove it.
-		//
-		try
+		if(canRemoveServerDirectory(*p))
 		{
+		    //
+		    // If the server directory can be removed and we
+		    // either remove it or back it up before to remove it.
+		    //
 		    removeRecursive(_serversDir + "/" + *p);
+		    p = remove.erase(p);
+		    continue;
 		}
-		catch(const string& msg)
-		{
-		    Ice::Warning out(_traceLevels->logger);
-		    out << "removing server directory `" << _serversDir << "/" << *p << "' failed:" << msg;
-		}
-		p = remove.erase(p);
 	    }
-	    else
+	    catch(const string& msg)
 	    {
-		++p;
+		Ice::Warning out(_traceLevels->logger);
+		out << "removing server directory `" << _serversDir << "/" << *p << "' failed:" << msg;
 	    }
+
+	    ++p;
 	}
     }
 	
@@ -705,10 +707,11 @@ NodeI::checkConsistencyNoSync(const Ice::StringSeq& servers)
 	ostringstream os;
 	os << "servers-" << contents.size();
 	contents.push_back(os.str());
+	sort(contents.begin(), contents.end(), greater<string>());
     }
-    sort(contents.begin(), contents.end(), greater<string>());
-    if(contents.size() == 10)
+    else if(contents.size() == 10)
     {
+	sort(contents.begin(), contents.end(), greater<string>());
 	try
 	{
 	    removeRecursive(_tmpDir + "/" + *contents.begin());
@@ -728,7 +731,6 @@ NodeI::checkConsistencyNoSync(const Ice::StringSeq& servers)
 	    rename(_tmpDir + "/" + *(p + 1), _tmpDir + "/" + *p);
 	}
 	createDirectoryRecursive(_tmpDir + "/servers-0");
-	
 	for(p = remove.begin(); p != remove.end(); ++p)
 	{
 	    rename(_serversDir + "/" + *p, _tmpDir + "/servers-0/" + *p);
@@ -737,7 +739,7 @@ NodeI::checkConsistencyNoSync(const Ice::StringSeq& servers)
     catch(const string& msg)
     {
 	Ice::Warning out(_traceLevels->logger);
-	out << "rotation failed:" << msg;
+	out << "rotation failed: " << msg;
     }
 }
 
@@ -755,9 +757,9 @@ NodeI::canRemoveServerDirectory(const string& name)
     {
 	return false;
     }
-
+    
     contents = readDirectory(_serversDir + "/" + name + "/config");
-
+    
     Ice::StringSeq::const_iterator p;
     for(p = contents.begin() ; p != contents.end(); ++p)
     {
@@ -766,7 +768,7 @@ NodeI::canRemoveServerDirectory(const string& name)
 	    return false;
 	}
     }
-
+    
     contents = readDirectory(_serversDir + "/" + name + "/dbs");
     for(p = contents.begin() ; p != contents.end(); ++p)
     {
@@ -893,7 +895,7 @@ Ice::Identity
 NodeI::createServerIdentity(const string& name)
 {
     Ice::Identity id;
-    id.category = "IceGridServer";
+    id.category = _instName + "-Server";
     id.name = name;
     return id;
 }

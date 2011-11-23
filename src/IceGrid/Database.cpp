@@ -163,6 +163,12 @@ Database::~Database()
 {
 }
 
+void
+Database::destroy()
+{
+    _nodeCache.destroy(); // Break cyclic reference count.
+}
+
 std::string
 Database::getInstanceName() const
 {
@@ -732,14 +738,14 @@ Database::getAdapters(const string& id, bool allRegistered, int& endpointCount)
     StringAdapterInfoDict::const_iterator p = adapters.find(id);
     if(p != adapters.end())
     {
-	vector<pair<string, AdapterPrx> > adapters;
+	vector<pair<string, AdapterPrx> > adpts;
 	Ice::Identity identity;
 	identity.category = "IceGridAdapter";
 	identity.name = id;
 	AdapterPrx adpt = AdapterPrx::uncheckedCast(_internalAdapter->createDirectProxy(identity));
-	adapters.push_back(make_pair(id, adpt));
+	adpts.push_back(make_pair(id, adpt));
 	endpointCount = 1;
-	return adapters;
+	return adpts;
     }
 
     //
@@ -760,7 +766,7 @@ Database::getAdapters(const string& id, bool allRegistered, int& endpointCount)
 	    ++p;
 	}
 	random_shuffle(adpts.begin(), adpts.end());
-	endpointCount = adpts.size();
+	endpointCount = static_cast<int>(adpts.size());
 	return adpts;
     }
 

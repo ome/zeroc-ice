@@ -447,10 +447,12 @@ char *yytext;
 #include <IceStorm/Parser.h>
 #include <IceStorm/Grammar.h>
 
-#ifdef _MSC_VER
-// I get these warnings from some flex versions:
-// warning C4003: not enough actual parameters for macro 'yywrap'
-#   pragma warning( disable : 4003 )
+#if defined(_MSC_VER) && defined(ICE_64)
+//
+// 'initializing' : conversion from '__int64' to 'int', possible loss of data
+// Puts a pointer-difference into an int
+//
+#   pragma warning( 4 : 4244 )
 #endif
 
 using namespace std;
@@ -459,7 +461,7 @@ using namespace IceStorm;
 
 #define YY_INPUT(buf, result, maxSize) parser->getInput(buf, result, maxSize)
 
-#line 462 "lex.yy.c"
+#line 464 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -613,10 +615,10 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 35 "Scanner.l"
+#line 37 "Scanner.l"
 
 
-#line 619 "lex.yy.c"
+#line 621 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -705,7 +707,7 @@ case 1:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 37 "Scanner.l"
+#line 39 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
@@ -715,7 +717,7 @@ case 2:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 41 "Scanner.l"
+#line 43 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
@@ -725,7 +727,7 @@ case 3:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 45 "Scanner.l"
+#line 47 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
@@ -735,14 +737,14 @@ case 4:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 49 "Scanner.l"
+#line 51 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 53 "Scanner.l"
+#line 55 "Scanner.l"
 {
     // C++-style comment
     int c;
@@ -759,7 +761,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 67 "Scanner.l"
+#line 69 "Scanner.l"
 {
     // C-style comment
     while(true)
@@ -791,84 +793,84 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 96 "Scanner.l"
+#line 98 "Scanner.l"
 {
     return ICE_STORM_HELP;
 }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 100 "Scanner.l"
+#line 102 "Scanner.l"
 {
     return ICE_STORM_EXIT;
 }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 104 "Scanner.l"
+#line 106 "Scanner.l"
 {
     return ICE_STORM_CREATE;
 }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 108 "Scanner.l"
+#line 110 "Scanner.l"
 {
     return ICE_STORM_DESTROY;
 }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 112 "Scanner.l"
+#line 114 "Scanner.l"
 {
     return ICE_STORM_LIST;
 }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 116 "Scanner.l"
+#line 118 "Scanner.l"
 {
     return ICE_STORM_LINK;
 }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 120 "Scanner.l"
+#line 122 "Scanner.l"
 {
     return ICE_STORM_UNLINK;
 }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 124 "Scanner.l"
+#line 126 "Scanner.l"
 {
     return ICE_STORM_GRAPH;
 }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 128 "Scanner.l"
+#line 130 "Scanner.l"
 {
     return ICE_STORM_SHOW;
 }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 132 "Scanner.l"
+#line 134 "Scanner.l"
 {
     return ICE_STORM_COPYING;
 }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 136 "Scanner.l"
+#line 138 "Scanner.l"
 {
     return ICE_STORM_WARRANTY;
 }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 140 "Scanner.l"
+#line 142 "Scanner.l"
 {
     size_t len = strlen(yytext);
     for(size_t i = 0; i < len; ++i)
@@ -886,7 +888,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 155 "Scanner.l"
+#line 157 "Scanner.l"
 {
     size_t len = strlen(yytext);
     for(size_t i = 0; i < len; ++i)
@@ -901,7 +903,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 167 "Scanner.l"
+#line 169 "Scanner.l"
 {
     // "..."-type strings
     string s;
@@ -983,7 +985,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 246 "Scanner.l"
+#line 248 "Scanner.l"
 {
     // '...'-type strings
     string s;
@@ -1016,7 +1018,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 276 "Scanner.l"
+#line 278 "Scanner.l"
 {
     // Simple strings
     string s;
@@ -1043,10 +1045,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 300 "Scanner.l"
+#line 302 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 1049 "lex.yy.c"
+#line 1051 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1930,5 +1932,5 @@ int main()
 	return 0;
 	}
 #endif
-#line 300 "Scanner.l"
+#line 302 "Scanner.l"
 

@@ -83,6 +83,24 @@ public:
 
 typedef IceUtil::Handle<AMI_MyClass_opVoidI> AMI_MyClass_opVoidIPtr;
 
+class AMI_MyClass_opVoidExI : public Test::AMI_MyClass_opVoid, public CallbackBase
+{
+public:
+
+    virtual void ice_response()
+    {
+	test(false);
+    }
+
+    virtual void ice_exception(const ::Ice::Exception& ex)
+    {
+	test(dynamic_cast<const ::Ice::TwowayOnlyException*>(&ex));
+        called();
+    }
+};
+
+typedef IceUtil::Handle<AMI_MyClass_opVoidExI> AMI_MyClass_opVoidExIPtr;
+
 class AMI_MyClass_opByteI : public Test::AMI_MyClass_opByte, public CallbackBase
 {
 public:
@@ -101,6 +119,25 @@ public:
 };
 
 typedef IceUtil::Handle<AMI_MyClass_opByteI> AMI_MyClass_opByteIPtr;
+
+class AMI_MyClass_opByteExI : public Test::AMI_MyClass_opByte, public CallbackBase
+{
+public:
+
+    virtual void ice_response(::Ice::Byte r, ::Ice::Byte b)
+    {
+	test(false);
+    }
+
+    virtual void ice_exception(const ::Ice::Exception& ex)
+    {
+	test(dynamic_cast<const ::Ice::TwowayOnlyException*>(&ex));
+        called();
+    }
+};
+
+typedef IceUtil::Handle<AMI_MyClass_opByteExI> AMI_MyClass_opByteExIPtr;
+
 
 class AMI_MyClass_opBoolI : public Test::AMI_MyClass_opBool, public CallbackBase
 {
@@ -803,6 +840,37 @@ void
 twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 {
     {
+        // Check that a call to a void operation raises TwowayOnlyException
+	// in the ice_exception() callback instead of at the point of call.
+	Test::MyClassPrx oneway = Test::MyClassPrx::uncheckedCast(p->ice_oneway());
+	AMI_MyClass_opVoidExIPtr cb = new AMI_MyClass_opVoidExI;
+	try {
+	    oneway->opVoid_async(cb);
+	}
+	catch(const Ice::Exception&)
+	{
+	    test(false);
+	}
+	test(cb->check());
+    }
+
+    {
+        // Check that a call to a twoway operation raises TwowayOnlyException
+	// in the ice_exception() callback instead of at the point of call.
+	Test::MyClassPrx oneway = Test::MyClassPrx::uncheckedCast(p->ice_oneway());
+	AMI_MyClass_opByteExIPtr cb = new AMI_MyClass_opByteExI;
+	try
+	{
+	    oneway->opByte_async(cb, 0, 0);
+	}
+	catch(const Ice::Exception&)
+	{
+	    test(false);
+	}
+	test(cb->check());
+    }
+
+    {
 	AMI_MyClass_opVoidIPtr cb = new AMI_MyClass_opVoidI;
 	p->opVoid_async(cb);
 	test(cb->check());
@@ -1163,6 +1231,59 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 		p2->opContext_async(cb);
 		test(cb->check());
 	    }
+
+	    communicator->setDefaultContext(dflt);
+	    Test::MyClassPrx c = Test::MyClassPrx::checkedCast(
+				    communicator->stringToProxy("test:default -p 12345 -t 10000"));
+	    {
+		Ice::Context tmp;
+		tmp["a"] = "b";
+		AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(tmp);
+		c->opContext_async(cb);
+		test(cb->check());
+	    }
+
+	    dflt["a"] = "c";
+	    Test::MyClassPrx c2 = Test::MyClassPrx::uncheckedCast(c->ice_newContext(dflt));
+	    {
+		Ice::Context tmp;
+		tmp["a"] = "c";
+		AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(tmp);
+		c2->opContext_async(cb);
+		test(cb->check());
+	    }
+
+	    dflt.clear();
+	    Test::MyClassPrx c3 = Test::MyClassPrx::uncheckedCast(c2->ice_newContext(dflt));
+	    {
+	        Ice::Context tmp;
+		AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(tmp);
+		c3->opContext_async(cb);
+		test(cb->check());
+	    }
+
+	    Test::MyClassPrx c4 = Test::MyClassPrx::uncheckedCast(c2->ice_defaultContext());
+	    {
+	        Ice::Context tmp;
+		tmp["a"] = "b";
+		AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(tmp);
+		c4->opContext_async(cb);
+		test(cb->check());
+	    }
+
+	    dflt["a"] = "d";
+	    communicator->setDefaultContext(dflt);
+
+	    Test::MyClassPrx c5 = Test::MyClassPrx::uncheckedCast(c->ice_defaultContext());
+	    {
+	        Ice::Context tmp;
+		tmp["a"] = "d";
+		AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(tmp);
+		c5->opContext_async(cb);
+		test(cb->check());
+	    }
+
+	    communicator->setDefaultContext(Ice::Context());
 	}
     }
 

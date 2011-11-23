@@ -7,6 +7,7 @@
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
 #include <IceUtil/Options.h>
 #include <Slice/Preprocessor.h>
 #include <Slice/CPlusPlusUtil.h>
@@ -97,7 +98,7 @@ usage(const char* n)
 	"                      By default, keys are sorted using their binary\n"
 	"                      Ice-encoding representation. Use 'sort' to sort\n"
 	"                      with the COMPARE functor class. COMPARE's default\n"
-	"                      value is std::less<secondary key type>\n."
+	"                      value is std::less<secondary key type>.\n"
         "--output-dir DIR      Create files in the directory DIR.\n"
         "-d, --debug           Print debug messages.\n"
         "--ice                 Permit `Ice' prefix (for building Ice source code only)\n"
@@ -855,16 +856,16 @@ writeDict(const string& n, UnitPtr& u, const Dict& dict, Output& H, Output& C, c
 		    }
 		    dataMembers = structDecl->dataMembers();
 		}
-		DataMemberList::const_iterator q = dataMembers.begin();
-		while(q != dataMembers.end() && dataMember == 0)
+		DataMemberList::const_iterator d = dataMembers.begin();
+		while(d != dataMembers.end() && dataMember == 0)
 		{
-		    if((*q)->name() == index.member)
+		    if((*d)->name() == index.member)
 		    {
-			dataMember = *q;
+			dataMember = *d;
 		    }
 		    else
 		    {
-			++q;
+			++d;
 		    }
 		}
 		
@@ -1236,8 +1237,8 @@ main(int argc, char* argv[])
     }
     if(opts.isSet("dict"))
     {
-	vector<string> args = opts.argVec("dict");
-	for(vector<string>::const_iterator i = args.begin(); i != args.end(); ++i)
+	vector<string> optargs = opts.argVec("dict");
+	for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
 	{
 	    string s = *i;
 	    s.erase(remove_if(s.begin(), s.end(), ::isspace), s.end());
@@ -1322,8 +1323,8 @@ main(int argc, char* argv[])
     }
     if(opts.isSet("index"))
     {
-	vector<string> args = opts.argVec("index");
-	for(vector<string>::const_iterator i = args.begin(); i != args.end(); ++i)
+	vector<string> optargs = opts.argVec("index");
+	for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
 	{
 	    string s = *i;
 	    s.erase(remove_if(s.begin(), s.end(), ::isspace), s.end());
@@ -1391,8 +1392,8 @@ main(int argc, char* argv[])
     }
     if(opts.isSet("dict-index"))
     {
-	vector<string> args = opts.argVec("dict-index");
-	for(vector<string>::const_iterator i = args.begin(); i != args.end(); ++i)
+	vector<string> optargs = opts.argVec("dict-index");
+	for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
 	{
 	    string s = *i;
 	    s.erase(remove_if(s.begin(), s.end(), ::isspace), s.end());
@@ -1544,6 +1545,7 @@ main(int argc, char* argv[])
 
     string fileH = args[0];
     fileH += "." + headerExtension;
+    string includeH = fileH;
     string fileC = args[0];
     fileC += "." + sourceExtension;
     if(!output.empty())
@@ -1694,7 +1696,7 @@ main(int argc, char* argv[])
 	{
 	    C << include << '/';
 	}
-	C << fileH << '>';
+	C << includeH << '>';
 
 	printVersionCheck(H);
 	printVersionCheck(C);

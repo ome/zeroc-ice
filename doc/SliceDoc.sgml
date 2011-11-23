@@ -8,7 +8,7 @@
 
  **********************************************************************
 -->
-<!-- Ice version 3.0.0 -->
+<!-- Ice version 3.0.1 -->
 <section>
     <title>Global Module</title>
     <section>
@@ -447,7 +447,8 @@ This exception is raised when a failure occurs during initialization.</para>
 		    <term><link linkend="Ice.InvalidReplicaGroupIdException"><classname>InvalidReplicaGroupIdException</classname></link></term>
 		    <listitem>
 			<para>
-</para>
+This exception is raised if the replica group provided by the
+server is invalid.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -2894,7 +2895,9 @@ The reason for the failure.</para>
     <section>
 	<title>Overview</title>
 <synopsis>exception <classname>InvalidReplicaGroupIdException</classname></synopsis>
-	<para></para>
+	<para>
+This exception is raised if the replica group provided by the
+server is invalid.</para>
     </section>
 </section>
 <section id="Ice.Locator">
@@ -3494,7 +3497,7 @@ unmarshaling.</para>
 		    <term><link linkend="Ice.NoObjectFactoryException.type"><type>type</type></link></term>
 		    <listitem>
 			<para>
-The absolute Slice type name of the object for which we
+The absolute Slice type id of the object for which we
 could not find a factory.</para>
 		    </listitem>
 		</varlistentry>
@@ -3505,7 +3508,7 @@ could not find a factory.</para>
 	<title><literal>type</literal></title>
 <synopsis><type>string</type> <structfield>type</structfield>;</synopsis>
 	<para>
-The absolute Slice type name of the object for which we
+The absolute Slice type id of the object for which we
 could not find a factory.</para>
     </section>
 </section>
@@ -4794,9 +4797,9 @@ the communicator is destroyed.</para>
 <synopsis><type>Object</type> <function>create</function>(<type>string</type> <parameter>type</parameter>);</synopsis>
 	<para>
 Create a new object for a given object type. The type is the
-absolute &Slice; type name, i.e., the name relative to the
+absolute &Slice; type id, i.e., the id relative to the
 unnamed top-level Slice module. For example, the absolute
-&Slice; type name for interfaces of type <literal>Bar</literal> in the module
+&Slice; type id for interfaces of type <literal>Bar</literal> in the module
 <literal>Foo</literal> is <literal>::Foo::Bar</literal>.
 <note><para>The leading "<literal>::</literal>" is required.</para></note></para>
 	<section>
@@ -5121,8 +5124,7 @@ Obtain a plug-in by name.</para>
 <synopsis>interface <classname>Process</classname></synopsis>
 	<para>
 An administrative interface for process management. Managed servers must
-implement this interface and invoke <literal>ObjectAdapter::setProcess</literal> to register
-the process proxy.
+implement this interface.
 <note><para> A servant implementing this interface is a potential target
 for denial-of-service attacks, therefore proper security precautions
 should be taken. For example, the servant can use a UUID to make its
@@ -8550,7 +8552,7 @@ This exception is raised if an object is not registered.</para>
 		    <term><link linkend="IceGrid.PatchException"><classname>PatchException</classname></link></term>
 		    <listitem>
 			<para>
-This exception is raised if the patching failed.</para>
+This exception is raised if a patch failed.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -8590,7 +8592,7 @@ Dynamic information about the state of an adapter.</para>
 		    <term><link linkend="IceGrid.AdapterInfo"><structname>AdapterInfo</structname></link></term>
 		    <listitem>
 			<para>
-Information on an adapter registered with the &IceGrid; registry.</para>
+Information about an adapter registered with the &IceGrid; registry.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -8646,7 +8648,7 @@ Dynamic information about the state of a node.</para>
 		    <term><link linkend="IceGrid.NodeInfo"><structname>NodeInfo</structname></link></term>
 		    <listitem>
 			<para>
-</para>
+Information about an &IceGrid; node.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -8667,7 +8669,7 @@ An &Ice; object descriptor.</para>
 		    <term><link linkend="IceGrid.ObjectInfo"><structname>ObjectInfo</structname></link></term>
 		    <listitem>
 			<para>
-Information on an Ice object.</para>
+Information about an Ice object.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -8695,7 +8697,7 @@ Dynamic information about the state of a server.</para>
 		    <term><link linkend="IceGrid.ServerInfo"><structname>ServerInfo</structname></link></term>
 		    <listitem>
 			<para>
-Information on a server managed by an IceGrid node.</para>
+Information about a server managed by an &IceGrid; node.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -9343,7 +9345,7 @@ The direct proxy containing the adapter endpoints.</para>
 	<title>Overview</title>
 <synopsis>struct <structname>AdapterInfo</structname></synopsis>
 	<para>
-Information on an adapter registered with the &IceGrid; registry.</para>
+Information about an adapter registered with the &IceGrid; registry.</para>
 	<section>
 	    <title>Used By</title>
 	    <para>
@@ -9364,7 +9366,7 @@ A dummy direct proxy that contains the adapter endpoints.</para>
 		    <term><link linkend="IceGrid.AdapterInfo.replicaGroupId"><type>replicaGroupId</type></link></term>
 		    <listitem>
 			<para>
-The replica group id of the object adapter or empty if the
+The replica group id of the object adapter, or empty if the
 adapter doesn't belong to a replica group.</para>
 		    </listitem>
 		</varlistentry>
@@ -9381,7 +9383,7 @@ A dummy direct proxy that contains the adapter endpoints.</para>
 	<title><literal>replicaGroupId</literal></title>
 <synopsis><type>string</type> <structfield>replicaGroupId</structfield>;</synopsis>
 	<para>
-The replica group id of the object adapter or empty if the
+The replica group id of the object adapter, or empty if the
 adapter doesn't belong to a replica group.</para>
     </section>
 </section>
@@ -9715,8 +9717,7 @@ Update an object in the object registry.</para>
 		    <term><link linkend="IceGrid.Admin.writeMessage"><function>writeMessage</function></link></term>
 		    <listitem>
 			<para>
-Write message on server stdout or stderr
-@param id The id of the server.</para>
+Write message on server stdout or stderr.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -9728,7 +9729,7 @@ Write message on server stdout or stderr
     throws
 	<link linkend="IceGrid.DeploymentException"><classname>DeploymentException</classname></link>;</synopsis>
 	<para>
-Add an application to &IceGrid;. An application is a set of servers.</para>
+Add an application to &IceGrid;.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -9845,7 +9846,7 @@ registered.</para>
 	<para>
 Enable or disable a server. A disabled server can't be started
 on demand or administratively. The enable state of the server
-is not persistent, if the node is shutdown and restarted, the
+is not persistent: if the node is shutdown and restarted, the
 server will be enabled by default.</para>
 	<section>
 	    <title>Parameters</title>
@@ -9854,7 +9855,7 @@ server will be enabled by default.</para>
 		    <term><parameter>id</parameter></term>
 		    <listitem>
 			<para>
-			    The id of the server.</para>
+			    The server id.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -10277,7 +10278,7 @@ system dependent.</para>
 		    <term><parameter>id</parameter></term>
 		    <listitem>
 			<para>
-			    The id of the server.</para>
+			    The server id.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -10285,7 +10286,7 @@ system dependent.</para>
 	<section>
 	    <title>Return Value</title>
 	    <para>
-		The server process id.</para>
+		The server's process id.</para>
 	</section>
 	<section>
 	    <title>Exceptions</title>
@@ -10323,7 +10324,7 @@ Get a server's state.</para>
 		    <term><parameter>id</parameter></term>
 		    <listitem>
 			<para>
-			    The id of the server.</para>
+			    The server id.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -10391,7 +10392,7 @@ Check if the server is enabled or disabled.</para>
 		    <term><parameter>id</parameter></term>
 		    <listitem>
 			<para>
-			    The id of the server.</para>
+			    The server id.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -10428,7 +10429,7 @@ be reached.</para>
 	<link linkend="IceGrid.PatchException"><classname>PatchException</classname></link>;</synopsis>
 	<para>
 Patch the given application data. If the patch argument is an
-empty string, all the application servers depending on patch
+empty string, all of the application's servers that depend on patch
 data will be patched.</para>
 	<section>
 	    <title>Parameters</title>
@@ -10489,7 +10490,7 @@ Patch a server.</para>
 		    <term><parameter>id</parameter></term>
 		    <listitem>
 			<para>
-			    The id of the server.</para>
+			    The server id.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -10675,7 +10676,7 @@ Send signal to a server.</para>
 		    <term><parameter>id</parameter></term>
 		    <listitem>
 			<para>
-			    The id of the server.</para>
+			    The server id.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -10782,7 +10783,7 @@ Start a server and wait for its activation.</para>
 		    <term><parameter>id</parameter></term>
 		    <listitem>
 			<para>
-			    The id of the server.</para>
+			    The server id.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -10831,7 +10832,7 @@ Stop a server.</para>
 		    <term><parameter>id</parameter></term>
 		    <listitem>
 			<para>
-			    The id of the server.</para>
+			    The server id.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -10988,7 +10989,7 @@ exist.</para>
 	<link linkend="IceGrid.ServerNotExistException"><classname>ServerNotExistException</classname></link>,
 	<link linkend="IceGrid.NodeUnreachableException"><classname>NodeUnreachableException</classname></link>;</synopsis>
 	<para>
-Write message on server stdout or stderr</para>
+Write message on server stdout or stderr.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -10996,7 +10997,7 @@ Write message on server stdout or stderr</para>
 		    <term><parameter>id</parameter></term>
 		    <listitem>
 			<para>
-			    The id of the server.</para>
+			    The server id.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -11564,7 +11565,7 @@ A &Freeze; database environment descriptor.</para>
 		    <term><link linkend="IceGrid.DbEnvDescriptor.dbHome"><type>dbHome</type></link></term>
 		    <listitem>
 			<para>
-The home of the database environment (i.e.: the directory where
+The home of the database environment (i.e., the directory where
 the database files will be stored).</para>
 		    </listitem>
 		</varlistentry>
@@ -11596,7 +11597,7 @@ The configuration properties of the database environment.</para>
 	<title><literal>dbHome</literal></title>
 <synopsis><type>string</type> <structfield>dbHome</structfield>;</synopsis>
 	<para>
-The home of the database environment (i.e.: the directory where
+The home of the database environment (i.e., the directory where
 the database files will be stored). If empty, the node will
 provide a default database directory, otherwise the directory
 must exist.</para>
@@ -12043,7 +12044,8 @@ The dynamic information of the servers deployed on this node.</para>
     <section>
 	<title>Overview</title>
 <synopsis>struct <structname>NodeInfo</structname></synopsis>
-	<para></para>
+	<para>
+Information about an &IceGrid; node.</para>
 	<section>
 	    <title>Used By</title>
 	    <para>
@@ -12361,7 +12363,7 @@ This exception is raised if a node could not be reached.</para>
 		    <term><link linkend="IceGrid.NodeUnreachableException.name"><type>name</type></link></term>
 		    <listitem>
 			<para>
-The name of the node which is not reachable.</para>
+The name of the node that is not reachable.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -12378,7 +12380,7 @@ The reason why the node couldn't be reached.</para>
 	<title><literal>name</literal></title>
 <synopsis><type>string</type> <structfield>name</structfield>;</synopsis>
 	<para>
-The name of the node which is not reachable.</para>
+The name of the node that is not reachable.</para>
     </section>
     <section id="IceGrid.NodeUnreachableException.reason">
 	<title><literal>reason</literal></title>
@@ -12595,7 +12597,7 @@ This exception is raised if an object already exists.</para>
 	<title>Overview</title>
 <synopsis>struct <structname>ObjectInfo</structname></synopsis>
 	<para>
-Information on an Ice object.</para>
+Information about an Ice object.</para>
 	<section>
 	    <title>Used By</title>
 	    <para>
@@ -12668,7 +12670,7 @@ This exception is raised if an object is not registered.</para>
 	<title>Overview</title>
 <synopsis>exception <classname>PatchException</classname></synopsis>
 	<para>
-This exception is raised if the patching failed.</para>
+This exception is raised if a patch failed.</para>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
@@ -12850,10 +12852,10 @@ for the given type, the object will be randomly selected.</para>
 <synopsis><type>Object*</type> <function>findObjectByTypeOnLeastLoadedNode</function>(<type>string</type> <parameter>type</parameter>,
     <link linkend="IceGrid.LoadSample"><type>LoadSample</type></link> <parameter>sample</parameter>);</synopsis>
 	<para>
-Find an object by type on the least loaded node. If the IceGrid
-registry can't figure out the node that hosts the object (e.g.:
+Find an object by type on the least loaded node. If the
+registry can't figure out the node that hosts the object (e.g.,
 if the object was registered with a direct proxy), the registry
-assumes the object is hosted on a node which has a load average
+assumes the object is hosted on a node that has a load average
 of 1.0.</para>
 	<section>
 	    <title>Parameters</title>
@@ -13029,8 +13031,8 @@ observer implementation.</para>
 		    <term><parameter>serial</parameter></term>
 		    <listitem>
 			<para>
-			    The current serial of the registry database. This
-serial allows observers to make sure that their internal state
+			    The current serial number of the registry database. This
+serial number allows observers to make sure that their internal state
 is synchronized with the registry.</para>
 		    </listitem>
 		</varlistentry>
@@ -13318,7 +13320,7 @@ Dynamic information about the state of a server.</para>
 		    <term><link linkend="IceGrid.ServerDynamicInfo.enabled"><type>enabled</type></link></term>
 		    <listitem>
 			<para>
-Whether or not the server is enabled or disabled.</para>
+Indicates whether the server is enabled.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -13349,7 +13351,7 @@ The state of the server.</para>
 	<title><literal>enabled</literal></title>
 <synopsis><type>bool</type> <structfield>enabled</structfield>;</synopsis>
 	<para>
-Whether or not the server is enabled or disabled.</para>
+Indicates whether the server is enabled.</para>
     </section>
     <section id="IceGrid.ServerDynamicInfo.id">
 	<title><literal>id</literal></title>
@@ -13376,7 +13378,7 @@ The state of the server.</para>
 	<title>Overview</title>
 <synopsis>struct <structname>ServerInfo</structname></synopsis>
 	<para>
-Information on a server managed by an IceGrid node.</para>
+Information about a server managed by an &IceGrid; node.</para>
 	<section>
 	    <title>Used By</title>
 	    <para>
@@ -13775,8 +13777,7 @@ Add an application.</para>
 		    <term><link linkend="IceGrid.Session.finishUpdate"><function>finishUpdate</function></link></term>
 		    <listitem>
 			<para>
-Finish to update the registry and release the exclusive
-lock.</para>
+Finish updating the registry and release the exclusive lock.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -13797,14 +13798,14 @@ Get the query interface.</para>
 		    <term><link linkend="IceGrid.Session.getTimeout"><function>getTimeout</function></link></term>
 		    <listitem>
 			<para>
-Get the session timeout configure for the node.</para>
+Get the session timeout configured for the node.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
 		    <term><link linkend="IceGrid.Session.keepAlive"><function>keepAlive</function></link></term>
 		    <listitem>
 			<para>
-Keep alive the session.</para>
+Keep the session alive.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -13836,8 +13837,7 @@ or nodes changes.</para>
 		    <term><link linkend="IceGrid.Session.startUpdate"><function>startUpdate</function></link></term>
 		    <listitem>
 			<para>
-Acquires to registry exclusive lock to start updating the
-registry applications.</para>
+Acquires an exclusive lock to start updating the registry applications.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -13886,8 +13886,7 @@ exclusive lock.</para>
     throws
 	<link linkend="IceGrid.AccessDeniedException"><classname>AccessDeniedException</classname></link>;</synopsis>
 	<para>
-Finish to update the registry and release the exclusive
-lock.</para>
+Finish updating the registry and release the exclusive lock.</para>
 	<section>
 	    <title>Exceptions</title>
 	    <variablelist>
@@ -13918,14 +13917,14 @@ Get the query interface.</para>
 	<title><literal>getTimeout</literal></title>
 <synopsis><type>int</type> <function>getTimeout</function>();</synopsis>
 	<para>
-Get the session timeout configure for the node.</para>
+Get the session timeout configured for the node.</para>
     </section>
     <section id="IceGrid.Session.keepAlive">
 	<title><literal>keepAlive</literal></title>
 <synopsis><type>void</type> <function>keepAlive</function>();</synopsis>
 	<para>
-Keep alive the session. Clients should call this method
-regularily to ensure the server won't reap the session.</para>
+Keep the session alive. Clients should call this method
+regularly to prevent the server from reaping the session.</para>
     </section>
     <section id="IceGrid.Session.removeApplication">
 	<title><literal>removeApplication</literal></title>
@@ -13986,7 +13985,7 @@ or nodes changes.</para>
 Set the identities of the observer objects that will receive
 notifications from the servers when the state of the registry
 or nodes changes. This method should be used by clients which
-are using a bi-directional connection to communicate with the
+are using a bidirectional connection to communicate with the
 session.</para>
 	<section>
 	    <title>Parameters</title>
@@ -14014,8 +14013,7 @@ session.</para>
     throws
 	<link linkend="IceGrid.AccessDeniedException"><classname>AccessDeniedException</classname></link>;</synopsis>
 	<para>
-Acquires to registry exclusive lock to start updating the
-registry applications.</para>
+Acquires an exclusive lock to start updating the registry applications.</para>
 	<section>
 	    <title>Return Value</title>
 	    <para>
@@ -14118,7 +14116,7 @@ Create a local session.</para>
 		    <term><parameter>userId</parameter></term>
 		    <listitem>
 			<para>
-			    An identifier to identify the session user.</para>
+			    Identifies the session user.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -14126,7 +14124,7 @@ Create a local session.</para>
 	<section>
 	    <title>Return Value</title>
 	    <para>
-		The proxy on the local session.</para>
+		The proxy of the local session.</para>
 	</section>
     </section>
 </section>

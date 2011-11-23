@@ -44,7 +44,7 @@ RSC=rc.exe
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /c
 # ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I "." /I ".." /I "../../include" /D "_USRDLL" /D "ICE_PATCH2_API_EXPORTS" /D "_CONSOLE" /D "NDEBUG" /D "WIN32_LEAN_AND_MEAN" /FD /c
-# SUBTRACT CPP /Fr /YX
+# SUBTRACT CPP /Z<none> /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -54,8 +54,8 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 libeay32.lib ssleay32.lib libbz2.lib /nologo /dll /incremental:yes /machine:I386 /out:"Release/icepatch230.dll" /implib:"Release/icepatch2.lib" /FIXED:no
-# SUBTRACT LINK32 /pdb:none /debug /nodefaultlib
+# ADD LINK32 libeay32.lib ssleay32.lib libbz2.lib /nologo /dll /pdb:none /machine:I386 /out:"Release/icepatch230.dll" /implib:"Release/icepatch2.lib" /FIXED:no
+# SUBTRACT LINK32 /debug
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
@@ -118,6 +118,10 @@ SOURCE=.\FileServer.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\OS.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Util.cpp
 # End Source File
 # End Group
@@ -135,6 +139,10 @@ SOURCE=..\..\include\icepatch2\FileInfo.h
 # Begin Source File
 
 SOURCE=..\..\include\icepatch2\FileServer.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\OS.h
 # End Source File
 # Begin Source File
 

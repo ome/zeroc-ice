@@ -22,6 +22,8 @@ typedef IceUtil::Handle<TraceLevels> TraceLevelsPtr;
 class ServerI;
 typedef IceUtil::Handle<ServerI> ServerIPtr;
 
+std::string signalToString(int);
+
 class Activator : public IceUtil::Monitor< IceUtil::Mutex>, public IceUtil::Shared
 {
 public:
@@ -62,6 +64,7 @@ private:
 #else
 	pid_t pid;
 	int pipeFd;
+	std::string msg;
 #endif
 	ServerIPtr server;
     };

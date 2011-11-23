@@ -954,7 +954,6 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	}
 	out << nl << "For block__ As Integer = 0 To 0";
 	out.inc();
-        string func = ProxyPtr::dynamicCast(type) ? "read__" : "read";
 	out << nl << "Dim szx__ As Integer = " << stream << ".readSize()";
 	if(!streamingAPI)
 	{
@@ -1025,10 +1024,10 @@ Slice::VbGenerator::toArrayAlloc(const string& decl, const string& sz)
 }
 
 void
-Slice::VbGenerator::validateMetaData(const UnitPtr& unit)
+Slice::VbGenerator::validateMetaData(const UnitPtr& u)
 {
     MetaDataVisitor visitor;
-    unit->visit(&visitor, false);
+    u->visit(&visitor, false);
 }
 
 Slice::VbGenerator::MetaDataVisitor::MetaDataVisitor()

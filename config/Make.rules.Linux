@@ -25,6 +25,19 @@ ifeq ($(CXX),g++)
    CXX			= c++
 endif
 
+#
+# icecpp is built with a C compiler
+#
+CFLAGS = -O2
+
+ifeq ($(MACHINE),x86_64)
+   ifeq ($(LP64),yes)
+      CFLAGS	+= -m64
+   else
+      CFLAGS	+= -m32
+   endif
+endif
+
 ifeq ($(CXX),c++)
 
    ifeq ($(MACHINE),sparc64)
@@ -88,7 +101,7 @@ ifeq ($(CXX),c++)
 
    mklib		= ar cr $(1) $(2)
 
-   LDPLATFORMFLAGS 	= -Xlinker -rpath -Xlinker $(install_libdir)
+   LDPLATFORMFLAGS 	= -Wl,--enable-new-dtags -Wl,-rpath,$(install_libdir)
 
 endif
 

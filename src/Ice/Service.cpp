@@ -7,6 +7,7 @@
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
 #include <IceUtil/CtrlCHandler.h>
 #include <IceUtil/Thread.h>
 #include <IceUtil/Monitor.h>
@@ -668,7 +669,7 @@ Ice::Service::installService(const string& name, const string& display, const st
         hSCM,
         name.c_str(),
         disp.c_str(),
-        SC_MANAGER_ALL_ACCESS,
+        SERVICE_ALL_ACCESS,
         SERVICE_WIN32_OWN_PROCESS,
         SERVICE_AUTO_START,
         SERVICE_ERROR_NORMAL,
@@ -702,7 +703,7 @@ Ice::Service::uninstallService(const string& name)
         return EXIT_FAILURE;
     }
 
-    SC_HANDLE hService = OpenService(hSCM, name.c_str(), SC_MANAGER_ALL_ACCESS);
+    SC_HANDLE hService = OpenService(hSCM, name.c_str(), SERVICE_ALL_ACCESS);
     if(hService == NULL)
     {
         syserror("unable to open service `" + name + "'");
@@ -736,7 +737,7 @@ Ice::Service::startService(const string& name, const vector<string>& args)
         return EXIT_FAILURE;
     }
 
-    SC_HANDLE hService = OpenService(hSCM, name.c_str(), SC_MANAGER_ALL_ACCESS);
+    SC_HANDLE hService = OpenService(hSCM, name.c_str(), SERVICE_ALL_ACCESS);
     if(hService == NULL)
     {
         syserror("unable to open service `" + name + "'");
@@ -749,7 +750,7 @@ Ice::Service::startService(const string& name, const vector<string>& args)
     // in argv[0], so the argv that is passed to StartService() must *not* include the
     // the service name in argv[0].
     //
-    const int argc = args.size();
+    const int argc = static_cast<int>(args.size());
     LPCSTR* argv = new LPCSTR[argc];
     int i = 0;
     for(vector<string>::const_iterator p = args.begin(); p != args.end(); ++p)
@@ -819,7 +820,7 @@ Ice::Service::stopService(const string& name)
         return EXIT_FAILURE;
     }
 
-    SC_HANDLE hService = OpenService(hSCM, name.c_str(), SC_MANAGER_ALL_ACCESS);
+    SC_HANDLE hService = OpenService(hSCM, name.c_str(), SERVICE_ALL_ACCESS);
     if(hService == NULL)
     {
         syserror("unable to open service `" + name + "'");
@@ -1263,7 +1264,7 @@ Ice::Service::serviceMain(int argc, char* argv[])
     {
         args[i++] = argv[j];
     }
-    argc += _serviceArgs.size();
+    argc += static_cast<int>(_serviceArgs.size());
 
     //
     // If we can't initialize a communicator, then stop immediately.

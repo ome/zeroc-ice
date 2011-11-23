@@ -717,10 +717,10 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	        out << fixId(seq->scoped()) << "(szx__)";
 	    }
 	    out << ';';
-	    out << nl << "for(int i__ = 0; i__ < szx__; ++i__)";
+	    out << nl << "for(int ix__ = 0; ix__ < szx__; ++ix__)";
 	    out << sb;
 	    out << nl << "IceInternal.SequencePatcher spx = new IceInternal.SequencePatcher("
-		<< param << ", " << "typeof(" << typeS << "), i__);";
+		<< param << ", " << "typeof(" << typeS << "), ix__);";
 	    out << nl << stream << ".readObject(";
 	    if(streamingAPI)
 	    {
@@ -976,10 +976,10 @@ Slice::CsGenerator::toArrayAlloc(const string& decl, const string& sz)
 }
 
 void
-Slice::CsGenerator::validateMetaData(const UnitPtr& unit)
+Slice::CsGenerator::validateMetaData(const UnitPtr& u)
 {
     MetaDataVisitor visitor;
-    unit->visit(&visitor, true);
+    u->visit(&visitor, true);
 }
 
 Slice::CsGenerator::MetaDataVisitor::MetaDataVisitor()

@@ -7,6 +7,7 @@
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
 #include <Ice/Ice.h>
 #include <IceGrid/Activator.h>
 #include <IceGrid/Admin.h>
@@ -19,8 +20,12 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <signal.h>
 #include <fcntl.h>
+
+#ifndef _WIN32
+#   include <sys/wait.h>
+#   include <signal.h>
+#endif
 
 using namespace std;
 using namespace Ice;
@@ -53,7 +58,7 @@ private:
 
 #define ICE_STRING(X) #X
 
-namespace
+namespace IceGrid
 {
 
 #ifndef _WIN32
@@ -480,6 +485,8 @@ Activator::activate(const string& name,
     //
     // Create the environment block for the child process. We start with the environment
     // of this process, and then merge environment variables from the server description.
+    // Since Windows is case insensitive wrt environment variables we convert the keys to
+    // uppercase to ensure matches are found.
     //
     const char* env = NULL;
     string envbuf;
@@ -505,7 +512,9 @@ Activator::activate(const string& name,
             string::size_type pos = s.find('=');
             if(pos != string::npos)
             {
-                envMap.insert(map<string, string>::value_type(s.substr(0, pos), s.substr(pos + 1)));
+	    	string key = s.substr(0, pos);
+		std::transform(key.begin(), key.end(), key.begin(), toupper);
+                envMap.insert(map<string, string>::value_type(key, s.substr(pos + 1)));
             }
             var += s.size();
             var++; // Skip the '\0' byte
@@ -517,7 +526,10 @@ Activator::activate(const string& name,
             string::size_type pos = s.find('=');
             if(pos != string::npos)
             {
-                envMap.insert(map<string, string>::value_type(s.substr(0, pos), s.substr(pos + 1)));
+	        string key = s.substr(0, pos);
+		std::transform(key.begin(), key.end(), key.begin(), toupper);
+		envMap.erase(key);
+                envMap.insert(map<string, string>::value_type(key, s.substr(pos + 1)));
             }
         }
         for(map<string, string>::const_iterator q = envMap.begin(); q != envMap.end(); ++q)
@@ -734,7 +746,7 @@ Activator::deactivate(const string& name, const Ice::ProcessPrx& process)
 	//
 	return;
     }
-#endif 
+#endif
 
     //
     // Try to shut down the server gracefully using the process proxy.
@@ -812,16 +824,9 @@ Activator::kill(const string& name)
         throw ex;
     }
 
-    BOOL b = TerminateProcess(hnd, 1);
+    BOOL b = TerminateProcess(hnd, 0); // We use 0 for the exit code to make sure it's not considered as a crash.
 
     CloseHandle(hnd);
-
-    if(!b)
-    {
-        SyscallException ex(__FILE__, __LINE__);
-        ex.error = getSystemErrno();
-        throw ex;
-    }
 
     if(_traceLevels->activator > 1)
     {
@@ -954,19 +959,23 @@ Activator::destroy()
 void
 Activator::runTerminationListener()
 {
-    try
+    while(true)
     {
-	terminationListener();
-    }
-    catch(const Exception& ex)
-    {
-	Error out(_traceLevels->logger);
-	out << "exception in process termination listener:\n" << ex;
-    }
-    catch(...)
-    {
-	Error out(_traceLevels->logger);
-	out << "unknown exception in process termination listener";
+	try
+	{
+	    terminationListener();
+	    break;
+	}
+	catch(const Exception& ex)
+	{
+	    Error out(_traceLevels->logger);
+	    out << "exception in process termination listener:\n" << ex;
+	}
+	catch(...)
+	{
+	    Error out(_traceLevels->logger);
+	    out << "unknown exception in process termination listener";
+	}
     }
 }
 
@@ -1032,7 +1041,7 @@ Activator::terminationListener()
         //
         // Wait for a child to terminate, or the interrupt event to be signaled.
         //
-        DWORD ret = WaitForMultipleObjects(handles.size(), &handles[0], FALSE, INFINITE);
+        DWORD ret = WaitForMultipleObjects(static_cast<DWORD>(handles.size()), &handles[0], FALSE, INFINITE);
         if(ret == WAIT_FAILED)
         {
             SyscallException ex(__FILE__, __LINE__);
@@ -1044,7 +1053,7 @@ Activator::terminationListener()
         assert(pos < handles.size());
         HANDLE hnd = handles[pos];
 
-	vector<ServerIPtr> terminated;
+	vector<Process> terminated;
 	bool deactivated = false;
 	{
 	    IceUtil::Monitor< IceUtil::Mutex>::Lock sync(*this);
@@ -1059,15 +1068,7 @@ Activator::terminationListener()
 		{
 		    if(p->second.hnd == hnd)
 		    {
-			if(_traceLevels->activator > 0)
-			{
-			    Ice::Trace out(_traceLevels->logger, _traceLevels->activatorCat);
-			    out << "detected termination of server `" << p->first << "'";
-			}
-			
-			terminated.push_back(p->second.server);
-			
-			CloseHandle(hnd);
+			terminated.push_back(p->second);
 			_processes.erase(p);
 			break;
 		    }
@@ -1077,16 +1078,31 @@ Activator::terminationListener()
 	    deactivated = _deactivating && _processes.empty();
 	}
 	
-	for(vector<ServerIPtr>::const_iterator p = terminated.begin(); p != terminated.end(); ++p)
+	for(vector<Process>::const_iterator p = terminated.begin(); p != terminated.end(); ++p)
 	{
+	    DWORD status;
+	    BOOL b = GetExitCodeProcess(p->hnd, &status);
+	    CloseHandle(p->hnd);
+	    assert(status != STILL_ACTIVE);
+
+	    if(_traceLevels->activator > 0)
+	    {
+		Ice::Trace out(_traceLevels->logger, _traceLevels->activatorCat);
+		out << "detected termination of server `" << p->server->getId() << "'";
+		if(status != 0)
+		{
+		    out << "\nexit code = " << status;
+		}
+	    }
+
 	    try
 	    {
-		(*p)->terminated();
+		p->server->terminated("", status);
 	    }
 	    catch(const Ice::LocalException& ex)
 	    {
 		Ice::Warning out(_traceLevels->logger);
-		out << "unexpected exception raised by server `" << (*p)->getId() << "' termination:\n" << ex;
+		out << "unexpected exception raised by server `" << p->server->getId() << "' termination:\n" << ex;
 	    }
 	}
 
@@ -1140,7 +1156,7 @@ Activator::terminationListener()
 	    throw ex;
 	}
 	
-	vector<ServerIPtr> terminated;
+	vector<Process> terminated;
 	bool deactivated = false;
 	{
 	    IceUtil::Monitor< IceUtil::Mutex>::Lock sync(*this);
@@ -1177,6 +1193,14 @@ Activator::terminationListener()
 		    message.append(s, rs);
 		}
 
+		//
+		// Keep the received message.
+		//
+		if(!message.empty())
+		{
+		    p->second.msg += message;
+		}
+
 		if(rs == -1)
 		{
 		    if(errno != EAGAIN || message.empty())
@@ -1194,25 +1218,10 @@ Activator::terminationListener()
 		    // If the pipe was closed, the process has terminated.
 		    //
 
-		    if(_traceLevels->activator > 0)
-		    {
-			Ice::Trace out(_traceLevels->logger, _traceLevels->activatorCat);
-                        out << "detected termination of server `" << p->first << "'";
-		    }
-
-		    terminated.push_back(p->second.server);
+		    terminated.push_back(p->second);
     
 		    close(p->second.pipeFd);
 		    _processes.erase(p++);
-		}
-
-		//
-		// Log the received message.
-		//
-		if(!message.empty())
-		{
-		    Error out(_traceLevels->logger);
-		    out << message;
 		}
 	    }
 
@@ -1222,16 +1231,60 @@ Activator::terminationListener()
 	    deactivated = _deactivating && _processes.empty();
 	}
 	
-	for(vector<ServerIPtr>::const_iterator p = terminated.begin(); p != terminated.end(); ++p)
+	for(vector<Process>::const_iterator p = terminated.begin(); p != terminated.end(); ++p)
 	{
+	    int status = 0;
+	    pid_t pid = waitpid(p->pid, &status, 0);
+#ifdef __linux
+	    //
+	    // Calling waitpid() in a LinuxThreads environment fails with ECHILD
+	    // if the calling thread is not the one that forked the child. We
+	    // ignore this error; a signal handler installed by the main
+	    // program ensures we don't create zombies. This limitation means
+	    // that DisableOnFailure does not work under LinuxThreads.
+	    //
+	    if(pid < 0 && getSystemErrno() != ECHILD)
+	    {
+		SyscallException ex(__FILE__, __LINE__);
+		ex.error = getSystemErrno();
+		throw ex;
+	    }
+#else
+	    if(pid < 0)
+	    {
+		SyscallException ex(__FILE__, __LINE__);
+		ex.error = getSystemErrno();
+		throw ex;
+	    }
+	    assert(pid == p->pid);
+#endif
+
+	    if(_traceLevels->activator > 0)
+	    {
+		Ice::Trace out(_traceLevels->logger, _traceLevels->activatorCat);
+		out << "detected termination of server `" << p->server->getId() << "'";
+		if(!p->msg.empty())
+		{
+		    out << "\nreason = " << p->msg;
+		}
+		if(WIFEXITED(status) && status != 0)
+		{
+		    out << "\nexit code = " << WEXITSTATUS(status);
+		}
+		else if(WIFSIGNALED(status))
+		{
+		    out << "\nsignal = " << signalToString(WTERMSIG(status));
+		}
+	    }
+
 	    try
 	    {
-		(*p)->terminated();
+		p->server->terminated(p->msg, status);
 	    }
 	    catch(const Ice::LocalException& ex)
 	    {
 		Ice::Warning out(_traceLevels->logger);
-		out << "unexpected exception raised by server `" << (*p)->getId() << "' termination:\n" << ex;
+		out << "unexpected exception raised by server `" << p->server->getId() << "' termination:\n" << ex;
 	    }
 	}
 

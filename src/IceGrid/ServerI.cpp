@@ -24,7 +24,10 @@
 
 #ifdef _WIN32
 #   include <direct.h>
+#   include <signal.h>
 #else
+#   include <sys/wait.h>
+#   include <signal.h>
 #   include <unistd.h>
 #   include <dirent.h>
 #endif
@@ -493,11 +496,14 @@ ServerI::ServerI(const NodeIPtr& node, const ServerPrx& proxy, const string& ser
     _id(id),
     _waitTime(wt),
     _serversDir(serversDir),
+    _disableOnFailure(0),
     _state(ServerI::Inactive),
     _activation(ServerI::Manual),
     _pid(0)
 {
     assert(_node->getActivator());
+    const_cast<int&>(_disableOnFailure) = 
+	_node->getCommunicator()->getProperties()->getPropertyAsIntWithDefault("IceGrid.Node.DisableOnFailure", 0);
 }
 
 ServerI::~ServerI()
@@ -511,15 +517,15 @@ ServerI::start_async(const AMD_Server_startPtr& amdCB, const Ice::Current&)
     {
 	Lock sync(*this);
 	checkDestroyed();
-	if(_state == Destroying)
-	{
-	    throw ServerStartException(_id, "The server is being destroyed.");
-	}
-	
+
 	//
-	// If the amd callback is set, it's a remote start call to
-	// manually activate the server. Otherwise it's a call to
-	// activate the server on demand (called from ServerAdapterI).
+	// Re-enable the server if disabled because of a failure and if
+	// activated manually.
+	//
+	enableAfterFailure(amdCB);
+
+	//
+	// Check the current activation mode and the requested activation.
 	//
 	if(_activation == Disabled)
 	{
@@ -529,13 +535,21 @@ ServerI::start_async(const AMD_Server_startPtr& amdCB, const Ice::Current&)
 	{
 	    throw ServerStartException(_id, "The server activation doesn't allow this activation mode.");
 	}
-	else if(_state == ActivationTimeout)
+
+	//
+	// Check the current state.
+	//
+	if(_state == ActivationTimeout)
 	{
 	    throw ServerStartException(_id, "The server activation timed out.");
 	}
 	else if(_state == Active)
 	{
 	    throw ServerStartException(_id, "The server is already active.");
+	}
+	else if(_state == Destroying)
+	{
+	    throw ServerStartException(_id, "The server is being destroyed.");
 	}
 
 	if(!_start)
@@ -625,10 +639,13 @@ ServerI::setEnabled(bool enabled, const ::Ice::Current&)
 {
     {
 	Lock sync(*this);
-	if(enabled && _activation < Disabled || !enabled && _activation == Disabled)
+	if(enabled && _activation < Disabled || 
+	   !enabled && _activation == Disabled && _failureTime == IceUtil::Time())
 	{
 	    return;
 	}
+
+	_failureTime = IceUtil::Time();
 	_activation = enabled ? (_desc->activation  == "on-demand" ? OnDemand : Manual) : Disabled;
     }
     
@@ -688,7 +705,7 @@ ServerI::ServerActivation
 ServerI::getActivationMode() const
 {
     Lock sync(*this);
-    return _activation;
+    return _desc->activation  == "on-demand" ? OnDemand : Manual;
 }
 
 const string&
@@ -843,6 +860,33 @@ ServerI::checkDestroyed()
 	Ice::ObjectNotExistException ex(__FILE__, __LINE__);
 	ex.id = _this->ice_getIdentity();
 	throw ex;
+    }
+}
+
+void
+ServerI::disableOnFailure()
+{
+    if(_disableOnFailure != 0 && _activation != Disabled)
+    {
+	_previousActivation = _activation;
+	_activation = Disabled;
+	_failureTime = IceUtil::Time::now();
+    }
+}
+
+void
+ServerI::enableAfterFailure(bool force)
+{
+    if(_disableOnFailure == 0 || _failureTime == IceUtil::Time())
+    {
+	return;
+    }
+
+    if(force || 
+       _disableOnFailure > 0 && (_failureTime + IceUtil::Time::seconds(_disableOnFailure) < IceUtil::Time::now()))
+    {
+	_activation = _previousActivation;
+	_failureTime = IceUtil::Time();
     }
 }
 
@@ -1015,6 +1059,20 @@ ServerI::activate()
 	os << ex;
 	failure = os.str();
     }
+
+    ServerCommandPtr command;
+    {
+	Lock sync(*this);
+	disableOnFailure();
+	setStateNoSync(ServerI::Inactive, failure);
+	command = nextCommand();
+    }
+
+    //
+    // It's important to notify the adapters after changing the state!
+    // Otherwise, a race condition could occur if an adapter is
+    // activated after the notification and the state change.
+    //
     for(ServerAdapterDict::iterator r = adpts.begin(); r != adpts.end(); ++r)
     {
 	try
@@ -1025,7 +1083,11 @@ ServerI::activate()
 	{
 	}
     }    
-    setState(ServerI::Inactive, failure);
+
+    if(command)
+    {
+	command->execute();
+    }
 }
 
 void
@@ -1140,7 +1202,7 @@ ServerI::destroy()
 }
 
 void
-ServerI::terminated()
+ServerI::terminated(const string& msg, int status)
 {
     ServerAdapterDict adpts;
     {
@@ -1175,9 +1237,40 @@ ServerI::terminated()
 	_process = 0;
 	_pid = 0;
 
+	bool failed = false;
+#ifndef _WIN32
+	failed = WIFEXITED(status) && WEXITSTATUS(status) != 0;
+	if(WIFSIGNALED(status))
+	{
+	    int s = WTERMSIG(status);
+	    failed = s == SIGABRT || s == SIGILL || s == SIGBUS || s == SIGFPE || s == SIGSEGV;
+	}
+#else
+	failed = status != 0;
+#endif
+	if(failed)
+	{
+	    disableOnFailure();
+	}
+	
 	if(_state != ServerI::Destroying)
 	{
-	    setStateNoSync(ServerI::Inactive, "The server terminated unexpectedly.");
+	    ostringstream os;
+	    os << "The server terminated unexpectedly";
+#ifndef _WIN32
+	    if(WIFEXITED(status))
+	    {
+		os << " with exit code " << WEXITSTATUS(status);
+	    }
+	    else if(WIFSIGNALED(status))
+	    {
+		os << " with signal " << signalToString(WTERMSIG(status));
+	    }
+#else
+	    os << " with exit code " << status;
+#endif
+	    os << (msg.empty() ? "." : ":\n" + msg);
+	    setStateNoSync(ServerI::Inactive, os.str());
 	    command = nextCommand();
 	}
 	else
@@ -1321,7 +1414,8 @@ ServerI::updateImpl()
 	    knownFiles.push_back("config_" + p->descriptor->name);
 	}
     }
-
+    sort(knownFiles.begin(), knownFiles.end());
+    
     //
     // Remove old configuration files.
     //
@@ -1367,6 +1461,7 @@ ServerI::updateImpl()
 	    }
 	}
     }
+    sort(knownDbEnvs.begin(), knownDbEnvs.end());
 
     //
     // Remove old database environments.
@@ -1734,7 +1829,7 @@ ServerI::addAdapter(const AdapterDescriptor& desc, const CommunicatorDescriptorP
     assert(!desc.id.empty());
 
     Ice::Identity id;
-    id.category = "IceGridServerAdapter";
+    id.category = _this->ice_getIdentity().category + "Adapter";
     id.name = _desc->id + "-" + desc.id;
     AdapterPrx proxy = AdapterPrx::uncheckedCast(_node->getAdapter()->createProxy(id));
     ServerAdapterIPtr servant = ServerAdapterIPtr::dynamicCast(_node->getAdapter()->find(id));
@@ -1778,7 +1873,8 @@ ServerI::updateConfigFile(const string& serverDir, const CommunicatorDescriptorP
 	    {
 		ServiceDescriptorPtr s = ServiceDescriptorPtr::dynamicCast(p->descriptor);
 		const string path = serverDir + "/config/config_" + s->name;
-		props.push_back(createProperty("IceBox.Service." + s->name, s->entry + " --Ice.Config=" + path));
+		props.push_back(createProperty("IceBox.Service." + s->name, 
+					       s->entry + " --Ice.Config=" + path));
 		servicesStr += s->name + " ";
 	    }
 	    props.push_back(createProperty("IceBox.LoadOrder", servicesStr));

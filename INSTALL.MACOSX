@@ -6,13 +6,13 @@ Requirements
 Operating System
 ----------------
 
-MacOS X 10.3.x
+MacOS X 10.3.x or 10.4.x
 
 
 C++ compiler
 ------------
 
-GCC 3.3
+GCC 3.3 or 4.0.1
 
 
 Third-party libraries
@@ -39,11 +39,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ tar xvfz Ice-3.0.0.tar.gz
+$ tar xvfz Ice-3.0.1.tar.gz
 
-Change the working directory to Ice-3.0.0:
+Change the working directory to Ice-3.0.1:
 
-$ cd Ice-3.0.0
+$ cd Ice-3.0.1
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular
@@ -84,7 +84,7 @@ specified by the "prefix" variable in config/Make.rules.
 
 After installation, make sure that the <prefix>/bin directory is in
 your PATH, and the <prefix>/lib directory is in your
-DYLD_LIBRARY_PATH. When compiling Ice programs, you must also make
-sure to pass the location of the <prefix>/include directory to the
-compiler with the -I option, and the location of the <prefix>/lib
-directory with the -L option.
+DYLD_LIBRARY_PATH. When compiling Ice programs, you must pass the
+location of the <prefix>/include directory to the compiler with the -I
+option, and the location of the <prefix>/lib directory with the -L
+option.

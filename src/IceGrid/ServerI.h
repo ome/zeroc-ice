@@ -100,13 +100,15 @@ public:
     void deactivate();
     void update();
     void destroy();
-    void terminated();
+    void terminated(const std::string&, int);
 
 private:
     
     void updateImpl();
     void checkActivation();
     void checkDestroyed();
+    void disableOnFailure();
+    void enableAfterFailure(bool);
 
     void setState(InternalServerState, const std::string& = std::string());
     ServerCommandPtr nextCommand();
@@ -124,6 +126,7 @@ private:
     const std::string _id;
     const Ice::Int _waitTime;
     const std::string _serversDir;
+    const int _disableOnFailure;
 
     std::string _serverDir;
     std::string _application;
@@ -137,6 +140,8 @@ private:
     bool _processRegistered;
     Ice::ProcessPrx _process;
     std::set<std::string> _activeAdapters;
+    IceUtil::Time _failureTime;
+    ServerActivation _previousActivation;
 
     DestroyCommandPtr _destroy;
     StopCommandPtr _stop;

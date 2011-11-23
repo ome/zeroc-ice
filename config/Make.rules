@@ -12,7 +12,7 @@
 # if it does not exist.
 #
 
-prefix			= /opt/Ice-$(VERSION)
+prefix			?= /opt/Ice-$(VERSION)
 
 #
 # Define OPTIMIZE as yes if you want to build with
@@ -138,14 +138,14 @@ KERBEROS_HOME		?= /usr/kerberos
 # ----------------------------------------------------------------------
 
 SHELL			= /bin/sh
-VERSION			= 3.0.0
+VERSION			= 3.0.1
 SOVERSION		= 30
 bindir			= $(top_srcdir)/bin
 libdir			= $(top_srcdir)/lib
 includedir		= $(top_srcdir)/include
 slicedir		= $(top_srcdir)/slice
 
-install_bindir	= $(prefix)/bin
+install_bindir		= $(prefix)/bin
 
 ifeq ($(LP64),yes)
     install_libdir	= $(prefix)/lib$(lp64suffix)

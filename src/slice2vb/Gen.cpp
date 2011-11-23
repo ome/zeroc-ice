@@ -7,6 +7,7 @@
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
 #include <IceUtil/Functional.h>
 #include <Gen.h>
 #include <limits>
@@ -219,15 +220,17 @@ Slice::VbVisitor::writeDispatch(const ClassDefPtr& p)
     _out << nl << "{ _";
     _out.inc();
 
-    StringList::const_iterator q = ids.begin();
-    while(q != ids.end())
     {
-        _out << nl << '"' << *q << '"';
-	if(++q != ids.end())
+	StringList::const_iterator q = ids.begin();
+	while(q != ids.end())
 	{
-	    _out << ',';
+	    _out << nl << '"' << *q << '"';
+	    if(++q != ids.end())
+	    {
+		_out << ',';
+	    }
+	    _out << " _";
 	}
-	_out << " _";
     }
     _out.dec();
     _out << nl << '}';
@@ -987,7 +990,7 @@ Slice::Gen::generateChecksums(const UnitPtr& p)
     ChecksumMap map = createChecksums(p);
     if(!map.empty())
     {
-        string className = "_" + IceUtil::generateUUID();
+        string className = "X" + IceUtil::generateUUID();
         for(string::size_type pos = 1; pos < className.size(); ++pos)
         {
             if(!isalnum(className[pos]))
@@ -1006,15 +1009,15 @@ Slice::Gen::generateChecksums(const UnitPtr& p)
 	     << " = new _System.Collections.Hashtable()";
         _out << sp << nl << "Shared Sub New()";
         _out.inc();
-        for(ChecksumMap::const_iterator p = map.begin(); p != map.end(); ++p)
+        for(ChecksumMap::const_iterator q = map.begin(); q != map.end(); ++q)
         {
-            _out << nl << "map.Add(\"" << p->first << "\", \"";
+            _out << nl << "map.Add(\"" << q->first << "\", \"";
             ostringstream str;
             str.flags(ios_base::hex);
             str.fill('0');
-            for(vector<unsigned char>::const_iterator q = p->second.begin(); q != p->second.end(); ++q)
+            for(vector<unsigned char>::const_iterator r = q->second.begin(); r != q->second.end(); ++r)
             {
-                str << (int)(*q);
+                str << (int)(*r);
             }
             _out << str.str() << "\")";
         }
@@ -1339,7 +1342,6 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	writeDispatch(p);
 
 	DataMemberList members = p->dataMembers();
-	DataMemberList::const_iterator d;
 
 	_out.zeroIndent();
 	_out << sp << nl << "#Region \"Marshaling support\"";
@@ -1842,8 +1844,8 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
 
     _out << sp << nl << "Public Shared Function Repeat(ByVal value As " << s << ", ByVal count As Integer) As " << name;
     _out.inc();
-    _out << nl << "Dim r As " << name << " = New " << name << "()";
-    _out << nl << "For i As Integer = 0 To Count - 1";
+    _out << nl << "Dim r As " << name << " = New " << name << "(count)";
+    _out << nl << "For i As Integer = 0 To count - 1";
     _out.inc();
     _out << nl << "r.Add(value)";
     _out.dec();
@@ -1990,7 +1992,9 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
 
     _out << sp << nl << "Function Clone() As Object Implements _System.ICloneable.Clone";
     _out.inc();
-    _out << nl << "Return MemberwiseClone()";
+    _out << nl << "Dim s As " << name << " = New " << name;
+    _out << nl << "s.InnerList.AddRange(InnerList)";
+    _out << nl << "Return s";
     _out.dec();
     _out << nl << "End Function";
 
@@ -2043,11 +2047,16 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
     _out.inc();
     if(!isValue)
     {
-	_out << nl << "If InnerList(i__) Is Nothing And Not CType(other, " << name << ")(i__) Is Nothing Then";
+	_out << nl << "If InnerList(i__) Is Nothing Then";
+	_out.inc();
+	_out << nl << "If Not CType(other, " << name << ")(i__) Is Nothing Then";
 	_out.inc();
 	_out << nl << "Return False";
 	_out.dec();
 	_out << nl << "End If";
+	_out.dec();
+	_out << nl << "Else";
+	_out.inc();
     }
     _out << nl << "If Not CType(InnerList(i__), Integer).Equals(CType(other, " << name << ")(i__)) Then";
     _out.inc();
@@ -2055,6 +2064,11 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
     _out.dec();
     _out << nl << "End If";
     _out.dec();
+    if(!isValue)
+    {
+        _out.dec();
+	_out << nl << "End If";
+    }
     _out << nl << "Next";
     _out << nl << "Return True";
     _out.dec();
@@ -2200,14 +2214,27 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
     _out << nl << "End If";
     _out << nl << "If Not TypeOf other__ Is " << name << " Then";
     _out.inc();
-    _out << nl << "Throw New _System.ArgumentException(\"expected argument of type `" << p->name()
-         << "'\", \"other__\")";
+    _out << nl << "Return False";
     _out.dec();
     _out << nl << "End If";
     for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
     {
         string memberName = fixId((*q)->name(), DotNet::ApplicationException);
+	bool isValue = isValueType((*q)->type());
 
+	if(!isValue)
+	{
+	    _out << nl << "If " << memberName << " Is Nothing";
+	    _out.inc();
+	    _out << nl << "If Not CType(other__, " << name << ")." << memberName << " Is Nothing";
+	    _out.inc();
+	    _out << nl << "Return False";
+	    _out.dec();
+	    _out << nl << "End If";
+	    _out.dec();
+	    _out << nl << "Else";
+	    _out.inc();
+	}
 	ClassDeclPtr cl = ClassDeclPtr::dynamicCast((*q)->type());
 	if(cl && cl->isInterface()) // Bug in VB 7.1: cast should not be necessary.
 	{
@@ -2230,6 +2257,11 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	_out << nl << "Return False";
 	_out.dec();
 	_out << nl << "End If";
+	if(!isValue)
+	{
+	    _out.dec();
+	    _out << nl << "End If";
+	}
     }
     _out << nl << "Return True";
     _out.dec();
@@ -2423,7 +2455,6 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	    //
 	    // Emit placeholder functions to catch errors.
 	    //
-            string scoped = p->scoped();
 	    _out << sp << nl << "Public Overloads Overrides Sub write__(ByVal outS__ As Ice.OutputStream)";
 	    _out.inc();
 	    _out << nl << "Dim ex As Ice.MarshalException = New Ice.MarshalException";
@@ -3011,7 +3042,13 @@ Slice::Gen::TypesVisitor::visitDictionary(const DictionaryPtr& p)
 
     _out << sp << nl << "Function Clone() As Object Implements _System.ICloneable.Clone";
     _out.inc();
-    _out << nl << "Return MemberwiseClone()";
+    _out << nl << "Dim d As " << name << " = New " << name;
+    _out << nl << "For Each e As _System.Collections.DictionaryEntry in d";
+    _out.inc();
+    _out << nl << "d.InnerHashtable.Add(e.Key, e.Value)";
+    _out.dec();
+    _out << nl << "Next";
+    _out << nl << "Return d";
     _out.dec();
     _out << nl << "End Function";
 
@@ -3527,7 +3564,7 @@ Slice::Gen::OpsVisitor::writeOperations(const ClassDefPtr& p, bool noCurrent)
     {
 	OperationPtr op = *r;
 	bool amd = !p->isLocal() && (p->hasMetaData("amd") || op->hasMetaData("amd"));
-	string name = amd ? (op->name() + "_async") : fixId(op->name(), DotNet::ICloneable, true);
+	string opname = amd ? (op->name() + "_async") : fixId(op->name(), DotNet::ICloneable, true);
 
 	TypePtr ret;
 	vector<string> params;
@@ -3546,7 +3583,7 @@ Slice::Gen::OpsVisitor::writeOperations(const ClassDefPtr& p, bool noCurrent)
 
 	_out << sp << nl;
 	emitAttributes(op);
-	_out << vbOp << ' ' << name << spar << params;
+	_out << vbOp << ' ' << opname << spar << params;
 	if(!noCurrent && !p->isLocal())
 	{
 	    _out << "ByVal current__ As Ice.Current";
@@ -3735,7 +3772,6 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
 	         << "ByVal ctx__ As Ice.Context" << epar
 	         << " Implements " << name << "Prx." << opName << "_async"; // TODO: should be containing class?
 	    _out.inc();
-	    _out << nl << "checkTwowayOnly__(\"" << p->name() << "\")";
 	    _out << nl << "cb__.invoke__" << spar << "Me" << argsAMI << "ctx__" << epar;
 	    _out.dec();
 	    _out << nl << "End Sub";
@@ -4815,6 +4851,7 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	_out << nl << "Try";
 	_out.inc();
 	_out << nl << "prepare__(prx__, \"" << p->name() << "\", " << sliceModeToIceMode(p) << ", ctx__)";
+	if(p->returnsData())
 	for(q = inParams.begin(); q != inParams.end(); ++q)
 	{
 	    string typeS = typeToString(q->first);
@@ -4836,7 +4873,7 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	_out.dec();
 	_out << nl << "End Sub";
 
-	_out << sp << nl << "Protected Overrides Sub response__(ok__ As Boolean) As Boolean";
+	_out << sp << nl << "Protected Overrides Sub response__(ByVal ok__ As Boolean)";
 	_out.inc();
         for(q = outParams.begin(); q != outParams.end(); ++q)
         {
@@ -4902,19 +4939,20 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
    	_out.dec();
 	_out << nl << "Catch ex__ As Ice.LocalException";
 	_out.inc();
-	_out << nl << "Return finished__(ex__)";
+	_out << nl << "finished__(ex__)";
+	_out << nl << "Return";
 	_out.dec();
 	if(!throws.empty())
 	{
 	    _out << nl << "Catch ex__ As Ice.UserException";
 	    _out.inc();
 	    _out << nl << "ice_exception(ex__)";
-	    _out << nl << "Return False";
+	    _out << nl << "Return";
 	    _out.dec();
 	}
 	_out << nl << "End Try";
 	_out << nl << "ice_response" << spar << args << epar;
-	_out << nl << "Return False";
+	_out << nl << "Return";
 	_out.dec();
 	_out << nl << "End Sub";
 	_out.dec();
@@ -5429,7 +5467,7 @@ Slice::Gen::BaseImplVisitor::writeOperation(const OperationPtr& op, bool comment
 	    }
 	}
 	_out.inc();
-	for(ParamDeclList::const_iterator i = params.begin(); i != params.end(); ++i)
+	for(i = params.begin(); i != params.end(); ++i)
 	{
 	    if((*i)->isOutParam())
 	    {

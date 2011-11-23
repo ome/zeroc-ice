@@ -7,6 +7,7 @@
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
 #include <Ice/ConnectionI.h>
 #include <Ice/Instance.h>
 #include <Ice/LoggerUtil.h>
@@ -67,7 +68,16 @@ Ice::ConnectionI::validate()
 		return;
 	    }
 	    
-	    assert(_state == StateNotValidated);
+	    //
+	    // The connection might already be closed (e.g.: the communicator 
+	    // was destroyed or object adapter deactivated.)
+	    //
+	    assert(_state == StateNotValidated || _state == StateClosed);
+	    if(_state == StateClosed)
+	    {
+		assert(_exception.get());
+		_exception->ice_throw();
+	    }
 	    
 	    if(_adapter)
 	    {
@@ -966,11 +976,11 @@ Ice::ConnectionI::flushBatchRequests()
 	    // No compression, just fill in the message size.
 	    //
 	    Int sz = static_cast<Int>(_batchStream.b.size());
-	    const Byte* p = reinterpret_cast<const Byte*>(&sz);
+	    const Byte* q = reinterpret_cast<const Byte*>(&sz);
 #ifdef ICE_BIG_ENDIAN
-	    reverse_copy(p, p + sizeof(Int), _batchStream.b.begin() + 10);
+	    reverse_copy(q, q + sizeof(Int), _batchStream.b.begin() + 10);
 #else
-	    copy(p, p + sizeof(Int), _batchStream.b.begin() + 10);
+	    copy(q, q + sizeof(Int), _batchStream.b.begin() + 10);
 #endif
 	    
 	    //

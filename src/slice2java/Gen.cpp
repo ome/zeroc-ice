@@ -7,6 +7,7 @@
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
 #include <Gen.h>
 #include <Slice/Checksum.h>
 #include <IceUtil/Functional.h>
@@ -481,7 +482,6 @@ Slice::JavaVisitor::writeDispatch(Output& out, const ClassDefPtr& p)
 	    //
 	    // The operation is not defined in this class.
 	    //
-	    ClassList bases = p->bases();
 	    if(!bases.empty())
 	    {
 	        //
@@ -526,7 +526,7 @@ Slice::JavaVisitor::writeDispatch(Output& out, const ClassDefPtr& p)
 	    out << sb << nl;
 	    if(ret)
 	    {
-		out << nl << "return ";
+		out << "return ";
 	    }
 	    out << opName << spar << args << "null" << epar << ';';
 	    out << eb;
@@ -1111,7 +1111,7 @@ Slice::Gen::OpsVisitor::writeOperations(const ClassDefPtr& p, bool noCurrent)
 	OperationPtr op = *r;
         ContainerPtr container = op->container();
 	ClassDefPtr cl = ClassDefPtr::dynamicCast(container);
-	string name = op->name();
+	string opname = op->name();
 
 	TypePtr ret;
 	vector<string> params;
@@ -1133,7 +1133,7 @@ Slice::Gen::OpsVisitor::writeOperations(const ClassDefPtr& p, bool noCurrent)
 	ExceptionList throws = op->throws();
 	throws.sort();
 	throws.unique();
-	out << sp << nl << retS << ' ' << (amd ? name + "_async" : fixKwd(name)) << spar << params;
+	out << sp << nl << retS << ' ' << (amd ? opname + "_async" : fixKwd(opname)) << spar << params;
 	if(!noCurrent && !p->isLocal())
 	{
 	    out << "Ice.Current __current";
@@ -1690,7 +1690,7 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
 	out << nl << "__is.startReadSlice();";
         iter = 0;
 	DataMemberList classMembers = p->classDataMembers();
-	long classMemberCount = allClassMembers.size() - classMembers.size();
+	size_t classMemberCount = allClassMembers.size() - classMembers.size();
         for(d = members.begin(); d != members.end(); ++d)
         {
             StringList metaData = (*d)->getMetaData();
@@ -2001,7 +2001,7 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	out << nl << "__is.startReadSlice();";
         iter = 0;
 	DataMemberList classMembers = p->classDataMembers();
-	long classMemberCount = allClassMembers.size() - classMembers.size();
+	size_t classMemberCount = allClassMembers.size() - classMembers.size();
         for(d = members.begin(); d != members.end(); ++d)
         {
 	    ostringstream patchParams;
@@ -2079,7 +2079,6 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
             //
             // Emit placeholder functions to catch errors.
             //
-            string scoped = p->scoped();
             out << sp << nl << "public void" << nl << "__write(Ice.OutputStream __outS)";
             out << sb;
             out << nl << "Ice.MarshalException ex = new Ice.MarshalException();";
@@ -2168,6 +2167,10 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 
     out << sp << nl << "public boolean" << nl << "equals(java.lang.Object rhs)";
     out << sb;
+    out << nl << "if(this == rhs)";
+    out << sb;
+    out << nl << "return true;";
+    out << eb;
     out << nl << typeS << " _r = null;";
     out << nl << "try";
     out << sb;
@@ -2454,9 +2457,116 @@ Slice::Gen::TypesVisitor::visitDataMember(const DataMemberPtr& p)
     ContainerPtr container = p->container();
     ContainedPtr contained = ContainedPtr::dynamicCast(container);
     StringList metaData = p->getMetaData();
-    string s = typeToString(p->type(), TypeModeMember, getPackage(contained), metaData);
+    TypePtr type = p->type();
+    string s = typeToString(type, TypeModeMember, getPackage(contained), metaData);
     Output& out = output();
     out << sp << nl << "public " << s << ' ' << name << ';';
+
+    //
+    // Getter/Setter.
+    //
+    if(p->hasMetaData(_getSetMetaData) || contained->hasMetaData(_getSetMetaData))
+    {
+	string capName = p->name();
+	capName[0] = toupper(capName[0]);
+
+	//
+	// If container is a class, get all of its operations so that we can check for conflicts.
+	//
+	OperationList ops;
+	string file, line;
+	ClassDefPtr cls = ClassDefPtr::dynamicCast(container);
+	if(cls)
+	{
+	    ops = cls->allOperations();
+	    DefinitionContextPtr dc = p->definitionContext();
+	    file = dc->filename();
+	    line = p->line();
+	    if(!validateGetterSetter(ops, "get" + capName, 0, file, line) ||
+	       !validateGetterSetter(ops, "set" + capName, 1, file, line))
+	    {
+		return;
+	    }
+	}
+
+	//
+	// Getter.
+	//
+	out << sp << nl << "public " << s;
+	out << nl << "get" << capName << "()";
+	out << sb;
+	out << nl << "return " << name << ';';
+	out << eb;
+
+	//
+	// Setter.
+	//
+	out << sp << nl << "public void";
+	out << nl << "set" << capName << '(' << s << " _" << name << ')';
+	out << sb;
+	out << nl << name << " = _" << name << ';';
+	out << eb;
+
+	//
+	// Check for bool type.
+	//
+	BuiltinPtr b = BuiltinPtr::dynamicCast(type);
+	if(b && b->kind() == Builtin::KindBool)
+	{
+	    if(cls && !validateGetterSetter(ops, "is" + capName, 0, file, line))
+	    {
+		return;
+	    }
+	    out << sp << nl << "public boolean";
+	    out << nl << "is" << capName << "()";
+	    out << sb;
+	    out << nl << "return " << name << ';';
+	    out << eb;
+	}
+
+	//
+	// Check for unmodified sequence type and emit indexing methods.
+	//
+	SequencePtr seq = SequencePtr::dynamicCast(type);
+	if(seq)
+	{
+	    string md = findMetaData(metaData);
+	    if(md.empty())
+	    {
+		StringList l = seq->getMetaData();
+		md = findMetaData(l);
+	    }
+	    if(md.empty())
+	    {
+		if(cls &&
+		   (!validateGetterSetter(ops, "get" + capName, 1, file, line) ||
+		    !validateGetterSetter(ops, "set" + capName, 2, file, line)))
+		{
+		    return;
+		}
+
+		string elem = typeToString(seq->type(), TypeModeMember, getPackage(contained));
+
+		//
+		// Indexed getter.
+		//
+		out << sp << nl << "public " << elem;
+		out << nl << "get" << capName << "(int _index)";
+		out << sb;
+		out << nl << "return " << name << "[_index];";
+		out << eb;
+
+		//
+		// Indexed setter.
+		//
+		out << sp << nl << "public void";
+		out << nl << "set" << capName << "(int _index, " << elem << " _val)";
+		out << sb;
+		out << nl << name << "[_index] = _val;";
+		out << eb;
+	    }
+	}
+    }
 }
 
 void
@@ -2732,6 +2842,27 @@ Slice::Gen::TypesVisitor::visitConst(const ConstPtr& p)
     close();
 }
 
+bool
+Slice::Gen::TypesVisitor::validateGetterSetter(const OperationList& ops, const std::string& name, int numArgs,
+					       const string& file, const string& line)
+{
+    for(OperationList::const_iterator i = ops.begin(); i != ops.end(); ++i)
+    {
+	if((*i)->name() == name)
+	{
+	    int numParams = static_cast<int>((*i)->parameters().size());
+	    if(numArgs >= numParams && numArgs - numParams <= 1)
+	    {
+		cerr << file << ":" << line
+		     << ": error: operation `" << name << "' conflicts with getter/setter method" << endl;
+		return false;
+	    }
+	    break;
+	}
+    }
+    return true;
+}
+
 Slice::Gen::HolderVisitor::HolderVisitor(const string& dir, bool stream) :
     JavaVisitor(dir), _stream(stream)
 {
@@ -2996,8 +3127,6 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
 	    out << nl << "public void" << nl << op->name() << "_async" << spar << paramsAMI << "java.util.Map __ctx"
 		<< epar;
 	    out << sb;
-	    // Async requests may only be sent twoway.
-	    out << nl << "__checkTwowayOnly(\"" << p->name() << "\");";
 	    out << nl << "__cb.__invoke" << spar << "this" << argsAMI << "__ctx" << epar << ';';
 	    out << eb;
 	}

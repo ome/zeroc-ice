@@ -8,8 +8,9 @@ Operating System
 
 Solaris 8 or Solaris 9 on SPARC.
 
-You also need to have /dev/urandom installed. This is the default with
-Solaris 9; on Solaris 8, you need to install patch 112438-01.
+You also need to have /dev/urandom installed. This is installed by
+default on Solaris 9; on Solaris 8, you need to install patch
+112438-01.
 
 
 C++ compiler
@@ -26,7 +27,8 @@ The following Sun compilers are supported:
 Builds with the following compilers are expected to succeed, but these
 compilers are not supported at this time:
 
-- Sun C++ 5.6 and 5.7 (Sun Studio 9 and Sun Studio 10)
+- Sun C++ 5.6, 5.7 and 5.8 (Sun Studio 9, Sun Studio 10 and Sun Studio
+  11 respectively)
 
 - GCC 3.4.2
 
@@ -86,11 +88,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ tar xvfz Ice-3.0.0.tar.gz
+$ tar xvfz Ice-3.0.1.tar.gz
 
-Change the working directory to Ice-3.0.0:
+Change the working directory to Ice-3.0.1:
 
-$ cd Ice-3.0.0
+$ cd Ice-3.0.1
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular
@@ -133,8 +135,8 @@ CC 5.4 note
 -----------
 
 The Sun CC 5.4 build produces a large number of warnings about hidden
-functions in the fstream and sstream standard headers. This is a known
-Sun bug (#4852754). You can suppress them by removing the
+functions in the fstream and sstream standard headers, which is a
+known Sun bug (#4852754). You can suppress them by removing the
 corresponding '+w' option in config/Make.rules.SunOS, or by filtering
 your build log file with a sed script such as:
 
@@ -170,12 +172,10 @@ Simply run "gmake install". This will install Ice in the directory
 specified by the "prefix" variable in config/Make.rules.
 
 After installation, make sure that the <prefix>/bin directory is in
-your PATH, and the <prefix>/lib directory is in your
-LD_LIBRARY_PATH. When compiling Ice programs, you must also make sure
-to pass the location of the <prefix>/include directory to the compiler
-with the -I option, and the location of the <prefix>/lib directory
-with the -L option.
+your PATH, and the <prefix>/lib directory is in your LD_LIBRARY_PATH.
+When compiling Ice programs, you must pass the location of the
+<prefix>/include directory to the compiler with the -I option, and the
+location of the <prefix>/lib directory with the -L option.
 
 If you built in 64 bit mode, the libraries are installed in
-<prefix>/lib/sparcv9 and the programs are installed in
-<prefix>/bin/sparcv9. No other changes are necessary.
+<prefix>/lib/sparcv9. No other changes are necessary.

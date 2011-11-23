@@ -38,6 +38,7 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
     Ice::ObjectPrx base3 = communicator->stringToProxy("test");
     Ice::ObjectPrx base4 = communicator->stringToProxy("ServerManager"); 
     Ice::ObjectPrx base5 = communicator->stringToProxy("test2");
+    Ice::ObjectPrx base6 = communicator->stringToProxy("test @ ReplicatedAdapter");
     cout << "ok" << endl;
 
     cout << "starting server... " << flush;
@@ -58,6 +59,8 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
     test(obj4);
     TestIntfPrx obj5 = TestIntfPrx::checkedCast(base5);
     test(obj5);
+    TestIntfPrx obj6 = TestIntfPrx::checkedCast(base6);
+    test(obj6);
     cout << "ok" << endl;
  
     cout << "testing id@AdapterId indirect proxy... " << flush;
@@ -68,12 +71,28 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
 	obj2 = TestIntfPrx::checkedCast(base2);
 	obj2->ice_ping();
     }
-    catch(const Ice::LocalException&)
+    catch(const Ice::LocalException& ex)
     {
+	cerr << ex << endl;
 	test(false);
     }
     cout << "ok" << endl;    
     
+    cout << "testing id@ReplicaGroupId indirect proxy... " << flush;
+    obj->shutdown();
+    manager->startServer();
+    try
+    {
+	obj6 = TestIntfPrx::checkedCast(base6);
+	obj6->ice_ping();
+    }
+    catch(const Ice::LocalException& ex)
+    {
+	cerr << ex << endl;
+	test(false);
+    }
+    cout << "ok" << endl;    
+
     cout << "testing identity indirect proxy... " << flush;
     obj->shutdown();
     manager->startServer();
@@ -92,8 +111,9 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
 	obj2 = TestIntfPrx::checkedCast(base2);
 	obj2->ice_ping();
     }
-    catch(const Ice::LocalException&)
+    catch(const Ice::LocalException& ex)
     {
+	cerr << ex << endl;
 	test(false);
     }
     obj->shutdown();
@@ -103,8 +123,9 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
 	obj2 = TestIntfPrx::checkedCast(base2);
 	obj2->ice_ping();
     }
-    catch(const Ice::LocalException&)
+    catch(const Ice::LocalException& ex)
     {
+	cerr << ex << endl;
 	test(false);
     }
     try
@@ -112,8 +133,9 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
 	obj3 = TestIntfPrx::checkedCast(base3);
 	obj3->ice_ping();
     }
-    catch(const Ice::LocalException&)
+    catch(const Ice::LocalException& ex)
     {
+	cerr << ex << endl;
 	test(false);
     }
     obj->shutdown();
@@ -124,8 +146,9 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
 	obj2 = TestIntfPrx::checkedCast(base2);
 	obj2->ice_ping();
     }
-    catch(const Ice::LocalException&)
+    catch(const Ice::LocalException& ex)
     {
+	cerr << ex << endl;
 	test(false);
     }
     obj->shutdown();
@@ -135,8 +158,9 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
 	obj3 = TestIntfPrx::checkedCast(base3);
 	obj3->ice_ping();
     }
-    catch(const Ice::LocalException&)
+    catch(const Ice::LocalException& ex)
     {
+	cerr << ex << endl;
 	test(false);
     }
     obj->shutdown();
@@ -146,8 +170,9 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
 	obj2 = TestIntfPrx::checkedCast(base2);
 	obj2->ice_ping();
     }
-    catch(const Ice::LocalException&)
+    catch(const Ice::LocalException& ex)
     {
+	cerr << ex << endl;
 	test(false);
     }
     obj->shutdown();
@@ -158,8 +183,9 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
 	obj5 = TestIntfPrx::checkedCast(base5);
 	obj5->ice_ping();
     }
-    catch(const Ice::LocalException&)
+    catch(const Ice::LocalException& ex)
     {
+	cerr << ex << endl;
 	test(false);
     }
     cout << "ok" << endl;
@@ -194,6 +220,10 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
 
     cout << "testing object reference from server... " << flush;
     HelloPrx hello = obj->getHello();
+    test(hello->ice_getAdapterId() == "TestAdapter");
+    hello->sayHello();
+    hello = obj->getReplicatedHello();
+    test(hello->ice_getAdapterId() == "ReplicatedAdapter");
     hello->sayHello();
     cout << "ok" << endl;
 
