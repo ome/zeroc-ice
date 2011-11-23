@@ -5,7 +5,8 @@
 >IceSSL Properties</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -14,10 +15,10 @@ TITLE="Properties"
 HREF="c12907.html"><LINK
 REL="PREVIOUS"
 TITLE="Ice Miscellaneous Properties"
-HREF="x13439.html"><LINK
+HREF="x13483.html"><LINK
 REL="NEXT"
 TITLE="IceBox Properties"
-HREF="x13989.html"></HEAD
+HREF="x14058.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -45,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x13439.html"
+HREF="x13483.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -59,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x13989.html"
+HREF="x14058.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -73,31 +74,31 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="AEN13698"
+NAME="AEN13767"
+></A
 ><SPAN
 CLASS="phrase"
 ><SPAN
 CLASS="PHRASE"
 >IceSSL</SPAN
 ></SPAN
-> Properties</A
-></H1
+> Properties</H1
 ><DIV
 CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13701"
->IceSSL.Trace.Security</A
-></H2
+NAME="AEN13770"
+></A
+>IceSSL.Trace.Security</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13703"
->Synopsis</A
-></H3
+NAME="AEN13772"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -106,9 +107,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Trace.Security=<VAR
+>IceSSL.Trace.Security=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -119,18 +122,18 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13707"
->Description</A
-></H3
+NAME="AEN13776"
+></A
+>Description</H3
 ><P
 >The SSL plug-in trace level:
 <DIV
 CLASS="INFORMALTABLE"
+><A
+NAME="AEN13779"
+></A
 ><P
 ></P
-><A
-NAME="AEN13710"
-></A
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -140,20 +143,32 @@ CLASS="CALSTABLE"
 ><TBODY
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >0</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >No security trace. (default)</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >1</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Trace security warnings (C++), and display the list of selected ciphersuites (Java).</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >2</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Like 1, but more verbose, including warnings during
 configuration file parsing (C++).</TD
 ></TR
@@ -170,17 +185,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13722"
->IceSSL.Client.CertPath, IceSSL.Server.CertPath</A
-></H2
+NAME="AEN13791"
+></A
+>IceSSL.Client.CertPath, IceSSL.Server.CertPath</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13724"
->Synopsis</A
-></H3
+NAME="AEN13793"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -189,13 +204,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.CertPath=<VAR
+>IceSSL.Client.CertPath=<TT
 CLASS="REPLACEABLE"
->path</VAR
+><I
+>path</I
+></TT
 >
-IceSSL.Server.CertPath=<VAR
+IceSSL.Server.CertPath=<TT
 CLASS="REPLACEABLE"
->path</VAR
+><I
+>path</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -206,9 +225,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13729"
->Description</A
-></H3
+NAME="AEN13798"
+></A
+>Description</H3
 ><P
 >Defines the path (relative or absolute) where the SSL plug-in can
 find PEM format certificate files (RSA and DSA) and Diffie-Hellman group
@@ -240,17 +259,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13738"
->IceSSL.Client.Config, IceSSL.Server.Config</A
-></H2
+NAME="AEN13807"
+></A
+>IceSSL.Client.Config, IceSSL.Server.Config</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13740"
->Synopsis</A
-></H3
+NAME="AEN13809"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -259,13 +278,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.Config=<VAR
+>IceSSL.Client.Config=<TT
 CLASS="REPLACEABLE"
->config_file</VAR
+><I
+>config_file</I
+></TT
 >
-IceSSL.Server.Config=<VAR
+IceSSL.Server.Config=<TT
 CLASS="REPLACEABLE"
->config_file</VAR
+><I
+>config_file</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -276,9 +299,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13745"
->Description</A
-></H3
+NAME="AEN13814"
+></A
+>Description</H3
 ><P
 >Defines the XML-based configuration file from which the SSL plug-in
 loads initialization information and certificates. (C++ only)</P
@@ -312,17 +335,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13754"
->IceSSL.Client.Handshake.Retries</A
-></H2
+NAME="AEN13823"
+></A
+>IceSSL.Client.Handshake.Retries</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13756"
->Synopsis</A
-></H3
+NAME="AEN13825"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -331,9 +354,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.Handshake.Retries=<VAR
+>IceSSL.Client.Handshake.Retries=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -344,9 +369,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13760"
->Description</A
-></H3
+NAME="AEN13829"
+></A
+>Description</H3
 ><P
 >IceSSL clients attempt to perform an entire SSL handshake in the connection
 phase. When attempting this handshake, it is possible for the client to
@@ -365,17 +390,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13765"
->IceSSL.Client.Passphrase.Retries, IceSSL.Server.Passphrase.Retries</A
-></H2
+NAME="AEN13834"
+></A
+>IceSSL.Client.Passphrase.Retries, IceSSL.Server.Passphrase.Retries</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13767"
->Synopsis</A
-></H3
+NAME="AEN13836"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -384,13 +409,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.Passphrase.Retries=<VAR
+>IceSSL.Client.Passphrase.Retries=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 >
-IceSSL.Server.Passphrase.Retries=<VAR
+IceSSL.Server.Passphrase.Retries=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -401,9 +430,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13772"
->Description</A
-></H3
+NAME="AEN13841"
+></A
+>Description</H3
 ><P
 >When <SPAN
 CLASS="phrase"
@@ -434,17 +463,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13779"
->IceSSL.Server.Overrides.RSA.PrivateKey, IceSSL.Server.Overrides.RSA.Certificate</A
-></H2
+NAME="AEN13848"
+></A
+>IceSSL.Server.Overrides.RSA.PrivateKey, IceSSL.Server.Overrides.RSA.Certificate</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13781"
->Synopsis</A
-></H3
+NAME="AEN13850"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -453,13 +482,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Server.Overrides.RSA.PrivateKey=<VAR
+>IceSSL.Server.Overrides.RSA.PrivateKey=<TT
 CLASS="REPLACEABLE"
->Base64 encoded DER string</VAR
+><I
+>Base64 encoded DER string</I
+></TT
 >
-IceSSL.Server.Overrides.RSA.Certificate=<VAR
+IceSSL.Server.Overrides.RSA.Certificate=<TT
 CLASS="REPLACEABLE"
->Base64 encoded DER string</VAR
+><I
+>Base64 encoded DER string</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -470,9 +503,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13786"
->Description</A
-></H3
+NAME="AEN13855"
+></A
+>Description</H3
 ><P
 >These properties override the RSA private key and public key (certificate)
 specified in the config file (<TT
@@ -490,17 +523,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13791"
->IceSSL.Server.Overrides.DSA.PrivateKey, IceSSL.Server.Overrides.DSA.Certificate</A
-></H2
+NAME="AEN13860"
+></A
+>IceSSL.Server.Overrides.DSA.PrivateKey, IceSSL.Server.Overrides.DSA.Certificate</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13793"
->Synopsis</A
-></H3
+NAME="AEN13862"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -509,13 +542,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Server.Overrides.DSA.PrivateKey=<VAR
+>IceSSL.Server.Overrides.DSA.PrivateKey=<TT
 CLASS="REPLACEABLE"
->Base64 encoded DER string</VAR
+><I
+>Base64 encoded DER string</I
+></TT
 >
-IceSSL.Server.Overrides.DSA.Certificate=<VAR
+IceSSL.Server.Overrides.DSA.Certificate=<TT
 CLASS="REPLACEABLE"
->Base64 encoded DER string</VAR
+><I
+>Base64 encoded DER string</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -526,9 +563,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13798"
->Description</A
-></H3
+NAME="AEN13867"
+></A
+>Description</H3
 ><P
 >These properties override the DSA private key and public key (certificate)
 specified in the config file (<TT
@@ -546,17 +583,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13803"
->IceSSL.Client.Overrides.RSA.PrivateKey, IceSSL.Client.Overrides.RSA.Certificate</A
-></H2
+NAME="AEN13872"
+></A
+>IceSSL.Client.Overrides.RSA.PrivateKey, IceSSL.Client.Overrides.RSA.Certificate</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13805"
->Synopsis</A
-></H3
+NAME="AEN13874"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -565,13 +602,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.Overrides.RSA.PrivateKey=<VAR
+>IceSSL.Client.Overrides.RSA.PrivateKey=<TT
 CLASS="REPLACEABLE"
->Base64 encoded DER string</VAR
+><I
+>Base64 encoded DER string</I
+></TT
 >
-IceSSL.Client.Overrides.RSA.Certificate=<VAR
+IceSSL.Client.Overrides.RSA.Certificate=<TT
 CLASS="REPLACEABLE"
->Base64 encoded DER string</VAR
+><I
+>Base64 encoded DER string</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -582,9 +623,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13810"
->Description</A
-></H3
+NAME="AEN13879"
+></A
+>Description</H3
 ><P
 >These properties override the RSA private key and public key (certificate)
 specified in the config file (<TT
@@ -602,17 +643,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13815"
->IceSSL.Client.Overrides.DSA.PrivateKey, IceSSL.Client.Overrides.DSA.Certificate</A
-></H2
+NAME="AEN13884"
+></A
+>IceSSL.Client.Overrides.DSA.PrivateKey, IceSSL.Client.Overrides.DSA.Certificate</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13817"
->Synopsis</A
-></H3
+NAME="AEN13886"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -621,13 +662,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.Overrides.DSA.PrivateKey=<VAR
+>IceSSL.Client.Overrides.DSA.PrivateKey=<TT
 CLASS="REPLACEABLE"
->Base64 encoded DER string</VAR
+><I
+>Base64 encoded DER string</I
+></TT
 >
-IceSSL.Client.Overrides.DSA.Certificate=<VAR
+IceSSL.Client.Overrides.DSA.Certificate=<TT
 CLASS="REPLACEABLE"
->Base64 encoded DER string</VAR
+><I
+>Base64 encoded DER string</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -638,9 +683,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13822"
->Description</A
-></H3
+NAME="AEN13891"
+></A
+>Description</H3
 ><P
 >These properties override the DSA private key and public key (certificate)
 specified in the config file (<TT
@@ -658,17 +703,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13827"
->IceSSL.Client.Overrides.CACertificate, IceSSL.Server.Overrides.CACertificate</A
-></H2
+NAME="AEN13896"
+></A
+>IceSSL.Client.Overrides.CACertificate, IceSSL.Server.Overrides.CACertificate</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13829"
->Synopsis</A
-></H3
+NAME="AEN13898"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -677,13 +722,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.Overrides.CACertificate=<VAR
+>IceSSL.Client.Overrides.CACertificate=<TT
 CLASS="REPLACEABLE"
->Base64 encoded DER string</VAR
+><I
+>Base64 encoded DER string</I
+></TT
 >
-IceSSL.Server.Overrides.CACertificate=<VAR
+IceSSL.Server.Overrides.CACertificate=<TT
 CLASS="REPLACEABLE"
->Base64 encoded DER string</VAR
+><I
+>Base64 encoded DER string</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -694,9 +743,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13834"
->Description</A
-></H3
+NAME="AEN13903"
+></A
+>Description</H3
 ><P
 >These properties override any trusted Certificate Authority (CA) certificates
 specified in <TT
@@ -717,17 +766,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13840"
->IceSSL.Client.IgnoreValidPeriod, IceSSL.Server.IgnoreValidPeriod</A
-></H2
+NAME="AEN13909"
+></A
+>IceSSL.Client.IgnoreValidPeriod, IceSSL.Server.IgnoreValidPeriod</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13842"
->Synopsis</A
-></H3
+NAME="AEN13911"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -736,13 +785,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.IgnoreValidPeriod=<VAR
+>IceSSL.Client.IgnoreValidPeriod=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 >
-IceSSL.Server.IgnoreValidPeriod=<VAR
+IceSSL.Server.IgnoreValidPeriod=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -753,9 +806,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13847"
->Description</A
-></H3
+NAME="AEN13916"
+></A
+>Description</H3
 ><P
 >If set to 1, these properties cause the default certificate verifier to ignore the
 certificate validity period on peer certificates. The default value for these
@@ -767,17 +820,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13850"
->IceSSL.Client.Certs, IceSSL.Server.Certs</A
-></H2
+NAME="AEN13919"
+></A
+>IceSSL.Client.Certs, IceSSL.Server.Certs</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13852"
->Synopsis</A
-></H3
+NAME="AEN13921"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -786,13 +839,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.Certs=<VAR
+>IceSSL.Client.Certs=<TT
 CLASS="REPLACEABLE"
->keystore</VAR
+><I
+>keystore</I
+></TT
 >
-IceSSL.Server.Certs=<VAR
+IceSSL.Server.Certs=<TT
 CLASS="REPLACEABLE"
->keystore</VAR
+><I
+>keystore</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -803,14 +860,16 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13857"
->Description</A
-></H3
+NAME="AEN13926"
+></A
+>Description</H3
 ><P
 >Defines the filename of a Java keystore containing trusted certificates.
-If <VAR
+If <TT
 CLASS="REPLACEABLE"
->keystore</VAR
+><I
+>keystore</I
+></TT
 > is a relative pathname, it is
 relative to the program's current working directory.</P
 ><P
@@ -832,17 +891,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13865"
->IceSSL.Client.CertsPassword, IceSSL.Server.CertsPassword</A
-></H2
+NAME="AEN13934"
+></A
+>IceSSL.Client.CertsPassword, IceSSL.Server.CertsPassword</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13867"
->Synopsis</A
-></H3
+NAME="AEN13936"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -851,13 +910,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.CertsPassword=<VAR
+>IceSSL.Client.CertsPassword=<TT
 CLASS="REPLACEABLE"
->password</VAR
+><I
+>password</I
+></TT
 >
-IceSSL.Server.CertsPassword=<VAR
+IceSSL.Server.CertsPassword=<TT
 CLASS="REPLACEABLE"
->password</VAR
+><I
+>password</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -868,9 +931,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13872"
->Description</A
-></H3
+NAME="AEN13941"
+></A
+>Description</H3
 ><P
 >Defines the password used to verify the integrity of the Java keystore provided
 by <TT
@@ -889,17 +952,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13878"
->IceSSL.Client.Ciphers, IceSSL.Server.Ciphers</A
-></H2
+NAME="AEN13947"
+></A
+>IceSSL.Client.Ciphers, IceSSL.Server.Ciphers</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13880"
->Synopsis</A
-></H3
+NAME="AEN13949"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -908,13 +971,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.Ciphers=<VAR
+>IceSSL.Client.Ciphers=<TT
 CLASS="REPLACEABLE"
->cipher-list</VAR
+><I
+>cipher-list</I
+></TT
 >
-IceSSL.Server.Ciphers=<VAR
+IceSSL.Server.Ciphers=<TT
 CLASS="REPLACEABLE"
->cipher-list</VAR
+><I
+>cipher-list</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -925,9 +992,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13885"
->Description</A
-></H3
+NAME="AEN13954"
+></A
+>Description</H3
 ><P
 >Defines the ciphersuites enabled by the Java plug-in.</P
 ><P
@@ -936,11 +1003,11 @@ The plug-in executes the tokens in the order of appearance in order to assemble
 the list of enabled ciphersuites. The table below describes the tokens:
 <DIV
 CLASS="INFORMALTABLE"
+><A
+NAME="AEN13958"
+></A
 ><P
 ></P
-><A
-NAME="AEN13889"
-></A
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -950,78 +1017,114 @@ CLASS="CALSTABLE"
 ><TBODY
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 ><TT
 CLASS="LITERAL"
 >NONE</TT
 ></TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Disables all ciphersuites. If specified, it must be the first token in the list.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 ><TT
 CLASS="LITERAL"
 >ALL</TT
 ></TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Enables all supported ciphersuites. If specified, it must be the first token
 in the list. This token should be used with caution, as it may enable low-security
 ciphersuites.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 ><TT
 CLASS="LITERAL"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->NAME</VAR
+><I
+>NAME</I
+></TT
 ></TT
 ></TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Enables the ciphersuite matching the given name.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 ><TT
 CLASS="LITERAL"
->!<VAR
+>!<TT
 CLASS="REPLACEABLE"
->NAME</VAR
+><I
+>NAME</I
+></TT
 ></TT
 ></TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Disables the ciphersuite matching the given name.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 ><TT
 CLASS="LITERAL"
->(<VAR
+>(<TT
 CLASS="REPLACEABLE"
->EXP</VAR
+><I
+>EXP</I
+></TT
 >)</TT
 ></TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Enables ciphersuites whose names contain the regular expression
-<VAR
+<TT
 CLASS="REPLACEABLE"
->EXP</VAR
+><I
+>EXP</I
+></TT
 >.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 ><TT
 CLASS="LITERAL"
->!(<VAR
+>!(<TT
 CLASS="REPLACEABLE"
->EXP</VAR
+><I
+>EXP</I
+></TT
 >)</TT
 ></TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Disables ciphersuites whose names contain the regular expression
-<VAR
+<TT
 CLASS="REPLACEABLE"
->EXP</VAR
+><I
+>EXP</I
+></TT
 >.</TD
 ></TR
 ></TBODY
@@ -1039,17 +1142,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13923"
->IceSSL.Client.Keystore, IceSSL.Server.Keystore</A
-></H2
+NAME="AEN13992"
+></A
+>IceSSL.Client.Keystore, IceSSL.Server.Keystore</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13925"
->Synopsis</A
-></H3
+NAME="AEN13994"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -1058,13 +1161,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.Keystore=<VAR
+>IceSSL.Client.Keystore=<TT
 CLASS="REPLACEABLE"
->keystore</VAR
+><I
+>keystore</I
+></TT
 >
-IceSSL.Server.Keystore=<VAR
+IceSSL.Server.Keystore=<TT
 CLASS="REPLACEABLE"
->keystore</VAR
+><I
+>keystore</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -1075,14 +1182,16 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13930"
->Description</A
-></H3
+NAME="AEN13999"
+></A
+>Description</H3
 ><P
 >Defines the filename of a Java keystore containing the private key(s)
-and corresponding certificate(s). If <VAR
+and corresponding certificate(s). If <TT
 CLASS="REPLACEABLE"
->keystore</VAR
+><I
+>keystore</I
+></TT
 >
 is a relative pathname, it is relative to the program's current working
 directory.</P
@@ -1112,17 +1221,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13940"
->IceSSL.Client.KeystorePassword, IceSSL.Server.KeystorePassword</A
-></H2
+NAME="AEN14009"
+></A
+>IceSSL.Client.KeystorePassword, IceSSL.Server.KeystorePassword</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13942"
->Synopsis</A
-></H3
+NAME="AEN14011"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -1131,13 +1240,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.KeystorePassword=<VAR
+>IceSSL.Client.KeystorePassword=<TT
 CLASS="REPLACEABLE"
->password</VAR
+><I
+>password</I
+></TT
 >
-IceSSL.Server.KeystorePassword=<VAR
+IceSSL.Server.KeystorePassword=<TT
 CLASS="REPLACEABLE"
->password</VAR
+><I
+>password</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -1148,9 +1261,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13947"
->Description</A
-></H3
+NAME="AEN14016"
+></A
+>Description</H3
 ><P
 >Defines the password used to verify the integrity of the Java keystore provided
 by <TT
@@ -1169,17 +1282,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13953"
->IceSSL.Client.Password, IceSSL.Server.Password</A
-></H2
+NAME="AEN14022"
+></A
+>IceSSL.Client.Password, IceSSL.Server.Password</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13955"
->Synopsis</A
-></H3
+NAME="AEN14024"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -1188,13 +1301,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Client.Password=<VAR
+>IceSSL.Client.Password=<TT
 CLASS="REPLACEABLE"
->password</VAR
+><I
+>password</I
+></TT
 >
-IceSSL.Server.Password=<VAR
+IceSSL.Server.Password=<TT
 CLASS="REPLACEABLE"
->password</VAR
+><I
+>password</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -1205,9 +1322,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13960"
->Description</A
-></H3
+NAME="AEN14029"
+></A
+>Description</H3
 ><P
 >Defines the password of the private key in the Java keystore specified
 by <TT
@@ -1252,17 +1369,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13968"
->IceSSL.Server.ClientAuth</A
-></H2
+NAME="AEN14037"
+></A
+>IceSSL.Server.ClientAuth</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13970"
->Synopsis</A
-></H3
+NAME="AEN14039"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -1271,9 +1388,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->IceSSL.Server.ClientAuth=<VAR
+>IceSSL.Server.ClientAuth=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -1284,18 +1403,18 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13974"
->Description</A
-></H3
+NAME="AEN14043"
+></A
+>Description</H3
 ><P
 >Defines how a Java server authenticates a client:
 <DIV
 CLASS="INFORMALTABLE"
+><A
+NAME="AEN14046"
+></A
 ><P
 ></P
-><A
-NAME="AEN13977"
-></A
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -1305,20 +1424,32 @@ CLASS="CALSTABLE"
 ><TBODY
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >0</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >No certificate is requested from the client. (default)</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >1</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >A certificate is requested but is not required.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >2</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >A certificate is required.</TD
 ></TR
 ></TBODY
@@ -1346,7 +1477,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x13439.html"
+HREF="x13483.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -1364,7 +1495,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x13989.html"
+HREF="x14058.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD

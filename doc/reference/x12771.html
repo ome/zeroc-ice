@@ -5,7 +5,8 @@
 >IcePatch2::FileServer</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -74,10 +75,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICEPATCH2.FILESERVER"
+></A
 ><TT
 CLASS="LITERAL"
 >IcePatch2::FileServer</TT
-></A
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -85,8 +86,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12774"
->Overview</A
-></H2
+></A
+>Overview</H2
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -95,9 +96,9 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->interface <CODE
+>interface <TT
 CLASS="CLASSNAME"
->FileServer</CODE
+>FileServer</TT
 ></PRE
 ></TD
 ></TR
@@ -110,8 +111,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12779"
->Operation Index</A
-></H3
+></A
+>Operation Index</H3
 ><P
 ></P
 ><DIV
@@ -181,10 +182,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICEPATCH2.FILESERVER.GETCHECKSUM"
+></A
 ><TT
 CLASS="LITERAL"
 >getChecksum</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -216,8 +217,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12816"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The master checksum for the file set.</P
 ></DIV
@@ -228,10 +229,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICEPATCH2.FILESERVER.GETCHECKSUMSEQ"
+></A
 ><TT
 CLASS="LITERAL"
 >getChecksumSeq</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -262,8 +263,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12827"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A sequence containing 256 checksums. Partitions with a
 checksum that differs from the previous checksum for the same
@@ -278,10 +279,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICEPATCH2.FILESERVER.GETFILECOMPRESSED"
+></A
 ><TT
 CLASS="LITERAL"
 >getFileCompressed</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -331,9 +332,9 @@ CLASS="PARAMETER"
     throws
 	<A
 HREF="x12688.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->FileAccessException</CODE
+>FileAccessException</TT
 ></A
 >;</PRE
 ></TD
@@ -343,9 +344,9 @@ CLASS="CLASSNAME"
 >Read the specified file. If the read operation fails, the
 operation throws <A
 HREF="x12688.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->FileAccessException</CODE
+>FileAccessException</TT
 ></A
 >. This operation may only
 return fewer bytes than requested in case there was an
@@ -356,8 +357,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12848"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -406,8 +407,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12866"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A sequence containing the compressed file contents.</P
 ></DIV
@@ -418,10 +419,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICEPATCH2.FILESERVER.GETFILEINFOSEQ"
+></A
 ><TT
 CLASS="LITERAL"
 >getFileInfoSeq</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -453,9 +454,9 @@ CLASS="PARAMETER"
     throws
 	<A
 HREF="x12897.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->PartitionOutOfRangeException</CODE
+>PartitionOutOfRangeException</TT
 ></A
 >;</PRE
 ></TD
@@ -480,8 +481,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12884"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -507,14 +508,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12892"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A sequence containing the <A
 HREF="x12713.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->FileInfo</CODE
+>FileInfo</SPAN
 ></A
 > structures for
 files in the specified partition.</P

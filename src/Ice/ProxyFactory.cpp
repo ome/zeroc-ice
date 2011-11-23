@@ -13,6 +13,7 @@
 #include <Ice/Instance.h>
 #include <Ice/Proxy.h>
 #include <Ice/ReferenceFactory.h>
+#include <Ice/LocatorInfo.h>
 #include <Ice/BasicStream.h>
 #include <Ice/Properties.h>
 #include <Ice/LoggerUtil.h>
@@ -87,13 +88,49 @@ IceInternal::ProxyFactory::referenceToProxy(const ReferencePtr& ref) const
 }
 
 void
-IceInternal::ProxyFactory::checkRetryAfterException(const LocalException& ex, int& cnt) const
+IceInternal::ProxyFactory::checkRetryAfterException(const LocalException& ex, const ReferencePtr& ref, int& cnt) const
 {
     //
-    // We don't retry *NotExistException, which are all derived from
-    // RequestFailedException.
+    // We retry ObjectNotExistException if the reference is
+    // indirect. Otherwise, we don't retry other *NotExistException,
+    // which are all derived from RequestFailedException.
     //
-    if(dynamic_cast<const RequestFailedException*>(&ex))
+    if(dynamic_cast<const ObjectNotExistException*>(&ex))
+    {
+	IndirectReferencePtr ir = IndirectReferencePtr::dynamicCast(ref);
+	if(!ir || !ir->getLocatorInfo())
+	{
+	    ex.ice_throw();
+	}
+	ir->getLocatorInfo()->clearObjectCache(ir);
+    }
+    else if(dynamic_cast<const RequestFailedException*>(&ex))
+    {
+	ex.ice_throw();
+    }
+
+    //
+    // There is no point in retrying an operation that resulted in a
+    // MarshalException. This must have been raised locally (because if
+    // it happened in a server it would result in an UnknownLocalException
+    // instead), which means there was a problem in this process that will
+    // not change if we try again.
+    //
+    // The most likely cause for a MarshalException is exceeding the
+    // maximum message size, which is represented by the the subclass
+    // MemoryLimitException. For example, a client can attempt to send a
+    // message that exceeds the maximum memory size, or accumulate enough
+    // batch requests without flushing that the maximum size is reached.
+    //
+    // This latter case is especially problematic, because if we were to
+    // retry a batch request after a MarshalException, we would in fact
+    // silently discard the accumulated requests and allow new batch
+    // requests to accumulate. If the subsequent batched requests do not
+    // exceed the maximum message size, it appears to the client that all
+    // of the batched requests were accepted, when in reality only the
+    // last few are actually sent.
+    //
+    if(dynamic_cast<const MarshalException*>(&ex))
     {
 	ex.ice_throw();
     }

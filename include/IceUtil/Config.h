@@ -212,7 +212,7 @@ const Int64 Int64Min = INT64_MIN;
 #   else
 const Int64 Int64Min = -0x7fffffffffffffffLL-1LL;
 #   endif
-#   ifdef INT64_MIN
+#   ifdef INT64_MAX
 const Int64 Int64Max = INT64_MAX;
 #   else
 const Int64 Int64Max = 0x7fffffffffffffffLL;
@@ -235,7 +235,7 @@ const Int64 Int64Max = 0x7fffffffffffffffLL;
 //
 // The Ice version.
 //
-#define ICE_STRING_VERSION "2.1.0" // "A.B.C", with A=major, B=minor, C=patch
-#define ICE_INT_VERSION 20100      // AABBCC, with AA=major, BB=minor, CC=patch
+#define ICE_STRING_VERSION "2.1.1" // "A.B.C", with A=major, B=minor, C=patch
+#define ICE_INT_VERSION 20101      // AABBCC, with AA=major, BB=minor, CC=patch
 
 #endif

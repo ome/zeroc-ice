@@ -5,7 +5,8 @@
 >Ice Trace Properties</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -74,30 +75,30 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12949"
+></A
 ><SPAN
 CLASS="phrase"
 ><SPAN
 CLASS="PHRASE"
 >Ice</SPAN
 ></SPAN
-> Trace Properties</A
-></H1
+> Trace Properties</H1
 ><DIV
 CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
 NAME="AEN12952"
->Ice.Trace.GC</A
-></H2
+></A
+>Ice.Trace.GC</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN12954"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -106,9 +107,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Trace.GC=<VAR
+>Ice.Trace.GC=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -120,17 +123,17 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12958"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
 >The garbage collector trace level:
 <DIV
 CLASS="INFORMALTABLE"
-><P
-></P
 ><A
 NAME="AEN12961"
 ></A
+><P
+></P
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -140,21 +143,33 @@ CLASS="CALSTABLE"
 ><TBODY
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >0</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >No garbage collector trace. (default)</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >1</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Show the total number of instances collected, the total number of instances examined, the time spent
 in the collector in milliseconds, and the total number of runs of the collector.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >2</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Like 1, but also produces a trace message for each run of the collector.</TD
 ></TR
 ></TBODY
@@ -171,16 +186,16 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12973"
->Ice.Trace.Network</A
-></H2
+></A
+>Ice.Trace.Network</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN12975"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -189,9 +204,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Trace.Network=<VAR
+>Ice.Trace.Network=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -203,17 +220,17 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12979"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
 >The network trace level:
 <DIV
 CLASS="INFORMALTABLE"
-><P
-></P
 ><A
 NAME="AEN12982"
 ></A
+><P
+></P
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -223,26 +240,42 @@ CLASS="CALSTABLE"
 ><TBODY
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >0</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >No network trace. (default)</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >1</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Trace connection establishment and closure.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >2</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Like 1, but more detailed.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >3</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Like 2, but also trace data transfer.</TD
 ></TR
 ></TBODY
@@ -259,16 +292,16 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12997"
->Ice.Trace.Protocol</A
-></H2
+></A
+>Ice.Trace.Protocol</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN12999"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -277,9 +310,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Trace.Protocol=<VAR
+>Ice.Trace.Protocol=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -291,17 +326,17 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13003"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
 >The protocol trace level:
 <DIV
 CLASS="INFORMALTABLE"
-><P
-></P
 ><A
 NAME="AEN13006"
 ></A
+><P
+></P
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -311,14 +346,22 @@ CLASS="CALSTABLE"
 ><TBODY
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >0</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >No protocol trace. (default)</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >1</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Trace <SPAN
 CLASS="phrase"
 ><SPAN
@@ -341,16 +384,16 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13016"
->Ice.Trace.Retry</A
-></H2
+></A
+>Ice.Trace.Retry</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13018"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -359,9 +402,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Trace.Retry=<VAR
+>Ice.Trace.Retry=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -373,17 +418,17 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13022"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
 >The request retry trace level:
 <DIV
 CLASS="INFORMALTABLE"
-><P
-></P
 ><A
 NAME="AEN13025"
 ></A
+><P
+></P
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -393,14 +438,22 @@ CLASS="CALSTABLE"
 ><TBODY
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >0</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >No request retry trace. (default)</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >1</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Trace <SPAN
 CLASS="phrase"
 ><SPAN
@@ -411,8 +464,12 @@ CLASS="PHRASE"
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >2</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Also trace <SPAN
 CLASS="phrase"
 ><SPAN
@@ -435,16 +492,16 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13039"
->Ice.Trace.Slicing</A
-></H2
+></A
+>Ice.Trace.Slicing</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13041"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -453,9 +510,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Trace.Slicing=<VAR
+>Ice.Trace.Slicing=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -467,17 +526,17 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13045"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
 >The slicing trace level:
 <DIV
 CLASS="INFORMALTABLE"
-><P
-></P
 ><A
 NAME="AEN13048"
 ></A
+><P
+></P
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -487,14 +546,22 @@ CLASS="CALSTABLE"
 ><TBODY
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >0</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >No trace of slicing activity. (default)</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >1</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Trace all exception and class types that are unknown to the receiver and therefore sliced.</TD
 ></TR
 ></TBODY

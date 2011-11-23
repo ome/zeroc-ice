@@ -5,7 +5,8 @@
 >Ice Object Adapter Properties</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -17,7 +18,7 @@ TITLE="Ice Warning Properties"
 HREF="x13057.html"><LINK
 REL="NEXT"
 TITLE="Ice Plug-in Properties"
-HREF="x13241.html"></HEAD
+HREF="x13300.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -59,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x13241.html"
+HREF="x13300.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -74,33 +75,35 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13128"
+></A
 ><SPAN
 CLASS="phrase"
 ><SPAN
 CLASS="PHRASE"
 >Ice</SPAN
 ></SPAN
-> Object Adapter Properties</A
-></H1
+> Object Adapter Properties</H1
 ><DIV
 CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
 NAME="ADAPTER.ADAPTERID"
-><VAR
+></A
+><TT
 CLASS="REPLACEABLE"
->name</VAR
->.AdapterId</A
-></H2
+><I
+>name</I
+></TT
+>.AdapterId</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13134"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -109,12 +112,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->name</VAR
->.AdapterId=<VAR
+><I
+>name</I
+></TT
+>.AdapterId=<TT
 CLASS="REPLACEABLE"
->id</VAR
+><I
+>id</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -126,21 +133,25 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13139"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
 >Specifies an identifier for the object adapter with the name
-<VAR
+<TT
 CLASS="REPLACEABLE"
->name</VAR
+><I
+>name</I
+></TT
 >. This identifier must be unique among
 all object adapters using the same locator instance. If a locator
 proxy is defined using
 <TT
 CLASS="LITERAL"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->name</VAR
+><I
+>name</I
+></TT
 >.Locator</TT
 > or
 <TT
@@ -156,19 +167,21 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13146"
-><VAR
+></A
+><TT
 CLASS="REPLACEABLE"
->name</VAR
->.Endpoints</A
-></H2
+><I
+>name</I
+></TT
+>.Endpoints</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13149"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -177,12 +190,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->name</VAR
->.Endpoints=<VAR
+><I
+>name</I
+></TT
+>.Endpoints=<TT
 CLASS="REPLACEABLE"
->endpoints</VAR
+><I
+>endpoints</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -194,24 +211,30 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13154"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
->Sets the endpoints for the object adapter <VAR
+>Sets the endpoints for the object adapter <TT
 CLASS="REPLACEABLE"
->name</VAR
+><I
+>name</I
+></TT
 > to
-<VAR
+<TT
 CLASS="REPLACEABLE"
->endpoints</VAR
+><I
+>endpoints</I
+></TT
 >. These endpoints specify the network
 interfaces on which the object adapter receives requests. Proxies created
 by the object adapter contain these endpoints, unless the
 <TT
 CLASS="LITERAL"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->name</VAR
+><I
+>name</I
+></TT
 >.PublishedEndpoints</TT
 >
 property is also specified.</P
@@ -223,19 +246,21 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ADAPTER.PUBLISHEDENDPOINTS"
-><VAR
+></A
+><TT
 CLASS="REPLACEABLE"
->name</VAR
->.PublishedEndpoints</A
-></H2
+><I
+>name</I
+></TT
+>.PublishedEndpoints</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13164"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -244,12 +269,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->name</VAR
->.PublishedEndpoints=<VAR
+><I
+>name</I
+></TT
+>.PublishedEndpoints=<TT
 CLASS="REPLACEABLE"
->endpoints</VAR
+><I
+>endpoints</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -261,26 +290,32 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13169"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
->When creating a proxy, the object adapter <VAR
+>When creating a proxy, the object adapter <TT
 CLASS="REPLACEABLE"
->name</VAR
+><I
+>name</I
+></TT
 >
 normally includes the endpoints defined by
 <TT
 CLASS="LITERAL"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->name</VAR
+><I
+>name</I
+></TT
 >.Endpoints</TT
 >. If
 <TT
 CLASS="LITERAL"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->name</VAR
+><I
+>name</I
+></TT
 >.PublishedEndpoints</TT
 >
 is defined, the object adapter uses these endpoints instead. This is
@@ -295,19 +330,21 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13177"
-><VAR
+></A
+><TT
 CLASS="REPLACEABLE"
->name</VAR
->.Locator</A
-></H2
+><I
+>name</I
+></TT
+>.Locator</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13180"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -316,12 +353,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->name</VAR
->.Locator=<VAR
+><I
+>name</I
+></TT
+>.Locator=<TT
 CLASS="REPLACEABLE"
->locator</VAR
+><I
+>locator</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -333,13 +374,15 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13185"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
 >Specifies a locator for the object adapter with the name
-<VAR
+<TT
 CLASS="REPLACEABLE"
->name</VAR
+><I
+>name</I
+></TT
 >. The value is a stringified proxy
 to the <SPAN
 CLASS="phrase"
@@ -356,19 +399,21 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ADAPTER.REGISTERPROCESS"
-><VAR
+></A
+><TT
 CLASS="REPLACEABLE"
->name</VAR
->.RegisterProcess</A
-></H2
+><I
+>name</I
+></TT
+>.RegisterProcess</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13193"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -377,12 +422,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->name</VAR
->.RegisterProcess=<VAR
+><I
+>name</I
+></TT
+>.RegisterProcess=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -394,16 +443,20 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13198"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
-the object adapter with the name <VAR
+the object adapter with the name <TT
 CLASS="REPLACEABLE"
->name</VAR
+><I
+>name</I
+></TT
 > registers
 the server with the locator registry. Registration occurs upon the
 object adapter's initial activation, during which the object adapter creates
@@ -513,19 +566,21 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13215"
-><VAR
+></A
+><TT
 CLASS="REPLACEABLE"
->name</VAR
->.Router</A
-></H2
+><I
+>name</I
+></TT
+>.Router</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13218"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -534,12 +589,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->name</VAR
->.Router=<VAR
+><I
+>name</I
+></TT
+>.Router=<TT
 CLASS="REPLACEABLE"
->router</VAR
+><I
+>router</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -551,13 +610,15 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13223"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
 >Specifies a router for the object adapter with the name
-<VAR
+<TT
 CLASS="REPLACEABLE"
->name</VAR
+><I
+>name</I
+></TT
 >. The value is a stringified proxy
 to the <SPAN
 CLASS="phrase"
@@ -606,17 +667,22 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13230"
->Ice.PrintAdapterReady</A
-></H2
+NAME="ADAPTERTHREADPOOL.SIZE"
+></A
+><TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.ThreadPool.Size</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13232"
->Synopsis</A
-></H3
+NAME="AEN13233"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -625,9 +691,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.PrintAdapterReady=<VAR
+><TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>name</I
+></TT
+>.ThreadPool.Size=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -638,17 +711,317 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13236"
->Description</A
-></H3
+NAME="AEN13238"
+></A
+>Description</H3
 ><P
->If <VAR
+>A communicator creates a default server thread pool that dispatches requests
+to its object adapters. An object adapter can also be configured with its
+own thread pool. This is useful in avoiding deadlocks due to thread starvation
+by ensuring that a minimum number of threads is available for dispatching requests
+to certain <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> objects.</P
+><P
+><TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
+> is the initial and also minimum number
+of threads in the thread pool. The default value is zero, meaning that
+an object adapter by default uses the communicator's server thread pool.
+See <A
+HREF="x13330.html#THREADPOOL.SIZE"
+>Ice.ThreadPool.Server.Size</A
+>
+for more information.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ADAPTERTHREADPOOL.SIZEMAX"
+></A
+><TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.ThreadPool.SizeMax</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13248"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.ThreadPool.SizeMax=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13253"
+></A
+>Description</H3
+><P
+><TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is the maximum number of threads for
+the thread pool. Thread pools in Ice can grow and shrink dynamically,
+based on an average load factor. This thread pool will not grow larger
+than <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+>, and does not shrink to a number
+of threads smaller than the value specified by
+<A
+HREF="x13128.html#ADAPTERTHREADPOOL.SIZE"
+><TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.ThreadPool.Size</A
+>.</P
+><P
+>The default value is the value of
+<TT
+CLASS="LITERAL"
+><TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.ThreadPool.Size</TT
+>, meaning
+that by default, this thread pool does not grow dynamically.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ADAPTERTHREADPOOL.SIZEWARN"
+></A
+><TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.ThreadPool.SizeWarn</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13266"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.ThreadPool.SizeWarn=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13271"
+></A
+>Description</H3
+><P
+>Whenever <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> threads are active in a thread
+pool, a "low on threads" warning is printed. The default value for
+is 80% of the value specified by
+<TT
+CLASS="LITERAL"
+><TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.ThreadPool.SizeMax</TT
+>.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ADAPTERTHREADPOOL.STACKSIZE"
+></A
+><TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.ThreadPool.StackSize</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13280"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.ThreadPool.StackSize=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13285"
+></A
+>Description</H3
+><P
+><TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is the stack size (in bytes) of threads in
+the thread pool. The default value is zero, meaning the operating system's
+default is used.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13289"
+></A
+>Ice.PrintAdapterReady</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13291"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.PrintAdapterReady=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13295"
+></A
+>Description</H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
-an object adapter prints "<VAR
+an object adapter prints "<TT
 CLASS="REPLACEABLE"
->adapter_name</VAR
+><I
+>adapter_name</I
+></TT
 >
 ready" on standard output after initialization is complete. This is
 useful for scripts that need to wait until an object adapter is ready
@@ -690,7 +1063,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x13241.html"
+HREF="x13300.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD

@@ -5,7 +5,8 @@
 >Ice Warning Properties</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -74,30 +75,30 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13057"
+></A
 ><SPAN
 CLASS="phrase"
 ><SPAN
 CLASS="PHRASE"
 >Ice</SPAN
 ></SPAN
-> Warning Properties</A
-></H1
+> Warning Properties</H1
 ><DIV
 CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
 NAME="AEN13060"
->Ice.Warn.Connections</A
-></H2
+></A
+>Ice.Warn.Connections</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13062"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -106,9 +107,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Warn.Connections=<VAR
+>Ice.Warn.Connections=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -120,12 +123,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13066"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 Ice applications print warning messages for certain exceptional
 conditions in connections. The default value is 0.</P
@@ -137,16 +142,16 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13070"
->Ice.Warn.Datagrams</A
-></H2
+></A
+>Ice.Warn.Datagrams</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13072"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -155,9 +160,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Warn.Datagrams=<VAR
+>Ice.Warn.Datagrams=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -169,12 +176,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13076"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 servers print a warning message if they receive a datagram that exceeds the
 servers' receive buffer size. (Note that this condition is not detected
@@ -188,16 +197,16 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13080"
->Ice.Warn.Dispatch</A
-></H2
+></A
+>Ice.Warn.Dispatch</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13082"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -206,9 +215,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Warn.Dispatch=<VAR
+>Ice.Warn.Dispatch=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -220,22 +231,24 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13086"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 Ice applications print warning messages for certain exceptions
 that are raised while an incoming request is dispatched.
 <DIV
 CLASS="INFORMALTABLE"
-><P
-></P
 ><A
 NAME="AEN13090"
 ></A
+><P
+></P
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -245,14 +258,22 @@ CLASS="CALSTABLE"
 ><TBODY
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >0</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >No warnings.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >1</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Print warnings for unexpected
 <TT
 CLASS="LITERAL"
@@ -265,8 +286,12 @@ C++ exceptions, and Java runtime exceptions. (default)</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >2</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Like 1, but also issue warnings for
 <TT
 CLASS="LITERAL"
@@ -295,16 +320,16 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13107"
->Ice.Warn.AMICallback</A
-></H2
+></A
+>Ice.Warn.AMICallback</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13109"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -313,9 +338,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Warn.AMICallback=<VAR
+>Ice.Warn.AMICallback=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -327,12 +354,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13113"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 warnings are printed if an AMI callback raises an exception. The
 default value is 1.</P
@@ -344,16 +373,16 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13117"
->Ice.Warn.Leaks</A
-></H2
+></A
+>Ice.Warn.Leaks</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13119"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -362,9 +391,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Warn.Leaks=<VAR
+>Ice.Warn.Leaks=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -376,12 +407,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN13123"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 the <TT
 CLASS="LITERAL"

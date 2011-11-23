@@ -5,7 +5,8 @@
 >Ice::Properties</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -74,10 +75,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.PROPERTIES"
+></A
 ><TT
 CLASS="LITERAL"
 >Ice::Properties</TT
-></A
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -85,8 +86,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4843"
->Overview</A
-></H2
+></A
+>Overview</H2
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -95,9 +96,9 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->local interface <CODE
+>local interface <TT
 CLASS="CLASSNAME"
->Properties</CODE
+>Properties</TT
 ></PRE
 ></TD
 ></TR
@@ -121,18 +122,26 @@ being <SPAN
 CLASS="TYPE"
 >string</SPAN
 >s. By convention, property keys should have the form
-<VAR
+<TT
 CLASS="REPLACEABLE"
->application-name</VAR
->[.<VAR
+><I
+>application-name</I
+></TT
+>[.<TT
 CLASS="REPLACEABLE"
->category</VAR
->[.<VAR
+><I
+>category</I
+></TT
+>[.<TT
 CLASS="REPLACEABLE"
->sub-category</VAR
->]].<VAR
+><I
+>sub-category</I
+></TT
+>]].<TT
 CLASS="REPLACEABLE"
->name</VAR
+><I
+>name</I
+></TT
 >.</P
 ><DIV
 CLASS="SECTION"
@@ -140,8 +149,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4855"
->Used By</A
-></H3
+></A
+>Used By</H3
 ><P
 >	    <A
 HREF="x1128.html#ICE.COMMUNICATOR.GETPROPERTIES"
@@ -163,8 +172,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4865"
->Operation Index</A
-></H3
+></A
+>Operation Index</H3
 ><P
 ></P
 ><DIV
@@ -206,9 +215,11 @@ CLASS="FUNCTION"
 ><DD
 ><P
 >Get all properties whose keys begins with
-<VAR
+<TT
 CLASS="REPLACEABLE"
->prefix</VAR
+><I
+>prefix</I
+></TT
 >.</P
 ></DD
 ><DT
@@ -317,10 +328,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.PROPERTIES.CLONE"
+></A
 ><TT
 CLASS="LITERAL"
 >clone</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -332,9 +343,9 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 ><A
 HREF="x4840.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->Properties</CODE
+>Properties</TT
 ></A
 > <TT
 CLASS="FUNCTION"
@@ -351,8 +362,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4943"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A copy of this property set.</P
 ></DIV
@@ -363,10 +374,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.PROPERTIES.GETCOMMANDLINEOPTIONS"
+></A
 ><TT
 CLASS="LITERAL"
 >getCommandLineOptions</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -395,12 +406,16 @@ this property set. Each element of the returned sequence is
 a command-line option of the form
 <TT
 CLASS="LITERAL"
->--<VAR
+>--<TT
 CLASS="REPLACEABLE"
->key</VAR
->=<VAR
+><I
+>key</I
+></TT
+>=<TT
 CLASS="REPLACEABLE"
->value</VAR
+><I
+>value</I
+></TT
 ></TT
 >.</P
 ><DIV
@@ -409,8 +424,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4957"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The command line options for this property set.</P
 ></DIV
@@ -421,10 +436,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.PROPERTIES.GETPROPERTIESFORPREFIX"
+></A
 ><TT
 CLASS="LITERAL"
 >getPropertiesForPrefix</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -457,13 +472,17 @@ CLASS="PARAMETER"
 ></TABLE
 ><P
 >Get all properties whose keys begins with
-<VAR
+<TT
 CLASS="REPLACEABLE"
->prefix</VAR
+><I
+>prefix</I
+></TT
 >. If
-<VAR
+<TT
 CLASS="REPLACEABLE"
->prefix</VAR
+><I
+>prefix</I
+></TT
 > is an empty string,
 then all properties are returned.</P
 ><DIV
@@ -472,8 +491,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4972"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The matching property set.</P
 ></DIV
@@ -484,10 +503,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.PROPERTIES.GETPROPERTY"
+></A
 ><TT
 CLASS="LITERAL"
 >getProperty</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -524,8 +543,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4984"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -551,8 +570,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4992"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The property value.</P
 ></DIV
@@ -562,8 +581,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4995"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x4840.html#ICE.PROPERTIES.SETPROPERTY"
@@ -580,10 +599,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.PROPERTIES.GETPROPERTYASINT"
+></A
 ><TT
 CLASS="LITERAL"
 >getPropertyAsInt</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -620,8 +639,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5011"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -647,8 +666,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5019"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The property value interpreted as an integer.</P
 ></DIV
@@ -658,8 +677,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5022"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x4840.html#ICE.PROPERTIES.SETPROPERTY"
@@ -676,10 +695,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.PROPERTIES.GETPROPERTYASINTWITHDEFAULT"
+></A
 ><TT
 CLASS="LITERAL"
 >getPropertyAsIntWithDefault</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -725,8 +744,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5040"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -764,8 +783,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5053"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The property value interpreted as an integer, or the
 default value.</P
@@ -776,8 +795,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5056"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x4840.html#ICE.PROPERTIES.SETPROPERTY"
@@ -794,10 +813,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.PROPERTIES.GETPROPERTYWITHDEFAULT"
+></A
 ><TT
 CLASS="LITERAL"
 >getPropertyWithDefault</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -843,8 +862,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5074"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -882,8 +901,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5087"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The property value or the default value.</P
 ></DIV
@@ -893,8 +912,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5090"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x4840.html#ICE.PROPERTIES.SETPROPERTY"
@@ -911,10 +930,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.PROPERTIES.LOAD"
+></A
 ><TT
 CLASS="LITERAL"
 >load</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -950,8 +969,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5106"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -978,10 +997,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.PROPERTIES.PARSECOMMANDLINEOPTIONS"
+></A
 ><TT
 CLASS="LITERAL"
 >parseCommandLineOptions</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -1029,9 +1048,11 @@ CLASS="PARAMETER"
 All options that begin with
 <TT
 CLASS="LITERAL"
->--<VAR
+>--<TT
 CLASS="REPLACEABLE"
->prefix</VAR
+><I
+>prefix</I
+></TT
 >.</TT
 > are
 converted into properties. If the prefix is empty, all options
@@ -1045,8 +1066,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5130"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -1087,8 +1108,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5144"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The command-line options that do not start with the specified
 prefix, in their original order.</P
@@ -1100,10 +1121,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.PROPERTIES.PARSEICECOMMANDLINEOPTIONS"
+></A
 ><TT
 CLASS="LITERAL"
 >parseIceCommandLineOptions</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -1172,8 +1193,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5166"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -1199,8 +1220,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5174"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The command-line options that do not start with one of
 the listed prefixes, in their original order.</P
@@ -1212,10 +1233,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.PROPERTIES.SETPROPERTY"
+></A
 ><TT
 CLASS="LITERAL"
 >setProperty</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -1261,8 +1282,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5188"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -1299,8 +1320,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN5201"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x4840.html#ICE.PROPERTIES.GETPROPERTY"

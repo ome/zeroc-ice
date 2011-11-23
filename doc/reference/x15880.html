@@ -5,16 +5,17 @@
 >Endpoints</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
 REL="UP"
 TITLE="Proxies and Endpoints"
-HREF="c15705.html"><LINK
+HREF="c15776.html"><LINK
 REL="PREVIOUS"
 TITLE="Proxies and Endpoints"
-HREF="c15705.html"></HEAD
+HREF="c15776.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -42,7 +43,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="c15705.html"
+HREF="c15776.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -67,23 +68,27 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ENDPOINTS"
->Endpoints</A
-></H1
+></A
+>Endpoints</H1
 ><DIV
 CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15811"
->Synopsis</A
-></H2
+NAME="AEN15882"
+></A
+>Synopsis</H2
 ><P
-> <VAR
+> <TT
 CLASS="REPLACEABLE"
->endpoint</VAR
->  [ : <VAR
+><I
+>endpoint</I
+></TT
+>  [ : <TT
 CLASS="REPLACEABLE"
->endpoint</VAR
+><I
+>endpoint</I
+></TT
 >...]</P
 ></DIV
 ><DIV
@@ -91,9 +96,9 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15818"
->Description</A
-></H2
+NAME="AEN15889"
+></A
+>Description</H2
 ><P
 >An endpoint list comprises one or more endpoints separated by a colon
 (<TT
@@ -101,12 +106,16 @@ CLASS="LITERAL"
 >:</TT
 >). An endpoint has the following format:
 <P
-> <VAR
+> <TT
 CLASS="REPLACEABLE"
->protocol</VAR
->  [<VAR
+><I
+>protocol</I
+></TT
+>  [<TT
 CLASS="REPLACEABLE"
->option</VAR
+><I
+>option</I
+></TT
 >...]</P
 >
 The supported protocols are <TT
@@ -175,30 +184,36 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15838"
->TCP Endpoint</A
-></H2
+NAME="AEN15909"
+></A
+>TCP Endpoint</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15840"
->Synopsis</A
-></H3
+NAME="AEN15911"
+></A
+>Synopsis</H3
 ><P
 ><B
 CLASS="COMMAND"
 >tcp</B
-> [-h <VAR
+> [-h <TT
 CLASS="REPLACEABLE"
->host</VAR
->] [-p <VAR
+><I
+>host</I
+></TT
+>] [-p <TT
 CLASS="REPLACEABLE"
->port</VAR
->] [-t <VAR
+><I
+>port</I
+></TT
+>] [-t <TT
 CLASS="REPLACEABLE"
->timeout</VAR
+><I
+>timeout</I
+></TT
 >] [-z]</P
 ></DIV
 ><DIV
@@ -206,9 +221,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15851"
->Description</A
-></H3
+NAME="AEN15922"
+></A
+>Description</H3
 ><P
 >A <TT
 CLASS="LITERAL"
@@ -216,11 +231,11 @@ CLASS="LITERAL"
 > endpoint supports the following options:
 <DIV
 CLASS="INFORMALTABLE"
+><A
+NAME="AEN15926"
+></A
 ><P
 ></P
-><A
-NAME="AEN15855"
-></A
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -230,23 +245,37 @@ CLASS="CALSTABLE"
 ><THEAD
 ><TR
 ><TH
+ALIGN="LEFT"
+VALIGN="TOP"
 >Option</TH
 ><TH
+ALIGN="LEFT"
+VALIGN="TOP"
 >Description</TH
 ><TH
+ALIGN="LEFT"
+VALIGN="TOP"
 >Client Semantics</TH
 ><TH
+ALIGN="LEFT"
+VALIGN="TOP"
 >Server Semantics</TH
 ></TR
 ></THEAD
 ><TBODY
 ><TR
 ><TD
->-h <VAR
+ALIGN="LEFT"
+VALIGN="TOP"
+>-h <TT
 CLASS="REPLACEABLE"
->host</VAR
+><I
+>host</I
+></TT
 ></TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Specifies the hostname or IP address of the endpoint. If not
 specified, the value of <TT
 CLASS="LITERAL"
@@ -254,43 +283,69 @@ CLASS="LITERAL"
 > is used
 instead.</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Determines the hostname or IP address to which a connection
 attempt is made.</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Determines the network interface on which the object adapter
 listens for connections, as well as the hostname that is advertised
 in proxies created by the adapter.</TD
 ></TR
 ><TR
 ><TD
->-p <VAR
+ALIGN="LEFT"
+VALIGN="TOP"
+>-p <TT
 CLASS="REPLACEABLE"
->port</VAR
+><I
+>port</I
+></TT
 ></TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Specifies the port number of the endpoint.</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Determines the port to which a connection attempt is made.
 (required)</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >The port will be selected by the operating system if this option
-is not specified or <VAR
+is not specified or <TT
 CLASS="REPLACEABLE"
->port</VAR
+><I
+>port</I
+></TT
 > is zero.</TD
 ></TR
 ><TR
 ><TD
->-t <VAR
+ALIGN="LEFT"
+VALIGN="TOP"
+>-t <TT
 CLASS="REPLACEABLE"
->timeout</VAR
+><I
+>timeout</I
+></TT
 ></TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Specifies the endpoint timeout in milliseconds.</TD
 ><TD
->If <VAR
+ALIGN="LEFT"
+VALIGN="TOP"
+>If <TT
 CLASS="REPLACEABLE"
->timeout</VAR
+><I
+>timeout</I
+></TT
 > is greater than zero,
 it sets a maximum delay for binding and proxy invocations. If a timeout
 occurs, the application receives <TT
@@ -298,224 +353,27 @@ CLASS="LITERAL"
 >Ice::TimeoutException</TT
 >.</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Determines the default timeout that is advertised in proxies
 created by the object adapter.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >-z</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Specifies bzip2 compression.</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Determines whether compressed requests are sent.</TD
 ><TD
->Determines whether compression is advertised in proxies created
-by the adapter.</TD
-></TR
-></TBODY
-></TABLE
-><P
-></P
-></DIV
-></P
-></DIV
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="AEN15891"
->UDP Endpoint</A
-></H2
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN15893"
->Synopsis</A
-></H3
-><P
-><B
-CLASS="COMMAND"
->udp</B
-> [-v <VAR
-CLASS="REPLACEABLE"
->major</VAR
->.<VAR
-CLASS="REPLACEABLE"
->minor</VAR
->] [-e <VAR
-CLASS="REPLACEABLE"
->major</VAR
->.<VAR
-CLASS="REPLACEABLE"
->minor</VAR
->] [-h <VAR
-CLASS="REPLACEABLE"
->host</VAR
->] [-p <VAR
-CLASS="REPLACEABLE"
->port</VAR
->] [-c] [-z]</P
-></DIV
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN15909"
->Description</A
-></H3
-><P
->A <TT
-CLASS="LITERAL"
->udp</TT
-> endpoint supports the following options:
-<DIV
-CLASS="INFORMALTABLE"
-><P
-></P
-><A
-NAME="AEN15913"
-></A
-><TABLE
-BORDER="1"
-BGCOLOR="#E0E0E0"
-CELLSPACING="0"
-CELLPADDING="4"
-CLASS="CALSTABLE"
-><THEAD
-><TR
-><TH
->Option</TH
-><TH
->Description</TH
-><TH
->Client Semantics</TH
-><TH
->Server Semantics</TH
-></TR
-></THEAD
-><TBODY
-><TR
-><TD
->-v <VAR
-CLASS="REPLACEABLE"
->major</VAR
->.<VAR
-CLASS="REPLACEABLE"
->minor</VAR
-></TD
-><TD
->Specifies the protocol major and highest minor version number to be used for this
-endpoint. If not specified, the protocol major version and highest supported minor version
-of the client-side <SPAN
-CLASS="phrase"
-><SPAN
-CLASS="PHRASE"
->Ice</SPAN
-></SPAN
-> run time is used.</TD
-><TD
->Determines the protocol major version and highest minor version used by the client side
-when sending messages to this endpoint. The protocol major version number must match the protocol major
-version number of the server; the protocol minor version number must not be higher than the highest minor
-version number supported by the server.</TD
-><TD
->Determines the protocol major version and highest minor version advertised by the server side for this endpoint.
-The protocol major version number must match the protocol major
-version number of the server; the protocol minor version number must not be higher than the highest minor
-version number supported by the server.</TD
-></TR
-><TR
-><TD
->-e <VAR
-CLASS="REPLACEABLE"
->major</VAR
->.<VAR
-CLASS="REPLACEABLE"
->minor</VAR
-></TD
-><TD
->Specifies the encoding major and highest minor version number to be used for this
-endpoint. If not specified, the encoding major version and highest supported minor version
-of the client-side <SPAN
-CLASS="phrase"
-><SPAN
-CLASS="PHRASE"
->Ice</SPAN
-></SPAN
-> run time is used.</TD
-><TD
->Determines the encoding major version and highest minor version used by the client side
-when sending messages to this endpoint. The encoding major version number must match the encoding major
-version number of the server; the encoding minor version number must not be higher than the highest minor
-version number supported by the server.</TD
-><TD
->Determines the encoding version and highest minor version advertised by the server side for this endpoint.
-The protocol major version number must match the protocol major
-version number of the server; the protocol minor version number must not be higher than the highest minor
-version number supported by the server.</TD
-></TR
-><TR
-><TD
->-h <VAR
-CLASS="REPLACEABLE"
->host</VAR
-></TD
-><TD
->Specifies the hostname or IP address of the endpoint. If not
-specified, the value of <TT
-CLASS="LITERAL"
->Ice.Default.Host</TT
-> is used
-instead.</TD
-><TD
->Determines the hostname or IP address to which datagrams
-are sent.</TD
-><TD
->Determines the network interface on which the object adapter
-listens for datagrams, as well as the hostname that is advertised
-in proxies created by the adapter.</TD
-></TR
-><TR
-><TD
->-p <VAR
-CLASS="REPLACEABLE"
->port</VAR
-></TD
-><TD
->Specifies the port number of the endpoint.</TD
-><TD
->Determines the port to which datagrams are sent. (required)</TD
-><TD
->The port will be selected by the operating system if this option
-is not specified or <VAR
-CLASS="REPLACEABLE"
->port</VAR
-> is zero.</TD
-></TR
-><TR
-><TD
->-c</TD
-><TD
->Specifies that a connected UDP socket should be used.</TD
-><TD
->None.</TD
-><TD
->Causes the server to connect to the socket of the first peer
-that sends a datagram to this endpoint.</TD
-></TR
-><TR
-><TD
->-z</TD
-><TD
->Specifies bzip2 compression.</TD
-><TD
->Determines whether compressed requests are sent.</TD
-><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Determines whether compression is advertised in proxies created
 by the adapter.</TD
 ></TR
@@ -533,51 +391,72 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN15962"
->SSL Endpoint</A
-></H2
+></A
+>UDP Endpoint</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN15964"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><P
 ><B
 CLASS="COMMAND"
->ssl</B
-> [-h <VAR
+>udp</B
+> [-v <TT
 CLASS="REPLACEABLE"
->host</VAR
->] [-p <VAR
+><I
+>major</I
+></TT
+>.<TT
 CLASS="REPLACEABLE"
->port</VAR
->] [-t <VAR
+><I
+>minor</I
+></TT
+>] [-e <TT
 CLASS="REPLACEABLE"
->timeout</VAR
->] [-z]</P
+><I
+>major</I
+></TT
+>.<TT
+CLASS="REPLACEABLE"
+><I
+>minor</I
+></TT
+>] [-h <TT
+CLASS="REPLACEABLE"
+><I
+>host</I
+></TT
+>] [-p <TT
+CLASS="REPLACEABLE"
+><I
+>port</I
+></TT
+>] [-c] [-z]</P
 ></DIV
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15975"
->Description</A
-></H3
+NAME="AEN15980"
+></A
+>Description</H3
 ><P
->An <TT
+>A <TT
 CLASS="LITERAL"
->ssl</TT
+>udp</TT
 > endpoint supports the following options:
 <DIV
 CLASS="INFORMALTABLE"
+><A
+NAME="AEN15984"
+></A
 ><P
 ></P
-><A
-NAME="AEN15979"
-></A
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -587,23 +466,121 @@ CLASS="CALSTABLE"
 ><THEAD
 ><TR
 ><TH
+ALIGN="LEFT"
+VALIGN="TOP"
 >Option</TH
 ><TH
+ALIGN="LEFT"
+VALIGN="TOP"
 >Description</TH
 ><TH
+ALIGN="LEFT"
+VALIGN="TOP"
 >Client Semantics</TH
 ><TH
+ALIGN="LEFT"
+VALIGN="TOP"
 >Server Semantics</TH
 ></TR
 ></THEAD
 ><TBODY
 ><TR
 ><TD
->-h <VAR
+ALIGN="LEFT"
+VALIGN="TOP"
+>-v <TT
 CLASS="REPLACEABLE"
->host</VAR
+><I
+>major</I
+></TT
+>.<TT
+CLASS="REPLACEABLE"
+><I
+>minor</I
+></TT
 ></TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Specifies the protocol major and highest minor version number to be used for this
+endpoint. If not specified, the protocol major version and highest supported minor version
+of the client-side <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> run time is used.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Determines the protocol major version and highest minor version used by the client side
+when sending messages to this endpoint. The protocol major version number must match the protocol major
+version number of the server; the protocol minor version number must not be higher than the highest minor
+version number supported by the server.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Determines the protocol major version and highest minor version advertised by the server side for this endpoint.
+The protocol major version number must match the protocol major
+version number of the server; the protocol minor version number must not be higher than the highest minor
+version number supported by the server.</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>-e <TT
+CLASS="REPLACEABLE"
+><I
+>major</I
+></TT
+>.<TT
+CLASS="REPLACEABLE"
+><I
+>minor</I
+></TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Specifies the encoding major and highest minor version number to be used for this
+endpoint. If not specified, the encoding major version and highest supported minor version
+of the client-side <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> run time is used.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Determines the encoding major version and highest minor version used by the client side
+when sending messages to this endpoint. The encoding major version number must match the encoding major
+version number of the server; the encoding minor version number must not be higher than the highest minor
+version number supported by the server.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Determines the encoding version and highest minor version advertised by the server side for this endpoint.
+The protocol major version number must match the protocol major
+version number of the server; the protocol minor version number must not be higher than the highest minor
+version number supported by the server.</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>-h <TT
+CLASS="REPLACEABLE"
+><I
+>host</I
+></TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Specifies the hostname or IP address of the endpoint. If not
 specified, the value of <TT
 CLASS="LITERAL"
@@ -611,43 +588,259 @@ CLASS="LITERAL"
 > is used
 instead.</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Determines the hostname or IP address to which datagrams
+are sent.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Determines the network interface on which the object adapter
+listens for datagrams, as well as the hostname that is advertised
+in proxies created by the adapter.</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>-p <TT
+CLASS="REPLACEABLE"
+><I
+>port</I
+></TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Specifies the port number of the endpoint.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Determines the port to which datagrams are sent. (required)</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>The port will be selected by the operating system if this option
+is not specified or <TT
+CLASS="REPLACEABLE"
+><I
+>port</I
+></TT
+> is zero.</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>-c</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Specifies that a connected UDP socket should be used.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>None.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Causes the server to connect to the socket of the first peer
+that sends a datagram to this endpoint.</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>-z</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Specifies bzip2 compression.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Determines whether compressed requests are sent.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Determines whether compression is advertised in proxies created
+by the adapter.</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN16033"
+></A
+>SSL Endpoint</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16035"
+></A
+>Synopsis</H3
+><P
+><B
+CLASS="COMMAND"
+>ssl</B
+> [-h <TT
+CLASS="REPLACEABLE"
+><I
+>host</I
+></TT
+>] [-p <TT
+CLASS="REPLACEABLE"
+><I
+>port</I
+></TT
+>] [-t <TT
+CLASS="REPLACEABLE"
+><I
+>timeout</I
+></TT
+>] [-z]</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16046"
+></A
+>Description</H3
+><P
+>An <TT
+CLASS="LITERAL"
+>ssl</TT
+> endpoint supports the following options:
+<DIV
+CLASS="INFORMALTABLE"
+><A
+NAME="AEN16050"
+></A
+><P
+></P
+><TABLE
+BORDER="1"
+BGCOLOR="#E0E0E0"
+CELLSPACING="0"
+CELLPADDING="4"
+CLASS="CALSTABLE"
+><THEAD
+><TR
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Option</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Description</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Client Semantics</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Server Semantics</TH
+></TR
+></THEAD
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>-h <TT
+CLASS="REPLACEABLE"
+><I
+>host</I
+></TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Specifies the hostname or IP address of the endpoint. If not
+specified, the value of <TT
+CLASS="LITERAL"
+>Ice.Default.Host</TT
+> is used
+instead.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Determines the hostname or IP address to which a connection
 attempt is made.</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Determines the network interface on which the object adapter
 listens for connections, as well as the hostname that is advertised
 in proxies created by the adapter.</TD
 ></TR
 ><TR
 ><TD
->-p <VAR
+ALIGN="LEFT"
+VALIGN="TOP"
+>-p <TT
 CLASS="REPLACEABLE"
->port</VAR
+><I
+>port</I
+></TT
 ></TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Specifies the port number of the endpoint.</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Determines the port to which a connection attempt is made.
 (required)</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >The port will be selected by the operating system if this option
-is not specified or <VAR
+is not specified or <TT
 CLASS="REPLACEABLE"
->port</VAR
+><I
+>port</I
+></TT
 > is zero.</TD
 ></TR
 ><TR
 ><TD
->-t <VAR
+ALIGN="LEFT"
+VALIGN="TOP"
+>-t <TT
 CLASS="REPLACEABLE"
->timeout</VAR
+><I
+>timeout</I
+></TT
 ></TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Specifies the endpoint timeout in milliseconds.</TD
 ><TD
->If <VAR
+ALIGN="LEFT"
+VALIGN="TOP"
+>If <TT
 CLASS="REPLACEABLE"
->timeout</VAR
+><I
+>timeout</I
+></TT
 > is greater than zero,
 it sets a maximum delay for binding and proxy invocations. If a timeout
 occurs, the application receives <TT
@@ -655,17 +848,27 @@ CLASS="LITERAL"
 >Ice::TimeoutException</TT
 >.</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Determines the default timeout that is advertised in proxies
 created by the object adapter.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >-z</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Specifies bzip2 compression.</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Determines whether compressed requests are sent.</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Determines whether compression is advertised in proxies created
 by the adapter.</TD
 ></TR
@@ -694,7 +897,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="c15705.html"
+HREF="c15776.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -724,7 +927,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="c15705.html"
+HREF="c15776.html"
 ACCESSKEY="U"
 >Up</A
 ></TD

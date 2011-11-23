@@ -1,3 +1,55 @@
+Changes since version 2.1.0
+---------------------------
+
+- Fixed bug with the random selection of an endpoint for a proxy with
+  multiple endpoints configured. The random number generator used
+  by GCC was not being seeded, causing the selection order to always
+  be the same.
+
+- Fixed the Slice compilers to permit file names containing whitespace.
+
+- Fixed a thread pool bug on Win32 in which the file descriptors for
+  the pipe were not closed.
+
+- Fixed a bug in Freeze Maps: you can now add an index to an existing
+  Freeze Map.
+
+- Added RTLD_GLOBAL when calling dlopen on Unix platforms.
+
+- Fixed a bug that could cause an assert if connections could not be
+  established in thread-per-connection mode.
+
+- Added two new properties for controlling Active Connection
+  Management (ACM). In prior releases ACM was governed by the property
+  Ice.ConnectionIdleTime, which affected client- and server-side
+  behavior. The new properties, Ice.ACM.Client and Ice.ACM.Server,
+  now allow independent timeouts to be specified for client- and
+  server-side ACM. Ice.ConnectionIdleTime is now deprecated.
+
+- Reverted a change introduced in 2.1.0 in which retries were not
+  attempted for oneway and batch oneway requests. Ice now behaves
+  as it did in prior releases: if the connection associated with a
+  oneway or batch oneway proxy is closed, an invocation on the proxy
+  will transparently reestablish the connection. Please see the Ice
+  manual for more information on the reliability of oneway and batch
+  oneway reliability.
+
+- A race condition with Glacier2 detaching the request handler thread
+  has been fixed.
+
+- Ice::ObjectNotExistException is now retried for invocations made on
+  indirect proxies. This allows the transparent migration of objects
+  or objects adapters.
+
+- Fixed bug where data transfer statistics were not being reported on
+  outgoing datagram requests.
+
+- Fixed bug where the IcePack node with a collocated registry wouldn't
+  terminate after the admin "shutdown" command.
+
+- The Windows demo/IcePatch2/MFC example displays an error dialog when
+  the patch client is run without the --IcePatch2.Endpoints option.
+
 Changes since version 2.0.0
 ---------------------------
 

@@ -5,7 +5,8 @@
 >IceSSL::CertificateVerifier</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -74,10 +75,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICESSL.CERTIFICATEVERIFIER"
+></A
 ><TT
 CLASS="LITERAL"
 >IceSSL::CertificateVerifier</TT
-></A
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -85,8 +86,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN10709"
->Overview</A
-></H2
+></A
+>Overview</H2
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -95,9 +96,9 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->local interface <CODE
+>local interface <TT
 CLASS="CLASSNAME"
->CertificateVerifier</CODE
+>CertificateVerifier</TT
 ></PRE
 ></TD
 ></TR
@@ -105,27 +106,27 @@ CLASS="CLASSNAME"
 ><P
 >The <A
 HREF="x10706.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->CertificateVerifier</CODE
+>CertificateVerifier</TT
 ></A
 > is the base interface for all classes that define
 additional application-specific certificate verification rules.  These rules
 are evaluated during the SSL handshake by an instance of a class derived
 from <A
 HREF="x10706.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->CertificateVerifier</CODE
+>CertificateVerifier</TT
 ></A
 >.  The methods defined in derived interfaces will
 depend upon the requirements of the underlying SSL implementation.
 Default certificate verifier implementations can be obtained via the
 <A
 HREF="x10956.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->Plugin</CODE
+>Plugin</TT
 ></A
 >.
 As this is simply a base class for purposes of derivation, no methods are
@@ -136,8 +137,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN10720"
->Used By</A
-></H3
+></A
+>Used By</H3
 ><P
 >	    <A
 HREF="x10956.html#ICESSL.PLUGIN.GETDEFAULTCERTVERIFIER"
@@ -165,14 +166,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN10733"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x10956.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->Plugin</CODE
+>Plugin</TT
 ></A
 ></P
 ></DIV
@@ -182,8 +183,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN10740"
->Operation Index</A
-></H3
+></A
+>Operation Index</H3
 ><P
 ></P
 ><DIV
@@ -211,10 +212,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICESSL.CERTIFICATEVERIFIER.SETCONTEXT"
+></A
 ><TT
 CLASS="LITERAL"
 >setContext</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -253,8 +254,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN10759"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV

@@ -5,7 +5,8 @@
 >Ice::ObjectAdapter</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -74,10 +75,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER"
+></A
 ><TT
 CLASS="LITERAL"
 >Ice::ObjectAdapter</TT
-></A
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -85,8 +86,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3284"
->Overview</A
-></H2
+></A
+>Overview</H2
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -95,9 +96,9 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->local interface <CODE
+>local interface <TT
 CLASS="CLASSNAME"
->ObjectAdapter</CODE
+>ObjectAdapter</TT
 ></PRE
 ></TD
 ></TR
@@ -112,8 +113,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3289"
->Used By</A
-></H3
+></A
+>Used By</H3
 ><P
 >	    <A
 HREF="x7444.html#FREEZE.SERVANTINITIALIZER.INITIALIZE"
@@ -159,20 +160,20 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3311"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x1128.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->Communicator</CODE
+>Communicator</TT
 ></A
 >, <A
 HREF="x5449.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->ServantLocator</CODE
+>ServantLocator</TT
 ></A
 ></P
 ></DIV
@@ -182,8 +183,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3321"
->Operation Index</A
-></H3
+></A
+>Operation Index</H3
 ><P
 ></P
 ><DIV
@@ -553,10 +554,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.ACTIVATE"
+></A
 ><TT
 CLASS="LITERAL"
 >activate</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -586,8 +587,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3492"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x3281.html#ICE.OBJECTADAPTER.HOLD"
@@ -610,10 +611,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.ADD"
+></A
 ><TT
 CLASS="LITERAL"
 >add</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -640,9 +641,9 @@ CLASS="PARAMETER"
 >,
     <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 > <TT
 CLASS="PARAMETER"
@@ -666,9 +667,9 @@ registering the servant with multiple identities. Adding a
 servant with an identity that is in the map already throws
 <A
 HREF="x1030.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->AlreadyRegisteredException</CODE
+>AlreadyRegisteredException</TT
 ></A
 >.</P
 ><DIV
@@ -677,8 +678,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3517"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -722,8 +723,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3531"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A proxy that matches the given identity and this object
 adapter.</P
@@ -734,14 +735,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3534"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 >, <A
 HREF="x3281.html#ICE.OBJECTADAPTER.ADDFACET"
@@ -776,10 +777,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.ADDFACET"
+></A
 ><TT
 CLASS="LITERAL"
 >addFacet</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -806,9 +807,9 @@ CLASS="PARAMETER"
 >,
     <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 > <TT
 CLASS="PARAMETER"
@@ -853,8 +854,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3572"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -910,8 +911,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3591"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A proxy that matches the given identity, facet, and
 this object adapter.</P
@@ -922,14 +923,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3594"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 >, <A
 HREF="x3281.html#ICE.OBJECTADAPTER.ADD"
@@ -964,10 +965,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.ADDFACETWITHUUID"
+></A
 ><TT
 CLASS="LITERAL"
 >addFacetWithUUID</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -1029,8 +1030,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3629"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -1068,8 +1069,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3642"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A proxy that matches the generated UUID identity,
 facet, and this object adapter.</P
@@ -1080,14 +1081,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3645"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 >, <A
 HREF="x3281.html#ICE.OBJECTADAPTER.ADDFACET"
@@ -1122,10 +1123,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.ADDROUTER"
+></A
 ><TT
 CLASS="LITERAL"
 >addRouter</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -1141,9 +1142,9 @@ CLASS="TYPE"
 > <TT
 CLASS="FUNCTION"
 >addRouter</TT
->(<CODE
+>(<TT
 CLASS="CLASSNAME"
->Router*</CODE
+>Router*</TT
 > <TT
 CLASS="PARAMETER"
 ><I
@@ -1196,8 +1197,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3675"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -1223,14 +1224,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3683"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x5369.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->Router</CODE
+>Router</TT
 ></A
 >, <A
 HREF="x1128.html#ICE.COMMUNICATOR.SETDEFAULTROUTER"
@@ -1247,10 +1248,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.ADDSERVANTLOCATOR"
+></A
 ><TT
 CLASS="LITERAL"
 >addServantLocator</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -1268,9 +1269,9 @@ CLASS="FUNCTION"
 >addServantLocator</TT
 >(<A
 HREF="x5449.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->ServantLocator</CODE
+>ServantLocator</TT
 ></A
 > <TT
 CLASS="PARAMETER"
@@ -1295,9 +1296,9 @@ CLASS="PARAMETER"
 locator for a category for which a servant locator is already
 registered throws <A
 HREF="x1030.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->AlreadyRegisteredException</CODE
+>AlreadyRegisteredException</TT
 ></A
 >. To dispatch
 operation calls on servants, the object adapter tries to find a
@@ -1341,16 +1342,16 @@ find a servant using this locator.</P
 preceding steps, the object adapter gives up and the caller
 receives <A
 HREF="x4521.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->ObjectNotExistException</CODE
+>ObjectNotExistException</TT
 ></A
 > or
 <A
 HREF="x2469.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->FacetNotExistException</CODE
+>FacetNotExistException</TT
 ></A
 >.</P
 ></LI
@@ -1390,8 +1391,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3723"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -1430,14 +1431,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3736"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 >, <A
 HREF="x3281.html#ICE.OBJECTADAPTER.FINDSERVANTLOCATOR"
@@ -1447,9 +1448,9 @@ CLASS="FUNCTION"
 ></A
 >, <A
 HREF="x5449.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->ServantLocator</CODE
+>ServantLocator</TT
 ></A
 ></P
 ></DIV
@@ -1460,10 +1461,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.ADDWITHUUID"
+></A
 ><TT
 CLASS="LITERAL"
 >addWithUUID</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -1505,8 +1506,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3759"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -1532,8 +1533,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3767"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A proxy that matches the generated UUID identity and
 this object adapter.</P
@@ -1544,14 +1545,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3770"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 >, <A
 HREF="x3281.html#ICE.OBJECTADAPTER.ADD"
@@ -1586,10 +1587,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.CREATEDIRECTPROXY"
+></A
 ><TT
 CLASS="LITERAL"
 >createDirectProxy</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -1607,9 +1608,9 @@ CLASS="FUNCTION"
 >createDirectProxy</TT
 >(<A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 > <TT
 CLASS="PARAMETER"
@@ -1630,8 +1631,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3799"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -1657,8 +1658,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3807"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A proxy that matches the given identity and this object
 adapter.</P
@@ -1669,14 +1670,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3810"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 ></P
 ></DIV
@@ -1687,10 +1688,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.CREATEPROXY"
+></A
 ><TT
 CLASS="LITERAL"
 >createProxy</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -1708,9 +1709,9 @@ CLASS="FUNCTION"
 >createProxy</TT
 >(<A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 > <TT
 CLASS="PARAMETER"
@@ -1730,8 +1731,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3827"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -1757,8 +1758,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3835"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A proxy that matches the given identity and this object
 adapter.</P
@@ -1769,14 +1770,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3838"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 ></P
 ></DIV
@@ -1787,10 +1788,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.CREATEREVERSEPROXY"
+></A
 ><TT
 CLASS="LITERAL"
 >createReverseProxy</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -1808,9 +1809,9 @@ CLASS="FUNCTION"
 >createReverseProxy</TT
 >(<A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 > <TT
 CLASS="PARAMETER"
@@ -1850,9 +1851,9 @@ VALIGN="TOP"
 > This operation is intended to be used by special
 services, such as <A
 HREF="x5369.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->Router</CODE
+>Router</TT
 ></A
 > implementations. Regular user code
 should not attempt to use this operation. </P
@@ -1867,8 +1868,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3859"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -1894,8 +1895,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3867"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A "reverse proxy" that matches the given identity and
 uses the incoming connections of this object adapter.</P
@@ -1906,14 +1907,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3870"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 ></P
 ></DIV
@@ -1924,10 +1925,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.DEACTIVATE"
+></A
 ><TT
 CLASS="LITERAL"
 >deactivate</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -1974,9 +1975,9 @@ CLASS="FUNCTION"
 >; attempting to do so results
 in an <A
 HREF="x4368.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->ObjectAdapterDeactivatedException</CODE
+>ObjectAdapterDeactivatedException</TT
 ></A
 > being thrown. Calls
 to <A
@@ -2043,8 +2044,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3902"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x3281.html#ICE.OBJECTADAPTER.ACTIVATE"
@@ -2079,10 +2080,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.FIND"
+></A
 ><TT
 CLASS="LITERAL"
 >find</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -2100,9 +2101,9 @@ CLASS="FUNCTION"
 >find</TT
 >(<A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 > <TT
 CLASS="PARAMETER"
@@ -2147,9 +2148,9 @@ VALIGN="TOP"
 the Active Servant Map. It does not attempt to find a servant
 by using any installed <A
 HREF="x5449.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->ServantLocator</CODE
+>ServantLocator</TT
 ></A
 >.</P
 ></TD
@@ -2163,8 +2164,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3933"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -2197,8 +2198,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3942"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The servant that implements the <SPAN
 CLASS="phrase"
@@ -2215,14 +2216,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3946"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 >, <A
 HREF="x3281.html#ICE.OBJECTADAPTER.FINDFACET"
@@ -2245,10 +2246,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.FINDALLFACETS"
+></A
 ><TT
 CLASS="LITERAL"
 >findAllFacets</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -2269,9 +2270,9 @@ CLASS="FUNCTION"
 >findAllFacets</TT
 >(<A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 > <TT
 CLASS="PARAMETER"
@@ -2291,8 +2292,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3970"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -2325,8 +2326,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3979"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A collection containing all the facet names and
 servants which have been found, or an empty map if there is no
@@ -2338,8 +2339,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN3982"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x3281.html#ICE.OBJECTADAPTER.FIND"
@@ -2362,10 +2363,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.FINDBYPROXY"
+></A
 ><TT
 CLASS="LITERAL"
 >findByProxy</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -2421,9 +2422,9 @@ VALIGN="TOP"
 the Active Servant Map. It does not attempt to find a servant
 via any installed <A
 HREF="x5449.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->ServantLocator</CODE
+>ServantLocator</TT
 ></A
 >s.</P
 ></TD
@@ -2437,8 +2438,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4005"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -2464,8 +2465,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4013"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The servant that matches the proxy, or null if no such
 servant has been found.</P
@@ -2476,8 +2477,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4016"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x3281.html#ICE.OBJECTADAPTER.FIND"
@@ -2500,10 +2501,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.FINDFACET"
+></A
 ><TT
 CLASS="LITERAL"
 >findFacet</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -2521,9 +2522,9 @@ CLASS="FUNCTION"
 >findFacet</TT
 >(<A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 > <TT
 CLASS="PARAMETER"
@@ -2568,8 +2569,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4043"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -2614,8 +2615,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4057"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The servant that implements the <SPAN
 CLASS="phrase"
@@ -2633,14 +2634,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4061"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 >, <A
 HREF="x3281.html#ICE.OBJECTADAPTER.FIND"
@@ -2663,10 +2664,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.FINDSERVANTLOCATOR"
+></A
 ><TT
 CLASS="LITERAL"
 >findServantLocator</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -2678,9 +2679,9 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 ><A
 HREF="x5449.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->ServantLocator</CODE
+>ServantLocator</TT
 ></A
 > <TT
 CLASS="FUNCTION"
@@ -2705,8 +2706,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4084"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -2734,8 +2735,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4092"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The Servant Locator, or null if no Servant Locator was
 found for the given category.</P
@@ -2746,14 +2747,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4095"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 >, <A
 HREF="x3281.html#ICE.OBJECTADAPTER.ADDSERVANTLOCATOR"
@@ -2763,9 +2764,9 @@ CLASS="FUNCTION"
 ></A
 >, <A
 HREF="x5449.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->ServantLocator</CODE
+>ServantLocator</TT
 ></A
 ></P
 ></DIV
@@ -2776,10 +2777,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.GETCOMMUNICATOR"
+></A
 ><TT
 CLASS="LITERAL"
 >getCommunicator</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -2791,9 +2792,9 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 ><A
 HREF="x1128.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->Communicator</CODE
+>Communicator</TT
 ></A
 > <TT
 CLASS="FUNCTION"
@@ -2810,8 +2811,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4116"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		This object adapter's communicator.</P
 ></DIV
@@ -2821,14 +2822,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4119"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x1128.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->Communicator</CODE
+>Communicator</TT
 ></A
 ></P
 ></DIV
@@ -2839,10 +2840,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.GETNAME"
+></A
 ><TT
 CLASS="LITERAL"
 >getName</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -2870,8 +2871,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4133"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		This object adapter's name.</P
 ></DIV
@@ -2882,10 +2883,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.HOLD"
+></A
 ><TT
 CLASS="LITERAL"
 >hold</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -2962,8 +2963,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4151"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x3281.html#ICE.OBJECTADAPTER.ACTIVATE"
@@ -2992,10 +2993,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.REMOVE"
+></A
 ><TT
 CLASS="LITERAL"
 >remove</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -3013,9 +3014,9 @@ CLASS="FUNCTION"
 >remove</TT
 >(<A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 > <TT
 CLASS="PARAMETER"
@@ -3035,8 +3036,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4174"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -3081,9 +3082,9 @@ CLASS="PHRASE"
 objects. Removing an identity that is not in the map throws
 <A
 HREF="x3244.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->NotRegisteredException</CODE
+>NotRegisteredException</TT
 ></A
 >.</P
 ></DD
@@ -3096,8 +3097,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4189"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The removed servant.</P
 ></DIV
@@ -3107,14 +3108,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4192"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 >, <A
 HREF="x3281.html#ICE.OBJECTADAPTER.ADD"
@@ -3137,10 +3138,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.REMOVEALLFACETS"
+></A
 ><TT
 CLASS="LITERAL"
 >removeAllFacets</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -3161,9 +3162,9 @@ CLASS="FUNCTION"
 >removeAllFacets</TT
 >(<A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 > <TT
 CLASS="PARAMETER"
@@ -3186,9 +3187,9 @@ CLASS="PHRASE"
 including it's default facet). Removing an identity that
 is not in the map throws <A
 HREF="x3244.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->NotRegisteredException</CODE
+>NotRegisteredException</TT
 ></A
 >.</P
 ><DIV
@@ -3197,8 +3198,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4219"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -3230,8 +3231,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4228"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A collection containing all the facet names and
 servants of the removed <SPAN
@@ -3248,8 +3249,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4232"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x3281.html#ICE.OBJECTADAPTER.REMOVE"
@@ -3272,10 +3273,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.REMOVEFACET"
+></A
 ><TT
 CLASS="LITERAL"
 >removeFacet</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -3293,9 +3294,9 @@ CLASS="FUNCTION"
 >removeFacet</TT
 >(<A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 > <TT
 CLASS="PARAMETER"
@@ -3340,8 +3341,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4259"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -3386,8 +3387,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4273"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		The removed servant.</P
 ></DIV
@@ -3397,14 +3398,14 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4276"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x2498.html"
-><CODE
+><SPAN
 CLASS="STRUCTNAME"
->Identity</CODE
+>Identity</SPAN
 ></A
 >, <A
 HREF="x3281.html#ICE.OBJECTADAPTER.ADDFACET"
@@ -3427,10 +3428,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.SETLOCATOR"
+></A
 ><TT
 CLASS="LITERAL"
 >setLocator</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -3446,9 +3447,9 @@ CLASS="TYPE"
 > <TT
 CLASS="FUNCTION"
 >setLocator</TT
->(<CODE
+>(<TT
 CLASS="CLASSNAME"
->Locator*</CODE
+>Locator*</TT
 > <TT
 CLASS="PARAMETER"
 ><I
@@ -3476,8 +3477,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4299"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -3503,8 +3504,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4307"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x3281.html#ICE.OBJECTADAPTER.CREATEDIRECTPROXY"
@@ -3514,15 +3515,15 @@ CLASS="FUNCTION"
 ></A
 >, <A
 HREF="x2758.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->Locator</CODE
+>Locator</TT
 ></A
 >, <A
 HREF="x2866.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->LocatorRegistry</CODE
+>LocatorRegistry</TT
 ></A
 ></P
 ></DIV
@@ -3533,10 +3534,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.WAITFORDEACTIVATE"
+></A
 ><TT
 CLASS="LITERAL"
 >waitForDeactivate</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -3579,8 +3580,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4331"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x3281.html#ICE.OBJECTADAPTER.DEACTIVATE"
@@ -3609,10 +3610,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="ICE.OBJECTADAPTER.WAITFORHOLD"
+></A
 ><TT
 CLASS="LITERAL"
 >waitForHold</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -3654,8 +3655,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN4355"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x3281.html#ICE.OBJECTADAPTER.HOLD"

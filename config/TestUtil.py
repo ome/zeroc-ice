@@ -302,7 +302,7 @@ def mixedClientServerTestWithOptions(name, additionalServerOptions, additionalCl
     print "ok"
 
     printOutputFromPipe(clientPipe)
-
+    
     clientStatus = clientPipe.close()
     serverStatus = serverPipe.close()
 

@@ -5,7 +5,8 @@
 >Properties</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -83,30 +84,30 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12910"
+></A
 ><SPAN
 CLASS="phrase"
 ><SPAN
 CLASS="PHRASE"
 >Ice</SPAN
 ></SPAN
-> Configuration Property</A
-></H1
+> Configuration Property</H1
 ><DIV
 CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
 NAME="AEN12913"
->Ice.Config</A
-></H2
+></A
+>Ice.Config</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN12915"
->Synopsis</A
-></H3
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -117,9 +118,11 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 >--Ice.Config
 --Ice.Config=1
---Ice.Config=<VAR
+--Ice.Config=<TT
 CLASS="REPLACEABLE"
->config_file</VAR
+><I
+>config_file</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -131,49 +134,55 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN12919"
->Description</A
-></H3
+></A
+>Description</H3
 ><P
->This property must be set from the command line with the <TT
-CLASS="LITERAL"
->--Ice.Config</TT
->,
+>This property must be set from the command line with the
 <TT
 CLASS="LITERAL"
+>--Ice.Config</TT
+>, <TT
+CLASS="LITERAL"
 >--Ice.Config=1</TT
->, or <TT
+>, or
+<TT
 CLASS="LITERAL"
 >--Ice.Config=</TT
-><VAR
+><TT
 CLASS="REPLACEABLE"
->config_file</VAR
-> option.</P
+><I
+>config_file</I
+></TT
+>
+option.</P
 ><P
 >If the <TT
 CLASS="LITERAL"
 >Ice.Config</TT
-> property is empty or set to <TT
+> property is empty or set to
+<TT
 CLASS="LITERAL"
 >1</TT
->,
-the Ice run time examines the contents of the <TT
+>, the Ice run time examines the contents of the
+<TT
 CLASS="LITERAL"
 >ICE_CONFIG</TT
-> environment
-variable to retrieve the pathname of a configuration file. Otherwise, <TT
+> environment variable to retrieve the
+pathname of a configuration file. Otherwise,
+<TT
 CLASS="LITERAL"
 >Ice.Config</TT
->
-must be set to the pathname of a configuration file. (Pathnames can be relative or absolute.)
-Further property values are read from the configuration file thus specified.</P
+> must be set to the pathname of a
+configuration file. (Pathnames can be relative or absolute.)  Further
+property values are read from the configuration file thus specified.</P
 ><DIV
 CLASS="SECTION"
 ><H4
 CLASS="SECTION"
 ><A
 NAME="AEN12931"
->Configuration File Syntax</A
-></H4
+></A
+>Configuration File Syntax</H4
 ><P
 >A configuration file contains a number of property settings, one setting per line.
 Property settings have one of the forms</P
@@ -187,9 +196,11 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 ><TT
 CLASS="LITERAL"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->property_name</VAR
+><I
+>property_name</I
+></TT
 >=      # Set property to the empty string or zero</TT
 ></PRE
 ></TD
@@ -205,12 +216,16 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 ><TT
 CLASS="LITERAL"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->property_name</VAR
->=<VAR
+><I
+>property_name</I
+></TT
+>=<TT
 CLASS="REPLACEABLE"
->value</VAR
+><I
+>value</I
+></TT
 > # Assign value to property</TT
 ></PRE
 ></TD

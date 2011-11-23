@@ -5,7 +5,8 @@
 >Ice Miscellaneous Properties</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -14,10 +15,10 @@ TITLE="Properties"
 HREF="c12907.html"><LINK
 REL="PREVIOUS"
 TITLE="Ice Default and Override Properties"
-HREF="x13344.html"><LINK
+HREF="x13388.html"><LINK
 REL="NEXT"
 TITLE="IceSSL Properties"
-HREF="x13698.html"></HEAD
+HREF="x13767.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -45,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x13344.html"
+HREF="x13388.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -59,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x13698.html"
+HREF="x13767.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -73,31 +74,31 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="AEN13439"
+NAME="AEN13483"
+></A
 ><SPAN
 CLASS="phrase"
 ><SPAN
 CLASS="PHRASE"
 >Ice</SPAN
 ></SPAN
-> Miscellaneous Properties</A
-></H1
+> Miscellaneous Properties</H1
 ><DIV
 CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13442"
->Ice.GC.Interval</A
-></H2
+NAME="AEN13486"
+></A
+>Ice.GC.Interval</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13444"
->Synopsis</A
-></H3
+NAME="AEN13488"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -106,9 +107,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.GC.Interval=<VAR
+>Ice.GC.Interval=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -119,16 +122,18 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13448"
->Description</A
-></H3
+NAME="AEN13492"
+></A
+>Description</H3
 ><P
 >This property determines the frequency with which the class garbage
 collector runs. If the interval is set to zero (the default), no
 collector thread is created. Otherwise, the collector thread runs
-every <VAR
+every <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > seconds.</P
 ></DIV
 ></DIV
@@ -137,17 +142,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13452"
->Ice.RetryIntervals</A
-></H2
+NAME="AEN13496"
+></A
+>Ice.RetryIntervals</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13454"
->Synopsis</A
-></H3
+NAME="AEN13498"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -156,9 +161,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.RetryIntervals=<VAR
+>Ice.RetryIntervals=<TT
 CLASS="REPLACEABLE"
->num [num ...]</VAR
+><I
+>num [num ...]</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -169,15 +176,17 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13458"
->Description</A
-></H3
+NAME="AEN13502"
+></A
+>Description</H3
 ><P
 >This property defines the number of times an operation is re-tried and
 the delay between each retry. For example, if the property is set to
-<VAR
+<TT
 CLASS="REPLACEABLE"
->0 100 500</VAR
+><I
+>0 100 500</I
+></TT
 >, the operation is re-tried 3
 times: immediately upon the first failure, again after waiting 100
 (ms) upon the second failure, and again after waiting 500 (ms) upon the third
@@ -190,17 +199,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13462"
->Ice.MessageSizeMax</A
-></H2
+NAME="AEN13506"
+></A
+>Ice.MessageSizeMax</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13464"
->Synopsis</A
-></H3
+NAME="AEN13508"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -209,9 +218,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.MessageSizeMax=<VAR
+>Ice.MessageSizeMax=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -222,9 +233,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13468"
->Description</A
-></H3
+NAME="AEN13512"
+></A
+>Description</H3
 ><P
 >This property controls the maximum size (in kilobytes) of a protocol
 message that is accepted or sent by the <SPAN
@@ -268,17 +279,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13479"
->Ice.ChangeUser</A
-></H2
+NAME="AEN13523"
+></A
+>Ice.ChangeUser</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13481"
->Synopsis</A
-></H3
+NAME="AEN13525"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -287,9 +298,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.ChangeUser=<VAR
+>Ice.ChangeUser=<TT
 CLASS="REPLACEABLE"
->user</VAR
+><I
+>user</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -300,9 +313,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13485"
->Description</A
-></H3
+NAME="AEN13529"
+></A
+>Description</H3
 ><P
 >If set, <SPAN
 CLASS="phrase"
@@ -311,9 +324,11 @@ CLASS="PHRASE"
 >Ice</SPAN
 ></SPAN
 > changes the user and group id to the respective ids
-of <VAR
+of <TT
 CLASS="REPLACEABLE"
->user</VAR
+><I
+>user</I
+></TT
 > in
 <TT
 CLASS="LITERAL"
@@ -333,17 +348,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13492"
->Ice.ConnectionIdleTime</A
-></H2
+NAME="ACM.CLIENT"
+></A
+>Ice.ACM.Client</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13494"
->Synopsis</A
-></H3
+NAME="AEN13538"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -352,9 +367,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.ConnectionIdleTime=<VAR
+>Ice.ACM.Client=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -365,23 +382,28 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13498"
->Description</A
-></H3
+NAME="AEN13542"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
-ACM (Active Connection Management) is enabled. This means that
-connections are automatically closed after they have been idle for
-<VAR
+client-side Active Connection Management (ACM) is enabled. This means
+that connections are automatically closed by the client after they have
+been idle for <TT
 CLASS="REPLACEABLE"
->num</VAR
-> seconds. This is transparent to user
-code, i.e., closed connections are automatically reestablished in case
-they are needed again. The default value is 60, meaning that idle
-connections are automatically closed after one minute.</P
+><I
+>num</I
+></TT
+> seconds. This is
+transparent to applications because connections closed by ACM are
+automatically reestablished if they are needed again. The default value
+is 60, meaning that idle connections are automatically closed after one
+minute.</P
 ></DIV
 ></DIV
 ><DIV
@@ -389,17 +411,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13503"
->Ice.MonitorConnections</A
-></H2
+NAME="ACM.SERVER"
+></A
+>Ice.ACM.Server</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13505"
->Synopsis</A
-></H3
+NAME="AEN13549"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -408,9 +430,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.MonitorConnections=<VAR
+>Ice.ACM.Server=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -421,13 +445,165 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13509"
->Description</A
-></H3
+NAME="AEN13553"
+></A
+>Description</H3
 ><P
->If <VAR
+>This property is the server-side equivalent of
+<A
+HREF="x13483.html#ACM.CLIENT"
+>Ice.ACM.Client</A
+>.
+If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
+> is set to a value larger than zero,
+server-side Active Connection Management (ACM) is enabled, in which
+the server automatically closes an incoming connection after it has
+been idle for <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> seconds. The
+default value is 0, meaning that server-side ACM is disabled
+by default.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Server-side ACM can cause incoming oneway requests to be
+silently discarded. See the Ice manual for more information.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13561"
+></A
+>Ice.ConnectionIdleTime</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13563"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.ConnectionIdleTime=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13567"
+></A
+>Description</H3
+><P
+>This property is deprecated, and available for backwards-compatibility
+only. If the property is defined (i.e., set to a non-empty string), it
+sets both client- and server-side ACM timeouts. The properties
+<A
+HREF="x13483.html#ACM.CLIENT"
+>Ice.ACM.Client</A
+> and
+<A
+HREF="x13483.html#ACM.SERVER"
+>Ice.ACM.Server</A
+> override this value
+for the client- and server-side ACM timeouts, respectively.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13572"
+></A
+>Ice.MonitorConnections</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13574"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Ice.MonitorConnections=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13578"
+></A
+>Description</H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 <SPAN
 CLASS="phrase"
@@ -436,16 +612,17 @@ CLASS="PHRASE"
 >Ice</SPAN
 ></SPAN
 > starts a thread that monitors connections. This thread is
-responsible for shutting down idle connections (see
+responsible for shutting down idle connections and enforcing
+AMI timeouts. The default value is the smaller of
 <TT
 CLASS="LITERAL"
->Ice.ConnectionIdleTime</TT
->), as well as for enforcing
-AMI timeouts. The default value is the value of
-<TT
+>Ice.ACM.Client</TT
+> or <TT
 CLASS="LITERAL"
->Ice.ConnectionIdleTime</TT
->.</P
+>Ice.ACM.Server</TT
+>.
+If neither property is specified or has a non-zero value, the monitoring
+thread is disabled.</P
 ></DIV
 ></DIV
 ><DIV
@@ -453,17 +630,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13516"
->Ice.PrintProcessId</A
-></H2
+NAME="AEN13585"
+></A
+>Ice.PrintProcessId</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13518"
->Synopsis</A
-></H3
+NAME="AEN13587"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -472,9 +649,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.PrintProcessId=<VAR
+>Ice.PrintProcessId=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -485,13 +664,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13522"
->Description</A
-></H3
+NAME="AEN13591"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 the process ID is printed on standard output upon startup.</P
 ></DIV
@@ -501,17 +682,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13526"
->Ice.ProgramName</A
-></H2
+NAME="AEN13595"
+></A
+>Ice.ProgramName</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13528"
->Synopsis</A
-></H3
+NAME="AEN13597"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -520,9 +701,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.ProgramName=<VAR
+>Ice.ProgramName=<TT
 CLASS="REPLACEABLE"
->name</VAR
+><I
+>name</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -533,13 +716,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13532"
->Description</A
-></H3
+NAME="AEN13601"
+></A
+>Description</H3
 ><P
-><VAR
+><TT
 CLASS="REPLACEABLE"
->name</VAR
+><I
+>name</I
+></TT
 > is the program name, which is set
 automatically from <TT
 CLASS="LITERAL"
@@ -552,8 +737,9 @@ CLASS="LITERAL"
 initialization. (For Java, <TT
 CLASS="LITERAL"
 >Ice.ProgramName</TT
-> is initialized to the empty string.)
-For all languages, the default name can be overridden by setting this property.</P
+> is
+initialized to the empty string.)  For all languages, the default name
+can be overridden by setting this property.</P
 ></DIV
 ></DIV
 ><DIV
@@ -561,17 +747,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13539"
->Ice.ServerId</A
-></H2
+NAME="AEN13608"
+></A
+>Ice.ServerId</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13541"
->Synopsis</A
-></H3
+NAME="AEN13610"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -580,9 +766,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.ServerId=<VAR
+>Ice.ServerId=<TT
 CLASS="REPLACEABLE"
->id</VAR
+><I
+>id</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -593,21 +781,24 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13545"
->Description</A
-></H3
+NAME="AEN13614"
+></A
+>Description</H3
 ><P
->The value <VAR
+>The value <TT
 CLASS="REPLACEABLE"
->id</VAR
+><I
+>id</I
+></TT
 > is used as the server id when
 an object adapter registers the server with the locator registry.
-Refer to the description of the object adapter property
-<A
+Refer to the description of the object adapter property <A
 HREF="x13128.html#ADAPTER.REGISTERPROCESS"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->adapter</VAR
+><I
+>adapter</I
+></TT
 >.RegisterProcess</A
 >
 for more information.</P
@@ -618,17 +809,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13551"
->Ice.ServerIdleTime</A
-></H2
+NAME="AEN13620"
+></A
+>Ice.ServerIdleTime</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13553"
->Synopsis</A
-></H3
+NAME="AEN13622"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -637,9 +828,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.ServerIdleTime=<VAR
+>Ice.ServerIdleTime=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -650,13 +843,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13557"
->Description</A
-></H3
+NAME="AEN13626"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 <SPAN
 CLASS="phrase"
@@ -669,9 +864,11 @@ CLASS="PHRASE"
 CLASS="LITERAL"
 >Communicator::shutdown</TT
 > once the Communicator has
-been idle for <VAR
+been idle for <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > seconds. This shuts
 down the Communicator's server side and causes all threads waiting in
 <TT
@@ -688,17 +885,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13565"
->Ice.StdErr</A
-></H2
+NAME="AEN13634"
+></A
+>Ice.StdErr</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13567"
->Synopsis</A
-></H3
+NAME="AEN13636"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -707,9 +904,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.StdErr=<VAR
+>Ice.StdErr=<TT
 CLASS="REPLACEABLE"
->filename</VAR
+><I
+>filename</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -720,13 +919,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13571"
->Description</A
-></H3
+NAME="AEN13640"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->filename</VAR
+><I
+>filename</I
+></TT
 > is not empty, the standard
 error stream of this process is redirected to this file, in
 append mode. This property is checked only for the first
@@ -738,17 +939,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13575"
->Ice.StdOut</A
-></H2
+NAME="AEN13644"
+></A
+>Ice.StdOut</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13577"
->Synopsis</A
-></H3
+NAME="AEN13646"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -757,9 +958,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.StdOut=<VAR
+>Ice.StdOut=<TT
 CLASS="REPLACEABLE"
->filename</VAR
+><I
+>filename</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -770,13 +973,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13581"
->Description</A
-></H3
+NAME="AEN13650"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->filename</VAR
+><I
+>filename</I
+></TT
 > is not empty, the standard
 output stream of this process is redirected to this file, in
 append mode. This property is checked only for the first
@@ -788,17 +993,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13585"
->Ice.UseEventLog</A
-></H2
+NAME="AEN13654"
+></A
+>Ice.UseEventLog</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13587"
->Synopsis</A
-></H3
+NAME="AEN13656"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -807,9 +1012,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.UseEventLog=<VAR
+>Ice.UseEventLog=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -820,13 +1027,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13591"
->Description</A
-></H3
+NAME="AEN13660"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 a special logger is installed that logs to the Windows Event Log
 instead of standard error. The event source name is the
@@ -841,17 +1050,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13596"
->Ice.UseSyslog</A
-></H2
+NAME="AEN13665"
+></A
+>Ice.UseSyslog</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13598"
->Synopsis</A
-></H3
+NAME="AEN13667"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -860,9 +1069,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.UseSyslog=<VAR
+>Ice.UseSyslog=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -873,13 +1084,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13602"
->Description</A
-></H3
+NAME="AEN13671"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 a special logger is installed that logs to the syslog facility
 instead of standard error. The identifier for syslog is the
@@ -894,17 +1107,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13607"
->Ice.Logger.Timestamp</A
-></H2
+NAME="AEN13676"
+></A
+>Ice.Logger.Timestamp</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13609"
->Synopsis</A
-></H3
+NAME="AEN13678"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -913,9 +1126,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Logger.Timestamp=<VAR
+>Ice.Logger.Timestamp=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -926,13 +1141,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13613"
->Description</A
-></H3
+NAME="AEN13682"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 the output of the default logger includes timestamps.</P
 ></DIV
@@ -942,17 +1159,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13617"
->Ice.NullHandleAbort</A
-></H2
+NAME="AEN13686"
+></A
+>Ice.NullHandleAbort</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13619"
->Synopsis</A
-></H3
+NAME="AEN13688"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -961,9 +1178,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.NullHandleAbort=<VAR
+>Ice.NullHandleAbort=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -974,13 +1193,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13623"
->Description</A
-></H3
+NAME="AEN13692"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 invoking an operation using a null smart pointer (i.e., a handle)
 causes the program to abort immediately instead of raising
@@ -995,17 +1216,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13628"
->Ice.Nohup</A
-></H2
+NAME="AEN13697"
+></A
+>Ice.Nohup</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13630"
->Synopsis</A
-></H3
+NAME="AEN13699"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -1014,9 +1235,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Nohup=<VAR
+>Ice.Nohup=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -1027,13 +1250,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13634"
->Description</A
-></H3
+NAME="AEN13703"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 the C++ classes <TT
 CLASS="LITERAL"
@@ -1077,17 +1302,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13647"
->Ice.UDP.RcvSize, Ice.UDP.SndSize</A
-></H2
+NAME="AEN13716"
+></A
+>Ice.UDP.RcvSize, Ice.UDP.SndSize</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13649"
->Synopsis</A
-></H3
+NAME="AEN13718"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -1096,13 +1321,17 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.UDP.RcvSize=<VAR
+>Ice.UDP.RcvSize=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 >
-Ice.UDP.SndSize=<VAR
+Ice.UDP.SndSize=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -1113,23 +1342,27 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13654"
->Description</A
-></H3
+NAME="AEN13723"
+></A
+>Description</H3
 ><P
->These properties set the UDP receive and send buffer sizes to the specified value
-in bytes. Ice messages larger than <TT
+>These properties set the UDP receive and send buffer sizes to the
+specified value in bytes. Ice messages larger than
+<TT
 CLASS="LITERAL"
-><VAR
+><TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > - 28</TT
-> bytes
-cause a <TT
+> bytes cause a
+<TT
 CLASS="LITERAL"
 >DatagramLimitException</TT
->. The default value depends on the configuration
-of the local UDP stack. (Common default values are <TT
+>. The default value depends
+on the configuration of the local UDP stack. (Common default values
+are <TT
 CLASS="LITERAL"
 >65535</TT
 > and <TT
@@ -1137,31 +1370,36 @@ CLASS="LITERAL"
 >8192</TT
 > bytes.)</P
 ><P
->The OS may impose lower and upper limits on the receive and send buffer sizes or otherwise adjust the buffer sizes.
-If a limit is requested that is lower than the OS-imposed minimum, the value is silently adjusted to the
-OS-imposed minimum. If a limit is requested that is larger than the OS-imposed maximum, the value is adjusted
-to the OS-imposed maximum; in addition, <SPAN
+>The OS may impose lower and upper limits on the receive and send
+buffer sizes or otherwise adjust the buffer sizes.  If a limit is
+requested that is lower than the OS-imposed minimum, the value is
+silently adjusted to the OS-imposed minimum. If a limit is requested
+that is larger than the OS-imposed maximum, the value is adjusted to
+the OS-imposed maximum; in addition, <SPAN
 CLASS="phrase"
 ><SPAN
 CLASS="PHRASE"
 >Ice</SPAN
 ></SPAN
-> logs a warning showing the requested size and the adjusted size.</P
+> logs a warning showing the
+requested size and the adjusted size.</P
 ><P
 >Settings of these properties less than <TT
 CLASS="LITERAL"
 >28</TT
 > are ignored.</P
 ><P
->Note that, on many operating systems, it is possible to set buffer sizes greater than <TT
+>Note that, on many operating systems, it is possible to set buffer
+sizes greater than <TT
 CLASS="LITERAL"
 >65535</TT
->.
-Such settings do not change the hard limit of <TT
+>.  Such settings do not
+change the hard limit of <TT
 CLASS="LITERAL"
 >65507</TT
-> bytes for the payload of a UDP packet,
-but merely affect how much data can be buffered by the kernel.</P
+> bytes for the
+payload of a UDP packet, but merely affect how much data can be
+buffered by the kernel.</P
 ><P
 >Settings less than <TT
 CLASS="LITERAL"
@@ -1172,18 +1410,19 @@ CLASS="phrase"
 CLASS="PHRASE"
 >Ice</SPAN
 ></SPAN
-> datagrams as well as adjust the kernel
-buffer sizes.</P
+>
+datagrams as well as adjust the kernel buffer sizes.</P
 ><P
 >If <TT
 CLASS="LITERAL"
 >Ice.MessageSizeMax</TT
-> is set and <TT
+> is set and
+<TT
 CLASS="LITERAL"
 >Ice.MessageSizeMax * 1024 + 28</TT
->
-is smaller than the UDP receive or send buffer size, the corresponding UDP buffer size is reduced to
-<TT
+> is smaller than the
+UDP receive or send buffer size, the corresponding UDP buffer size is
+reduced to <TT
 CLASS="LITERAL"
 >Ice.MessageSizeMax * 1024 + 28</TT
 >.</P
@@ -1194,20 +1433,22 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13676"
->Ice.Package.<VAR
-CLASS="REPLACEABLE"
->module</VAR
+NAME="AEN13745"
 ></A
+>Ice.Package.<TT
+CLASS="REPLACEABLE"
+><I
+>module</I
+></TT
 ></H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13679"
->Synopsis</A
-></H3
+NAME="AEN13748"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -1216,12 +1457,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Package.<VAR
+>Ice.Package.<TT
 CLASS="REPLACEABLE"
->module</VAR
->=<VAR
+><I
+>module</I
+></TT
+>=<TT
 CLASS="REPLACEABLE"
->package</VAR
+><I
+>package</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -1232,19 +1477,19 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13684"
->Description</A
-></H3
+NAME="AEN13753"
+></A
+>Description</H3
 ><P
->Associates a top-level Slice module with a Java package. If global metadata
-is used to enclose generated Java classes in a user-defined package, the
-Ice run time must be configured in order to successfully unmarshal exceptions
-and concrete class types. If all top-level modules are generated into the
-same user-defined package, it is easier to use <TT
+>Associates a top-level Slice module with a Java package. If global
+metadata is used to enclose generated Java classes in a user-defined
+package, the Ice run time must be configured in order to successfully
+unmarshal exceptions and concrete class types. If all top-level
+modules are generated into the same user-defined package, it is easier
+to use <TT
 CLASS="LITERAL"
 >Ice.Default.Package</TT
->
-instead.</P
+> instead.</P
 ></DIV
 ></DIV
 ><DIV
@@ -1252,17 +1497,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13688"
->Ice.Default.Package</A
-></H2
+NAME="AEN13757"
+></A
+>Ice.Default.Package</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13690"
->Synopsis</A
-></H3
+NAME="AEN13759"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -1271,9 +1516,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Default.Package=<VAR
+>Ice.Default.Package=<TT
 CLASS="REPLACEABLE"
->package</VAR
+><I
+>package</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -1284,17 +1531,19 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13694"
->Description</A
-></H3
+NAME="AEN13763"
+></A
+>Description</H3
 ><P
 >Specifies a default package to use if other attempts by the Ice run time to
 dynamically load a generated class have failed. If global metadata is used to
 enclose generated Java classes in a user-defined package, the Ice run time must
 be configured in order to successfully unmarshal exceptions and concrete class
-types. Also see Ice.Package.<VAR
+types. Also see Ice.Package.<TT
 CLASS="REPLACEABLE"
->module</VAR
+><I
+>module</I
+></TT
 >.</P
 ></DIV
 ></DIV
@@ -1315,7 +1564,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x13344.html"
+HREF="x13388.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -1333,7 +1582,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x13698.html"
+HREF="x13767.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD

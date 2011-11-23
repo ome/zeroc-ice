@@ -5,7 +5,8 @@
 >Freeze Properties</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -14,10 +15,10 @@ TITLE="Properties"
 HREF="c12907.html"><LINK
 REL="PREVIOUS"
 TITLE="Glacier2 Properties"
-HREF="x14992.html"><LINK
+HREF="x15061.html"><LINK
 REL="NEXT"
 TITLE="IcePatch2 Properties"
-HREF="x15604.html"></HEAD
+HREF="x15675.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -45,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x14992.html"
+HREF="x15061.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -59,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x15604.html"
+HREF="x15675.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -73,34 +74,36 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="AEN15364"
+NAME="AEN15421"
+></A
 ><SPAN
 CLASS="phrase"
 ><SPAN
 CLASS="PHRASE"
 >Freeze</SPAN
 ></SPAN
-> Properties</A
-></H1
+> Properties</H1
 ><DIV
 CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15367"
->Freeze.DbEnv.<VAR
+NAME="AEN15424"
+></A
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.CheckpointPeriod</A
-></H2
+><I
+>env-name</I
+></TT
+>.CheckpointPeriod</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15370"
->Synopsis</A
-></H3
+NAME="AEN15427"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -109,12 +112,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.DbEnv.<VAR
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.CheckpointPeriod=<VAR
+><I
+>env-name</I
+></TT
+>.CheckpointPeriod=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -125,17 +132,21 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15375"
->Description</A
-></H3
+NAME="AEN15432"
+></A
+>Description</H3
 ><P
 >Every Berkeley DB environment created by Freeze has an associated thread that checkpoints this environment every
-<VAR
+<TT
 CLASS="REPLACEABLE"
->num</VAR
-> seconds. If <VAR
+><I
+>num</I
+></TT
+> seconds. If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is less than 0, no checkpoint is performed.
 Defaults to 120 seconds.</P
 ></DIV
@@ -145,20 +156,22 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15380"
->Freeze.DbEnv.<VAR
+NAME="AEN15437"
+></A
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.DbHome</A
-></H2
+><I
+>env-name</I
+></TT
+>.DbHome</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15383"
->Synopsis</A
-></H3
+NAME="AEN15440"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -167,12 +180,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.DbEnv.<VAR
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.DbHome=<VAR
+><I
+>env-name</I
+></TT
+>.DbHome=<TT
 CLASS="REPLACEABLE"
->db-home</VAR
+><I
+>db-home</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -183,9 +200,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15388"
->Description</A
-></H3
+NAME="AEN15445"
+></A
+>Description</H3
 ><P
 >Defines the home directory of this <SPAN
 CLASS="phrase"
@@ -194,9 +211,11 @@ CLASS="PHRASE"
 >Freeze</SPAN
 ></SPAN
 > database
-environment. Defaults to <VAR
+environment. Defaults to <TT
 CLASS="REPLACEABLE"
->env-name</VAR
+><I
+>env-name</I
+></TT
 >.</P
 ></DIV
 ></DIV
@@ -205,20 +224,22 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15393"
->Freeze.DbEnv.<VAR
+NAME="AEN15450"
+></A
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.DbPrivate</A
-></H2
+><I
+>env-name</I
+></TT
+>.DbPrivate</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15396"
->Synopsis</A
-></H3
+NAME="AEN15453"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -227,12 +248,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.DbEnv.<VAR
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.DbPrivate=<VAR
+><I
+>env-name</I
+></TT
+>.DbPrivate=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -243,13 +268,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15401"
->Description</A
-></H3
+NAME="AEN15458"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 <SPAN
 CLASS="phrase"
@@ -266,20 +293,22 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15406"
->Freeze.DbEnv.<VAR
+NAME="AEN15463"
+></A
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.DbRecoverFatal</A
-></H2
+><I
+>env-name</I
+></TT
+>.DbRecoverFatal</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15409"
->Synopsis</A
-></H3
+NAME="AEN15466"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -288,12 +317,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.DbEnv.<VAR
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.DbRecoverFatal=<VAR
+><I
+>env-name</I
+></TT
+>.DbRecoverFatal=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -304,13 +337,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15414"
->Description</A
-></H3
+NAME="AEN15471"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 "fatal" recovery is performed when the environment is opened. The default value is 0.</P
 ></DIV
@@ -320,20 +355,22 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15418"
->Freeze.DbEnv.<VAR
+NAME="AEN15475"
+></A
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.OldLogsAutoDelete</A
-></H2
+><I
+>env-name</I
+></TT
+>.OldLogsAutoDelete</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15421"
->Synopsis</A
-></H3
+NAME="AEN15478"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -342,12 +379,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.DbEnv.<VAR
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.OldLogsAutoDelete=<VAR
+><I
+>env-name</I
+></TT
+>.OldLogsAutoDelete=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -358,21 +399,25 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15426"
->Description</A
-></H3
+NAME="AEN15483"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 old transactional logs no longer in use are deleted after each
 periodic checkpoint  (see
 <TT
 CLASS="LITERAL"
->Freeze.DbEnv.<VAR
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
+><I
+>env-name</I
+></TT
 >.CheckpointPeriod</TT
 >). The default value is 1.</P
 ></DIV
@@ -382,20 +427,22 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15432"
->Freeze.DbEnv.<VAR
+NAME="AEN15489"
+></A
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.PeriodicCheckpointMinSize</A
-></H2
+><I
+>env-name</I
+></TT
+>.PeriodicCheckpointMinSize</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15435"
->Synopsis</A
-></H3
+NAME="AEN15492"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -404,12 +451,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.DbEnv.<VAR
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.PeriodicCheckpointMinSize=<VAR
+><I
+>env-name</I
+></TT
+>.PeriodicCheckpointMinSize=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -420,20 +471,24 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15440"
->Description</A
-></H3
+NAME="AEN15497"
+></A
+>Description</H3
 ><P
-><VAR
+><TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is the minimum size in kbytes for the
 periodic checkpoint (see
 <TT
 CLASS="LITERAL"
->Freeze.DbEnv.<VAR
+>Freeze.DbEnv.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
+><I
+>env-name</I
+></TT
 >.CheckpointPeriod</TT
 >). 
 This value is passed to Berkeley DB's checkpoint function. Defaults to
@@ -445,23 +500,27 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15446"
->Freeze.Evictor.<VAR
+NAME="AEN15503"
+></A
+>Freeze.Evictor.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.<VAR
+><I
+>env-name</I
+></TT
+>.<TT
 CLASS="REPLACEABLE"
->filename</VAR
->.MaxTxSize</A
-></H2
+><I
+>filename</I
+></TT
+>.MaxTxSize</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15450"
->Synopsis</A
-></H3
+NAME="AEN15507"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -470,15 +529,21 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.Evictor.<VAR
+>Freeze.Evictor.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.<VAR
+><I
+>env-name</I
+></TT
+>.<TT
 CLASS="REPLACEABLE"
->filename</VAR
->.MaxTxSize=<VAR
+><I
+>filename</I
+></TT
+>.MaxTxSize=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -489,9 +554,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15456"
->Description</A
-></H3
+NAME="AEN15513"
+></A
+>Description</H3
 ><P
 > <SPAN
 CLASS="phrase"
@@ -501,19 +566,25 @@ CLASS="PHRASE"
 ></SPAN
 > uses a background thread to save updates
 to the database. Transactions are used to save many
-facets together. <VAR
+facets together. <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > defines the maximum
 number of facets saved per transaction. Defaults to 10 *
 SaveSizeTrigger (see <TT
 CLASS="LITERAL"
->Freeze.Evictor.<VAR
+>Freeze.Evictor.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.<VAR
+><I
+>env-name</I
+></TT
+>.<TT
 CLASS="REPLACEABLE"
->filename</VAR
+><I
+>filename</I
+></TT
 >.SaveSizeTrigger</TT
 >); if this value is negative, the actual value is set to 100.</P
 ></DIV
@@ -523,23 +594,27 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15464"
->Freeze.Evictor.<VAR
+NAME="AEN15521"
+></A
+>Freeze.Evictor.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.<VAR
+><I
+>env-name</I
+></TT
+>.<TT
 CLASS="REPLACEABLE"
->filename</VAR
->.SavePeriod</A
-></H2
+><I
+>filename</I
+></TT
+>.PopulateEmptyIndices</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15468"
->Synopsis</A
-></H3
+NAME="AEN15525"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -548,15 +623,21 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.Evictor.<VAR
+>Freeze.Evictor.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.<VAR
+><I
+>env-name</I
+></TT
+>.<TT
 CLASS="REPLACEABLE"
->filename</VAR
->.SavePeriod=<VAR
+><I
+>filename</I
+></TT
+>.PopulateEmptyIndices=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -567,9 +648,86 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15474"
->Description</A
-></H3
+NAME="AEN15531"
+></A
+>Description</H3
+><P
+> 
+When <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is not 0 and you create an evictor
+with one or more empty indices, the createEvictor() call will populate
+these indices by iterating over all the corresponding facets. This is particularly
+useful after transforming a Freeze Evictor with FreezeScript, since
+FreezeScript does not transform indices; however this can significantly slow down createEvictor() if you have an empty
+index because none of the facets currently in your database match the type of this index. The default value for this property is 0.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN15535"
+></A
+>Freeze.Evictor.<TT
+CLASS="REPLACEABLE"
+><I
+>env-name</I
+></TT
+>.<TT
+CLASS="REPLACEABLE"
+><I
+>filename</I
+></TT
+>.SavePeriod</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN15539"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>Freeze.Evictor.<TT
+CLASS="REPLACEABLE"
+><I
+>env-name</I
+></TT
+>.<TT
+CLASS="REPLACEABLE"
+><I
+>filename</I
+></TT
+>.SavePeriod=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN15545"
+></A
+>Description</H3
 ><P
 > <SPAN
 CLASS="phrase"
@@ -578,14 +736,18 @@ CLASS="PHRASE"
 >Freeze</SPAN
 ></SPAN
 > uses a background thread to save updates
-to the database. After <VAR
+to the database. After <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > milliseconds
 without saving, if there is any facet created, modified or destroyed, this background thread wakes up to
-save these facets. When <VAR
+save these facets. When <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is 0, there is
 no periodic saving. Defaults to 60,000.</P
 ></DIV
@@ -595,23 +757,27 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15480"
->Freeze.Evictor.<VAR
+NAME="AEN15551"
+></A
+>Freeze.Evictor.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.<VAR
+><I
+>env-name</I
+></TT
+>.<TT
 CLASS="REPLACEABLE"
->filename</VAR
->.SaveSizeTrigger</A
-></H2
+><I
+>filename</I
+></TT
+>.SaveSizeTrigger</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15484"
->Synopsis</A
-></H3
+NAME="AEN15555"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -620,15 +786,21 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.Evictor.<VAR
+>Freeze.Evictor.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.<VAR
+><I
+>env-name</I
+></TT
+>.<TT
 CLASS="REPLACEABLE"
->filename</VAR
->.SaveSizeTrigger=<VAR
+><I
+>filename</I
+></TT
+>.SaveSizeTrigger=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -639,9 +811,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15490"
->Description</A
-></H3
+NAME="AEN15561"
+></A
+>Description</H3
 ><P
 > <SPAN
 CLASS="phrase"
@@ -650,18 +822,24 @@ CLASS="PHRASE"
 >Freeze</SPAN
 ></SPAN
 > uses a background thread to save updates
-to the database. When <VAR
+to the database. When <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is 0 or positive,
-as soon as <VAR
+as soon as <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > or more facets have been
 created, modified or destroyed, this background thread wakes up to
-save them. When <VAR
+save them. When <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is negative, there is no size trigger. Defaults to 10.</P
 ></DIV
 ></DIV
@@ -670,23 +848,27 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15497"
->Freeze.Evictor.<VAR
+NAME="AEN15568"
+></A
+>Freeze.Evictor.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.<VAR
+><I
+>env-name</I
+></TT
+>.<TT
 CLASS="REPLACEABLE"
->filename</VAR
->.StreamTimeout</A
-></H2
+><I
+>filename</I
+></TT
+>.StreamTimeout</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15501"
->Synopsis</A
-></H3
+NAME="AEN15572"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -695,15 +877,21 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.Evictor.<VAR
+>Freeze.Evictor.<TT
 CLASS="REPLACEABLE"
->env-name</VAR
->.<VAR
+><I
+>env-name</I
+></TT
+>.<TT
 CLASS="REPLACEABLE"
->filename</VAR
->.StreamTimeout=<VAR
+><I
+>filename</I
+></TT
+>.StreamTimeout=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -714,22 +902,26 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15507"
->Description</A
-></H3
+NAME="AEN15578"
+></A
+>Description</H3
 ><P
 > When the saving thread saves an object, it needs to lock
 this object in order to get a consistent copy of the object's state. If the
-lock cannot be acquired within <VAR
+lock cannot be acquired within <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > seconds,
 a fatal error is generated. If a fatal error callback was registered
 by the appplication, this callback is called; otherwise the program
 is terminated immediately.
-When <VAR
+When <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is 0 or negative, there is no
 timeout. The default value is 0.</P
 ></DIV
@@ -739,17 +931,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15512"
->Freeze.Trace.DbEnv</A
-></H2
+NAME="AEN15583"
+></A
+>Freeze.Trace.DbEnv</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15514"
->Synopsis</A
-></H3
+NAME="AEN15585"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -758,9 +950,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.Trace.DbEnv=<VAR
+>Freeze.Trace.DbEnv=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -771,9 +965,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15518"
->Description</A
-></H3
+NAME="AEN15589"
+></A
+>Description</H3
 ><P
 >The <SPAN
 CLASS="phrase"
@@ -784,11 +978,11 @@ CLASS="PHRASE"
 > database environment activity trace level:
 <DIV
 CLASS="INFORMALTABLE"
+><A
+NAME="AEN15593"
+></A
 ><P
 ></P
-><A
-NAME="AEN15522"
-></A
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -798,20 +992,32 @@ CLASS="CALSTABLE"
 ><TBODY
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >0</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >No database environment activity trace. (default)</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >1</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Trace database open and close.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >2</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Also trace checkpoints and the removal of old log files.</TD
 ></TR
 ></TBODY
@@ -827,17 +1033,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15534"
->Freeze.Trace.Evictor</A
-></H2
+NAME="AEN15605"
+></A
+>Freeze.Trace.Evictor</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15536"
->Synopsis</A
-></H3
+NAME="AEN15607"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -846,9 +1052,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.Trace.Evictor=<VAR
+>Freeze.Trace.Evictor=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -859,9 +1067,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15540"
->Description</A
-></H3
+NAME="AEN15611"
+></A
+>Description</H3
 ><P
 >The <SPAN
 CLASS="phrase"
@@ -872,11 +1080,11 @@ CLASS="PHRASE"
 > evictor activity trace level:
 <DIV
 CLASS="INFORMALTABLE"
+><A
+NAME="AEN15615"
+></A
 ><P
 ></P
-><A
-NAME="AEN15544"
-></A
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -886,14 +1094,22 @@ CLASS="CALSTABLE"
 ><TBODY
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >0</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >No evictor activity trace. (default)</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >1</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Trace <SPAN
 CLASS="phrase"
 ><SPAN
@@ -905,14 +1121,22 @@ CLASS="PHRASE"
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >2</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Also trace object lookups, and all object evictions.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >3</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Also trace object retrieval from the database.</TD
 ></TR
 ></TBODY
@@ -928,17 +1152,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15560"
->Freeze.Trace.Map</A
-></H2
+NAME="AEN15631"
+></A
+>Freeze.Trace.Map</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15562"
->Synopsis</A
-></H3
+NAME="AEN15633"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -947,9 +1171,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.Trace.Map=<VAR
+>Freeze.Trace.Map=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -960,9 +1186,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15566"
->Description</A
-></H3
+NAME="AEN15637"
+></A
+>Description</H3
 ><P
 >The <SPAN
 CLASS="phrase"
@@ -973,11 +1199,11 @@ CLASS="PHRASE"
 > map activity trace level:
 <DIV
 CLASS="INFORMALTABLE"
+><A
+NAME="AEN15641"
+></A
 ><P
 ></P
-><A
-NAME="AEN15570"
-></A
 ><TABLE
 BORDER="1"
 BGCOLOR="#E0E0E0"
@@ -987,20 +1213,32 @@ CLASS="CALSTABLE"
 ><TBODY
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >0</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >No map activity trace. (default)</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >1</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Trace database open and close.</TD
 ></TR
 ><TR
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >2</TD
 ><TD
+ALIGN="LEFT"
+VALIGN="TOP"
 >Also trace iterator and transaction operations, and reference
 counting of the underlying database.</TD
 ></TR
@@ -1017,17 +1255,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15582"
->Freeze.Warn.Deadlocks</A
-></H2
+NAME="AEN15653"
+></A
+>Freeze.Warn.Deadlocks</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15584"
->Synopsis</A
-></H3
+NAME="AEN15655"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -1036,9 +1274,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.Warn.Deadlocks=<VAR
+>Freeze.Warn.Deadlocks=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -1049,13 +1289,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15588"
->Description</A
-></H3
+NAME="AEN15659"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 <SPAN
 CLASS="phrase"
@@ -1071,17 +1313,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN15593"
->Freeze.Warn.CloseInFinalize</A
-></H2
+NAME="AEN15664"
+></A
+>Freeze.Warn.CloseInFinalize</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15595"
->Synopsis</A
-></H3
+NAME="AEN15666"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -1090,9 +1332,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Freeze.Warn.CloseInFinalize=<VAR
+>Freeze.Warn.CloseInFinalize=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -1103,13 +1347,15 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN15599"
->Description</A
-></H3
+NAME="AEN15670"
+></A
+>Description</H3
 ><P
->If <VAR
+>If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger than zero,
 <SPAN
 CLASS="phrase"
@@ -1138,7 +1384,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x14992.html"
+HREF="x15061.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -1156,7 +1402,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x15604.html"
+HREF="x15675.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD

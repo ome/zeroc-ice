@@ -5,7 +5,8 @@
 >Ice Default and Override Properties</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -14,10 +15,10 @@ TITLE="Properties"
 HREF="c12907.html"><LINK
 REL="PREVIOUS"
 TITLE="Ice Thread Pool Properties"
-HREF="x13271.html"><LINK
+HREF="x13330.html"><LINK
 REL="NEXT"
 TITLE="Ice Miscellaneous Properties"
-HREF="x13439.html"></HEAD
+HREF="x13483.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -45,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x13271.html"
+HREF="x13330.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -59,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x13439.html"
+HREF="x13483.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -73,31 +74,31 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="AEN13344"
+NAME="AEN13388"
+></A
 ><SPAN
 CLASS="phrase"
 ><SPAN
 CLASS="PHRASE"
 >Ice</SPAN
 ></SPAN
-> Default and Override Properties</A
-></H1
+> Default and Override Properties</H1
 ><DIV
 CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13347"
->Ice.Default.Protocol</A
-></H2
+NAME="AEN13391"
+></A
+>Ice.Default.Protocol</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13349"
->Synopsis</A
-></H3
+NAME="AEN13393"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -106,9 +107,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Default.Protocol=<VAR
+>Ice.Default.Protocol=<TT
 CLASS="REPLACEABLE"
->protocol</VAR
+><I
+>protocol</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -119,9 +122,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13353"
->Description</A
-></H3
+NAME="AEN13397"
+></A
+>Description</H3
 ><P
 >Sets the protocol that is being used if an endpoint uses
 <TT
@@ -139,17 +142,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13358"
->Ice.Default.Host</A
-></H2
+NAME="AEN13402"
+></A
+>Ice.Default.Host</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13360"
->Synopsis</A
-></H3
+NAME="AEN13404"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -158,9 +161,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Default.Host=<VAR
+>Ice.Default.Host=<TT
 CLASS="REPLACEABLE"
->host</VAR
+><I
+>host</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -171,21 +176,25 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13364"
->Description</A
-></H3
+NAME="AEN13408"
+></A
+>Description</H3
 ><P
 >If an endpoint is specified without a host name (i.e., without a
 <TT
 CLASS="LITERAL"
->-h <VAR
+>-h <TT
 CLASS="REPLACEABLE"
->host</VAR
+><I
+>host</I
+></TT
 ></TT
 > option), the
-<VAR
+<TT
 CLASS="REPLACEABLE"
->host</VAR
+><I
+>host</I
+></TT
 > value from this property is used
 instead. The default value is the local host name.</P
 ></DIV
@@ -195,17 +204,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13370"
->Ice.Default.Router</A
-></H2
+NAME="AEN13414"
+></A
+>Ice.Default.Router</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13372"
->Synopsis</A
-></H3
+NAME="AEN13416"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -214,9 +223,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Default.Router=<VAR
+>Ice.Default.Router=<TT
 CLASS="REPLACEABLE"
->router</VAR
+><I
+>router</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -227,9 +238,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13376"
->Description</A
-></H3
+NAME="AEN13420"
+></A
+>Description</H3
 ><P
 >Specifies the default router for all proxies. The value is a
 stringified proxy to the <SPAN
@@ -252,17 +263,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13381"
->Ice.Default.Locator</A
-></H2
+NAME="AEN13425"
+></A
+>Ice.Default.Locator</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13383"
->Synopsis</A
-></H3
+NAME="AEN13427"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -271,9 +282,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Default.Locator=<VAR
+>Ice.Default.Locator=<TT
 CLASS="REPLACEABLE"
->locator</VAR
+><I
+>locator</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -284,9 +297,9 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13387"
->Description</A
-></H3
+NAME="AEN13431"
+></A
+>Description</H3
 ><P
 >Specifies a default locator for all proxies and object adapters.
 The value is a stringified proxy to the <SPAN
@@ -371,17 +384,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13401"
->Ice.Override.Timeout</A
-></H2
+NAME="AEN13445"
+></A
+>Ice.Override.Timeout</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13403"
->Synopsis</A
-></H3
+NAME="AEN13447"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -390,9 +403,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Override.Timeout=<VAR
+>Ice.Override.Timeout=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -403,14 +418,16 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13407"
->Description</A
-></H3
+NAME="AEN13451"
+></A
+>Description</H3
 ><P
 >If set, this property overrides timeout settings in all
-endpoints. <VAR
+endpoints. <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is the timeout value in
 milliseconds, or -1 for no timeout.</P
 ></DIV
@@ -420,17 +437,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13411"
->Ice.Override.ConnectTimeout</A
-></H2
+NAME="AEN13455"
+></A
+>Ice.Override.ConnectTimeout</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13413"
->Synopsis</A
-></H3
+NAME="AEN13457"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -439,9 +456,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Override.ConnectTimeout=<VAR
+>Ice.Override.ConnectTimeout=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -452,14 +471,16 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13417"
->Description</A
-></H3
+NAME="AEN13461"
+></A
+>Description</H3
 ><P
 >This property overrides timeout settings used to establish
-connections.  <VAR
+connections.  <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is the timeout value in
 milliseconds, or -1 for no timeout. If this property is not set, then
 <TT
@@ -473,17 +494,17 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="AEN13422"
->Ice.Override.Compress</A
-></H2
+NAME="AEN13466"
+></A
+>Ice.Override.Compress</H2
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13424"
->Synopsis</A
-></H3
+NAME="AEN13468"
+></A
+>Synopsis</H3
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -492,9 +513,11 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->Ice.Override.Compress=<VAR
+>Ice.Override.Compress=<TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 ></PRE
 ></TD
 ></TR
@@ -505,14 +528,16 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13428"
->Description</A
-></H3
+NAME="AEN13472"
+></A
+>Description</H3
 ><P
 >If set, this property overrides compression settings in all
-proxies. If <VAR
+proxies. If <TT
 CLASS="REPLACEABLE"
->num</VAR
+><I
+>num</I
+></TT
 > is set to a value larger
 than zero, compression is enabled. If zero, compression is disabled.</P
 ><P
@@ -555,7 +580,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x13271.html"
+HREF="x13330.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -573,7 +598,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x13439.html"
+HREF="x13483.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD

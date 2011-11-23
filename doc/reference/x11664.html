@@ -5,7 +5,8 @@
 >Glacier2::Router</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Ice Reference Documentation"
 HREF="index.html"><LINK
@@ -74,10 +75,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="GLACIER2.ROUTER"
+></A
 ><TT
 CLASS="LITERAL"
 >Glacier2::Router</TT
-></A
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -85,8 +86,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN11667"
->Overview</A
-></H2
+></A
+>Overview</H2
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -95,9 +96,9 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->interface <CODE
+>interface <TT
 CLASS="CLASSNAME"
->Router</CODE
+>Router</TT
 >
     extends 
 	<A
@@ -131,8 +132,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN11676"
->Operation Index</A
-></H3
+></A
+>Operation Index</H3
 ><P
 ></P
 ><DIV
@@ -172,10 +173,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="GLACIER2.ROUTER.CREATESESSION"
+></A
 ><TT
 CLASS="LITERAL"
 >createSession</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -185,9 +186,9 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
-><CODE
+><TT
 CLASS="CLASSNAME"
->Session*</CODE
+>Session*</TT
 > <TT
 CLASS="FUNCTION"
 >createSession</TT
@@ -212,16 +213,16 @@ CLASS="PARAMETER"
     throws
 	<A
 HREF="x11581.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->PermissionDeniedException</CODE
+>PermissionDeniedException</TT
 ></A
 >,
 	<A
 HREF="x11548.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->CannotCreateSessionException</CODE
+>CannotCreateSessionException</TT
 ></A
 >;</PRE
 ></TD
@@ -231,15 +232,15 @@ CLASS="CLASSNAME"
 >Create a per-client session with the router. If a
 <A
 HREF="x11812.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->SessionManager</CODE
+>SessionManager</TT
 ></A
 > has been installed, a proxy to a <A
 HREF="x11774.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->Session</CODE
+>Session</TT
 ></A
 >
 object is returned to the client. Otherwise, null is returned
@@ -251,8 +252,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN11710"
->Parameters</A
-></H3
+></A
+>Parameters</H3
 ><P
 ></P
 ><DIV
@@ -289,15 +290,15 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN11723"
->Return Value</A
-></H3
+></A
+>Return Value</H3
 ><P
 >		A proxy for the newly created session, or null if no
 <A
 HREF="x11812.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->SessionManager</CODE
+>SessionManager</TT
 ></A
 > has been installed.</P
 ></DIV
@@ -307,8 +308,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN11728"
->Exceptions</A
-></H3
+></A
+>Exceptions</H3
 ><P
 ></P
 ><DIV
@@ -317,9 +318,9 @@ CLASS="VARIABLELIST"
 ><DT
 ><A
 HREF="x11581.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->PermissionDeniedException</CODE
+>PermissionDeniedException</TT
 ></A
 ></DT
 ><DD
@@ -331,9 +332,9 @@ access.</P
 ><DT
 ><A
 HREF="x11548.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->CannotCreateSessionException</CODE
+>CannotCreateSessionException</TT
 ></A
 ></DT
 ><DD
@@ -350,26 +351,26 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN11743"
->See Also</A
-></H3
+></A
+>See Also</H3
 ><P
 >	    <A
 HREF="x11774.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->Session</CODE
+>Session</TT
 ></A
 >, <A
 HREF="x11812.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->SessionManager</CODE
+>SessionManager</TT
 ></A
 >, <A
 HREF="x11612.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->PermissionsVerifier</CODE
+>PermissionsVerifier</TT
 ></A
 ></P
 ></DIV
@@ -380,10 +381,10 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="GLACIER2.ROUTER.DESTROYSESSION"
+></A
 ><TT
 CLASS="LITERAL"
 >destroySession</TT
-></A
 ></H2
 ><TABLE
 BORDER="0"
@@ -404,9 +405,9 @@ CLASS="FUNCTION"
     throws
 	<A
 HREF="x11874.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->SessionNotExistException</CODE
+>SessionNotExistException</TT
 ></A
 >;</PRE
 ></TD
@@ -420,8 +421,8 @@ CLASS="SECTION"
 CLASS="SECTION"
 ><A
 NAME="AEN11765"
->Exceptions</A
-></H3
+></A
+>Exceptions</H3
 ><P
 ></P
 ><DIV
@@ -430,9 +431,9 @@ CLASS="VARIABLELIST"
 ><DT
 ><A
 HREF="x11874.html"
-><CODE
+><TT
 CLASS="CLASSNAME"
->SessionNotExistException</CODE
+>SessionNotExistException</TT
 ></A
 ></DT
 ><DD

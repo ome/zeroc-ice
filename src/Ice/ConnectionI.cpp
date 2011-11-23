@@ -93,6 +93,14 @@ Ice::ConnectionI::validate()
 	    
 	    if(active)
 	    {
+		IceUtil::Mutex::Lock sendSync(_sendMutex);
+
+		if(!_transceiver) // Has the transceiver already been closed?
+		{
+		    assert(_exception.get()); 
+		    _exception->ice_throw(); // The exception is immutable at this point.
+		}
+
 		BasicStream os(_instance.get());
 		os.writeBlob(magic, sizeof(magic));
 		os.write(protocolMajor);
@@ -285,9 +293,7 @@ Ice::ConnectionI::isFinished() const
 	}
 
 	if(_transceiver != 0 || _dispatchCount != 0 ||
-	   (_threadPerConnection &&
-	    _threadPerConnection->getThreadControl() != IceUtil::ThreadControl() &&
-	    _threadPerConnection->getThreadControl().isAlive()))
+	   (_threadPerConnection && _threadPerConnection->getThreadControl().isAlive()))
 	{
 	    return false;
 	}
@@ -298,7 +304,7 @@ Ice::ConnectionI::isFinished() const
 	_threadPerConnection = 0;
     }
 
-    if(threadPerConnection && threadPerConnection->getThreadControl() != IceUtil::ThreadControl())
+    if(threadPerConnection)
     {
 	threadPerConnection->getThreadControl().join();
     }
@@ -385,7 +391,7 @@ Ice::ConnectionI::waitUntilFinished()
 	_threadPerConnection = 0;
     }
 
-    if(threadPerConnection && threadPerConnection->getThreadControl() != IceUtil::ThreadControl())
+    if(threadPerConnection)
     {
 	threadPerConnection->getThreadControl().join();
     }
@@ -1378,7 +1384,7 @@ Ice::ConnectionI::ConnectionI(const InstancePtr& instance,
     _traceLevels(_instance->traceLevels()), // Cached for better performance.
     _registeredWithPool(false),
     _warn(_instance->properties()->getPropertyAsInt("Ice.Warn.Connections") > 0),
-    _acmTimeout(_endpoint->datagram() ?	0 : _instance->connectionIdleTime()),
+    _acmTimeout(0),
     _requestHdr(headerSize + sizeof(Int), 0),
     _requestBatchHdr(headerSize + sizeof(Int), 0),
     _replyHdr(headerSize, 0),
@@ -1393,6 +1399,23 @@ Ice::ConnectionI::ConnectionI(const InstancePtr& instance,
     _state(StateNotValidated),
     _stateTime(IceUtil::Time::now())
 {
+    Int& acmTimeout = const_cast<Int&>(_acmTimeout);
+    if(_endpoint->datagram())
+    {
+	acmTimeout = 0;
+    }
+    else
+    {
+	if(_adapter)
+	{
+	    acmTimeout = _instance->serverACM();
+	}
+	else
+	{
+	    acmTimeout = _instance->clientACM();
+	}
+    }
+
     vector<Byte>& requestHdr = const_cast<vector<Byte>&>(_requestHdr);
     requestHdr[0] = magic[0];
     requestHdr[1] = magic[1];
@@ -1479,8 +1502,6 @@ Ice::ConnectionI::ConnectionI(const InstancePtr& instance,
 	    }
 	}
 	
-	_state = StateClosed;
-	
 	try
 	{
 	    _transceiver->close();
@@ -1489,8 +1510,6 @@ Ice::ConnectionI::ConnectionI(const InstancePtr& instance,
 	{
 	    // Here we ignore any exceptions in close().
 	}
-	_transceiver = 0;
-	_threadPerConnection = 0;
 	
 	__setNoDelete(false);
 	ex.ice_throw();
@@ -1571,6 +1590,14 @@ Ice::ConnectionI::setState(State state)
     // only supports oneway transmission from client to server.
     //
     if(_endpoint->datagram() && state == StateClosing)
+    {
+	state = StateClosed;
+    }
+
+    //
+    // Skip graceful shutdown if we are destroyed before validation.
+    //
+    if(_state == StateNotValidated && state == StateClosing)
     {
 	state = StateClosed;
     }
