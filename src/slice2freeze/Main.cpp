@@ -49,7 +49,7 @@ usage(const char* n)
         "-DNAME=DEF            Define NAME as DEF.\n"
         "-UNAME                Remove any definition for NAME.\n"
         "-IDIR                 Put DIR in the include file search path.\n"
-        "--include-dir DIR     Use DIR as the header include directory.\n"
+        "--include-dir DIR     Use DIR as the header include directory in source files.\n"
         "--dll-export SYMBOL   Use SYMBOL for DLL exports.\n"
         "--dict NAME,KEY,VALUE Create a Freeze dictionary with the name NAME,\n"
         "                      using KEY as key, and VALUE as value. This\n"
@@ -159,6 +159,10 @@ writeCodecC(const TypePtr& type, const string& name, const string& freezeType, b
     C << sb;
     C << nl << "IceInternal::InstancePtr instance = IceInternal::getInstance(communicator);";
     C << nl << "IceInternal::BasicStream stream(instance.get());";
+    if(type->usesClasses())
+    {
+        C << nl << "stream.sliceObjects(false);";
+    }
     C << nl << "stream.b = bytes;";
     C << nl << "stream.i = stream.b.begin();";
     if(encaps)
@@ -284,7 +288,6 @@ writeIndexH(const string& memberTypeString, const string& name, Output& H, const
     H << sp;
     H << nl << "typedef IceUtil::Handle<" << name << "> " << name << "Ptr;";
 }
-
 
 void
 writeIndexC(const TypePtr& type, const TypePtr& memberType, const string& memberName,
@@ -464,8 +467,6 @@ writeIndex(const string& n, UnitPtr& u, const Index& index, Output& H, Output& C
     writeIndexC(type, dataMember->type(), index.member, index.caseSensitive, absolute, name, C);
     return true;
 }
-
-
 
 int
 main(int argc, char* argv[])
@@ -814,6 +815,10 @@ main(int argc, char* argv[])
     {
 	Preprocessor icecpp(argv[0], argv[idx], cppArgs);
 
+        //
+        // Add an include file for each Slice file. Note that the .h extension
+        // is replaced with headerExtension later.
+        //
 	includes.push_back(icecpp.getBaseName() + ".h");
 
 	FILE* cppHandle = icecpp.preprocess(false);
@@ -890,7 +895,7 @@ main(int argc, char* argv[])
 	{
 	    for(StringList::const_iterator p = includes.begin(); p != includes.end(); ++p)
 	    {
-		H << "\n#include <" << changeInclude(*p, includePaths) << ".h>";
+		H << "\n#include <" << changeInclude(*p, includePaths) << "." + headerExtension + ">";
 	    }
 	}
 

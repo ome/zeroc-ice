@@ -47,7 +47,6 @@ slice_error(const char* s)
 %}
 
 %pure_parser
-%name_prefix="slice_"
 
 //
 // All keyword tokens. Make sure to modify the "keyword" rule in this
@@ -107,6 +106,15 @@ start
 ;
 
 // ----------------------------------------------------------------------
+global_meta_data
+// ----------------------------------------------------------------------
+: '[' '[' string_list ']' ']'
+{
+    $$ = $3;
+}
+;
+
+// ----------------------------------------------------------------------
 meta_data
 // ----------------------------------------------------------------------
 : '[' string_list ']'
@@ -122,7 +130,16 @@ meta_data
 // ----------------------------------------------------------------------
 definitions
 // ----------------------------------------------------------------------
-: meta_data definition ';' definitions
+: global_meta_data
+{
+    StringListTokPtr metaData = StringListTokPtr::dynamicCast($1);
+    if(!metaData->v.empty())
+    {
+        unit->setGlobalMetaData(metaData->v);
+    }
+}
+definitions
+| meta_data definition
 {
     StringListTokPtr metaData = StringListTokPtr::dynamicCast($1);
     ContainedPtr contained = ContainedPtr::dynamicCast($2);
@@ -130,7 +147,9 @@ definitions
     {
 	contained->setMetaData(metaData->v);
     }
+    unit->setSeenDefinition();
 }
+';' definitions
 | error ';' definitions
 {
     yyerrok;

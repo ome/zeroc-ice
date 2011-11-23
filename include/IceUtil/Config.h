@@ -15,15 +15,15 @@
 #ifndef ICE_UTIL_CONFIG_H
 #define ICE_UTIL_CONFIG_H
 
-
 //
 // Endianness
+//
 // Most CPUs support only one endianness, with the notable exceptions
 // of Itanium (IA64) and MIPS.
 //
 #if defined(__i386) || defined(_M_IX86) || defined (__x86_64)
 #   define ICE_LITTLE_ENDIAN
-#elif defined(__sparc) || defined(__sparc__)
+#elif defined(__sparc) || defined(__sparc__) || defined(__hppa) || defined(__ppc__)
 #   define ICE_BIG_ENDIAN
 #else
 #   error "Unknown architecture"
@@ -37,7 +37,7 @@
 // We are a linux sparc, which forces 32 bit usr land, no matter the architecture
 //
 #   define  ICE_32
-#elif (defined(__sun) && defined(__sparcv9)) || (defined(__linux) && defined(__x86_64))
+#elif (defined(__sun) && defined(__sparcv9)) || (defined(__linux) && defined(__x86_64)) || (defined(__hppa) && defined(__LP64__))
 #   define ICE_64
 #else
 #   define ICE_32
@@ -49,7 +49,7 @@
 //
 // TODO: more macros to support IBM Visual Age _Export syntax as well.
 //
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || (defined(__HP_aCC) && defined(__HP_WINDLL))
 #   define ICE_DECLSPEC_EXPORT __declspec(dllexport)
 #   define ICE_DECLSPEC_IMPORT __declspec(dllimport)
 #elif defined(__SUNPRO_CC) && (__SUNPRO_CC >= 0x550)
@@ -74,12 +74,14 @@
 // STLport library. This is done by setting _STLP_DEBUG before any
 // STLport header files are included.
 //
-#if !defined(NDEBUG) && !defined(_STLP_DEBUG)
+// TODO: figure out why IceUtil does not compile with _SLTP_DEBUG using
+// the Intel compiler.
+//
+#if !defined(NDEBUG) && !defined(_STLP_DEBUG) && !defined(__INTEL_COMPILER)
 #   define _STLP_DEBUG
 #endif
 
 #if defined(_WIN32)
-
 
 //
 // Comment out the following block if you want to run on Windows 9x
@@ -92,22 +94,20 @@
 #       define _WIN32_WINNT 0x0400
 #   endif
 
-
-#   if !defined(_UNICODE)
-#       error "Only unicode libraries can be used with Ice!"
-#   endif
-
-// For some unknown reason, VC++ 7.1 does not pass properly /DUNICODE
-// (needs further investigation)
-#   if defined(_MSC_VER) && (_MSC_VER == 1310) && !defined(UNICODE)
-#       define UNICODE 1
-#   endif
-
 #   if !defined(_DLL) || !defined(_MT)
 #       error "Only multi-threaded DLL libraries can be used with Ice!"
 #   endif
 
 #   include <windows.h>
+
+//
+// MFC applications that include afxwin.h before this header will cause
+// windows.h to skip inclusion of winsock.h, so we include it here if
+// necessary.
+// 
+#   ifndef _WINSOCKAPI_
+#      include <winsock.h>
+#   endif
 
 // '...' : forcing value to bool 'true' or 'false' (performance warning)
 #   pragma warning( disable : 4800 )
@@ -124,7 +124,7 @@
 //  ...: decorated name length exceeded, name was truncated
 #   pragma warning( disable : 4503 )  
 
-#elif defined(__sun) && defined(__sparc)
+#elif (defined(__sun) && defined(__sparc)) || (defined(__hpux))
 #   include <inttypes.h>
 #else
 //
@@ -132,7 +132,9 @@
 // macros for minimum/maximum integer values should only be defined if
 // explicitly requested with __STDC_LIMIT_MACROS.
 //
-#   define __STDC_LIMIT_MACROS
+#   ifndef  __STDC_LIMIT_MACROS
+#      define __STDC_LIMIT_MACROS
+#   endif
 #   include <stdint.h>
 #endif
 
@@ -203,6 +205,8 @@ const Int64 Int64Max = INT64_MAX;
 
 #if defined(_MSC_VER)
 #   define ICE_INT64(n) n##i64
+#elif defined(__HP_aCC)
+#   define ICE_INT64(n) n
 #elif defined(ICE_64)
 #   define ICE_INT64(n) n##L
 #else
@@ -214,7 +218,7 @@ const Int64 Int64Max = INT64_MAX;
 //
 // The Ice version.
 //
-#define ICE_STRING_VERSION "1.2.0" // "A.B.C", with A=major, B=minor, C=patch
-#define ICE_INT_VERSION 10200      // AABBCC, with AA=major, BB=minor, CC=patch
+#define ICE_STRING_VERSION "1.3.0" // "A.B.C", with A=major, B=minor, C=patch
+#define ICE_INT_VERSION 10300      // AABBCC, with AA=major, BB=minor, CC=patch
 
 #endif

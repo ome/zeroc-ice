@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Ice::ConnectionNotValidatedException</TITLE
+>Ice::ConnectionLostException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
@@ -14,10 +14,10 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Ice::ConnectionLostException"
+TITLE="Ice::ConnectTimeoutException"
 HREF="x1840.html"><LINK
 REL="NEXT"
-TITLE="Ice::ConnectionTimeoutException"
+TITLE="Ice::ConnectionNotValidatedException"
 HREF="x1864.html"></HEAD
 ><BODY
 CLASS="SECTION"
@@ -74,11 +74,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICE.CONNECTIONNOTVALIDATEDEXCEPTION"
+NAME="ICE.CONNECTIONLOSTEXCEPTION"
 ></A
 ><TT
 CLASS="LITERAL"
->Ice::ConnectionNotValidatedException</TT
+>Ice::ConnectionLostException</TT
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -98,14 +98,14 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 >local exception <TT
 CLASS="CLASSNAME"
->ConnectionNotValidatedException</TT
+>ConnectionLostException</TT
 >
     extends 
 	<A
-HREF="x4255.html"
+HREF="x4800.html"
 ><TT
 CLASS="CLASSNAME"
->ProtocolException</TT
+>SocketException</TT
 ></A
 ></PRE
 ></TD
@@ -113,14 +113,13 @@ CLASS="CLASSNAME"
 ></TABLE
 ><P
 >This exception is a specialization of <A
-HREF="x4255.html"
+HREF="x4800.html"
 ><TT
 CLASS="CLASSNAME"
->ProtocolException</TT
+>SocketException</TT
 ></A
->, that is
-raised if a message is received over a connection that is not yet
-validated.</P
+>, indicating
+a lost connection.</P
 ></DIV
 ></DIV
 ><DIV
@@ -169,7 +168,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::ConnectionLostException</TT
+>Ice::ConnectTimeoutException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -186,7 +185,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::ConnectionTimeoutException</TT
+>Ice::ConnectionNotValidatedException</TT
 ></TD
 ></TR
 ></TABLE

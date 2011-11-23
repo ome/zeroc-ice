@@ -17,6 +17,7 @@
 
 #include <Ice/Identity.ice>
 #include <Ice/BuiltinSequences.ice>
+#include <Ice/ProcessF.ice>
 #include <IcePack/Admin.ice>
 
 module IcePack
@@ -270,6 +271,20 @@ class Server
 
     /**
      *
+     * Send signal to the server
+     *
+     **/
+    void sendSignal(string signal) throws BadSignalException;
+    
+    /**
+     *
+     * Write message on servers' stdout or stderr.
+     *
+     **/
+    void writeMessage(string message, int fd);
+
+    /**
+     *
      * Destroy the server. This method destroys the server and
      * eventually deactivates if it's still active.
      *
@@ -318,7 +333,21 @@ class Server
      *
      **/
     ServerActivation getActivationMode();
-    
+
+    /**
+     *
+     * Set the process proxy.
+     *
+     **/
+    void setProcess(Ice::Process* proc);
+
+    /**
+     *
+     * Get the proxy for the server's process.
+     *
+     **/
+    Ice::Process* getProcess();
+
     /**
      * 
      * The description of this server.
@@ -377,8 +406,7 @@ interface ServerRegistry
      *
      * @param name Name of the server.
      *
-     * @return Server proxy or a null proxy if the server is not
-     * found.
+     * @return Server proxy.
      *
      **/
     Server* findByName(string name)

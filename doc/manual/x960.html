@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Ice::AdapterAlreadyActiveException</TITLE
+>Ice::AbortBatchRequestException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
@@ -14,11 +14,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Ice::AbortBatchRequestException"
-HREF="x948.html"><LINK
+TITLE="Ice"
+HREF="x77.html"><LINK
 REL="NEXT"
-TITLE="Ice::AdapterNotFoundException"
-HREF="x968.html"></HEAD
+TITLE="Ice::AdapterAlreadyActiveException"
+HREF="x972.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -46,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x948.html"
+HREF="x77.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -60,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x968.html"
+HREF="x972.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -74,11 +74,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICE.ADAPTERALREADYACTIVEEXCEPTION"
+NAME="ICE.ABORTBATCHREQUESTEXCEPTION"
 ></A
 ><TT
 CLASS="LITERAL"
->Ice::AdapterAlreadyActiveException</TT
+>Ice::AbortBatchRequestException</TT
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -96,16 +96,30 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->exception <TT
+>local exception <TT
 CLASS="CLASSNAME"
->AdapterAlreadyActiveException</TT
+>AbortBatchRequestException</TT
+>
+    extends 
+	<A
+HREF="x4360.html"
+><TT
+CLASS="CLASSNAME"
+>ProtocolException</TT
+></A
 ></PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->This exception is raised if a server tries to set endpoints for
-an adapter that is already active.</P
+>This exception is a specialization of <A
+HREF="x4360.html"
+><TT
+CLASS="CLASSNAME"
+>ProtocolException</TT
+></A
+>,
+indicating that a batch request has been aborted.</P
 ></DIV
 ></DIV
 ><DIV
@@ -124,7 +138,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x948.html"
+HREF="x77.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -142,7 +156,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x968.html"
+HREF="x972.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -154,7 +168,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::AbortBatchRequestException</TT
+>Ice</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -171,7 +185,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::AdapterNotFoundException</TT
+>Ice::AdapterAlreadyActiveException</TT
 ></TD
 ></TR
 ></TABLE

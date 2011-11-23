@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D "_USRDLL" /D "ICE_XML_API_EXPORTS" /D "NDEBUG" /D "_CONSOLE" /D "_UNICODE" /FD /c
+# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D "_USRDLL" /D "ICE_XML_API_EXPORTS" /D "NDEBUG" /D "_CONSOLE" /FD /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
@@ -54,12 +54,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 libexpat.lib /nologo /dll /machine:I386 /out:"Release/icexml12.dll" /implib:"Release/icexml.lib"
+# ADD LINK32 libexpat.lib /nologo /dll /machine:I386 /out:"Release/icexml13.dll" /implib:"Release/icexml.lib"
 # SUBTRACT LINK32 /pdb:none /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\icexml.lib ..\..\lib	copy $(OutDir)\icexml12.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\icexml.lib ..\..\lib	copy $(OutDir)\icexml13.dll ..\..\bin
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "IceXML - Win32 Debug"
@@ -76,7 +76,7 @@ PostBuild_Cmds=copy $(OutDir)\icexml.lib ..\..\lib	copy $(OutDir)\icexml12.dll .
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "_USRDLL" /D "ICE_XML_API_EXPORTS" /D "_DEBUG" /D "_CONSOLE" /D "_UNICODE" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "_USRDLL" /D "ICE_XML_API_EXPORTS" /D "_DEBUG" /D "_CONSOLE" /FD /GZ /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
@@ -87,12 +87,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386
-# ADD LINK32 libexpat.lib /nologo /dll /debug /machine:I386 /out:"Debug/icexml12d.dll" /implib:"Debug/icexmld.lib"
+# ADD LINK32 libexpat.lib /nologo /dll /debug /machine:I386 /out:"Debug/icexml13d.dll" /implib:"Debug/icexmld.lib"
 # SUBTRACT LINK32 /pdb:none /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Debug
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\icexmld.lib ..\..\lib	copy $(OutDir)\icexml12d.pdb ..\..\bin	copy $(OutDir)\icexml12d.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\icexmld.lib ..\..\lib	copy $(OutDir)\icexml13d.pdb ..\..\bin	copy $(OutDir)\icexml13d.dll ..\..\bin
 # End Special Build Tool
 
 !ENDIF 

@@ -156,7 +156,7 @@ IcePack::AdminI::stopServer(const string& name, const Current&)
     ServerPrx server = _serverRegistry->findByName(name);
     try
     {
-	return server->stop();
+	server->stop();
     }
     catch(const Ice::ObjectNotExistException&)
     {
@@ -167,6 +167,43 @@ IcePack::AdminI::stopServer(const string& name, const Current&)
 	throw NodeUnreachableException();
     }
 }
+
+void
+IcePack::AdminI::sendSignal(const string& name, const string& signal, const Current&)
+{
+    ServerPrx server = _serverRegistry->findByName(name);
+    try
+    {
+	server->sendSignal(signal);
+    }
+    catch(const Ice::ObjectNotExistException&)
+    {
+	throw ServerNotExistException();
+    }
+    catch(const Ice::LocalException&)
+    {
+	throw NodeUnreachableException();
+    }
+}
+
+void
+IcePack::AdminI::writeMessage(const string& name, const string& message, Int fd, const Current&)
+{
+    ServerPrx server = _serverRegistry->findByName(name);
+    try
+    {
+	server->writeMessage(message, fd);
+    }
+    catch(const Ice::ObjectNotExistException&)
+    {
+	throw ServerNotExistException();
+    }
+    catch(const Ice::LocalException&)
+    {
+	throw NodeUnreachableException();
+    }
+}
+
 
 StringSeq
 IcePack::AdminI::getAllServerNames(const Current&) const
@@ -198,7 +235,7 @@ IcePack::AdminI::setServerActivation(const ::std::string& name, ServerActivation
     ServerPrx server = _serverRegistry->findByName(name);
     try
     {
-	return server->setActivationMode(mode);
+	server->setActivationMode(mode);
     }
     catch(const Ice::ObjectNotExistException&)
     {
@@ -281,7 +318,7 @@ IcePack::AdminI::pingNode(const string& name, const Current&) const
     {
 	throw NodeNotExistException();
     }
-    catch(const Ice::LocalException& ex)
+    catch(const Ice::LocalException&)
     {
 	return false;
     }

@@ -89,6 +89,7 @@ void
 Freeze::EvictorI::init(const string& envName, bool createDb)
 {
     _trace = _communicator->getProperties()->getPropertyAsInt("Freeze.Trace.Evictor");
+    _deadlockWarning = (_communicator->getProperties()->getPropertyAsInt("Freeze.Warn.Deadlocks") != 0);
    
     string propertyPrefix = string("Freeze.Evictor.") + envName + '.' + _dbName; 
     
@@ -284,7 +285,7 @@ Freeze::EvictorI::createObject(const Identity& ident, const ObjectPtr& servant)
 		    //
 		    for(FacetMap::iterator q = element->facets.begin(); q != element->facets.end(); q++)
 		    {
-			destroyFacetImpl(q, q->second);
+			destroyFacetImpl(q->second);
 		    }
 		}
 		else
@@ -485,7 +486,7 @@ Freeze::EvictorI::destroyObject(const Identity& ident)
 		    //
 		    for(FacetMap::iterator q = element->facets.begin(); q != element->facets.end(); q++)
 		    {
-			destroyFacetImpl(q, q->second);
+			destroyFacetImpl(q->second);
 		    }
 		}
 
@@ -674,7 +675,7 @@ Freeze::EvictorI::removeAllFacets(const Identity& ident)
 		    {
 			if(q->second != element->mainObject)
 			{
-			    destroyFacetImpl(q, q->second);
+			    destroyFacetImpl(q->second);
 			}
 		    }
 		}
@@ -949,10 +950,7 @@ Freeze::EvictorI::finished(const Current& current, const ObjectPtr& servant, con
 	
 	if(enqueue)
 	{
-	    FacetMap::iterator q = facet->element->facets.find(current.facet);
-	    assert(q != facet->element->facets.end());
-	    
-	    addToModifiedQueue(q, facet);
+	    addToModifiedQueue(facet);
 	}
 	else
 	{
@@ -1017,307 +1015,353 @@ Freeze::EvictorI::deactivate(const string&)
 void
 Freeze::EvictorI::run()
 {
-    for(;;)
+    try
     {
-    	deque<FacetMap::iterator> allObjects;
-	size_t saveNowThreadsSize = 0;
-
+	for(;;)
 	{
-	    Lock sync(*this);
-	    while(!_deactivated &&
-		  (_saveNowThreads.size() == 0) &&
-		  (_saveSizeTrigger < 0 || static_cast<Int>(_modifiedQueue.size()) < _saveSizeTrigger))
-	    {
-		if(_savePeriod == IceUtil::Time::milliSeconds(0))
-		{
-		    wait();
-		}
-		else if(timedWait(_savePeriod) == false)
-		{
-		    //
-		    // Timeout, so let's save
-		    //
-		    break; // while
-		}				
-	    }
+	    deque<FacetPtr> allObjects;
+	    size_t saveNowThreadsSize = 0;
 	    
-	    saveNowThreadsSize = _saveNowThreads.size();
-	    
-	    if(_deactivated)
 	    {
-		assert(_modifiedQueue.size() == 0);
-		if(saveNowThreadsSize > 0)
+		Lock sync(*this);
+		while(!_deactivated &&
+		      (_saveNowThreads.size() == 0) &&
+		      (_saveSizeTrigger < 0 || static_cast<Int>(_modifiedQueue.size()) < _saveSizeTrigger))
 		{
-		    _saveNowThreads.clear();
-		    notifyAll();
-		}
-		break; // for(;;)
-	    }
-
-	    //
-	    // Check first if there is something to do!
-	    //
-	    if(_modifiedQueue.size() == 0)
-	    {
-		if(saveNowThreadsSize > 0)
-		{
-		    _saveNowThreads.clear();
-		    notifyAll();
-		}
-		continue; // for(;;)
-	    }
-
-	    _modifiedQueue.swap(allObjects);
-	}
-    
-	const size_t size = allObjects.size();
-    
-	deque<StreamedObject> streamedObjectQueue;
-	
-	Long saveStart = IceUtil::Time::now().toMilliSeconds();
-	
-	//
-	// Stream each element
-	//
-	for(size_t i = 0; i < size; i++)
-	{
-	    FacetPtr& facet = allObjects[i]->second;
-	    
-	    bool tryAgain;
-	    do
-	    {
-		tryAgain = false;
-		ObjectPtr servant = 0;
-
-		IceUtil::Mutex::Lock lockFacet(facet->mutex);
-		Byte status = facet->status;
-		
-		switch(status)
-		{
-		    case created:
-		    case modified:
+		    if(_savePeriod == IceUtil::Time::milliSeconds(0))
 		    {
-			servant = facet->rec.servant;
-			break;
-		    }   
-		    case destroyed:
-		    {
-			facet->status = dead;
-			size_t index = streamedObjectQueue.size();
-			streamedObjectQueue.resize(index + 1);
-			StreamedObject& obj = streamedObjectQueue[index];
-			streamFacet(facet, allObjects[i]->first, status, saveStart, obj);
-			break;
-		    }   
-		    default:
-		    {
-			//
-			// Nothing to do (could be a duplicate)
-			//
-			break;
+			wait();
 		    }
-		}
-		if(servant == 0)
-		{
-		    lockFacet.release();
-		}
-		else
-		{
-		    IceUtil::AbstractMutex* mutex = dynamic_cast<IceUtil::AbstractMutex*>(servant.get());
-		    if(mutex != 0)
+		    else if(timedWait(_savePeriod) == false)
 		    {
 			//
-			// Lock servant and then facet so that user can safely lock
-			// servant and call various Evictor operations
+			// Timeout, so let's save
 			//
-
-			IceUtil::AbstractMutex::TryLock lockServant(*mutex);
-			if(!lockServant.acquired())
+			break; // while
+		    }				
+		}
+		
+		saveNowThreadsSize = _saveNowThreads.size();
+		
+		if(_deactivated)
+		{
+		    assert(_modifiedQueue.size() == 0);
+		    if(saveNowThreadsSize > 0)
+		    {
+			_saveNowThreads.clear();
+			notifyAll();
+		    }
+		    break; // for(;;)
+		}
+		
+		//
+		// Check first if there is something to do!
+		//
+		if(_modifiedQueue.size() == 0)
+		{
+		    if(saveNowThreadsSize > 0)
+		    {
+			_saveNowThreads.clear();
+			notifyAll();
+		    }
+		    continue; // for(;;)
+		}
+		
+		_modifiedQueue.swap(allObjects);
+	    }
+	    
+	    const size_t size = allObjects.size();
+	    
+	    deque<StreamedObject> streamedObjectQueue;
+	    
+	    Long streamStart = IceUtil::Time::now().toMilliSeconds();
+	    
+	    //
+	    // Stream each element
+	    //
+	    for(size_t i = 0; i < size; i++)
+	    {
+		FacetPtr& facet = allObjects[i];
+		
+		bool tryAgain;
+		do
+		{
+		    tryAgain = false;
+		    ObjectPtr servant = 0;
+		    
+		    IceUtil::Mutex::Lock lockFacet(facet->mutex);
+		    Byte status = facet->status;
+		    
+		    switch(status)
+		    {
+			case created:
+			case modified:
 			{
-			    lockFacet.release();
-			    lockServant.acquire();
-			    lockFacet.acquire();
-			    status = facet->status;
-			}
-			
-			switch(status)
+			    servant = facet->rec.servant;
+			    break;
+			}   
+			case destroyed:
 			{
-			    case created:
-			    case modified:
-			    {
-				if(servant == facet->rec.servant)
-				{
-				    facet->status = clean;
-				    size_t index = streamedObjectQueue.size();
-				    streamedObjectQueue.resize(index + 1);
-				    StreamedObject& obj = streamedObjectQueue[index];
-				    streamFacet(facet, allObjects[i]->first, status, saveStart, obj);
-				}
-				else
-				{
-				    tryAgain = true;
-				}
-				break;
-			    }
-			    case destroyed:
-			    {
-				lockServant.release();
-				facet->status = dead;
-				size_t index = streamedObjectQueue.size();
-				streamedObjectQueue.resize(index + 1);
-				StreamedObject& obj = streamedObjectQueue[index];
-				streamFacet(facet, allObjects[i]->first, status, saveStart, obj);
-				break;
-			    }   
-			    default:
-			    {
-				//
-				// Nothing to do (could be a duplicate)
-				//
-				break;
-			    }
+			    facet->status = dead;
+			    size_t index = streamedObjectQueue.size();
+			    streamedObjectQueue.resize(index + 1);
+			    StreamedObject& obj = streamedObjectQueue[index];
+			    streamFacet(facet, facet->position->first, status, streamStart, obj);
+			    break;
+			}   
+			default:
+			{
+			    //
+			    // Nothing to do (could be a duplicate)
+			    //
+			    break;
 			}
+		    }
+		    if(servant == 0)
+		    {
+			lockFacet.release();
 		    }
 		    else
 		    {
-			DatabaseException ex(__FILE__, __LINE__);
-			ex.message = string(typeid(*facet->rec.servant).name()) 
-			    + " does not implement IceUtil::AbstractMutex";
-			throw ex;
-		    }
-		}
-	    } while(tryAgain);
-	}
-	
-	//
-	// Now let's save all these streamed objects to disk using a transaction
-	//
-	
-	//
-	// Each time we get a deadlock, we reduce the number of objects to save
-	// per transaction
-	//
-	size_t txSize = streamedObjectQueue.size();
-	if(txSize > static_cast<size_t>(_maxTxSize))
-	{
-	    txSize = static_cast<size_t>(_maxTxSize);
-	}
-	bool tryAgain;
-	
-	do
-	{
-	    tryAgain = false;
-	    
-	    while(streamedObjectQueue.size() > 0)
-	    {
-		if(txSize > streamedObjectQueue.size())
-		{
-		    txSize = streamedObjectQueue.size();
-		}
-		
-		try
-		{
-		    DbTxn* tx = 0;
-		    _dbEnv->txn_begin(0, &tx, 0);
-		    try
-		    {   
-			for(size_t i = 0; i < txSize; i++)
+			IceUtil::AbstractMutex* mutex = dynamic_cast<IceUtil::AbstractMutex*>(servant.get());
+			if(mutex != 0)
 			{
-			    StreamedObject& obj = streamedObjectQueue[i];
-
-			    switch(obj.status)
+			    //
+			    // Lock servant and then facet so that user can safely lock
+			    // servant and call various Evictor operations
+			    //
+			    
+			    IceUtil::AbstractMutex::TryLock lockServant(*mutex);
+			    if(!lockServant.acquired())
+			    {
+				lockFacet.release();
+				lockServant.acquire();
+				lockFacet.acquire();
+				status = facet->status;
+			    }
+			    
+			    switch(status)
 			    {
 				case created:
 				case modified:
 				{
-				    Dbt dbKey;
-				    Dbt dbValue;
-				    initializeInDbt(obj.key, dbKey);
-				    initializeInDbt(obj.value, dbValue);
-				    u_int32_t flags = (obj.status == created) ? DB_NOOVERWRITE : 0;
-				    int err = _db->put(tx, &dbKey, &dbValue, flags);
-				    if(err != 0)
+				    if(servant == facet->rec.servant)
 				    {
-					throw DatabaseException(__FILE__, __LINE__);
+					facet->status = clean;
+					size_t index = streamedObjectQueue.size();
+					streamedObjectQueue.resize(index + 1);
+					StreamedObject& obj = streamedObjectQueue[index];
+					streamFacet(facet, facet->position->first, status, streamStart, obj);
+				    }
+				    else
+				    {
+					tryAgain = true;
 				    }
 				    break;
 				}
 				case destroyed:
 				{
-				    Dbt dbKey;
-				    initializeInDbt(obj.key, dbKey);
-				    int err = _db->del(tx, &dbKey, 0);
-				    if(err != 0)
-				    {
-					throw DatabaseException(__FILE__, __LINE__);
-				    }
+				    lockServant.release();
+				    facet->status = dead;
+				    size_t index = streamedObjectQueue.size();
+				    streamedObjectQueue.resize(index + 1);
+				    StreamedObject& obj = streamedObjectQueue[index];
+				    streamFacet(facet, facet->position->first, status, streamStart, obj);
 				    break;
 				}   
 				default:
 				{
-				    assert(0);
+				    //
+				    // Nothing to do (could be a duplicate)
+				    //
+				    break;
 				}
 			    }
 			}
+			else
+			{
+			    DatabaseException ex(__FILE__, __LINE__);
+			    ex.message = string(typeid(*facet->rec.servant).name()) 
+				+ " does not implement IceUtil::AbstractMutex";
+			    throw ex;
+			}
 		    }
-		    catch(...)
+		} while(tryAgain);
+	    }
+	    
+	    if(_trace >= 1)
+	    {
+		Long now = IceUtil::Time::now().toMilliSeconds();
+		Trace out(_communicator->getLogger(), "Freeze.Evictor");
+		out << "streamed " << streamedObjectQueue.size() << " objects in " 
+		    << static_cast<Int>(now - streamStart) << " ms";
+	    }
+	    
+	    //
+	    // Now let's save all these streamed objects to disk using a transaction
+	    //
+	    
+	    //
+	    // Each time we get a deadlock, we reduce the number of objects to save
+	    // per transaction
+	    //
+	    size_t txSize = streamedObjectQueue.size();
+	    if(txSize > static_cast<size_t>(_maxTxSize))
+	    {
+		txSize = static_cast<size_t>(_maxTxSize);
+	    }
+	    bool tryAgain;
+	    
+	    do
+	    {
+		tryAgain = false;
+		
+		while(streamedObjectQueue.size() > 0)
+		{
+		    if(txSize > streamedObjectQueue.size())
 		    {
-			tx->abort();
-			throw;
+			txSize = streamedObjectQueue.size();
 		    }
-		    tx->commit(0);
-		    streamedObjectQueue.erase
-			(streamedObjectQueue.begin(), 
-			 streamedObjectQueue.begin() + txSize);
 		    
-		    if(_trace >= 1)
+		    Long saveStart = IceUtil::Time::now().toMilliSeconds();
+		    try
 		    {
-			Long now = IceUtil::Time::now().toMilliSeconds();
-			Trace out(_communicator->getLogger(), "Freeze.Evictor");
-			out << "saved " << txSize << " objects in " 
-			    << static_cast<Int>(now - saveStart) << " ms";
-			saveStart = now;
+			DbTxn* tx = 0;
+			_dbEnv->txn_begin(0, &tx, 0);
+			try
+			{	
+			    for(size_t i = 0; i < txSize; i++)
+			    {
+				StreamedObject& obj = streamedObjectQueue[i];
+				
+				switch(obj.status)
+				{
+				    case created:
+				    case modified:
+				    {
+					Dbt dbKey;
+					Dbt dbValue;
+					initializeInDbt(obj.key, dbKey);
+					initializeInDbt(obj.value, dbValue);
+					u_int32_t flags = (obj.status == created) ? DB_NOOVERWRITE : 0;
+					int err = _db->put(tx, &dbKey, &dbValue, flags);
+					if(err != 0)
+					{
+					    throw DatabaseException(__FILE__, __LINE__);
+					}
+					break;
+				    }
+				    case destroyed:
+				    {
+					Dbt dbKey;
+					initializeInDbt(obj.key, dbKey);
+					int err = _db->del(tx, &dbKey, 0);
+					if(err != 0)
+					{
+					    throw DatabaseException(__FILE__, __LINE__);
+					}
+					break;
+				    }   
+				    default:
+				    {
+					assert(0);
+				    }
+				}
+			    }
+			}
+			catch(...)
+			{
+			    tx->abort();
+			    throw;
+			}
+			tx->commit(0);
+			streamedObjectQueue.erase
+			    (streamedObjectQueue.begin(), 
+			     streamedObjectQueue.begin() + txSize);
+			
+			if(_trace >= 1)
+			{
+			    Long now = IceUtil::Time::now().toMilliSeconds();
+			    Trace out(_communicator->getLogger(), "Freeze.Evictor");
+			    out << "saved " << txSize << " objects in " 
+				<< static_cast<Int>(now - saveStart) << " ms";
+			}
+		    }
+		    catch(const DbDeadlockException&)
+		    {
+			tryAgain = true;
+			txSize = (txSize + 1)/2;
+		    }
+		    catch(const DbException& dx)
+		    {
+			DatabaseException ex(__FILE__, __LINE__);
+			ex.message = dx.what();
+			throw ex;
+		    }
+		} 
+	    }
+	    while(tryAgain);
+	    
+	    {
+		Lock sync(*this);
+		
+		_generation++;
+		
+		for(deque<FacetPtr>::iterator q = allObjects.begin();
+		    q != allObjects.end(); q++)
+		{
+		    FacetPtr& facet = *q;
+		    facet->element->usageCount--;
+		    
+		    if(facet != facet->element->mainObject)
+		    {
+			//
+			// Remove if dead
+			//
+			IceUtil::Mutex::Lock lockFacet(facet->mutex);
+			{
+			    if(facet->status == dead)
+			    {
+				facet->element->facets.erase(facet->position);
+				facet->position = facet->element->facets.end();
+			    }    
+			}
 		    }
 		}
-		catch(const DbDeadlockException&)
+		allObjects.clear();
+		evict();
+		
+		if(saveNowThreadsSize > 0)
 		{
-		    tryAgain = true;
-		    txSize = (txSize + 1)/2;
+		    _saveNowThreads.erase(_saveNowThreads.begin(), _saveNowThreads.begin() + saveNowThreadsSize);
+		    notifyAll();
 		}
-		catch(const DbException& dx)
-		{
-		    DatabaseException ex(__FILE__, __LINE__);
-		    ex.message = dx.what();
-		    throw ex;
-		}
-	    } 
-	}
-        while(tryAgain);
-	
-	
-	{
-	    Lock sync(*this);
-	    
-	    _generation++;
-
-	    for(deque<FacetMap::iterator>::iterator q = allObjects.begin();
-		q != allObjects.end(); q++)
-	    {
-		(*q)->second->element->usageCount--;
 	    }
-	    allObjects.clear();
-	    evict();
-	    
-	    if(saveNowThreadsSize > 0)
-	    {
-		_saveNowThreads.erase(_saveNowThreads.begin(), _saveNowThreads.begin() + saveNowThreadsSize);
-		notifyAll();
-	    }
+	    _lastSave = IceUtil::Time::now();
 	}
-	_lastSave = IceUtil::Time::now();
+    }
+    catch(const IceUtil::Exception& ex)
+    {
+	Error out(_communicator->getLogger());
+	out << "Saving thread killed by exception: " << ex;
+	out.flush();
+	::abort();
+    }
+    catch(const std::exception& ex)
+    {
+	Error out(_communicator->getLogger());
+	out << "Saving thread killed by std::exception: " << ex.what();
+	out.flush();
+	::abort();
+    }
+    catch(...)
+    {
+	Error out(_communicator->getLogger());
+	out << "Saving thread killed by unknown exception";
+	out.flush();
+	::abort();
     }
 }
-
 
 bool
 Freeze::EvictorI::load(Dbc* dbc, Key& key, Value& value, 
@@ -1387,6 +1431,7 @@ Freeze::EvictorI::load(Dbc* dbc, Key& key, Value& value,
 	    pair<FacetMap::iterator, bool> pair;
 	    pair = elt->facets.insert(FacetMap::value_type(esk.facet, facet));
 	    assert(pair.second);
+	    facet->position = pair.first;
 	    
 	    if(esk.facet.size() == 0)
 	    {
@@ -1534,7 +1579,6 @@ Freeze::EvictorI::insert(const vector<Identity>& identities,
     }
 }
 
-
 //
 // Marshaling/unmarshaling persistent (key, data) pairs. The marshalRoot function
 // is used to create a key prefix containing only the key's identity.
@@ -1586,6 +1630,7 @@ Freeze::EvictorI::unmarshal(ObjectRecord& v, const Value& bytes, const Communica
 {
     IceInternal::InstancePtr instance = IceInternal::getInstance(communicator);
     IceInternal::BasicStream stream(instance.get());
+    stream.sliceObjects(false);
     stream.b = bytes;
     stream.i = stream.b.begin();
     stream.startReadEncaps();
@@ -1593,7 +1638,6 @@ Freeze::EvictorI::unmarshal(ObjectRecord& v, const Value& bytes, const Communica
     stream.readPendingObjects();
     stream.endReadEncaps();
 }
-
 
 void
 Freeze::EvictorI::evict()
@@ -1627,7 +1671,7 @@ Freeze::EvictorI::evict()
 	    break;
 	}
 
-	if(_trace >= 2)
+	if(_trace >= 2 || (_trace >= 1 && _evictorList.size() % 50 == 0))
 	{
 	    Trace out(_communicator->getLogger(), "Freeze.Evictor");
 	    out << "evicting \"" << q->first << "\" from the queue\n"
@@ -1683,6 +1727,13 @@ Freeze::EvictorI::dbHasObject(const Identity& ident)
 	}
 	catch(const DbDeadlockException&)
 	{
+	    if(_deadlockWarning)
+	    {
+		Warning out(_communicator->getLogger());
+		out << "Deadlock in Freeze::EvictorI::dbHasObject while searching \"" 
+		    << _dbName << "\"; retrying ...";
+	    }
+
 	    //
 	    // Ignored, try again
 	    //
@@ -1697,11 +1748,10 @@ Freeze::EvictorI::dbHasObject(const Identity& ident)
 }
 
 void
-Freeze::EvictorI::addToModifiedQueue(const Freeze::EvictorI::FacetMap::iterator& q,
-				     const Freeze::EvictorI::FacetPtr& facet)
+Freeze::EvictorI::addToModifiedQueue(const Freeze::EvictorI::FacetPtr& facet)
 {
     facet->element->usageCount++;
-    _modifiedQueue.push_back(q);
+    _modifiedQueue.push_back(facet);
     
     if(_saveSizeTrigger >= 0 && static_cast<Int>(_modifiedQueue.size()) >= _saveSizeTrigger)
     {
@@ -1711,7 +1761,7 @@ Freeze::EvictorI::addToModifiedQueue(const Freeze::EvictorI::FacetMap::iterator&
 
 void
 Freeze::EvictorI::streamFacet(const FacetPtr& facet, const FacetPath& facetPath, Byte status, 
-			      Long saveStart, StreamedObject& obj)
+			      Long streamStart, StreamedObject& obj)
 {
     EvictorStorageKey esk;
     esk.identity.name = facet->element->identity->name;
@@ -1721,7 +1771,7 @@ Freeze::EvictorI::streamFacet(const FacetPtr& facet, const FacetPath& facetPath,
     obj.status = status;
     if(status != destroyed)
     {
-	writeObjectRecordToValue(saveStart, facet->rec, obj.value);
+	writeObjectRecordToValue(streamStart, facet->rec, obj.value);
     }
 }
 
@@ -1740,13 +1790,13 @@ Freeze::EvictorI::saveNowNoSync()
 }
 
 void
-Freeze::EvictorI::writeObjectRecordToValue(Long saveStart, ObjectRecord& rec, Value& value)
+Freeze::EvictorI::writeObjectRecordToValue(Long streamStart, ObjectRecord& rec, Value& value)
 {
     //
     // Update stats first
     //
     Statistics& stats = rec.stats;
-    Long diff = saveStart - (stats.creationTime + stats.lastSaveTime);
+    Long diff = streamStart - (stats.creationTime + stats.lastSaveTime);
     if(stats.lastSaveTime == 0)
     {
 	stats.lastSaveTime = diff;
@@ -1754,7 +1804,7 @@ Freeze::EvictorI::writeObjectRecordToValue(Long saveStart, ObjectRecord& rec, Va
     }
     else
     {
-	stats.lastSaveTime = saveStart - stats.creationTime;
+	stats.lastSaveTime = streamStart - stats.creationTime;
 	stats.avgSaveTime = static_cast<Long>(stats.avgSaveTime * 0.95 + diff * 0.05);
     }
     
@@ -1857,6 +1907,7 @@ Freeze::EvictorI::load(const Identity& ident)
 		pair<FacetMap::iterator, bool> pair;
 		pair = result->facets.insert(FacetMap::value_type(esk.facet, facet));
 		assert(pair.second);
+		facet->position = pair.first;
 		
 		if(esk.facet.size() == 0)
 		{
@@ -1901,6 +1952,13 @@ Freeze::EvictorI::load(const Identity& ident)
 		}
 	    }
 	    
+	    if(_deadlockWarning)
+	    {
+		Warning out(_communicator->getLogger());
+		out << "Deadlock in Freeze::EvictorI::load while searching \"" 
+		    << _dbName << "\"; retrying ...";
+	    }
+
 	    //
 	    // Try again
 	    //
@@ -1992,7 +2050,7 @@ Freeze::EvictorI::addFacetImpl(EvictorElementPtr& element, const ObjectPtr& serv
 		    case clean:
 		    {
 			facet->status = modified;
-			addToModifiedQueue(q, facet);
+			addToModifiedQueue(facet);
 			break;
 		    }
 		    case created:
@@ -2019,7 +2077,7 @@ Freeze::EvictorI::addFacetImpl(EvictorElementPtr& element, const ObjectPtr& serv
 		    case dead:
 		    {
 			facet->status = created;
-			addToModifiedQueue(q, facet);
+			addToModifiedQueue(facet);
 			break;
 		    }
 		    default:
@@ -2047,11 +2105,13 @@ Freeze::EvictorI::addFacetImpl(EvictorElementPtr& element, const ObjectPtr& serv
 
 	pair<FacetMap::iterator, bool> insertResult = facets.insert(FacetMap::value_type(facetPath, facet));
 	assert(insertResult.second);
+	facet->position = insertResult.first;
+
 	if(facetPath.size() == 0)
 	{
 	    element->mainObject = facet;
 	}
-	addToModifiedQueue(insertResult.first, facet);
+	addToModifiedQueue(facet);
     }
 
     
@@ -2079,7 +2139,7 @@ Freeze::EvictorI::removeFacetImpl(FacetMap& facets, const FacetPath& facetPath)
 
     if(q != facets.end())
     {
-	servant = destroyFacetImpl(q, q->second);
+	servant = destroyFacetImpl(q->second);
     }
     //
     // else should we raise an exception?
@@ -2102,7 +2162,7 @@ Freeze::EvictorI::removeFacetImpl(FacetMap& facets, const FacetPath& facetPath)
 
 
 ObjectPtr
-Freeze::EvictorI::destroyFacetImpl(Freeze::EvictorI::FacetMap::iterator& q, const Freeze::EvictorI::FacetPtr& facet)
+Freeze::EvictorI::destroyFacetImpl(const Freeze::EvictorI::FacetPtr& facet)
 {
     IceUtil::Mutex::Lock lockFacet(facet->mutex);
     switch(facet->status)
@@ -2110,7 +2170,7 @@ Freeze::EvictorI::destroyFacetImpl(Freeze::EvictorI::FacetMap::iterator& q, cons
 	case clean:
 	{
 	    facet->status = destroyed;
-	    addToModifiedQueue(q, facet);
+	    addToModifiedQueue(facet);
 	    break;
 	}
 	case created:

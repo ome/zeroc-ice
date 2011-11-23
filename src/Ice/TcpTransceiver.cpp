@@ -42,8 +42,16 @@ IceInternal::TcpTransceiver::close()
     }
 
     assert(_fd != INVALID_SOCKET);
-    closeSocket(_fd);
-    _fd = INVALID_SOCKET;
+    try
+    {
+	closeSocket(_fd);
+	_fd = INVALID_SOCKET;
+    }
+    catch(const SocketException&)
+    {
+	_fd = INVALID_SOCKET;
+	throw;
+    }
 }
 
 void
@@ -56,7 +64,7 @@ IceInternal::TcpTransceiver::shutdown()
     }
 
     assert(_fd != INVALID_SOCKET);
-    ::shutdown(_fd, SHUT_WR); // Shutdown socket for writing
+    shutdownSocket(_fd);
 }
 
 void
@@ -185,6 +193,17 @@ IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 
 	if(ret == 0)
 	{
+	    //
+	    // If the connection is lost when reading data, we shut
+	    // down the write end of the socket. This helps to unblock
+	    // threads that are stuck in send() or select() while
+	    // sending data. Note: I don't really understand why
+	    // send() or select() sometimes don't detect a connection
+	    // loss. Therefore this helper to make them detect it.
+	    //
+	    //assert(_fd != INVALID_SOCKET);
+	    //shutdownSocket(_fd);
+	    
 	    ConnectionLostException ex(__FILE__, __LINE__);
 	    ex.error = 0;
 	    throw ex;
@@ -245,6 +264,14 @@ IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 	    
 	    if(connectionLost())
 	    {
+		//
+		// See the commment above about shutting down the
+		// socket if the connection is lost while reading
+		// data.
+		//
+		//assert(_fd != INVALID_SOCKET);
+		//shutdownSocket(_fd);
+	    
 		ConnectionLostException ex(__FILE__, __LINE__);
 		ex.error = getSocketErrno();
 		throw ex;

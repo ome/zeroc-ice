@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Ice::IllegalMessageSizeException</TITLE
+>Ice::IllegalIndirectionException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
@@ -14,10 +14,10 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Ice::IllegalIndirectionException"
-HREF="x2267.html"><LINK
+TITLE="Ice::IllegalIdentityException"
+HREF="x2254.html"><LINK
 REL="NEXT"
-TITLE="Ice::Locator"
+TITLE="Ice::IllegalMessageSizeException"
 HREF="x2291.html"></HEAD
 ><BODY
 CLASS="SECTION"
@@ -46,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x2267.html"
+HREF="x2254.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -74,11 +74,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICE.ILLEGALMESSAGESIZEEXCEPTION"
+NAME="ICE.ILLEGALINDIRECTIONEXCEPTION"
 ></A
 ><TT
 CLASS="LITERAL"
->Ice::IllegalMessageSizeException</TT
+>Ice::IllegalIndirectionException</TT
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -98,14 +98,14 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 >local exception <TT
 CLASS="CLASSNAME"
->IllegalMessageSizeException</TT
+>IllegalIndirectionException</TT
 >
     extends 
 	<A
-HREF="x4255.html"
+HREF="x2629.html"
 ><TT
 CLASS="CLASSNAME"
->ProtocolException</TT
+>MarshalException</TT
 ></A
 ></PRE
 ></TD
@@ -113,14 +113,13 @@ CLASS="CLASSNAME"
 ></TABLE
 ><P
 >This exception is a specialization of <A
-HREF="x4255.html"
+HREF="x2629.html"
 ><TT
 CLASS="CLASSNAME"
->ProtocolException</TT
+>MarshalException</TT
 ></A
 >,
-indicating that the message size is illegal, i.e., it is
-less than the minimum required size.</P
+indicating an illegal indirection during unmarshaling.</P
 ></DIV
 ></DIV
 ><DIV
@@ -139,7 +138,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x2267.html"
+HREF="x2254.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -169,7 +168,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::IllegalIndirectionException</TT
+>Ice::IllegalIdentityException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -186,7 +185,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::Locator</TT
+>Ice::IllegalMessageSizeException</TT
 ></TD
 ></TR
 ></TABLE

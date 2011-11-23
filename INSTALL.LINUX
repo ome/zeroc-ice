@@ -8,19 +8,20 @@ Operating System
 
 A recent Linux distribution for Intel x86 or AMD Opteron (x86-64).
 
-If you are using RedHat 9, see "Notes for RedHat 9 Users" below.
-
-
 C++ compiler
 ------------
 
+- GCC 3.3; or
+
 - GCC 3.2; or
+
+- Intel C++ 8.0; or
 
 - GCC 2.96 with STLport 4.5
 
 The STL (Standard Template Library) that is included with GCC 2.96 is
-not supported! You must use STLport 4.5 with GCC 2.96. You can
-download STLport 4.5 from:
+not supported! You must use STLport 4.5 (or later) with GCC 2.96. You
+can download STLport from:
 
 http://www.stlport.org/download.html
 
@@ -28,14 +29,24 @@ For STLport installation instructions, please see:
 
 http://www.stlport.org/doc/install.html
 
-For GCC 3.2, you can use the included STL library. Downloading and
-installing STLport is not required for this compiler version.
+For GCC 3.x or ICC 8.0, you can use the included STL library. The use
+of STLport is not required for these compilers.
 
 
 Third-party libraries
 ---------------------
 
-- Berkeley DB 4.1
+- Berkeley DB 4.1.25 or 4.2.52 configured with --enable-cxx
+  You can download the Berkeley DB source distribution 
+  from http://www.sleepycat.com/download
+
+  With Intel C++, it is critical to build and link libdb_cxx-4.?.so
+  with icc (not cc). A recommended configuration is:
+  CXX="icc -no-gcc" CC=icc ../dist/configure --enable-cxx
+  (and --prefix=<dir> and --enable-java if you like)
+
+  Also, if you are using RedHat 9 and do not want to use NTPL, 
+  set LD_ASSUME_KERNEL to 2.4.1 before running configure.
 
 - expat 1.9x
 
@@ -46,21 +57,17 @@ Third-party libraries
 - readline and ncurses (optional, but used unless you set USE_READLINE
   to no in config/Make.rules)
 
-Berkeley DB, expat, OpenSSL, bzip2, readline and ncurses are usually
-available with your Linux distribution.
+expat, OpenSSL, bzip2, readline and ncurses are usually available with 
+your Linux distribution.
 
 The RPMs for RedHat 8.0 are:
-db4-devel-4.0.14-14
 expat-devel-1.95.4-1
 openssl-devel-0.9.6b-29
 bzip2-devel-1.0.2-5
 readline-devel-4.3-3
 ncurses-devel-5.2-28
 
-If you don't have them, you can download Berkeley DB from:
-http://www.sleepycat.com/download
-
-And expat from:
+If you don't have them, you can download expat from:
 http://sourceforge.net/projects/expat/
 
 And OpenSSL from:
@@ -101,6 +108,9 @@ file. Make sure that the paths for the third-party libraries are set
 correctly if they are not installed in the default location /usr/lib
 and /usr/include.
 
+If you want to build Ice with the Intel C++ compiler, set CXX to icc:
+$ export CXX=icc
+
 Now you're ready to build Ice:
 
 $ make
@@ -131,7 +141,7 @@ $ export LD_LIBRARY_PATH=`pwd`/lib:$LD_LIBRARY_PATH
 
 
 ======================================================================
-64 bit builds on AMD Opteron
+64 bit builds on AMD64
 ======================================================================
 
 To build Ice in 64 bit mode, you need to:
@@ -140,46 +150,10 @@ To build Ice in 64 bit mode, you need to:
   libraries in the "lib64" directories. For example put Berkeley DB 64
   bit libraries in $DB_HOME/lib64.
 
-- Set the environment variable LP64 to yes, e.g.: $ export LP64=yes
+- Set the environment variable LP64 to yes, e.g.: 
+  $ export LP64=yes
 
-- Build and test as described above.
-
-
-======================================================================
-Notes for RedHat 9 Users
-======================================================================
-
-Ice is not currently compatible with the "NPTL" threading model used
-by default on RedHat 9, causing Ice programs to hang
-indefinitely. Until this issue is resolved, you will need to set the
-following environment variable:
-
-export LD_ASSUME_KERNEL=2.4.1
-
-Also note that BerkeleyDB is sensitive to this environment variable,
-requiring you to build BerkeleyDB from source with this environment
-variable defined. Otherwise, a program that uses BerkeleyDB will fail
-with the error code ENOSYS ("Function not implemented") when this
-environment variable is set.
-
-Unfortunately, this means you cannot use the version of BerkeleyDB
-that is supplied by RedHat 9 with Ice, because it was not built
-properly for use with LD_ASSUME_KERNEL. We recommend downloading the
-latest release from the URL shown above.
-
-The steps for building BerkeleyDB are straightforward:
-
-$ tar xzf db-X.Y.Z.tar.gz
-$ export LD_ASSUME_KERNEL=2.4.1
-$ cd db-X.Y.Z/build_unix
-$ ../dist/configure --enable-java --prefix=/opt/db-X.Y.Z
-$ make
-
-The --enable-java option is necessary if you plan to use Ice for Java.
-The --prefix option overrides the default installation directory.
-
-Please refer to the BerkeleyDB documentation if you need more
-information.
+- Build and test as described above (with gcc).
 
 
 ======================================================================

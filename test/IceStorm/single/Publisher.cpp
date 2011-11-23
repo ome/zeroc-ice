@@ -57,17 +57,18 @@ run(int argc, char* argv[], const CommunicatorPtr& communicator)
     // Get a publisher object, create a oneway proxy and then cast to
     // a Single object.
     //
-    ObjectPrx obj = topic->getPublisher();
-    if(!obj->ice_isDatagram())
-    {
-        obj = obj->ice_oneway();
-    }
-    SinglePrx single = SinglePrx::uncheckedCast(obj);
+    SinglePrx single = SinglePrx::uncheckedCast(topic->getPublisher()->ice_oneway());
 
     for(int i = 0; i < 10; ++i)
     {
 	single->event();
     }
+
+    //
+    // Before we exit, we ping the proxy as twoway, to make sure that
+    // all oneways are delivered.
+    //
+    SinglePrx::uncheckedCast(single->ice_twoway())->ice_ping();
 
     return EXIT_SUCCESS;
 }

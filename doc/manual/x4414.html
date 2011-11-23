@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Ice::Router</TITLE
+>Ice::ProxyParseException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
@@ -14,11 +14,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Ice::RequestFailedException"
-HREF="x4345.html"><LINK
+TITLE="Ice::ProtocolException"
+HREF="x4360.html"><LINK
 REL="NEXT"
-TITLE="Ice::ServantLocator"
-HREF="x4494.html"></HEAD
+TITLE="Ice::ProxyUnmarshalException"
+HREF="x4438.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -46,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x4345.html"
+HREF="x4360.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -60,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x4494.html"
+HREF="x4438.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -74,11 +74,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICE.ROUTER"
+NAME="ICE.PROXYPARSEEXCEPTION"
 ></A
 ><TT
 CLASS="LITERAL"
->Ice::Router</TT
+>Ice::ProxyParseException</TT
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -96,93 +96,24 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->interface <TT
+>local exception <TT
 CLASS="CLASSNAME"
->Router</TT
+>ProxyParseException</TT
 ></PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->The <SPAN
-CLASS="phrase"
-><SPAN
-CLASS="PHRASE"
->Ice</SPAN
-></SPAN
-> router interface. Routers can be set either globally with
-<A
-HREF="x1074.html#ICE.COMMUNICATOR.SETDEFAULTROUTER"
-><TT
-CLASS="FUNCTION"
->Communicator::setDefaultRouter</TT
-></A
->, or with <TT
-CLASS="LITERAL"
->ice_router</TT
-> on specific
-proxies.
-<DIV
-CLASS="NOTE"
-><P
-></P
-><TABLE
-CLASS="NOTE"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="./stylesheet-images/note.gif"
-HSPACE="5"
-ALT="Note"></TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
-> The router interface is intended to be used by <SPAN
-CLASS="phrase"
-><SPAN
-CLASS="PHRASE"
->Ice</SPAN
-></SPAN
->
-internals and by router implementations. Regular user code should
-not attempt to use any functionality of this interface
-directly.</P
-></TD
-></TR
-></TABLE
-></DIV
-></P
+>This exception is raised if there was an error while parsing a
+stringified proxy.</P
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN4429"
+NAME="AEN4422"
 ></A
->Derived Classes and Interfaces</H3
-><P
->	    <A
-HREF="x9461.html"
-><SPAN
-CLASS="TYPE"
->::Glacier::Router</SPAN
-></A
-></P
-></DIV
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN4436"
-></A
->Operation Index</H3
+>Data Member Index</H3
 ><P
 ></P
 ><DIV
@@ -190,41 +121,15 @@ CLASS="VARIABLELIST"
 ><DL
 ><DT
 ><A
-HREF="x4414.html#ICE.ROUTER.ADDPROXY"
-><TT
-CLASS="FUNCTION"
->addProxy</TT
+HREF="x4414.html#ICE.PROXYPARSEEXCEPTION.STR"
+><SPAN
+CLASS="TYPE"
+>str</SPAN
 ></A
 ></DT
 ><DD
 ><P
->Add new proxy information to the router's routing table.</P
-></DD
-><DT
-><A
-HREF="x4414.html#ICE.ROUTER.GETCLIENTPROXY"
-><TT
-CLASS="FUNCTION"
->getClientProxy</TT
-></A
-></DT
-><DD
-><P
->Get the router's client proxy, i.e., the proxy to use for
-forwarding requests from the client to the router.</P
-></DD
-><DT
-><A
-HREF="x4414.html#ICE.ROUTER.GETSERVERPROXY"
-><TT
-CLASS="FUNCTION"
->getServerProxy</TT
-></A
-></DT
-><DD
-><P
->Get the router's server proxy, i.e., the proxy to use for
-forwarding requests from the server to the router.</P
+>The string that could not be parsed.</P
 ></DD
 ></DL
 ></DIV
@@ -235,11 +140,11 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="ICE.ROUTER.ADDPROXY"
+NAME="ICE.PROXYPARSEEXCEPTION.STR"
 ></A
 ><TT
 CLASS="LITERAL"
->addProxy</TT
+>str</TT
 ></H2
 ><TABLE
 BORDER="0"
@@ -251,139 +156,18 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 ><SPAN
 CLASS="TYPE"
->void</SPAN
+>string</SPAN
 > <TT
-CLASS="FUNCTION"
->addProxy</TT
->(<SPAN
-CLASS="TYPE"
->Object*</SPAN
-> <TT
-CLASS="PARAMETER"
+CLASS="STRUCTFIELD"
 ><I
->proxy</I
+>str</I
 ></TT
->);</PRE
+>;</PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->Add new proxy information to the router's routing table.</P
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN4466"
-></A
->Parameters</H3
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
-><TT
-CLASS="PARAMETER"
-><I
->proxy</I
-></TT
-></DT
-><DD
-><P
->			    The proxy to add.</P
-></DD
-></DL
-></DIV
-></DIV
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICE.ROUTER.GETCLIENTPROXY"
-></A
-><TT
-CLASS="LITERAL"
->getClientProxy</TT
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><SPAN
-CLASS="TYPE"
->Object*</SPAN
-> <TT
-CLASS="FUNCTION"
->getClientProxy</TT
->();</PRE
-></TD
-></TR
-></TABLE
-><P
->Get the router's client proxy, i.e., the proxy to use for
-forwarding requests from the client to the router.</P
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN4481"
-></A
->Return Value</H3
-><P
->		The router's client proxy.</P
-></DIV
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICE.ROUTER.GETSERVERPROXY"
-></A
-><TT
-CLASS="LITERAL"
->getServerProxy</TT
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><SPAN
-CLASS="TYPE"
->Object*</SPAN
-> <TT
-CLASS="FUNCTION"
->getServerProxy</TT
->();</PRE
-></TD
-></TR
-></TABLE
-><P
->Get the router's server proxy, i.e., the proxy to use for
-forwarding requests from the server to the router.</P
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN4491"
-></A
->Return Value</H3
-><P
->		The router's server proxy.</P
-></DIV
+>The string that could not be parsed.</P
 ></DIV
 ></DIV
 ><DIV
@@ -402,7 +186,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x4345.html"
+HREF="x4360.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -420,7 +204,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x4494.html"
+HREF="x4438.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -432,7 +216,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::RequestFailedException</TT
+>Ice::ProtocolException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -449,7 +233,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::ServantLocator</TT
+>Ice::ProxyUnmarshalException</TT
 ></TD
 ></TR
 ></TABLE

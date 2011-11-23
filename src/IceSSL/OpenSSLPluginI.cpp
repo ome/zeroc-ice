@@ -35,6 +35,10 @@
 #include <openssl/rand.h>
 #include <openssl/err.h>
 
+#if OPENSSL_VERSION_NUMBER >= 0x0090700fL
+#include <openssl/engine.h>
+#endif
+
 #include <sstream>
 
 #define OPENSSL_THREAD_DEFINES
@@ -147,14 +151,14 @@ idFunction()
 {
 #if defined(_WIN32)
     return static_cast<unsigned long>(GetCurrentThreadId());
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__APPLE__)
     //
     // On FreeBSD, pthread_t is a pointer to a per-thread structure
     // 
     return reinterpret_cast<unsigned long>(pthread_self());
-#elif (defined(__linux) || defined(__sun))
+#elif (defined(__linux) || defined(__sun) || defined(__hpux))
     //
-    // On Linux and Solaris, pthread_t is an integer
+    // On Linux, Solaris and HP-UX, pthread_t is an integer
     //
     return static_cast<unsigned long>(pthread_self());
 #else
@@ -190,10 +194,24 @@ IceSSL::OpenSSLPluginI::OpenSSLPluginI(const ProtocolPluginFacadePtr& protocolPl
     _protocolPluginFacade(protocolPluginFacade),
     _traceLevels(new TraceLevels(_protocolPluginFacade)),
     _properties(_protocolPluginFacade->getCommunicator()->getProperties()),
+    _memDebug(_properties->getPropertyAsIntWithDefault("IceSSL.MemoryDebug", 0)),
     _serverContext(new TraceLevels(protocolPluginFacade), protocolPluginFacade->getCommunicator()),
     _clientContext(new TraceLevels(protocolPluginFacade), protocolPluginFacade->getCommunicator()),
     _randSeeded(0)
 {
+    if(_memDebug != 0)
+    {
+        CRYPTO_malloc_debug_init();
+        CRYPTO_set_mem_debug_options(V_CRYPTO_MDEBUG_ALL);
+        CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
+    }
+    else
+    {
+        CRYPTO_set_mem_debug_functions(0, 0, 0, 0, 0);
+    }
+
+    SSL_library_init();
+
     SSL_load_error_strings();
 
     OpenSSL_add_ssl_algorithms();
@@ -201,8 +219,27 @@ IceSSL::OpenSSLPluginI::OpenSSLPluginI(const ProtocolPluginFacadePtr& protocolPl
 
 IceSSL::OpenSSLPluginI::~OpenSSLPluginI()
 {
-    unregisterThreads();
+    _serverContext.cleanUp();
+    _clientContext.cleanUp();
+
+#if OPENSSL_VERSION_NUMBER >= 0x0090700fL
+    ENGINE_cleanup();
+    CRYPTO_cleanup_all_ex_data();
+#endif
+
+    // TODO: Introduces a 72byte memory leak, if we kidnap the code from OpenSSL 0.9.7a for
+    //       ENGINE_cleanup(), we can fix that.
+
     ERR_free_strings();
+    unregisterThreads();
+    ERR_remove_state(0);
+
+    EVP_cleanup();
+
+    if(_memDebug != 0)
+    {
+        CRYPTO_mem_leaks_fp(stderr);
+    }
 }
 
 IceSSL::SslTransceiverPtr
@@ -603,6 +640,8 @@ IceSSL::OpenSSLPluginI::setCertificateVerifier(ContextType contextType,
         IceSSL::CertificateVerifierTypeException cvtEx(__FILE__, __LINE__);
         throw cvtEx;
     }
+
+    castVerifier->setContext(contextType);
 
     if(contextType == Client || contextType == ClientServer)
     {

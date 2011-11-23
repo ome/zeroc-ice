@@ -27,9 +27,14 @@ public:
 
     virtual ~JavaGenerator();
 
+    //
+    // Validate all metadata in the unit with a "java:" prefix.
+    //
+    static void validateMetaData(const UnitPtr&);
+
 protected:
 
-    JavaGenerator(const std::string&, const std::string&);
+    JavaGenerator(const std::string&);
 
     //
     // Given the fully-scoped Java class name, create any intermediate
@@ -47,10 +52,23 @@ protected:
     std::string fixKwd(const std::string&) const;
 
     //
-    // Convert a scoped name into a Java class name. If an optional
-    // scope is provided, the scope will be removed from the result.
+    // Convert a Slice scoped name into a Java name.
     //
-    std::string getAbsolute(const std::string&,
+    std::string convertScopedName(const std::string&,
+                                  const std::string& = std::string(),
+                                  const std::string& = std::string()) const;
+
+    //
+    // Returns the Java package of a Contained entity.
+    //
+    std::string getPackage(const ContainedPtr&) const;
+
+    //
+    // Returns the Java name for a Contained entity. If the optional
+    // package argument matches the entity's package name, then the
+    // package is removed from the result.
+    //
+    std::string getAbsolute(const ContainedPtr&,
                             const std::string& = std::string(),
                             const std::string& = std::string(),
                             const std::string& = std::string()) const;
@@ -66,15 +84,14 @@ protected:
         TypeModeMember,
         TypeModeReturn
     };
-    std::string typeToString(const TypePtr&, TypeMode mode,
-                             const std::string& = std::string(),
-                             const std::list<std::string>& = std::list<std::string>()) const;
+    std::string typeToString(const TypePtr&, TypeMode, const std::string& = std::string(),
+                             const StringList& = StringList()) const;
 
     //
     // Generate code to marshal or unmarshal a type
     //
     void writeMarshalUnmarshalCode(::IceUtil::Output&, const std::string&, const TypePtr&, const std::string&,
-                                   bool, int&, bool = false, const std::list<std::string>& = std::list<std::string>(),
+                                   bool, int&, bool = false, const StringList& = StringList(),
 				   const std::string& patchParams = "");
 
     //
@@ -82,18 +99,41 @@ protected:
     //
     void writeSequenceMarshalUnmarshalCode(::IceUtil::Output&, const std::string&, const SequencePtr&,
                                            const std::string&, bool, int&, bool,
-                                           const std::list<std::string>& = std::list<std::string>());
+                                           const StringList& = StringList());
 
-protected:
-
-    static std::string findMetaData(const std::list<std::string>&);
+    //
+    // Find custom sequence metadata.
+    //
+    static std::string findMetaData(const StringList&);
 
 private:
+
+    class MetaDataVisitor : public ParserVisitor
+    {
+    public:
+
+        virtual bool visitModuleStart(const ModulePtr&);
+        virtual void visitClassDecl(const ClassDeclPtr&);
+        virtual bool visitClassDefStart(const ClassDefPtr&);
+        virtual bool visitExceptionStart(const ExceptionPtr&);
+        virtual bool visitStructStart(const StructPtr&);
+        virtual void visitOperation(const OperationPtr&);
+        virtual void visitDataMember(const DataMemberPtr&);
+        virtual void visitSequence(const SequencePtr&);
+        virtual void visitDictionary(const DictionaryPtr&);
+        virtual void visitEnum(const EnumPtr&);
+        virtual void visitConst(const ConstPtr&);
+
+    private:
+
+        void validate(const ContainedPtr&);
+
+        StringSet _history;
+    };
 
     void printHeader();
 
     std::string _dir;
-    std::string _package;
 
     ::IceUtil::Output* _out;
 };

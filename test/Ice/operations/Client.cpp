@@ -47,8 +47,13 @@ main(int argc, char* argv[])
 
     try
     {
-	Ice::PropertiesPtr properties = Ice::getDefaultProperties();
-	properties->setProperty("Ice.ThreadPool.Client.Size", "2"); // For nested AMI.
+	//
+	// In this test, we need at least two threads in the
+	// client side thread pool for nested AMI.
+	//
+	Ice::PropertiesPtr properties = Ice::getDefaultProperties(argc, argv);
+	properties->setProperty("Ice.ThreadPool.Client.Size", "2");
+	properties->setProperty("Ice.ThreadPool.Client.SizeWarn", "0");
 
 	communicator = Ice::initialize(argc, argv);
 	status = run(argc, argv, communicator);

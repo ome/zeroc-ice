@@ -40,16 +40,17 @@ else:
 #
 def startClient(options):
 
+    global testdir
+
     fullClientOptions = TestUtil.clientOptions + \
-                        " --Ice.Default.Locator=\"IcePack/Locator:default -p 12346\" " + \
+                        " --Ice.Default.Locator=\"IcePack/Locator:default -p 12345\" " + \
                         options
 
     print "starting client...",
     clientPipe = os.popen(os.path.join(testdir, "client") + fullClientOptions)
     print "ok"
 
-    for output in clientPipe.xreadlines():
-        print output,
+    TestUtil.printOutputFromPipe(clientPipe)
     
     clientStatus = clientPipe.close()
     if clientStatus:
@@ -59,8 +60,8 @@ def startClient(options):
 # Start IcePack.
 #
 IcePackAdmin.cleanDbDir(os.path.join(testdir, "db"))
-icePackRegistryPipe = IcePackAdmin.startIcePackRegistry("12346", testdir)
-icePackNodePipe = IcePackAdmin.startIcePackNode(testdir)
+icePackRegistryThread = IcePackAdmin.startIcePackRegistry("12345", testdir)
+icePackNodeThread = IcePackAdmin.startIcePackNode(testdir)
 
 #
 # Deploy the application, run the client and remove the application.
@@ -73,7 +74,7 @@ startClient("")
 
 print "removing application...",
 IcePackAdmin.removeApplication(os.path.join(testdir, "application.xml"));
-print "ok"
+print "ok"    
 
 #
 # Deploy the application with some targets to test targets, run the
@@ -92,7 +93,9 @@ print "ok"
 #
 # Shutdown IcePack.
 #
-IcePackAdmin.shutdownIcePackNode(icePackNodePipe)
-IcePackAdmin.shutdownIcePackRegistry(icePackRegistryPipe)
+IcePackAdmin.shutdownIcePackNode()
+icePackNodeThread.join()
+IcePackAdmin.shutdownIcePackRegistry()
+icePackRegistryThread.join()
 
 sys.exit(0)

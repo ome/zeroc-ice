@@ -405,6 +405,42 @@ to the &Ice; locator interface.
 </section>
 </section>
 
+<section><title><replaceable>name</replaceable>.RegisterProcess</title>
+<section><title>Synopsis</title>
+<synopsis>
+<replaceable>name</replaceable>.RegisterProcess=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+the object adapter with the name <replaceable>name</replaceable> registers
+the server with the locator registry. Registration occurs upon the
+object adapter's initial activation, during which the object adapter creates
+a servant implementing the <literal>Ice::Process</literal> interface, adds
+the servant using a UUID, and registers its proxy with the locator
+registry using the value of the <literal>Ice.ServerId</literal> property
+for the server id. The servant implements the <literal>shutdown</literal>
+operation by invoking <literal>shutdown</literal> on the object adapter's
+communicator. </para>
+<para> It is important for a server to be registered with the locator 
+registry so that services such as &IcePack; can request a graceful shutdown
+when necessary. If a server is not registered, then platform-specific
+techniques are used to request a shutdown, and these techniques are not
+always effective (especially on Windows platforms). </para>
+<note><para> Only one object adapter in a server should register with
+a locator registry. </para></note>
+<note><para> The <literal>Ice::Process</literal> servant represents a
+potential target for denial-of-service attacks. The object adapter uses
+a UUID to make the proxy more difficult to guess, but the object adapter
+should be configured with secure endpoints if the server operates in a
+potentially hostile environment. Alternatively, a dedicated object
+adapter can be created specifically to provide a restricted access point
+for services such as &IcePack;.</para></note>
+</section>
+</section>
+
 <section><title><replaceable>name</replaceable>.Router</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -514,16 +550,16 @@ of thread starvation.
 </para>
 <para>
 <replaceable>num</replaceable> is the initial and also minimum number
-of threads in the thread pool. The default is one thread for
-<literal>Ice.ThreadPool.Client</literal>, five threads for
-<literal>Ice.ThreadPool.Server</literal>, and zero threads for object
-adapter thread pools, meaning that by default, object adapters use the
-default server-side thread pool.  <note><para>Multiple threads for the
-client side thread pool are only required for nested AMI
-invocations. If AMI is not used, or AMI calls are not nested (i.e.,
-AMI callbacks do not call any other methods on Ice objects), then
-there is no need to set the number of threads in the client thread
-pool to a value larger than one. </para></note>
+of threads in the thread pool. The default is one for
+<literal>Ice.ThreadPool.Client</literal> and
+<literal>Ice.ThreadPool.Server</literal>, and zero for object adapter
+thread pools, meaning that by default, object adapters use the default
+server-side thread pool.  <note><para>Multiple threads for the client
+side thread pool are only required for nested AMI invocations. If AMI
+is not used, or AMI calls are not nested (i.e., AMI callbacks do not
+call any other methods on Ice objects), then there is no need to set
+the number of threads in the client thread pool to a value larger than
+one. </para></note>
 </para>
 </section>
 </section>
@@ -537,17 +573,17 @@ pool to a value larger than one. </para></note>
 <section>
 <title>Description</title>
 <para>
-<replaceable>num</replaceable> is the maximum number of threads for the
-thread pool <replaceable>name</replaceable>. Thread pools in Ice grow
-and shrink dynamically, based on an average load factor. Thread
-pools do not grow larger than the parameter specified by
-<literal>SizeMax</literal>, and they do not shrink to a number of
+<replaceable>num</replaceable> is the maximum number of threads for
+the thread pool <replaceable>name</replaceable>. Thread pools in Ice
+can grow and shrink dynamically, based on an average load
+factor. Thread pools do not grow larger than the parameter specified
+by <literal>SizeMax</literal>, and they do not shrink to a number of
 threads smaller than the value specified by <literal>Size</literal>.
 </para>
 <para>
-The default value for <literal>SizeMax</literal> is 1 for the
-client-side thread pool. For all other thread pools, it is 10 times
-the value of <literal>Size</literal>.
+The default value for <literal>SizeMax</literal> is the value of
+<literal>Size</literal>, meaning that by default, thread pools do not
+grow dynamically.
 </para>
 </section>
 </section>
@@ -667,6 +703,23 @@ milliseconds, or -1 for no timeout.
 </section>
 </section>
 
+<section><title>Ice.Override.ConnectTimeout</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Override.ConnectTimeout=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property overrides timeout settings used to establish
+connections.  <replaceable>num</replaceable> is the timeout value in
+milliseconds, or -1 for no timeout. If this property is not set, then
+<literal>Ice.Override.Timeout</literal> is used.
+</para>
+</section>
+</section>
+
 <section><title>Ice.Override.Compress</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -751,29 +804,6 @@ is, if <literal>Ice.UDP.RcvSize</literal> or <literal>Ice.UDP.SndSize</literal> 
 </section>
 </section>
 
-<section><title>Ice.Daemon, Ice.DaemonNoClose, Ice.DaemonNoChdir</title>
-<section><title>Synopsis</title>
-<synopsis>
-Ice.Daemon=<replaceable>num</replaceable>
-Ice.DaemonNoClose=<replaceable>no_close</replaceable>
-Ice.DaemonNoChdir=<replaceable>no_chdir</replaceable>
-</synopsis>
-</section>
-<section>
-<title>Description</title>
-<para>
-If <replaceable>num</replaceable> is set to a value larger than zero,
-the &Ice; process daeamonizes itself with the
-<literal>daemon</literal> system call. If
-<replaceable>no_close</replaceable> is set to a value larger than zero,
-standard input, output, and error are not redirected to
-<literal>/dev/null</literal>. If <replaceable>no_chdir</replaceable> is
-set to a value larger than zero, &Ice; does not change its working
-directory to the root directory. (Unix only.)
-</para>
-</section>
-</section>
-
 <section><title>Ice.ChangeUser</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -801,9 +831,12 @@ Ice.ConnectionIdleTime=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-&Ice; connections that have been idle for
-<replaceable>num</replaceable> seconds are closed. The default value
-is zero, meaning that idle connections are not automatically closed.
+ACM (Active Connection Management) is enabled. This means that
+connections are automatically closed after they have been idle for
+<replaceable>num</replaceable> seconds. This is transparent to user
+code, i.e., closed connections are automatically reestablished in case
+they are needed again. The default value is 60, meaning that idle
+connections are automatically closed after one minute.
 </para>
 </section>
 </section>
@@ -859,6 +892,24 @@ this property.
 </section>
 </section>
 
+<section><title>Ice.ServerId</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.ServerId=<replaceable>id</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The value <replaceable>id</replaceable> is used as the server id when
+an object adapter registers the server with the locator registry.
+Refer to the description of the object adapter property
+<literal><replaceable>adapter</replaceable>.RegisterProcess</literal>
+for more information.
+</para>
+</section>
+</section>
+
 <section><title>Ice.ServerIdleTime</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -881,6 +932,23 @@ automatically.
 </section>
 </section>
 
+<section><title>Ice.UseEventLog</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.UseEventLog=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+a special logger is installed that logs to the Windows Event Log
+instead of standard error. The event source name is the
+value of <literal>Ice.ProgramName</literal>. (Windows 2000/XP only.)
+</para>
+</section>
+</section>
+
 <section><title>Ice.UseSyslog</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -891,7 +959,7 @@ Ice.UseSyslog=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-a special logger is installed which logs to the syslog facility
+a special logger is installed that logs to the syslog facility
 instead of standard error. The identifier for syslog is the
 value of <literal>Ice.ProgramName</literal>. (Unix only.)
 </para>
@@ -1232,6 +1300,24 @@ There are no default values for these properties.
 </section>
 </section>
 
+<section><title>IceSSL.Client.IgnoreValidPeriod, IceSSL.Server.IgnoreValidPeriod</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceSSL.Client.IgnoreValidPeriod=<replaceable>num</replaceable>
+IceSSL.Server.IgnoreValidPeriod=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+These properties will cause the default certificate verifier to ignore the
+certificate validity period on peer certificates if set to 1. The
+default value for these properties is 0, meaning that the certificate
+validity period is not ignored.
+</para>
+</section>
+</section>
+
 </section>
 
 <!-- ********************************************************************** -->
@@ -1282,6 +1368,25 @@ The service manager will print "<replaceable>token</replaceable>
 ready" on standard output after initialization of all the services is
 done. This is useful for scripts that wish to wait until all services
 are ready to be used.
+</para>
+</section>
+</section>
+
+<section><title>IceBox.LoadOrder</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceBox.LoadOrder=<replaceable>names</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Determines the order in which services are loaded. The service manager
+loads the services in the order they appear in
+<replaceable>names</replaceable>, where each service name is separated
+by a comma or whitespace. Any services not mentioned in
+<replaceable>names</replaceable> are loaded afterward, in an undefined
+order.
 </para>
 </section>
 </section>
@@ -1612,6 +1717,24 @@ each deployed server.
 </section>
 </section>
 
+<section><title>IcePack.Node.Output</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.Output=<replaceable>path</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the path of the &IcePack; node output directory. If set, the 
+node will redirect the stdout and stderr output of the started
+servers to files named <replaceable>server</replaceable>.out and 
+<replaceable>server</replaceable>.err in this directory. Otherwise, 
+the started servers share the stdout and stderr of the &IcePack; node.
+</para>
+</section>
+</section>
+
 <section><title>IcePack.Node.PropertiesOverride</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -1626,6 +1749,21 @@ server deployment descriptors. For example, in some cases it is desirable
 to set the property <literal>Ice.Default.Host</literal> for servers, but
 not in server deployment descriptors. The property definitions should
 be separated by white space.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Node.RedirectErrToOut</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.RedirectErrToOut=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+the stderr of each started server is redirected to the server's stdout.
 </para>
 </section>
 </section>
@@ -2147,6 +2285,34 @@ The routing table trace level:
 </section>
 </section>
 
+<section><title>Glacier.Router.Trace.Throttle</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Trace.Throttle=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The request throttle trace level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No request throttle tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace throttled requests.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
 <section><title>Glacier.Router.Client.ForwardContext, Glacier.Router.Server.ForwardContext</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -2165,19 +2331,40 @@ forwarded. Default is no context forwarding.
 </section>
 </section>
 
-<section><title>Glacier.Router.Client.BatchSleepTime, Glacier.Router.Server.BatchSleepTime</title>
+<section><title>Glacier.Router.Client.SleepTime, Glacier.Router.Server.SleepTime</title>
 <section><title>Synopsis</title>
 <synopsis>
-Glacier.Router.Client.BatchSleepTime=<replaceable>num</replaceable>
-Glacier.Router.Server.BatchSleepTime=<replaceable>num</replaceable>
+Glacier.Router.Client.SleepTime=<replaceable>num</replaceable>
+Glacier.Router.Server.SleepTime=<replaceable>num</replaceable>
 </synopsis>
 </section>
 <section>
 <title>Description</title>
 <para>
 <replaceable>num</replaceable> is the sleep time (delay) in
-milliseconds between forwarding client and server message batches. The
-default values are 250ms.
+milliseconds after a request or message batch has been forwarded. The
+default value is zero, meaning no delay. Setting these values avoids
+message flooding. This is useful to avoid denial-of-service attacks,
+or to allow a minimum time for collecting messages for batching.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.Client.Throttle.Twoways, Glacier.Router.Server.Throttle.Twoways</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Client.Throttle.Twoways=<replaceable>num</replaceable>
+Glacier.Router.Server.Throttle.Twoways=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+<replaceable>num</replaceable> is the maximum number of twoway
+requests that the router will forward simultaneously. The default is
+zero, meaning no limit. Enabling twoway message throttling is
+useful to prevent a router from consuming too many resources of
+backend services.
 </para>
 </section>
 </section>
@@ -2606,30 +2793,184 @@ time.
 <section><title>&Freeze; Properties</title>
 <!-- ********************************************************************** -->
 
-<section><title>Freeze.Trace.DB</title>
+<section><title>Freeze.DbEnv.<replaceable>env-name</replaceable>.DbCheckpointPeriod</title>
 <section><title>Synopsis</title>
 <synopsis>
-Freeze.Trace.DB=<replaceable>num</replaceable>
+Freeze.DbEnv.<replaceable>env-name</replaceable>.DbCheckpointPeriod=<replaceable>num</replaceable>
 </synopsis>
 </section>
 <section>
 <title>Description</title>
 <para>
-The &Freeze; database activity trace level:
+Every Berkeley DB environment created by Freeze has an associated
+thread that checkpoints this environment every <replaceable>num</replaceable> seconds.
+Defaults to 120 seconds.
+</para>
+</section>
+</section>
+
+
+<section><title>Freeze.DbEnv.<replaceable>env-name</replaceable>.DbHome</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.DbEnv.<replaceable>env-name</replaceable>.DbHome=<replaceable>db-home</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the home directory of this &Freeze; database
+environment. Defaults to <replaceable>env-name</replaceable>.
+</para>
+</section>
+</section>
+
+<section><title>Freeze.DbEnv.<replaceable>env-name</replaceable>.DbPrivate</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.DbEnv.<replaceable>env-name</replaceable>.DbPrivate=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+&Freeze; will instruct Berkeley DB to use process private memory instead of shared
+memory. The default value is 1. Set it to 0 in order to run db_archive (or another Berkeley DB utility) on a running environment.
+</para>
+</section>
+</section>
+
+<section><title>Freeze.DbEnv.<replaceable>env-name</replaceable>.DbRecoverFatal</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.DbEnv.<replaceable>env-name</replaceable>.DbRecoverFatal=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+"fatal" recovery will be performed when the environment is opened. The default value is 0.
+</para>
+</section>
+</section>
+
+<section><title>Freeze.DbEnv.<replaceable>env-name</replaceable>.OldLogsAutoDelete</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.DbEnv.<replaceable>env-name</replaceable>.OldLogsAutoDelete=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+old transactional logs no longer in use are deleted after each
+periodic checkpoint  (see
+<literal>Freeze.DbEnv.<replaceable>env-name</replaceable>.DbCheckpointPeriod</literal>). The default value is 1.
+</para>
+</section>
+</section>
+
+<section><title>Freeze.DbEnv.<replaceable>env-name</replaceable>.PeriodicCheckpointMinSize</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.DbEnv.<replaceable>env-name</replaceable>.PeriodicCheckpointMinSize=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+<replaceable>num</replaceable> is the minimum size in kbytes for the
+periodic checkpoint (see
+<literal>Freeze.DbEnv.<replaceable>env-name</replaceable>.DbCheckpointPeriod</literal>). 
+This value is passed to Berkeley DB's checkpoint function. Defaults to
+0 (which means no minimum).
+</para>
+</section>
+</section>
+
+
+<section><title>Freeze.Evictor.<replaceable>env-name</replaceable>.<replaceable>db-name</replaceable>.MaxTxSize</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.Evictor.<replaceable>env-name</replaceable>.<replaceable>db-name</replaceable>.MaxTxSize=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para> &Freeze; uses a background thread to save updates
+to the database. Transactions are used to save many
+facets together. <replaceable>num</replaceable> defines the maximum
+number of facets saved per transaction. Defaults to 10 *
+SaveSizeTrigger (see <literal>Freeze.Evictor.<replaceable>env-name</replaceable>.<replaceable>db-name</replaceable>.SaveSizeTrigger</literal>); if this value is negative, the actual value is set to 100.
+</para>
+</section>
+</section>
+
+<section><title>Freeze.Evictor.<replaceable>env-name</replaceable>.<replaceable>db-name</replaceable>.SavePeriod</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.Evictor.<replaceable>env-name</replaceable>.<replaceable>db-name</replaceable>.SavePeriod=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para> &Freeze; uses a background thread to save updates
+to the database. After <replaceable>num</replaceable> milliseconds
+without saving, if there is any facet created, modified or destroyed, this background thread wakes up to
+save these facets. When <replaceable>num</replaceable> is 0, there is
+no periodic saving. Defaults to 60,000.
+</para>
+</section>
+</section>
+
+
+<section><title>Freeze.Evictor.<replaceable>env-name</replaceable>.<replaceable>db-name</replaceable>.SaveSizeTrigger</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.Evictor.<replaceable>env-name</replaceable>.<replaceable>db-name</replaceable>.SaveSizeTrigger=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para> &Freeze; uses a background thread to save updates
+to the database. When <replaceable>num</replaceable> is 0 or positive,
+as soon as <replaceable>num</replaceable> or more facets have been
+created, modified or destroyed, this background thread wakes up to
+save them. When <replaceable>num</replaceable> is negative, there is no size trigger. Defaults to 10.
+</para>
+</section>
+</section>
+
+
+
+
+<section><title>Freeze.Trace.DbEnv</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.Trace.DbEnv=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The &Freeze; database environment activity trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No database activity trace. (default)</entry>
+<entry>No database environment activity trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
-<entry>Trace database activity.</entry>
+<entry>Trace database open and close.</entry>
 </row>
 <row>
 <entry>2</entry>
-<entry>Also trace database transactions.</entry>
+<entry>Also trace checkpoints and the removal of old log files.</entry>
 </row>
 </tbody>
 </tgroup>
@@ -2657,12 +2998,16 @@ The &Freeze; evictor activity trace level:
 </row>
 <row>
 <entry>1</entry>
-<entry>Trace &Ice; object creation and destruction, as well as
-evictor deactivation.</entry>
+<entry>Trace &Ice; object and facet creation and destruction, facet streaming time, facet saving time, object eviction
+(every 50 objects) and evictor deactivation.</entry>
 </row>
 <row>
 <entry>2</entry>
-<entry>Also trace evictor queue activity.</entry>
+<entry>Also trace object lookups, and all object evictions.</entry>
+</row>
+<row>
+<entry>3</entry>
+<entry>Also trace object retrieval from the database.</entry>
 </row>
 </tbody>
 </tgroup>
@@ -2670,5 +3015,39 @@ evictor deactivation.</entry>
 </para>
 </section>
 </section>
+
+<section><title>Freeze.Trace.Map</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.Trace.Map=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The &Freeze; map activity trace level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No map activity trace. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace database open and close.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Also trace iterator and transaction operations, and reference
+counting of the underlying database.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
 
 </section>

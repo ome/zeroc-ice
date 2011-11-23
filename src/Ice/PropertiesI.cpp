@@ -13,6 +13,7 @@
 // **********************************************************************
 
 #include <Ice/PropertiesI.h>
+#include <Ice/Initialize.h>
 #include <Ice/LocalException.h>
 #include <fstream>
 
@@ -105,9 +106,6 @@ static const string iceProps[] =
     "ChangeUser",
     "Config",
     "ConnectionIdleTime",
-    "Daemon",
-    "DaemonNoChdir",
-    "DaemonNoClose",
     "Default.Host",
     "Default.Locator",
     "Default.Protocol",
@@ -119,12 +117,14 @@ static const string iceProps[] =
     "Nohup",
     "NullHandleAbort",
     "Override.Compress",
+    "Override.ConnectTimeout",
     "Override.Timeout",
     "Plugin.*",
     "PrintAdapterReady",
     "PrintProcessId",
     "ProgramName",
     "RetryIntervals",
+    "ServerId",
     "ServerIdleTime",
     "ThreadPool.Client.Size",
     "ThreadPool.Client.SizeMax",
@@ -140,6 +140,7 @@ static const string iceProps[] =
     "Trace.Location",
     "UDP.RcvSize",
     "UDP.SndSize",
+    "UseEventLog",
     "UseSyslog",
     "Warn.AMICallback",
     "Warn.Connections",
@@ -151,11 +152,13 @@ static const string iceProps[] =
 static const string iceBoxProps[] =
 {
     "DBEnvName.*",
+    "LoadOrder",
     "PrintServicesReady",
     "Service.*",
     "ServiceManager.AdapterId",
     "ServiceManager.Endpoints",
     "ServiceManager.Identity",
+    "ServiceManager.RegisterProcess",
     "UseSharedCommunicator.*"
 };
 
@@ -164,6 +167,8 @@ static const string icePackProps[] =
     "Node.AdapterId",
     "Node.CollocateRegistry",
     "Node.Data",
+    "Node.Output",
+    "Node.RedirectErrToOut",
     "Node.Endpoints",
     "Node.Name",
     "Node.PrintServersReady",
@@ -203,6 +208,7 @@ static const string iceSSLProps[] =
     "Client.CertPath*",
     "Client.Config",
     "Client.Handshake.Retries",
+    "Client.IgnoreValidPeriod",
     "Client.Overrides.CACertificate",
     "Client.Overrides.DSA.Certificate",
     "Client.Overrides.DSA.PrivateKey",
@@ -211,6 +217,7 @@ static const string iceSSLProps[] =
     "Client.Passphrase.Retries",
     "Server.CertPath*",
     "Server.Config",
+    "Server.IgnoreValidPeriod",
     "Server.Overrides.CACertificate",
     "Server.Overrides.DSA.Certificate",
     "Server.Overrides.DSA.PrivateKey",
@@ -224,7 +231,9 @@ static const string iceStormProps[] =
 {
     "Flush.Timeout",
     "Publish.Endpoints",
+    "Publish.AdapterId",
     "TopicManager.Endpoints",
+    "TopicManager.AdapterId",
     "TopicManager.Proxy",
     "Trace.Flush",
     "Trace.Subscriber",
@@ -236,28 +245,31 @@ static const string glacierProps[] =
 {
     "Router.AcceptCert",
     "Router.AllowCategories",
-    "Router.Client.BatchSleepTime",
     "Router.Client.Endpoints",
+    "Router.Client.ForwardContext",
+    "Router.Client.SleepTime",
     "Router.Client.ThreadPool.Size",
     "Router.Client.ThreadPool.SizeMax",
     "Router.Client.ThreadPool.SizeWarn",
-    "Router.Client.ForwardContext",
+    "Router.Client.Throttle.Twoways",
     "Router.Endpoints",
     "Router.ThreadPool.Size",
     "Router.ThreadPool.SizeMax",
     "Router.ThreadPool.SizeWarn",
     "Router.Identity",
     "Router.PrintProxyOnFd",
-    "Router.Server.BatchSleepTime",
     "Router.Server.Endpoints",
+    "Router.Server.ForwardContext",
+    "Router.Server.SleepTime",
     "Router.Server.ThreadPool.Size",
     "Router.Server.ThreadPool.SizeMax",
     "Router.Server.ThreadPool.SizeWarn",
-    "Router.Server.ForwardContext",
+    "Router.Server.Throttle.Twoways",
     "Router.SessionManager",
     "Router.Trace.Client",
     "Router.Trace.RoutingTable",
     "Router.Trace.Server",
+    "Router.Trace.Throttle",
     "Router.UserId",
     "Starter.AddUserToAllowCategories",
     "Starter.Certificate.BitStrength",
@@ -271,7 +283,7 @@ static const string glacierProps[] =
     "Starter.Certificate.StateProvince",
     "Starter.CryptPasswords",
     "Starter.Endpoints",
-    "Starter.PasswordVerifier",
+    "Starter.PermissionsVerifier",
     "Starter.PropertiesOverride",
     "Starter.RouterPath",
     "Starter.StartupTimeout",
@@ -460,10 +472,12 @@ PropertiesPtr
 Ice::PropertiesI::clone()
 {
     IceUtil::Mutex::Lock sync(*this);
+    return new PropertiesI(this);
+}
 
-    PropertiesI* p = new PropertiesI();
-    p->_properties = _properties;
-    return p;
+Ice::PropertiesI::PropertiesI(const PropertiesI* p) :
+    _properties(p->_properties)
+{
 }
 
 Ice::PropertiesI::PropertiesI()
@@ -493,38 +507,8 @@ Ice::PropertiesI::PropertiesI(StringSeq& args)
     }
 
     loadConfig();
-}
 
-Ice::PropertiesI::PropertiesI(int& argc, char* argv[])
-{
-    for(int i = 1; i < argc; ++i)
-    {
-        if(strncmp(argv[i], "--Ice.Config", 12) == 0)
-        {
-            string line = argv[i];
-            if(line.find('=') == string::npos)
-            {
-                line += "=1";
-            }
-            parseLine(line.substr(2));
-            for(int j = i; j + 1 < argc; ++j)
-            {
-                argv[j] = argv[j + 1];
-            }
-            --argc;
-        }
-    }
-
-    loadConfig();
-
-    if(argc > 0)
-    {
-        string name = getProperty("Ice.ProgramName");
-        if(name.empty())
-        {
-            setProperty("Ice.ProgramName", argv[0]);
-        }
-    }
+    args = parseIceCommandLineOptions(args);
 }
 
 void

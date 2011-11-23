@@ -30,21 +30,22 @@ struct ICE_UTIL_API GCStats
     double msec;
 };
 
-class ICE_UTIL_API GC : public ::IceUtil::Thread, public ::IceUtil::Monitor< ::IceUtil::Mutex>
+class GC : public ::IceUtil::Thread, public ::IceUtil::Monitor< ::IceUtil::Mutex>
 {
 public:
 
     typedef void (*StatsCallback)(const ::IceUtil::GCStats&);
 
-    GC(int, StatsCallback);
-    virtual ~GC();
-    virtual void run();
-    void stop();
-    void collectGarbage();
+    ICE_UTIL_API GC(int, StatsCallback);
+    ICE_UTIL_API virtual ~GC();
+    ICE_UTIL_API virtual void run();
+    ICE_UTIL_API void stop();
+    ICE_UTIL_API void collectGarbage();
 
 private:
 
-    bool _running;
+    enum State { NotStarted, Started, Stopping, Stopped };
+    State _state;
     bool _collecting;
     int _interval;
     StatsCallback _statsCallback;

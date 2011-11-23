@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Ice::CollocationOptimizationException</TITLE
+>Ice::CloseTimeoutException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
@@ -14,11 +14,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Ice::CloseTimeoutException"
+TITLE="Ice::CloseConnectionException"
 HREF="x1054.html"><LINK
 REL="NEXT"
-TITLE="Ice::Communicator"
-HREF="x1074.html"></HEAD
+TITLE="Ice::CollocationOptimizationException"
+HREF="x1078.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -60,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x1074.html"
+HREF="x1078.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -74,11 +74,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICE.COLLOCATIONOPTIMIZATIONEXCEPTION"
+NAME="ICE.CLOSETIMEOUTEXCEPTION"
 ></A
 ><TT
 CLASS="LITERAL"
->Ice::CollocationOptimizationException</TT
+>Ice::CloseTimeoutException</TT
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -98,14 +98,28 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 >local exception <TT
 CLASS="CLASSNAME"
->CollocationOptimizationException</TT
+>CloseTimeoutException</TT
+>
+    extends 
+	<A
+HREF="x4942.html"
+><TT
+CLASS="CLASSNAME"
+>TimeoutException</TT
+></A
 ></PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->This exception is raised if a feature is requested that is not
-supported with collocation optimization.</P
+>This exception is a specialization of <A
+HREF="x4942.html"
+><TT
+CLASS="CLASSNAME"
+>TimeoutException</TT
+></A
+> for
+connection closure timeout conditions.</P
 ></DIV
 ></DIV
 ><DIV
@@ -142,7 +156,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x1074.html"
+HREF="x1078.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -154,7 +168,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::CloseTimeoutException</TT
+>Ice::CloseConnectionException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -171,7 +185,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::Communicator</TT
+>Ice::CollocationOptimizationException</TT
 ></TD
 ></TR
 ></TABLE

@@ -51,6 +51,7 @@ def getIceVersion():
     return re.search("ICE_STRING_VERSION \"([0-9\.]*)\"", config.read()).group(1)
 
 def getIceSoVersion():
+
     config = open(os.path.join(toplevel, "include", "IceUtil", "Config.h"), "r")
     intVersion = int(re.search("ICE_INT_VERSION ([0-9]*)", config.read()).group(1))
     majorVersion = intVersion / 10000
@@ -73,13 +74,36 @@ def isWin32():
     else:
         return 0
 
+def isWin9x():
+
+    if isWin32():
+        if os.environ.has_key("OS") and os.environ["OS"] == "Windows_NT":
+           return 0
+        return 1
+    else:
+        return 0
+
 def isSolaris():
 
     if sys.platform == "sunos5":
         return 1
     else:
         return 0
-        
+       
+def isHpUx():
+
+   if sys.platform == "hp-ux11":
+        return 1
+   else:
+        return 0
+     
+def isDarwin():
+
+   if sys.platform == "darwin":
+        return 1
+   else:
+        return 0
+     
 serverPids = []
 def killServers():
 
@@ -126,7 +150,7 @@ def getAdapterReady(serverPipe):
 
 def waitServiceReady(pipe, token):
 
-    while 1:
+    while True:
 
         output = pipe.readline().strip()
 
@@ -138,10 +162,14 @@ def waitServiceReady(pipe, token):
             break
 
 def printOutputFromPipe(pipe):
-    while 1:
+
+    while True:
+
         line = pipe.readline()
+
         if not line:
             break
+
         os.write(1, line)
 
 for toplevel in [".", "..", "../..", "../../..", "../../../.."]:
@@ -156,6 +184,10 @@ if isWin32():
 	os.environ["PATH"] = os.path.join(toplevel, "bin") + ":" + os.getenv("PATH", "")
     else:
 	os.environ["PATH"] = os.path.join(toplevel, "bin") + ";" + os.getenv("PATH", "")
+elif isHpUx():
+    os.environ["SHLIB_PATH"] = os.path.join(toplevel, "lib") + ":" + os.getenv("SHLIB_PATH", "")
+elif isDarwin():
+    os.environ["DYLD_LIBRARY_PATH"] = os.path.join(toplevel, "lib") + ":" + os.getenv("DYLD_LIBRRARY_PATH", "")
 else:
     os.environ["LD_LIBRARY_PATH"] = os.path.join(toplevel, "lib") + ":" + os.getenv("LD_LIBRARY_PATH", "")
     os.environ["LD_LIBRARY_PATH_64"] = os.path.join(toplevel, "lib") + ":" + os.getenv("LD_LIBRARY_PATH_64", "")
@@ -188,10 +220,14 @@ if host != "":
 else:
     defaultHost = ""
 
-commonServerOptions = " --Ice.PrintProcessId --Ice.PrintAdapterReady --Ice.ThreadPool.Server.Size=3" + \
-                      " --Ice.Warn.Connections "
+commonClientOptions = " --Ice.NullHandleAbort --Ice.Warn.Connections"
 
-clientOptions = clientProtocol + defaultHost
+commonServerOptions = " --Ice.PrintProcessId --Ice.PrintAdapterReady --Ice.NullHandleAbort" + \
+                      " --Ice.Warn.Connections --Ice.ServerIdleTime=30" + \
+                      " --Ice.ThreadPool.Server.Size=1 --Ice.ThreadPool.Server.SizeMax=3" + \
+                      " --Ice.ThreadPool.Server.SizeWarn=0"
+
+clientOptions = clientProtocol + defaultHost + commonClientOptions
 serverOptions = serverProtocol + defaultHost + commonServerOptions
 clientServerOptions = clientServerProtocol + defaultHost + commonServerOptions
 collocatedOptions = clientServerProtocol + defaultHost

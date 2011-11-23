@@ -16,7 +16,6 @@
 #define ICE_CONNECTION_H
 
 #include <IceUtil/Mutex.h>
-#include <IceUtil/RecMutex.h>
 #include <IceUtil/Monitor.h>
 #include <IceUtil/Time.h>
 #include <Ice/ConnectionF.h>
@@ -43,7 +42,7 @@ namespace IceInternal
 
 class Outgoing;
 
-class Connection : public EventHandler, public IceUtil::Monitor<IceUtil::RecMutex>
+class Connection : public EventHandler, public IceUtil::Monitor<IceUtil::Mutex>
 {
 public:
 
@@ -66,16 +65,12 @@ public:
 
     void monitor();
 
-    void incProxyCount();
-    void decProxyCount();
-
     void prepareRequest(BasicStream*);
-    void sendRequest(Outgoing*, bool);
-    void sendAsyncRequest(const OutgoingAsyncPtr&);
+    void sendRequest(BasicStream*, Outgoing*);
+    void sendAsyncRequest(BasicStream*, const OutgoingAsyncPtr&);
 
     void prepareBatchRequest(BasicStream*);
     void finishBatchRequest(BasicStream*);
-    void abortBatchRequest();
     void flushBatchRequest();
 
     void sendResponse(BasicStream*, Ice::Byte);
@@ -132,9 +127,8 @@ private:
     static void doCompress(BasicStream&, BasicStream&);
     static void doUncompress(BasicStream&, BasicStream&);
 
-    bool closingOK() const;
-
     TransceiverPtr _transceiver;
+    const std::string _desc;
     const EndpointPtr _endpoint;
 
     Ice::ObjectAdapterPtr _adapter;
@@ -144,11 +138,11 @@ private:
     const TraceLevelsPtr _traceLevels;
 
     bool _registeredWithPool;
-    ThreadPoolPtr _threadPool;
+    const ThreadPoolPtr _threadPool;
 
-    bool _warn;
+    const bool _warn;
 
-    int _acmTimeout;
+    const int _acmTimeout;
     IceUtil::Time _acmAbsoluteTimeout;
 
     const std::vector<Ice::Byte> _requestHdr;
@@ -156,29 +150,34 @@ private:
     const std::vector<Ice::Byte> _replyHdr;
 
     Ice::Int _nextRequestId;
+
     std::map<Ice::Int, Outgoing*> _requests;
     std::map<Ice::Int, Outgoing*>::iterator _requestsHint;
-    std::map<Ice::Int, OutgoingAsyncPtr> _asyncRequests;
-    std::map<Ice::Int, OutgoingAsyncPtr>::iterator _asyncRequestsHint;
+
+    struct AsyncRequest
+    {
+	OutgoingAsyncPtr p;
+	IceUtil::Time t;
+    };
+    std::map<Ice::Int, AsyncRequest> _asyncRequests;
+    std::map<Ice::Int, AsyncRequest>::iterator _asyncRequestsHint;
 
     std::auto_ptr<Ice::LocalException> _exception;
 
     BasicStream _batchStream;
+    bool _batchStreamInUse;
     int _batchRequestNum;
 
     int _dispatchCount;
 
-    int _proxyCount;
-
-    State _state;
+    State _state; // The current state.
+    IceUtil::Time _stateTime; // The last time when the state was changed.
 
     //
-    // We need a special mutex for the isDestroyed() and isFinished()
-    // functions, because these functions must not block. Using the
-    // default mutex is therefore not possible, as the default mutex
-    // might be locked for a longer period of time.
+    // We have a separate mutex for sending, so that we don't block
+    // the whole connection when we do a blocking send.
     //
-    IceUtil::Mutex _queryMutex;
+    IceUtil::Mutex _sendMutex;
 };
 
 }

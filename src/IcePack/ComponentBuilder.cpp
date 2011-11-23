@@ -20,10 +20,15 @@
 #include <IcePack/ComponentBuilder.h>
 #include <IcePack/Internal.h>
 
-#include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <dirent.h>
+#include <sys/stat.h>
+
+#ifdef _WIN32
+#   include <direct.h>
+#else
+#   include <unistd.h>
+#   include <dirent.h>
+#endif
 
 #include <iterator>
 #include <fstream>
@@ -54,7 +59,11 @@ public:
     virtual void
     execute()
     {
+#ifdef _WIN32
+	if(_mkdir(_name.c_str()) != 0)
+#else
 	if(mkdir(_name.c_str(), 0755) != 0)
+#endif
 	{
 	    DeploymentException ex;
 	    ex.reason = "couldn't create directory " + _name + ": " + strerror(getSystemErrno());
@@ -74,33 +83,44 @@ public:
 	    // removed by another task).
 	    //
 
+	    Ice::StringSeq files;
+
+#ifdef _WIN32
+	    string pattern = _name + "/*";
+	    WIN32_FIND_DATA data;
+	    HANDLE hnd = FindFirstFile(pattern.c_str(), &data);
+	    if(hnd == INVALID_HANDLE_VALUE)
+	    {
+		// TODO: log a warning, throw an exception?
+		return;
+	    }
+
+	    do
+	    {
+		if((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+		{
+		    files.push_back(_name + "/" + data.cFileName);
+		}
+	    } while(FindNextFile(hnd, &data));
+
+	    FindClose(hnd);
+#else
 	    DIR* dir = opendir(_name.c_str());
-	    
 	    if(dir == 0)
 	    {
 		// TODO: log a warning, throw an exception?
 		return;
 	    }
 	    
-	    
 	    // TODO: make the allocation/deallocation exception-safe
 	    struct dirent* entry = static_cast<struct dirent*>(malloc(pathconf(_name.c_str(), _PC_NAME_MAX) + 1));
 
-	    Ice::StringSeq entries;
-	   
 	    while(readdir_r(dir, entry, &entry) == 0 && entry != 0)
 	    {
-		string name = entry->d_name;
-		entries.push_back(_name + "/" + name);
-	    }
-	    free(entry);
-	    closedir(dir);
-		
-	    for(Ice::StringSeq::iterator p = entries.begin(); p != entries.end(); ++p)
-	    {
+		string name = _name + "/" + entry->d_name;
 		struct stat buf;
 		
-		if(::stat(p->c_str(), &buf) != 0)
+		if(::stat(name.c_str(), &buf) != 0)
 		{
 		    if(errno != ENOENT)
 		    {
@@ -111,12 +131,21 @@ public:
 		}
 		else if(S_ISREG(buf.st_mode))
 		{
-		    if(unlink(p->c_str()) != 0)
-		    {
-			//
-			// TODO: log error
-			//
-		    }
+		    files.push_back(name);
+		}
+	    }
+
+	    free(entry);
+	    closedir(dir);
+#endif
+		
+	    for(Ice::StringSeq::iterator p = files.begin(); p != files.end(); ++p)
+	    {
+		if(unlink(p->c_str()) != 0)
+		{
+		    //
+		    // TODO: log error
+		    //
 		}
 	    }
 	}
@@ -143,17 +172,32 @@ class GenerateConfiguration : public Task
     class WriteConfigProperty : public unary_function<Ice::PropertyDict::value_type, string>
     {
     public:
+	
+	WriteConfigProperty(const string& sep, const string& prefix) :
+	    _sep(sep),
+	    _prefix(prefix)
+       {
+       }
+	
 
 	string 
 	operator()(const Ice::PropertyDict::value_type& p) const
 	{
-	    return p.first + "=" + p.second;
+	    return p.first.substr(_prefix.length()) + _sep + p.second;
 	}
+
+    private:
+	
+	const string _sep;
+	const string _prefix;
     };
 
 public:
 
-    GenerateConfiguration(const string& file, const Ice::PropertiesPtr& properties) :
+    GenerateConfiguration(const string& sep, const string& prefix, const string& file, 
+			  const Ice::PropertiesPtr& properties) :
+	_sep(sep),
+	_prefix(prefix),
 	_file(file),
 	_properties(properties)
     {
@@ -171,8 +215,9 @@ public:
 	    throw ex;
 	}
 	
-	Ice::PropertyDict props = _properties->getPropertiesForPrefix("");
-	transform(props.begin(), props.end(), ostream_iterator<string>(configfile,"\n"), WriteConfigProperty());
+	Ice::PropertyDict props = _properties->getPropertiesForPrefix(_prefix);
+	transform(props.begin(), props.end(), ostream_iterator<string>(configfile,"\n"), 
+		  WriteConfigProperty(_sep, _prefix));
 	configfile.close();
     }
 
@@ -189,7 +234,9 @@ public:
 
 private:
 
-    string _file;
+    const string _sep;
+    const string _prefix;
+    const string _file;
     Ice::PropertiesPtr _properties;
 };
 
@@ -405,7 +452,7 @@ IcePack::ComponentHandler::getAttributeValueWithDefault(const IceXML::Attributes
 string
 IcePack::ComponentHandler::elementValue() const
 {
-    return _elements.top();
+    return _builder.substitute(_elements.top());
 }
 
 bool
@@ -571,7 +618,7 @@ IcePack::ComponentBuilder::createConfigFile(const string& name)
 {
     assert(!name.empty());
     _configFile = getVariable("datadir") + (name[0] == '/' ? name : "/" + name);
-    _tasks.push_back(new GenerateConfiguration(_configFile, _properties));
+    _tasks.push_back(new GenerateConfiguration("=", "", _configFile, _properties));
 }
 
 void
@@ -775,3 +822,9 @@ IcePack::ComponentBuilder::undoFrom(vector<TaskPtr>::iterator p)
     }
 }
 
+void
+IcePack::ComponentBuilder::generateConfigFile(const string& sep, const string& prefix, const string& path, 
+					      const Ice::PropertiesPtr& props)
+{
+    _tasks.push_back(new GenerateConfiguration(sep, prefix, path, props));
+}

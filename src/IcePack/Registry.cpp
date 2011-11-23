@@ -31,7 +31,14 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
+
+#ifdef _WIN32
+#   include <direct.h>
+#   define S_ISDIR(mode) ((mode) & _S_IFDIR)
+#   define S_ISREG(mode) ((mode) & _S_IFREG)
+#else
+#   include <unistd.h>
+#endif
 
 using namespace std;
 using namespace Ice;
@@ -114,12 +121,17 @@ IcePack::Registry::start(bool nowarn, bool requiresInternalEndpoints)
 	    out << "administrative endpoints `IcePack.Registry.Admin.Endpoints' enabled";
 	}
     }
-    
+
+    if(properties->getPropertyAsIntWithDefault("Ice.ThreadPool.Server.Size", 5) <= 5)
+    {
+	properties->setProperty("Ice.ThreadPool.Server.Size", "5");
+    }
+
     _communicator->setDefaultLocator(0);
 
-    properties->setProperty("Ice.Daemon", "0");
     properties->setProperty("Ice.PrintProcessId", "0");
     properties->setProperty("Ice.Warn.Leaks", "0");
+    properties->setProperty("Ice.ServerIdleTime", "0");
 
     TraceLevelsPtr traceLevels = new TraceLevels(properties, _communicator->getLogger());
 
@@ -148,7 +160,6 @@ IcePack::Registry::start(bool nowarn, bool requiresInternalEndpoints)
     registryAdapter->add(serverRegistry, stringToIdentity("IcePack/ServerRegistry"));    
     registryAdapter->add(nodeRegistry, stringToIdentity("IcePack/NodeRegistry"));
 
-
     //
     // Create the locator registry adapter and servant.
     //
@@ -158,7 +169,7 @@ IcePack::Registry::start(bool nowarn, bool requiresInternalEndpoints)
     locatorRegistryId.category = "IcePack";
     locatorRegistryId.name = IceUtil::generateUUID();
     
-    ObjectPtr locatorRegistry = new LocatorRegistryI(adapterRegistry, serverAdapter);
+    ObjectPtr locatorRegistry = new LocatorRegistryI(adapterRegistry, serverRegistry, serverAdapter);
     LocatorRegistryPrx locatorRegistryPrx = LocatorRegistryPrx::uncheckedCast(
 	serverAdapter->add(locatorRegistry, locatorRegistryId));
 

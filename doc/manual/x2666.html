@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Ice::NoObjectFactoryException</TITLE
+>Ice::MemoryLimitException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
@@ -14,11 +14,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Ice::NoEndpointException"
-HREF="x2642.html"><LINK
+TITLE="Ice::MarshalException"
+HREF="x2629.html"><LINK
 REL="NEXT"
-TITLE="Ice::NotRegisteredException"
-HREF="x2710.html"></HEAD
+TITLE="Ice::NegativeSizeException"
+HREF="x2678.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -46,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x2642.html"
+HREF="x2629.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -60,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x2710.html"
+HREF="x2678.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -74,11 +74,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICE.NOOBJECTFACTORYEXCEPTION"
+NAME="ICE.MEMORYLIMITEXCEPTION"
 ></A
 ><TT
 CLASS="LITERAL"
->Ice::NoObjectFactoryException</TT
+>Ice::MemoryLimitException</TT
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -98,11 +98,11 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 >local exception <TT
 CLASS="CLASSNAME"
->NoObjectFactoryException</TT
+>MemoryLimitException</TT
 >
     extends 
 	<A
-HREF="x2581.html"
+HREF="x2629.html"
 ><TT
 CLASS="CLASSNAME"
 >MarshalException</TT
@@ -113,113 +113,14 @@ CLASS="CLASSNAME"
 ></TABLE
 ><P
 >This exception is a specialization of <A
-HREF="x2581.html"
+HREF="x2629.html"
 ><TT
 CLASS="CLASSNAME"
 >MarshalException</TT
 ></A
 > that is
-raised if no suitable object factory was found during object
-unmarshaling.</P
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN2678"
-></A
->See Also</H3
-><P
->	    <A
-HREF="x3545.html"
-><TT
-CLASS="CLASSNAME"
->ObjectFactory</TT
-></A
->, <A
-HREF="x1074.html#ICE.COMMUNICATOR.ADDOBJECTFACTORY"
-><TT
-CLASS="FUNCTION"
->Communicator::addObjectFactory</TT
-></A
->, <A
-HREF="x1074.html#ICE.COMMUNICATOR.REMOVEOBJECTFACTORY"
-><TT
-CLASS="FUNCTION"
->Communicator::removeObjectFactory</TT
-></A
->, <A
-HREF="x1074.html#ICE.COMMUNICATOR.FINDOBJECTFACTORY"
-><TT
-CLASS="FUNCTION"
->Communicator::findObjectFactory</TT
-></A
-></P
-></DIV
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN2694"
-></A
->Data Member Index</H3
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
-><A
-HREF="x2666.html#ICE.NOOBJECTFACTORYEXCEPTION.TYPE"
-><SPAN
-CLASS="TYPE"
->type</SPAN
-></A
-></DT
-><DD
-><P
->The absolute Slice type name of the object for which we
-could not find a factory.</P
-></DD
-></DL
-></DIV
-></DIV
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICE.NOOBJECTFACTORYEXCEPTION.TYPE"
-></A
-><TT
-CLASS="LITERAL"
->type</TT
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><SPAN
-CLASS="TYPE"
->string</SPAN
-> <TT
-CLASS="STRUCTFIELD"
-><I
->type</I
-></TT
->;</PRE
-></TD
-></TR
-></TABLE
-><P
->The absolute Slice type name of the object for which we
-could not find a factory.</P
+raised if the system-specific memory limit is exceeded during
+marshaling or unmarshaling.</P
 ></DIV
 ></DIV
 ><DIV
@@ -238,7 +139,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x2642.html"
+HREF="x2629.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -256,7 +157,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x2710.html"
+HREF="x2678.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -268,7 +169,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::NoEndpointException</TT
+>Ice::MarshalException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -285,7 +186,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::NotRegisteredException</TT
+>Ice::NegativeSizeException</TT
 ></TD
 ></TR
 ></TABLE

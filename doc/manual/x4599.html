@@ -1,0 +1,763 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Ice::ServantLocator</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Ice::Router"
+HREF="x4519.html"><LINK
+REL="NEXT"
+TITLE="Ice::ServerNotFoundException"
+HREF="x4792.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x4519.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x4792.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICE.SERVANTLOCATOR"
+></A
+><TT
+CLASS="LITERAL"
+>Ice::ServantLocator</TT
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN4602"
+></A
+>Overview</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local interface <TT
+CLASS="CLASSNAME"
+>ServantLocator</TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>The servant locator, which is called by the object adapter to
+locate a servant that is not found in its active servant map.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4607"
+></A
+>Derived Classes and Interfaces</H3
+><P
+>	    <A
+HREF="x5571.html"
+><SPAN
+CLASS="TYPE"
+>::Freeze::Evictor</SPAN
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4614"
+></A
+>Used By</H3
+><P
+>	    <A
+HREF="x2795.html#ICE.OBJECTADAPTER.ADDSERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::addServantLocator</TT
+></A
+>, <A
+HREF="x2795.html#ICE.OBJECTADAPTER.FINDSERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::findServantLocator</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4624"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2795.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectAdapter</TT
+></A
+>, <A
+HREF="x2795.html#ICE.OBJECTADAPTER.ADDSERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::addServantLocator</TT
+></A
+>, <A
+HREF="x2795.html#ICE.OBJECTADAPTER.FINDSERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::findServantLocator</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4637"
+></A
+>Operation Index</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x4599.html#ICE.SERVANTLOCATOR.DEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>deactivate</TT
+></A
+></DT
+><DD
+><P
+>Called when the object adapter in which this servant locator is
+installed is deactivated.</P
+></DD
+><DT
+><A
+HREF="x4599.html#ICE.SERVANTLOCATOR.FINISHED"
+><TT
+CLASS="FUNCTION"
+>finished</TT
+></A
+></DT
+><DD
+><P
+>Called by the object adapter after a request has been
+made.</P
+></DD
+><DT
+><A
+HREF="x4599.html#ICE.SERVANTLOCATOR.LOCATE"
+><TT
+CLASS="FUNCTION"
+>locate</TT
+></A
+></DT
+><DD
+><P
+>Called by the object adapter before a request is made when a
+servant cannot be found in the object adapter's active servant
+map.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.SERVANTLOCATOR.DEACTIVATE"
+></A
+><TT
+CLASS="LITERAL"
+>deactivate</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>deactivate</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>category</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Called when the object adapter in which this servant locator is
+installed is deactivated.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4667"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>category</I
+></TT
+></DT
+><DD
+><P
+>			    Indicates for which category the servant locator
+is being deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4675"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2795.html#ICE.OBJECTADAPTER.DEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::deactivate</TT
+></A
+>, <A
+HREF="x1086.html#ICE.COMMUNICATOR.SHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>Communicator::shutdown</TT
+></A
+>, <A
+HREF="x1086.html#ICE.COMMUNICATOR.DESTROY"
+><TT
+CLASS="FUNCTION"
+>Communicator::destroy</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.SERVANTLOCATOR.FINISHED"
+></A
+><TT
+CLASS="LITERAL"
+>finished</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>finished</TT
+>(<A
+HREF="x1888.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Current</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>curr</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>LocalObject</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>cookie</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Called by the object adapter after a request has been
+made. This operation is only called if <A
+HREF="x4599.html#ICE.SERVANTLOCATOR.LOCATE"
+><TT
+CLASS="FUNCTION"
+>locate</TT
+></A
+> was called
+prior to the request and returned a non-null servant. This
+operation can be used for cleanup purposes after a request.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4704"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>curr</I
+></TT
+></DT
+><DD
+><P
+>			    Information about the current operation call for
+which a servant was located by <A
+HREF="x4599.html#ICE.SERVANTLOCATOR.LOCATE"
+><TT
+CLASS="FUNCTION"
+>locate</TT
+></A
+>.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+></DT
+><DD
+><P
+>			    The servant that was returned by <A
+HREF="x4599.html#ICE.SERVANTLOCATOR.LOCATE"
+><TT
+CLASS="FUNCTION"
+>locate</TT
+></A
+>.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>cookie</I
+></TT
+></DT
+><DD
+><P
+>			    The cookie that was returned by <A
+HREF="x4599.html#ICE.SERVANTLOCATOR.LOCATE"
+><TT
+CLASS="FUNCTION"
+>locate</TT
+></A
+>.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4728"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2795.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectAdapter</TT
+></A
+>, <A
+HREF="x1888.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Current</SPAN
+></A
+>, <A
+HREF="x4599.html#ICE.SERVANTLOCATOR.LOCATE"
+><TT
+CLASS="FUNCTION"
+>locate</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.SERVANTLOCATOR.LOCATE"
+></A
+><TT
+CLASS="LITERAL"
+>locate</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="FUNCTION"
+>locate</TT
+>(<A
+HREF="x1888.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Current</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>curr</I
+></TT
+>,
+    out <SPAN
+CLASS="TYPE"
+>LocalObject</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>cookie</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Called by the object adapter before a request is made when a
+servant cannot be found in the object adapter's active servant
+map. Note that the object adapter does not automatically insert
+the returned servant into its active servant map. This must be
+done by the servant locator implementation, if this is desired.
+<DIV
+CLASS="IMPORTANT"
+><P
+></P
+><TABLE
+CLASS="IMPORTANT"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/important.gif"
+HSPACE="5"
+ALT="Important"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>If you call <A
+HREF="x4599.html#ICE.SERVANTLOCATOR.LOCATE"
+><TT
+CLASS="FUNCTION"
+>locate</TT
+></A
+> from your own code, you
+must also call <A
+HREF="x4599.html#ICE.SERVANTLOCATOR.FINISHED"
+><TT
+CLASS="FUNCTION"
+>finished</TT
+></A
+> when you have finished using the
+servant, provided that a non-null servant was
+returned. Otherwise you will get undefined behavior if you use
+Servant Locators such as the
+<A
+HREF="x5571.html"
+><TT
+CLASS="CLASSNAME"
+>::Freeze::Evictor</TT
+></A
+>.</P
+></TD
+></TR
+></TABLE
+></DIV
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4761"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>curr</I
+></TT
+></DT
+><DD
+><P
+>			    Information about the current operation for which
+a servant is required.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>cookie</I
+></TT
+></DT
+><DD
+><P
+>			    A "cookie" that will be passed to <A
+HREF="x4599.html#ICE.SERVANTLOCATOR.FINISHED"
+><TT
+CLASS="FUNCTION"
+>finished</TT
+></A
+>.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4776"
+></A
+>Return Value</H3
+><P
+>		The located servant, or null if no suitable servant has
+been found.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4779"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2795.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectAdapter</TT
+></A
+>, <A
+HREF="x1888.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Current</SPAN
+></A
+>, <A
+HREF="x4599.html#ICE.SERVANTLOCATOR.FINISHED"
+><TT
+CLASS="FUNCTION"
+>finished</TT
+></A
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x4519.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x4792.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::Router</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::ServerNotFoundException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

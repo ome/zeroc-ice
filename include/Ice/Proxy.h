@@ -180,9 +180,6 @@ public:
     virtual ::Ice::FacetPath ice_facets(const ::Ice::Context&) = 0;
     virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 			    ::std::vector< ::Ice::Byte>&, const ::Ice::Context&) = 0;
-    virtual void ice_invoke_async(const ::Ice::AMI_Object_ice_invokePtr&,
-				  const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
-				  const ::Ice::Context&) = 0;
 };
 
 } }
@@ -203,9 +200,6 @@ public:
     virtual ::Ice::FacetPath ice_facets(const ::Ice::Context&);
     virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 			    ::std::vector< ::Ice::Byte>&, const ::Ice::Context&);
-    virtual void ice_invoke_async(const ::Ice::AMI_Object_ice_invokePtr&,
-				  const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
-				  const ::Ice::Context&);
 
     void __copyFrom(const ::IceInternal::Handle< ::IceDelegateM::Ice::Object>&);
 
@@ -218,9 +212,6 @@ private:
 
     void setup(const ::IceInternal::ReferencePtr&);
     friend class ::IceProxy::Ice::Object;
-
-    ::std::vector< ::IceInternal::EndpointPtr>
-    filterEndpoints(const ::std::vector< ::IceInternal::EndpointPtr>&) const;
 };
 
 } }
@@ -239,9 +230,6 @@ public:
     virtual ::Ice::FacetPath ice_facets(const ::Ice::Context&);
     virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 			    ::std::vector< ::Ice::Byte>&, const ::Ice::Context&);
-    virtual void ice_invoke_async(const ::Ice::AMI_Object_ice_invokePtr&,
-				  const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
-				  const ::Ice::Context&);
     void __copyFrom(const ::IceInternal::Handle< ::IceDelegateD::Ice::Object>&);
 
 protected:
@@ -267,6 +255,38 @@ ICE_API bool proxyIdentityEqual(const ObjectPrx&, const ObjectPrx&);
 
 ICE_API bool proxyIdentityAndFacetLess(const ObjectPrx&, const ObjectPrx&);
 ICE_API bool proxyIdentityAndFacetEqual(const ObjectPrx&, const ObjectPrx&);
+
+struct ProxyIdentityLess : std::binary_function<bool, ObjectPrx&, ObjectPrx&>
+{
+    bool operator()(const ObjectPrx& lhs, const ObjectPrx& rhs) const
+    {
+	return proxyIdentityLess(lhs, rhs);
+    }
+};
+
+struct ProxyIdentityEqual : std::binary_function<bool, ObjectPrx&, ObjectPrx&>
+{
+    bool operator()(const ObjectPrx& lhs, const ObjectPrx& rhs) const
+    {
+	return proxyIdentityEqual(lhs, rhs);
+    }
+};
+
+struct ProxyIdentityAndFacetLess : std::binary_function<bool, ObjectPrx&, ObjectPrx&>
+{
+    bool operator()(const ObjectPrx& lhs, const ObjectPrx& rhs) const
+    {
+	return proxyIdentityAndFacetLess(lhs, rhs);
+    }
+};
+
+struct ProxyIdentityAndFacetEqual : std::binary_function<bool, ObjectPrx&, ObjectPrx&>
+{
+    bool operator()(const ObjectPrx& lhs, const ObjectPrx& rhs) const
+    {
+	return proxyIdentityAndFacetEqual(lhs, rhs);
+    }
+};
 
 }
 

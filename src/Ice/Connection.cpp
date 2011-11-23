@@ -39,17 +39,9 @@ void IceInternal::decRef(Connection* p) { p->__decRef(); }
 void
 IceInternal::Connection::validate()
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 
-    if(_exception.get())
-    {
-	_exception->ice_throw();
-    }
-
-    if(_state != StateNotValidated)
-    {
-	return;
-    }
+    assert(_state == StateNotValidated);
 
     if(!_endpoint->datagram()) // Datagram connections are always implicitly validated.
     {
@@ -57,6 +49,8 @@ IceInternal::Connection::validate()
 	{
 	    if(_adapter)
 	    {
+		IceUtil::Mutex::Lock sendSync(_sendMutex);
+
 		//
 		// Incoming connections play the active role with respect to
 		// connection validation.
@@ -176,24 +170,9 @@ IceInternal::Connection::validate()
 	}
     }
 
-    //
-    // We only print warnings after successful connection validation.
-    //
-    _warn = _instance->properties()->getPropertyAsInt("Ice.Warn.Connections") > 0;
-
-    //
-    // We only use active connection management after successful
-    // connection validation. We don't use active connection
-    // management for datagram connections at all, because such
-    // "virtual connections" cannot be reestablished.
-    //
-    if(!_endpoint->datagram())
+    if(_acmTimeout > 0)
     {
-	_acmTimeout = _instance->properties()->getPropertyAsInt("Ice.ConnectionIdleTime");
-	if(_acmTimeout > 0)
-	{
-	    _acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
-	}
+	_acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
     }
 
     //
@@ -205,21 +184,21 @@ IceInternal::Connection::validate()
 void
 IceInternal::Connection::activate()
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
     setState(StateActive);
 }
 
 void
 IceInternal::Connection::hold()
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
     setState(StateHolding);
 }
 
 void
 IceInternal::Connection::destroy(DestructionReason reason)
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 
     switch(reason)
     {
@@ -240,31 +219,28 @@ IceInternal::Connection::destroy(DestructionReason reason)
 bool
 IceInternal::Connection::isValidated() const
 {
-    // See _queryMutex comment in header file.
-    IceUtil::Mutex::Lock sync(_queryMutex);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
     return _state > StateNotValidated;
 }
 
 bool
 IceInternal::Connection::isDestroyed() const
 {
-    // See _queryMutex comment in header file.
-    IceUtil::Mutex::Lock sync(_queryMutex);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
     return _state >= StateClosing;
 }
 
 bool
 IceInternal::Connection::isFinished() const
 {
-    // See _queryMutex comment in header file.
-    IceUtil::Mutex::Lock sync(_queryMutex);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
     return _transceiver == 0 && _dispatchCount == 0;
 }
 
 void
 IceInternal::Connection::waitUntilHolding() const
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 
     while(_state < StateHolding || _dispatchCount > 0)
     {
@@ -275,32 +251,55 @@ IceInternal::Connection::waitUntilHolding() const
 void
 IceInternal::Connection::waitUntilFinished()
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 
     //
-    // We wait indefinitely until all outstanding requests are
-    // completed. Otherwise we couldn't guarantee that there are no
-    // outstanding calls when deactivate() is called on the servant
-    // locators.
+    // We wait indefinitely until connection closing has been
+    // initiated. We also wait indefinitely until all outstanding
+    // requests are completed. Otherwise we couldn't guarantee that
+    // there are no outstanding calls when deactivate() is called on
+    // the servant locators.
     //
-    while(_dispatchCount > 0)
+    while(_state < StateClosing || _dispatchCount > 0)
     {
 	wait();
     }
 
     //
-    // Now we must wait for connection closure. If there is a timeout,
-    // we force the connection closure.
+    // Now we must wait until close() has been called on the
+    // transceiver.
     //
     while(_transceiver)
     {
-	if(_endpoint->timeout() >= 0)
+	if(_state != StateClosed && _endpoint->timeout() >= 0)
 	{
-	    if(!timedWait(IceUtil::Time::milliSeconds(_endpoint->timeout())))
+	    IceUtil::Time timeout = IceUtil::Time::milliSeconds(_endpoint->timeout());
+	    IceUtil::Time waitTime = _stateTime + timeout - IceUtil::Time::now();
+	    
+	    if(waitTime > IceUtil::Time())
 	    {
-		setState(StateClosed, CloseTimeoutException(__FILE__, __LINE__));
-		// No return here, we must still wait until _transceiver becomes null.
+		//
+		// We must wait a bit longer until we close this
+		// connection.
+		//
+		if(!timedWait(waitTime))
+		{
+		    setState(StateClosed, CloseTimeoutException(__FILE__, __LINE__));
+		}
 	    }
+	    else
+	    {
+		//
+		// We already waited long enough, so let's close this
+		// connection!
+		//
+		setState(StateClosed, CloseTimeoutException(__FILE__, __LINE__));
+	    }
+
+	    //
+	    // No return here, we must still wait until close() is
+	    // called on the _transceiver.
+	    //
 	}
 	else
 	{
@@ -314,8 +313,8 @@ IceInternal::Connection::waitUntilFinished()
 void
 IceInternal::Connection::monitor()
 {
-    
-    IceUtil::Monitor<IceUtil::RecMutex>::TryLock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::TryLock sync(*this);
+
     if(!sync.acquired())
     {
 	return;
@@ -329,9 +328,9 @@ IceInternal::Connection::monitor()
     //
     // Check for timed out async requests.
     //
-    for(map<Int, OutgoingAsyncPtr>::iterator p = _asyncRequests.begin(); p != _asyncRequests.end(); ++p)
+    for(map<Int, AsyncRequest>::iterator p = _asyncRequests.begin(); p != _asyncRequests.end(); ++p)
     {
-	if(p->second->__timedOut())
+	if(p->second.t > IceUtil::Time() && p->second.t <= IceUtil::Time::now())
 	{
 	    setState(StateClosed, TimeoutException(__FILE__, __LINE__));
 	    return;
@@ -341,10 +340,10 @@ IceInternal::Connection::monitor()
     //
     // Active connection management for idle connections.
     //
-    // TODO: Hack: ACM for incoming connections doesn't work right
-    // with AMI.
-    //
-    if(_acmTimeout > 0 && closingOK() && !_adapter)
+    if(_acmTimeout > 0 &&
+       _requests.empty() && _asyncRequests.empty() &&
+       !_batchStreamInUse && _batchStream.b.empty() &&
+       _dispatchCount == 0)
     {
 	if(IceUtil::Time::now() >= _acmAbsoluteTimeout)
 	{
@@ -354,27 +353,9 @@ IceInternal::Connection::monitor()
     }
 }
 
-void
-IceInternal::Connection::incProxyCount()
-{
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-    assert(_proxyCount >= 0);
-    ++_proxyCount;
-}
-
-void
-IceInternal::Connection::decProxyCount()
-{
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-    assert(_proxyCount > 0);
-    --_proxyCount;
-
-    if(_proxyCount == 0 && !_adapter && closingOK())
-    {
-	setState(StateClosing, CloseConnectionException(__FILE__, __LINE__));
-    }
-}
-
+//
+// TODO: Should not be a member function of Connection.
+//
 void
 IceInternal::Connection::prepareRequest(BasicStream* os)
 {
@@ -382,42 +363,70 @@ IceInternal::Connection::prepareRequest(BasicStream* os)
 }
 
 void
-IceInternal::Connection::sendRequest(Outgoing* out, bool oneway)
+IceInternal::Connection::sendRequest(BasicStream* os, Outgoing* out)
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-
-    if(_exception.get())
-    {
-	_exception->ice_throw();
-    }
-    assert(_state > StateNotValidated);
-    assert(_state < StateClosing);
-
     Int requestId;
 
-    try
     {
-	BasicStream* os = out->os();
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+
+	assert(!(out && _endpoint->datagram())); // Twoway requests cannot be datagrams.
 	
-	//
-	// Fill in the request ID.
-	//
-	if(!_endpoint->datagram() && !oneway)
+	if(_exception.get())
 	{
+	    _exception->ice_throw();
+	}
+
+	assert(_state > StateNotValidated);
+	assert(_state < StateClosing);
+
+	//
+	// Only add to the request map if this is a twoway call.
+	//
+	if(out)
+	{
+	    //
+	    // Create a new unique request ID.
+	    //
 	    requestId = _nextRequestId++;
 	    if(requestId <= 0)
 	    {
 		_nextRequestId = 1;
 		requestId = _nextRequestId++;
 	    }
+
+	    //
+	    // Fill in the request ID.
+	    //
 	    const Byte* p = reinterpret_cast<const Byte*>(&requestId);
 #ifdef ICE_BIG_ENDIAN
 	    reverse_copy(p, p + sizeof(Int), os->b.begin() + headerSize);
 #else
 	    copy(p, p + sizeof(Int), os->b.begin() + headerSize);
 #endif
-	}
 
+	    //
+	    // Add to the requests map.
+	    //
+	    _requestsHint = _requests.insert(_requests.end(), pair<const Int, Outgoing*>(requestId, out));
+	}
+		
+	if(_acmTimeout > 0)
+	{
+	    _acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
+	}
+    }
+
+    try
+    {
+	IceUtil::Mutex::Lock sendSync(_sendMutex);
+
+	if(!_transceiver) // Has the transceiver already been closed?
+	{
+	    assert(_exception.get()); 
+	    _exception->ice_throw(); // The exception is immutable at this point.
+	}
+	
 	bool compress;
 	if(os->b.size() < 100) // Don't compress if message size is smaller than 100 bytes.
 	{
@@ -427,20 +436,20 @@ IceInternal::Connection::sendRequest(Outgoing* out, bool oneway)
 	{
 	    compress = _endpoint->compress();
 	}
-
+	
 	if(compress)
 	{
 	    //
 	    // Set compression status.
 	    //
 	    os->b[9] = 2; // Message is compressed.
-
+	    
 	    //
 	    // Do compression.
 	    //
 	    BasicStream cstream(_instance.get());
 	    doCompress(*os, cstream);
-
+	    
 	    //
 	    // Send the request.
 	    //
@@ -461,7 +470,7 @@ IceInternal::Connection::sendRequest(Outgoing* out, bool oneway)
 #else
 	    copy(p, p + sizeof(Int), os->b.begin() + 10);
 #endif
-
+	    
 	    //
 	    // Send the request.
 	    //
@@ -472,46 +481,69 @@ IceInternal::Connection::sendRequest(Outgoing* out, bool oneway)
     }
     catch(const LocalException& ex)
     {
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 	setState(StateClosed, ex);
 	assert(_exception.get());
-	_exception->ice_throw();
-    }
-    
-    //
-    // Only add to the request map if there was no exception, and if
-    // the operation is not oneway.
-    //
-    if(!_endpoint->datagram() && !oneway)
-    {
-	_requestsHint = _requests.insert(_requests.end(), pair<const Int, Outgoing*>(requestId, out));
-    }
 
-    if(_acmTimeout > 0)
-    {
-	_acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
+	if(out)
+	{
+	    //
+	    // If the request has already been removed from the
+	    // request map, we are out of luck. It would mean that
+	    // finished() has been called already, and therefore the
+	    // exception has been set using the Outgoing::finished()
+	    // callback. In this case, we cannot throw the exception
+	    // here, because we must not both raise an exception and
+	    // have Outgoing::finished() called with an
+	    // exception. This means that in some rare cases, a
+	    // request will not be retried even though it could. But I
+	    // honestly don't know how I could avoid this, without a
+	    // very elaborate and complex design, which would be bad
+	    // for performance.
+	    //
+	    map<Int, Outgoing*>::iterator p = _requests.find(requestId);
+	    if(p != _requests.end())
+	    {
+		if(p == _requestsHint)
+		{
+		    _requests.erase(p++);
+		    _requestsHint = p;
+		}
+		else
+		{
+		    _requests.erase(p);
+		}
+
+		_exception->ice_throw();
+	    }
+	}
+	else
+	{
+	    _exception->ice_throw();
+	}
     }
 }
 
 void
-IceInternal::Connection::sendAsyncRequest(const OutgoingAsyncPtr& out)
+IceInternal::Connection::sendAsyncRequest(BasicStream* os, const OutgoingAsyncPtr& out)
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-
-    if(_exception.get())
-    {
-	_exception->ice_throw();
-    }
-    assert(_state > StateNotValidated);
-    assert(_state < StateClosing);
-
     Int requestId;
 
-    try
     {
-	BasicStream* os = out->__os();
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+
+	assert(!_endpoint->datagram()); // Twoway requests cannot be datagrams, and async implies twoway.
+
+	if(_exception.get())
+	{
+	    _exception->ice_throw();
+	}
+
+	assert(_state > StateNotValidated);
+	assert(_state < StateClosing);
 	
 	//
-	// Fill in the request ID.
+	// Create a new unique request ID.
 	//
 	requestId = _nextRequestId++;
 	if(requestId <= 0)
@@ -519,12 +551,44 @@ IceInternal::Connection::sendAsyncRequest(const OutgoingAsyncPtr& out)
 	    _nextRequestId = 1;
 	    requestId = _nextRequestId++;
 	}
+	
+	//
+	// Fill in the request ID.
+	//
 	const Byte* p = reinterpret_cast<const Byte*>(&requestId);
 #ifdef ICE_BIG_ENDIAN
 	reverse_copy(p, p + sizeof(Int), os->b.begin() + headerSize);
 #else
 	copy(p, p + sizeof(Int), os->b.begin() + headerSize);
 #endif
+	
+	//
+	// Add to the async requests map.
+	//
+	struct AsyncRequest asyncRequest;
+	asyncRequest.p = out;
+	if(_endpoint->timeout() > 0)
+	{
+	    asyncRequest.t = IceUtil::Time::now() + IceUtil::Time::milliSeconds(_endpoint->timeout());
+	}
+	_asyncRequestsHint = _asyncRequests.insert(_asyncRequests.end(),
+						   pair<const Int, AsyncRequest>(requestId, asyncRequest));
+	
+	if(_acmTimeout > 0)
+	{
+	    _acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
+	}
+    }
+
+    try
+    {
+	IceUtil::Mutex::Lock sendSync(_sendMutex);
+
+	if(!_transceiver) // Has the transceiver already been closed?
+	{
+	    assert(_exception.get());
+	    _exception->ice_throw(); // The exception is immutable at this point.
+	}
 
 	bool compress;
 	if(os->b.size() < 100) // Don't compress if message size is smaller than 100 bytes.
@@ -563,7 +627,7 @@ IceInternal::Connection::sendAsyncRequest(const OutgoingAsyncPtr& out)
 	    // No compression, just fill in the message size.
 	    //
 	    Int sz = static_cast<Int>(os->b.size());
-	    p = reinterpret_cast<const Byte*>(&sz);
+	    const Byte* p = reinterpret_cast<const Byte*>(&sz);
 #ifdef ICE_BIG_ENDIAN
 	    reverse_copy(p, p + sizeof(Int), os->b.begin() + 10);
 #else
@@ -580,33 +644,60 @@ IceInternal::Connection::sendAsyncRequest(const OutgoingAsyncPtr& out)
     }
     catch(const LocalException& ex)
     {
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 	setState(StateClosed, ex);
 	assert(_exception.get());
-	_exception->ice_throw();
-    }
-    
-    //
-    // Only add to the request map if there was no exception.
-    //
-    _asyncRequestsHint = _asyncRequests.insert(_asyncRequests.end(),
-					       pair<const Int, OutgoingAsyncPtr>(requestId, out));
 
-    if(_acmTimeout > 0)
-    {
-	_acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
+	//
+	// If the request has already been removed from the async
+	// request map, we are out of luck. It would mean that
+	// finished() has been called already, and therefore the
+	// exception has been set using the
+	// OutgoingAsync::__finished() callback. In this case, we
+	// cannot throw the exception here, because we must not both
+	// raise an exception and have OutgoingAsync::__finished()
+	// called with an exception. This means that in some rare
+	// cases, a request will not be retried even though it
+	// could. But I honestly don't know how I could avoid this,
+	// without a very elaborate and complex design, which would be
+	// bad for performance.
+	//
+	map<Int, AsyncRequest>::iterator p = _asyncRequests.find(requestId);
+	if(p != _asyncRequests.end())
+	{
+	    if(p == _asyncRequestsHint)
+	    {
+		_asyncRequests.erase(p++);
+		_asyncRequestsHint = p;
+	    }
+	    else
+	    {
+		_asyncRequests.erase(p);
+	    }
+
+	    _exception->ice_throw();
+	}
     }
 }
 
 void
 IceInternal::Connection::prepareBatchRequest(BasicStream* os)
 {
-    lock();
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+
+    //
+    // Wait if flushing is currently in progress.
+    //
+    while(_batchStreamInUse && !_exception.get())
+    {
+	wait();
+    }
 
     if(_exception.get())
     {
-	unlock();
 	_exception->ice_throw();
     }
+
     assert(_state > StateNotValidated);
     assert(_state < StateClosing);
 
@@ -619,171 +710,192 @@ IceInternal::Connection::prepareBatchRequest(BasicStream* os)
 	catch(const LocalException& ex)
 	{
 	    setState(StateClosed, ex);
-	    unlock();
 	    ex.ice_throw();
 	}
     }
 
+    _batchStreamInUse = true;
     _batchStream.swap(*os);
 
     //
-    // The Connection and _batchStream now belongs to the caller,
-    // until finishBatchRequest() or abortBatchRequest() is called.
+    // _batchStream now belongs to the caller, until
+    // finishBatchRequest() is called.
     //
 }
 
 void
 IceInternal::Connection::finishBatchRequest(BasicStream* os)
 {
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+
     if(_exception.get())
     {
-	unlock();
 	_exception->ice_throw();
     }
+
     assert(_state > StateNotValidated);
     assert(_state < StateClosing);
 
     _batchStream.swap(*os); // Get the batch stream back.
     ++_batchRequestNum; // Increment the number of requests in the batch.
-    unlock(); // Give the Connection back.
-}
 
-void
-IceInternal::Connection::abortBatchRequest()
-{
-    setState(StateClosed, AbortBatchRequestException(__FILE__, __LINE__));
-    unlock(); // Give the Connection back.
+    //
+    // Give the Connection back.
+    //
+    assert(_batchStreamInUse);
+    _batchStreamInUse = false;
+    notifyAll();
 }
 
 void
 IceInternal::Connection::flushBatchRequest()
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-
-    if(_exception.get())
     {
-	_exception->ice_throw();
-    }
-    assert(_state > StateNotValidated);
-    assert(_state < StateClosing);
-    
-    if(!_batchStream.b.empty())
-    {
-	try
-	{
-	    _batchStream.i = _batchStream.b.begin();
-	    
-	    //
-	    // Fill in the number of requests in the batch.
-	    //
-	    const Byte* p = reinterpret_cast<const Byte*>(&_batchRequestNum);
-#ifdef ICE_BIG_ENDIAN
-            reverse_copy(p, p + sizeof(Int), _batchStream.b.begin() + headerSize);
-#else
-            copy(p, p + sizeof(Int), _batchStream.b.begin() + headerSize);
-#endif
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 
-	    bool compress;
-	    if(_batchStream.b.size() < 100) // Don't compress if message size is smaller than 100 bytes.
-	    {
-		compress = false;
-	    }
-	    else
-	    {
-		compress = _endpoint->compress();
-	    }
-	    
-	    if(compress)
-	    {
-		//
-		// Set compression status.
-		//
-		_batchStream.b[9] = 2; // Message is compressed.
-		
-		//
-		// Do compression.
-		//
-		BasicStream cstream(_instance.get());
-		doCompress(_batchStream, cstream);
-		
-		//
-		// Send the batch request.
-		//
-		_batchStream.i = _batchStream.b.begin();
-		traceBatchRequest("sending batch request", _batchStream, _logger, _traceLevels);
-		cstream.i = cstream.b.begin();
-		_transceiver->write(cstream, _endpoint->timeout());
-	    }
-	    else
-	    {
-		//
-		// No compression, just fill in the message size.
-		//
-                Int sz = static_cast<Int>(_batchStream.b.size());
-		p = reinterpret_cast<const Byte*>(&sz);
-#ifdef ICE_BIG_ENDIAN
-                reverse_copy(p, p + sizeof(Int), _batchStream.b.begin() + 10);
-#else
-                copy(p, p + sizeof(Int), _batchStream.b.begin() + 10);
-#endif
-
-		//
-		// Send the batch request.
-		//
-		_batchStream.i = _batchStream.b.begin();
-		traceBatchRequest("sending batch request", _batchStream, _logger, _traceLevels);
-		_transceiver->write(_batchStream, _endpoint->timeout());
-	    }
-	    
-	    //
-	    // Reset _batchStream and _batchRequestNum, so that new batch
-	    // messages can be sent.
-	    //
-	    BasicStream dummy(_instance.get());
-	    _batchStream.swap(dummy);
-	    assert(_batchStream.b.empty());
-	    _batchRequestNum = 0;
-	}
-	catch(const LocalException& ex)
+	while(_batchStreamInUse && !_exception.get())
 	{
-	    setState(StateClosed, ex);
-	    assert(_exception.get());
-	    _exception->ice_throw();
+	    wait();
 	}
 	
+	if(_exception.get())
+	{
+	    _exception->ice_throw();
+	}
+
+	assert(_state > StateNotValidated);
+	assert(_state < StateClosing);
+
+	if(_batchStream.b.empty())
+	{
+	    return; // Nothing to do.
+	}
+
+	_batchStream.i = _batchStream.b.begin();
+
 	if(_acmTimeout > 0)
 	{
 	    _acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
 	}
+
+	//
+	// Prevent that new batch requests are added while we are
+	// flushing.
+	//
+	_batchStreamInUse = true;
     }
     
-    if(_proxyCount == 0 && !_adapter && closingOK())
+    try
     {
-	setState(StateClosing, CloseConnectionException(__FILE__, __LINE__));
+	IceUtil::Mutex::Lock sendSync(_sendMutex);
+
+	if(!_transceiver) // Has the transceiver already been closed?
+	{
+	    assert(_exception.get());
+	    _exception->ice_throw(); // The exception is immutable at this point.
+	}
+
+	//
+	// Fill in the number of requests in the batch.
+	//
+	const Byte* p = reinterpret_cast<const Byte*>(&_batchRequestNum);
+#ifdef ICE_BIG_ENDIAN
+	reverse_copy(p, p + sizeof(Int), _batchStream.b.begin() + headerSize);
+#else
+	copy(p, p + sizeof(Int), _batchStream.b.begin() + headerSize);
+#endif
+	
+	bool compress;
+	if(_batchStream.b.size() < 100) // Don't compress if message size is smaller than 100 bytes.
+	{
+	    compress = false;
+	}
+	else
+	{
+	    compress = _endpoint->compress();
+	}
+	
+	if(compress)
+	{
+	    //
+	    // Set compression status.
+	    //
+	    _batchStream.b[9] = 2; // Message is compressed.
+	    
+	    //
+	    // Do compression.
+	    //
+	    BasicStream cstream(_instance.get());
+	    doCompress(_batchStream, cstream);
+	    
+	    //
+	    // Send the batch request.
+	    //
+	    _batchStream.i = _batchStream.b.begin();
+	    traceBatchRequest("sending batch request", _batchStream, _logger, _traceLevels);
+	    cstream.i = cstream.b.begin();
+	    _transceiver->write(cstream, _endpoint->timeout());
+	}
+	else
+	{
+	    //
+	    // No compression, just fill in the message size.
+	    //
+	    Int sz = static_cast<Int>(_batchStream.b.size());
+	    const Byte* p = reinterpret_cast<const Byte*>(&sz);
+#ifdef ICE_BIG_ENDIAN
+	    reverse_copy(p, p + sizeof(Int), _batchStream.b.begin() + 10);
+#else
+	    copy(p, p + sizeof(Int), _batchStream.b.begin() + 10);
+#endif
+	    
+	    //
+	    // Send the batch request.
+	    //
+	    _batchStream.i = _batchStream.b.begin();
+	    traceBatchRequest("sending batch request", _batchStream, _logger, _traceLevels);
+	    _transceiver->write(_batchStream, _endpoint->timeout());
+	}
+    }
+    catch(const LocalException& ex)
+    {
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+	setState(StateClosed, ex);
+	assert(_exception.get());
+
+	//
+	// Since batch requests are all oneways (or datagrams), we
+	// must report the exception to the caller.
+	//
+	_exception->ice_throw();
+    }
+
+    {
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+
+	//
+	// Reset the batch stream, and notify that flushing is over.
+	//
+	BasicStream dummy(_instance.get());
+	_batchStream.swap(dummy);
+	assert(_batchStream.b.empty());
+	_batchRequestNum = 0;
+	_batchStreamInUse = false;
+	notifyAll();
     }
 }
 
 void
 IceInternal::Connection::sendResponse(BasicStream* os, Byte compressFlag)
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-    
     try
     {
-	{
-	    // See _queryMutex comment in header file.
-	    IceUtil::Mutex::Lock s(_queryMutex);
-	    --_dispatchCount;
-	}
+	IceUtil::Mutex::Lock sendSync(_sendMutex);
 
-	if(_dispatchCount == 0)
+	if(!_transceiver) // Has the transceiver already been closed?
 	{
-	    notifyAll();
-	}
-
-	if(_state == StateClosed)
-	{
-	    return;
+	    assert(_exception.get());
+	    _exception->ice_throw(); // The exception is immutable at this point.
 	}
 
 	bool compress;
@@ -802,7 +914,7 @@ IceInternal::Connection::sendResponse(BasicStream* os, Byte compressFlag)
 	    // Set compression status.
 	    //
 	    os->b[9] = 2; // Message is compressed.
-
+	    
 	    //
 	    // Do compression.
 	    //
@@ -837,44 +949,54 @@ IceInternal::Connection::sendResponse(BasicStream* os, Byte compressFlag)
 	    traceReply("sending reply", *os, _logger, _traceLevels);
 	    _transceiver->write(*os, _endpoint->timeout());
 	}
-	
-	if(_state == StateClosing && _dispatchCount == 0)
-	{
-	    initiateShutdown();
-	}
     }
     catch(const LocalException& ex)
     {
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 	setState(StateClosed, ex);
     }
 
-    if(_acmTimeout > 0)
     {
-	_acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+
+	assert(_state > StateNotValidated);
+
+	try
+	{
+	    if(--_dispatchCount == 0)
+	    {
+		notifyAll();
+	    }
+	    
+	    if(_state == StateClosing && _dispatchCount == 0)
+	    {
+		initiateShutdown();
+	    }
+	    
+	    if(_acmTimeout > 0)
+	    {
+		_acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
+	    }
+	}
+	catch(const LocalException& ex)
+	{
+	    setState(StateClosed, ex);
+	}
     }
 }
 
 void
 IceInternal::Connection::sendNoResponse()
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
     
+    assert(_state > StateNotValidated);
+
     try
     {
-	{
-	    // See _queryMutex comment in header file.
-	    IceUtil::Mutex::Lock s(_queryMutex);
-	    --_dispatchCount;
-	}
-
-	if(_dispatchCount == 0)
+	if(--_dispatchCount == 0)
 	{
 	    notifyAll();
-	}
-
-	if(_state == StateClosed)
-	{
-	    return;
 	}
 
 	if(_state == StateClosing && _dispatchCount == 0)
@@ -905,7 +1027,7 @@ IceInternal::Connection::endpoint() const
 void
 IceInternal::Connection::setAdapter(const ObjectAdapterPtr& adapter)
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 
     //
     // We never change the thread pool with which we were initially
@@ -926,7 +1048,7 @@ IceInternal::Connection::setAdapter(const ObjectAdapterPtr& adapter)
 ObjectAdapterPtr
 IceInternal::Connection::getAdapter() const
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
     return _adapter;
 }
 
@@ -945,10 +1067,7 @@ IceInternal::Connection::readable() const
 void
 IceInternal::Connection::read(BasicStream& stream)
 {
-    if(_transceiver)
-    {
-	_transceiver->read(stream, 0);
-    }
+    _transceiver->read(stream, 0);
 
     //
     // Updating _acmAbsoluteTimeout is too expensive here, because we
@@ -957,104 +1076,73 @@ IceInternal::Connection::read(BasicStream& stream)
     //
 }
 
-// used for the COMPILERFIX below
-static void
-setAbsoluteTimeout(int timeout, IceUtil::Time& result)
-{
-    result = IceUtil::Time::now() + IceUtil::Time::seconds(timeout);
-}
-
 void
 IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threadPool)
 {
     OutgoingAsyncPtr outAsync;
-
     Int invoke = 0;
     Int requestId = 0;
-    Byte compress = 0;
+    Byte compress;
 
     {
-	IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-	
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+
+	//
+	// We must promote within the synchronization, otherwise
+	// there could be various race conditions with close
+	// connection messages and other messages.
+	//
 	threadPool->promoteFollower();
-	
+
+	assert(_state > StateNotValidated);
+
 	if(_state == StateClosed)
 	{
-	    IceUtil::ThreadControl::yield();
 	    return;
 	}
-	
-//	if(_acmTimeout > 0)
-//	{
-//	    _acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
-//	}
-// COMPILERFIX without this change VC6 sp5 + processor pack generates code that crashed on exceptions
+
 	if(_acmTimeout > 0)
 	{
-	    setAbsoluteTimeout(_acmTimeout, _acmAbsoluteTimeout);
+	    _acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
 	}
 
 	try
 	{
+	    //
+	    // We don't need to check magic and version here. This
+	    // has already been done by the ThreadPool, which
+	    // provides us the stream.
+	    //
 	    assert(stream.i == stream.b.end());
-	    stream.i = stream.b.begin();
-
-	    ByteSeq m(sizeof(magic), 0);
-	    stream.readBlob(m, static_cast<Int>(sizeof(magic)));
-	    if(!equal(m.begin(), m.end(), magic))
-	    {
-		BadMagicException ex(__FILE__, __LINE__);
-		ex.badMagic = m;
-		throw ex;
-	    }
-
-	    Byte pMajor;
-	    Byte pMinor;
-	    stream.read(pMajor);
-	    stream.read(pMinor);
-	    if(pMajor != protocolMajor
-	       || static_cast<unsigned char>(pMinor) > static_cast<unsigned char>(protocolMinor))
-	    {
-		UnsupportedProtocolException ex(__FILE__, __LINE__);
-		ex.badMajor = static_cast<unsigned char>(pMajor);
-		ex.badMinor = static_cast<unsigned char>(pMinor);
-		ex.major = static_cast<unsigned char>(protocolMajor);
-		ex.minor = static_cast<unsigned char>(protocolMinor);
-		throw ex;
-	    }
-	    Byte eMajor;
-	    Byte eMinor;
-	    stream.read(eMajor);
-	    stream.read(eMinor);
-	    if(eMajor != encodingMajor
-	       || static_cast<unsigned char>(eMinor) > static_cast<unsigned char>(encodingMinor))
-	    {
-		UnsupportedEncodingException ex(__FILE__, __LINE__);
-		ex.badMajor = static_cast<unsigned char>(eMajor);
-		ex.badMinor = static_cast<unsigned char>(eMinor);
-		ex.major = static_cast<unsigned char>(encodingMajor);
-		ex.minor = static_cast<unsigned char>(encodingMinor);
-		throw ex;
-	    }
-
+	    stream.i = stream.b.begin() + 8;
 	    Byte messageType;
 	    stream.read(messageType);
-
-	    //
-	    // Uncompress if necessary.
-	    //
-            stream.read(compress);
+	    stream.read(compress);
 	    if(compress == 2)
 	    {
 		BasicStream ustream(_instance.get());
 		doUncompress(stream, ustream);
 		stream.b.swap(ustream.b);
 	    }
-
 	    stream.i = stream.b.begin() + headerSize;
-	    
+
 	    switch(messageType)
 	    {
+		case closeConnectionMsg:
+		{
+		    traceHeader("received close connection", stream, _logger, _traceLevels);
+		    if(_endpoint->datagram() && _warn)
+		    {
+			Warning out(_logger);
+			out << "ignoring close connection message for datagram connection:\n" << _desc;
+		    }
+		    else
+		    {
+			setState(StateClosed, CloseConnectionException(__FILE__, __LINE__));
+		    }
+		    break;
+		}
+
 		case requestMsg:
 		{
 		    if(_state == StateClosing)
@@ -1068,11 +1156,7 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 			traceRequest("received request", stream, _logger, _traceLevels);
 			stream.read(requestId);
 			invoke = 1;
-			{
-			    // See _queryMutex comment in header file.
-			    IceUtil::Mutex::Lock s(_queryMutex);
-			    ++_dispatchCount;
-			}
+			++_dispatchCount;
 		    }
 		    break;
 		}
@@ -1093,11 +1177,7 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 			{
 			    throw NegativeSizeException(__FILE__, __LINE__);
 			}
-			{
-			    // See _queryMutex comment in header file.
-			    IceUtil::Mutex::Lock s(_queryMutex);
-			    _dispatchCount += invoke;
-			}
+			_dispatchCount += invoke;
 		    }
 		    break;
 		}
@@ -1109,7 +1189,7 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 		    stream.read(requestId);
 		    
 		    map<Int, Outgoing*>::iterator p = _requests.end();
-		    map<Int, OutgoingAsyncPtr>::iterator q = _asyncRequests.end();
+		    map<Int, AsyncRequest>::iterator q = _asyncRequests.end();
 		    
 		    if(_requestsHint != _requests.end())
 		    {
@@ -1163,7 +1243,7 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 		    {
 			assert(q != _asyncRequests.end());
 
-			outAsync = q->second;
+			outAsync = q->second.p;
 			
 			if(q == _asyncRequestsHint)
 			{
@@ -1173,11 +1253,6 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 			else
 			{
 			    _asyncRequests.erase(q);
-			}
-
-			if(_proxyCount == 0 && !_adapter && closingOK())
-			{
-			    setState(StateClosing, CloseConnectionException(__FILE__, __LINE__));
 			}
 		    }
 
@@ -1190,27 +1265,7 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 		    if(_warn)
 		    {
 			Warning out(_logger);
-			out << "ignoring unexpected validate connection message:\n"
-			    << _transceiver->toString();
-		    }
-		    break;
-		}
-		
-		case closeConnectionMsg:
-		{
-		    traceHeader("received close connection", stream, _logger, _traceLevels);
-		    if(_endpoint->datagram())
-		    {
-			if(_warn)
-			{
-			    Warning out(_logger);
-			    out << "ignoring close connection message for datagram connection:\n"
-				<< _transceiver->toString();
-			}
-		    }
-		    else
-		    {
-			throw CloseConnectionException(__FILE__, __LINE__);
+			out << "ignoring unexpected validate connection message:\n" << _desc;
 		    }
 		    break;
 		}
@@ -1286,7 +1341,7 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
     }
     catch(const LocalException& ex)
     {
-	IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 	setState(StateClosed, ex);
     }
 }
@@ -1294,40 +1349,79 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 void
 IceInternal::Connection::finished(const ThreadPoolPtr& threadPool)
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-
     threadPool->promoteFollower();
 
-    if(_state == StateActive || _state == StateClosing)
+    auto_ptr<LocalException> exception;
+    
+    map<Int, Outgoing*> requests;
+    map<Int, AsyncRequest> asyncRequests;
+
     {
-	registerWithPool();
-    }
-    else if(_state == StateClosed && _transceiver)
-    {
-	_transceiver->close();
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+	
+	if(_state == StateActive || _state == StateClosing)
 	{
-	    // See _queryMutex comment in header file.
-	    IceUtil::Mutex::Lock s(_queryMutex);
-	    _transceiver = 0;
+	    registerWithPool();
 	}
-	_threadPool = 0; // We don't need the thread pool anymore.
-	notifyAll();
+	else if(_state == StateClosed)
+	{
+	    //
+	    // We must make sure that nobody is sending when we close
+	    // the transceiver.
+	    //
+	    IceUtil::Mutex::Lock sendSync(_sendMutex);
+
+	    try
+	    {
+		_transceiver->close();
+	    }
+	    catch(const LocalException& ex)
+	    {
+		exception = auto_ptr<LocalException>(dynamic_cast<LocalException*>(ex.ice_clone()));
+	    }
+
+	    assert(_transceiver);
+	    _transceiver = 0;
+	    notifyAll();
+	}
+
+	if(_state == StateClosed || _state == StateClosing)
+	{
+	    requests.swap(_requests);
+	    _requestsHint = _requests.end();
+
+	    asyncRequests.swap(_asyncRequests);
+	    _asyncRequestsHint = _asyncRequests.end();
+	}
     }
+
+    for(map<Int, Outgoing*>::iterator p = requests.begin(); p != requests.end(); ++p)
+    {
+	p->second->finished(*_exception.get()); // The exception is immutable at this point.
+    }
+
+    for(map<Int, AsyncRequest>::iterator q = asyncRequests.begin(); q != asyncRequests.end(); ++q)
+    {
+	q->second.p->__finished(*_exception.get()); // The exception is immutable at this point.
+    }
+
+    if(exception.get())
+    {
+	exception->ice_throw();
+    }    
 }
 
 void
 IceInternal::Connection::exception(const LocalException& ex)
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
     setState(StateClosed, ex);
 }
 
 string
 IceInternal::Connection::toString() const
 {
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-    assert(_transceiver);
-    return _transceiver->toString();
+    return _desc; // No mutex lock, _desc is immutable.
 }
 
 bool
@@ -1354,13 +1448,14 @@ IceInternal::Connection::Connection(const InstancePtr& instance,
 				    const ObjectAdapterPtr& adapter) :
     EventHandler(instance),
     _transceiver(transceiver),
+    _desc(transceiver->toString()),
     _endpoint(endpoint),
     _adapter(adapter),
     _logger(_instance->logger()), // Cached for better performance.
     _traceLevels(_instance->traceLevels()), // Cached for better performance.
     _registeredWithPool(false),
-    _warn(false),
-    _acmTimeout(0),
+    _warn(_instance->properties()->getPropertyAsInt("Ice.Warn.Connections") > 0),
+    _acmTimeout(_endpoint->datagram() ?	0 : _instance->connectionIdleTime()),
     _requestHdr(headerSize + sizeof(Int), 0),
     _requestBatchHdr(headerSize + sizeof(Int), 0),
     _replyHdr(headerSize, 0),
@@ -1368,19 +1463,20 @@ IceInternal::Connection::Connection(const InstancePtr& instance,
     _requestsHint(_requests.end()),
     _asyncRequestsHint(_asyncRequests.end()),
     _batchStream(_instance.get()),
+    _batchStreamInUse(false),
     _batchRequestNum(0),
     _dispatchCount(0),
-    _proxyCount(0),
-    _state(StateNotValidated)
+    _state(StateNotValidated),
+    _stateTime(IceUtil::Time::now())
 {
     if(_adapter)
     {
-	_threadPool = dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool();
+	const_cast<ThreadPoolPtr&>(_threadPool) = dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool();
 	_servantManager = dynamic_cast<ObjectAdapterI*>(_adapter.get())->getServantManager();
     }
     else
     {
-	_threadPool = _instance->clientThreadPool();
+	const_cast<ThreadPoolPtr&>(_threadPool) = _instance->clientThreadPool();
 	_servantManager = 0;
     }
 
@@ -1423,17 +1519,20 @@ IceInternal::Connection::Connection(const InstancePtr& instance,
 
 IceInternal::Connection::~Connection()
 {
-    // See _queryMutex comment in header file.
-    IceUtil::Mutex::Lock sync(_queryMutex);
     assert(_state == StateClosed);
     assert(!_transceiver);
     assert(_dispatchCount == 0);
-    assert(_proxyCount == 0);
 }
 
 void
 IceInternal::Connection::setState(State state, const LocalException& ex)
 {
+    //
+    // If setState() is called with an exception, then only closed and
+    // closing states are permissible.
+    //
+    assert(state == StateClosing || state == StateClosed);
+
     if(_state == state) // Don't switch twice.
     {
 	return;
@@ -1441,21 +1540,32 @@ IceInternal::Connection::setState(State state, const LocalException& ex)
 
     if(!_exception.get())
     {
+	//
+	// If we are in closed state, an exception must be set.
+	//
+	assert(_state != StateClosed);
+
 	_exception = auto_ptr<LocalException>(dynamic_cast<LocalException*>(ex.ice_clone()));
 
 	if(_warn)
 	{
 	    //
-	    // Don't warn about certain expected exceptions.
+	    // We don't warn if we are not validated.
 	    //
-	    if(!(dynamic_cast<const CloseConnectionException*>(_exception.get()) ||
-		 dynamic_cast<const ConnectionTimeoutException*>(_exception.get()) ||
-		 dynamic_cast<const CommunicatorDestroyedException*>(_exception.get()) ||
-		 dynamic_cast<const ObjectAdapterDeactivatedException*>(_exception.get()) ||
-		 (dynamic_cast<const ConnectionLostException*>(_exception.get()) && _state == StateClosing)))
+	    if(_state > StateNotValidated)
 	    {
-		Warning out(_logger);
-		out << "connection exception:\n" << *_exception.get() << '\n' << _transceiver->toString();
+		//
+		// Don't warn about certain expected exceptions.
+		//
+		if(!(dynamic_cast<const CloseConnectionException*>(_exception.get()) ||
+		     dynamic_cast<const ConnectionTimeoutException*>(_exception.get()) ||
+		     dynamic_cast<const CommunicatorDestroyedException*>(_exception.get()) ||
+		     dynamic_cast<const ObjectAdapterDeactivatedException*>(_exception.get()) ||
+		     (dynamic_cast<const ConnectionLostException*>(_exception.get()) && _state == StateClosing)))
+		{
+		    Warning out(_logger);
+		    out << "connection exception:\n" << *_exception.get() << '\n' << _desc;
+		}
 	    }
 	}
     }
@@ -1466,20 +1576,6 @@ IceInternal::Connection::setState(State state, const LocalException& ex)
     // that is not yet marked as closed or closing.
     //
     setState(state);
-
-    for(map<Int, Outgoing*>::iterator p = _requests.begin(); p != _requests.end(); ++p)
-    {
-	p->second->finished(*_exception.get());
-    }
-    _requests.clear();
-    _requestsHint = _requests.end();
-
-    for(map<Int, OutgoingAsyncPtr>::iterator q = _asyncRequests.begin(); q != _asyncRequests.end(); ++q)
-    {
-	q->second->__finished(*_exception.get());
-    }
-    _asyncRequests.clear();
-    _asyncRequestsHint = _asyncRequests.end();
 }
 
 void
@@ -1559,13 +1655,24 @@ IceInternal::Connection::setState(State state)
 	    if(_state == StateNotValidated)
 	    {
 		assert(!_registeredWithPool);
-		_transceiver->close();
+		
+		//
+		// We must make sure that nobody is sending when we
+		// close the transceiver.
+		//
+		IceUtil::Mutex::Lock sendSync(_sendMutex);
+		
+		try
 		{
-		    // See _queryMutex comment in header file.
-		    IceUtil::Mutex::Lock sync(_queryMutex);
-		    _transceiver = 0;
+		    _transceiver->close();
 		}
-		_threadPool = 0; // We don't need the thread pool anymore.
+		catch(const LocalException&)
+		{
+		    // Here we ignore any exceptions in close().
+		}
+
+		_transceiver = 0;
+		//notifyAll(); // We notify already below.
 	    }
 	    else
 	    {
@@ -1576,11 +1683,8 @@ IceInternal::Connection::setState(State state)
 	}
     }
 
-    {
-	// See _queryMutex comment in header file.
-	IceUtil::Mutex::Lock sync(_queryMutex);
-	_state = state;
-    }
+    _state = state;
+    _stateTime = IceUtil::Time::now();
 
     notifyAll();
 
@@ -1605,6 +1709,8 @@ IceInternal::Connection::initiateShutdown() const
 
     if(!_endpoint->datagram())
     {
+	IceUtil::Mutex::Lock sendSync(_sendMutex);
+
 	//
 	// Before we shut down, we send a close connection message.
 	//
@@ -1617,6 +1723,10 @@ IceInternal::Connection::initiateShutdown() const
 	os.write(closeConnectionMsg);
 	os.write((Byte)1); // Compression status: compression supported but not used.
 	os.write(headerSize); // Message size.
+
+	//
+	// Send the message.
+	//
 	os.i = os.b.begin();
 	traceHeader("sending close connection", os, _logger, _traceLevels);
 	_transceiver->write(os, _endpoint->timeout());
@@ -1629,7 +1739,6 @@ IceInternal::Connection::registerWithPool()
 {
     if(!_registeredWithPool)
     {
-	assert(_threadPool);
 	_threadPool->_register(_transceiver->fd(), this);
 	_registeredWithPool = true;
 
@@ -1646,7 +1755,6 @@ IceInternal::Connection::unregisterWithPool()
 {
     if(_registeredWithPool)
     {
-	assert(_threadPool);
 	_threadPool->unregister(_transceiver->fd());
 	_registeredWithPool = false;
 
@@ -1801,14 +1909,4 @@ IceInternal::Connection::doUncompress(BasicStream& compressed, BasicStream& unco
     }
 
     copy(compressed.b.begin(), compressed.b.begin() + headerSize, uncompressed.b.begin());
-}
-
-bool
-IceInternal::Connection::closingOK() const
-{
-    return
-	_requests.empty() &&
-	_asyncRequests.empty() &&
-	_batchStream.b.empty() &&
-	_dispatchCount == 0;
 }

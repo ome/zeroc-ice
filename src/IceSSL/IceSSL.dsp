@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D "_USRDLL" /D "ICE_SSL_API_EXPORTS" /D "USE_SOCKETS" /D "NDEBUG" /D "_CONSOLE" /D "_UNICODE" /FD /c
+# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D "NDEBUG" /D "USE_SOCKETS" /D "_USRDLL" /D "ICE_SSL_API_EXPORTS" /D FD_SETSIZE=1024 /D "_CONSOLE" /FD /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
@@ -54,12 +54,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 ws2_32.lib libeay32.lib ssleay32.lib /nologo /dll /machine:I386 /out:"Release/icessl12.dll" /implib:"Release/icessl.lib"
+# ADD LINK32 ws2_32.lib libeay32.lib ssleay32.lib /nologo /dll /machine:I386 /out:"Release/icessl13.dll" /implib:"Release/icessl.lib"
 # SUBTRACT LINK32 /pdb:none /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\icessl.lib ..\..\lib	copy $(OutDir)\icessl12.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\icessl.lib ..\..\lib	copy $(OutDir)\icessl13.dll ..\..\bin
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "IceSSL - Win32 Debug"
@@ -76,7 +76,7 @@ PostBuild_Cmds=copy $(OutDir)\icessl.lib ..\..\lib	copy $(OutDir)\icessl12.dll .
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "USE_SOCKETS" /D "_USRDLL" /D "ICE_SSL_API_EXPORTS" /D "_DEBUG" /D "_CONSOLE" /D "_UNICODE" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "_DEBUG" /D "USE_SOCKETS" /D "_USRDLL" /D "ICE_SSL_API_EXPORTS" /D FD_SETSIZE=1024 /D "_CONSOLE" /FD /GZ /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
@@ -87,12 +87,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386
-# ADD LINK32 ws2_32.lib libeay32.lib ssleay32.lib /nologo /dll /debug /machine:I386 /out:"Debug/icessl12d.dll" /implib:"Debug/icessld.lib"
+# ADD LINK32 ws2_32.lib libeay32.lib ssleay32.lib /nologo /dll /debug /machine:I386 /out:"Debug/icessl13d.dll" /implib:"Debug/icessld.lib"
 # SUBTRACT LINK32 /pdb:none /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Debug
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\icessld.lib ..\..\lib	copy $(OutDir)\icessl12d.pdb ..\..\bin	copy $(OutDir)\icessl12d.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\icessld.lib ..\..\lib	copy $(OutDir)\icessl13d.pdb ..\..\bin	copy $(OutDir)\icessl13d.dll ..\..\bin
 # End Special Build Tool
 
 !ENDIF 

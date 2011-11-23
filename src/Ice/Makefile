@@ -91,7 +91,9 @@ OBJS		= Initialize.o \
 		  LocatorInfo.o \
 		  StringUtil.o \
 		  FactoryTableDef.o \
-		  FactoryTable.o
+		  FactoryTable.o \
+		  Service.o \
+		  Process.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
@@ -119,7 +121,9 @@ SLICE_SRCS	= $(SDIR)/LocalException.ice \
 		  $(SDIR)/Locator.ice \
 		  $(SDIR)/LocatorF.ice \
                   $(SDIR)/StatsF.ice \
-                  $(SDIR)/Stats.ice
+                  $(SDIR)/Stats.ice \
+                  $(SDIR)/Process.ice \
+                  $(SDIR)/ProcessF.ice
 
 HDIR		= $(includedir)/Ice
 SDIR		= $(slicedir)/Ice
@@ -129,7 +133,7 @@ include $(top_srcdir)/config/Make.rules
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_API_EXPORTS -DICE_PROTOCOL_API_EXPORTS $(BZIP2_FLAGS)
 SLICE2CPPFLAGS	:= --ice --include-dir Ice --dll-export ICE_API $(SLICE2CPPFLAGS)
 
-LINKWITH        := $(BZIP2_LIBS) $(ICE_OS_LIBS)
+LINKWITH        := -lIceUtil $(BZIP2_LIBS) $(ICE_OS_LIBS)
 
 $(libdir)/$(LIBFILENAME): $(OBJS)
 	rm -f $@

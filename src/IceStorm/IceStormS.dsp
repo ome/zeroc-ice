@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D "_USRDLL" /D "NDEBUG" /D "_CONSOLE" /D "_UNICODE" /FD /c
+# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D "_USRDLL" /D "NDEBUG" /D "_CONSOLE" /FD /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
@@ -54,12 +54,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 /nologo /dll /machine:I386 /out:"Release/icestormservice12.dll" /implib:"Release/icestormservice.lib" /libpath:"../../../lib"
+# ADD LINK32 /nologo /dll /machine:I386 /out:"Release/icestormservice13.dll" /implib:"Release/icestormservice.lib"
 # SUBTRACT LINK32 /pdb:none /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\icestormservice.lib ..\..\lib	copy $(OutDir)\icestormservice12.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\icestormservice.lib ..\..\lib	copy $(OutDir)\icestormservice13.dll ..\..\bin
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "IceStormS - Win32 Debug"
@@ -76,7 +76,7 @@ PostBuild_Cmds=copy $(OutDir)\icestormservice.lib ..\..\lib	copy $(OutDir)\icest
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "_USRDLL" /D "_DEBUG" /D "_CONSOLE" /D "_UNICODE" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "_USRDLL" /D "_DEBUG" /D "_CONSOLE" /FD /GZ /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
@@ -87,12 +87,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386
-# ADD LINK32 /nologo /dll /debug /machine:I386 /out:"Debug/icestormservice12d.dll" /implib:"Debug/icestormserviced.lib" /libpath:"../../../lib"
+# ADD LINK32 /nologo /dll /debug /machine:I386 /out:"Debug/icestormservice13d.dll" /implib:"Debug/icestormserviced.lib"
 # SUBTRACT LINK32 /pdb:none /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Debug
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\icestormserviced.lib ..\..\lib	copy $(OutDir)\icestormservice12d.pdb ..\..\bin	copy $(OutDir)\icestormservice12d.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\icestormserviced.lib ..\..\lib	copy $(OutDir)\icestormservice13d.pdb ..\..\bin	copy $(OutDir)\icestormservice13d.dll ..\..\bin
 # End Special Build Tool
 
 !ENDIF 
@@ -114,11 +114,11 @@ SOURCE=.\IceStormInternal.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\IdentityLinkDict.cpp
+SOURCE=.\PersistentTopicMap.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\LinkDB.cpp
+SOURCE=.\LinkRecord.cpp
 # End Source File
 # Begin Source File
 
@@ -147,10 +147,6 @@ SOURCE=.\QueuedProxy.cpp
 # Begin Source File
 
 SOURCE=.\Service.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\StringBoolDict.cpp
 # End Source File
 # Begin Source File
 
@@ -198,7 +194,7 @@ SOURCE=.\IceStormInternalI.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\IdentityLinkDict.h
+SOURCE=.\PersistentTopicMap.h
 # End Source File
 # Begin Source File
 
@@ -215,10 +211,6 @@ SOURCE=.\OnewayBatchSubscriber.h
 # Begin Source File
 
 SOURCE=.\OnewaySubscriber.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\StringBoolDict.h
 # End Source File
 # Begin Source File
 
@@ -244,45 +236,7 @@ SOURCE=.\TraceLevels.h
 # Begin Group "Resource Files"
 
 # PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
-# Begin Source File
 
-SOURCE=.\dummy.ice
-
-!IF  "$(CFG)" == "IceStormS - Win32 Release"
-
-USERDEP__DUMMY="..\..\bin\slice2freeze.exe"	"..\..\lib\slice.lib"	
-# Begin Custom Build
-InputPath=.\dummy.ice
-
-BuildCmds= \
-	..\..\bin\slice2freeze.exe --include-dir IceStorm  --dict IceStorm::StringBoolDict,string,bool StringBoolDict
-
-"StringBoolDict.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"StringBoolDict.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-# End Custom Build
-
-!ELSEIF  "$(CFG)" == "IceStormS - Win32 Debug"
-
-USERDEP__DUMMY="..\..\bin\slice2freeze.exe"	"..\..\lib\sliced.lib"	
-# Begin Custom Build
-InputPath=.\dummy.ice
-
-BuildCmds= \
-	..\..\bin\slice2freeze.exe --include-dir IceStorm  --dict IceStorm::StringBoolDict,string,bool StringBoolDict
-
-"StringBoolDict.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"StringBoolDict.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-# End Custom Build
-
-!ENDIF 
-
-# End Source File
 # Begin Source File
 
 SOURCE=.\IceStormInternal.ice
@@ -324,29 +278,29 @@ BuildCmds= \
 # End Source File
 # Begin Source File
 
-SOURCE=.\LinkDB.ice
+SOURCE=.\LinkRecord.ice
 
 !IF  "$(CFG)" == "IceStormS - Win32 Release"
 
 USERDEP__LINKD="..\..\bin\slice2freeze.exe"	"..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
 # Begin Custom Build
-InputPath=.\LinkDB.ice
+InputPath=.\LinkRecord.ice
 
 BuildCmds= \
-	..\..\bin\slice2cpp.exe --ice --include-dir IceStorm -I../../slice -I.. LinkDB.ice \
-	..\..\bin\slice2freeze.exe --ice --include-dir IceStorm  -I../../slice -I.. --dict IceStorm::IdentityLinkDict,Ice::Identity,IceStorm::LinkDB IdentityLinkDict ../IceStorm/LinkDB.ice ../../slice/Ice/Identity.ice \
+	..\..\bin\slice2cpp.exe --ice --include-dir IceStorm -I../../slice -I.. LinkRecord.ice \
+	..\..\bin\slice2freeze.exe --ice --include-dir IceStorm  -I../../slice -I.. --dict IceStorm::PersistentTopicMap,string,IceStorm::LinkRecordDict PersistentTopicMap ../IceStorm/LinkRecord.ice  \
 	
 
-"LinkDB.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"LinkRecord.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 
-"LinkDB.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"LinkRecord.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 
-"IdentityLinkDict.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"PersistentTopicMap.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 
-"IdentityLinkDict.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"PersistentTopicMap.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
 
@@ -354,23 +308,23 @@ BuildCmds= \
 
 USERDEP__LINKD="..\..\bin\slice2freeze.exe"	"..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
 # Begin Custom Build
-InputPath=.\LinkDB.ice
+InputPath=.\LinkRecord.ice
 
 BuildCmds= \
-	..\..\bin\slice2cpp.exe --ice --include-dir IceStorm -I../../slice -I.. LinkDB.ice \
-	..\..\bin\slice2freeze.exe --ice --include-dir IceStorm  -I../../slice -I.. --dict IceStorm::IdentityLinkDict,Ice::Identity,IceStorm::LinkDB IdentityLinkDict ../IceStorm/LinkDB.ice ../../slice/Ice/Identity.ice \
+	..\..\bin\slice2cpp.exe --ice --include-dir IceStorm -I../../slice -I.. LinkRecord.ice \
+	..\..\bin\slice2freeze.exe --ice --include-dir IceStorm  -I../../slice -I.. --dict IceStorm::PersistentTopicMap,string,IceStorm::LinkRecordDict PersistentTopicMap ../IceStorm/LinkRecord.ice  \
 	
 
-"LinkDB.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"LinkRecord.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 
-"LinkDB.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"LinkRecord.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 
-"IdentityLinkDict.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"PersistentTopicMap.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 
-"IdentityLinkDict.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"PersistentTopicMap.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
 

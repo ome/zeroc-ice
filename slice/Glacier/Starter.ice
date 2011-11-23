@@ -31,11 +31,15 @@ module Glacier
 
 /**
  *
- * This exception is raised if an incorrect password was given.
+ * This exception is raised if router access is denied.
  *
  **/
-exception InvalidPasswordException
+exception PermissionDeniedException
 {
+    /**
+     * Details as to why access was denied.
+     **/
+    string reason;
 };
 
 /**
@@ -60,10 +64,10 @@ interface Starter
 {
     /**
      *
-     * Start a new &Glacier; router. If the password for the given
-     * user id is incorrect, an [InvalidPasswordException] is
-     * raised. Otherwise a new router is started, and a proxy to that
-     * router is returned to the caller.
+     * Start a new &Glacier; router. If the password for the given user
+     * id is incorrect, or if the user isn't allowed access, an
+     * [PermissionDeniedException] is raised. Otherwise a new router is
+     * started, and a proxy to that router is returned to the caller.
      *
      * @param userId The user id for which to check the password.
      *
@@ -80,35 +84,37 @@ interface Starter
      *
      * @return A proxy to the router that has been started.
      *
-     * @throws InvalidPasswordException Raised if the password for the
-     * given user id is not correct.
+     * @throws PermissionDeniedException Raised if the password for the
+     * given user id is not correct or if the user isn't allowed access.
      *
      **/
     Glacier::Router* startRouter(string userId, string password,
 				 out Ice::ByteSeq privateKey, out Ice::ByteSeq publicKey, out Ice::ByteSeq routerCert)
-	throws InvalidPasswordException, CannotStartRouterException;
+	throws PermissionDeniedException, CannotStartRouterException;
 };
 
 /**
  *
- * The &Glacier; router starter password verifier.
+ * The &Glacier; router starter permissions verifier.
  *
  **/
-interface PasswordVerifier
+interface PermissionsVerifier
 {
     /**
      *
-     * Check whether a password is valid.
+     * Check whether user has permission to access router.
      *
-     * @param userId The user id for which to check the password.
+     * @param userId The user id for which to check permissions.
      *
-     * @param password The password to check.
+     * @param password The user's password.
      *
-     * @return true if the password is valid, or false otherwise.
+     * @param reason The reason access was denied.
+     *
+     * @return true if access is allowed, or false otherwise.
      *
      **/
     nonmutating
-    bool checkPassword(string userId, string password);
+    bool checkPermissions(string userId, string password, out string reason);
 };
 
 };

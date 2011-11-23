@@ -189,6 +189,12 @@ startHook(void* arg)
     {
 	IceUtil::Thread* rawThread = static_cast<IceUtil::Thread*>(arg);
 
+        //
+        // Initialize the random number generator in each thread.
+        //
+        unsigned int seed = static_cast<unsigned int>(IceUtil::Time::now().toMicroSeconds());
+        srand(seed);            
+
 	//
 	// Ensure that the thread doesn't go away until run() has
 	// completed.
@@ -407,9 +413,18 @@ bool
 IceUtil::ThreadControl::isAlive() const
 {
     int policy;
+    int ret;
     struct sched_param param;
     IceUtil::Mutex::Lock lock(_stateMutex);
-    return pthread_getschedparam(_id, &policy, &param) == 0;
+
+    ret = pthread_getschedparam(_id, &policy, &param);
+#ifdef __APPLE__
+    if (ret == 0) 
+    {
+	ret = pthread_setschedparam(_id, policy, &param);
+    }
+#endif 
+    return (ret == 0);
 }
 
 void

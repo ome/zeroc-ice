@@ -84,7 +84,7 @@ CallbackClient::run(int argc, char* argv[])
 	cerr << appName() << ": " << ex << ":\n" << ex.reason << endl;
 	return EXIT_FAILURE;
     }
-    catch(const Glacier::InvalidPasswordException& ex)
+    catch(const Glacier::PermissionDeniedException& ex)
     {
 	cerr << appName() << ": " << ex << endl;
 	return EXIT_FAILURE;
@@ -131,7 +131,7 @@ CallbackClient::run(int argc, char* argv[])
     cout << "ok" << endl;
 
     cout << "testing stringToProxy... " << flush;
-    ref = "callback:tcp -p 12345 -t 5000";
+    ref = "callback:tcp -p 12345 -t 10000";
     ObjectPrx base = communicator()->stringToProxy(ref);
     cout << "ok" << endl;
 

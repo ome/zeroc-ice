@@ -36,7 +36,7 @@ namespace IceInternal
 
 class BasicStream;
 
-class ThreadPool : public IceUtil::Shared, public IceUtil::Mutex
+class ThreadPool : public IceUtil::Shared, public IceUtil::Monitor<IceUtil::Mutex>
 {
 public:
 
@@ -52,9 +52,8 @@ public:
     
 private:
 
-    void initiateShutdown(); // Signal-safe shutdown initiation.
-    bool clearInterrupt();
-    void setInterrupt(char);
+    void clearInterrupt();
+    void setInterrupt();
 
     bool run(); // Returns true if a follower should be promoted.
     void read(const EventHandlerPtr&);
@@ -100,9 +99,9 @@ private:
     int _inUse; // Number of threads that are currently in use.
     double _load; // Current load in number of threads.
 
-    const bool _warnUdp;
+    bool _promote;
 
-    IceUtil::Mutex _promoteMutex;
+    const bool _warnUdp;
 };
 
 }

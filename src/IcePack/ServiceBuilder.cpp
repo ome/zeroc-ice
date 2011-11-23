@@ -79,8 +79,18 @@ IcePack::ServiceHandler::startElement(const string& name, const IceXML::Attribut
     {
 	assert(!_currentAdapterId.empty());
 	string adapterName = getAttributeValue(attrs, "name");
+        bool registerProcess = getAttributeValueWithDefault(attrs, "register", "false") == "true";
 	_builder.getServerBuilder().registerAdapter(adapterName, getAttributeValue(attrs, "endpoints"),
-                                                    _currentAdapterId);
+                                                    registerProcess, _currentAdapterId);
+    }
+    else if(name == "dbproperty")
+    {
+	string value = getAttributeValueWithDefault(attrs, "value", "");
+	if(value.empty())
+	{
+	    value = _builder.toLocation(getAttributeValueWithDefault(attrs, "location", ""));
+	}
+	_builder.addDatabaseProperty(getAttributeValue(attrs, "name"), value);
     }
 }
 
@@ -90,7 +100,8 @@ IcePack::ServiceBuilder::ServiceBuilder(const NodeInfoPtr& nodeInfo,
 					const vector<string>& targets) :
     ComponentBuilder(nodeInfo->getCommunicator(), variables, targets),
     _nodeInfo(nodeInfo),
-    _serverBuilder(serverBuilder)
+    _serverBuilder(serverBuilder),
+    _dbProperties(Ice::createProperties())
 {
     assert(_variables.back().find("parent") != _variables.back().end());
     assert(_variables.back().find("name") != _variables.back().end());
@@ -158,7 +169,15 @@ IcePack::ServiceBuilder::setDBEnv(const string& dir)
     }
     _serverBuilder.addProperty("IceBox.DBEnvName." + getVariable("name"), getVariable("name"));
     addProperty("Freeze.DbEnv." + getVariable("name") + ".DbHome", path);
-    
+
+    string dbConfigFile = path + "/DB_CONFIG";
+    generateConfigFile(" ", "BdB.", dbConfigFile, _dbProperties);
+}
+
+void
+IcePack::ServiceBuilder::addDatabaseProperty(const string& name, const string& value)
+{
+    _dbProperties->setProperty("BdB." + name, value);
 }
 
 //

@@ -93,7 +93,7 @@ IcePack::ServerI::start(ServerActivation act, const Ice::Current& current)
 
     try
     {
-	bool active  = _activator->activate(this);
+        bool active = _activator->activate(this);
 	setState(active ? Active : Inactive);
 	return active;
     }
@@ -155,6 +155,19 @@ IcePack::ServerI::stop(const Ice::Current& current)
 
     stopInternal();
 }
+
+void
+IcePack::ServerI::sendSignal(const string& signal, const Ice::Current& current)
+{
+    _activator->sendSignal(this, signal);
+}
+
+void
+IcePack::ServerI::writeMessage(const string& message, Ice::Int fd, const Ice::Current& current)
+{
+    _activator->writeMessage(this, message, fd);
+}
+
 
 void
 IcePack::ServerI::destroy(const Ice::Current& current)
@@ -229,15 +242,19 @@ void
 IcePack::ServerI::terminated(const Ice::Current&)
 {
     ServerState newState = Inactive; // Initialize to keep the compiler happy.
-
+    while(true)
     {
 	IceUtil::Monitor< IceUtil::Mutex>::Lock sync(*this);
 	switch(_state)
 	{
 	case Inactive:
-	case Activating:
 	{
 	    assert(false);
+	}
+	case Activating:
+	{
+	    wait(); // TODO: Timeout?
+	    continue;
 	}
 	case Active:
 	{
@@ -273,6 +290,7 @@ IcePack::ServerI::terminated(const Ice::Current&)
 	}
 
 	assert(_state == Deactivating || _state == Destroying);
+	break;
     }
 
     if(newState != Destroyed)
@@ -294,7 +312,7 @@ IcePack::ServerI::terminated(const Ice::Current&)
 		// TODO: Inconsistent database.
 		//
 	    }
-	    catch(const Ice::LocalException& ex)
+	    catch(const Ice::LocalException&)
 	    {
 		//cerr << (*p)->__reference()->toString() << endl;
 		//cerr << ex << endl;
@@ -331,6 +349,20 @@ IcePack::ServerI::getActivationMode(const ::Ice::Current&)
 {
     IceUtil::Monitor< ::IceUtil::Mutex>::Lock sync(*this);
     return activation;
+}
+
+void
+IcePack::ServerI::setProcess(const ::Ice::ProcessPrx& proc, const ::Ice::Current&)
+{
+    IceUtil::Monitor< ::IceUtil::Mutex>::Lock sync(*this);
+    _process = proc;
+}
+
+Ice::ProcessPrx
+IcePack::ServerI::getProcess(const ::Ice::Current&)
+{
+    IceUtil::Monitor< ::IceUtil::Mutex>::Lock sync(*this);
+    return _process;
 }
 
 void
@@ -381,22 +413,22 @@ IcePack::ServerI::stopInternal()
 
     if(deactivate)
     {
-	//
-	// Deactivate the server by sending a SIGTERM.
-	//
-	try
-	{
-	    _activator->deactivate(this);
-	}
-	catch(const Ice::SyscallException& ex)
-	{
-	    Ice::Warning out(_traceLevels->logger);
-	    out << "deactivation failed for server `" << description.name << "':\n";
-	    out << ex;
-	    
-	    setState(Active);
-	    return;
-	}
+        //
+        // Deactivate the server.
+        //
+        try
+        {
+            _activator->deactivate(this);
+        }
+        catch(const Ice::Exception& ex)
+        {
+            Ice::Warning out(_traceLevels->logger);
+            out << "deactivation failed for server `" << description.name << "':\n";
+            out << ex;
+            
+            setState(Active);
+            return;
+        }
     }
 
     //
@@ -437,7 +469,7 @@ IcePack::ServerI::stopInternal()
     if(_traceLevels->server > 1)
     {
 	Ice::Trace out(_traceLevels->logger, _traceLevels->serverCat);
-	out << "gracefull server shutdown failed, killing server `" << description.name << "'";
+	out << "graceful server shutdown failed, killing server `" << description.name << "'";
     }
     
     //

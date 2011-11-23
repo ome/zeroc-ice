@@ -68,10 +68,42 @@ sequence<LinkInfo> LinkInfoSeq;
  *
  * This dictionary represents Quality of service parameters.
  *
- * @see TopicManager::subscribe
+ * @see Topic::subscribe
  *
  */
 dictionary<string, string> QoS;
+
+/**
+ *
+ * This exception indicates that an attempt was made to create a link
+ * that already exists.
+ *
+ **/
+exception LinkExists
+{
+    /**
+     *
+     * The name of the linked topic.
+     *
+     */
+    string name;
+};
+
+/**
+ *
+ * This exception indicates that an attempt was made to remove a
+ * link that does not exist.
+ *
+ **/
+exception NoSuchLink
+{
+    /**
+     *
+     * The name of the link that does not exist.
+     *
+     */
+    string name;
+};
 
 /**
  *
@@ -142,8 +174,11 @@ interface Topic
      *
      * @param cost The cost to the linked topic.
      *
+     * @throws LinkExists Raised if a link to the same topic already
+     * exists.
+     *
      **/
-    idempotent void link(Topic* linkTo, int cost);
+    void link(Topic* linkTo, int cost) throws LinkExists;
 
     /**
      *
@@ -151,8 +186,10 @@ interface Topic
      *
      * @param link The topic to destroy the link to.
      *
+     * @throws NoSuchLink Raised if a link to the topic does not exist.
+     *
      **/
-    idempotent void unlink(Topic* linkTo);
+    void unlink(Topic* linkTo) throws NoSuchLink;
 
     /**
      *

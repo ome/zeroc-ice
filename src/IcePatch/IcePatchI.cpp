@@ -26,8 +26,13 @@ IcePatch::FileI::FileI(const ObjectAdapterPtr& adapter) :
     _fileTraceLogger(adapter->getCommunicator()->getProperties()->getPropertyAsInt("IcePatch.Trace.Files") > 0 ?
 		     adapter->getCommunicator()->getLogger() : LoggerPtr()),
     _busyTimeout(IceUtil::Time::seconds(adapter->getCommunicator()->getProperties()->
-					getPropertyAsIntWithDefault("IcePatch.BusyTimeout", 10)))
+					getPropertyAsIntWithDefault("IcePatch.BusyTimeout", 10))),
+    _dir(adapter->getCommunicator()->getProperties()->getProperty("IcePatch.Directory"))
 {
+    if(!_dir.empty() && _dir[_dir.length() - 1] != '/')
+    {
+	const_cast<string&>(_dir) += '/';
+    }
 }
 
 ByteSeq
@@ -38,10 +43,12 @@ IcePatch::FileI::readMD5(const Current& current) const
     if(path == ".")
     {
 	//
-	// We cannot create an MD5 file for the current directory.
+	// We do not create a MD5 file for the top-level directory.
 	//
 	return ByteSeq();
     }
+
+    path = _dir + path;
     
     IceUtil::RWRecMutex::TryRLock sync(globalMutex, _busyTimeout);
     if(!sync.acquired())
@@ -103,7 +110,12 @@ IcePatch::DirectoryI::describe(const Current& current) const
     // No mutex lock necessary.
     DirectoryDescPtr desc = new DirectoryDesc;
     desc->md5 = readMD5(current);
-    desc->dir = DirectoryPrx::uncheckedCast(_adapter->createProxy(current.id));
+    
+    //
+    // We want compression for directories, to compress directory
+    // listings on the fly.
+    //
+    desc->dir = DirectoryPrx::uncheckedCast(_adapter->createProxy(current.id));//->ice_compress(true));
     return desc;
 }
 
@@ -120,8 +132,9 @@ IcePatch::DirectoryI::getContents(const Current& current) const
 	}
 
 	bool syncUpgraded = false;
-	string path = identityToPath(current.id);
-	StringSeq paths = readDirectory(path);
+	string prependPath = identityToPath(current.id);
+	string realPath = _dir + prependPath;
+	StringSeq paths = readDirectory(realPath, prependPath);
 	filteredPaths.reserve(paths.size() / 3);
 	for(StringSeq::const_iterator p = paths.begin(); p != paths.end(); ++p)
 	{
@@ -139,12 +152,12 @@ IcePatch::DirectoryI::getContents(const Current& current) const
 			    throw BusyException();
 			}
 		    }
-		    StringSeq paths2 = readDirectory(path);
+		    StringSeq paths2 = readDirectory(realPath, prependPath);
 		    pair<StringSeq::iterator, StringSeq::iterator> r2 =
 			equal_range(paths2.begin(), paths2.end(), removeSuffix(*p));
 		    if(r2.first == r2.second)
 		    {
-			removeRecursive(*p, _fileTraceLogger);
+			removeRecursive(_dir + *p, _fileTraceLogger);
 		    }
 		}
 	    }
@@ -155,7 +168,6 @@ IcePatch::DirectoryI::getContents(const Current& current) const
 	}
     }
    
-
     //
     // Call describe() outside the thread synchronization, to avoid
     // deadlocks.
@@ -191,7 +203,13 @@ IcePatch::RegularI::describe(const Current& current) const
     // No mutex lock necessary.
     RegularDescPtr desc = new RegularDesc;
     desc->md5 = readMD5(current);
-    desc->reg = RegularPrx::uncheckedCast(_adapter->createProxy(current.id));
+
+    //
+    // We do not want compression for regular files, because we
+    // download pre-compressed files.
+    //
+    desc->reg = RegularPrx::uncheckedCast(_adapter->createProxy(current.id));//->ice_compress(false));
+
     return desc;
 }
 
@@ -205,7 +223,7 @@ IcePatch::RegularI::getBZ2Size(const Current& current) const
 	throw BusyException();
     }
     
-    string path = identityToPath(current.id);
+    string path = _dir + identityToPath(current.id);
     
     FileInfo info = getFileInfo(path, true, _fileTraceLogger);
     assert(info.type == FileTypeRegular);
@@ -250,7 +268,7 @@ IcePatch::RegularI::getBZ2(Int pos, Int num, const Current& current) const
 	throw BusyException();
     }
 
-    string path = identityToPath(current.id);
+    string path = _dir + identityToPath(current.id);
     
     FileInfo info = getFileInfo(path, true, _fileTraceLogger);
     assert(info.type == FileTypeRegular);
@@ -295,7 +313,7 @@ IcePatch::RegularI::getBZ2MD5(Int size, const Current& current) const
 	throw BusyException();
     }
 
-    string path = identityToPath(current.id);
+    string path = _dir + identityToPath(current.id);
 
     FileInfo info = getFileInfo(path, true, _fileTraceLogger);
     assert(info.type == FileTypeRegular);

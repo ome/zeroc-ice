@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "PARSER_EXPORTS" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /I "dummyinclude" /D "_USRDLL" /D "SLICE_API_EXPORTS" /D "NDEBUG" /D "_CONSOLE" /D "_UNICODE" /FD /c
+# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /I "dummyinclude" /D "_USRDLL" /D "SLICE_API_EXPORTS" /D "NDEBUG" /D "_CONSOLE" /FD /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
@@ -54,12 +54,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 /nologo /dll /machine:I386 /out:"Release/slice12.dll" /implib:"Release/slice.lib"
+# ADD LINK32 /nologo /dll /machine:I386 /out:"Release/slice13.dll" /implib:"Release/slice.lib"
 # SUBTRACT LINK32 /pdb:none /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\slice.lib ..\..\lib	copy $(OutDir)\slice12.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\slice.lib ..\..\lib	copy $(OutDir)\slice13.dll ..\..\bin
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Slice - Win32 Debug"
@@ -76,7 +76,7 @@ PostBuild_Cmds=copy $(OutDir)\slice.lib ..\..\lib	copy $(OutDir)\slice12.dll ..\
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "PARSER_EXPORTS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /I "dummyinclude" /D "_USRDLL" /D "SLICE_API_EXPORTS" /D "_DEBUG" /D "_CONSOLE" /D "_UNICODE" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /I "dummyinclude" /D "_USRDLL" /D "SLICE_API_EXPORTS" /D "_DEBUG" /D "_CONSOLE" /FD /GZ /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
@@ -87,12 +87,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386
-# ADD LINK32 /nologo /dll /debug /machine:I386 /out:"Debug/slice12d.dll" /implib:"Debug/sliced.lib"
+# ADD LINK32 /nologo /dll /debug /machine:I386 /out:"Debug/slice13d.dll" /implib:"Debug/sliced.lib"
 # SUBTRACT LINK32 /pdb:none /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Debug
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\sliced.lib ..\..\lib	copy $(OutDir)\slice12d.pdb ..\..\bin	copy $(OutDir)\slice12d.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\sliced.lib ..\..\lib	copy $(OutDir)\slice13d.pdb ..\..\bin	copy $(OutDir)\slice13d.dll ..\..\bin
 # End Special Build Tool
 
 !ENDIF 
@@ -107,6 +107,10 @@ PostBuild_Cmds=copy $(OutDir)\sliced.lib ..\..\lib	copy $(OutDir)\slice12d.pdb .
 # Begin Source File
 
 SOURCE=.\CPlusPlusUtil.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\CsUtil.cpp
 # End Source File
 # Begin Source File
 
@@ -135,6 +139,10 @@ SOURCE=.\Scanner.cpp
 # Begin Source File
 
 SOURCE=..\..\incluce\Slice\CPlusPlusUtil.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\incluce\Slice\CsUtil.h
 # End Source File
 # Begin Source File
 
@@ -170,7 +178,7 @@ SOURCE=..\..\include\Slice\Preprocessor.h
 #xxx#InputPath=.\Grammar.y
 #xxx#
 #xxx#BuildCmds= \
-#xxx#	bison -dvt Grammar.y \
+#xxx#	bison -dvt --name-prefix "slice_" Grammar.y \
 #xxx#	move Grammar.tab.c Grammar.cpp \
 #xxx#	move Grammar.tab.h Grammar.h \
 #xxx#	
@@ -188,7 +196,7 @@ SOURCE=..\..\include\Slice\Preprocessor.h
 #xxx#InputPath=.\Grammar.y
 #xxx#
 #xxx#BuildCmds= \
-#xxx#	bison -dvt Grammar.y \
+#xxx#	bison -dvt --name-prefix "slice_" Grammar.y \
 #xxx#	move Grammar.tab.c Grammar.cpp \
 #xxx#	move Grammar.tab.h Grammar.h \
 #xxx#	

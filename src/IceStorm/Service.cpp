@@ -36,9 +36,9 @@ public:
     virtual ~ServiceI();
 
     virtual void start(const string&,
-                      const CommunicatorPtr&,
-                      const StringSeq&,
-                      const string&);
+		       const CommunicatorPtr&,
+		       const StringSeq&,
+		       const string&);
 
     virtual void stop();
 
@@ -49,14 +49,11 @@ private:
     ObjectAdapterPtr _publishAdapter;
 };
 
-} // End namespace IceStorm
+}
 
 extern "C"
 {
 
-//
-// Factory function
-//
 ICESTORM_SERVICE_API ::IceBox::FreezeService*
 create(CommunicatorPtr communicator)
 {
@@ -83,7 +80,7 @@ IceStorm::ServiceI::start(const string& name,
     _topicAdapter = communicator->createObjectAdapter(name + ".TopicManager");
     _publishAdapter = communicator->createObjectAdapter(name + ".Publish");
 
-    _manager = new TopicManagerI(communicator, _topicAdapter, _publishAdapter, traceLevels, envName, "topicmanager");
+    _manager = new TopicManagerI(communicator, _topicAdapter, _publishAdapter, traceLevels, envName, "topics");
     _topicAdapter->add(_manager, stringToIdentity(name + "/TopicManager"));
 
     _topicAdapter->activate();

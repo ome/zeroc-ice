@@ -43,6 +43,7 @@ IceInternal::ThreadPool::ThreadPool(const InstancePtr& instance, const string& p
     _running(0),
     _inUse(0),
     _load(0),
+    _promote(true),
     _warnUdp(_instance->properties()->getPropertyAsInt("Ice.Warn.Datagrams") > 0)
 {
     SOCKET fds[2];
@@ -56,21 +57,27 @@ IceInternal::ThreadPool::ThreadPool(const InstancePtr& instance, const string& p
     _maxFd = _fdIntrRead;
     _minFd = _fdIntrRead;
 
-    int size = _instance->properties()->getPropertyAsIntWithDefault(_prefix + ".Size", 5);
+    //
+    // We use just one thread as the default. This is the fastest
+    // possible setting, still allows one level of nesting, and
+    // doesn't require to make the servants thread safe.
+    //
+    int size = _instance->properties()->getPropertyAsIntWithDefault(_prefix + ".Size", 1);
     if(size < 1)
     {
 	size = 1;
     }
-    const_cast<int&>(_size) = size;
     
-    int sizeMax = _instance->properties()->getPropertyAsIntWithDefault(_prefix + ".SizeMax", _size * 10);
-    if(sizeMax < _size)
+    int sizeMax = _instance->properties()->getPropertyAsIntWithDefault(_prefix + ".SizeMax", size);
+    if(sizeMax < size)
     {
-	sizeMax = _size;
-    }
-    const_cast<int&>(_sizeMax) = sizeMax;
+	sizeMax = size;
+    }		
+    
+    int sizeWarn = _instance->properties()->getPropertyAsIntWithDefault(_prefix + ".SizeWarn", sizeMax * 80 / 100);
 
-    int sizeWarn = _instance->properties()->getPropertyAsIntWithDefault(_prefix + ".SizeWarn", _sizeMax * 80 / 100);
+    const_cast<int&>(_size) = size;
+    const_cast<int&>(_sizeMax) = sizeMax;
     const_cast<int&>(_sizeWarn) = sizeWarn;
 
     const_cast<int&>(_messageSizeMax) = instance->messageSizeMax();
@@ -116,30 +123,30 @@ IceInternal::ThreadPool::~ThreadPool()
 void
 IceInternal::ThreadPool::destroy()
 {
-    IceUtil::Mutex::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
     assert(!_destroyed);
     assert(_handlerMap.empty());
     assert(_changes.empty());
     _destroyed = true;
-    setInterrupt(0);
+    setInterrupt();
 }
 
 void
 IceInternal::ThreadPool::_register(SOCKET fd, const EventHandlerPtr& handler)
 {
-    IceUtil::Mutex::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
     assert(!_destroyed);
     _changes.push_back(make_pair(fd, handler));
-    setInterrupt(0);
+    setInterrupt();
 }
 
 void
 IceInternal::ThreadPool::unregister(SOCKET fd)
 {
-    IceUtil::Mutex::Lock sync(*this);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
     assert(!_destroyed);
     _changes.push_back(make_pair(fd, EventHandlerPtr(0)));
-    setInterrupt(0);
+    setInterrupt();
 }
 
 void
@@ -147,51 +154,41 @@ IceInternal::ThreadPool::promoteFollower()
 {
     if(_sizeMax > 1)
     {
-	_promoteMutex.unlock();
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 
+	assert(!_promote);
+	_promote = true;
+	notify();
+
+	if(!_destroyed)
 	{
-	    IceUtil::Mutex::Lock sync(*this);
-
-	    if(!_destroyed)
+	    assert(_inUse >= 0);
+	    ++_inUse;
+	    
+	    if(_inUse == _sizeWarn)
 	    {
-		assert(_inUse >= 0);
-		++_inUse;
-		
-		if(_inUse == _sizeWarn)
+		Warning out(_instance->logger());
+		out << "thread pool `" << _prefix << "' is running low on threads\n"
+		    << "Size=" << _size << ", " << "SizeMax=" << _sizeMax << ", " << "SizeWarn=" << _sizeWarn;
+	    }
+	    
+	    assert(_inUse <= _running);
+	    if(_inUse < _sizeMax && _inUse == _running)
+	    {
+		try
 		{
-		    Warning out(_instance->logger());
-		    out << "thread pool `" << _prefix << "' is running low on threads\n"
-			<< "Size=" << _size << ", " << "SizeMax=" << _sizeMax << ", " << "SizeWarn=" << _sizeWarn;
+		    IceUtil::ThreadPtr thread = new EventHandlerThread(this);
+		    _threads.push_back(thread->start());
+		    ++_running;
 		}
-		
-		assert(_inUse <= _running);
-		if(_inUse < _sizeMax && _inUse == _running)
+		catch(const IceUtil::Exception& ex)
 		{
-		    try
-		    {
-			IceUtil::ThreadPtr thread = new EventHandlerThread(this);
-			_threads.push_back(thread->start());
-			++_running;
-		    }
-		    catch(const IceUtil::Exception& ex)
-		    {
-			Error out(_instance->logger());
-			out << "cannot create thread for `" << _prefix << "':\n" << ex;
-		    }
+		    Error out(_instance->logger());
+		    out << "cannot create thread for `" << _prefix << "':\n" << ex;
 		}
 	    }
 	}
     }
-}
-
-void
-IceInternal::ThreadPool::initiateShutdown()
-{
-    //
-    // This operation must be signal safe, so all we can do is to set
-    // an interrupt.
-    //
-    setInterrupt(1);
 }
 
 void
@@ -214,7 +211,7 @@ IceInternal::ThreadPool::joinWithAllThreads()
 #endif
 }
 
-bool
+void
 IceInternal::ThreadPool::clearInterrupt()
 {
     char c;
@@ -246,13 +243,13 @@ repeat:
 	throw ex;
     }
 #endif
-    
-    return c == 1; // Return true if shutdown has been initiated.
 }
 
 void
-IceInternal::ThreadPool::setInterrupt(char c)
+IceInternal::ThreadPool::setInterrupt()
 {
+    char c = 0;
+
 repeat:
 
 #ifdef _WIN32
@@ -289,7 +286,14 @@ IceInternal::ThreadPool::run()
 
     if(_sizeMax > 1)
     {
-	_promoteMutex.lock();	
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+
+	while(!_promote)
+	{
+	    wait();
+	}
+
+	_promote = false;
     }
 
     while(true)
@@ -309,14 +313,6 @@ IceInternal::ThreadPool::run()
 	    ret = ::select(_maxFd + 1, &fdSet, 0, 0, 0);
 	}
 	
-	if(ret == 0) // We initiate a shutdown if there is a thread pool timeout.
-	{
-	    assert(_timeout > 0);
-	    _timeout = 0;
-	    initiateShutdown();
-	    continue;
-	}
-	
 	if(ret == SOCKET_ERROR)
 	{
 	    if(interrupted())
@@ -326,44 +322,51 @@ IceInternal::ThreadPool::run()
 	    
 	    SocketException ex(__FILE__, __LINE__);
 	    ex.error = getSocketErrno();
-	    throw ex;
+	    //throw ex;
+	    Error out(_instance->logger());
+	    out << "exception in `" << _prefix << "':\n" << ex; 
+	    continue;
 	}
 	
 	EventHandlerPtr handler;
 	bool finished = false;
 	bool shutdown = false;
-	
+
 	{
-	    IceUtil::Mutex::Lock sync(*this);
-
-	    if(FD_ISSET(_fdIntrRead, &fdSet))
+	    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+	    
+	    if(ret == 0) // We initiate a shutdown if there is a thread pool timeout.
 	    {
-		//
-		// There are three possiblities for an interrupt:
-		//
-		// - The thread pool has been destroyed.
-		//
-		// - Server shutdown has been initiated.
-		//
-		// - An event handler was registered or unregistered.
-		//
-		
-		//
-		// Thread pool destroyed?
-		//
-		if(_destroyed)
+		assert(_timeout > 0);
+		_timeout = 0;
+		shutdown = true;
+	    }
+	    else
+	    {
+		if(FD_ISSET(_fdIntrRead, &fdSet))
 		{
 		    //
-		    // Don't clear the interrupt if destroyed, so that
-		    // the other threads exit as well.
+		    // There are two possiblities for an interrupt:
 		    //
-		    return true;
-		}
-		
-		shutdown = clearInterrupt();
+		    // 1. The thread pool has been destroyed.
+		    //
+		    // 2. An event handler was registered or unregistered.
+		    //
 
-		if(!shutdown)
-		{
+		    //
+		    // Thread pool destroyed?
+		    //
+		    if(_destroyed)
+		    {
+			//
+			// Don't clear the interrupt if destroyed, so that
+			// the other threads exit as well.
+			//
+			return true;
+		    }
+		    
+		    clearInterrupt();
+		    
 		    //
 		    // An event handler must have been registered or
 		    // unregistered.
@@ -400,92 +403,96 @@ IceInternal::ThreadPool::run()
 			// the thread synchronization.
 		    }
 		}
-	    }
-	    else
-	    {
+		else
+		{
 //
 // Optimization for WIN32 specific version of fd_set. Looping with a
 // FD_ISSET test like for Unix is very inefficient for WIN32.
 //
 #ifdef _WIN32
-		//
-		// Round robin for the filedescriptors.
-		//
-		if(fdSet.fd_count == 0)
-		{
-		    Error out(_instance->logger());
-		    out << "select() in `" << _prefix << "' returned " << ret << " but no filedescriptor is readable";
-		    continue;
-		}
-		
-		SOCKET largerFd = _maxFd + 1;
-		SOCKET smallestFd = _maxFd + 1;
-		for(u_short i = 0; i < fdSet.fd_count; ++i)
-		{
-		    SOCKET fd = fdSet.fd_array[i];
-		    assert(fd != INVALID_SOCKET);
-		    
-		    if(fd > _lastFd || _lastFd == INVALID_SOCKET)
+		    //
+		    // Round robin for the filedescriptors.
+		    //
+		    if(fdSet.fd_count == 0)
 		    {
-			largerFd = min(largerFd, fd);
+			Error out(_instance->logger());
+			out << "select() in `" << _prefix << "' returned " << ret
+			    << " but no filedescriptor is readable";
+			continue;
 		    }
 		    
-		    smallestFd = min(smallestFd, fd);
-		}
-		
-		if(largerFd <= _maxFd)
-		{
-		    assert(largerFd >= _minFd);
-		    _lastFd = largerFd;
-		}
-		else
-		{
-		    assert(smallestFd >= _minFd && smallestFd <= _maxFd);
-		    _lastFd = smallestFd;
-		}
+		    SOCKET largerFd = _maxFd + 1;
+		    SOCKET smallestFd = _maxFd + 1;
+		    for(u_short i = 0; i < fdSet.fd_count; ++i)
+		    {
+			SOCKET fd = fdSet.fd_array[i];
+			assert(fd != INVALID_SOCKET);
+			
+			if(fd > _lastFd || _lastFd == INVALID_SOCKET)
+			{
+			    largerFd = min(largerFd, fd);
+			}
+			
+			smallestFd = min(smallestFd, fd);
+		    }
+		    
+		    if(largerFd <= _maxFd)
+		    {
+			assert(largerFd >= _minFd);
+			_lastFd = largerFd;
+		    }
+		    else
+		    {
+			assert(smallestFd >= _minFd && smallestFd <= _maxFd);
+			_lastFd = smallestFd;
+		    }
 #else
-		//
-		// Round robin for the filedescriptors.
-		//
-		if(_lastFd < _minFd - 1 || _lastFd == INVALID_SOCKET)
-		{
-		    _lastFd = _minFd - 1;
-		}
-		
-		int loops = 0;
-		do
-		{
-		    if(++_lastFd > _maxFd)
+		    //
+		    // Round robin for the filedescriptors.
+		    //
+		    if(_lastFd < _minFd - 1 || _lastFd == INVALID_SOCKET)
 		    {
-			++loops;
-			_lastFd = _minFd;
+			_lastFd = _minFd - 1;
 		    }
-		}
-		while(!FD_ISSET(_lastFd, &fdSet) && loops <= 1);
-		
-		if(loops > 1)
-		{
-		    Error out(_instance->logger());
-		    out << "select() in `" << _prefix << "' returned " << ret << " but no filedescriptor is readable";
-		    continue;
-		}
+		    
+		    int loops = 0;
+		    do
+		    {
+			if(++_lastFd > _maxFd)
+			{
+			    ++loops;
+			    _lastFd = _minFd;
+			}
+		    }
+		    while(!FD_ISSET(_lastFd, &fdSet) && loops <= 1);
+		    
+		    if(loops > 1)
+		    {
+			Error out(_instance->logger());
+			out << "select() in `" << _prefix << "' returned " << ret
+			    << " but no filedescriptor is readable";
+			continue;
+		    }
 #endif
-		
-		assert(_lastFd != _fdIntrRead);
-		
-		map<SOCKET, EventHandlerPtr>::iterator p = _handlerMap.find(_lastFd);
-		if(p == _handlerMap.end())
-		{
-		    Error out(_instance->logger());
-		    out << "filedescriptor " << _lastFd << " not registered with `" << _prefix << "'";
-		    continue;
+		    
+		    assert(_lastFd != _fdIntrRead);
+		    
+		    map<SOCKET, EventHandlerPtr>::iterator p = _handlerMap.find(_lastFd);
+		    if(p == _handlerMap.end())
+		    {
+			Error out(_instance->logger());
+			out << "filedescriptor " << _lastFd << " not registered with `" << _prefix << "'";
+			continue;
+		    }
+		    
+		    handler = p->second;
 		}
-		
-		handler = p->second;
 	    }
 	}
 	
-	assert(handler || shutdown);
+	//
+	// Now we are outside the thread synchronization.
+	//
 
 	if(shutdown)
 	{
@@ -504,6 +511,12 @@ IceInternal::ThreadPool::run()
 
 	    promoteFollower();
 	    factory->shutdown();
+
+	    //
+	    // No "continue", because we want shutdown to be done in
+	    // its own thread from this pool. Therefore we called
+	    // promoteFollower().
+	    //
 	}
 	else
 	{
@@ -517,7 +530,11 @@ IceInternal::ThreadPool::run()
 		//
 		try
 		{
-		    handler->finished(self); // "self" is faster than "this", as the reference count is not modified.
+		    //
+		    // "self" is faster than "this", as the reference
+		    // count is not modified.
+		    //
+		    handler->finished(self);
 		}
 		catch(const LocalException& ex)
 		{
@@ -525,6 +542,13 @@ IceInternal::ThreadPool::run()
 		    out << "exception in `" << _prefix << "' while calling finished():\n"
 			<< ex << '\n' << handler->toString();
 		}
+
+		//
+		// No "continue", because we want finished() to be
+		// called in its own thread from this pool. Note that
+		// this means that finished() must call
+		// promoteFollower().
+		//
 	    }
 	    else
 	    {
@@ -558,69 +582,92 @@ IceInternal::ThreadPool::run()
 		}
 	    
 		//
-		// "self" is faster than "this", as the reference
-		// count is not modified.
+		// Provide a new mesage to the handler.
 		//
-		handler->message(stream, self);
+		try
+		{
+		    //
+		    // "self" is faster than "this", as the reference
+		    // count is not modified.
+		    //
+		    handler->message(stream, self);
+		}
+		catch(const LocalException& ex)
+		{
+		    Error out(_instance->logger());
+		    out << "exception in `" << _prefix << "' while calling finished():\n"
+			<< ex << '\n' << handler->toString();
+		}
+		
+		//
+		// No "continue", because we want message() to be
+		// called in its own thread from this pool. Note that
+		// this means that message() must call
+		// promoteFollower().
+		//
 	    }
 	}
 
 	if(_sizeMax > 1)
 	{
+	    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+	    
+	    if(!_destroyed)
 	    {
-		IceUtil::Mutex::Lock sync(*this);
-		
-		if(!_destroyed)
+		//
+		// First we reap threads that have been destroyed before.
+		//
+		int sz = static_cast<int>(_threads.size());
+		assert(_running <= sz);
+		if(_running < sz)
 		{
-		    //
-		    // First we reap threads that have been destroyed before.
-		    //
-		    int sz = static_cast<int>(_threads.size());
-		    assert(_running <= sz);
-		    if(_running < sz)
-		    {
-			vector<IceUtil::ThreadControl>::iterator start =
-			    partition(_threads.begin(), _threads.end(), mem_fun_ref(&IceUtil::ThreadControl::isAlive));
+		    vector<IceUtil::ThreadControl>::iterator start =
+			partition(_threads.begin(), _threads.end(), mem_fun_ref(&IceUtil::ThreadControl::isAlive));
 #if defined(_MSC_VER) && _MSC_VER <= 1200 // The mem_fun_ref below does not work with VC++ 6.0
-			for(vector<IceUtil::ThreadControl>::iterator p = start; p != _threads.end(); ++p)
-			{
-			    p->join();
-			}
-#else
-			for_each(start, _threads.end(), mem_fun_ref(&IceUtil::ThreadControl::join));
-#endif
-			_threads.erase(start, _threads.end());
-		    }
-		    
-		    //
-		    // Now we check if this thread can be destroyed, based
-		    // on a load factor.
-		    //
-		    const double loadFactor = 0.05; // TODO: Configurable?
-		    const double oneMinusLoadFactor = 1 - loadFactor;
-		    _load = _load * oneMinusLoadFactor + _inUse * loadFactor;
-
-		    if(_running > _size)
+		    for(vector<IceUtil::ThreadControl>::iterator p = start; p != _threads.end(); ++p)
 		    {
-			int load = static_cast<int>(_load + 1);
-			if(load < _running)
-			{
-			    assert(_inUse > 0);
-			    --_inUse;
-
-			    assert(_running > 0);
-			    --_running;
-
-			    return false;
-			}
+			p->join();
 		    }
-			
-		    assert(_inUse > 0);
-		    --_inUse;
+#else
+		    for_each(start, _threads.end(), mem_fun_ref(&IceUtil::ThreadControl::join));
+#endif
+		    _threads.erase(start, _threads.end());
 		}
+		
+		//
+		// Now we check if this thread can be destroyed, based
+		// on a load factor.
+		//
+		const double loadFactor = 0.05; // TODO: Configurable?
+		const double oneMinusLoadFactor = 1 - loadFactor;
+		_load = _load * oneMinusLoadFactor + _inUse * loadFactor;
+		
+		if(_running > _size)
+		{
+		    int load = static_cast<int>(_load + 1);
+		    if(load < _running)
+		    {
+			assert(_inUse > 0);
+			--_inUse;
+			
+			assert(_running > 0);
+			--_running;
+			
+			return false;
+		    }
+		}
+		
+		assert(_inUse > 0);
+		--_inUse;
 	    }
 
-	    _promoteMutex.lock();	
+
+	    while(!_promote)
+	    {
+		wait();
+	    }
+	    
+	    _promote = false;
 	}
     }
 }
@@ -742,12 +789,18 @@ IceInternal::ThreadPool::EventHandlerThread::run()
 	out << "exception in `" << _pool->_prefix << "':\n" << ex; 
 	promote = true;
     }
+    catch(const std::exception& ex)
+    {
+	Error out(_pool->_instance->logger());
+	out << "std::exception in `" << _pool->_prefix << "':\n" << ex.what();
+	promote = true;
+    }
     catch(...)
     {
 	Error out(_pool->_instance->logger());
 	out << "unknown exception in `" << _pool->_prefix << "'"; 
 	promote = true;
-   }
+    }
 
     if(promote && _pool->_sizeMax > 1)
     {
@@ -755,7 +808,12 @@ IceInternal::ThreadPool::EventHandlerThread::run()
 	// Promote a follower, but w/o modifying _inUse or creating
 	// new threads.
 	//
-	_pool->_promoteMutex.unlock();
+	{
+	    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*_pool.get());
+	    assert(!_pool->_promote);
+	    _pool->_promote = true;
+	    _pool->notify();
+	}
     }
 
     _pool = 0; // Break cyclic dependency.

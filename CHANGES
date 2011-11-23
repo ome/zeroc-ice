@@ -1,3 +1,253 @@
+Changes since version 1.2.0
+---------------------------
+
+- Added FreezeScript, which consists of the tools dumpdb and
+  transformdb for inspecting and migrating Freeze databases,
+  respectively.
+
+- The IceStorm server now uses a single database for all topics,
+  which makes topic creation much faster.
+
+- Added the virtual member functions ice_preMarshal and
+  ice_postUnmarshal to Ice::Object. The default implementations do
+  nothing, but subclasses may override them to take special action
+  before marshaling and after unmarshaling, respectively.
+
+- Added the demo/IcePack/simple example.
+
+- Fixed a bug in IcePack that could cause the node to crash if a
+  server failed to start.
+
+- IceBox services deployed with IcePack are now loaded in the order
+  they appear in the XML IceBox descriptor.
+
+- Connections are no longer closed when the last proxy using the
+  connection is destroyed. Doing so is error prone:
+
+  * Quite often, proxies are created on the fly, resulting in
+    connections being opened and closed all the time. This is
+    especially true for services that receive a proxy and data, and
+    then forward this data using the proxy.
+
+  * Often, connections are stay open for too long, because proxies are
+    kept even though they are never used again.
+
+  * It doesn't work well with AMI requests, because the AMI callback
+    objects keep track of connections directly. This would mean that
+    if a process only uses AMI requests, a connection is opened and
+    closed for each request, as each request typically has its own
+    AMI callback object.
+
+  Instead, ACM (Automatic Connection Management) is now enabled by
+  default, with a default value of one minute. This means that idle
+  connections are closed after one minute, regardless of whether there
+  are proxies using the connection or not. This closing of connections
+  is transparent, i.e., closed connections are automatically
+  reestablished in case they are needed again. Please see the
+  description of the Ice.ConnectionIdleTime property for details.
+
+- ACM has been completely reworked. It now works properly with respect
+  to retrying failed requests.
+
+- Added the IceSSL.Client.IgnoreValidPeriod and
+  IceSSL.Server.IgnoreValidPeriod properties. See the description in
+  the manual for details.
+
+- Added the IceBox.LoadOrder property, which specifies the order
+  in which IceBox services are loaded.
+
+- Added support for the Intel C++ compiler (v8.0) on Linux x86.
+
+- Removed the Ice.Daemon, Ice.DaemonNoChdir and Ice.DaemonNoClose
+  properties. Support for Unix daemons and Win32 services has been
+  integrated into the Ice::Service class.
+
+- The default thread pool size is now just one thread. This is the
+  fastest possible setting, still allows one level of nesting, and
+  doesn't require that servants be thread safe. (Please see the
+  description of the thread pool properties in the manual for
+  information on how to increase the number of threads.)
+
+- HP-UX port. See INSTALL.HP-UX.
+
+- Added extra file integrity checks to IcePatch::Client.
+
+- Fixed a problem with servers not shutting down properly under
+  certain circumstances.
+
+- IceUtil::Thread now calls srand() in each new thread (Windows only).
+
+- When unmarshaling a string sequence parameter, Ice was not clearing
+  the vector before appending elements to it. This has been fixed.
+  
+- Fixed a rare connection deadlock, that could happen if lots of long
+  messages are sent rapidly in parallel, using separate threads or
+  AMI.
+
+- Fixed a race condition that could lead to a deadlock if a thread
+  tried to join with another thread from within the destructor of a
+  servant or class.
+
+- Added support for IcePack and Glacier on Windows platforms.
+  The IcePack Registry, IcePack Node and Glacier Starter programs
+  can optionally be installed as Windows services. See the Ice
+  manual for more information.
+
+- Added a new logger implementation that uses the Windows Event Log.
+  To use it, set the Ice.UseEventLog property to a non-zero value.
+
+- Three new icepackadmin commands:
+
+  * server signal NAME SIGNAL
+
+    Causes the IcePackNode to send a signal to a server. (Unix only)
+
+  * server stdout NAME MESSAGE
+
+    Writes MESSAGE on server's stdout.
+
+  * server stderr NAME MESSAGE
+
+    Writes MESSAGE on server's stderr.
+
+- Two new IcePack.Node properties:
+
+  * IcePack.Node.Output=<path>
+
+    If set, the IcePack node will redirect the stdout and stderr 
+    output of the started servers to files named <server>.out and 
+    <server>.err in this directory. Otherwise, the started servers 
+    share the stdout and stderr of the IcePack node.
+
+  * IcePack.Node.RedirectErrToOut=<num>
+
+    If <num> is set to a value larger than zero, the stderr of each
+    started server is redirected to the server's stdout.
+
+- Added Slice interface Ice::Process in slice/Ice/Process.ice. This
+  interface enables IcePack to properly shut down a process without
+  relying on signals, which is necessary for successful operation
+  on Windows.
+
+- Added setServerProcessProxy to Ice::LocatorRegistry.
+
+- Added new properties <ObjectAdapter>.RegisterProcess and
+  Ice.ServerId. If RegisterProcess is defined, the object adapter
+  creates a servant implementing the Ice::Process interface and
+  registers it with the locator registry using the server id
+  defined by Ice.ServerId.
+
+- Added the "register" attribute to the <adapter> element in the
+  IcePack descriptors. If true, the RegisterProcess property is
+  defined for the object adapter.
+
+- Added getLocator to ObjectAdapter.
+
+- Eliminated Glacier's dependency on the crypt library. It now
+  uses an equivalent function from OpenSSL.
+
+- Fixed a bug that could cause a crash if an application used
+  Ice::Application and was interrupted by a signal, resulting
+  in two calls to Communicator::destroy().
+
+- Replaced interface Glacier::PasswordVerifier with
+  Glacier::PermissionsVerifier, property
+  Glacier.Starter.PasswordVerifier with
+  Glacier.Starter.PermissionsVerifier, and changed
+  Glacier::Starter::startRouter() to throw PermissionDeniedException
+  instead of InvalidPasswordException.
+
+- Fixed a problem with the random selection of SSL endpoints.
+
+- Ice is now supported on Windows 98 SE. See INSTALL.WINDOWS.
+
+- Fixed an incorrect complaint in the Slice parser about a change of
+  meaning for enumeration constant definitions.
+
+- The glacierrouter and glacierstarter processes used to abort if
+  given a non-existent config file.
+
+- Changed Ice::Exception::ice_name() to return const std::string&
+  instead of returning a string by value.
+
+- Added support for "global" metadata, which can only be specified
+  once in a file and must appear before any definitions. The syntax
+  is similar to that of local metadata, but with an extra set of
+  brackets: [["metadata1","metadata2","etc."]]. The first use of this
+  metadata is for specifying a package in Java.
+
+- The IcePatch server no longer changes the working directory.
+  This avoids potential problems with core files being generated in
+  the data directory.
+
+- Ice now uses gethostbyname_r() if available.
+
+- Errors during close() or shutdown() on connections now cause
+  exceptions.
+
+- Fixed a deadlock that could happen if requests were sent from the
+  exception() AMI callback.
+
+- Eliminated the need to define _UNICODE when building Ice on Windows.
+
+- Fixed problems with generated code in slice2cpp and slice2freeze
+  when --header-ext is used.
+
+- The Slice parser and database transformer didn't parse negative
+  floating-point numbers correctly. This has been fixed.
+
+- If the Glacier Starter couldn't start the Glacier Router, the
+  starter terminated. This has been fixed.
+
+- Visual C++ 7.x builds can now be used by applications built with 
+  /Zc:wchar_t.
+
+- Fixed a bug in IceSSL that caused the error message "WRN unable
+  to load certificate authorities" to be logged when no value
+  was specified for the "path" attribute of <certauthority>.
+
+- Added property Ice.Override.ConnectTimeout. See the manual for
+  details.
+
+- Fixed a rare deadlock in the object adapter, when a locator was
+  used.
+
+- Fixed a bug that could cause an abort if communicators were created
+  and destroyed in rapid succession.
+
+- Fixed transformdb to take separate arguments for specifying
+  include paths. The option -I has been replaced with the options
+  --include-old and --include-new.
+
+- Added twoway-throttling to Glacier. See the descriptions of the
+  properties Glacier.Router.Client.Throttle.Twoways and
+  Glacier.Router.Server.Throttle.Twoways for details. To trace
+  throttling, set the property Glacier.Router.Trace.Throttle.
+
+- The properties Glacier.Router.Client.BatchSleepTime and
+  Glacier.Router.Server.BatchSleepTime have been replaced with
+  Glacier.Router.Client.SleepTime and Glacier.Router.Server.SleepTime.
+  Please see the description of the properties in the manual for the
+  new semantics of the sleep times.
+
+- Added STL functors for partial proxy comparison:
+
+  * ProxyIdentityLess
+  * ProxyIdentityEqual
+  * ProxyIdentityAndFacetLess
+  * ProxyIdentityAndFacetEqual
+
+- A DNSException could cause a deadlock. This has been fixed.
+
+- Changed FD_SETSIZE under Windows to 1024. (The default permits only
+  64 concurrent connections, which is too small for some applications.)
+
+- The IcePatch server now ignores Ice exceptions in the update thread
+  instead of terminating the update thread.
+
+- Fixed a concurrency bug that could cause the IcePack registry to
+  crash.
+
 Changes since version 1.1.1
 ---------------------------
 

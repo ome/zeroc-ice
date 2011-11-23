@@ -25,6 +25,7 @@
 #include <Ice/FactoryTable.h>
 #include <Ice/TraceUtil.h>
 #include <Ice/TraceLevels.h>
+#include <Ice/LoggerUtil.h>
 
 template<typename InputIter, typename OutputIter>
 inline void
@@ -54,8 +55,29 @@ IceInternal::BasicStream::BasicStream(Instance* instance) :
     _currentWriteEncaps(0),
     _traceSlicing(-1),
     _marshalFacets(true),
-    _messageSizeMax(_instance->messageSizeMax()) // Cached for efficiency.
+    _sliceObjects(true),
+    _messageSizeMax(_instance->messageSizeMax()), // Cached for efficiency.
+    _objectList(0)
 {
+}
+
+IceInternal::BasicStream::~BasicStream()
+{
+    while(_currentReadEncaps)
+    {
+	ReadEncaps* oldEncaps = _currentReadEncaps;
+	_currentReadEncaps = _currentReadEncaps->previous;
+	delete oldEncaps;
+    }
+
+    while(_currentWriteEncaps)
+    {
+	WriteEncaps* oldEncaps = _currentWriteEncaps;
+	_currentWriteEncaps = _currentWriteEncaps->previous;
+	delete oldEncaps;
+    }
+
+    delete _objectList;
 }
 
 Instance*
@@ -71,10 +93,9 @@ IceInternal::BasicStream::swap(BasicStream& other)
 
     b.swap(other.b);
     std::swap(i, other.i);
-    _readEncapsStack.swap(other._readEncapsStack);
-    _writeEncapsStack.swap(other._writeEncapsStack);
     std::swap(_currentReadEncaps, other._currentReadEncaps);
     std::swap(_currentWriteEncaps, other._currentWriteEncaps);
+    std::swap(_objectList, other._objectList);
 }
 
 void
@@ -89,28 +110,23 @@ IceInternal::BasicStream::reserve(Container::size_type sz)
 }
 
 IceInternal::BasicStream::WriteEncaps::WriteEncaps()
-    : writeIndex(0), toBeMarshaledMap(0), marshaledMap(0), typeIdIndex(0), typeIdMap(0)
+    : writeIndex(0), toBeMarshaledMap(0), marshaledMap(0), typeIdMap(0), typeIdIndex(0), previous(0)
 {
 }
 
 IceInternal::BasicStream::WriteEncaps::~WriteEncaps()
 {
-    if(toBeMarshaledMap)
-    {
-	delete toBeMarshaledMap;
-	delete marshaledMap;
-	delete typeIdMap;
-    }
+    delete toBeMarshaledMap;
+    delete marshaledMap;
+    delete typeIdMap;
 }
 
 void
 IceInternal::BasicStream::startWriteEncaps()
 {
-    {
-	_writeEncapsStack.push_back(WriteEncaps());
-	_currentWriteEncaps = &_writeEncapsStack.back();
-    }
-	
+    WriteEncaps* oldEncaps = _currentWriteEncaps;
+    _currentWriteEncaps = new WriteEncaps();
+    _currentWriteEncaps->previous = oldEncaps;
     _currentWriteEncaps->start = b.size();
 
     write(Int(0)); // Placeholder for the encapsulation length.
@@ -140,42 +156,29 @@ IceInternal::BasicStream::endWriteEncaps()
     *dest = *src;
 #endif
 
-    {
-	_writeEncapsStack.pop_back();
-	if(_writeEncapsStack.empty())
-	{
-	    _currentWriteEncaps = 0;
-	}
-	else
-	{
-	    _currentWriteEncaps = &_writeEncapsStack.back();
-	}
-    }
+    WriteEncaps* oldEncaps = _currentWriteEncaps;
+    _currentWriteEncaps = _currentWriteEncaps->previous;
+    delete oldEncaps;
 }
 
 IceInternal::BasicStream::ReadEncaps::ReadEncaps()
-    : patchMap(0), unmarshaledMap(0), typeIdIndex(0), typeIdMap(0)
+    : patchMap(0), unmarshaledMap(0), typeIdMap(0), typeIdIndex(0), previous(0)
 {
 }
 
 IceInternal::BasicStream::ReadEncaps::~ReadEncaps()
 {
-    if(patchMap)
-    {
-	delete patchMap;
-	delete unmarshaledMap;
-	delete typeIdMap;
-    }
+    delete patchMap;
+    delete unmarshaledMap;
+    delete typeIdMap;
 }
 
 void
 IceInternal::BasicStream::startReadEncaps()
 {
-    {
-	_readEncapsStack.push_back(ReadEncaps());
-	_currentReadEncaps = &_readEncapsStack.back();
-    }
-
+    ReadEncaps* oldEncaps = _currentReadEncaps;
+    _currentReadEncaps = new ReadEncaps();
+    _currentReadEncaps->previous = oldEncaps;
     _currentReadEncaps->start = i - b.begin();
 
     //
@@ -223,15 +226,9 @@ IceInternal::BasicStream::endReadEncaps()
     Int sz = _currentReadEncaps->sz;
     i = b.begin() + start + sz;
 
-    _readEncapsStack.pop_back();
-    if(_readEncapsStack.empty())
-    {
-	_currentReadEncaps = 0;
-    }
-    else
-    {
-	_currentReadEncaps = &_readEncapsStack.back();
-    }
+    ReadEncaps* oldEncaps = _currentReadEncaps;
+    _currentReadEncaps = _currentReadEncaps->previous;
+    delete oldEncaps;
 }
 
 void
@@ -1114,11 +1111,17 @@ IceInternal::BasicStream::read(vector<string>& v)
 {
     Int sz;
     readSize(sz);
+    v.clear();
+
+    //
+    // Don't use v.resize(sz) or v.reserve(sz) here, as it cannot be
+    // checked whether sz is a reasonable value.
+    //
+
     while(sz--)
     {
-	string s;
-	read(s);
-	v.push_back(s);
+	v.resize(v.size() + 1);
+	read(v.back());
     }
 }
 
@@ -1139,10 +1142,8 @@ IceInternal::BasicStream::write(const ObjectPtr& v)
 {
     if(!_currentWriteEncaps) // Lazy initialization.
     {
-	_writeEncapsStack.push_back(WriteEncaps());
-	_currentWriteEncaps = &_writeEncapsStack.back();
+	_currentWriteEncaps = new WriteEncaps();
 	_currentWriteEncaps->start = b.size();
-	_currentWriteEncaps->toBeMarshaledMap = 0;
     }
 
     if(!_currentWriteEncaps->toBeMarshaledMap) // Lazy initialization.
@@ -1192,8 +1193,7 @@ IceInternal::BasicStream::read(PatchFunc patchFunc, void* patchAddr)
 {
     if(!_currentReadEncaps) // Lazy initialization.
     {
-	_readEncapsStack.push_back(ReadEncaps());
-	_currentReadEncaps = &_readEncapsStack.back();
+	_currentReadEncaps = new ReadEncaps();
     }
 
     if(!_currentReadEncaps->patchMap) // Lazy initialization.
@@ -1289,24 +1289,43 @@ IceInternal::BasicStream::read(PatchFunc patchFunc, void* patchAddr)
 
         if(!v)
         {
-            //
-            // Performance sensitive, so we use lazy initialization for tracing.
-            //
-            if(_traceSlicing == -1)
+            if(_sliceObjects)
             {
-                _traceSlicing = _instance->traceLevels()->slicing;
-                _slicingCat = _instance->traceLevels()->slicingCat;
+                //
+                // Performance sensitive, so we use lazy initialization for tracing.
+                //
+                if(_traceSlicing == -1)
+                {
+                    _traceSlicing = _instance->traceLevels()->slicing;
+                    _slicingCat = _instance->traceLevels()->slicingCat;
+                }
+                if(_traceSlicing > 0)
+                {
+                    traceSlicing("class", id, _slicingCat, _instance->logger());
+                }
+                skipSlice(); // Slice off this derived part -- we don't understand it.
+                continue;
             }
-            if(_traceSlicing > 0)
+            else
             {
-                traceSlicing("class", id, _slicingCat, _instance->logger());
+                NoObjectFactoryException ex(__FILE__, __LINE__);
+                ex.type = id;
+                throw ex;
             }
-            skipSlice(); // Slice off this derived part -- we don't understand it.
-            continue;
         }
 
 	IndexToPtrMap::const_iterator unmarshaledPos =
 			    _currentReadEncaps->unmarshaledMap->insert(make_pair(index, v)).first;
+
+        //
+        // Record each object instance so that readPendingObjects can invoke ice_postUnmarshal
+        // after all objects have been unmarshaled.
+        //
+        if(!_objectList)
+        {
+            _objectList = new ObjectList;
+        }
+        _objectList->push_back(v);
 
 	v->__read(this, false);
 	patchPointers(index, unmarshaledPos, _currentReadEncaps->patchMap->end());
@@ -1381,14 +1400,15 @@ IceInternal::BasicStream::throwException()
 		traceSlicing("exception", id, _slicingCat, _instance->logger());
 	    }
 	    skipSlice(); // Slice off what we don't understand.
-	    read(id);  // Read type id for next slice.
+	    read(id); // Read type id for next slice.
 	}
     }
+
     //
-    // Getting here should be impossible: we can get here only if the
-    // sender has marshaled a sequence of type IDs, none of which we
-    // have factory for. This means that sender and receiver disagree
-    // about the Slice definitions they use.
+    // We can get here only if the sender has marshaled a sequence of
+    // type IDs, none of which we have factory for. This means that
+    // sender and receiver disagree about the Slice definitions they
+    // use.
     //
     throw UnknownUserException(__FILE__, __LINE__);
 }
@@ -1444,12 +1464,49 @@ IceInternal::BasicStream::readPendingObjects()
 	}
     }
     while(num);
+
+    //
+    // Iterate over the object list and invoke ice_postUnmarshal on each object.
+    // We must do this after all objects have been unmarshaled in order to ensure
+    // that any object data members have been properly patched.
+    //
+    if(_objectList)
+    {
+        for(ObjectList::iterator p = _objectList->begin(); p != _objectList->end(); ++p)
+        {
+            try
+            {
+                (*p)->ice_postUnmarshal();
+            }
+            catch(const Ice::Exception& ex)
+            {
+                Ice::Warning out(_instance->logger());
+                out << "Ice::Exception raised by ice_postUnmarshal:\n" << ex;
+            }
+            catch(const std::exception& ex)
+            {
+                Ice::Warning out(_instance->logger());
+                out << "std::exception raised by ice_postUnmarshal:\n" << ex.what();
+            }
+            catch(...)
+            {
+                Ice::Warning out(_instance->logger());
+                out << "unknown exception raised by ice_postUnmarshal";
+            }
+        }
+    }
 }
 
 void
 IceInternal::BasicStream::marshalFacets(bool doMarshal)
 {
     _marshalFacets = doMarshal;
+}
+
+void
+IceInternal::BasicStream::sliceObjects(bool doSlice)
+{
+    _sliceObjects = doSlice;
 }
 
 void
@@ -1468,6 +1525,25 @@ void
 IceInternal::BasicStream::writeInstance(const ObjectPtr& v, Int index)
 {
     write(index);
+    try
+    {
+        v->ice_preMarshal();
+    }
+    catch(const Ice::Exception& ex)
+    {
+        Ice::Warning out(_instance->logger());
+        out << "Ice::Exception raised by ice_preMarshal:\n" << ex;
+    }
+    catch(const std::exception& ex)
+    {
+        Ice::Warning out(_instance->logger());
+        out << "std::exception raised by ice_preMarshal:\n" << ex.what();
+    }
+    catch(...)
+    {
+        Ice::Warning out(_instance->logger());
+        out << "unknown exception raised by ice_preMarshal";
+    }
     v->__write(this, _marshalFacets);
 }
 

@@ -48,7 +48,7 @@ private:
 };
 
 FreezeGenerator::FreezeGenerator(const string& prog, const string& dir)
-    : JavaGenerator(dir, string()),
+    : JavaGenerator(dir),
       _prog(prog)
 {
 }
@@ -244,8 +244,11 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
         out << sp << nl << "public Object" << nl << "decode" << keyValue
             << "(byte[] b, Ice.Communicator communicator)";
         out << sb;
-        out << nl << "IceInternal.BasicStream __is = "
-            << "new IceInternal.BasicStream(Ice.Util.getInstance(communicator));";
+        out << nl << "IceInternal.BasicStream __is = new IceInternal.BasicStream(Ice.Util.getInstance(communicator));";
+        if(type->usesClasses())
+        {
+            out << nl << "__is.sliceObjects(false);";
+        }
         out << nl << "try";
         out << sb;
         out << nl << "__is.resize(b.length, true);";
@@ -497,12 +500,14 @@ FreezeGenerator::generate(UnitPtr& u, const Index& index)
     //
     // Key marshalling
     //
+    string typeString = typeToString(type, TypeModeIn);
+
     out << sp << nl << "protected byte[]" << nl 
 	<< "marshalKey(Ice.Object __servant)";
     out << sb;
-    out << nl << "if(__servant instanceof " << index.type << ")";
+    out << nl << "if(__servant instanceof " << typeString << ")";
     out << sb;
-    out << nl <<  memberTypeString << " __key = ((" << index.type << ")__servant)." << index.member << ";"; 
+    out << nl <<  memberTypeString << " __key = ((" << typeString << ")__servant)." << index.member << ";"; 
     out << nl << "return marshalKey(__key);";
     out << eb;
     out << nl << "else";
@@ -899,6 +904,8 @@ main(int argc, char* argv[])
         u->sort();
 
         FreezeGenerator gen(argv[0], output);
+
+        JavaGenerator::validateMetaData(u);
 
         for(vector<Dict>::const_iterator p = dicts.begin(); p != dicts.end(); ++p)
         {

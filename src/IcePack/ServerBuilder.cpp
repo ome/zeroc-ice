@@ -19,6 +19,8 @@
 #include <IcePack/AdapterFactory.h>
 #include <IcePack/ServerFactory.h>
 
+#include <iterator>
+
 using namespace std;
 using namespace IcePack;
 
@@ -252,9 +254,9 @@ IcePack::ServerHandler::startElement(const string& name, const IceXML::Attribute
 	    // TODO: is the server name a good category?
 	    //
 	    _builder.addProperty("IceBox.ServiceManager.Identity", _builder.substitute("${name}/ServiceManager"));
-	    
+
 	    _builder.registerAdapter("IceBox.ServiceManager", 
-				     getAttributeValue(attrs, "endpoints"),
+				     getAttributeValue(attrs, "endpoints"), true,
 				     _builder.getDefaultAdapterId("IceBox.ServiceManager"));
 	}
 	else if(kind == "java-icebox")
@@ -269,7 +271,7 @@ IcePack::ServerHandler::startElement(const string& name, const IceXML::Attribute
 	    _builder.addProperty("IceBox.ServiceManager.Identity", _builder.substitute("${name}/ServiceManager"));
 
 	    _builder.registerAdapter("IceBox.ServiceManager", 
-				     getAttributeValue(attrs, "endpoints"),
+				     getAttributeValue(attrs, "endpoints"), true,
 				     _builder.getDefaultAdapterId("IceBox.ServiceManager"));
 	}
     }
@@ -284,7 +286,9 @@ IcePack::ServerHandler::startElement(const string& name, const IceXML::Attribute
     {
 	assert(!_currentAdapterId.empty());
 	string adapterName = getAttributeValue(attrs, "name");
-	_builder.registerAdapter(adapterName, getAttributeValue(attrs, "endpoints"), _currentAdapterId);
+        bool registerProcess = getAttributeValueWithDefault(attrs, "register", "false") == "true";
+	_builder.registerAdapter(adapterName, getAttributeValue(attrs, "endpoints"), registerProcess,
+                                 _currentAdapterId);
     }
 }
 
@@ -379,6 +383,13 @@ IcePack::ServerBuilder::parse(const std::string& descriptor)
 	{
 	    _description.args.insert(_description.args.begin(), *p);
 	}
+    }
+
+    if(_kind == ServerKindCppIceBox || _kind == ServerKindJavaIceBox)
+    {
+	ostringstream os;
+	copy(_serviceNames.begin(), _serviceNames.end(), ostream_iterator<string>(os," "));
+	addProperty("IceBox.LoadOrder", os.str());
     }
 
     _description.args.push_back("--Ice.Config=" + _configFile);
@@ -524,7 +535,8 @@ IcePack::ServerBuilder::registerServer()
 }
 
 void
-IcePack::ServerBuilder::registerAdapter(const string& name, const string& endpoints, const string& adapterId)
+IcePack::ServerBuilder::registerAdapter(const string& name, const string& endpoints, bool registerProcess,
+                                        const string& adapterId)
 {
     AdapterRegistryPrx adapterRegistry = _nodeInfo->getAdapterRegistry();
     if(!adapterRegistry)
@@ -559,6 +571,10 @@ IcePack::ServerBuilder::registerAdapter(const string& name, const string& endpoi
     //
     addProperty(name + ".Endpoints", endpoints);
     addProperty(name + ".AdapterId", adapterId);
+    if(registerProcess)
+    {
+        addProperty(name + ".RegisterProcess", "1");
+    }
 }
 
 void
@@ -600,6 +616,8 @@ IcePack::ServerBuilder::addService(const string& name, const string& descriptor,
     TaskPtr t = task;
     task->parse(toLocation(descriptor));
     _tasks.push_back(t);
+
+    _serviceNames.push_back(name);
 }
 
 void

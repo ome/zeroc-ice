@@ -40,6 +40,8 @@ public:
 
     bool isConfigured();
 
+    void cleanUp();
+
     virtual void setCertificateVerifier(const CertificateVerifierPtr&);
 
     virtual void addTrustedCertificateBase64(const std::string&);
@@ -59,7 +61,7 @@ public:
 
 protected:
 
-    Context(const TraceLevelsPtr&, const Ice::CommunicatorPtr&);
+    Context(const TraceLevelsPtr&, const Ice::CommunicatorPtr&, const ContextType&);
 
     SSL_METHOD* getSslMethod(SslProtocol);
     void createContext(SslProtocol);
@@ -90,6 +92,7 @@ protected:
 
     TraceLevelsPtr _traceLevels;
     Ice::CommunicatorPtr _communicator;
+    ContextType _contextType;
 
     std::string _rsaPrivateKeyProperty;
     std::string _rsaPublicKeyProperty;

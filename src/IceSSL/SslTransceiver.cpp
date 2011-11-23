@@ -54,6 +54,12 @@ IceSSL::SslTransceiver::fd()
 void
 IceSSL::SslTransceiver::close()
 {
+    if(_fd == INVALID_SOCKET)
+    {
+        // Ignore - the connection was never set up.
+        return;
+    }
+
     if(_traceLevels->network >= 1)
     {
    	Trace out(_logger, _traceLevels->networkCat);
@@ -78,8 +84,16 @@ IceSSL::SslTransceiver::close()
     }
 
     assert(_fd != INVALID_SOCKET);
-    closeSocket(_fd);
-    _fd = INVALID_SOCKET;
+    try
+    {
+	closeSocket(_fd);
+	_fd = INVALID_SOCKET;
+    }
+    catch(const SocketException&)
+    {
+	_fd = INVALID_SOCKET;
+	throw;
+    }
 }
 
 void
@@ -102,7 +116,7 @@ IceSSL::SslTransceiver::shutdown()
     while((shutdown == 0) && (retries < 0));
 
     assert(_fd != INVALID_SOCKET);
-    ::shutdown(_fd, SHUT_WR); // Shutdown socket for writing
+    shutdownSocket(_fd);
 }
 
 void
@@ -220,6 +234,17 @@ IceSSL::SslTransceiver::read(Buffer& buf, int timeout)
 
                     if(connectionLost())
                     {
+			//
+			// If the connection is lost when reading data, we shut
+			// down the write end of the socket. This helps to unblock
+			// threads that are stuck in send() or select() while
+			// sending data. Note: I don't really understand why
+			// send() or select() sometimes don't detect a connection
+			// loss. Therefore this helper to make them detect it.
+			//
+			//assert(_fd != INVALID_SOCKET);
+			//shutdownSocket(_fd);
+
                         ConnectionLostException ex(__FILE__, __LINE__);
                         ex.error = getSocketErrno();
                         throw ex;
@@ -231,6 +256,14 @@ IceSSL::SslTransceiver::read(Buffer& buf, int timeout)
                 }
                 else // (bytesRead == 0)
                 {
+		    //
+		    // See the commment above about shutting down the
+		    // socket if the connection is lost while reading
+		    // data.
+		    //
+		    //assert(_fd != INVALID_SOCKET);
+		    //shutdownSocket(_fd);
+
                     ConnectionLostException ex(__FILE__, __LINE__);
                     ex.error = 0;
                     throw ex;
@@ -249,6 +282,14 @@ IceSSL::SslTransceiver::read(Buffer& buf, int timeout)
 
             case SSL_ERROR_ZERO_RETURN:
             {
+		//
+		// See the commment above about shutting down the
+		// socket if the connection is lost while reading
+		// data.
+		//
+		//assert(_fd != INVALID_SOCKET);
+		//shutdownSocket(_fd);
+
                 // Indicates that that the SSL Connection has been closed.
                 // But does not necessarily indicate that the underlying transport
                 // has been closed (in the case of Ice, it definitely hasn't yet).
@@ -306,6 +347,8 @@ IceSSL::SslTransceiver::forceHandshake()
  	    Trace out(_logger, _traceLevels->securityCat);
             out << "Handshake retry maximum reached.\n" << toString();
         }
+
+        close();
 
         // If the handshake fails, the connection failed.
         ConnectFailedException ex(__FILE__, __LINE__);
@@ -453,7 +496,7 @@ IceSSL::SslTransceiver::internalShutdown(int timeout)
     if(retCode == 1)
     {
         // Shutdown successful - shut down the socket for writing.
-        ::shutdown(SSL_get_fd(_sslConnection), SHUT_WR);
+	shutdownSocket(SSL_get_fd(_sslConnection));
     }
     else if(retCode == -1)
     {

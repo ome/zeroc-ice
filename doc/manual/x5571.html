@@ -1,0 +1,1782 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Freeze::Evictor</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Freeze::EmptyFacetPathException"
+HREF="x5557.html"><LINK
+REL="NEXT"
+TITLE="Freeze::EvictorDeactivatedException"
+HREF="x6083.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x5557.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x6083.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR"
+></A
+><TT
+CLASS="LITERAL"
+>Freeze::Evictor</TT
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN5574"
+></A
+>Overview</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local interface <TT
+CLASS="CLASSNAME"
+>Evictor</TT
+>
+    extends 
+	<A
+HREF="x4599.html"
+><SPAN
+CLASS="TYPE"
+>::Ice::ServantLocator</SPAN
+></A
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>An automatic <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object persistence manager, based on the
+evictor pattern. The evictor is a servant locator implementation
+that stores the persistent state of its objects in a database. Any
+number of objects can be registered with an evictor, but only a
+configurable number of servants are active at a time.  These active
+servants reside in a queue; the least recently used servant in the
+queue is the first to be evicted when a new servant is activated.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5582"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x6280.html"
+><TT
+CLASS="CLASSNAME"
+>ServantInitializer</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5589"
+></A
+>Operation Index</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x5571.html#FREEZE.EVICTOR.ADDFACET"
+><TT
+CLASS="FUNCTION"
+>addFacet</TT
+></A
+></DT
+><DD
+><P
+>Adds a new persistent facet to this object.</P
+></DD
+><DT
+><A
+HREF="x5571.html#FREEZE.EVICTOR.CREATEOBJECT"
+><TT
+CLASS="FUNCTION"
+>createObject</TT
+></A
+></DT
+><DD
+><P
+>Create a new <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object for this evictor.</P
+></DD
+><DT
+><A
+HREF="x5571.html#FREEZE.EVICTOR.DESTROYOBJECT"
+><TT
+CLASS="FUNCTION"
+>destroyObject</TT
+></A
+></DT
+><DD
+><P
+>Permanently destroy an <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object by removing it from the
+evictor's persistent store.</P
+></DD
+><DT
+><A
+HREF="x5571.html#FREEZE.EVICTOR.GETITERATOR"
+><TT
+CLASS="FUNCTION"
+>getIterator</TT
+></A
+></DT
+><DD
+><P
+>Get an iterator for the identities managed by the evictor.</P
+></DD
+><DT
+><A
+HREF="x5571.html#FREEZE.EVICTOR.GETSIZE"
+><TT
+CLASS="FUNCTION"
+>getSize</TT
+></A
+></DT
+><DD
+><P
+>Get the size of the evictor's servant queue.</P
+></DD
+><DT
+><A
+HREF="x5571.html#FREEZE.EVICTOR.HASOBJECT"
+><TT
+CLASS="FUNCTION"
+>hasObject</TT
+></A
+></DT
+><DD
+><P
+>Returns true if the given identity is managed by the evictor.</P
+></DD
+><DT
+><A
+HREF="x5571.html#FREEZE.EVICTOR.INSTALLSERVANTINITIALIZER"
+><TT
+CLASS="FUNCTION"
+>installServantInitializer</TT
+></A
+></DT
+><DD
+><P
+>Install a servant initializer for this evictor.</P
+></DD
+><DT
+><A
+HREF="x5571.html#FREEZE.EVICTOR.REMOVEALLFACETS"
+><TT
+CLASS="FUNCTION"
+>removeAllFacets</TT
+></A
+></DT
+><DD
+><P
+>Permanently remove all the facets from the object.</P
+></DD
+><DT
+><A
+HREF="x5571.html#FREEZE.EVICTOR.REMOVEFACET"
+><TT
+CLASS="FUNCTION"
+>removeFacet</TT
+></A
+></DT
+><DD
+><P
+>Permanently remove this facet from the object.</P
+></DD
+><DT
+><A
+HREF="x5571.html#FREEZE.EVICTOR.SETSIZE"
+><TT
+CLASS="FUNCTION"
+>setSize</TT
+></A
+></DT
+><DD
+><P
+>Set the size of the evictor's servant queue.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.ADDFACET"
+></A
+><TT
+CLASS="LITERAL"
+>addFacet</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>addFacet</TT
+>(<A
+HREF="x2106.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+>,
+    <A
+HREF="x77.html#ICE.FACETPATH"
+><SPAN
+CLASS="TYPE"
+>::Ice::FacetPath</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>facet</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Adds a new persistent facet to this object.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5669"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the target <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>facet</I
+></TT
+></DT
+><DD
+><P
+>			    The facet path.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+></DT
+><DD
+><P
+>			    The servant for the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5689"
+></A
+>Exceptions</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x5501.html"
+><TT
+CLASS="CLASSNAME"
+>DatabaseException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a database failure occurred.</P
+></DD
+><DT
+><A
+HREF="x6083.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+><DT
+><A
+HREF="x5557.html"
+><TT
+CLASS="CLASSNAME"
+>EmptyFacetPathException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if the facet path is
+empty.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5710"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2106.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+>, <A
+HREF="x5571.html#FREEZE.EVICTOR.REMOVEFACET"
+><TT
+CLASS="FUNCTION"
+>removeFacet</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.CREATEOBJECT"
+></A
+><TT
+CLASS="LITERAL"
+>createObject</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>createObject</TT
+>(<A
+HREF="x2106.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Create a new <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object for this evictor. The state of the
+servant passed to this operation is saved in the evictor's
+persistent store.
+If the object already exists, it is updated.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5733"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object to create.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+></DT
+><DD
+><P
+>			    The servant for the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5748"
+></A
+>Exceptions</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x5501.html"
+><TT
+CLASS="CLASSNAME"
+>DatabaseException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a database failure occurred.</P
+></DD
+><DT
+><A
+HREF="x6083.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5763"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2106.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+>, <A
+HREF="x5571.html#FREEZE.EVICTOR.DESTROYOBJECT"
+><TT
+CLASS="FUNCTION"
+>destroyObject</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.DESTROYOBJECT"
+></A
+><TT
+CLASS="LITERAL"
+>destroyObject</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>destroyObject</TT
+>(<A
+HREF="x2106.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Permanently destroy an <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object by removing it from the
+evictor's persistent store. If the object does not exist,
+this operation does nothing.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5784"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object to destroy.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5793"
+></A
+>Exceptions</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x5501.html"
+><TT
+CLASS="CLASSNAME"
+>DatabaseException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a database failure occurred.</P
+></DD
+><DT
+><A
+HREF="x6083.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5808"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2106.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+>, <A
+HREF="x5571.html#FREEZE.EVICTOR.CREATEOBJECT"
+><TT
+CLASS="FUNCTION"
+>createObject</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.GETITERATOR"
+></A
+><TT
+CLASS="LITERAL"
+>getIterator</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x6091.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorIterator</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>getIterator</TT
+>(<SPAN
+CLASS="TYPE"
+>int</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>batchSize</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>bool</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>loadServants</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get an iterator for the identities managed by the evictor.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5830"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>batchSize</I
+></TT
+></DT
+><DD
+><P
+>			    Internally, the Iterator retrieves the
+identities in batches of size batchSize. Selecting a small batchSize
+can have an adverse effect on performance.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>loadServants</I
+></TT
+></DT
+><DD
+><P
+>			    If true, attempt to load the corresponding 
+servants in the Evictor. The servants may not be loaded if a
+save occurs while the batch is retrieved.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5843"
+></A
+>Return Value</H3
+><P
+>		A new iterator.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5846"
+></A
+>Exceptions</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x6083.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.GETSIZE"
+></A
+><TT
+CLASS="LITERAL"
+>getSize</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>int</SPAN
+> <TT
+CLASS="FUNCTION"
+>getSize</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the size of the evictor's servant queue.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5862"
+></A
+>Return Value</H3
+><P
+>		The size of the servant queue.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5865"
+></A
+>Exceptions</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x6083.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5874"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x5571.html#FREEZE.EVICTOR.SETSIZE"
+><TT
+CLASS="FUNCTION"
+>setSize</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.HASOBJECT"
+></A
+><TT
+CLASS="LITERAL"
+>hasObject</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>bool</SPAN
+> <TT
+CLASS="FUNCTION"
+>hasObject</TT
+>(<A
+HREF="x2106.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>ident</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Returns true if the given identity is managed by the evictor.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5891"
+></A
+>Return Value</H3
+><P
+>		true if the identity is managed by the evictor, false
+otherwise.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5894"
+></A
+>Exceptions</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x5501.html"
+><TT
+CLASS="CLASSNAME"
+>DatabaseException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a database failure occurred.</P
+></DD
+><DT
+><A
+HREF="x6083.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.INSTALLSERVANTINITIALIZER"
+></A
+><TT
+CLASS="LITERAL"
+>installServantInitializer</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>installServantInitializer</TT
+>(<A
+HREF="x6280.html"
+><TT
+CLASS="CLASSNAME"
+>ServantInitializer</TT
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>initializer</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Install a servant initializer for this evictor.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5919"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>initializer</I
+></TT
+></DT
+><DD
+><P
+>			    The servant initializer to install.
+Subsequent calls overwrite any previously set value. A null
+value removes an existing servant initializer.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5927"
+></A
+>Exceptions</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x6083.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5936"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x6280.html"
+><TT
+CLASS="CLASSNAME"
+>ServantInitializer</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.REMOVEALLFACETS"
+></A
+><TT
+CLASS="LITERAL"
+>removeAllFacets</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>removeAllFacets</TT
+>(<A
+HREF="x2106.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Permanently remove all the facets from the object.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5953"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the target <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5962"
+></A
+>Exceptions</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x5501.html"
+><TT
+CLASS="CLASSNAME"
+>DatabaseException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a database failure occurred.</P
+></DD
+><DT
+><A
+HREF="x6083.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN5977"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2106.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+>, <A
+HREF="x5571.html#FREEZE.EVICTOR.REMOVEFACET"
+><TT
+CLASS="FUNCTION"
+>removeFacet</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.REMOVEFACET"
+></A
+><TT
+CLASS="LITERAL"
+>removeFacet</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="FUNCTION"
+>removeFacet</TT
+>(<A
+HREF="x2106.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+>,
+    <A
+HREF="x77.html#ICE.FACETPATH"
+><SPAN
+CLASS="TYPE"
+>::Ice::FacetPath</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>facet</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Permanently remove this facet from the object.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN6000"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the target <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>facet</I
+></TT
+></DT
+><DD
+><P
+>			    The facet path.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN6014"
+></A
+>Return Value</H3
+><P
+>		The removed facet.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN6017"
+></A
+>Exceptions</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x5501.html"
+><TT
+CLASS="CLASSNAME"
+>DatabaseException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a database failure occurred.</P
+></DD
+><DT
+><A
+HREF="x6083.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+><DT
+><A
+HREF="x5557.html"
+><TT
+CLASS="CLASSNAME"
+>EmptyFacetPathException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if the facet path is
+empty.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN6038"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2106.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+>, <A
+HREF="x5571.html#FREEZE.EVICTOR.ADDFACET"
+><TT
+CLASS="FUNCTION"
+>addFacet</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.SETSIZE"
+></A
+><TT
+CLASS="LITERAL"
+>setSize</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>setSize</TT
+>(<SPAN
+CLASS="TYPE"
+>int</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>sz</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Set the size of the evictor's servant queue. This is the
+maximum number of servants the evictor keeps active. Requests
+to set the queue size to a value smaller than zero are ignored.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN6057"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>sz</I
+></TT
+></DT
+><DD
+><P
+>			    The size of the servant queue. If the evictor
+currently holds more than <A
+HREF="x5571.html#FREEZE.EVICTOR.SETSIZE"
+><TT
+CLASS="FUNCTION"
+>setSize</TT
+></A
+> servants in its queue, it evicts
+enough servants to match the new size. Note that this operation
+can block if the new queue size is smaller than the current
+number of servants that are servicing requests. In this case,
+the operation waits until a sufficient number of servants
+complete their requests.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN6067"
+></A
+>Exceptions</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x6083.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN6076"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x5571.html#FREEZE.EVICTOR.GETSIZE"
+><TT
+CLASS="FUNCTION"
+>getSize</TT
+></A
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x5557.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x6083.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Freeze::EmptyFacetPathException</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Freeze::EvictorDeactivatedException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

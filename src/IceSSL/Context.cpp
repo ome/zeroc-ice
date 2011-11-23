@@ -37,12 +37,7 @@ void IceInternal::decRef(::IceSSL::Context* p) { p->__decRef(); }
 
 IceSSL::Context::~Context()
 {
-    if(_sslContext != 0)
-    {
-        SSL_CTX_free(_sslContext);
-
-        _sslContext = 0;
-    }
+    cleanUp();
 }
 
 bool
@@ -52,9 +47,21 @@ IceSSL::Context::isConfigured()
 }
 
 void
+IceSSL::Context::cleanUp()
+{
+    if(_sslContext != 0)
+    {
+        SSL_CTX_free(_sslContext);
+
+        _sslContext = 0;
+    }
+}
+
+void
 IceSSL::Context::setCertificateVerifier(const CertificateVerifierPtr& verifier)
 {
     _certificateVerifier = verifier;
+    _certificateVerifier->setContext(_contextType);
 }
 
 void
@@ -74,8 +81,7 @@ IceSSL::Context::addTrustedCertificate(const Ice::ByteSeq& trustedCert)
 }
 
 void
-IceSSL::Context::setRSAKeysBase64(const string& privateKey,
-                                           const string& publicKey)
+IceSSL::Context::setRSAKeysBase64(const string& privateKey, const string& publicKey)
 {
     if(privateKey.empty())
     {
@@ -148,11 +154,14 @@ IceSSL::Context::configure(const GeneralConfig& generalConfig,
 // Protected
 //
 
-IceSSL::Context::Context(const TraceLevelsPtr& traceLevels, const CommunicatorPtr& communicator) :
+IceSSL::Context::Context(const TraceLevelsPtr& traceLevels, const CommunicatorPtr& communicator,
+                         const ContextType& type) :
     _traceLevels(traceLevels),
-    _communicator(communicator)
+    _communicator(communicator),
+    _contextType(type)
 {
     _certificateVerifier = new DefaultCertificateVerifier(traceLevels, communicator);
+    _certificateVerifier->setContext(_contextType);
     _sslContext = 0;
 
     _maxPassphraseRetriesDefault = "4";
@@ -242,7 +251,7 @@ IceSSL::Context::loadCertificateAuthority(const CertificateAuthority& certAuth)
         caFile = fileName.c_str();
     }
 
-    if(!certPath.length())
+    if(!certPath.empty())
     {
         caPath = certPath.c_str();
     }
@@ -264,7 +273,6 @@ IceSSL::Context::loadCertificateAuthority(const CertificateAuthority& certAuth)
     {
         int setDefaultVerifyPathsRet = SSL_CTX_set_default_verify_paths(_sslContext);
 
-
         if(!setDefaultVerifyPathsRet && (_traceLevels->security >= IceSSL::SECURITY_WARNINGS))
         { 
             Trace out(_communicator->getLogger(), _traceLevels->securityCat);
@@ -282,8 +290,8 @@ IceSSL::Context::loadCertificateAuthority(const CertificateAuthority& certAuth)
 
 void
 IceSSL::Context::setKeyCert(const CertificateDesc& certDesc,
-                                     const string& privateProperty,
-                                     const string& publicProperty)
+                            const string& privateProperty,
+                            const string& publicProperty)
 {
     string privateKey;
     string publicKey;
@@ -607,8 +615,18 @@ void
 IceSSL::Context::transceiverSetup(const SslTransceiverPtr& transceiver, int timeout)
 {
     // This timeout is implemented once on the first read after hanshake.
+    //
+    // Note: This is here because of some strange issue where SSL sometimes has long pauses
+    //       during handshake which cause timeouts.  If the IceSSL timeout is less than 5s,
+    //       there is a possibility (increasing in probability as you set the timeout lower)
+    //       that the handshake will faile due to a timeout.
+    //
     transceiver->setHandshakeReadTimeout(timeout < 5000 ? 5000 : timeout);
 
+    // Note: Likewise, because the handshake has to be completed by a single thread, we do
+    //       handshake retries in the Transceiver.  This is obviously not what we'd like, but
+    //       this is due to the way the OpenSSL library handles handshaking.
+    //
     int retries = _communicator->getProperties()->getPropertyAsIntWithDefault(_connectionHandshakeRetries, 10);
     transceiver->setHandshakeRetries(retries);
 }

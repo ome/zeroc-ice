@@ -15,6 +15,10 @@
 #ifndef ICE_NETWORK_H
 #define ICE_NETWORK_H
 
+#ifdef __hpux
+#   define _XOPEN_SOURCE_EXTENDED
+#endif
+
 #include <Ice/Config.h>
 
 #ifdef _WIN32
@@ -24,7 +28,13 @@ typedef int ssize_t;
 #   include <unistd.h>
 #   include <fcntl.h>
 #   include <sys/socket.h>
-#   include <sys/select.h>
+
+#   if defined(__hpux)
+#      include <sys/time.h>
+#   else   
+#      include <sys/select.h>
+#   endif
+
 #   include <netinet/in.h>
 #   include <netinet/tcp.h>
 #   include <arpa/inet.h>
@@ -76,6 +86,7 @@ ICE_PROTOCOL_API bool recvTruncated();
 
 ICE_PROTOCOL_API SOCKET createSocket(bool);
 ICE_PROTOCOL_API void closeSocket(SOCKET);
+ICE_PROTOCOL_API void shutdownSocket(SOCKET);
 
 ICE_PROTOCOL_API void setBlock(SOCKET, bool);
 ICE_PROTOCOL_API void setTcpNoDelay(SOCKET);
@@ -99,7 +110,6 @@ ICE_PROTOCOL_API void createPipe(SOCKET fds[2]);
 ICE_PROTOCOL_API std::string errorToString(int);
 ICE_PROTOCOL_API std::string errorToStringDNS(int);
 ICE_PROTOCOL_API std::string lastErrorToString();
-ICE_PROTOCOL_API std::string lastErrorToStringDNS();
 
 ICE_PROTOCOL_API std::string fdToString(SOCKET);
 ICE_PROTOCOL_API std::string addrToString(const struct sockaddr_in&);

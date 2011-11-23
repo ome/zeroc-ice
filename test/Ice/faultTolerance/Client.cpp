@@ -47,8 +47,17 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 	return EXIT_FAILURE;
     }
 
-    void allTests(const Ice::CommunicatorPtr&, const vector<int>&);
-    allTests(communicator, ports);
+    try
+    {
+	void allTests(const Ice::CommunicatorPtr&, const vector<int>&);
+	allTests(communicator, ports);
+    }
+    catch(const Ice::Exception& ex)
+    {
+	cout << ex << endl;
+	test(false);
+    }
+
     return EXIT_SUCCESS;
 }
 
@@ -60,6 +69,13 @@ main(int argc, char* argv[])
 
     try
     {
+	Ice::PropertiesPtr properties = Ice::getDefaultProperties(argc, argv);
+
+	//
+	// This test aborts servers, so we don't want warnings.
+	//
+	properties->setProperty("Ice.Warn.Connections", "0");
+
 	communicator = Ice::initialize(argc, argv);
 	status = run(argc, argv, communicator);
     }

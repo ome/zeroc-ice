@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Ice::Current</TITLE
+>Ice::ConnectionTimeoutException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
@@ -14,11 +14,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Ice::ConnectionTimeoutException"
+TITLE="Ice::ConnectionNotValidatedException"
 HREF="x1864.html"><LINK
 REL="NEXT"
-TITLE="Ice::DNSException"
-HREF="x1995.html"></HEAD
+TITLE="Ice::Current"
+HREF="x1888.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -60,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x1995.html"
+HREF="x1888.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -74,11 +74,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICE.CURRENT"
+NAME="ICE.CONNECTIONTIMEOUTEXCEPTION"
 ></A
 ><TT
 CLASS="LITERAL"
->Ice::Current</TT
+>Ice::ConnectionTimeoutException</TT
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -96,401 +96,31 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->local struct <SPAN
-CLASS="STRUCTNAME"
->Current</SPAN
+>local exception <TT
+CLASS="CLASSNAME"
+>ConnectionTimeoutException</TT
+>
+    extends 
+	<A
+HREF="x4942.html"
+><TT
+CLASS="CLASSNAME"
+>TimeoutException</TT
+></A
 ></PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->Information about the current method invocation for servers. Each
-operation on the server has a <A
-HREF="x1876.html"
-><SPAN
-CLASS="STRUCTNAME"
->Current</SPAN
-></A
-> as its implicit final
-parameter. <A
-HREF="x1876.html"
-><SPAN
-CLASS="STRUCTNAME"
->Current</SPAN
-></A
-> is mostly used for <SPAN
-CLASS="phrase"
-><SPAN
-CLASS="PHRASE"
->Ice</SPAN
-></SPAN
-> services, such as
-<SPAN
-CLASS="phrase"
-><SPAN
-CLASS="PHRASE"
->IceStorm</SPAN
-></SPAN
->. Most applications ignore this parameter.</P
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN1890"
-></A
->Used By</H3
-><P
->	    <A
-HREF="x4494.html#ICE.SERVANTLOCATOR.FINISHED"
-><TT
-CLASS="FUNCTION"
->ServantLocator::finished</TT
-></A
->, <A
-HREF="x4494.html#ICE.SERVANTLOCATOR.LOCATE"
-><TT
-CLASS="FUNCTION"
->ServantLocator::locate</TT
-></A
-></P
-></DIV
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN1900"
-></A
->See Also</H3
-><P
->	    <A
-HREF="x9690.html"
-><SPAN
-CLASS="TYPE"
->::IceStorm</SPAN
-></A
-></P
-></DIV
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN1907"
-></A
->Data Member Index</H3
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
-><A
-HREF="x1876.html#ICE.CURRENT.ADAPTER"
-><SPAN
-CLASS="TYPE"
->adapter</SPAN
-></A
-></DT
-><DD
-><P
->The object adapter.</P
-></DD
-><DT
-><A
-HREF="x1876.html#ICE.CURRENT.CTX"
-><SPAN
-CLASS="TYPE"
->ctx</SPAN
-></A
-></DT
-><DD
-><P
->The request context, as received from the client.</P
-></DD
-><DT
-><A
-HREF="x1876.html#ICE.CURRENT.FACET"
-><SPAN
-CLASS="TYPE"
->facet</SPAN
-></A
-></DT
-><DD
-><P
->The facet.</P
-></DD
-><DT
-><A
-HREF="x1876.html#ICE.CURRENT.ID"
-><SPAN
-CLASS="TYPE"
->id</SPAN
-></A
-></DT
-><DD
-><P
->The <SPAN
-CLASS="phrase"
-><SPAN
-CLASS="PHRASE"
->Ice</SPAN
-></SPAN
-> object identity.</P
-></DD
-><DT
-><A
-HREF="x1876.html#ICE.CURRENT.MODE"
-><SPAN
-CLASS="TYPE"
->mode</SPAN
-></A
-></DT
-><DD
-><P
->The mode of the operation.</P
-></DD
-><DT
-><A
-HREF="x1876.html#ICE.CURRENT.OPERATION"
-><SPAN
-CLASS="TYPE"
->operation</SPAN
-></A
-></DT
-><DD
-><P
->The operation name.</P
-></DD
-></DL
-></DIV
-></DIV
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICE.CURRENT.ADAPTER"
-></A
-><TT
-CLASS="LITERAL"
->adapter</TT
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><A
-HREF="x2747.html"
+>This exception is a specialization of <A
+HREF="x4942.html"
 ><TT
 CLASS="CLASSNAME"
->ObjectAdapter</TT
+>TimeoutException</TT
 ></A
-> <TT
-CLASS="STRUCTFIELD"
-><I
->adapter</I
-></TT
->;</PRE
-></TD
-></TR
-></TABLE
-><P
->The object adapter.</P
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICE.CURRENT.CTX"
-></A
-><TT
-CLASS="LITERAL"
->ctx</TT
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><A
-HREF="x77.html#ICE.CONTEXT"
-><SPAN
-CLASS="TYPE"
->Context</SPAN
-></A
-> <TT
-CLASS="STRUCTFIELD"
-><I
->ctx</I
-></TT
->;</PRE
-></TD
-></TR
-></TABLE
-><P
->The request context, as received from the client.</P
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICE.CURRENT.FACET"
-></A
-><TT
-CLASS="LITERAL"
->facet</TT
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><A
-HREF="x77.html#ICE.FACETPATH"
-><SPAN
-CLASS="TYPE"
->FacetPath</SPAN
-></A
-> <TT
-CLASS="STRUCTFIELD"
-><I
->facet</I
-></TT
->;</PRE
-></TD
-></TR
-></TABLE
-><P
->The facet.</P
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICE.CURRENT.ID"
-></A
-><TT
-CLASS="LITERAL"
->id</TT
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><A
-HREF="x2094.html"
-><SPAN
-CLASS="STRUCTNAME"
->Identity</SPAN
-></A
-> <TT
-CLASS="STRUCTFIELD"
-><I
->id</I
-></TT
->;</PRE
-></TD
-></TR
-></TABLE
-><P
->The <SPAN
-CLASS="phrase"
-><SPAN
-CLASS="PHRASE"
->Ice</SPAN
-></SPAN
-> object identity.</P
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICE.CURRENT.MODE"
-></A
-><TT
-CLASS="LITERAL"
->mode</TT
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><A
-HREF="x3650.html"
-><SPAN
-CLASS="TYPE"
->OperationMode</SPAN
-></A
-> <TT
-CLASS="STRUCTFIELD"
-><I
->mode</I
-></TT
->;</PRE
-></TD
-></TR
-></TABLE
-><P
->The mode of the operation.</P
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICE.CURRENT.OPERATION"
-></A
-><TT
-CLASS="LITERAL"
->operation</TT
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><SPAN
-CLASS="TYPE"
->string</SPAN
-> <TT
-CLASS="STRUCTFIELD"
-><I
->operation</I
-></TT
->;</PRE
-></TD
-></TR
-></TABLE
-><P
->The operation name.</P
+>, and
+indicates that a connection has been shut down because it has been
+idle for some time.</P
 ></DIV
 ></DIV
 ><DIV
@@ -527,7 +157,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x1995.html"
+HREF="x1888.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -539,7 +169,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::ConnectionTimeoutException</TT
+>Ice::ConnectionNotValidatedException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -556,7 +186,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::DNSException</TT
+>Ice::Current</TT
 ></TD
 ></TR
 ></TABLE

@@ -15,12 +15,15 @@
 #include <Ice/Ice.h>
 #include <IceStorm/IceStorm.h>
 #include <Event.h>
-#include <fstream>
 
 #include <TestCommon.h>
 
+#include <fcntl.h>
 #ifdef _WIN32
 #   include <io.h>
+#else
+#   include <sys/types.h>
+#   include <sys/stat.h>
 #endif
 
 using namespace std;
@@ -32,45 +35,51 @@ class EventI : public Event
 public:
 
     EventI(const CommunicatorPtr& communicator) :
-	_communicator(communicator),
-	_count(0)
+	_communicator(communicator)
     {
     }
 
-    virtual void pub(const string& data, const Ice::Current&)
+    virtual void
+    pub(const string& data, const Ice::Current&)
     {
-	if(data == "shutdown")
+	IceUtil::StaticMutex::Lock sync(_countMutex);
+
+	if(++_count == 30 + 40 + 30)
 	{
 	    _communicator->shutdown();
-	    return;
 	}
-	++_count;
     }
-
-    int count() const { return _count; }
 
 private:
 
     CommunicatorPtr _communicator;
-    int _count;
+
+    static int _count;
+    static IceUtil::StaticMutex _countMutex;
 };
 
 typedef IceUtil::Handle<EventI> EventIPtr;
 
+int EventI::_count = 0;
+IceUtil::StaticMutex EventI::_countMutex = ICE_STATIC_MUTEX_INITIALIZER;
+
 void
 createLock(const string& name)
 {
-    ofstream f(name.c_str());
+    int fd = open(name.c_str(), O_CREAT | O_WRONLY | O_EXCL, 0777);
+    assert(fd != -1);
+    close(fd);
 }
 
 void
 deleteLock(const string& name)
 {
 #ifdef _WIN32
-    _unlink(name.c_str());
+    int ret = _unlink(name.c_str());
 #else
-    unlink(name.c_str());
+    int ret = unlink(name.c_str());
 #endif
+    assert(ret != -1);
 }
 
 void
@@ -176,10 +185,6 @@ run(int argc, char* argv[], const CommunicatorPtr& communicator)
     createLock(lockfile);
 
     communicator->waitForShutdown();
-
-    test(eventFed1->count() == 30);
-    test(eventFed2->count() == 40);
-    test(eventFed3->count() == 30);
 
     deleteLock(lockfile);
 

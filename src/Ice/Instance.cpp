@@ -36,7 +36,9 @@
 #include <Ice/PluginManagerI.h>
 #include <Ice/Initialize.h>
 
-#ifndef _WIN32
+#ifdef _WIN32
+#   include <Ice/EventLoggerI.h>
+#else
 #   include <Ice/SysLoggerI.h>
 #endif
 
@@ -273,22 +275,6 @@ IceInternal::Instance::clientThreadPool()
 
     if(!_clientThreadPool) // Lazy initialization.
     {
-	//
-	// Make sure that the client thread pool defaults are correctly
-	//
-	if(_properties->getProperty("Ice.ThreadPool.Client.Size").empty())
-	{
-	    _properties->setProperty("Ice.ThreadPool.Client.Size", "1");
-	}
-	if(_properties->getProperty("Ice.ThreadPool.Client.SizeMax").empty())
-	{
-	    _properties->setProperty("Ice.ThreadPool.Client.SizeMax", "1");
-	}
-	if(_properties->getProperty("Ice.ThreadPool.Client.SizeWarn").empty())
-	{
-	    _properties->setProperty("Ice.ThreadPool.Client.SizeWarn", "0");
-	}
-
 	_clientThreadPool = new ThreadPool(this, "Ice.ThreadPool.Client", 0);
     }
 
@@ -360,6 +346,13 @@ IceInternal::Instance::messageSizeMax() const
     return _messageSizeMax;
 }
 
+int
+IceInternal::Instance::connectionIdleTime() const
+{
+    // No mutex lock, immutable.
+    return _connectionIdleTime;
+}
+
 void
 IceInternal::Instance::flushBatchRequests()
 {
@@ -382,20 +375,14 @@ IceInternal::Instance::flushBatchRequests()
     adapterFactory->flushBatchRequests();
 }
 
-IceInternal::Instance::Instance(const CommunicatorPtr& communicator, int& argc, char* argv[],
-                                const PropertiesPtr& properties) :
+IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const PropertiesPtr& properties) :
     _destroyed(false),
-    _properties(properties)
+    _properties(properties),
+    _messageSizeMax(0),
+    _connectionIdleTime(0)
 {
     IceUtil::Mutex::Lock sync(*_globalStateMutex);
     ++_globalStateCounter;
-
-    //
-    // Convert command-line options to properties.
-    //
-    StringSeq args = argsToStringSeq(argc, argv);
-    args = _properties->parseIceCommandLineOptions(args);
-    stringSeqToArgs(args, argc, argv);
 
     try
     {
@@ -403,8 +390,7 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, int& argc, 
 
 	if(_globalStateCounter == 1) // Only on first call
 	{
-	    unsigned int seed = 
-		static_cast<unsigned int>(IceUtil::Time::now().toMicroSeconds());
+	    unsigned int seed = static_cast<unsigned int>(IceUtil::Time::now().toMicroSeconds());
 	    srand(seed);
 	    
 	    if(_properties->getPropertyAsInt("Ice.NullHandleAbort") > 0)
@@ -469,7 +455,17 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, int& argc, 
 #endif
 	}
 
-#ifndef _WIN32
+#ifdef _WIN32
+        if(_properties->getPropertyAsInt("Ice.UseEventLog") > 0)
+        {
+            _logger = new EventLoggerI(_properties->getProperty("Ice.ProgramName"));
+        }
+        else
+        {
+            _logger = new LoggerI(_properties->getProperty("Ice.ProgramName"), 
+                                  _properties->getPropertyAsInt("Ice.Logger.Timestamp") > 0);
+        }
+#else
 	if(_properties->getPropertyAsInt("Ice.UseSyslog") > 0)
 	{
 	    _logger = new SysLoggerI;
@@ -479,9 +475,6 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, int& argc, 
 	    _logger = new LoggerI(_properties->getProperty("Ice.ProgramName"), 
 				  _properties->getPropertyAsInt("Ice.Logger.Timestamp") > 0);
 	}
-#else
-	_logger = new LoggerI(_properties->getProperty("Ice.ProgramName"), 
-			      _properties->getPropertyAsInt("Ice.Logger.Timestamp") > 0);
 #endif
 
 	_stats = 0; // There is no default statistics callback object.
@@ -490,19 +483,34 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, int& argc, 
 
 	const_cast<DefaultsAndOverridesPtr&>(_defaultsAndOverrides) = new DefaultsAndOverrides(_properties);
 
-	static const int defaultMessageSizeMax = 1024;
-	Int num = _properties->getPropertyAsIntWithDefault("Ice.MessageSizeMax", defaultMessageSizeMax);
-	if(num < 1)
 	{
-	    _messageSizeMax = defaultMessageSizeMax * 1024; // Ignore stupid values.
+	    static const int defaultMessageSizeMax = 1024;
+	    Int num = _properties->getPropertyAsIntWithDefault("Ice.MessageSizeMax", defaultMessageSizeMax);
+	    if(num < 1)
+	    {
+		const_cast<size_t&>(_messageSizeMax) = defaultMessageSizeMax * 1024; // Ignore stupid values.
+	    }
+	    else if(static_cast<size_t>(num) > (size_t)(0x7fffffff / 1024))
+	    {
+		const_cast<size_t&>(_messageSizeMax) = static_cast<size_t>(0x7fffffff);
+	    }
+	    else
+	    {
+		// Property is in kilobytes, _messageSizeMax in bytes.
+		const_cast<size_t&>(_messageSizeMax) = static_cast<size_t>(num) * 1024;
+	    }
 	}
-	else if(static_cast<size_t>(num) > (size_t)(0x7fffffff / 1024))
+
 	{
-	    _messageSizeMax = static_cast<size_t>(0x7fffffff);
-	}
-	else
-	{
-	    _messageSizeMax = static_cast<size_t>(num) * 1024; // Property is in kilobytes, _messageSizeMax in bytes.
+	    Int num = _properties->getPropertyAsIntWithDefault("Ice.ConnectionIdleTime", 60);
+	    if(num < 0)
+	    {
+		const_cast<Int&>(_connectionIdleTime) = 0;
+	    }
+	    else
+	    {
+		const_cast<Int&>(_connectionIdleTime) = num;
+	    }
 	}
 
 	_routerManager = new RouterManager;
@@ -619,34 +627,8 @@ IceInternal::Instance::finishSetup(int& argc, char* argv[])
 	    LocatorPrx::uncheckedCast(_proxyFactory->stringToProxy(_defaultsAndOverrides->defaultLocator)));
     }
 
-#if !defined(_WIN32) && !defined(__sun) 
     //
-    // daemon() must be called after any plug-ins have been
-    // installed. For example, an SSL plug-in might want to
-    // read a passphrase from standard input.
-    //
-    // TODO: This is a problem for plug-ins that open files, create
-    // threads, etc. Perhaps we need a two-stage plug-in
-    // initialization?
-    //
-    if(_properties->getPropertyAsInt("Ice.Daemon") > 0)
-    {
-        int noclose = _properties->getPropertyAsInt("Ice.DaemonNoClose");
-        int nochdir = _properties->getPropertyAsInt("Ice.DaemonNoChdir");
-        
-        if(daemon(nochdir, noclose) == -1)
-        {
-            SyscallException ex(__FILE__, __LINE__);
-            ex.error = getSystemErrno();
-            throw ex;
-        }
-    }
-#endif
-
-    //
-    // Must be done after daemon() is called, since daemon()
-    // forks. Does not work together with Ice.Daemon if
-    // Ice.DaemonNoClose is not set.
+    // Show process id if requested.
     //
     if(_properties->getPropertyAsInt("Ice.PrintProcessId") > 0)
     {
@@ -658,20 +640,13 @@ IceInternal::Instance::finishSetup(int& argc, char* argv[])
     }
 
     //
-    // Connection monitor initializations must be done after daemon()
-    // is called, since daemon() forks.
+    // Start connection monitor if necessary.
     //
-    int acmTimeout = _properties->getPropertyAsInt("Ice.ConnectionIdleTime");
-    int interval = _properties->getPropertyAsIntWithDefault("Ice.MonitorConnections", acmTimeout);
+    Int interval = _properties->getPropertyAsIntWithDefault("Ice.MonitorConnections", _connectionIdleTime);
     if(interval > 0)
     {
 	_connectionMonitor = new ConnectionMonitor(this, interval);
     }
-
-    //
-    // Thread pool initializations must be done after daemon() is
-    // called, since daemon() forks.
-    //
 
     //
     // Thread pool initialization is now lazy initialization in

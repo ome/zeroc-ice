@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D "NDEBUG" /D "_USRDLL" /D "ICE_API_EXPORTS" /D "ICE_PROTOCOL_API_EXPORTS" /D "_CONSOLE" /D "_UNICODE" /FD /c
+# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D "NDEBUG" /D FD_SETSIZE=1024 /D "_USRDLL" /D "ICE_API_EXPORTS" /D "ICE_PROTOCOL_API_EXPORTS" /D "_CONSOLE" /FD /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
@@ -54,12 +54,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 ws2_32.lib libbz2.lib /nologo /dll /machine:I386 /out:"Release/ice12.dll" /implib:"Release/ice.lib"
+# ADD LINK32 ws2_32.lib libbz2.lib advapi32.lib /nologo /entry:"Ice_DLL_Main" /dll /machine:I386 /out:"Release/ice13.dll" /implib:"Release/ice.lib"
 # SUBTRACT LINK32 /pdb:none /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\ice.lib ..\..\lib	copy $(OutDir)\ice12.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\ice.lib ..\..\lib	copy $(OutDir)\ice13.dll ..\..\bin
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Ice - Win32 Debug"
@@ -76,7 +76,7 @@ PostBuild_Cmds=copy $(OutDir)\ice.lib ..\..\lib	copy $(OutDir)\ice12.dll ..\..\b
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "_DEBUG" /D "_USRDLL" /D "ICE_API_EXPORTS" /D "ICE_PROTOCOL_API_EXPORTS" /D "_CONSOLE" /D "_UNICODE" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I ".." /I "../../include" /D "_DEBUG" /D "_USRDLL" /D "ICE_API_EXPORTS" /D "ICE_PROTOCOL_API_EXPORTS" /D FD_SETSIZE=1024 /D "_CONSOLE" /FD /GZ /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
@@ -87,12 +87,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386
-# ADD LINK32 ws2_32.lib libbz2d.lib /nologo /dll /debug /machine:I386 /out:"Debug/ice12d.dll" /implib:"Debug/iced.lib"
+# ADD LINK32 ws2_32.lib libbz2d.lib advapi32.lib /nologo /entry:"Ice_DLL_Main" /dll /debug /machine:I386 /out:"Debug/ice13d.dll" /implib:"Debug/iced.lib"
 # SUBTRACT LINK32 /pdb:none /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Debug
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\iced.lib ..\..\lib	copy $(OutDir)\ice12d.pdb ..\..\bin	copy $(OutDir)\ice12d.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\iced.lib ..\..\lib	copy $(OutDir)\ice13d.pdb ..\..\bin	copy $(OutDir)\ice13d.dll ..\..\bin
 # End Special Build Tool
 
 !ENDIF 
@@ -158,6 +158,10 @@ SOURCE=.\Direct.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\DLLMain.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\DynamicLibrary.cpp
 # End Source File
 # Begin Source File
@@ -175,6 +179,18 @@ SOURCE=.\EndpointFactoryManager.cpp
 # Begin Source File
 
 SOURCE=.\EventHandler.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\EventLoggerI.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\EventLoggerMsg.mc
+# End Source File
+# Begin Source File
+
+SOURCE=.\EventLoggerMsg.res
 # End Source File
 # Begin Source File
 
@@ -290,6 +306,10 @@ SOURCE=.\PluginManagerI.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\Process.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Properties.cpp
 # End Source File
 # Begin Source File
@@ -335,6 +355,10 @@ SOURCE=.\ServantLocator.cpp
 # Begin Source File
 
 SOURCE=.\ServantManager.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Service.cpp
 # End Source File
 # Begin Source File
 
@@ -511,6 +535,14 @@ SOURCE=.\EventHandler.h
 # Begin Source File
 
 SOURCE=.\EventHandlerF.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\EventLoggerI.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\EventLoggerMsg.h
 # End Source File
 # Begin Source File
 
@@ -698,6 +730,14 @@ SOURCE=.\PluginManagerI.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\include\Ice\Process.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\include\Ice\ProcessF.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\include\Ice\Properties.h
 # End Source File
 # Begin Source File
@@ -799,6 +839,10 @@ SOURCE=.\ServantManager.h
 # Begin Source File
 
 SOURCE=..\..\include\Ice\ServantManagerF.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\include\Ice\Service.h
 # End Source File
 # Begin Source File
 
@@ -1040,6 +1084,49 @@ BuildCmds= \
    $(BuildCmds)
 
 "Current.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\EventLoggerMsg.mc
+
+!IF  "$(CFG)" == "Ice - Win32 Release"
+
+# Begin Custom Build
+InputPath=.\EventLoggerMsg.mc
+InputName=EventLoggerMsg
+
+BuildCmds= \
+	mc $(InputPath) \
+	rc -r -fo $(InputName).res $(InputName).rc \
+	
+
+"EventLoggerMsg.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"EventLoggerMsg.res" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "Ice - Win32 Debug"
+
+# Begin Custom Build
+InputPath=.\EventLoggerMsg.mc
+InputName=EventLoggerMsg
+
+BuildCmds= \
+	mc $(InputPath) \
+	rc -r -fo $(InputName).res $(InputName).rc \
+	
+
+"EventLoggerMsg.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"EventLoggerMsg.res" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
 
@@ -1547,6 +1634,82 @@ InputPath=..\..\slice\Ice\PluginF.ice
 	..\..\bin\slice2cpp.exe --ice --dll-export ICE_API --include-dir Ice -I../../slice ../../slice/Ice/PluginF.ice 
 	move PluginF.h ..\..\include\Ice 
 	del PluginF.cpp 
+	
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\slice\Ice\Process.ice
+
+!IF  "$(CFG)" == "Ice - Win32 Release"
+
+USERDEP__PLUGI="..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
+# Begin Custom Build
+InputPath=..\..\slice\Ice\Process.ice
+
+BuildCmds= \
+	..\..\bin\slice2cpp.exe --ice --dll-export ICE_API --include-dir Ice -I../../slice ../../slice/Ice/Process.ice \
+	move Process.h ..\..\include\Ice \
+	
+
+"..\..\include\Ice\Process.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"Process.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "Ice - Win32 Debug"
+
+USERDEP__PLUGI="..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
+# Begin Custom Build
+InputPath=..\..\slice\Ice\Process.ice
+
+BuildCmds= \
+	..\..\bin\slice2cpp.exe --ice --dll-export ICE_API --include-dir Ice -I../../slice ../../slice/Ice/Process.ice \
+	move Process.h ..\..\include\Ice \
+	
+
+"..\..\include\Ice\Process.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"Process.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\slice\Ice\ProcessF.ice
+
+!IF  "$(CFG)" == "Ice - Win32 Release"
+
+USERDEP__PLUGIN="..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
+# Begin Custom Build
+InputPath=..\..\slice\Ice\ProcessF.ice
+
+"..\..\include\Ice\ProcessF.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	..\..\bin\slice2cpp.exe --ice --dll-export ICE_API --include-dir Ice -I../../slice ../../slice/Ice/ProcessF.ice 
+	move ProcessF.h ..\..\include\Ice 
+	del ProcessF.cpp 
+	
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "Ice - Win32 Debug"
+
+USERDEP__PLUGIN="..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
+# Begin Custom Build
+InputPath=..\..\slice\Ice\ProcessF.ice
+
+"..\..\include\Ice\ProcessF.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	..\..\bin\slice2cpp.exe --ice --dll-export ICE_API --include-dir Ice -I../../slice ../../slice/Ice/ProcessF.ice 
+	move ProcessF.h ..\..\include\Ice 
+	del ProcessF.cpp 
 	
 # End Custom Build
 

@@ -84,7 +84,7 @@ TestI::knownMostDerivedAsBase(const ::Ice::Current&)
 }
 
 void
-TestI::knownIntermediateAsknownIntermediate(const ::Ice::Current&)
+TestI::knownIntermediateAsKnownIntermediate(const ::Ice::Current&)
 {
     KnownIntermediate ki;
     ki.b = "KnownIntermediate.b";

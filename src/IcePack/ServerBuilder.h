@@ -48,7 +48,7 @@ public:
     void setClassName(const std::string&);
     void setWorkingDirectory(const std::string&);
     void registerServer();
-    void registerAdapter(const std::string&, const std::string&, const std::string&);
+    void registerAdapter(const std::string&, const std::string&, bool, const std::string&);
     void addService(const std::string&, const std::string&, const std::string&);
     void addOption(const std::string&);
     void addJavaOption(const std::string&);
@@ -68,6 +68,7 @@ private:
     std::string _className;
     std::string _libraryPath;
     std::vector<std::string> _javaOptions;
+    std::vector<std::string> _serviceNames;
 
     ServerPrx _server;
     std::map<std::string, ServerAdapterPrx> _serverAdapters;

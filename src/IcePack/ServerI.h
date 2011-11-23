@@ -42,6 +42,8 @@ public:
 
     virtual bool start(ServerActivation, const ::Ice::Current&);
     virtual void stop(const ::Ice::Current&);
+    virtual void sendSignal(const std::string&, const ::Ice::Current&);
+    virtual void writeMessage(const std::string&, Ice::Int, const ::Ice::Current&);
     virtual void destroy(const ::Ice::Current&);
     virtual void terminated(const ::Ice::Current&);
 
@@ -50,6 +52,9 @@ public:
 
     virtual void setActivationMode(ServerActivation, const ::Ice::Current&);
     virtual ServerActivation getActivationMode(const ::Ice::Current&);
+
+    virtual void setProcess(const ::Ice::ProcessPrx&, const ::Ice::Current&);
+    virtual Ice::ProcessPrx getProcess(const ::Ice::Current&);
 
 private:
 
@@ -62,6 +67,8 @@ private:
     ::Ice::Int _waitTime;
 
     ServerState _state;
+
+    ::Ice::ProcessPrx _process;
 };
 
 }

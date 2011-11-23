@@ -76,30 +76,13 @@ run(int argc, char* argv[], const CommunicatorPtr& communicator)
 	
     }
 
-    ObjectPrx obj;
-    obj = fed1->getPublisher();
-    if(!obj->ice_isDatagram())
-    {
-        obj = obj->ice_oneway();
-    }
-    EventPrx eventFed1 = EventPrx::uncheckedCast(obj);
-
-    obj = fed2->getPublisher();
-    if(!obj->ice_isDatagram())
-    {
-        obj = obj->ice_oneway();
-    }
-    EventPrx eventFed2 = EventPrx::uncheckedCast(obj);
-
-    obj = fed3->getPublisher();
-    if(!obj->ice_isDatagram())
-    {
-        obj = obj->ice_oneway();
-    }
-    EventPrx eventFed3 = EventPrx::uncheckedCast(obj);
+    EventPrx eventFed1 = EventPrx::uncheckedCast(fed1->getPublisher()->ice_oneway());
+    EventPrx eventFed2 = EventPrx::uncheckedCast(fed2->getPublisher()->ice_oneway());
+    EventPrx eventFed3 = EventPrx::uncheckedCast(fed3->getPublisher()->ice_oneway());
 
     Ice::Context context;
     int i;
+
     context["cost"] = "0";
     for(i = 0; i < 10; ++i)
     {
@@ -137,15 +120,12 @@ run(int argc, char* argv[], const CommunicatorPtr& communicator)
     }
 
     //
-    // Sleep for 4 seconds before shutting down.
+    // Before we exit, we ping all proxies as twoway, to make sure
+    // that all oneways are delivered.
     //
-#ifdef _WIN32
-    Sleep(4*1000);
-#else
-    sleep(4);
-#endif
-
-    eventFed3->pub("shutdown");
+    EventPrx::uncheckedCast(eventFed1->ice_twoway())->ice_ping();
+    EventPrx::uncheckedCast(eventFed2->ice_twoway())->ice_ping();
+    EventPrx::uncheckedCast(eventFed3->ice_twoway())->ice_ping();
 
     return EXIT_SUCCESS;
 }

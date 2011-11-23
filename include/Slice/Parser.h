@@ -171,6 +171,37 @@ public:
 };
 
 // ----------------------------------------------------------------------
+// DefinitionContext
+// ----------------------------------------------------------------------
+
+class SLICE_API DefinitionContext : public ::IceUtil::SimpleShared
+{
+public:
+
+    DefinitionContext(int);
+
+    std::string filename() const;
+    int includeLevel() const;
+    bool seenDefinition() const;
+
+    void setFilename(const std::string&);
+    void setSeenDefinition();
+
+    bool hasMetaData() const;
+    void setMetaData(const StringList&);
+    std::string findMetaData(const std::string&) const;
+    StringList getMetaData() const;
+
+private:
+
+    int _includeLevel;
+    std::string _filename;
+    bool _seenDefinition;
+    StringList _metaData;
+};
+typedef ::IceUtil::Handle<DefinitionContext> DefinitionContextPtr;
+
+// ----------------------------------------------------------------------
 // GrammarBase
 // ----------------------------------------------------------------------
 
@@ -188,6 +219,7 @@ public:
 
     virtual void destroy();
     UnitPtr unit() const;
+    DefinitionContextPtr definitionContext() const; // May be nil
     virtual void visit(ParserVisitor*);
 
 protected:
@@ -195,6 +227,7 @@ protected:
     SyntaxTreeBase(const UnitPtr&);
 
     UnitPtr _unit;
+    DefinitionContextPtr _definitionContext;
 };
 
 // ----------------------------------------------------------------------
@@ -249,7 +282,7 @@ public:
 protected:
 
     Builtin(const UnitPtr&, Kind);
-    friend class SLICE_API Unit;
+    friend class Unit;
 
     Kind _kind;
 };
@@ -303,7 +336,7 @@ public:
 protected:
 
     Contained(const ContainerPtr&, const std::string&);
-    friend class SLICE_API Container;
+    friend class Container;
 
     ContainerPtr _container;
     std::string _name;
@@ -387,7 +420,7 @@ public:
 protected:
 
     Module(const ContainerPtr&, const std::string&);
-    friend class SLICE_API Container;
+    friend class Container;
 };
 
 // ----------------------------------------------------------------------
@@ -433,8 +466,8 @@ public:
 protected:
 
     ClassDecl(const ContainerPtr&, const std::string&, bool, bool);
-    friend class SLICE_API Container;
-    friend class SLICE_API ClassDef;
+    friend class Container;
+    friend class ClassDef;
 
     ClassDefPtr _definition;
     bool _interface;
@@ -486,7 +519,7 @@ public:
 protected:
 
     Operation(const ContainerPtr&, const std::string&, const TypePtr&, Mode);
-    friend class SLICE_API ClassDef;
+    friend class ClassDef;
 
     TypePtr _returnType;
     ExceptionList _throws;
@@ -522,6 +555,7 @@ public:
     DataMemberList allClassDataMembers() const;
     bool isAbstract() const;
     bool isInterface() const;
+    bool isA(const std::string&) const;
     virtual bool isLocal() const;
     bool hasDataMembers() const;
     virtual ContainedType containedType() const;
@@ -532,7 +566,7 @@ public:
 protected:
 
     ClassDef(const ContainerPtr&, const std::string&, bool, const ClassList&, bool);
-    friend class SLICE_API Container;
+    friend class Container;
 
     ClassDeclPtr _declaration;
     bool _interface;
@@ -588,7 +622,7 @@ public:
 protected:
 
     Exception(const ContainerPtr&, const std::string&, const ExceptionPtr&, bool);
-    friend class SLICE_API Container;
+    friend class Container;
 
     ExceptionPtr _base;
     bool _local;
@@ -615,7 +649,7 @@ public:
 protected:
 
     Struct(const ContainerPtr&, const std::string&, bool);
-    friend class SLICE_API Container;
+    friend class Container;
 };
 
 // ----------------------------------------------------------------------
@@ -637,7 +671,7 @@ public:
 protected:
 
     Sequence(const ContainerPtr&, const std::string&, const TypePtr&, bool);
-    friend class SLICE_API Container;
+    friend class Container;
 
     TypePtr _type;
 };
@@ -664,7 +698,7 @@ public:
 protected:
 
     Dictionary(const ContainerPtr&, const std::string&, const TypePtr&, const TypePtr&, bool);
-    friend class SLICE_API Container;
+    friend class Container;
 
     TypePtr _keyType;
     TypePtr _valueType;
@@ -691,7 +725,7 @@ public:
 protected:
 
     Enum(const ContainerPtr&, const std::string&, bool);
-    friend class SLICE_API Container;
+    friend class Container;
 
     EnumeratorList _enumerators;
 };
@@ -712,8 +746,8 @@ public:
 protected:
 
     Enumerator(const ContainerPtr&, const std::string&);
-    friend class SLICE_API Container;
-    friend class SLICE_API Enum;
+    friend class Container;
+    friend class Enum;
 
     EnumPtr _type;
 };
@@ -741,7 +775,7 @@ public:
 protected:
 
     Const(const ContainerPtr&, const std::string&, const TypePtr&, const std::string&);
-    friend class SLICE_API Container;
+    friend class Container;
 
     TypePtr _type;
     std::string _value;
@@ -765,7 +799,7 @@ public:
 protected:
 
     ParamDecl(const ContainerPtr&, const std::string&, const TypePtr&, bool isOutParam);
-    friend class SLICE_API Operation;
+    friend class Operation;
 
     TypePtr _type;
     bool _isOutParam;
@@ -788,9 +822,9 @@ public:
 protected:
     
     DataMember(const ContainerPtr&, const std::string&, const TypePtr&);
-    friend class SLICE_API ClassDef;
-    friend class SLICE_API Struct;
-    friend class SLICE_API Exception;
+    friend class ClassDef;
+    friend class Struct;
+    friend class Exception;
 
     TypePtr _type;
 };
@@ -819,6 +853,9 @@ public:
     void scanPosition(const char*);
     int currentIncludeLevel() const;
 
+    void setGlobalMetaData(const StringList&);
+    void setSeenDefinition();
+
     void error(const char*); // Not const, because error count is increased.
     void error(const std::string&); // Ditto.
 
@@ -828,6 +865,10 @@ public:
     ContainerPtr currentContainer() const;
     void pushContainer(const ContainerPtr&);
     void popContainer();
+
+    DefinitionContextPtr currentDefinitionContext() const;
+    void pushDefinitionContext();
+    void popDefinitionContext();
 
     void addContent(const ContainedPtr&);
     void removeContent(const ContainedPtr&);
@@ -863,6 +904,7 @@ private:
     int _currentIncludeLevel;
     std::string _currentFile;
     std::string _topLevelFile;
+    std::stack<DefinitionContextPtr> _definitionContextStack;
     StringList _includeFiles;
     std::stack<ContainerPtr> _containerStack;
     std::map<Builtin::Kind, BuiltinPtr> _builtins;

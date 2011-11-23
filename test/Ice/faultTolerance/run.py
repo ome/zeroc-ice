@@ -31,7 +31,7 @@ testdir = os.path.join(toplevel, "test", name)
 server = os.path.join(testdir, "server")
 client = os.path.join(testdir, "client")
 
-num = 6
+num = 12
 base = 12340
 
 serverPipes = { }
@@ -49,8 +49,7 @@ print "starting client...",
 clientPipe = os.popen(client + TestUtil.clientOptions + " " + ports)
 print "ok"
 
-for output in clientPipe.xreadlines():
-    print output,
+TestUtil.printOutputFromPipe(clientPipe)
 
 clientStatus = clientPipe.close()
 serverStatus = None
@@ -72,9 +71,10 @@ if clientStatus:
 #
 if serverStatus:
     TestUtil.killServers()
-    if TestUtil.isWin32():
-        sys.exit(1)
-    else:
-        sys.exit(0)
+    sys.exit(1)
+#    if TestUtil.isWin32():
+#        sys.exit(1)
+#    else:
+#        sys.exit(0)
 
 sys.exit(0)

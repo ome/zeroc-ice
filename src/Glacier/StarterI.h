@@ -12,8 +12,8 @@
 //
 // **********************************************************************
 
-#ifndef GLACIER_GLACIER_I_H
-#define GLACIER_GLACIER_I_H
+#ifndef GLACIER_STARTER_I_H
+#define GLACIER_STARTER_I_H
 
 #include <Ice/Ice.h>
 #include <IceSSL/RSACertificateGen.h>
@@ -29,7 +29,7 @@ class StarterI : public Starter
 {
 public:
 
-    StarterI(const Ice::CommunicatorPtr&, const PasswordVerifierPrx&);
+    StarterI(const Ice::CommunicatorPtr&, const PermissionsVerifierPrx&);
 
     void destroy();
 
@@ -45,19 +45,21 @@ private:
     Ice::CommunicatorPtr _communicator;
     Ice::LoggerPtr _logger;
     Ice::PropertiesPtr _properties;
-    PasswordVerifierPrx _verifier;
+    PermissionsVerifierPrx _verifier;
     int _traceLevel;
     RSACertificateGenContext _certContext;
     RSACertificateGen _certificateGenerator;
 };
 
-class CryptPasswordVerifierI : public PasswordVerifier, public IceUtil::Mutex
+typedef IceUtil::Handle<StarterI> StarterIPtr;
+
+class CryptPasswordVerifierI : public PermissionsVerifier, public IceUtil::Mutex
 {
 public:
 
     CryptPasswordVerifierI(const std::map<std::string, std::string>&);
 
-    virtual bool checkPassword(const std::string&, const std::string&, const Ice::Current&) const;
+    virtual bool checkPermissions(const std::string&, const std::string&, std::string&, const Ice::Current&) const;
     virtual void destroy(const Ice::Current&);
 
 private:

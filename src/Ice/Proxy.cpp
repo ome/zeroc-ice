@@ -12,28 +12,20 @@
 //
 // **********************************************************************
 
-#include <IceUtil/Thread.h>
-
 #include <Ice/Proxy.h>
 #include <Ice/ProxyFactory.h>
 #include <Ice/Object.h>
 #include <Ice/ObjectAdapterFactory.h>
-#include <Ice/ObjectAdapterI.h> // For getIncomingConnections().
 #include <Ice/Outgoing.h>
 #include <Ice/OutgoingAsync.h>
 #include <Ice/Direct.h>
 #include <Ice/Reference.h>
 #include <Ice/Endpoint.h>
 #include <Ice/Instance.h>
-#include <Ice/LoggerUtil.h>
-#include <Ice/TraceLevels.h>
-#include <Ice/ConnectionFactory.h>
-#include <Ice/Connection.h>
 #include <Ice/RouterInfo.h>
 #include <Ice/LocatorInfo.h>
 #include <Ice/BasicStream.h>
 #include <Ice/LocalException.h>
-#include <Ice/Functional.h>
 
 using namespace std;
 using namespace Ice;
@@ -328,20 +320,8 @@ IceProxy::Ice::Object::ice_invoke_async(const AMI_Object_ice_invokePtr& cb,
 					const vector<Byte>& inParams,
 					const Context& context)
 {
-    int __cnt = 0;
-    while(true)
-    {
-	try
-	{
-	    Handle< ::IceDelegate::Ice::Object> __del = __getDelegate();
-	    __del->ice_invoke_async(cb, operation, mode, inParams, context);
-	    return;
-	}
-	catch(const LocalException& __ex)
-	{
-	    __handleException(__ex, __cnt);
-	}
-    }
+    __checkTwowayOnly("ice_invoke_async");
+    cb->__invoke(__reference(), operation, mode, inParams, context);
 }
 
 Context
@@ -700,63 +680,27 @@ IceProxy::Ice::Object::__handleException(const LocalException& ex, int& cnt)
 	_reference->locatorInfo->clearObjectCache(_reference);
     }
 
-    ++cnt;
-    
-    TraceLevelsPtr traceLevels = _reference->instance->traceLevels();
-    LoggerPtr logger = _reference->instance->logger();
     ProxyFactoryPtr proxyFactory = _reference->instance->proxyFactory();
-    
-    //
-    // Instance components may be null if Communicator has been destroyed.
-    //
-    if(traceLevels && logger && proxyFactory)
+    if(proxyFactory)
     {
-        const std::vector<int>& retryIntervals = proxyFactory->getRetryIntervals();
-        
-        if(cnt > static_cast<int>(retryIntervals.size()))
-        {
-            if(traceLevels->retry >= 1)
-            {
-                Trace out(logger, traceLevels->retryCat);
-                out << "cannot retry operation call because retry limit has been exceeded\n" << ex;
-            }
-            ex.ice_throw();
-        }
-
-        if(traceLevels->retry >= 1)
-        {
-            Trace out(logger, traceLevels->retryCat);
-            out << "re-trying operation call";
-            if(cnt > 0 && retryIntervals[cnt - 1] > 0)
-            {
-                out << " in " << retryIntervals[cnt - 1] << "ms";
-            }
-            out << " because of exception\n" << ex;
-        }
-
-        if(cnt > 0)
-        {
-            //
-            // Sleep before retrying.
-            //
-            IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(retryIntervals[cnt - 1]));
-        }
+	proxyFactory->checkRetryAfterException(ex, cnt);
     }
     else
     {
-        //
-        // Impossible to retry after Communicator has been destroyed.
-        //
-        ex.ice_throw();
+        ex.ice_throw(); // The communicator is already destroyed, so we cannot retry.
     }
 }
 
 void
 IceProxy::Ice::Object::__rethrowException(const LocalException& ex)
 {
-    IceUtil::Mutex::Lock sync(*this);
-
-    _delegate = 0;
+    //
+    // Only _delegate needs to be mutex protected here.
+    //
+    {
+	IceUtil::Mutex::Lock sync(*this);
+	_delegate = 0;
+    }
 
     if(_reference->locatorInfo)
     {
@@ -769,7 +713,10 @@ IceProxy::Ice::Object::__rethrowException(const LocalException& ex)
 void
 IceProxy::Ice::Object::__checkTwowayOnly(const char* name) const
 {
-    IceUtil::Mutex::Lock sync(*this);
+    //
+    // No mutex lock necessary, there is nothing mutable in this
+    // operation.
+    //
 
     if(!ice_isTwoway())
     {
@@ -852,10 +799,6 @@ IceProxy::Ice::Object::setup(const ReferencePtr& ref)
 
 IceDelegateM::Ice::Object::~Object()
 {
-    if(__connection)
-    {
-	__connection->decProxyCount();
-    }
 }
 
 bool
@@ -866,13 +809,13 @@ IceDelegateM::Ice::Object::ice_isA(const string& __id, const Context& __context)
     BasicStream* __is = __out.is();
     BasicStream* __os = __out.os();
     __os->write(__id);
-    if(!__out.invoke())
-    {
-	throw ::Ice::UnknownUserException(__FILE__, __LINE__);
-    }
     bool __ret;
     try
     {
+	if(!__out.invoke())
+	{
+	    __is->throwException();
+	}
         __is->read(__ret);
     }
     catch(const ::Ice::LocalException& __ex)
@@ -887,9 +830,17 @@ IceDelegateM::Ice::Object::ice_ping(const Context& __context)
 {
     static const string __operation("ice_ping");
     Outgoing __out(__connection.get(), __reference.get(), __operation, ::Ice::Nonmutating, __context);
-    if(!__out.invoke())
+    BasicStream* __is = __out.is();
+    try
     {
-	throw ::Ice::UnknownUserException(__FILE__, __LINE__);
+	if(!__out.invoke())
+	{
+	    __is->throwException();
+	}
+    }
+    catch(const ::Ice::LocalException& __ex)
+    {
+        throw ::IceInternal::NonRepeatable(__ex);
     }
 }
 
@@ -899,13 +850,13 @@ IceDelegateM::Ice::Object::ice_ids(const Context& __context)
     static const string __operation("ice_ids");
     Outgoing __out(__connection.get(), __reference.get(), __operation, ::Ice::Nonmutating, __context);
     BasicStream* __is = __out.is();
-    if(!__out.invoke())
-    {
-	throw ::Ice::UnknownUserException(__FILE__, __LINE__);
-    }
     vector<string> __ret;
     try
     {
+	if(!__out.invoke())
+	{
+	    __is->throwException();
+	}
         __is->read(__ret);
     }
     catch(const ::Ice::LocalException& __ex)
@@ -921,13 +872,13 @@ IceDelegateM::Ice::Object::ice_id(const Context& __context)
     static const string __operation("ice_id");
     Outgoing __out(__connection.get(), __reference.get(), __operation, ::Ice::Nonmutating, __context);
     BasicStream* __is = __out.is();
-    if(!__out.invoke())
-    {
-	throw ::Ice::UnknownUserException(__FILE__, __LINE__);
-    }
     string __ret;
     try
     {
+	if(!__out.invoke())
+	{
+	    __is->throwException();
+	}
         __is->read(__ret);
     }
     catch(const ::Ice::LocalException& __ex)
@@ -943,13 +894,13 @@ IceDelegateM::Ice::Object::ice_facets(const Context& __context)
     static const string __operation("ice_facets");
     Outgoing __out(__connection.get(), __reference.get(), __operation, ::Ice::Nonmutating, __context);
     BasicStream* __is = __out.is();
-    if(!__out.invoke())
-    {
-	throw ::Ice::UnknownUserException(__FILE__, __LINE__);
-    }
     FacetPath __ret;
     try
     {
+	if(!__out.invoke())
+	{
+	    __is->throwException();
+	}
         __is->read(__ret);
     }
     catch(const ::Ice::LocalException& __ex)
@@ -987,19 +938,6 @@ IceDelegateM::Ice::Object::ice_invoke(const string& operation,
 }
 
 void
-IceDelegateM::Ice::Object::ice_invoke_async(const AMI_Object_ice_invokePtr& cb,
-					    const string& operation,
-					    OperationMode mode,
-					    const vector<Byte>& inParams,
-					    const Context& context)
-{
-    cb->__setup(__connection, __reference, operation, mode, context);
-    BasicStream* __os = cb->__os();
-    __os->writeBlob(inParams);
-    cb->__invoke();
-}
-
-void
 IceDelegateM::Ice::Object::__copyFrom(const ::IceInternal::Handle< ::IceDelegateM::Ice::Object>& from)
 {
     //
@@ -1014,19 +952,6 @@ IceDelegateM::Ice::Object::__copyFrom(const ::IceInternal::Handle< ::IceDelegate
 
     assert(!__reference);
     assert(!__connection);
-
-    if(from->__connection)
-    {
-	from->__connection->incProxyCount();
-    }
-
-// Can not happen, __connection must be null.
-/*
-    if(__connection)
-    {
-	__connection->decProxyCount();
-    }
-*/
 
     __reference = from->__reference;
     __connection = from->__connection;
@@ -1044,181 +969,7 @@ IceDelegateM::Ice::Object::setup(const ReferencePtr& ref)
     assert(!__connection);
 
     __reference = ref;
-
-    if(__reference->reverseAdapter)
-    {
-	//
-	// If we have a reverse object adapter, we use the incoming
-	// connections from such object adapter.
-	//
-	ObjectAdapterIPtr adapter = ObjectAdapterIPtr::dynamicCast(__reference->reverseAdapter);
-	assert(adapter);
-	list<ConnectionPtr> connections = adapter->getIncomingConnections();
-
-	vector<EndpointPtr> endpoints;
-	endpoints.reserve(connections.size());
-	transform(connections.begin(), connections.end(), back_inserter(endpoints),
-		  ::Ice::constMemFun(&Connection::endpoint));
-	endpoints = filterEndpoints(endpoints);
-	
-	if(endpoints.empty())
-	{
-	    NoEndpointException ex(__FILE__, __LINE__);
-	    ex.proxy = __reference->toString();
-	    throw ex;
-	}
-
-	list<ConnectionPtr>::iterator p;
-	for(p = connections.begin(); p != connections.end(); ++p)
-	{
-	    if((*p)->endpoint() == endpoints.front())
-	    {
-		break;
-	    }
-	}
-	assert(p != connections.end());
-	__connection = *p;
-	__connection->incProxyCount();
-    }
-    else
-    {	
-	while(true)
-	{
-	    bool cached;
-	    vector<EndpointPtr> endpoints;
-
-	    if(__reference->routerInfo)
-	    {
-		//
-		// If we route, we send everything to the router's client
-		// proxy endpoints.
-		//
-		ObjectPrx proxy = ref->routerInfo->getClientProxy();
-		endpoints = proxy->__reference()->endpoints;
-	    }
-	    else if(!__reference->endpoints.empty())
-	    {
-		endpoints = __reference->endpoints;
-	    }
-	    else if(__reference->locatorInfo)
-	    {
-		endpoints = __reference->locatorInfo->getEndpoints(__reference, cached);
-	    }
-
-	    vector<EndpointPtr> filteredEndpoints = filterEndpoints(endpoints);
-	    if(filteredEndpoints.empty())
-	    {
-		NoEndpointException ex(__FILE__, __LINE__);
-		ex.proxy = __reference->toString();
-		throw ex;
-	    }
-
-	    try
-	    {
-		OutgoingConnectionFactoryPtr factory = __reference->instance->outgoingConnectionFactory();
-		__connection = factory->create(filteredEndpoints);
-		assert(__connection);
-		__connection->incProxyCount();
-	    }
-	    catch(const LocalException& ex)
-	    {
-		if(!__reference->routerInfo && __reference->endpoints.empty())
-		{	
-		    assert(__reference->locatorInfo);
-		    __reference->locatorInfo->clearCache(__reference);
-		    
-		    if(cached)
-		    {
-			TraceLevelsPtr traceLevels = __reference->instance->traceLevels();
-			LoggerPtr logger = __reference->instance->logger();
-			if(traceLevels->retry >= 2)
-			{
-			    Trace out(logger, traceLevels->retryCat);
-			    out << "connection to cached endpoints failed\n"
-				<< "removing endpoints from cache and trying one more time\n" << ex;
-			}
-			continue;
-		    }
-		}
-		
-		throw;
-	    }
-
-	    break;
-	}
-
-	//
-	// If we have a router, set the object adapter for this router
-	// (if any) to the new connection, so that callbacks from the
-	// router can be received over this new connection.
-	//
-	if(__reference->routerInfo)
-	{
-	    __connection->setAdapter(__reference->routerInfo->getAdapter());
-	}
-    }
-}
-
-vector<EndpointPtr>
-IceDelegateM::Ice::Object::filterEndpoints(const vector<EndpointPtr>& allEndpoints) const
-{
-    vector<EndpointPtr> endpoints = allEndpoints;
-
-    //
-    // Filter out unknown endpoints.
-    //
-    endpoints.erase(remove_if(endpoints.begin(), endpoints.end(), ::Ice::constMemFun(&Endpoint::unknown)),
-                    endpoints.end());
-
-    switch(__reference->mode)
-    {
-	case Reference::ModeTwoway:
-	case Reference::ModeOneway:
-	case Reference::ModeBatchOneway:
-	{
-	    //
-	    // Filter out datagram endpoints.
-	    //
-            endpoints.erase(remove_if(endpoints.begin(), endpoints.end(), ::Ice::constMemFun(&Endpoint::datagram)),
-                            endpoints.end());
-	    break;
-	}
-	
-	case Reference::ModeDatagram:
-	case Reference::ModeBatchDatagram:
-	{
-	    //
-	    // Filter out non-datagram endpoints.
-	    //
-            endpoints.erase(remove_if(endpoints.begin(), endpoints.end(),
-                                      not1(::Ice::constMemFun(&Endpoint::datagram))),
-                            endpoints.end());
-	    break;
-	}
-    }
-    
-    //
-    // Randomize the order of endpoints.
-    //
-    random_shuffle(endpoints.begin(), endpoints.end());
-    
-    //
-    // If a secure connection is requested, remove all non-secure
-    // endpoints. Otherwise make non-secure endpoints preferred over
-    // secure endpoints by partitioning the endpoint vector, so that
-    // non-secure endpoints come first.
-    //
-    if(__reference->secure)
-    {
-	endpoints.erase(remove_if(endpoints.begin(), endpoints.end(), not1(::Ice::constMemFun(&Endpoint::secure))),
-			endpoints.end());
-    }
-    else
-    {
-	partition(endpoints.begin(), endpoints.end(), not1(::Ice::constMemFun(&Endpoint::secure)));
-    }
-    
-    return endpoints;
+    __connection = __reference->getConnection();
 }
 
 bool
@@ -1292,16 +1043,6 @@ IceDelegateD::Ice::Object::ice_invoke(const string&,
 				      const vector<Byte>&,
 				      vector<Byte>&,
 				      const Context&)
-{
-    throw CollocationOptimizationException(__FILE__, __LINE__);
-}
-
-void
-IceDelegateD::Ice::Object::ice_invoke_async(const AMI_Object_ice_invokePtr&,
-					    const string&,
-					    OperationMode,
-					    const vector<Byte>&,
-					    const Context&)
 {
     throw CollocationOptimizationException(__FILE__, __LINE__);
 }

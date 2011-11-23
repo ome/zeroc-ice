@@ -20,7 +20,6 @@
 #include <Ice/ProxyF.h>
 #include <Ice/ObjectFactoryF.h>
 #include <Ice/Buffer.h>
-#include <list>
 
 namespace Ice
 {
@@ -38,7 +37,8 @@ public:
 
     typedef void (*PatchFunc)(void*, Ice::ObjectPtr&);
 
-    BasicStream(Instance *);
+    BasicStream(Instance*);
+    ~BasicStream();
 
     //
     // Must return Instance*, because we don't hold an InstancePtr for
@@ -173,6 +173,7 @@ public:
     void readPendingObjects();
 
     void marshalFacets(bool);
+    void sliceObjects(bool);
 
     struct PatchEntry 
     {
@@ -187,6 +188,8 @@ public:
 
     typedef std::map<Ice::ObjectPtr, Ice::Int> PtrToIndexMap;
     typedef std::map<std::string, Ice::Int> TypeIdWriteMap;
+
+    typedef std::vector<Ice::ObjectPtr> ObjectList;
 
 private:
 
@@ -205,7 +208,7 @@ private:
     //
     Instance* _instance;
 
-    class ICE_API ReadEncaps
+    class ICE_API ReadEncaps : public ::IceUtil::noncopyable
     {
     public:
 
@@ -220,11 +223,13 @@ private:
 
 	PatchMap* patchMap;
 	IndexToPtrMap* unmarshaledMap;
-	Ice::Int typeIdIndex;
 	TypeIdReadMap* typeIdMap;
+	Ice::Int typeIdIndex;
+
+	ReadEncaps* previous;
     };
 
-    class ICE_API WriteEncaps
+    class ICE_API WriteEncaps : public ::IceUtil::noncopyable
     {
     public:
 
@@ -236,12 +241,12 @@ private:
 	Ice::Int writeIndex;
 	PtrToIndexMap* toBeMarshaledMap;
 	PtrToIndexMap* marshaledMap;
-	Ice::Int typeIdIndex;
 	TypeIdWriteMap* typeIdMap;
+	Ice::Int typeIdIndex;
+
+	WriteEncaps* previous;
     };
 
-    std::list<ReadEncaps> _readEncapsStack;
-    std::list<WriteEncaps> _writeEncapsStack;
     ReadEncaps* _currentReadEncaps;
     WriteEncaps* _currentWriteEncaps;
     Container::size_type _readSlice;
@@ -254,8 +259,11 @@ private:
     const char* _slicingCat;
 
     bool _marshalFacets;
+    bool _sliceObjects;
 
     const Container::size_type _messageSizeMax;
+
+    ObjectList* _objectList;
 };
 
 }

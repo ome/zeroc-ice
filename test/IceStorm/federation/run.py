@@ -13,7 +13,8 @@
 #
 # **********************************************************************
 
-import os, sys, time
+import os, sys
+import time
 
 for toplevel in [".", "..", "../..", "../../..", "../../../.."]:
     toplevel = os.path.normpath(toplevel)
@@ -49,8 +50,10 @@ def doTest(batch):
 
     if batch:
         name = "batch subscriber"
+        batchOptions = " -b"
     else:
         name = "subscriber"
+        batchOptions = ""
 
     #
     # Start the subscriber. The subscriber creates a lock-file which
@@ -63,7 +66,7 @@ def doTest(batch):
         pass # Ignore errors if the lockfile is not present
 
     print "starting " + name + "...",
-    command = subscriber + TestUtil.clientServerOptions + iceStormReference + r' ' + subscriberLockFile
+    command = subscriber + batchOptions + TestUtil.clientServerOptions + iceStormReference + r' ' + subscriberLockFile
     subscriberPipe = os.popen(command)
     TestUtil.getServerPid(subscriberPipe)
     TestUtil.getAdapterReady(subscriberPipe)
@@ -89,8 +92,7 @@ def doTest(batch):
     publisherPipe = os.popen(command)
     print "ok"
 
-    for output in publisherPipe.xreadlines():
-        print output,
+    TestUtil.printOutputFromPipe(publisherPipe)
 
     #
     # Verify that the subscriber has terminated.
@@ -150,6 +152,7 @@ print "ok"
 # Test oneway subscribers.
 #
 onewayStatus = doTest(0)
+
 #
 # Test batch oneway subscribers.
 #

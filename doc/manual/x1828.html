@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Ice::ConnectTimeoutException</TITLE
+>Ice::ConnectFailedException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
@@ -14,10 +14,10 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Ice::ConnectFailedException"
-HREF="x1816.html"><LINK
+TITLE="Ice::CompressionNotSupportedException"
+HREF="x1815.html"><LINK
 REL="NEXT"
-TITLE="Ice::ConnectionLostException"
+TITLE="Ice::ConnectTimeoutException"
 HREF="x1840.html"></HEAD
 ><BODY
 CLASS="SECTION"
@@ -46,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x1816.html"
+HREF="x1815.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -74,11 +74,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICE.CONNECTTIMEOUTEXCEPTION"
+NAME="ICE.CONNECTFAILEDEXCEPTION"
 ></A
 ><TT
 CLASS="LITERAL"
->Ice::ConnectTimeoutException</TT
+>Ice::ConnectFailedException</TT
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -98,14 +98,14 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 >local exception <TT
 CLASS="CLASSNAME"
->ConnectTimeoutException</TT
+>ConnectFailedException</TT
 >
     extends 
 	<A
-HREF="x4829.html"
+HREF="x4800.html"
 ><TT
 CLASS="CLASSNAME"
->TimeoutException</TT
+>SocketException</TT
 ></A
 ></PRE
 ></TD
@@ -113,13 +113,13 @@ CLASS="CLASSNAME"
 ></TABLE
 ><P
 >This exception is a specialization of <A
-HREF="x4829.html"
+HREF="x4800.html"
 ><TT
 CLASS="CLASSNAME"
->TimeoutException</TT
+>SocketException</TT
 ></A
 > for
-connection establishment timeout conditions.</P
+connection failures.</P
 ></DIV
 ></DIV
 ><DIV
@@ -138,7 +138,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x1816.html"
+HREF="x1815.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -168,7 +168,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::ConnectFailedException</TT
+>Ice::CompressionNotSupportedException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -185,7 +185,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::ConnectionLostException</TT
+>Ice::ConnectTimeoutException</TT
 ></TD
 ></TR
 ></TABLE

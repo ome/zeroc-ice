@@ -146,7 +146,7 @@ IcePatch::Client::run(int argc, char* argv[])
 		    cerr << appName() << ": " << ex << ":\n" << ex.reason << endl;
 		    return EXIT_FAILURE;
 		}
-		catch(const Glacier::InvalidPasswordException&)
+		catch(const Glacier::PermissionDeniedException&)
 		{
 		    cout << "password is invalid, try again" << endl;
 		}
@@ -244,11 +244,12 @@ IcePatch::Client::run(int argc, char* argv[])
 	//
 	// Patch all subdirectories.
 	//
+	FilePrx top;
 	for(vector<string>::const_iterator p = subdirs.begin(); p != subdirs.end(); ++p)
 	{
 	    Identity identity = pathToIdentity(*p);
 	    ObjectPrx topObj = communicator()->stringToProxy(identityToString(identity) + ':' + endpoints);
-	    FilePrx top;
+	    
 	    try
 	    {
 		top = FilePrx::checkedCast(topObj);
@@ -527,21 +528,21 @@ IcePatch::Client::patch(const DirectoryDescPtr& dirDesc, const string& indent) c
 
 	    MyProgressCB progressCB;
 
+	    bool update = false;
+
 	    FileInfo info = getFileInfo(path, false);
 	    switch(info.type)
 	    {
 		case FileTypeNotExist:
 		{
-		    orphaned.erase(path + ".bz2");
-		    getRegular(regDesc->reg, progressCB);
+		    update = true;
 		    break;
 		}
 
 		case FileTypeDirectory:
 		{
 		    removeRecursive(path);
-		    orphaned.erase(path + ".bz2");
-		    getRegular(regDesc->reg, progressCB);
+		    update = true;
 		    break;
 		}
 
@@ -549,18 +550,24 @@ IcePatch::Client::patch(const DirectoryDescPtr& dirDesc, const string& indent) c
 		{
 		    ByteSeq md5;
 		    
-		    string pathMD5 = path + ".md5";
-		    FileInfo infoMD5 = getFileInfo(pathMD5, false);
-		    if(infoMD5.type == FileTypeRegular && infoMD5.time >= info.time)
+		    if(_thorough)
 		    {
-			md5 = getMD5(path);
+			md5 = calcMD5(path);
+		    }
+		    else
+		    {
+			string pathMD5 = path + ".md5";
+			FileInfo infoMD5 = getFileInfo(pathMD5, false);
+			if(infoMD5.type == FileTypeRegular && infoMD5.time >= info.time)
+			{
+			    md5 = getMD5(path);
+			}
 		    }
 
 		    if(md5 != regDesc->md5)
 		    {
 			removeRecursive(path);
-			orphaned.erase(path + ".bz2");
-			getRegular(regDesc->reg, progressCB);
+			update = true;
 		    }
 		    else
 		    {
@@ -568,6 +575,64 @@ IcePatch::Client::patch(const DirectoryDescPtr& dirDesc, const string& indent) c
 		    }
 
 		    break;
+		}
+	    }
+
+	    if(update)
+	    {
+		orphaned.erase(path + ".bz2");
+
+		int retries = 0;
+		while(true)
+		{
+		    //
+		    // Retrieve file from server.
+		    //
+		    getRegular(regDesc->reg, progressCB);
+
+		    //
+		    // Get the latest file description from server, as
+		    // the file may mave recently changed.
+		    //
+		    regDesc = RegularDescPtr::dynamicCast(regDesc->reg->describe());
+		    if(!regDesc)
+		    {
+			removeRecursive(path);
+
+			FileAccessException ex;
+			ex.reason = "Unexpected error accessing `" + path + "' remotely.";
+			throw ex;
+		    }
+
+		    //
+		    // Compare the icepatch and locally built MD5s. If
+		    // they differ, try again unless we've hit the
+		    // retry limit.
+		    //
+		    ByteSeq md5;
+		    string pathMD5 = path + ".md5";
+		    FileInfo infoMD5 = getFileInfo(pathMD5, false);
+		    if(infoMD5.type == FileTypeRegular)
+		    {
+			md5 = getMD5(path);
+		    }
+
+		    if(regDesc->md5 == md5)
+		    {
+			break;
+		    }
+		    else if(retries < 3)
+		    {
+			++retries;
+		    }
+		    else
+		    {
+			removeRecursive(path);
+
+			FileAccessException ex;
+			ex.reason = "Error patching `" + path + "'.";
+			throw ex;
+		    }
 		}
 	    }
 	}

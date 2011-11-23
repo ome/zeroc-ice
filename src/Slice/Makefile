@@ -25,6 +25,7 @@ OBJS		= Scanner.o \
 		  Grammar.o \
 		  Parser.o \
 		  CPlusPlusUtil.o \
+		  CsUtil.o \
 		  JavaUtil.o \
 		  Preprocessor.o
 
@@ -33,6 +34,8 @@ SRCS		= $(OBJS:.o=.cpp)
 include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DSLICE_API_EXPORTS 
+LINKWITH	:= -lIceUtil
+BISONFLAGS	:= --name-prefix "slice_" $(BISONFLAGS)
 
 $(libdir)/$(LIBFILENAME): $(OBJS)
 	rm -f $@

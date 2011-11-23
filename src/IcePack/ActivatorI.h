@@ -35,6 +35,9 @@ public:
     virtual bool activate(const ::IcePack::ServerPtr&);
     virtual void deactivate(const ::IcePack::ServerPtr&);
     virtual void kill(const ::IcePack::ServerPtr&);
+    virtual void sendSignal(const ::IcePack::ServerPtr&, const std::string&);
+    virtual void writeMessage(const ::IcePack::ServerPtr&, const std::string&, Ice::Int);
+
     virtual Ice::Int getServerPid(const ::IcePack::ServerPtr&);
     
     virtual void start();
@@ -42,6 +45,8 @@ public:
     virtual void shutdown();
     virtual void destroy();
     
+    
+    void sendSignal(const ::IcePack::ServerPtr&, int);
     void runTerminationListener();
 
 private:
@@ -49,13 +54,22 @@ private:
     void deactivateAll();    
 
     void terminationListener();
-    bool clearInterrupt();
-    void setInterrupt(char);
+    void clearInterrupt();
+    void setInterrupt();
 
     struct Process
     {
+#ifdef _WIN32
+        DWORD pid;
+        HANDLE hnd;
+	HANDLE outHandle;
+	HANDLE errHandle;
+#else
 	pid_t pid;
-	int fd;
+	int pipeFd;
+	int outFd;
+	int errFd;
+#endif
 	ServerPtr server;
     };
 
@@ -64,11 +78,18 @@ private:
     std::vector<Process> _processes;
     bool _deactivating;
 
+#ifdef _WIN32
+    HANDLE _hIntr;
+#else
     int _fdIntrRead;
     int _fdIntrWrite;
+#endif
 
     std::vector<std::string> _propertiesOverride;
-    
+
+    std::string _outputDir;
+    bool _redirectErrToOut;
+
     IceUtil::ThreadPtr _thread;
 };
 

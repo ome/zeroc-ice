@@ -13,7 +13,8 @@
 #
 # **********************************************************************
 
-import os, sys, time, re
+import os, sys
+import time
 
 for toplevel in [".", "..", "../..", "../../..", "../../../.."]:
     toplevel = os.path.normpath(toplevel)
@@ -97,8 +98,7 @@ command = publisher + TestUtil.clientOptions + iceStormReference
 publisherPipe = os.popen(command)
 print "ok"
 
-for output in publisherPipe.xreadlines():
-    print output,
+TestUtil.printOutputFromPipe(publisherPipe);
     
 #
 # Verify that the subscriber has terminated.

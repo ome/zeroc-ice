@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Ice::EndpointParseException</TITLE
+>Ice::EncapsulationException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
@@ -14,11 +14,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Ice::EncapsulationException"
+TITLE="Ice::DatagramLimitException"
 HREF="x2048.html"><LINK
 REL="NEXT"
-TITLE="Ice::FacetNotExistException"
-HREF="x2084.html"></HEAD
+TITLE="Ice::EndpointParseException"
+HREF="x2072.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -60,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x2084.html"
+HREF="x2072.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -74,11 +74,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICE.ENDPOINTPARSEEXCEPTION"
+NAME="ICE.ENCAPSULATIONEXCEPTION"
 ></A
 ><TT
 CLASS="LITERAL"
->Ice::EndpointParseException</TT
+>Ice::EncapsulationException</TT
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -98,76 +98,28 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 >local exception <TT
 CLASS="CLASSNAME"
->EndpointParseException</TT
+>EncapsulationException</TT
+>
+    extends 
+	<A
+HREF="x2629.html"
+><TT
+CLASS="CLASSNAME"
+>MarshalException</TT
+></A
 ></PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->This exception is raised if there was an error while parsing an
-endpoint.</P
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN2068"
-></A
->Data Member Index</H3
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
-><A
-HREF="x2060.html#ICE.ENDPOINTPARSEEXCEPTION.STR"
-><SPAN
-CLASS="TYPE"
->str</SPAN
-></A
-></DT
-><DD
-><P
->The string that could not be parsed.</P
-></DD
-></DL
-></DIV
-></DIV
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICE.ENDPOINTPARSEEXCEPTION.STR"
-></A
+>This exception is a specialization of <A
+HREF="x2629.html"
 ><TT
-CLASS="LITERAL"
->str</TT
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><SPAN
-CLASS="TYPE"
->string</SPAN
-> <TT
-CLASS="STRUCTFIELD"
-><I
->str</I
-></TT
->;</PRE
-></TD
-></TR
-></TABLE
-><P
->The string that could not be parsed.</P
+CLASS="CLASSNAME"
+>MarshalException</TT
+></A
+>,
+indicating a malformed data encapsulation.</P
 ></DIV
 ></DIV
 ><DIV
@@ -204,7 +156,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x2084.html"
+HREF="x2072.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -216,7 +168,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::EncapsulationException</TT
+>Ice::DatagramLimitException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -233,7 +185,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::FacetNotExistException</TT
+>Ice::EndpointParseException</TT
 ></TD
 ></TR
 ></TABLE

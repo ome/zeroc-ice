@@ -15,6 +15,8 @@
 #ifndef GEN_H
 #define GEN_H
 
+#include <Slice/Parser.h>
+#include <IceUtil/OutputUtil.h>
 #include <Slice/JavaUtil.h>
 
 namespace Slice
@@ -28,21 +30,21 @@ public:
 
 protected:
 
-    JavaVisitor(const std::string&, const std::string&);
+    JavaVisitor(const std::string&);
 
     //
     // Compose the parameter lists for an operation.
     //
-    std::string getParams(const OperationPtr&, const std::string&);
-    std::string getParamsAsync(const OperationPtr&, const std::string&, bool);
-    std::string getParamsAsyncCB(const OperationPtr&, const std::string&);
+    std::vector<std::string> getParams(const OperationPtr&, const std::string&);
+    std::vector<std::string> getParamsAsync(const OperationPtr&, const std::string&, bool);
+    std::vector<std::string> getParamsAsyncCB(const OperationPtr&, const std::string&);
 
     //
     // Compose the argument lists for an operation.
     //
-    std::string getArgs(const OperationPtr&);
-    std::string getArgsAsync(const OperationPtr&);
-    std::string getArgsAsyncCB(const OperationPtr&);
+    std::vector<std::string> getArgs(const OperationPtr&);
+    std::vector<std::string> getArgsAsync(const OperationPtr&);
+    std::vector<std::string> getArgsAsyncCB(const OperationPtr&);
 
     //
     // Generate a throws clause containing only non-local exceptions.
@@ -74,7 +76,6 @@ public:
     Gen(const std::string&,
         const std::string&,
         const std::vector<std::string>&,
-        const std::string&,
         const std::string&);
     ~Gen();
 
@@ -89,14 +90,13 @@ private:
 
     std::string _base;
     std::vector<std::string> _includePaths;
-    std::string _package;
     std::string _dir;
 
     class OpsVisitor : public JavaVisitor
     {
     public:
 
-        OpsVisitor(const std::string&, const std::string&);
+        OpsVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
         virtual void visitClassDefEnd(const ClassDefPtr&);
@@ -107,7 +107,7 @@ private:
     {
     public:
 
-        TieVisitor(const std::string&, const std::string&);
+        TieVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
     };
@@ -116,7 +116,7 @@ private:
     {
     public:
 
-        TypesVisitor(const std::string&, const std::string&);
+        TypesVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
         virtual void visitClassDefEnd(const ClassDefPtr&);
@@ -133,7 +133,7 @@ private:
     {
     public:
 
-        HolderVisitor(const std::string&, const std::string&);
+        HolderVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
         virtual bool visitStructStart(const StructPtr&);
@@ -150,7 +150,7 @@ private:
     {
     public:
 
-        HelperVisitor(const std::string&, const std::string&);
+        HelperVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
         virtual void visitSequence(const SequencePtr&);
@@ -161,7 +161,7 @@ private:
     {
     public:
 
-        ProxyVisitor(const std::string&, const std::string&);
+        ProxyVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
         virtual void visitClassDefEnd(const ClassDefPtr&);
@@ -172,7 +172,7 @@ private:
     {
     public:
 
-        DelegateVisitor(const std::string&, const std::string&);
+        DelegateVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
     };
@@ -181,7 +181,7 @@ private:
     {
     public:
 
-        DelegateMVisitor(const std::string&, const std::string&);
+        DelegateMVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
     };
@@ -190,7 +190,7 @@ private:
     {
     public:
 
-        DelegateDVisitor(const std::string&, const std::string&);
+        DelegateDVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
     };
@@ -199,7 +199,7 @@ private:
     {
     public:
 
-        DispatcherVisitor(const std::string&, const std::string&);
+        DispatcherVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
     };
@@ -208,7 +208,7 @@ private:
     {
     public:
 
-        BaseImplVisitor(const std::string&, const std::string&);
+        BaseImplVisitor(const std::string&);
 
     protected:
 
@@ -233,7 +233,7 @@ private:
     {
     public:
 
-        ImplVisitor(const std::string&, const std::string&);
+        ImplVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
     };
@@ -242,7 +242,7 @@ private:
     {
     public:
 
-        ImplTieVisitor(const std::string&, const std::string&);
+        ImplTieVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
     };
@@ -251,7 +251,7 @@ private:
     {
     public:
 
-        AsyncVisitor(const std::string&, const std::string&);
+        AsyncVisitor(const std::string&);
 
         virtual void visitOperation(const OperationPtr&);
     };

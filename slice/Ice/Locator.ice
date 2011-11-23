@@ -16,6 +16,7 @@
 #define ICE_LOCATOR_ICE
 
 #include <Ice/Identity.ice>
+#include <Ice/ProcessF.ice>
 
 module Ice
 {
@@ -45,6 +46,15 @@ exception AdapterAlreadyActiveException
  *
  **/
 exception ObjectNotFoundException
+{
+};
+
+/**
+ *
+ * This exception is raised if a server cannot be found.
+ *
+ **/
+exception ServerNotFoundException
 {
 };
 
@@ -128,19 +138,32 @@ interface LocatorRegistry
      * by the adapter). The direct proxy contains the adapter
      * endpoints.
      *
-     * @throws AdapterNotFound Raised if the locator only allows
-     * registered adapters to set their active proxy and if the
+     * @throws AdapterNotFoundException Raised if the adapter cannot
+     * be found, or if the locator only allows
+     * registered adapters to set their active proxy and the
      * adapter is not registered with the locator.
      *
      * @throws AdapterAlreadyActive Raised if an adapter with the same
      * id is already active.
      *
-     * @throws AdapterNotFoundException Raised if the adapter cannot be
-     * found.
-     *
-     */
+     **/
     idempotent void setAdapterDirectProxy(string id, Object* proxy)
 	throws AdapterNotFoundException, AdapterAlreadyActiveException;
+
+    /**
+     *
+     * Set the process proxy for a server.
+     *
+     * @param id The server id.
+     *
+     * @param proxy The process proxy.
+     *
+     * @throws ServerNotFoundException Raised if the server cannot
+     * be found.
+     *
+     **/
+    idempotent void setServerProcessProxy(string id, Process* proxy)
+	throws ServerNotFoundException;
 };
 
 };
