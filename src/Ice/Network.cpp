@@ -296,7 +296,7 @@ void
 IceInternal::setTcpNoDelay(SOCKET fd)
 {
     int flag = 1;
-    if(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&flag, sizeof(int)) == SOCKET_ERROR)
+    if(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&flag, int(sizeof(int))) == SOCKET_ERROR)
     {
 	closeSocket(fd);
 	SocketException ex(__FILE__, __LINE__);
@@ -309,7 +309,7 @@ void
 IceInternal::setKeepAlive(SOCKET fd)
 {
     int flag = 1;
-    if(setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (char*)&flag, sizeof(int)) == SOCKET_ERROR)
+    if(setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (char*)&flag, int(sizeof(int))) == SOCKET_ERROR)
     {
 	closeSocket(fd);
 	SocketException ex(__FILE__, __LINE__);
@@ -321,7 +321,19 @@ IceInternal::setKeepAlive(SOCKET fd)
 void
 IceInternal::setSendBufferSize(SOCKET fd, int sz)
 {
-    if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (char*)&sz, sizeof(int)) == SOCKET_ERROR)
+    if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (char*)&sz, int(sizeof(int))) == SOCKET_ERROR)
+    {
+	closeSocket(fd);
+	SocketException ex(__FILE__, __LINE__);
+	ex.error = getSocketErrno();
+	throw ex;
+    }
+}
+
+void
+IceInternal::setRecvBufferSize(SOCKET fd, int sz)
+{
+    if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (char*)&sz, int(sizeof(int))) == SOCKET_ERROR)
     {
 	closeSocket(fd);
 	SocketException ex(__FILE__, __LINE__);
@@ -335,7 +347,7 @@ IceInternal::doBind(SOCKET fd, struct sockaddr_in& addr)
 {
 #ifndef _WIN32
     int flag = 1;
-    if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*)&flag, sizeof(int)) == SOCKET_ERROR)
+    if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*)&flag, int(sizeof(int))) == SOCKET_ERROR)
     {
 	closeSocket(fd);
 	SocketException ex(__FILE__, __LINE__);
@@ -344,7 +356,7 @@ IceInternal::doBind(SOCKET fd, struct sockaddr_in& addr)
     }
 #endif
 
-    if(bind(fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == SOCKET_ERROR)
+    if(bind(fd, reinterpret_cast<struct sockaddr*>(&addr), int(sizeof(addr))) == SOCKET_ERROR)
     {
 	closeSocket(fd);
 	SocketException ex(__FILE__, __LINE__);
@@ -352,7 +364,7 @@ IceInternal::doBind(SOCKET fd, struct sockaddr_in& addr)
 	throw ex;
     }
 
-    socklen_t len = sizeof(addr);
+    socklen_t len = static_cast<socklen_t>(sizeof(addr));
 #ifdef NDEBUG
     getsockname(fd, reinterpret_cast<struct sockaddr*>(&addr), &len);
 #else
@@ -385,13 +397,13 @@ IceInternal::doConnect(SOCKET fd, struct sockaddr_in& addr, int timeout)
 #ifdef _WIN32
     //
     // Set larger send buffer size to avoid performance problems on
-    // WIN32
+    // WIN32.
     //
     setSendBufferSize(fd, 64 * 1024);
 #endif
 
 repeatConnect:
-    if(::connect(fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == SOCKET_ERROR)
+    if(::connect(fd, reinterpret_cast<struct sockaddr*>(&addr), int(sizeof(addr))) == SOCKET_ERROR)
     {
 	if(interrupted())
 	{
@@ -459,7 +471,7 @@ repeatConnect:
 	    //
 	    Sleep(0);
 #endif
-	    socklen_t len = sizeof(socklen_t);
+	    socklen_t len = static_cast<socklen_t>(sizeof(socklen_t));
 	    int val;
 	    if(getsockopt(fd, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&val), &len) == SOCKET_ERROR)
 	    {
@@ -526,7 +538,7 @@ repeatAccept:
 	if(wouldBlock())
 	{
 	repeatSelect:
-	    int ret;
+	    int rs;
 	    fd_set fdSet;
 	    FD_ZERO(&fdSet);
 	    FD_SET(fd, &fdSet);
@@ -535,14 +547,14 @@ repeatAccept:
 		struct timeval tv;
 		tv.tv_sec = timeout / 1000;
 		tv.tv_usec = (timeout - tv.tv_sec * 1000) * 1000;
-		ret = ::select(fd + 1, 0, &fdSet, 0, &tv);
+		rs = ::select(fd + 1, 0, &fdSet, 0, &tv);
 	    }
 	    else
 	    {
-		ret = ::select(fd + 1, 0, &fdSet, 0, 0);
+		rs = ::select(fd + 1, 0, &fdSet, 0, 0);
 	    }
 	    
-	    if(ret == SOCKET_ERROR)
+	    if(rs == SOCKET_ERROR)
 	    {
 		if(interrupted())
 		{
@@ -554,7 +566,7 @@ repeatAccept:
 		throw ex;
 	    }
 	    
-	    if(ret == 0)
+	    if(rs == 0)
 	    {
 		throw TimeoutException(__FILE__, __LINE__);
 	    }
@@ -573,7 +585,7 @@ repeatAccept:
 #ifdef _WIN32
     //
     // Set larger send buffer size to avoid performance problems on
-    // WIN32
+    // WIN32.
     //
     setSendBufferSize(ret, 64 * 1024);
 #endif
@@ -590,6 +602,10 @@ IceInternal::getAddress(const string& host, int port, struct sockaddr_in& addr)
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = inet_addr(host.c_str());
+
+#ifdef __sun
+#define INADDR_NONE -1
+#endif
 
     if(addr.sin_addr.s_addr == INADDR_NONE)
     {
@@ -611,7 +627,11 @@ IceInternal::getAddress(const string& host, int port, struct sockaddr_in& addr)
 	if(!entry)
 	{
 	    DNSException ex(__FILE__, __LINE__);
-	    ex.error = getDNSErrno();
+#ifdef _WIN32
+	    ex.error = WSAGetLastError();
+#else
+	    ex.error = h_errno;
+#endif
 	    ex.host = host;
 	    throw ex;
 	}
@@ -650,7 +670,11 @@ IceInternal::getLocalHost(bool numeric)
 	if(!entry)
 	{
 	    DNSException ex(__FILE__, __LINE__);
-	    ex.error = getDNSErrno();
+#ifdef _WIN32
+	    ex.error = WSAGetLastError();
+#else
+	    ex.error = h_errno;
+#endif
 	    ex.host = host;
 	    throw ex;
 	}
@@ -996,7 +1020,7 @@ IceInternal::fdToString(SOCKET fd)
 	return "<closed>";
     }
 
-    socklen_t localLen = sizeof(struct sockaddr_in);
+    socklen_t localLen = static_cast<socklen_t>(sizeof(struct sockaddr_in));
     struct sockaddr_in localAddr;
     if(getsockname(fd, reinterpret_cast<struct sockaddr*>(&localAddr), &localLen) == SOCKET_ERROR)
     {
@@ -1007,7 +1031,7 @@ IceInternal::fdToString(SOCKET fd)
     }
     
     bool peerNotConnected = false;
-    socklen_t remoteLen = sizeof(struct sockaddr_in);
+    socklen_t remoteLen = static_cast<socklen_t>(sizeof(struct sockaddr_in));
     struct sockaddr_in remoteAddr;
     if(getpeername(fd, reinterpret_cast<struct sockaddr*>(&remoteAddr), &remoteLen) == SOCKET_ERROR)
     {

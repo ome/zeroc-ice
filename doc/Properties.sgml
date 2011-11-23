@@ -28,7 +28,7 @@ Ice.Trace.Network=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The network tracing level:
+The network trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -64,7 +64,7 @@ Ice.Trace.Protocol=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The protocol tracing level:
+The protocol trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -92,7 +92,7 @@ Ice.Trace.Retry=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The request retry tracing level:
+The request retry trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -114,6 +114,38 @@ The request retry tracing level:
 </para>
 </section>
 </section>
+
+<!-- 
+
+<section><title>Ice.Trace.Slicing</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Trace.Slicing=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The slicing trace level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No tracing of slicing activity. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace all exception and class types that are unknown to the receiver and therefore sliced.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+-->
 
 </section>
 
@@ -291,25 +323,6 @@ in undefined behavior. The default value is no router. </para></note>
 </section>
 </section>
 
-<section><title><replaceable>name</replaceable>.ThreadPool.Size</title>
-<section><title>Synopsis</title>
-<synopsis>
-<replaceable>name</replaceable>.ThreadPool.Size=<replaceable>num</replaceable>
-</synopsis>
-</section>
-<section>
-<title>Description</title>
-<para>
-If <replaceable>num</replaceable> is set to a value larger than zero,
-the object adapter creates its own, private thread pool with
-<replaceable>num</replaceable> threads for dispatching requests. This
-is useful to ensure that a minimum number of threads is available for
-dispatching requests on certain &Ice; objects, in order to avoid
-deadlocks because of thread starvation.
-</para>
-</section>
-</section>
-
 <section><title>Ice.PrintAdapterReady</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -372,25 +385,81 @@ In Java, <replaceable>entry_point</replaceable> is the name of a class.
 <section><title>&Ice; Thread Pool Properties</title>
 <!-- ********************************************************************** -->
 
-<section><title>Ice.ThreadPool.Client.Size, Ice.ThreadPool.Server.Size</title>
+<section><title><replaceable>name</replaceable>.Size</title>
 <section><title>Synopsis</title>
 <synopsis>
-Ice.ThreadPool.Client.Size=<replaceable>num</replaceable>
-Ice.ThreadPool.Server.Size=<replaceable>num</replaceable>
+<replaceable>name</replaceable>.Size=<replaceable>num</replaceable>
 </synopsis>
 </section>
 <section>
 <title>Description</title>
 <para>
-The number of threads in the client and server thread pools. Default
-is one thread for the client thread pool, and 10 threads for the
-server thread pool. The number of threads in each pool must be larger
-than zero. <note><para>Multiple threads for the client side thread
-pool are only required for nested AMI invocations. If AMI is not used, or
-AMI calls are not nested (i.e., AMI callbacks do not call any other
-methods on Ice objects), then there is no need to set the number of
-threads in the client thread pool to a value larger than
-one. </para></note>
+<replaceable>name</replaceable> is the name of the thread pool. The
+name of the client-side thread pool is
+<literal>Ice.ThreadPool.Client</literal>, the name of the default
+server-side thread pool is
+<literal>Ice.ThreadPool.Server</literal>. In addition, individual
+object adapters can have separate thread pools. In this case, the name
+of the thread pool is
+<replaceable>adapter_name</replaceable><literal>.ThreadPool</literal>.
+Having a separate thread pool for an object adapter is useful to
+ensure that a minimum number of threads is available for dispatching
+requests on certain &Ice; objects, in order to avoid deadlocks because
+of thread starvation.
+</para>
+<para>
+<replaceable>num</replaceable> is the initial and also minimum number
+of threads in the thread pool. The default is one thread for
+<literal>Ice.ThreadPool.Client</literal>, five threads for
+<literal>Ice.ThreadPool.Server</literal>, and zero threads for object
+adapter thread pools, meaning that by default, object adapters use the
+default server-side thread pool.  <note><para>Multiple threads for the
+client side thread pool are only required for nested AMI
+invocations. If AMI is not used, or AMI calls are not nested (i.e.,
+AMI callbacks do not call any other methods on Ice objects), then
+there is no need to set the number of threads in the client thread
+pool to a value larger than one. </para></note>
+</para>
+</section>
+</section>
+
+<section><title><replaceable>name</replaceable>.SizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+<replaceable>name</replaceable>.SizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+<replaceable>num</replaceable> is the maximum number of threads for the
+thread pool <replaceable>name</replaceable>. Thread pools in Ice grow
+and shrink dynamically, based on an average load factor. Thread
+pools do not grow larger than the parameter specified by
+<literal>SizeMax</literal>, and they do not shrink to a number of
+threads smaller than the value specified by <literal>Size</literal>.
+</para>
+<para>
+The default value for <literal>SizeMax</literal> is 1 for the
+client-side thread pool. For all other thread pools, it is 10 times
+the value of <literal>Size</literal>.
+</para>
+</section>
+</section>
+
+<section><title><replaceable>name</replaceable>.SizeWarn</title>
+<section><title>Synopsis</title>
+<synopsis>
+<replaceable>name</replaceable>.SizeWarn=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Whenever <replaceable>num</replaceable> threads are active in a thread
+pool, a "low on threads" warning is printed. The default value for
+<literal>SizeWarn</literal> is 80% of the value specified by
+<literal>SizeMax</literal>.
 </para>
 </section>
 </section>
@@ -493,10 +562,10 @@ milliseconds, or -1 for no timeout.
 </section>
 </section>
 
-<section><title>Ice.Override.Compression</title>
+<section><title>Ice.Override.Compress</title>
 <section><title>Synopsis</title>
 <synopsis>
-Ice.Override.Compression=<replaceable>num</replaceable>
+Ice.Override.Compress=<replaceable>num</replaceable>
 </synopsis>
 </section>
 <section>
@@ -678,6 +747,21 @@ If <replaceable>num</replaceable> is set to a value larger than zero,
 a special logger is installed which logs to the syslog facility
 instead of standard error. The identifier for syslog is the
 value of <literal>Ice.ProgramName</literal>. (Unix only.)
+</para>
+</section>
+</section>
+
+<section><title>Ice.Logger.Timestamp</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Logger.Timestamp=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+the output of the default logger will include timestamps.
 </para>
 </section>
 </section>
@@ -1222,7 +1306,7 @@ IcePack.Registry.Trace.NodeRegistry=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The node registry tracing level:
+The node registry trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -1250,7 +1334,7 @@ IcePack.Registry.Trace.ObjectRegistry=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The object registry tracing level:
+The object registry trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -1388,7 +1472,7 @@ IcePack.Node.Trace.Server=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The server tracing level:
+The server trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -1426,7 +1510,7 @@ IcePack.Node.Trace.Adapter=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The object adapter tracing level:
+The object adapter trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -1464,7 +1548,7 @@ IcePack.Node.Trace.Activator=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The activator tracing level:
+The activator trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -1509,7 +1593,21 @@ IceStorm.TopicManager.Endpoints=<replaceable>endpoints</replaceable>
 <section>
 <title>Description</title>
 <para>
-Defines the endpoints for the &IceStorm; topic manager.
+Defines the endpoints for the &IceStorm; topic manager and topic objects.
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.Publish.Endpoints</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.Publish.Endpoints=<replaceable>endpoints</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the endpoints for the &IceStorm; publisher objects.
 </para>
 </section>
 </section>
@@ -1523,7 +1621,7 @@ IceStorm.Trace.TopicManager=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The topic manager tracing level:
+The topic manager trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -1533,13 +1631,7 @@ The topic manager tracing level:
 </row>
 <row>
 <entry>1</entry>
-<entry>Trace topic creation, subscription, and unsubscription.</entry>
-</row>
-<row>
-<entry>2</entry>
-<entry>Like 1, but more verbose, including QoS information, and other
-diagnostic information.
-</entry>
+<entry>Trace topic creation.</entry>
 </row>
 </tbody>
 </tgroup>
@@ -1557,7 +1649,7 @@ IceStorm.Trace.Topic=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The topic tracing level:
+The topic trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -1567,7 +1659,13 @@ The topic tracing level:
 </row>
 <row>
 <entry>1</entry>
-<entry>Trace topic diagnostic information.</entry>
+<entry>Trace topic links, subscription, and unsubscription.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Like 1, but more verbose, including QoS information, and other
+diagnostic information.
+</entry>
 </row>
 </tbody>
 </tgroup>
@@ -1613,7 +1711,7 @@ IceStorm.Trace.Subscriber=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The subscriber tracing level:
+The subscriber trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -1721,7 +1819,7 @@ Glacier.Router.Trace.Client=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The client interface tracing level:
+The client interface trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -1756,7 +1854,7 @@ Glacier.Router.Trace.Server=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The server interface tracing level:
+The server interface trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -1791,7 +1889,7 @@ Glacier.Router.Trace.RoutingTable=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The routing table tracing level:
+The routing table trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -2052,7 +2150,7 @@ Glacier.Starter.Trace=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The router starter tracing level: (Unix only.)
+The router starter trace level: (Unix only.)
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -2260,7 +2358,7 @@ Freeze.Trace.DB=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The &Freeze; database activity tracing level:
+The &Freeze; database activity trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
@@ -2292,7 +2390,7 @@ Freeze.Trace.Evictor=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The &Freeze; evictor activity tracing level:
+The &Freeze; evictor activity trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>

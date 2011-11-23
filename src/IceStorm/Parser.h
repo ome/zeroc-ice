@@ -75,12 +75,11 @@ public:
     void link(const std::list<std::string>&);
     void unlink(const std::list<std::string>&);
     void graph(const std::list<std::string>&);
-    void shutdown();
 
     void getInput(char*, int&, int);
     void nextLine();
     void continueLine();
-    char* getPrompt();
+    const char* getPrompt();
     void scanPosition(const char*);
 
     void error(const char*);

@@ -1,0 +1,74 @@
+# **********************************************************************
+#
+# Copyright (c) 2003
+# ZeroC, Inc.
+# Billerica, MA, USA
+#
+# All Rights Reserved.
+#
+# Ice is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License version 2 as published by
+# the Free Software Foundation.
+#
+# **********************************************************************
+
+#
+# This file is included by Make.rules when uname is SunOS.
+#
+
+CXX               	:= CC
+
+#
+# Which version of CC are we using?
+#
+CCVERSION               := $(filter 5.%, $(shell CC -V 2>&1))
+
+ifeq ($(LP64),yes)
+    CXXARCHFLAGS        := -xarch=v9
+endif
+
+ifeq ($(CCVERSION),5.3)
+    FLEX_NOLINE         := yes
+    BISON_NOLINE        := yes
+    TEMPLATE_REPOSITORY := SunWS_cache
+else
+    ifeq ($(CCVERSION),5.4)
+        CXXWARNFLAGS            := +w
+        TEMPLATE_REPOSITORY     := SunWS_cache
+    else
+        #
+        # Assumes >= 5.5
+        #
+        # -erroff=hidef is a (bad) work-around for
+        # for Sun CC 5.5 bug #4852754
+        #
+        CXXWARNFLAGS            := +w -erroff=hidef
+        CXXSCOPEFLAGS           := -xldscope=hidden
+    endif
+endif
+
+
+CXXFLAGS		= -KPIC -mt +p $(CXXSCOPEFLAGS) $(CXXWARNFLAGS) $(CXXARCHFLAGS)
+
+
+ifeq ($(OPTIMIZE),yes)
+     CXXFLAGS		:= -O -DNDEBUG $(CXXFLAGS)
+else
+     CXXFLAGS		:= -g $(CXXFLAGS)
+endif
+
+mkshlib                 = $(CXX) -G $(LDFLAGS) -o $(1) -h $(2) $(3) $(4)
+
+BASELIBS		= -lIceUtil $(STLPORT_LIBS) -lpthread
+LIBS			= -lIce $(BASELIBS)
+
+ICEUTIL_OS_LIBS         := -lpthread -lrt
+ICE_OS_LIBS             := -ldl -lsocket
+
+lp64suffix              := /sparcv9
+
+ifeq ($(LP64),yes)
+    export LD_LIBRARY_PATH_64	:= $(libdir):$(LD_LIBRARY_PATH_64)
+else
+    export LD_LIBRARY_PATH	:= $(libdir):$(LD_LIBRARY_PATH)
+endif

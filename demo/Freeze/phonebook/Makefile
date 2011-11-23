@@ -1,3 +1,4 @@
+
 # **********************************************************************
 #
 # Copyright (c) 2003
@@ -51,11 +52,11 @@ SLICE_SRCS	= PhoneBook.ice
 
 include $(top_srcdir)/config/Make.rules
 
-CPPFLAGS	:= -I. $(DB_FLAGS) $(CPPFLAGS)
+CPPFLAGS	:= -I. $(DB_FLAGS) $(READLINE_FLAGS) $(CPPFLAGS)
 
 $(CLIENT): $(OBJS) $(COBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(COBJS) $(LIBS) -lreadline -lncurses
+	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(COBJS) $(LIBS) $(READLINE_LIBS)
 
 $(SERVER): $(OBJS) $(SOBJS)
 	rm -f $@
@@ -63,7 +64,7 @@ $(SERVER): $(OBJS) $(SOBJS)
 
 $(COLLOCATED): $(OBJS) $(COLOBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(COLOBJS) -lFreeze -lIceXML $(LIBS) $(DB_LIBS) -lreadline -lncurses
+	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(COLOBJS) -lFreeze -lIceXML $(LIBS) $(DB_LIBS) $(READLINE_LIBS)
 
 NameIdentitiesDict.h NameIdentitiesDict.cpp: PhoneBook.ice $(SLICE2FREEZE)
 	rm -f NameIdentitiesDict.h NameIdentitiesDict.cpp

@@ -32,9 +32,9 @@ using namespace IceInternal;
 
 IceInternal::IncomingBase::IncomingBase(Instance* instance, Connection* connection, 
 					const ObjectAdapterPtr& adapter,
-					bool response) :
+					bool response, Byte compress) :
     _response(response),
-    _is(instance),
+    _compress(compress),
     _os(instance),
     _connection(connection)
 {
@@ -47,29 +47,19 @@ IceInternal::IncomingBase::IncomingBase(IncomingBase& in) :
     _locator(in._locator),
     _cookie(in._cookie),
     _response(in._response),
-    _is(in._is.instance()),
+    _compress(in._compress),
     _os(in._os.instance()),
     _connection(in._connection)
 {
-    _is.swap(in._is);
     _os.swap(in._os);
 }
 
 void
-IceInternal::IncomingBase::__finishInvoke(bool success)
+IceInternal::IncomingBase::__finishInvoke()
 {
     if(_locator && _servant)
     {
 	_locator->finished(_current, _servant, _cookie);
-    }
-    
-    if(success)
-    {
-	_is.endReadEncaps();
-    }
-    else
-    {
-	_is.skipReadEncaps();
     }
     
     //
@@ -79,7 +69,7 @@ IceInternal::IncomingBase::__finishInvoke(bool success)
     //
     if(_response)
     {
-	_connection->sendResponse(&_os);
+	_connection->sendResponse(&_os, _compress);
     }
     else
     {
@@ -120,8 +110,9 @@ IceInternal::IncomingBase::__warning(const string& msg) const
 
 IceInternal::Incoming::Incoming(Instance* instance, Connection* connection, 
 				const ObjectAdapterPtr& adapter,
-				bool response) :
-    IncomingBase(instance, connection, adapter, response)
+				bool response, Byte compress) :
+    IncomingBase(instance, connection, adapter, response, compress),
+    _is(instance)
 {
 }
 
@@ -141,8 +132,8 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     _is.readSize(sz);
     while(sz--)
     {
-	pair<string, string> pr;
-	_is.read(pr.first);
+	pair<const string, string> pr;
+	_is.read(const_cast<string&>(pr.first));
 	_is.read(pr.second);
 	_current.ctx.insert(_current.ctx.end(), pr);
     }
@@ -211,21 +202,6 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    {
 		status = _servant->__dispatch(*this, _current);
 	    }
-
-	    //
-	    // In case of an asynchronous dispatch, _is is now empty,
-	    // because an IncomingAsync has adopted this Incoming.
-	    //
-	    if(_is.b.empty())
-	    {
-		//
-		// If this was an asynchronous dispatch, we're done
-		// here.  We do *not* call __finishInvoke(), because the
-		// call is not finished yet.
-		//
-		assert(status == DispatchOK);
-		return;
-	    }
 	}
     }
     catch(RequestFailedException& ex)
@@ -272,7 +248,8 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(ex.operation);
 	}
 
-	__finishInvoke(false);
+	__finishInvoke();
+	_is.endReadEncaps();
 	return;
     }
     catch(const LocalException& ex)
@@ -289,7 +266,8 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(str.str());
 	}
 
-	__finishInvoke(false);
+	__finishInvoke();
+	_is.endReadEncaps();
 	return;
     }
     catch(const UserException& ex)
@@ -306,7 +284,8 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(str.str());
 	}
 
-	__finishInvoke(false);
+	__finishInvoke();
+	_is.endReadEncaps();
 	return;
     }
     catch(const Exception& ex)
@@ -323,7 +302,8 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(str.str());
 	}
 
-	__finishInvoke(false);
+	__finishInvoke();
+	_is.endReadEncaps();
 	return;
     }
     catch(const std::exception& ex)
@@ -340,7 +320,8 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(str.str());
 	}
 
-	__finishInvoke(false);
+	__finishInvoke();
+	_is.endReadEncaps();
 	return;
     }
     catch(...)
@@ -356,7 +337,8 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(reason);
 	}
 
-	__finishInvoke(false);
+	__finishInvoke();
+	_is.endReadEncaps();
 	return;
     }
 
@@ -365,6 +347,21 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     // in the code below are considered fatal, and must propagate to
     // the caller of this operation.
     //
+    
+    //
+    // DispatchAsync is "pseudo dispatch status", used internally only
+    // to indicate async dispatch.
+    //
+    if(status == DispatchAsync)
+    {
+	//
+	// If this was an asynchronous dispatch, we're done here.  We
+	// do *not* call __finishInvoke(), because the call is not
+	// finished yet.
+	//
+	_is.endReadEncaps();
+	return;
+    }
 
     if(_response)
     {
@@ -389,5 +386,6 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	}
     }
 
-    __finishInvoke(status == DispatchOK || status == DispatchUserException);
+    __finishInvoke();
+    _is.endReadEncaps();
 }

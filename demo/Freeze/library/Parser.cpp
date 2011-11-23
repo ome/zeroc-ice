@@ -197,6 +197,10 @@ Parser::printCurrent()
 	    cout << "no current book" << endl;
 	}
     }
+    catch(const Ice::ObjectNotExistException&)
+    {
+        cout << "current book no longer exists" << endl;
+    }
     catch(const Exception& ex)
     {
 	ostringstream s;
@@ -230,6 +234,10 @@ Parser::rentCurrent(const list<string>& args)
     {
 	cout << "the book has already been rented." << endl;
     }
+    catch(const Ice::ObjectNotExistException&)
+    {
+        cout << "current book no longer exists" << endl;
+    }
     catch(const DatabaseException& ex)
     {
 	error(ex.message);
@@ -261,6 +269,10 @@ Parser::returnCurrent()
     {
 	cout << "the book is not currently rented." << endl;
     }
+    catch(const Ice::ObjectNotExistException&)
+    {
+        cout << "current book no longer exists" << endl;
+    }
     catch(const DatabaseException& ex)
     {
 	error(ex.message);
@@ -287,6 +299,10 @@ Parser::removeCurrent()
 	{
 	    cout << "no current book" << endl;
 	}
+    }
+    catch(const Ice::ObjectNotExistException&)
+    {
+        cout << "current book no longer exists" << endl;
     }
     catch(const DatabaseException& ex)
     {
@@ -369,7 +385,8 @@ Parser::getInput(char* buf, int& result, int maxSize)
     {
 #ifdef HAVE_READLINE
 
-	char* line = readline(parser->getPrompt());
+        const char* prompt = parser->getPrompt();
+	char* line = readline(const_cast<char*>(prompt));
 	if(!line)
 	{
 	    result = 0;
@@ -421,7 +438,7 @@ Parser::getInput(char* buf, int& result, int maxSize)
 	    }
 	}
 	
-	result = line.length();
+	result = static_cast<int>(line.length());
 	if(result > maxSize)
 	{
 	    error("input line too long");
@@ -437,7 +454,7 @@ Parser::getInput(char* buf, int& result, int maxSize)
     }
     else
     {
-	if(((result = fread(buf, 1, maxSize, yyin)) == 0) && ferror(yyin))
+	if(((result = static_cast<int>(fread(buf, 1, maxSize, yyin))) == 0) && ferror(yyin))
 	{
 	    error("input in flex scanner failed");
 	    buf[0] = EOF;
@@ -458,7 +475,7 @@ Parser::continueLine()
     _continue = true;
 }
 
-char*
+const char*
 Parser::getPrompt()
 {
     assert(_commands.empty() && isatty(fileno(yyin)));

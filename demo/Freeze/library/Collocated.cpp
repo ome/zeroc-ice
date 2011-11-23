@@ -51,15 +51,16 @@ LibraryCollocated::runFreeze(int argc, char* argv[], const DBEnvironmentPtr& dbE
     //
     // Create an Evictor for books.
     //
-    EvictorPtr evictor;
-    if(properties->getPropertyAsInt("Library.SaveAfterMutatingOperation") > 0)
+    PersistenceStrategyPtr strategy;
+    if(properties->getPropertyAsInt("Library.IdleStrategy") > 0)
     {
-	evictor = dbBooks->createEvictor(SaveAfterMutatingOperation);
+        strategy = dbBooks->createIdleStrategy();
     }
     else
     {
-	evictor = dbBooks->createEvictor(SaveUponEviction);
+        strategy = dbBooks->createEvictionStrategy();
     }
+    EvictorPtr evictor = dbBooks->createEvictor(strategy);
     Int evictorSize = properties->getPropertyAsInt("Library.EvictorSize");
     if(evictorSize > 0)
     {
@@ -90,6 +91,7 @@ LibraryCollocated::runFreeze(int argc, char* argv[], const DBEnvironmentPtr& dbE
     int runParser(int, char*[], const CommunicatorPtr&);
     int status = runParser(argc, argv, communicator());
     adapter->deactivate();
+    adapter->waitForDeactivate();
 
     return status;
 }

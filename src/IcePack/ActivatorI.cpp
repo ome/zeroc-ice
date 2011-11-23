@@ -136,14 +136,16 @@ IcePack::ActivatorI::activate(const ServerPtr& server)
     //
     // Normalize the pathname a bit.
     //
-    string::size_type pos;
-    while((pos = path.find("//")) != string::npos)
     {
-	path.erase(pos, 1);
-    }
-    while((pos = path.find("/./")) != string::npos)
-    {
-	path.erase(pos, 2);
+	string::size_type pos;
+	while((pos = path.find("//")) != string::npos)
+	{
+	    path.erase(pos, 1);
+	}
+	while((pos = path.find("/./")) != string::npos)
+	{
+	    path.erase(pos, 2);
+	}
     }
 
     //
@@ -166,7 +168,7 @@ IcePack::ActivatorI::activate(const ServerPtr& server)
     //
     // Compute arguments.
     //
-    int argc = server->description.args.size() + _propertiesOverride.size() + 3;
+    int argc = static_cast<int>(server->description.args.size() + _propertiesOverride.size() + 3);
     char** argv = static_cast<char**>(malloc(argc * sizeof(char*)));
     argv[0] = strdup(path.c_str());
 
@@ -184,8 +186,8 @@ IcePack::ActivatorI::activate(const ServerPtr& server)
 
     string locatorArg = "--Ice.Default.Locator=" + _properties->getProperty("Ice.Default.Locator");
     argv[argc - 2] = strdup(locatorArg.c_str());
-    argv[argc - 1] = 0;
-    
+    argv[argc - 1] = 0;    
+
     if(_traceLevels->activator > 1)
     {
 	Ice::Trace out(_traceLevels->logger, _traceLevels->activatorCat);
@@ -225,6 +227,14 @@ IcePack::ActivatorI::activate(const ServerPtr& server)
     }
     if(pid == 0) // Child process.
     {
+
+#ifdef __linux
+	//
+	// Create a process group for this child, to be able to send 
+	// a signal to all the thread-processes with killpg
+	//
+	setpgrp();
+#endif
 	//
 	// Close all file descriptors, except for standard input,
 	// standard output, standard error output, and the write side
@@ -236,6 +246,20 @@ IcePack::ActivatorI::activate(const ServerPtr& server)
 	    if(fd != fds[1])
 	    {
 		close(fd);
+	    }
+	}
+
+	for(q = server->description.envs.begin(); q != server->description.envs.end(); ++q)
+	{
+	    if(putenv(strdup(q->c_str())) != 0)
+	    {
+		SyscallException ex(__FILE__, __LINE__);
+		ex.error = getSystemErrno();
+		ostringstream s;
+		s << "can't set environment variable: " << *q << "':\n" << ex;
+		write(fds[1], s.str().c_str(), s.str().length());
+		close(fds[1]);
+		exit(EXIT_FAILURE);
 	    }
 	}
 
@@ -349,7 +373,15 @@ IcePack::ActivatorI::deactivate(const ServerPtr& server)
     //
     // Send a SIGTERM to the process.
     //
+
+#ifdef __linux
+    //
+    // Use process groups on Linux instead of processes
+    //
+    int ret = ::killpg(static_cast<pid_t>(pid), SIGTERM);
+#else
     int ret = ::kill(static_cast<pid_t>(pid), SIGTERM);
+#endif
     if(ret != 0 && getSystemErrno() != ESRCH)
     {
 	SyscallException ex(__FILE__, __LINE__);
@@ -380,7 +412,12 @@ IcePack::ActivatorI::kill(const ServerPtr& server)
     //
     // Send a SIGKILL to the process.
     //
+#ifdef __linux
+    // Use process groups on Linux instead of processes
+    int ret = ::killpg(static_cast<pid_t>(pid), SIGKILL);
+#else
     int ret = ::kill(static_cast<pid_t>(pid), SIGKILL);
+#endif
     if(ret != 0 && getSystemErrno() != ESRCH)
     {
 	SyscallException ex(__FILE__, __LINE__);
@@ -593,18 +630,18 @@ IcePack::ActivatorI::terminationListener()
 		}
 
 		char s[16];
-		int ret;
+		ssize_t rs;
 		string message;
 
 		//
 		// Read the message over the pipe.
 		//
-		while((ret = read(fd, &s, 16)) > 0)
+		while((rs = read(fd, &s, 16)) > 0)
 		{
-		    message.append(s, ret);
+		    message.append(s, rs);
 		}
 
-		if(ret == -1)
+		if(rs == -1)
 		{
 		    if(errno != EAGAIN || message.empty())
 		    {
@@ -615,7 +652,7 @@ IcePack::ActivatorI::terminationListener()
 
 		    ++p;
 		}
-		else if(ret == 0)
+		else if(rs == 0)
 		{    
 		    //
 		    // If the pipe was closed, the process has terminated.

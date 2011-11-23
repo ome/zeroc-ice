@@ -17,9 +17,7 @@
 #include <Ice/Properties.h>
 #include <Ice/ReferenceFactory.h>
 #include <Ice/ProxyFactory.h>
-#include <Ice/ThreadPool.h>
 #include <Ice/ObjectFactoryManager.h>
-#include <Ice/UserExceptionFactoryManager.h>
 #include <Ice/ObjectAdapterFactory.h>
 #include <Ice/LoggerUtil.h>
 #include <Ice/LocalException.h>
@@ -40,7 +38,6 @@ Ice::CommunicatorI::destroy()
 	if(!_destroyed) // Don't destroy twice.
 	{
 	    _destroyed = true;
-	    _serverThreadPool = 0;
 	    instance = _instance;
 	}
     }
@@ -71,18 +68,6 @@ Ice::CommunicatorI::shutdown()
     // shutdown.
     //
     objectAdapterFactory->shutdown();
-}
-
-void
-Ice::CommunicatorI::signalShutdown()
-{
-    //
-    // No mutex locking here! This operation must be signal-safe.
-    //
-    if(_serverThreadPool)
-    {
-	_serverThreadPool->initiateShutdown();
-    }
 }
 
 void
@@ -140,11 +125,6 @@ Ice::CommunicatorI::createObjectAdapter(const string& name)
     
     ObjectAdapterPtr adapter = _instance->objectAdapterFactory()->createObjectAdapter(name);
 
-    if(!_serverThreadPool) // Lazy initialization of _serverThreadPool.
-    {
-	_serverThreadPool = _instance->serverThreadPool();
-    }
-
     return adapter;
 }
 
@@ -188,39 +168,6 @@ Ice::CommunicatorI::findObjectFactory(const string& id)
     return _instance->servantFactoryManager()->find(id);
 }
 
-void
-Ice::CommunicatorI::addUserExceptionFactory(const UserExceptionFactoryPtr& factory, const string& id)
-{
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
-    _instance->userExceptionFactoryManager()->add(factory, id);
-}
-
-void
-Ice::CommunicatorI::removeUserExceptionFactory(const string& id)
-{
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
-    _instance->userExceptionFactoryManager()->remove(id);
-}
-
-UserExceptionFactoryPtr
-Ice::CommunicatorI::findUserExceptionFactory(const string& id)
-{
-    RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
-    return _instance->userExceptionFactoryManager()->find(id);
-}
-
 PropertiesPtr
 Ice::CommunicatorI::getProperties()
 {
@@ -247,10 +194,11 @@ void
 Ice::CommunicatorI::setLogger(const LoggerPtr& logger)
 {
     RecMutex::Lock sync(*this);
-    if(_destroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
+    //
+    // No check for destruction. It must be possible to set the logger
+    // after destruction (needed by logger plugins for example to
+    // unset the logger).
+    //
     _instance->logger(logger);
 }
 

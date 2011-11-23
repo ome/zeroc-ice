@@ -45,7 +45,7 @@ ContactI::getName(const Ice::Current&) const
 }
 
 void
-ContactI::setName(const string& name, const Ice::Current&)
+ContactI::setName(const string& newName, const Ice::Current&)
 {
     IceUtil::RWRecMutex::WLock sync(*this);
 
@@ -55,8 +55,8 @@ ContactI::setName(const string& name, const Ice::Current&)
     }
 
     assert(!_identity.name.empty());
-    _phoneBook->move(_identity, this->name, name);
-    this->name = name;
+    _phoneBook->move(_identity, name, newName);
+    name = newName;
 }
 
 string
@@ -73,7 +73,7 @@ ContactI::getAddress(const Ice::Current&) const
 }
 
 void
-ContactI::setAddress(const string& address, const Ice::Current&)
+ContactI::setAddress(const string& newAddress, const Ice::Current&)
 {
     IceUtil::RWRecMutex::WLock sync(*this);
 
@@ -82,7 +82,7 @@ ContactI::setAddress(const string& address, const Ice::Current&)
         throw Ice::ObjectNotExistException(__FILE__, __LINE__);
     }
 
-    this->address = address;
+    address = newAddress;
 }
 
 string
@@ -99,7 +99,7 @@ ContactI::getPhone(const Ice::Current&) const
 }
 
 void
-ContactI::setPhone(const string& phone, const Ice::Current&)
+ContactI::setPhone(const string& newPhone, const Ice::Current&)
 {
     IceUtil::RWRecMutex::WLock sync(*this);
 
@@ -108,7 +108,7 @@ ContactI::setPhone(const string& phone, const Ice::Current&)
         throw Ice::ObjectNotExistException(__FILE__, __LINE__);
     }
 
-    this->phone = phone;
+    phone = newPhone;
 }
 
 void
@@ -215,7 +215,7 @@ PhoneBookI::createContact(const Ice::Current&)
 	}
 	
 	identities.push_back(ident);
-	_nameIdentitiesDict.insert(make_pair(string("N"), identities));
+	_nameIdentitiesDict.insert(NameIdentitiesDict::value_type(string("N"), identities));
 	
 	//
 	// Turn the identity into a Proxy and return the Proxy to the
@@ -318,7 +318,7 @@ PhoneBookI::move(const Identity& ident, const string& oldName, const string& new
 	    identities = p->second;
 	}
 	identities.push_back(ident);
-	_nameIdentitiesDict.insert(make_pair("N" + newName, identities));
+	_nameIdentitiesDict.insert(NameIdentitiesDict::value_type("N" + newName, identities));
     }
     catch(const Freeze::DBNotFoundException&)
     {
@@ -363,26 +363,30 @@ PhoneBookI::getNewIdentity()
 	    ids = p->second;
 	    assert(ids.size() == 1);
 
-	    string::size_type p;
-	    bool rc = IceUtil::stringToInt64(ids.front().name, n, p);
+	    string::size_type sz;
+	    bool rc = IceUtil::stringToInt64(ids.front().name, n, sz);
 	    assert(rc);
 	    n += 1;
 	}
 
 	char s[20];
-#ifdef _WIN32
-	sprintf(s, "%I64d", n);
+
+#if defined(ICE_64)
+	sprintf(s, "%ld", n);
 #else
+#   ifdef _WIN32
+	sprintf(s, "%I64d", n);
+#   else
 	sprintf(s, "%lld", n);
+#   endif
 #endif
-    
 	Identity id;
 
 	id.name = s;
 	ids.clear();
 	ids.push_back(id);
 
-	_nameIdentitiesDict.insert(make_pair(string("ID"), ids));
+	_nameIdentitiesDict.insert(NameIdentitiesDict::value_type(string("ID"), ids));
 
 	id.name = s;
 	id.category = "contact";
@@ -431,6 +435,6 @@ PhoneBookI::removeI(const Identity& ident, const string& name)
 	// See the comment in getNewIdentity why the prefix "N" is
 	// needed.
 	//
-	_nameIdentitiesDict.insert(make_pair("N" + name, identities));
+	_nameIdentitiesDict.insert(NameIdentitiesDict::value_type("N" + name, identities));
     }
 }

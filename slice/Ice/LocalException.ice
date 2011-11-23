@@ -17,6 +17,7 @@
 
 #include <Ice/Identity.ice>
 #include <Ice/Facet.ice>
+#include <Ice/BuiltinSequences.ice>
 
 module Ice
 {
@@ -352,10 +353,20 @@ local exception TimeoutException
 /**
  *
  * This exception is a specialization of [TimeoutException] for
- * connection timeout conditions.
+ * connection establishment timeout conditions.
  *
  **/
 local exception ConnectTimeoutException extends TimeoutException
+{
+};
+
+/**
+ *
+ * This exception is a specialization of [TimeoutException] for
+ * connection closure timeout conditions.
+ *
+ **/
+local exception CloseTimeoutException extends TimeoutException
 {
 };
 
@@ -383,12 +394,56 @@ local exception ProtocolException
 /**
  *
  * This exception is a specialization of [ProtocolException],
+ * indicating that a message did not start with the expected
+ * magic number ('I', 'c', 'e', 'P').
+ *
+ **/
+local exception BadMagicException extends ProtocolException
+{
+    /**
+     *
+     * A sequence containing the first four bytes of the incorrect message.
+     *
+     **/
+    ByteSeq badMagic;
+};
+
+/**
+ *
+ * This exception is a specialization of [ProtocolException],
  * indicating that an unsupported protocol version has been
  * encountered.
  *
  **/
 local exception UnsupportedProtocolException extends ProtocolException
 {
+    /**
+     *
+     * The major version number of the unsupported protocol.
+     *
+     **/
+    int badMajor;
+
+    /**
+     *
+     * The minor version number of the unsupported protocol.
+     *
+     **/
+    int badMinor;
+
+    /**
+     *
+     * The major version number of the protocol that is supported.
+     *
+     **/
+    int major;
+
+    /**
+     *
+     * The highest minor version number of the protocol that can be supported.
+     *
+     **/
+    int minor;
 };
 
 /**
@@ -400,6 +455,33 @@ local exception UnsupportedProtocolException extends ProtocolException
  **/
 local exception UnsupportedEncodingException extends ProtocolException
 {
+    /**
+     *
+     * The major version number of the unsupported encoding.
+     *
+     **/
+    int badMajor;
+
+    /**
+     *
+     * The minor version number of the unsupported encoding.
+     *
+     **/
+    int badMinor;
+
+    /**
+     *
+     * The major version number of the encoding that is supported.
+     *
+     **/
+    int major;
+
+    /**
+     *
+     * The highest minor version number of the encoding that can be supported.
+     *
+     **/
+    int minor;
 };
 
 /**
@@ -537,29 +619,6 @@ local exception NoObjectFactoryException extends MarshalException
     /**
      *
      * The absolute Slice type name of the object for which we
-     * could not find a factory.
-     *
-     **/
-    string type;
-};
-
-/**
- *
- * This exception is a specialization of [MarshalException] that is
- * raised if no suitable user exception factory was found during user
- * exception unmarshaling.
- *
- * @see UserExceptionFactory
- * @see Communicator::addUserExceptionFactory
- * @see Communicator::removeUserExceptionFactory
- * @see Communicator::findUserExceptionFactory
- *
- **/
-local exception NoUserExceptionFactoryException extends MarshalException
-{
-    /**
-     *
-     * The absolute Slice type name of the exception for which we
      * could not find a factory.
      *
      **/

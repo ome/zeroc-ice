@@ -53,7 +53,7 @@ Ice::Object::operator<(const Object& r) const
 Int
 Ice::Object::ice_hash() const
 {
-    return reinterpret_cast<Int>(this) >> 4;
+    return static_cast<Int>(reinterpret_cast<Long>(this) >> 4);
 }
 
 const string Ice::Object::__ids[] =
@@ -62,31 +62,31 @@ const string Ice::Object::__ids[] =
 };
 
 bool
-Ice::Object::ice_isA(const string& s, const Current&)
+Ice::Object::ice_isA(const string& s, const Current&) const
 {
     return s == __ids[0];
 }
 
 void
-Ice::Object::ice_ping(const Current&)
+Ice::Object::ice_ping(const Current&) const
 {
     // Nothing to do.
 }
 
 vector<string>
-Ice::Object::ice_ids(const Current&)
+Ice::Object::ice_ids(const Current&) const
 {
     return vector<string>(&__ids[0], &__ids[1]);
 }
 
 const string&
-Ice::Object::ice_id(const Current&)
+Ice::Object::ice_id(const Current&) const
 {
     return __ids[0];
 }
 
 vector<string>
-Ice::Object::ice_facets(const Current&)
+Ice::Object::ice_facets(const Current&) const
 {
     IceUtil::Mutex::Lock sync(_activeFacetMapMutex);
 
@@ -133,8 +133,8 @@ Ice::Object::___ice_ids(Incoming& __in, const Current& __current)
     return DispatchOK;
 }
 
-::IceInternal::DispatchStatus
-Ice::Object::___ice_id(::IceInternal::Incoming& __in, const Current& __current)
+DispatchStatus
+Ice::Object::___ice_id(Incoming& __in, const Current& __current)
 {
     BasicStream* __os = __in.os();
     string __ret = ice_id(__current);
@@ -142,8 +142,8 @@ Ice::Object::___ice_id(::IceInternal::Incoming& __in, const Current& __current)
     return DispatchOK;
 }
 
-::IceInternal::DispatchStatus
-Ice::Object::___ice_facets(::IceInternal::Incoming& __in, const Current& __current)
+DispatchStatus
+Ice::Object::___ice_facets(Incoming& __in, const Current& __current)
 {
     BasicStream* __os = __in.os();
     vector<string> __ret = ice_facets(__current);
@@ -164,7 +164,7 @@ string Ice::Object::__all[] =
 DispatchStatus
 Ice::Object::__dispatch(Incoming& in, const Current& current)
 {
-    pair<const string*, const string*> r =
+    pair<string*, string*> r =
 	equal_range(__all, __all + sizeof(__all) / sizeof(string), current.operation);
 
     if(r.first == r.second)
@@ -201,22 +201,33 @@ Ice::Object::__dispatch(Incoming& in, const Current& current)
 }
 
 void
-Ice::Object::__write(::IceInternal::BasicStream* __os) const
+Ice::Object::__write(BasicStream* __os) const
 {
     IceUtil::Mutex::Lock sync(_activeFacetMapMutex);
     
+    __os->writeTypeId(ice_staticId());
+    __os->startWriteSlice();
     __os->writeSize(Int(_activeFacetMap.size()));
     for(map<string, ObjectPtr>::const_iterator p = _activeFacetMap.begin(); p != _activeFacetMap.end(); ++p)
     {
 	__os->write(p->first);
 	__os->write(p->second);
     }
+    __os->endWriteSlice();
 }
 
 void
-Ice::Object::__read(::IceInternal::BasicStream* __is)
+Ice::Object::__read(BasicStream* __is, bool __rid)
 {
     IceUtil::Mutex::Lock sync(_activeFacetMapMutex);
+
+    if(__rid)
+    {
+	string myId;
+	__is->readTypeId(myId);
+    }
+
+    __is->startReadSlice();
 
     Int sz;
     __is->readSize(sz);
@@ -226,11 +237,14 @@ Ice::Object::__read(::IceInternal::BasicStream* __is)
 
     while(sz-- > 0)
     {
-	pair<string, ObjectPtr> v;
-	__is->read(v.first);
-	__is->read("", 0, v.second);
+	string s;
+	__is->read(s);
+	pair<const string, ObjectPtr> v(s, ObjectPtr());
 	_activeFacetMapHint = _activeFacetMap.insert(_activeFacetMapHint, v);
+	__is->read(::Ice::__patch__ObjectPtr, &_activeFacetMapHint->second);
     }
+
+    __is->endReadSlice();
 }
 
 void
@@ -238,7 +252,7 @@ Ice::Object::__marshal(const ::Ice::StreamPtr& __os) const
 {
     IceUtil::Mutex::Lock sync(_activeFacetMapMutex);
 
-    __os->startWriteDictionary("ice:facets", _activeFacetMap.size());
+    __os->startWriteDictionary("ice:facets", static_cast<Int>(_activeFacetMap.size()));
     for(map<string, ObjectPtr>::const_iterator p = _activeFacetMap.begin(); p != _activeFacetMap.end(); ++p)
     {
 	__os->startWriteDictionaryElement();
@@ -263,8 +277,8 @@ Ice::Object::__unmarshal(const ::Ice::StreamPtr& __is)
     while(sz-- > 0)
     {
 	__is->startReadDictionaryElement();
-	pair<string, ObjectPtr> v;
-	v.first = __is->readString("ice:key");
+	pair<const string, ObjectPtr> v;
+	const_cast<string&>(v.first) = __is->readString("ice:key");
 	v.second = __is->readObject("ice:value", "", 0);
 	_activeFacetMapHint = _activeFacetMap.insert(_activeFacetMapHint, v);
 	__is->endReadDictionaryElement();
@@ -298,7 +312,7 @@ Ice::Object::ice_addFacet(const ObjectPtr& facet, const string& name)
 	throw ex;
     }
 
-    _activeFacetMapHint = _activeFacetMap.insert(_activeFacetMapHint, make_pair(name, facet));
+    _activeFacetMapHint = _activeFacetMap.insert(_activeFacetMapHint, pair<const string, ObjectPtr>(name, facet));
 }
 
 ObjectPtr
@@ -388,7 +402,7 @@ Ice::Object::ice_findFacet(const string& name)
 ObjectPtr
 Ice::Object::ice_findFacetPath(const vector<string>& path, int start)
 {
-    int sz = path.size();
+    int sz = static_cast<int>(path.size());
 
     if(start > sz)
     {
@@ -411,6 +425,13 @@ Ice::Object::ice_findFacetPath(const vector<string>& path, int start)
     }
 }
 
+void
+Ice::__patch__ObjectPtr(void* __addr, ObjectPtr& v)
+{
+    ObjectPtr* p = static_cast<ObjectPtr*>(__addr);
+    *p = v;
+}
+
 DispatchStatus
 Ice::Blobject::__dispatch(Incoming& in, const Current& current)
 {
@@ -422,11 +443,11 @@ Ice::Blobject::__dispatch(Incoming& in, const Current& current)
     in.os()->writeBlob(outParams);
     if(ok)
     {
-	return ::IceInternal::DispatchOK;
+	return DispatchOK;
     }
     else
     {
-	return ::IceInternal::DispatchUserException;
+	return DispatchUserException;
     }
 }
 
@@ -453,5 +474,5 @@ Ice::BlobjectAsync::__dispatch(Incoming& in, const Current& current)
     {
 	cb->ice_exception();
     }
-    return ::IceInternal::DispatchOK;
+    return DispatchAsync;
 }

@@ -1,0 +1,434 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Glacier::Starter</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.59"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Glacier::SessionManager"
+HREF="glacier.sessionmanager.html"><LINK
+REL="NEXT"
+TITLE="IceStorm"
+HREF="icestorm.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="glacier.sessionmanager.html"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="icestorm.html"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="GLACIER.STARTER"
+><TT
+CLASS="LITERAL"
+>Glacier::Starter</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13541"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>interface <TT
+CLASS="CLASSNAME"
+>Starter</TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>The <SPAN
+CLASS="PHRASE"
+>Glacier</SPAN
+> router starter.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13547"
+>Operation Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="glacier.starter.html#GLACIER.STARTER.STARTROUTER"
+><TT
+CLASS="FUNCTION"
+>startRouter</TT
+></A
+></DT
+><DD
+><P
+>Start a new <SPAN
+CLASS="PHRASE"
+>Glacier</SPAN
+> router.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="GLACIER.STARTER.STARTROUTER"
+><TT
+CLASS="LITERAL"
+>startRouter</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="glacier.router.html"
+><TT
+CLASS="CLASSNAME"
+>Router*</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>startRouter</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>password</I
+></TT
+>,
+    out <A
+HREF="ice.html#ICE.BYTESEQ"
+><SPAN
+CLASS="TYPE"
+>::Ice::ByteSeq</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>privateKey</I
+></TT
+>,
+    out <A
+HREF="ice.html#ICE.BYTESEQ"
+><SPAN
+CLASS="TYPE"
+>::Ice::ByteSeq</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>publicKey</I
+></TT
+>,
+    out <A
+HREF="ice.html#ICE.BYTESEQ"
+><SPAN
+CLASS="TYPE"
+>::Ice::ByteSeq</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>routerCert</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>userId</I
+></TT
+>)
+    throws
+	<A
+HREF="glacier.invalidpasswordexception.html"
+><TT
+CLASS="CLASSNAME"
+>InvalidPasswordException</TT
+></A
+>,
+	<A
+HREF="glacier.cannotstartrouterexception.html"
+><TT
+CLASS="CLASSNAME"
+>CannotStartRouterException</TT
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Start a new <SPAN
+CLASS="PHRASE"
+>Glacier</SPAN
+> router. If the password for the given
+user id is incorrect, an <A
+HREF="glacier.invalidpasswordexception.html"
+><TT
+CLASS="CLASSNAME"
+>InvalidPasswordException</TT
+></A
+> is
+raised. Otherwise a new router is started, and a proxy to that
+router is returned to the caller.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13585"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>userId</I
+></TT
+></DT
+><DD
+><P
+>			    The user id for which to check the password.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>password</I
+></TT
+></DT
+><DD
+><P
+>			    The password for the given user id.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>privateKey</I
+></TT
+></DT
+><DD
+><P
+>			    The RSA Private Key (DER encoded) for the
+client to use. (Only for SSL.)</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>publicKey</I
+></TT
+></DT
+><DD
+><P
+>			    The RSA Public Key (DER encoded) for the
+client to use. (Only for SSL.)</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>routerCert</I
+></TT
+></DT
+><DD
+><P
+>			    The trusted certificate of the router.
+(Only for SSL.)</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13613"
+>Return Value</A
+></H3
+><P
+>		A proxy to the router that has been started.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13616"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="glacier.invalidpasswordexception.html"
+><TT
+CLASS="CLASSNAME"
+>InvalidPasswordException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if the password for the
+given user id is not correct.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="glacier.sessionmanager.html"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="icestorm.html"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Glacier::SessionManager</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceStorm</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

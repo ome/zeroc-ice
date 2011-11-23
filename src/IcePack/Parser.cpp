@@ -22,11 +22,12 @@
 
 #include <iterator>
 
+extern FILE* yyin;
+extern int yydebug;
+
 using namespace std;
 using namespace Ice;
 using namespace IcePack;
-
-extern FILE* yyin;
 
 namespace IcePack
 {
@@ -101,7 +102,7 @@ IcePack::Parser::addApplication(const list<string>& args)
 
 	string descriptor = *p++;
 
-	ServerTargets targets;
+	StringSeq targets;
 	for(; p != args.end(); ++p)
 	{
 	    targets.push_back(*p);
@@ -242,7 +243,7 @@ IcePack::Parser::addServer(const list<string>& args)
 	string descriptor = *p++;
 	string path;
 	string ldpath;
-	ServerTargets targets;
+	StringSeq targets;
 
 	if(p != args.end())
 	{
@@ -367,6 +368,9 @@ IcePack::Parser::describeServer(const list<string>& args)
 	cout << "activation = " << (activation == OnDemand ? "on-demand" : "manual") << endl;
 	cout << "args = ";
 	copy(desc.args.begin(), desc.args.end(), ostream_iterator<string>(cout," "));
+	cout << endl;
+	cout << "envs = ";
+	copy(desc.envs.begin(), desc.envs.end(), ostream_iterator<string>(cout," "));
 	cout << endl;
     }
     catch(const Exception& ex)
@@ -676,7 +680,8 @@ IcePack::Parser::getInput(char* buf, int& result, int maxSize)
     {
 #ifdef HAVE_READLINE
 
-	char* line = readline(parser->getPrompt());
+        const char* prompt = parser->getPrompt();
+	char* line = readline(const_cast<char*>(prompt));
 	if(!line)
 	{
 	    result = 0;
@@ -728,7 +733,7 @@ IcePack::Parser::getInput(char* buf, int& result, int maxSize)
 	    }
 	}
 	
-	result = line.length();
+	result = (int) line.length();
 	if(result > maxSize)
 	{
 	    error("input line too long");
@@ -744,7 +749,7 @@ IcePack::Parser::getInput(char* buf, int& result, int maxSize)
     }
     else
     {
-	if(((result = fread(buf, 1, maxSize, yyin)) == 0) && ferror(yyin))
+	if(((result = (int) fread(buf, 1, maxSize, yyin)) == 0) && ferror(yyin))
 	{
 	    error("input in flex scanner failed");
 	    buf[0] = EOF;
@@ -765,7 +770,7 @@ IcePack::Parser::continueLine()
     _continue = true;
 }
 
-char*
+const char*
 IcePack::Parser::getPrompt()
 {
     assert(_commands.empty() && isatty(fileno(yyin)));
@@ -867,7 +872,6 @@ IcePack::Parser::warning(const string& s)
 int
 IcePack::Parser::parse(FILE* file, bool debug)
 {
-    extern int yydebug;
     yydebug = debug ? 1 : 0;
 
     assert(!parser);
@@ -896,7 +900,6 @@ IcePack::Parser::parse(FILE* file, bool debug)
 int
 IcePack::Parser::parse(const std::string& commands, bool debug)
 {
-    extern int yydebug;
     yydebug = debug ? 1 : 0;
 
     assert(!parser);

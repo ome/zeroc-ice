@@ -26,47 +26,44 @@ public:
     
     MonitorRecMutexTestThread(Monitor<RecMutex>& m) :
 	_monitor(m),
-	_trylock(false)
+	_tryLock(false)
     {
     }
 
     virtual void run()
     {
-	try
+	
+	Monitor<RecMutex>::TryLock tlock(_monitor);
+	test(!tlock.acquired());
+	
 	{
-	    Monitor<RecMutex>::TryLock lock(_monitor);
-	    test(false);
+	    Mutex::Lock lock(_tryLockMutex);
+	    _tryLock = true;
 	}
-	catch(const ThreadLockedException&)
-	{
-	    // Expected
-	}
-
-	_trylock = true;
-	_trylockCond.signal();
+	_tryLockCond.signal();
 
 	Monitor<RecMutex>::Lock lock(_monitor);
     }
 
     void
-    waitTrylock()
+    waitTryLock()
     {
-	Mutex::Lock lock(_trylockMutex);
-	while(!_trylock)
+	Mutex::Lock lock(_tryLockMutex);
+	while(!_tryLock)
 	{
-	    _trylockCond.wait(lock);
+	    _tryLockCond.wait(lock);
 	}
     }
 
 private:
 
     Monitor<RecMutex>& _monitor;
-    bool _trylock;
+    bool _tryLock;
     //
     // Use native Condition variable here, not Monitor.
     //
-    Cond _trylockCond;
-    Mutex _trylockMutex;
+    Cond _tryLockCond;
+    Mutex _tryLockMutex;
 };
 
 typedef Handle<MonitorRecMutexTestThread> MonitorRecMutexTestThreadPtr;
@@ -119,23 +116,19 @@ MonitorRecMutexTest::run()
 	Monitor<RecMutex>::Lock lock(monitor);
 
 	Monitor<RecMutex>::TryLock lock2(monitor);
+	test(lock2.acquired());
 	
 	// TEST: TryLock
-	try
-	{
-	    Monitor<RecMutex>::TryLock lock(monitor);
-	}
-	catch(const ThreadLockedException&)
-	{
-	    test(false);
-	}
+	
+	Monitor<RecMutex>::TryLock tlock(monitor);
+	test(tlock.acquired());
 	
 	// TEST: Start thread, try to acquire the mutex.
 	t = new MonitorRecMutexTestThread(monitor);
 	control = t->start();
 	
-	// TEST: Wait until the trylock has been tested.
-	t->waitTrylock();
+	// TEST: Wait until the tryLock has been tested.
+	t->waitTryLock();
     }
 
     //

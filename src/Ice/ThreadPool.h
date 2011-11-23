@@ -17,6 +17,7 @@
 
 #include <IceUtil/Shared.h>
 #include <IceUtil/Mutex.h>
+#include <IceUtil/Monitor.h>
 #include <IceUtil/Thread.h>
 
 #include <Ice/ThreadPoolF.h>
@@ -35,11 +36,11 @@ namespace IceInternal
 
 class BasicStream;
 
-class ThreadPool : public ::IceUtil::Shared, public IceUtil::Mutex
+class ThreadPool : public IceUtil::Shared, public IceUtil::Mutex
 {
 public:
 
-    ThreadPool(const InstancePtr&, int, int);
+    ThreadPool(const InstancePtr&, const std::string&, int);
     virtual ~ThreadPool();
 
     void destroy();
@@ -47,32 +48,35 @@ public:
     void _register(SOCKET, const EventHandlerPtr&);
     void unregister(SOCKET);
     void promoteFollower();
-    void initiateShutdown(); // Signal-safe shutdown initiation.
     void joinWithAllThreads();
     
 private:
 
+    void initiateShutdown(); // Signal-safe shutdown initiation.
     bool clearInterrupt();
     void setInterrupt(char);
 
-    void run();
+    bool run(); // Returns true if a follower should be promoted.
     void read(const EventHandlerPtr&);
 
     InstancePtr _instance;
     bool _destroyed;
+    const std::string _prefix;
+
     SOCKET _maxFd;
     SOCKET _minFd;
     SOCKET _lastFd;
     SOCKET _fdIntrRead;
     SOCKET _fdIntrWrite;
     fd_set _fdSet;
-    std::list<std::pair<SOCKET, EventHandlerPtr> > _changes; // Event handler set for addition; null for removal.
-    std::map<SOCKET, EventHandlerPtr> _handlerMap;
-    int _timeout;
-    ::IceUtil::Mutex _threadMutex;
-    bool _multipleThreads;
 
-    class EventHandlerThread : public ::IceUtil::Thread
+    std::list<std::pair<SOCKET, EventHandlerPtr> > _changes; // Event handler set for addition; null for removal.
+
+    std::map<SOCKET, EventHandlerPtr> _handlerMap;
+
+    int _timeout;
+
+    class EventHandlerThread : public IceUtil::Thread
     {
     public:
 	
@@ -85,7 +89,16 @@ private:
     };
     friend class EventHandlerThread;
 
+    const int _size; // Number of threads that are pre-created.
+    const int _sizeMax; // Maximum number of threads.
+    const int _sizeWarn; // If _inUse reaches _sizeWarn, a "low on threads" warning will be printed.
+
     std::vector<IceUtil::ThreadControl> _threads; // Control for all threads, running or not.
+    int _running; // Number of running threads.
+    int _inUse; // Number of threads that are currently in use.
+    double _load; // Current load in number of threads.
+
+    IceUtil::Mutex _promoteMutex;
 };
 
 }

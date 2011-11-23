@@ -12,6 +12,11 @@
 //
 // **********************************************************************
 
+// For readdir_r
+#ifdef __sun
+#define _POSIX_PTHREAD_SEMANTICS
+#endif
+
 #include <IceUtil/InputUtil.h>
 #include <Ice/Ice.h>
 #include <XMLTransform/XMLTransform.h>
@@ -364,7 +369,7 @@ XMLTransform::DocumentInfo::DocumentInfo(ICE_XERCES_NS DOMDocument* document, bo
     _targetNamespace(targetNamespace)
 {
     ICE_XERCES_NS DOMNamedNodeMap* attributes = root->getAttributes();
-    unsigned int max = attributes->getLength();
+    size_t max = attributes->getLength();
     for(unsigned int i = 0; i < max; ++i)
     {
 	ICE_XERCES_NS DOMNode* attribute = attributes->item(i);
@@ -1386,8 +1391,10 @@ public:
     void create(ICE_XERCES_NS DOMDocument*, ICE_XERCES_NS DOMDocument*, const Ice::StringSeq&, const Ice::StringSeq&,
                 const Ice::StringSeq&, const Ice::StringSeq&, TransformMap*, TransformMap*);
 
-private:
 
+
+    // COMPILERBUG: Should be private but with Sun C++ 5.4, can't use Type in 
+    // StringTypeTable below unless it's public.
     enum Type
     {
 	TypeBoolean,
@@ -1404,6 +1411,8 @@ private:
 	TypeReference,
 	TypeInternal
     };
+
+private:
 
     //
     // Load all schemas in a list of directories.
@@ -1623,8 +1632,8 @@ XMLTransform::TransformFactory::create(ICE_XERCES_NS DOMDocument* fromDoc, ICE_X
     assert(toSchema);
     DocumentInfoPtr toInfo = new DocumentInfo(toDoc, false, toSchema);
     
-    _fromDocs.insert(make_pair(fromInfo->getTargetNamespace(), fromInfo));
-    _toDocs.insert(make_pair(toInfo->getTargetNamespace(), toInfo));
+    _fromDocs.insert(pair<const string, DocumentInfoPtr>(fromInfo->getTargetNamespace(), fromInfo));
+    _toDocs.insert(pair<const string, DocumentInfoPtr>(toInfo->getTargetNamespace(), toInfo));
 
     //
     // Process the import/include declarations for the source schema documents.
@@ -1715,26 +1724,30 @@ XMLTransform::TransformFactory::load(DocumentMap& documents, set<string>& import
 
 #else
 
-        struct dirent **namelist;
-        int n = ::scandir(path.c_str(), &namelist, 0, alphasort);
-        if(n < 0)
-        {
-            InvalidSchema ex(__FILE__, __LINE__);
+	DIR* dir = opendir(path.c_str());
+	
+	if (dir == 0)
+	{
+	    InvalidSchema ex(__FILE__, __LINE__);
             ex.reason = "cannot read directory `" + path + "': " + strerror(errno);
             throw ex;
-        }
+	}
+	    
+	
+	// TODO: make the allocation/deallocation exception-safe
+	struct dirent* entry = static_cast<struct dirent*>(malloc(pathconf(path.c_str(), _PC_NAME_MAX) + 1));
 
-        for(int i = 0; i < n; ++i)
-        {
-            string name = namelist[i]->d_name;
+        while(readdir_r(dir, entry, &entry) == 0 && entry != 0)
+	{
+            string name = entry->d_name;
             assert(!name.empty());
-
-            free(namelist[i]);
 
             struct stat buf;
             string fullPath = path + '/' + name;
             if(::stat(fullPath.c_str(), &buf) == -1)
             {
+		free(entry);
+		closedir(dir);
                 InvalidSchema ex(__FILE__, __LINE__);
                 ex.reason = "cannot stat `" + fullPath + "': " + strerror(errno);
                 throw ex;
@@ -1752,8 +1765,9 @@ XMLTransform::TransformFactory::load(DocumentMap& documents, set<string>& import
                 import(documents, importedFiles, "", fullPath, paths);
             }
         }
-        
-        free(namelist);
+
+        free(entry);
+	closedir(dir);
 
 #endif
     }
@@ -1830,7 +1844,7 @@ XMLTransform::TransformFactory::import(DocumentMap& documents, set<string>& impo
     parser.adoptDocument();
 
     DocumentInfoPtr info = new DocumentInfo(document, true, schema, ns);
-    documents.insert(make_pair(info->getTargetNamespace(), info));
+    documents.insert(pair<const string, DocumentInfoPtr>(info->getTargetNamespace(), info));
 
     //
     // Add the file to the list of imported files.
@@ -2277,7 +2291,7 @@ XMLTransform::TransformFactory::createTransform(const DocumentInfoPtr& fromTypeI
 	    if(_staticClassTransforms->find(type) == _staticClassTransforms->end())
 	    {
                 StructTransform* st = new StructTransform;
-                _staticClassTransforms->insert(make_pair(type, st));
+                _staticClassTransforms->insert(pair<const string, TransformPtr>(type, st));
 
                 vector<ElementTransformPtr> v;
                 createClassContentTransform(fromInfo, from, toInfo, to, v);
@@ -2957,7 +2971,7 @@ XMLTransform::DBTransformer::transform(ICE_XERCES_NS DOMDocument* oldSchema, ICE
                 fullKey.append(header);
                 fullKey.append(&k[0], k.size());
                 fullKey.append(footer);
-                ICE_XERCES_NS MemBufInputSource keySource((const XMLByte*)fullKey.data(), fullKey.size(), "key");
+                ICE_XERCES_NS MemBufInputSource keySource((const XMLByte*)fullKey.data(), static_cast<unsigned int>(fullKey.size()), "key");
                 parser.parse(keySource);
                 ICE_XERCES_NS DOMDocument* keyDoc = parser.getDocument();
 
@@ -2978,8 +2992,9 @@ XMLTransform::DBTransformer::transform(ICE_XERCES_NS DOMDocument* oldSchema, ICE
                 fullValue.append(header);
                 fullValue.append(&value[0], value.size());
                 fullValue.append(footer);
-                ICE_XERCES_NS MemBufInputSource valueSource((const XMLByte*)fullValue.data(), fullValue.size(),
-                                                            "value");
+                ICE_XERCES_NS MemBufInputSource valueSource((const XMLByte*)fullValue.data(), 
+							    static_cast<unsigned int>(fullValue.size()),
+							    "value");
                 parser.parse(valueSource);
                 ICE_XERCES_NS DOMDocument* valueDoc = parser.getDocument();
 
@@ -3135,7 +3150,9 @@ XMLTransform::DBTransformer::transform(const string& schemaStr)
 
     try
     {
-        ICE_XERCES_NS MemBufInputSource source((const XMLByte*)schemaStr.data(), schemaStr.size(), "schema");
+        ICE_XERCES_NS MemBufInputSource source((const XMLByte*)schemaStr.data(), 
+					       static_cast<unsigned int>(schemaStr.size()), 
+					       "schema");
         parser.parse(source);
         schema = parser.getDocument();
     }

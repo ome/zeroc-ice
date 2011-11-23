@@ -22,11 +22,12 @@
 #   include <readline/history.h>
 #endif
 
+extern FILE* yyin;
+extern int yydebug;
+
 using namespace std;
 using namespace Ice;
 using namespace IceStorm;
-
-extern FILE* yyin;
 
 namespace IceStorm
 {
@@ -53,17 +54,23 @@ Parser::usage()
         "unlink FROM TO              Unlink TO from FROM.\n"
         "graph DATA COST             Construct the link graph as described in DATA with COST\n"
         "list [TOPICS]               Display information on TOPICS or all topics.\n"
-        "shutdown                    Shut the IceStorm server down.\n";
+        ;
 }
 
 void
 Parser::create(const list<string>& args)
 {
+    if(args.size() == 0)
+    {
+        error("`create' requires an argument (type `help' for more info)");
+        return;
+    }
+
     try
     {
 	for(list<string>::const_iterator i = args.begin(); i != args.end() ; ++i)
 	{
-	    _admin->create(*i);
+            _admin->create(*i);
 	}
     }
     catch(const Exception& ex)
@@ -272,7 +279,6 @@ Parser::graph(const list<string>& _args)
 	return;
     }
     
-
     try
     {
 	WeightedGraph graph;
@@ -282,13 +288,14 @@ Parser::graph(const list<string>& _args)
 	    return;
 	}
 	
-
 	//
 	// Compute the new edge set.
 	//
-	vector<int> edges;
-	graph.compute(edges, maxCost);
-	graph.swap(edges);
+	{
+	    vector<int> edges;
+	    graph.compute(edges, maxCost);
+	    graph.swap(edges);
+	}
 
 	//
 	// Ensure each vertex is present.
@@ -373,21 +380,6 @@ Parser::graph(const list<string>& _args)
 }
 
 void
-Parser::shutdown()
-{
-    try
-    {
-	_admin->shutdown();
-    }
-    catch(const Exception& ex)
-    {
-	ostringstream s;
-	s << ex;
-	error(s.str());
-    }
-}
-
-void
 Parser::getInput(char* buf, int& result, int maxSize)
 {
     if(!_commands.empty())
@@ -416,7 +408,8 @@ Parser::getInput(char* buf, int& result, int maxSize)
     {
 #ifdef HAVE_READLINE
 
-	char* line = readline(parser->getPrompt());
+        const char* prompt = parser->getPrompt();
+	char* line = readline(const_cast<char*>(prompt));
 	if(!line)
 	{
 	    result = 0;
@@ -468,7 +461,7 @@ Parser::getInput(char* buf, int& result, int maxSize)
 	    }
 	}
 	
-	result = line.length();
+	result = (int) line.length();
 	if(result > maxSize)
 	{
 	    error("input line too long");
@@ -484,7 +477,7 @@ Parser::getInput(char* buf, int& result, int maxSize)
     }
     else
     {
-	if(((result = fread(buf, 1, maxSize, yyin)) == 0) && ferror(yyin))
+	if(((result = (int) fread(buf, 1, maxSize, yyin)) == 0) && ferror(yyin))
 	{
 	    error("input in flex scanner failed");
 	    buf[0] = EOF;
@@ -505,7 +498,7 @@ Parser::continueLine()
     _continue = true;
 }
 
-char*
+const char*
 Parser::getPrompt()
 {
     assert(_commands.empty() && isatty(fileno(yyin)));
@@ -607,7 +600,6 @@ Parser::warning(const string& s)
 int
 Parser::parse(FILE* file, bool debug)
 {
-    extern int yydebug;
     yydebug = debug ? 1 : 0;
 
     assert(!parser);
@@ -636,7 +628,6 @@ Parser::parse(FILE* file, bool debug)
 int
 Parser::parse(const std::string& commands, bool debug)
 {
-    extern int yydebug;
     yydebug = debug ? 1 : 0;
 
     assert(!parser);

@@ -16,10 +16,10 @@
 #include <IceUtil/Exception.h>
 #include <IceUtil/Time.h>
 
-#include <assert.h>
 
 IceUtil::RWRecMutex::RWRecMutex() :
     _count(0),
+    _writerId(0),
     _waitingWriters(0)
 {
 }
@@ -29,7 +29,7 @@ IceUtil::RWRecMutex::~RWRecMutex()
 }
 
 void
-IceUtil::RWRecMutex::readlock() const
+IceUtil::RWRecMutex::readLock() const
 {
     Mutex::Lock lock(_mutex);
 
@@ -44,8 +44,8 @@ IceUtil::RWRecMutex::readlock() const
     _count++;
 }
 
-void
-IceUtil::RWRecMutex::tryReadlock() const
+bool
+IceUtil::RWRecMutex::tryReadLock() const
 {
     Mutex::Lock lock(_mutex);
 
@@ -55,13 +55,14 @@ IceUtil::RWRecMutex::tryReadlock() const
     //
     if(_count < 0 || _waitingWriters != 0)
     {
-	throw ThreadLockedException(__FILE__, __LINE__);
+	return false;
     }
     _count++;
+    return true;
 }
 
-void
-IceUtil::RWRecMutex::timedTryReadlock(const Time& timeout) const
+bool
+IceUtil::RWRecMutex::timedReadLock(const Time& timeout) const
 {
     Mutex::Lock lock(_mutex);
 
@@ -75,19 +76,23 @@ IceUtil::RWRecMutex::timedTryReadlock(const Time& timeout) const
 	Time remainder = end - Time::now();
 	if(remainder > Time())
 	{
-	    _readers.timedWait(lock, remainder);
+	    if(_readers.timedWait(lock, remainder) == false)
+	    {
+		return false;
+	    }
 	}
 	else
 	{
-	    throw ThreadLockedException(__FILE__, __LINE__);
+	    return false;
 	}
     }
 
     _count++;
+    return true;
 }
 
 void
-IceUtil::RWRecMutex::writelock() const
+IceUtil::RWRecMutex::writeLock() const
 {
     Mutex::Lock lock(_mutex);
 
@@ -95,7 +100,7 @@ IceUtil::RWRecMutex::writelock() const
     // If the mutex is already write locked by this writer then
     // decrement _count, and return.
     //
-    if(_count < 0 && _writerControl == ThreadControl())
+    if(_count < 0 && _writerId == ThreadControl().id())
     {
 	--_count;
 	return;
@@ -124,11 +129,11 @@ IceUtil::RWRecMutex::writelock() const
     // Got the lock, indicate it's held by a writer.
     //
     _count = -1;
-    _writerControl = ThreadControl();
+    _writerId = ThreadControl().id();
 }
 
-void
-IceUtil::RWRecMutex::tryWritelock() const
+bool
+IceUtil::RWRecMutex::tryWriteLock() const
 {
     Mutex::Lock lock(_mutex);
 
@@ -136,10 +141,10 @@ IceUtil::RWRecMutex::tryWritelock() const
     // If the mutex is already write locked by this writer then
     // decrement _count, and return.
     //
-    if(_count < 0 && _writerControl == ThreadControl())
+    if(_count < 0 && _writerId == ThreadControl().id())
     {
 	--_count;
-	return;
+	return true;
     }
 
     //
@@ -147,28 +152,29 @@ IceUtil::RWRecMutex::tryWritelock() const
     //
     if(_count != 0)
     {
-	throw ThreadLockedException(__FILE__, __LINE__);
+	return false;
     }
 
     //
     // Got the lock, indicate it's held by a writer.
     //
     _count = -1;
-    _writerControl = ThreadControl();
+    _writerId = ThreadControl().id();
+    return true;
 }
 
-void
-IceUtil::RWRecMutex::timedTryWritelock(const Time& timeout) const
+bool
+IceUtil::RWRecMutex::timedWriteLock(const Time& timeout) const
 {
     Mutex::Lock lock(_mutex);
 
     //
     // If the mutex is already write locked by this writer then
     // decrement _count, and return.
-    if(_count < 0 && _writerControl == ThreadControl())
+    if(_count < 0 && _writerId == ThreadControl().id())
     {
 	--_count;
-	return;
+	return true;
     }
 
     //
@@ -184,18 +190,22 @@ IceUtil::RWRecMutex::timedTryWritelock(const Time& timeout) const
 	    _waitingWriters++;
 	    try
 	    {
-		_writers.timedWait(lock, remainder);
+		bool result = _writers.timedWait(lock, remainder);
+		_waitingWriters--;
+		if(result == false)
+		{
+		    return false;
+		}
 	    }
 	    catch(...)
 	    {
 		--_waitingWriters;
 		throw;
 	    }
-	    _waitingWriters--;
 	}
 	else
 	{
-	    throw ThreadLockedException(__FILE__, __LINE__);
+	    return false;
 	}
     }
 
@@ -203,7 +213,8 @@ IceUtil::RWRecMutex::timedTryWritelock(const Time& timeout) const
     // Got the lock, indicate it's held by a writer.
     //
     _count = -1;
-    _writerControl = ThreadControl();
+    _writerId = ThreadControl().id();
+    return true;
 }
 
 void
@@ -267,6 +278,7 @@ IceUtil::RWRecMutex::unlock() const
     }
     else if(wr)
     {
+	_writerId = 0;
 	//
 	// Wake readers
 	//
@@ -279,12 +291,11 @@ IceUtil::RWRecMutex::upgrade() const
 {
     Mutex::Lock lock(_mutex);
 
-    //
-    // Reader called unlock
+    // Reader owns at least one count
     //
     assert(_count > 0);
     --_count;
-
+   
     //
     // Wait to acquire the write lock.
     //
@@ -298,27 +309,25 @@ IceUtil::RWRecMutex::upgrade() const
 	catch(...)
 	{
 	    --_waitingWriters;
+	    _count++;
 	    throw;
 	}
-	_waitingWriters--;
-
-	
+	_waitingWriters--;	
     }
 
     //
     // Got the lock, indicate it's held by a writer.
     //
     _count = -1;
-    _writerControl = ThreadControl();
+    _writerId = ThreadControl().id();
 }
 
-void
+bool
 IceUtil::RWRecMutex::timedUpgrade(const Time& timeout) const
 {
     Mutex::Lock lock(_mutex);
 
-    //
-    // Reader called unlock
+    // Reader owns at least one count
     //
     assert(_count > 0);
     --_count;
@@ -335,23 +344,27 @@ IceUtil::RWRecMutex::timedUpgrade(const Time& timeout) const
 	    _waitingWriters++;
 	    try
 	    {
-		_writers.timedWait(lock, remainder);
+		bool result = _writers.timedWait(lock, remainder);
+		_waitingWriters--;
+		if(result == false)
+		{
+		    _count++;
+		    return false;
+		}
 	    }
 	    catch(...)
 	    {
 		--_waitingWriters;
+		_count++;
 		throw;
 	    }
-	    _waitingWriters--;
 	}
 	else
 	{
 	    //
-	    // If a timeout occurred then the lock wasn't acquired. Ensure
-	    // that the _count is increased again before returning.
-	    //
-	    ++_count;
-	    throw ThreadLockedException(__FILE__, __LINE__);
+	    // If a timeout occurred then the lock wasn't acquired
+	    _count++;
+	    return false;
 	}
     }
 
@@ -359,5 +372,6 @@ IceUtil::RWRecMutex::timedUpgrade(const Time& timeout) const
     // Got the lock, indicate it's held by a writer.
     //
     _count = -1;
-    _writerControl = ThreadControl();
+    _writerId = ThreadControl().id();
+    return true;
 }

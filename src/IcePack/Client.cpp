@@ -13,7 +13,6 @@
 // **********************************************************************
 
 #include <Ice/Application.h>
-#include <IcePack/ExceptionFactory.h>
 #include <IcePack/Parser.h>
 #include <fstream>
 
@@ -161,19 +160,15 @@ Client::run(int argc, char* argv[])
 	return EXIT_FAILURE;
     }
 
-    //
-    // Register IcePack exception factory with the communicator.
-    //
-    Ice::UserExceptionFactoryPtr(new ExceptionFactory(communicator()));
+    ParserPtr p = Parser::createParser(communicator(), admin, query);
 
-    ParserPtr parser = Parser::createParser(communicator(), admin, query);
     int status = EXIT_SUCCESS;
 
     if(argc < 2) // No files given
     {
 	if(!commands.empty()) // Commands were given
 	{
-	    int parseStatus = parser->parse(commands, debug);
+	    int parseStatus = p->parse(commands, debug);
 	    if(parseStatus == EXIT_FAILURE)
 	    {
 		status = EXIT_FAILURE;
@@ -181,7 +176,7 @@ Client::run(int argc, char* argv[])
 	}
 	else // No commands, let's use standard input
 	{
-	    int parseStatus = parser->parse(stdin, debug);
+	    int parseStatus = p->parse(stdin, debug);
 	    if(parseStatus == EXIT_FAILURE)
 	    {
 		status = EXIT_FAILURE;
@@ -212,7 +207,7 @@ Client::run(int argc, char* argv[])
 		return EXIT_FAILURE;
 	    }
 	    
-	    int parseStatus = parser->parse(cppHandle, debug);
+	    int parseStatus = p->parse(cppHandle, debug);
 	    
 #ifdef _WIN32
 	    _pclose(cppHandle);

@@ -36,7 +36,7 @@ validate(const DBPtr& db)
 
     cout << "testing database expressions... ";
     Complex::ComplexDict::const_iterator p;
-    Parser parser;
+    Parser myParser;
     for(p = m.begin(); p != m.end(); ++p)
     {
 	//
@@ -53,7 +53,7 @@ validate(const DBPtr& db)
 	//
 	// Verify that the expression & result again.
 	//
-	Complex::NodePtr root = parser.parse(p->first.expression);
+	Complex::NodePtr root = myParser.parse(p->first.expression);
 	test(root->calc() == p->first.result);
     }
     cout << "ok" << endl;
@@ -69,7 +69,7 @@ static const char* expressions[] =
     "5*(2+3)",
     "10+(10+(20+(8*(2*(3*2+4+5+6)))))"
 };
-static const int nexpressions = sizeof(expressions)/sizeof(expressions[0]);
+static const size_t nexpressions = sizeof(expressions)/sizeof(expressions[0]);
 
 static int
 populate(const DBPtr& db)
@@ -77,15 +77,15 @@ populate(const DBPtr& db)
     Complex::ComplexDict m(db);
 
     cout << "populating the database... ";
-    Parser parser;
-    for(int i = 0 ; i < nexpressions; ++i)
+    Parser myParser;
+    for(size_t i = 0 ; i < nexpressions; ++i)
     {
-	Complex::NodePtr root = parser.parse(expressions[i]);
+	Complex::NodePtr root = myParser.parse(expressions[i]);
 	assert(root);
 	Complex::Key k;
 	k.expression = expressions[i];
 	k.result = root->calc();
-	m.insert(make_pair(k, root));
+	m.insert(pair<const Complex::Key, const Complex::NodePtr>(k, root));
     }
     cout << "ok" << endl;
 

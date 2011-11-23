@@ -24,14 +24,10 @@ class ICE_API Buffer : public ::IceUtil::noncopyable
 {
 public:
 
-    // TODO: Should not be inline, as this is not performance critical.
-    Buffer()
-    {
-	b.reserve(1000);
-	i = b.begin();
-    }
+    Buffer() : i(b.begin()) { }
 
     typedef std::vector<Ice::Byte> Container;
+
     Container b;
     Container::iterator i;
 };

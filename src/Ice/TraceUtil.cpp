@@ -12,6 +12,7 @@
 //
 // **********************************************************************
 
+#include <IceUtil/StaticMutex.h>
 #include <Ice/TraceUtil.h>
 #include <Ice/Instance.h>
 #include <Ice/Object.h>
@@ -21,6 +22,7 @@
 #include <Ice/BasicStream.h>
 #include <Ice/Protocol.h>
 #include <Ice/IdentityUtil.h>
+#include <set>
 
 using namespace std;
 using namespace Ice;
@@ -82,13 +84,25 @@ printRequestHeader(ostream& s, BasicStream& stream)
 static void
 printHeader(ostream& s, BasicStream& stream)
 {
-    Byte protVer;
-    stream.read(protVer);
-//    s << "\nprotocol version = " << static_cast<int>(protVer);
+    Byte magicNumber;
+    stream.read(magicNumber);	// Don't bother printing the magic number
+    stream.read(magicNumber);
+    stream.read(magicNumber);
+    stream.read(magicNumber);
 
-    Byte encVer;
-    stream.read(encVer);
-//    s << "\nencoding version = " << static_cast<int>(encVer);
+    Byte pMajor;
+    Byte pMinor;
+    stream.read(pMajor);
+    stream.read(pMinor);
+//    s << "\nprotocol version = " << static_cast<unsigned>(pMajor)
+//      << "." << static_cast<unsigned>(pMinor);
+
+    Byte eMajor;
+    Byte eMinor;
+    stream.read(eMajor);
+    stream.read(eMinor);
+//    s << "\nencoding version = " << static_cast<unsigned>(eMajor)
+//      << "." << static_cast<unsigned>(eMinor);
 
     Byte type;
     stream.read(type);
@@ -114,24 +128,6 @@ printHeader(ostream& s, BasicStream& stream)
 	    break;
 	}
 
-	case compressedRequestMsg:
-	{
-	    s << "(compressed request)";
-	    break;
-	}
-
-	case compressedRequestBatchMsg:
-	{
-	    s << "(compressed batch request)";
-	    break;
-	}
-
-	case compressedReplyMsg:
-	{
-	    s << "(compressed reply)";
-	    break;
-	}
-
 	case closeConnectionMsg:
 	{
 	    s << "(close connection)";
@@ -143,6 +139,38 @@ printHeader(ostream& s, BasicStream& stream)
 	    s << "(validate connection)";
 	    break;
 	}
+
+	default:
+	{
+	    s << "(unknown)";
+	    break;
+	}
+    }
+
+    Byte compress;
+    stream.read(compress);
+    s << "\ncompression status = "  << static_cast<int>(compress) << ' ';
+
+    switch(compress)
+    {
+	case 0:
+	{
+	    s << "(compression not used, not supported by sender)";
+	    break;
+	}
+
+	case 1:
+	{
+	    s << "(compression not used, supported by sender)";
+	    break;
+	}
+
+	case 2:
+	{
+	    s << "(compression used, supported by sender)";
+	    break;
+	}
+
 	default:
 	{
 	    s << "(unknown)";
@@ -156,7 +184,7 @@ printHeader(ostream& s, BasicStream& stream)
 }
 
 void
-IceInternal::traceHeader(const char* heading, const BasicStream& str, const ::Ice::LoggerPtr& logger,
+IceInternal::traceHeader(const char* heading, const BasicStream& str, const LoggerPtr& logger,
 			 const TraceLevelsPtr& tl)
 {
     if(tl->protocol >= 1)
@@ -175,7 +203,7 @@ IceInternal::traceHeader(const char* heading, const BasicStream& str, const ::Ic
 }
 
 void
-IceInternal::traceRequest(const char* heading, const BasicStream& str, const ::Ice::LoggerPtr& logger,
+IceInternal::traceRequest(const char* heading, const BasicStream& str, const LoggerPtr& logger,
 			  const TraceLevelsPtr& tl)
 {
     if(tl->protocol >= 1)
@@ -204,7 +232,7 @@ IceInternal::traceRequest(const char* heading, const BasicStream& str, const ::I
 }
 
 void
-IceInternal::traceBatchRequest(const char* heading, const BasicStream& str, const ::Ice::LoggerPtr& logger,
+IceInternal::traceBatchRequest(const char* heading, const BasicStream& str, const LoggerPtr& logger,
 			       const TraceLevelsPtr& tl)
 {
     if(tl->protocol >= 1)
@@ -234,7 +262,7 @@ IceInternal::traceBatchRequest(const char* heading, const BasicStream& str, cons
 }
 
 void
-IceInternal::traceReply(const char* heading, const BasicStream& str, const ::Ice::LoggerPtr& logger,
+IceInternal::traceReply(const char* heading, const BasicStream& str, const LoggerPtr& logger,
 			const TraceLevelsPtr& tl)
 {
     if(tl->protocol >= 1)
@@ -351,3 +379,25 @@ IceInternal::traceReply(const char* heading, const BasicStream& str, const ::Ice
 	stream.i = p;
     }
 }
+
+/*
+static IceUtil::StaticMutex slicingMutex;
+static set<string> slicingIds;
+
+void
+IceInternal::traceSlicing(const char* kind, const string& typeId,
+	                  const LoggerPtr& logger, const TraceLevelsPtr& tl)
+{
+    if(tl->slicing >= 1)
+    {
+	IceUtil::StaticMutex::Lock lock(slicingMutex);
+	if(slicingIds.insert(typeId).second)
+	{
+	    string s("unknown ");
+	    s += kind;
+	    s += " type `" + typeId + "'";
+	    logger->trace(tl->slicingCat, s);
+	}
+    }
+}
+*/

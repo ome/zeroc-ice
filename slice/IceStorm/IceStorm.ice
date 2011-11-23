@@ -66,6 +66,15 @@ sequence<LinkInfo> LinkInfoSeq;
 
 /**
  *
+ * This dictionary represents Quality of service parameters.
+ *
+ * @see TopicManager::subscribe
+ *
+ */
+dictionary<string, string> QoS;
+
+/**
+ *
  * Publishers publish information on a particular topic. A topic
  * logically represents a type.
  *
@@ -76,24 +85,21 @@ interface Topic
 {
     /**
      *
-     * Get the name of this topic. The name of the topic is for
-     * administrative purposes. It is also important for subscribers
-     * to form correct object-identity.
+     * Get the name of this topic.
      *
      * @return The name of the topic.
      *
      * @see TopicManager::create
-     * @see TopicManager::subscribe
      *
      **/
     nonmutating string getName();
-    
+
     /**
      *
-     * Get a proxy to a publisher object for this topic.  To publish
-     * data to a topic the publisher calls [getPublisher] and then
-     * casts to the appropriate type (at present the cast must be
-     * unchecked since the type is not validated).
+     * Get a proxy to a publisher object for this topic. To publish
+     * data to a topic, the publisher calls [getPublisher] and then
+     * casts to the topic type. An unchecked cast must be used on
+     * this proxy.
      *
      * @return A proxy to publish data on this topic.
      *
@@ -102,9 +108,35 @@ interface Topic
 
     /**
      *
-     * Create a link to the given topic with the cost. All events
-     * flowing through this topic will flow to the given topic
-     * [linkTo].
+     * Subscribe with the given [qos] to this topic. If the given
+     * [subscriber] proxy has already been registered, it will be
+     * replaced.
+     *
+     * @param qos The quality of service parameters for this
+     * subscription.
+     *
+     * @param subscriber The subscriber's proxy.
+     *
+     * @see unsubscribe
+     *
+     **/
+    void subscribe(QoS theQoS, Object* subscriber);
+
+    /**
+     *
+     * Unsubscribe the given [subscriber].
+     *
+     * @param subscriber The proxy of an existing subscriber.
+     *
+     * @see subscribe
+     *
+     **/
+    idempotent void unsubscribe(Object* subscriber);
+
+    /**
+     *
+     * Create a link to the given topic. All events originating
+     * on this topic will also be sent to [linkTo].
      *
      * @param linkTo The topic to link to.
      *
@@ -180,15 +212,6 @@ exception NoSuchTopic
 
 /**
  *
- * This dictionary represents Quality of service parameters.
- *
- * @see TopicManager::subscribe
- *
- */
-dictionary<string, string> QoS;
-
-/**
- *
  * A topic manager manages topics, and subscribers to topics.
  *
  * @see Topic
@@ -198,13 +221,15 @@ interface TopicManager
 {
     /**
      *
-     * Create a topic by name.
+     * Create a new topic. The topic name must be unique, otherwise
+     * [TopicExists] is raised.
      *
      * @param name The name of the topic.
      *
      * @return A proxy to the topic instance.
      *
-     * @throws TopicExists Raised if the topic exists.
+     * @throws TopicExists Raised if a topic with the same name already
+     * exists.
      *
      **/
     Topic* create(string name) throws TopicExists;
@@ -230,42 +255,6 @@ interface TopicManager
      *
      **/
     nonmutating TopicDict retrieveAll();
-
-    /**
-     *
-     * Subscribe with the given [qos] to the topic identified in the
-     * [subscribers] identity category. If a subscriber already exists
-     * with the given identity, then it will be replaced by this
-     * subscriber.
-     *
-     * @param qos The quality of service parameters for this
-     * subscription. The only currently supported QoS is
-     * "reliability", which can be either "oneway" or "batch".
-     *
-     * @param subscriber The proxy to which to send events.
-     *
-     * @see unsubscribe
-     *
-     **/
-    void subscribe(QoS theQoS, Object* subscriber) throws NoSuchTopic;
-
-    /**
-     *
-     * Unsubscribe the given [subscriber].
-     *
-     * @param subscriber The proxy of the given subscriber.
-     *
-     * @see subscribe
-     *
-     **/
-    idempotent void unsubscribe(Object* subscriber);
-
-    /**
-     *
-     * Shutdown the &IceStorm; instance.
-     *
-     **/
-    idempotent void shutdown();
 };
 
 };

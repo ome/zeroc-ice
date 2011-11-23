@@ -565,8 +565,24 @@ IceProxy::Ice::Object::ice_default() const
 void
 IceProxy::Ice::Object::ice_flush()
 {
-    Handle< ::IceDelegate::Ice::Object> __del = __getDelegate();
-    __del->ice_flush();
+    //
+    // Retry is necessary for ice_flush in case the current connection
+    // is closed. If that's the case we need to get a new connection.
+    //
+    int __cnt = 0;
+    while(true)
+    {
+	try
+	{
+	    Handle< ::IceDelegate::Ice::Object> __del = __getDelegate();
+	    __del->ice_flush();
+	    return;
+	}
+	catch(const LocalException& __ex)
+	{
+	    __handleException(__ex, __cnt);
+	}
+    }
 }
 
 ReferencePtr
@@ -705,17 +721,7 @@ IceProxy::Ice::Object::__getDelegate()
     {
 	if(_reference->collocationOptimization)
 	{
-	    ObjectAdapterFactoryPtr objectAdapterFactory = _reference->instance->objectAdapterFactory();
-	    
-	    //
-	    // Instance components may be null if communicator has been destroyed.
-	    //
-	    if(!objectAdapterFactory)
-	    {
-		throw CommunicatorDestroyedException(__FILE__, __LINE__);
-	    }
-
-	    ObjectAdapterPtr adapter = objectAdapterFactory->findObjectAdapter(this);
+	    ObjectAdapterPtr adapter = _reference->instance->objectAdapterFactory()->findObjectAdapter(this);
 	    if(adapter)
 	    {
 		Handle< ::IceDelegateD::Ice::Object> delegate = __createDelegateD();
@@ -1197,7 +1203,7 @@ IceDelegateD::Ice::Object::ice_id(const ::Ice::Context& __context)
 	Direct __direct(__current);
 	return __direct.facetServant()->ice_id(__current);
     }
-    return false; // To keep the Visual C++ compiler happy.
+    return string(); // To keep the Visual C++ compiler happy.
 }
 
 FacetPath

@@ -1,0 +1,50 @@
+# **********************************************************************
+#
+# Copyright (c) 2003
+# ZeroC, Inc.
+# Billerica, MA, USA
+#
+# All Rights Reserved.
+#
+# Ice is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License version 2 as published by
+# the Free Software Foundation.
+#
+# **********************************************************************
+
+#
+# This file is included by Make.rules when uname is Linux.
+#
+
+MACHINE                 = $(shell uname -m)
+
+CXX			= c++
+
+ifeq ($(MACHINE),x86_64)
+
+    ifneq ($(LP64),yes)
+        CXXARCHFLAGS    := -m32
+    endif    
+
+    lp64suffix          := 64
+endif
+
+CXXFLAGS		= $(CXXARCHFLAGS) -ftemplate-depth-128 -fPIC -Wall -D_REENTRANT
+
+ifeq ($(OPTIMIZE),yes)
+     CXXFLAGS		:= -O2 -DNDEBUG $(CXXFLAGS)
+else
+     CXXFLAGS		:= -g $(CXXFLAGS)
+endif
+
+mkshlib                 = $(CXX) -shared $(LDFLAGS) -o $(1) -Wl,-h,$(2) $(3) $(4)
+
+BASELIBS		= -lIceUtil $(STLPORT_LIBS) -lpthread 
+LIBS			= -lIce $(BASELIBS)
+
+ICEUTIL_OS_LIBS         = -lpthread
+ICE_OS_LIBS             = -ldl
+
+PLATFORM_HAS_READLINE  := yes
+
+export LD_LIBRARY_PATH	:= $(libdir):$(LD_LIBRARY_PATH)

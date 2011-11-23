@@ -39,12 +39,12 @@ public:
     ~Monitor();
 
     //
-    // Note that lock/trylock & unlock in general should not be used
+    // Note that lock/tryLock & unlock in general should not be used
     // directly. Instead use Lock & TryLock.
     //
     void lock() const;
     void unlock() const;
-    void trylock() const;
+    bool tryLock() const;
 
     void wait() const;
     bool timedWait(const Time&) const;
@@ -91,7 +91,8 @@ IceUtil::Monitor<T>::~Monitor()
 template <class T> inline void
 IceUtil::Monitor<T>::lock() const
 {
-    if(_mutex.lock())
+    _mutex.lock();
+    if(_mutex.willUnlock())
     {
 	//
 	// On the first mutex acquisition reset the number pending
@@ -104,6 +105,16 @@ IceUtil::Monitor<T>::lock() const
 template <class T> inline void
 IceUtil::Monitor<T>::unlock() const
 {
+    if(_mutex.willUnlock())
+    {
+	//
+	// Perform any pending notifications.
+	//
+	notifyImpl(_nnotify);
+    }
+    _mutex.unlock();
+
+/*
     int nnotify = _nnotify;
     if(_mutex.unlock())
     {
@@ -112,12 +123,14 @@ IceUtil::Monitor<T>::unlock() const
 	//
 	notifyImpl(nnotify);
     }
+*/
 }
 
-template <class T> inline void
-IceUtil::Monitor<T>::trylock() const
+template <class T> inline bool
+IceUtil::Monitor<T>::tryLock() const
 {
-    if(_mutex.trylock())
+    bool result = _mutex.tryLock();
+    if(result && _mutex.willUnlock())
     {
 	//
 	// On the first mutex acquisition reset the number pending
@@ -125,6 +138,7 @@ IceUtil::Monitor<T>::trylock() const
 	//
 	_nnotify = 0;
     }
+    return result;
 }
 
 template <class T> inline void
@@ -150,6 +164,7 @@ IceUtil::Monitor<T>::wait() const
 	_nnotify = 0;
 	throw;
     }
+
     _nnotify = 0;
 }
 

@@ -27,6 +27,13 @@
 #include <vector>
 #include <map>
 
+#if defined(_WIN32)
+#   include <process.h>
+#else
+#   include <sys/types.h>
+#   include <unistd.h>
+#endif
+
 //
 // Define the Ice and IceInternal namespace, so that we can use the following
 // everywhere in our code:
@@ -42,21 +49,22 @@ namespace IceInternal
 {
 }
 
-#if defined(_WIN32)
-
+#ifndef ICE_API
 #   ifdef ICE_API_EXPORTS
-#       define ICE_API __declspec(dllexport)
-#   else
-#       define ICE_API __declspec(dllimport)
-#   endif
+#       define ICE_API ICE_DECLSPEC_EXPORT
+#    else
+#       define ICE_API ICE_DECLSPEC_IMPORT
+#    endif
+#endif
 
+#ifndef ICE_PROTOCOL_API 
 #   ifdef ICE_PROTOCOL_API_EXPORTS
-#       define ICE_PROTOCOL_API __declspec(dllexport)
+#       define ICE_PROTOCOL_API ICE_DECLSPEC_EXPORT
 #   else
-#       define ICE_PROTOCOL_API __declspec(dllimport)
+#       define ICE_PROTOCOL_API ICE_DECLSPEC_IMPORT
 #   endif
+#endif
 
-#   include <process.h>
 
 namespace Ice
 {
@@ -64,47 +72,19 @@ namespace Ice
 typedef char Byte;
 typedef short Short;
 typedef int Int;
-typedef __int64 Long;
+typedef IceUtil::Int64 Long;
 typedef float Float;
 typedef double Double;
 
 }
 
 // TODO: Should not be inline, this is not performance critical.
+#ifdef _WIN32
 inline int getSystemErrno() { return GetLastError(); }
 inline int getSocketErrno() { return WSAGetLastError(); }
-inline int getDNSErrno() { return WSAGetLastError(); }
-
-#elif (defined(__linux__) || defined(__FreeBSD__)) && defined(i386)
-
-#   include <sys/types.h>
-#   include <unistd.h>
-
-#   define ICE_API /**/
-#   define ICE_PROTOCOL_API /**/
-
-namespace Ice
-{
-
-typedef char Byte;
-typedef short Short;
-typedef int Int;
-typedef long long Long;
-typedef float Float;
-typedef double Double;
-
-}
-
-// TODO: Should not be inline, this is not performance critical.
+#else
 inline int getSystemErrno() { return errno; }
 inline int getSocketErrno() { return errno; }
-extern int h_errno;
-inline int getDNSErrno() { return h_errno; }
-
-#else
-
-#   error "Unsupported operating system or platform!"
-
 #endif
 
 #endif

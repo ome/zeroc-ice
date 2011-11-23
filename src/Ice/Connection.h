@@ -59,7 +59,7 @@ public:
     bool isFinished() const;
 
     void waitUntilHolding() const;
-    void waitUntilFinished() const;
+    void waitUntilFinished(); // Not const, as this might close the connection upon timeout.
 
     void monitor();
 
@@ -77,7 +77,7 @@ public:
     void abortBatchRequest();
     void flushBatchRequest();
 
-    void sendResponse(BasicStream*);
+    void sendResponse(BasicStream*, Ice::Byte);
     void sendNoResponse();
 
     int timeout() const;
@@ -129,6 +129,8 @@ private:
 
     static void doCompress(BasicStream&, BasicStream&);
     static void doUncompress(BasicStream&, BasicStream&);
+
+    bool closeOK() const;
 
     TransceiverPtr _transceiver;
     const EndpointPtr _endpoint;

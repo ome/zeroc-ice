@@ -47,11 +47,11 @@ typedef ::IceInternal::Handle< ::Ice::Stream> StreamPtr;
 
 typedef IceUtil::Exception Exception;
 
-class LocalException : public IceUtil::Exception
+class ICE_API LocalException : public IceUtil::Exception
 {
 public:    
 
-    ICE_API LocalException(const char*, int);
+    LocalException(const char*, int);
     virtual std::string ice_name() const = 0;
     virtual Exception* ice_clone() const = 0;
     virtual void ice_throw() const = 0;
@@ -65,14 +65,17 @@ public:
     virtual Exception* ice_clone() const = 0;
     virtual void ice_throw() const = 0;
 
-    virtual const std::string* __getExceptionIds() const = 0;
     virtual void __write(::IceInternal::BasicStream*) const = 0;
-    virtual void __read(::IceInternal::BasicStream*) = 0;
+    virtual void __read(::IceInternal::BasicStream*, bool) = 0;
     virtual void __marshal(const StreamPtr&) const = 0;
     virtual void __unmarshal(const StreamPtr&) = 0;
 
+    virtual bool __usesClasses() const;
+
     void ice_marshal(const ::std::string&, const ::Ice::StreamPtr&);
 };
+
+typedef ::IceInternal::Handle<UserException> UserExceptionPtr;
 
 }
 

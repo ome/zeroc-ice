@@ -455,7 +455,8 @@ Slice::JavaGenerator::writeMarshalUnmarshalCode(Output& out,
                                                 bool marshal,
                                                 int& iter,
                                                 bool holder,
-                                                const list<string>& metaData)
+                                                const list<string>& metaData,
+						const string& patchParams)
 {
     string stream = marshal ? "__os" : "__is";
     string v;
@@ -577,7 +578,21 @@ Slice::JavaGenerator::writeMarshalUnmarshalCode(Output& out,
                 }
                 else
                 {
-                    out << nl << v << " = " << stream << ".readObject(\"\", null);";
+		    if(holder)
+		    {
+			out << nl << stream << ".readObject(" << param << ".getPatcher());";
+		    }
+		    else
+		    {
+                        if(patchParams.empty())
+                        {
+                            out << nl << stream << ".readObject(new Patcher());";
+                        }
+                        else
+                        {
+                            out << nl << stream << ".readObject(new " << patchParams << ");";
+                        }
+		    }
                 }
                 break;
             }
@@ -627,16 +642,21 @@ Slice::JavaGenerator::writeMarshalUnmarshalCode(Output& out,
         else
         {
             string typeS = typeToString(type, TypeModeIn, scope);
-            ClassDefPtr def = cl->definition();
-            if(def && !def->isAbstract())
-            {
-                out << nl << v << " = (" << typeS << ')' << stream << ".readObject(" << typeS << ".ice_staticId(), "
-                    << typeS << ".ice_factory());";
-            }
-            else
-            {
-                out << nl << v << " = (" << typeS << ')' << stream << ".readObject(\"\", null);";
-            }
+	    if(holder)
+	    {
+		out << nl << stream << ".readObject(" << param << ".getPatcher());";
+	    }
+	    else
+	    {
+                if(patchParams.empty())
+                {
+                    out << nl << stream << ".readObject(new Patcher());";
+                }
+                else
+                {
+                    out << nl << stream << ".readObject(new " << patchParams << ");";
+                }
+	    }
         }
         return;
     }
@@ -760,6 +780,14 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
     SequencePtr s = SequencePtr::dynamicCast(origContent);
     while(s)
     {
+        //
+        // Stop if the inner sequence type has metadata.
+        //
+        string m = findMetaData(s->getMetaData());
+        if(!m.empty())
+        {
+            break;
+        }
         depth++;
         origContent = s->type();
         s = SequencePtr::dynamicCast(origContent);
@@ -768,6 +796,9 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 
     if(!listType.empty())
     {
+        //
+        // Marshal/unmarshal a custom sequence type
+        //
         BuiltinPtr b = BuiltinPtr::dynamicCast(seq->type());
         if(b && b->kind() != Builtin::KindObject && b->kind() != Builtin::KindObjectProxy)
         {
@@ -874,7 +905,7 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
                     }
                     case Builtin::KindBool:
                     {
-                        out << nl << o.str() << " __seq" << iter << " = " << stream << ".readByteSeq();";
+                        out << nl << o.str() << " __seq" << iter << " = " << stream << ".readBoolSeq();";
                         out << nl << "for(int __i" << iter << " = 0; __i" << iter << " < __seq" << iter
                             << ".length; __i" << iter << "++)";
                         out << sb;
@@ -979,15 +1010,50 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
             }
             else
             {
+                bool isObject = false;
+		BuiltinPtr builtin = BuiltinPtr::dynamicCast(origContent);
+		if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(origContent))
+                {
+                    isObject = true;
+                }
                 out << nl << v << " = new " << listType << "();";
-                out << nl << "int __len" << iter << " = " << stream << ".readSize();";
+                out << nl << "final int __len" << iter << " = " << stream << ".readSize();";
+                if(isObject)
+                {
+                    if(builtin)
+                    {
+                        out << nl << "final String __type" << iter << " = Ice.ObjectImpl.ice_staticId();";
+                    }
+                    else
+                    {
+                        out << nl << "final String __type" << iter << " = " << origContentS << ".ice_staticId();";
+                    }
+                }
                 out << nl << "for(int __i" << iter << " = 0; __i" << iter << " < __len" << iter << "; __i" << iter
                     << "++)";
                 out << sb;
-                out << nl << origContentS << " __elem;";
+		if(isObject)
+		{
+                    //
+                    // Add a null value to the list as a placeholder for the element.
+                    //
+		    out << nl << v << ".add(null);";
+		    ostringstream patchParams;
+		    patchParams << "IceInternal.ListPatcher(" << v << ", " << origContentS << ".class, __type" << iter
+                                << ", __i" << iter << ')';
+		    writeMarshalUnmarshalCode(out, scope, seq->type(), "__elem", false, iter, false,
+			                      list<string>(), patchParams.str());
+		}
+		else
+		{
+		    out << nl << origContentS << " __elem;";
+		    writeMarshalUnmarshalCode(out, scope, seq->type(), "__elem", false, iter, false);
+		}
                 iter++;
-                writeMarshalUnmarshalCode(out, scope, seq->type(), "__elem", false, iter, false);
-                out << nl << v << ".add(__elem);";
+		if(!isObject)
+		{
+		    out << nl << v << ".add(__elem);";
+		}
                 out << eb;
             }
         }
@@ -1127,7 +1193,23 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
             }
             else
             {
-                out << nl << "int __len" << iter << " = " << stream << ".readSize();";
+                bool isObject = false;
+		if((b && b->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(origContent))
+                {
+                    isObject = true;
+                }
+                out << nl << "final int __len" << iter << " = " << stream << ".readSize();";
+                if(isObject)
+                {
+                    if(b)
+                    {
+                        out << nl << "final String __type" << iter << " = Ice.ObjectImpl.ice_staticId();";
+                    }
+                    else
+                    {
+                        out << nl << "final String __type" << iter << " = " << origContentS << ".ice_staticId();";
+                    }
+                }
                 out << nl << v << " = new " << origContentS << "[__len" << iter << "]";
                 int d = depth;
                 while(d--)
@@ -1140,8 +1222,19 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
                 out << sb;
                 ostringstream o;
                 o << v << "[__i" << iter << "]";
+		ostringstream patchParams;
+                if(isObject)
+                {
+                    patchParams << "IceInternal.SequencePatcher(" << v << ", " << origContentS
+                                << ".class, __type" << iter << ", __i" << iter << ')';
+                    writeMarshalUnmarshalCode(out, scope, seq->type(), o.str(), false, iter, false,
+                                              list<string>(), patchParams.str());
+                }
+                else
+                {
+                    writeMarshalUnmarshalCode(out, scope, seq->type(), o.str(), false, iter, false);
+                }
                 iter++;
-                writeMarshalUnmarshalCode(out, scope, seq->type(), o.str(), false, iter, false);
                 out << eb;
             }
         }
@@ -1473,6 +1566,14 @@ Slice::JavaGenerator::writeGenericSequenceMarshalUnmarshalCode(Output& out,
     SequencePtr s = SequencePtr::dynamicCast(origContent);
     while(s)
     {
+        //
+        // Stop if the inner sequence type has metadata.
+        //
+        string m = findMetaData(s->getMetaData());
+        if(!m.empty())
+        {
+            break;
+        }
         depth++;
         origContent = s->type();
         s = SequencePtr::dynamicCast(origContent);
@@ -1589,7 +1690,7 @@ Slice::JavaGenerator::writeGenericSequenceMarshalUnmarshalCode(Output& out,
                     }
                     case Builtin::KindBool:
                     {
-                        out << nl << o.str() << " __seq" << iter << " = " << stream << ".readByteSeq(" << name << ");";
+                        out << nl << o.str() << " __seq" << iter << " = " << stream << ".readBoolSeq(" << name << ");";
                         out << nl << "for(int __i" << iter << " = 0; __i" << iter << " < __seq" << iter
                             << ".length; __i" << iter << "++)";
                         out << sb;
@@ -1698,7 +1799,7 @@ Slice::JavaGenerator::writeGenericSequenceMarshalUnmarshalCode(Output& out,
             else
             {
                 out << nl << v << " = new " << listType << "();";
-                out << nl << "int __len" << iter << " = " << stream << ".startReadSequence(" << name << ");";
+                out << nl << "final int __len" << iter << " = " << stream << ".startReadSequence(" << name << ");";
                 out << nl << "for(int __i" << iter << " = 0; __i" << iter << " < __len" << iter << "; __i" << iter
                     << "++)";
                 out << sb;
@@ -1849,7 +1950,7 @@ Slice::JavaGenerator::writeGenericSequenceMarshalUnmarshalCode(Output& out,
             }
             else
             {
-                out << nl << "int __len" << iter << " = " << stream << ".startReadSequence(" << name << ");";
+                out << nl << "final int __len" << iter << " = " << stream << ".startReadSequence(" << name << ");";
                 out << nl << v << " = new " << origContentS << "[__len" << iter << "]";
                 int d = depth;
                 while(d--)

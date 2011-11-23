@@ -2,6 +2,17 @@
 Requirements
 ======================================================================
 
+OS
+--
+
+A recent Linux distribution for Intel x86 or AMD Opteron (x86-64).
+
+Note that Ice is not currently compatible with the "NPTL" threading
+model used by default on RedHat 9. You will need to set the following
+environment variable to use Ice successfully on this platform:
+
+export LD_ASSUME_KERNEL=2.4.1
+
 
 C++ compiler
 ------------
@@ -27,45 +38,44 @@ installing STLport is not required for this compiler version.
 Third-party libraries
 ---------------------
 
-- Xerces-C++ 2.1.0
+- Xerces-C++ 2.1.0 or 2.2.0
 
 - Berkeley DB 3.3, 4.0, or 4.1
 
-- OpenSSL 0.9.6
-
-- e2fsprogs 1.27 (only for the UUID library, which is part of this
-  package)
+- OpenSSL 0.96 or 0.97
 
 - bzip2 1.0
 
-Xerces-C++ can be download from:
+- readline and ncurses (optional, but used unless you set 
+  USE_READLINE to no in config/Make.rules)
 
+Xerces-C++ can be download from:
 http://xml.apache.org/xerces-c
 
-Berkeley DB, OpenSSL, e2fsprogs, and bzip2 are usually available with
-your Linux distribution. The RPMs for Redhat 8.0 are:
+Berkeley DB, OpenSSL, bzip2, readline and ncurses are usually 
+available with your Linux distribution. 
 
+The RPMs for RedHat 8.0 are:
 db4-devel-4.0.14-14
 openssl-devel-0.9.6b-29
-e2fsprogs-devel-1.27-9
 bzip2-devel-1.0.2-5
+readline-devel-4.3-3
+ncurses-devel-5.2-28
 
 If you don't have them, you can download Berkeley DB from:
-
 http://www.sleepycat.com/download
 
 And OpenSSL from:
-
 http://www.openssl.org
 
 And bzip2 from:
-
 http://sources.redhat.com/bzip2
 
-We are not aware of any download possibilities for e2fsprogs-devel (or
-the UUID routines included in this RPM). But to our knowledge, every
-Linux distribution includes this, so there should be no problem.
+And readline from:
+http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html
 
+And ncurses from:
+http://www.gnu.org/software/ncurses/ncurses.html
 
 Python 2.2
 ----------
@@ -98,7 +108,7 @@ $ make
 
 This will build the Ice core library, all add-ons, all tests, and all
 examples. After a successful build, you can run the test suite,
-provided that you installed Python 2:
+provided that you installed Python:
 
 $ make test
 
@@ -106,7 +116,7 @@ This is equivalent to:
 
 $ python allTests.py
 
-Note that on some Linux distributions (like Redhat 7.x), Python 2 is
+Note that on some Linux distributions (like RedHat 7.x), Python 2.2 is
 available as "python2", in which case you must use:
 
 $ python2 allTests.py
@@ -120,6 +130,17 @@ PATH and "lib" to LD_LIBRARY_PATH:
 $ export PATH=`pwd`/bin:$PATH
 $ export LD_LIBRARY_PATH=`pwd`/bin:$LD_LIBRARY_PATH
 
+======================================================================
+64 bit builds on AMD Opteron
+======================================================================
+
+To build Ice in 64 bit mode, you need to:
+ - Obtain or build all the third party dependencies, and put the 64 bit
+   libraries in the "lib64" directories. For example put 
+   Berkeley DB 64 bit libraries in $DB_HOME/lib64.
+ - Set the environment variable LP64 to yes, e.g.:
+   $ export LP64=yes
+ - Build and test as described above.
 
 ======================================================================
 Installation
@@ -134,3 +155,8 @@ LD_LIBRARY_PATH. When compiling Ice programs, you must also make sure
 to pass the location of the <prefix>/include directory to the compiler
 with the -I option, and the location of the <prefix>/lib directory
 with the -L option.
+
+If LP64 is set to yes, the libraries are installed in <prefix>/lib64 
+and the programs are installed in <prefix>/bin64. Other files are 
+identical for 32 and 64 bit.
+

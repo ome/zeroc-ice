@@ -17,6 +17,7 @@
 #include <Ice/Logger.h>
 #include <Ice/LocalException.h>
 #include <Ice/ObjectFactory.h>
+#include <IceUtil/InputUtil.h>
 
 #include <IceXML/StreamI.h>
 
@@ -243,7 +244,7 @@ IceXML::StreamI::StreamI(const ::Ice::CommunicatorPtr& communicator, std::istrea
     bool errorsOccured = false;
     try
     {
-        ICE_XERCES_NS MemBufInputSource source((const XMLByte*)_content.data(), _content.size(), "inputsource");
+        ICE_XERCES_NS MemBufInputSource source((const XMLByte*)_content.data(), (unsigned int) _content.size(), "inputsource");
         parser.parse(source);
         if(parser.getErrorCount() > 0)
 	{
@@ -473,7 +474,7 @@ IceXML::StreamI::readEnum(const string& name, const ::Ice::StringSeq& table)
 
     endRead();
 
-    return p - table.begin();
+    return ::Ice::Int(p - table.begin());
 }
 
 void
@@ -491,7 +492,7 @@ IceXML::StreamI::writeByte(const string& name, ::Ice::Byte value)
 void
 IceXML::StreamI::writeByteSeq(const string& name, const ::Ice::ByteSeq& seq)
 {
-    startWriteSequence(name, seq.size());
+    startWriteSequence(name, ::Ice::Int(seq.size()));
     for(::Ice::ByteSeq::const_iterator p = seq.begin(); p != seq.end(); ++p)
     {
         startWriteSequenceElement();
@@ -514,7 +515,7 @@ IceXML::StreamI::readByte(const string& name)
 
     string s = toString(child->getNodeValue());
     ::Ice::Int i = atoi(s.c_str());
-    if(i < -127 || i > 128)
+    if(i < -128 || i > 127)
     {
 	throw ::Ice::MarshalException(__FILE__, __LINE__);
     }
@@ -599,7 +600,7 @@ IceXML::StreamI::writeBool(const string& name, bool value)
 void
 IceXML::StreamI::writeBoolSeq(const string& name, const ::Ice::BoolSeq& seq)
 {
-    startWriteSequence(name, seq.size());
+    startWriteSequence(name, ::Ice::Int(seq.size()));
     for(::Ice::BoolSeq::const_iterator p = seq.begin(); p != seq.end(); ++p)
     {
 	_os << se("e") << (*p ? "true" : "false") << ee;
@@ -660,7 +661,7 @@ IceXML::StreamI::writeShort(const string& name, ::Ice::Short value)
 void
 IceXML::StreamI::writeShortSeq(const string& name, const ::Ice::ShortSeq& seq)
 {
-    startWriteSequence(name, seq.size());
+    startWriteSequence(name, ::Ice::Int(seq.size()));
     for(::Ice::ShortSeq::const_iterator p = seq.begin(); p != seq.end(); ++p)
     {
 	_os << se("e") << *p << ee;
@@ -681,7 +682,7 @@ IceXML::StreamI::readShort(const string& name)
 
     string s = toString(child->getNodeValue());
     ::Ice::Int i = atoi(s.c_str());
-    if(i < -32767 || i > 32768)
+    if(i < -32768 || i > 32767)
     {
 	throw ::Ice::MarshalException(__FILE__, __LINE__);
     }
@@ -726,7 +727,7 @@ IceXML::StreamI::writeInt(const string& name, ::Ice::Int value)
 void
 IceXML::StreamI::writeIntSeq(const string& name, const ::Ice::IntSeq& seq)
 {
-    startWriteSequence(name, seq.size());
+    startWriteSequence(name, ::Ice::Int(seq.size()));
     for(::Ice::IntSeq::const_iterator p = seq.begin(); p != seq.end(); ++p)
     {
 	_os << se("e") << *p << ee;
@@ -787,7 +788,7 @@ IceXML::StreamI::writeLong(const string& name, ::Ice::Long value)
 void
 IceXML::StreamI::writeLongSeq(const string& name, const ::Ice::LongSeq& seq)
 {
-    startWriteSequence(name, seq.size());
+    startWriteSequence(name, ::Ice::Int(seq.size()));
     for(::Ice::LongSeq::const_iterator p = seq.begin(); p != seq.end(); ++p)
     {
 	_os << se("e") << *p << ee;
@@ -810,7 +811,13 @@ IceXML::StreamI::readLong(const string& name)
 
     endRead();
 
-    return atol(s.c_str());
+    Ice::Long result;
+    string::size_type pos;
+    if(!IceUtil::stringToInt64(s, result, pos))
+    {
+	throw ::Ice::MarshalException(__FILE__, __LINE__);
+    }
+    return result;
 }
 
 ::Ice::LongSeq
@@ -848,7 +855,7 @@ IceXML::StreamI::writeFloat(const string& name, ::Ice::Float value)
 void
 IceXML::StreamI::writeFloatSeq(const string& name, const ::Ice::FloatSeq& seq)
 {
-    startWriteSequence(name, seq.size());
+    startWriteSequence(name, ::Ice::Int(seq.size()));
     for(::Ice::FloatSeq::const_iterator p = seq.begin(); p != seq.end(); ++p)
     {
 	_os << se("e") << *p << ee;
@@ -909,7 +916,7 @@ IceXML::StreamI::writeDouble(const string& name, ::Ice::Double value)
 void
 IceXML::StreamI::writeDoubleSeq(const string& name, const ::Ice::DoubleSeq& seq)
 {
-    startWriteSequence(name, seq.size());
+    startWriteSequence(name, ::Ice::Int(seq.size()));
     for(::Ice::DoubleSeq::const_iterator p = seq.begin(); p != seq.end(); ++p)
     {
 	_os << se("e") << *p << ee;
@@ -976,7 +983,7 @@ IceXML::StreamI::writeString(const string& name, const string& value)
 void
 IceXML::StreamI::writeStringSeq(const string& name, const ::Ice::StringSeq& seq)
 {
-    startWriteSequence(name, seq.size());
+    startWriteSequence(name, ::Ice::Int(seq.size()));
     for(::Ice::StringSeq::const_iterator p = seq.begin(); p != seq.end(); ++p)
     {
 	_os << se("e");
@@ -1217,7 +1224,7 @@ IceXML::StreamI::readObject(const string& name, const string& signatureType, con
 	// Add the object to the readObjects map, move to the first
 	// child node & unmarshal the object.
 	//
-	_input->readObjects.insert(map<string, ::Ice::ObjectPtr>::value_type(id, value));
+	_input->readObjects.insert(pair<const string, ::Ice::ObjectPtr>(id, value));
 	_input->current = _input->current->getFirstChild();
 	value->__unmarshal(this);
     }
@@ -1373,8 +1380,8 @@ void
 IceXML::StreamI::readAttributes(::std::string& id, ::std::string& type, ::std::string& href)
 {
     ICE_XERCES_NS DOMNamedNodeMap* attributes = _input->current->getAttributes();
-    int attrCount = attributes->getLength();
-    for(int i = 0; i < attrCount; i++)
+    size_t attrCount = attributes->getLength();
+    for(size_t i = 0; i < attrCount; i++)
     {
 	ICE_XERCES_NS DOMNode* attribute = attributes->item(i);
 	string name = toString(attribute->getNodeName());
@@ -1397,8 +1404,8 @@ IceXML::StreamI::readAttributes(::std::string& id, ::std::string& type, ::std::s
 IceXML::StreamI::readLength()
 {
     ICE_XERCES_NS DOMNamedNodeMap* attributes = _input->current->getAttributes();
-    int attrCount = attributes->getLength();
-    for(int i = 0; i < attrCount; i++)
+    size_t attrCount = attributes->getLength();
+    for(size_t i = 0; i < attrCount; i++)
     {
 	ICE_XERCES_NS DOMNode* attribute = attributes->item(i);
 	string name = toString(attribute->getNodeName());

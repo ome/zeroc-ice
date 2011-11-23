@@ -284,16 +284,16 @@ IcePack::ServerHandler::startElement(const XMLCh *const name, ICE_XERCES_NS Attr
     }
     else if(str == "service")
     {
-	string name = getAttributeValue(attrs, "name");
+	string serviceName = getAttributeValue(attrs, "name");
 	string descriptor = getAttributeValue(attrs, "descriptor");
 	string targets = getAttributeValueWithDefault(attrs, "targets", "");
-	_builder.addService(name, descriptor, targets);
+	_builder.addService(serviceName, descriptor, targets);
     }
     else if(str == "adapter")
     {
 	assert(!_currentAdapterId.empty());
-	string name = getAttributeValue(attrs, "name");
-	_builder.registerAdapter(name, getAttributeValue(attrs, "endpoints"), _currentAdapterId);
+	string adapterName = getAttributeValue(attrs, "name");
+	_builder.registerAdapter(adapterName, getAttributeValue(attrs, "endpoints"), _currentAdapterId);
     }
 }
 
@@ -311,6 +311,18 @@ IcePack::ServerHandler::endElement(const XMLCh *const name)
 	else if(str == "pwd")
 	{
 	    _builder.setWorkingDirectory(elementValue());
+	}
+	else if(str == "option")
+	{
+	    _builder.addOption(elementValue());
+	}
+	else if(str == "vm-option")
+	{
+	    _builder.addJavaOption(elementValue());
+	}
+	else if(str == "env")
+	{
+	    _builder.addEnvVar(elementValue());
 	}
     }
 
@@ -611,6 +623,12 @@ void
 IcePack::ServerBuilder::addJavaOption(const string& option)
 {
     _javaOptions.push_back(option);
+}
+
+void
+IcePack::ServerBuilder::addEnvVar(const string& env)
+{
+    _description.envs.push_back(env);
 }
 
 void

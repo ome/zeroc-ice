@@ -62,7 +62,7 @@ IceInternal::TcpTransceiver::shutdown()
 void
 IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
 {
-    int packetSize = buf.b.end() - buf.i;
+     Buffer::Container::difference_type packetSize = buf.b.end() - buf.i;
     
 #ifdef _WIN32
     //
@@ -77,7 +77,7 @@ IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
     while(buf.i != buf.b.end())
     {
 	assert(_fd != INVALID_SOCKET);
-	int ret = ::send(_fd, &*buf.i, packetSize, 0);
+	ssize_t ret = ::send(_fd, &*buf.i, packetSize, 0);
 
 	if(ret == 0)
 	{
@@ -103,7 +103,7 @@ IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
 	    {
 	    repeatSelect:
 
-		int ret;
+		int rs;
 		assert(_fd != INVALID_SOCKET);
 		FD_SET(_fd, &_wFdSet);
 
@@ -112,14 +112,14 @@ IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
 		    struct timeval tv;
 		    tv.tv_sec = timeout / 1000;
 		    tv.tv_usec = (timeout - tv.tv_sec * 1000) * 1000;
-		    ret = ::select(_fd + 1, 0, &_wFdSet, 0, &tv);
+		    rs = ::select(_fd + 1, 0, &_wFdSet, 0, &tv);
 		}
 		else
 		{
-		    ret = ::select(_fd + 1, 0, &_wFdSet, 0, 0);
+		    rs = ::select(_fd + 1, 0, &_wFdSet, 0, 0);
 		}
 		
-		if(ret == SOCKET_ERROR)
+		if(rs == SOCKET_ERROR)
 		{
 		    if(interrupted())
 		    {
@@ -131,7 +131,7 @@ IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
 		    throw ex;
 		}
 		
-		if(ret == 0)
+		if(rs == 0)
 		{
 		    throw TimeoutException(__FILE__, __LINE__);
 		}
@@ -161,7 +161,7 @@ IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
 
 	if(_stats)
 	{
-	    _stats->bytesSent(_name, ret);
+	    _stats->bytesSent(_name, static_cast<Int>(ret));
 	}
 
 	buf.i += ret;
@@ -176,12 +176,12 @@ IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
 void
 IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 {
-    int packetSize = buf.b.end() - buf.i;
+    Buffer::Container::difference_type packetSize = buf.b.end() - buf.i;
     
     while(buf.i != buf.b.end())
     {
 	assert(_fd != INVALID_SOCKET);
-	int ret = ::recv(_fd, &*buf.i, packetSize, 0);
+	ssize_t ret = ::recv(_fd, &*buf.i, packetSize, 0);
 
 	if(ret == 0)
 	{
@@ -207,7 +207,7 @@ IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 	    {
 	    repeatSelect:
 
-		int ret;
+		int rs;
 		assert(_fd != INVALID_SOCKET);
 		FD_SET(_fd, &_rFdSet);
 
@@ -216,14 +216,14 @@ IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 		    struct timeval tv;
 		    tv.tv_sec = timeout / 1000;
 		    tv.tv_usec = (timeout - tv.tv_sec * 1000) * 1000;
-		    ret = ::select(_fd + 1, &_rFdSet, 0, 0, &tv);
+		    rs = ::select(_fd + 1, &_rFdSet, 0, 0, &tv);
 		}
 		else
 		{
-		    ret = ::select(_fd + 1, &_rFdSet, 0, 0, 0);
+		    rs = ::select(_fd + 1, &_rFdSet, 0, 0, 0);
 		}
 		
-		if(ret == SOCKET_ERROR)
+		if(rs == SOCKET_ERROR)
 		{
 		    if(interrupted())
 		    {
@@ -235,7 +235,7 @@ IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 		    throw ex;
 		}
 		
-		if(ret == 0)
+		if(rs == 0)
 		{
 		    throw TimeoutException(__FILE__, __LINE__);
 		}
@@ -265,7 +265,7 @@ IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 
 	if(_stats)
 	{
-	    _stats->bytesReceived(_name, ret);
+	    _stats->bytesReceived(_name, static_cast<Int>(ret));
 	}
 
 	buf.i += ret;
@@ -280,7 +280,7 @@ IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 string
 IceInternal::TcpTransceiver::toString() const
 {
-    return fdToString(_fd);
+    return _desc;
 }
 
 IceInternal::TcpTransceiver::TcpTransceiver(const InstancePtr& instance, SOCKET fd) :
@@ -292,6 +292,11 @@ IceInternal::TcpTransceiver::TcpTransceiver(const InstancePtr& instance, SOCKET 
 {
     FD_ZERO(&_rFdSet);
     FD_ZERO(&_wFdSet);
+
+    //
+    // fdToString may raise a socket exception.
+    //
+    const_cast<string&>(_desc) = fdToString(_fd);
 }
 
 IceInternal::TcpTransceiver::~TcpTransceiver()

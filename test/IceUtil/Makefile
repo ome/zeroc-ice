@@ -18,7 +18,9 @@ include $(top_srcdir)/config/Make.rules
 
 SUBDIRS		= thread \
 		  unicode \
-		  inputUtil
+		  inputUtil \
+                  uuid \
+                  ctrlCHandler
 
 $(EVERYTHING)::
 	@for subdir in $(SUBDIRS); \

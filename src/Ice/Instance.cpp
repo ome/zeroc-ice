@@ -23,7 +23,6 @@
 #include <Ice/ConnectionFactory.h>
 #include <Ice/ConnectionMonitor.h>
 #include <Ice/ObjectFactoryManager.h>
-#include <Ice/UserExceptionFactoryManager.h>
 #include <Ice/LocalException.h>
 #include <Ice/ObjectAdapterFactory.h>
 #include <Ice/Exception.h>
@@ -42,7 +41,7 @@
 #endif
 
 #ifndef _WIN32
-#   include <csignal>
+#   include <signal.h>
 #   include <syslog.h>
 #   include <pwd.h>
 #   include <sys/types.h>
@@ -97,6 +96,11 @@ LoggerPtr
 IceInternal::Instance::logger()
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    //
+    // Don't throw CommunicatorDestroyedException if destroyed. We
+    // need the logger also after destructions.
+    //
     return _logger;
 }
 
@@ -104,6 +108,12 @@ void
 IceInternal::Instance::logger(const LoggerPtr& logger)
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
     _logger = logger;
 }
 
@@ -111,6 +121,12 @@ StatsPtr
 IceInternal::Instance::stats()
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
     return _stats;
 }
 
@@ -118,6 +134,12 @@ void
 IceInternal::Instance::stats(const StatsPtr& stats)
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
     _stats = stats;
 }
 
@@ -139,6 +161,12 @@ RouterManagerPtr
 IceInternal::Instance::routerManager()
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
     return _routerManager;
 }
 
@@ -146,6 +174,12 @@ LocatorManagerPtr
 IceInternal::Instance::locatorManager()
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
     return _locatorManager;
 }
 
@@ -153,6 +187,12 @@ ReferenceFactoryPtr
 IceInternal::Instance::referenceFactory()
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
     return _referenceFactory;
 }
 
@@ -160,6 +200,12 @@ ProxyFactoryPtr
 IceInternal::Instance::proxyFactory()
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
     return _proxyFactory;
 }
 
@@ -167,6 +213,12 @@ OutgoingConnectionFactoryPtr
 IceInternal::Instance::outgoingConnectionFactory()
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
     return _outgoingConnectionFactory;
 }
 
@@ -174,6 +226,12 @@ ConnectionMonitorPtr
 IceInternal::Instance::connectionMonitor()
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
     return _connectionMonitor;
 }
 
@@ -181,20 +239,25 @@ ObjectFactoryManagerPtr
 IceInternal::Instance::servantFactoryManager()
 {
     IceUtil::RecMutex::Lock sync(*this);
-    return _servantFactoryManager;
-}
 
-UserExceptionFactoryManagerPtr
-IceInternal::Instance::userExceptionFactoryManager()
-{
-    IceUtil::RecMutex::Lock sync(*this);
-    return _userExceptionFactoryManager;
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
+    return _servantFactoryManager;
 }
 
 ObjectAdapterFactoryPtr
 IceInternal::Instance::objectAdapterFactory()
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
     return _objectAdapterFactory;
 }
 
@@ -203,12 +266,30 @@ IceInternal::Instance::clientThreadPool()
 {
     IceUtil::RecMutex::Lock sync(*this);
 
-    assert(!_destroyed);
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
 
     if(!_clientThreadPool) // Lazy initialization.
     {
-	int threadNum = _properties->getPropertyAsIntWithDefault("Ice.ThreadPool.Client.Size", 1);
-	_clientThreadPool = new ThreadPool(this, threadNum, 0);
+	//
+	// Make sure that the client thread pool defaults are correctly
+	//
+	if(_properties->getProperty("Ice.ThreadPool.Client.Size").empty())
+	{
+	    _properties->setProperty("Ice.ThreadPool.Client.Size", "1");
+	}
+	if(_properties->getProperty("Ice.ThreadPool.Client.SizeMax").empty())
+	{
+	    _properties->setProperty("Ice.ThreadPool.Client.SizeMax", "1");
+	}
+	if(_properties->getProperty("Ice.ThreadPool.Client.SizeWarn").empty())
+	{
+	    _properties->setProperty("Ice.ThreadPool.Client.SizeWarn", "0");
+	}
+
+	_clientThreadPool = new ThreadPool(this, "Ice.ThreadPool.Client", 0);
     }
 
     return _clientThreadPool;
@@ -219,13 +300,15 @@ IceInternal::Instance::serverThreadPool()
 {
     IceUtil::RecMutex::Lock sync(*this);
 
-    assert(!_destroyed);
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
     
     if(!_serverThreadPool) // Lazy initialization.
     {
-	int threadNum = _properties->getPropertyAsIntWithDefault("Ice.ThreadPool.Server.Size", 10);
 	int timeout = _properties->getPropertyAsInt("Ice.ServerIdleTime");
-	_serverThreadPool = new ThreadPool(this, threadNum, timeout);
+	_serverThreadPool = new ThreadPool(this, "Ice.ThreadPool.Server", timeout);
     }
 
     return _serverThreadPool;
@@ -235,6 +318,12 @@ EndpointFactoryManagerPtr
 IceInternal::Instance::endpointFactoryManager()
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
     return _endpointFactoryManager;
 }
 
@@ -242,6 +331,12 @@ DynamicLibraryListPtr
 IceInternal::Instance::dynamicLibraryList()
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
     return _dynamicLibraryList;
 }
 
@@ -249,6 +344,12 @@ PluginManagerPtr
 IceInternal::Instance::pluginManager()
 {
     IceUtil::RecMutex::Lock sync(*this);
+
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
     return _pluginManager;
 }
 
@@ -273,7 +374,9 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, int& argc, 
 
 	if(_globalStateCounter == 1) // Only on first call
 	{
-	    srand(static_cast<timeval>(IceUtil::Time::now()).tv_usec);
+	    unsigned int seed = 
+		static_cast<unsigned int>(IceUtil::Time::now().toMicroSeconds());
+	    srand(seed);
 	    
 	    if(_properties->getPropertyAsInt("Ice.NullHandleAbort") > 0)
 	    {
@@ -344,10 +447,12 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, int& argc, 
 	}
 	else
 	{
-	    _logger = new LoggerI(_properties->getProperty("Ice.ProgramName"));
+	    _logger = new LoggerI(_properties->getProperty("Ice.ProgramName"), 
+				  _properties->getPropertyAsInt("Ice.Logger.Timestamp") > 0);
 	}
 #else
-	_logger = new LoggerI(_properties->getProperty("Ice.ProgramName"));
+	_logger = new LoggerI(_properties->getProperty("Ice.ProgramName"), 
+			      _properties->getPropertyAsInt("Ice.Logger.Timestamp") > 0);
 #endif
 
 	_stats = 0; // There is no default statistics callback object.
@@ -378,8 +483,6 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, int& argc, 
 
 	_servantFactoryManager = new ObjectFactoryManager();
 
-	_userExceptionFactoryManager = new UserExceptionFactoryManager();
-
 	_objectAdapterFactory = new ObjectAdapterFactory(this, communicator);
 
 	__setNoDelete(false);
@@ -401,7 +504,6 @@ IceInternal::Instance::~Instance()
     assert(!_outgoingConnectionFactory);
     assert(!_connectionMonitor);
     assert(!_servantFactoryManager);
-    assert(!_userExceptionFactoryManager);
     assert(!_objectAdapterFactory);
     assert(!_clientThreadPool);
     assert(!_serverThreadPool);
@@ -473,7 +575,7 @@ IceInternal::Instance::finishSetup(int& argc, char* argv[])
 	    LocatorPrx::uncheckedCast(_proxyFactory->stringToProxy(_defaultsAndOverrides->defaultLocator)));
     }
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__sun) 
     //
     // daemon() must be called after any plug-ins have been
     // installed. For example, an SSL plug-in might want to
@@ -573,9 +675,6 @@ IceInternal::Instance::destroy()
 
 	_servantFactoryManager->destroy();
 	_servantFactoryManager = 0;
-	
-	_userExceptionFactoryManager->destroy();
-	_userExceptionFactoryManager = 0;
 	
 	_referenceFactory->destroy();
 	_referenceFactory = 0;

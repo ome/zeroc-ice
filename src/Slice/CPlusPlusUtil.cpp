@@ -101,14 +101,12 @@ Slice::printDllExportStuff(Output& out, const string& dllExport)
     if(dllExport.size())
     {
 	out << sp;
-	out << "\n#ifdef _WIN32";
+	out << "\n#ifndef " << dllExport;
 	out << "\n#   ifdef " << dllExport << "_EXPORTS";
-	out << "\n#       define " << dllExport << " __declspec(dllexport)";
+	out << "\n#       define " << dllExport << " ICE_DECLSPEC_EXPORT";
 	out << "\n#   else";
-	out << "\n#       define " << dllExport << " __declspec(dllimport)";
+	out << "\n#       define " << dllExport << " ICE_DECLSPEC_IMPORT";
 	out << "\n#   endif";
-	out << "\n#else";
-	out << "\n#   define " << dllExport << " /**/";
 	out << "\n#endif";
     }
 }
@@ -384,16 +382,6 @@ Slice::writeMarshalUnmarshalCode(Output& out, const TypePtr& type, const string&
 	deref = '.';
     }
     
-    string obj;
-    if(stream.find("__") == 0)
-    {
-	obj = "__obj";
-    }
-    else
-    {
-	obj = "obj";
-    }
-
     string func = marshal ? "write(" : "read(";
 
     BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
@@ -407,7 +395,7 @@ Slice::writeMarshalUnmarshalCode(Output& out, const TypePtr& type, const string&
 	    }
 	    else
 	    {
-		out << nl << stream << deref << func << "::Ice::Object::ice_staticId(), 0, " << fixedParam << ");";
+		out << nl << stream << deref << func << "::Ice::__patch__ObjectPtr, &" << fixedParam << ");";
 	    }
 	    return;
 	}
@@ -421,34 +409,16 @@ Slice::writeMarshalUnmarshalCode(Output& out, const TypePtr& type, const string&
     ClassDeclPtr cl = ClassDeclPtr::dynamicCast(type);
     if(cl)
     {
-	out << sb;
+	string scope = fixKwd(cl->scope());
 	if(marshal)
 	{
-	    out << nl << "::Ice::ObjectPtr " << obj << " = " << fixedParam << ';';
-	    out << nl << stream << deref << func << obj << ");";
+	    out << nl << scope << "__write(" << stream << ", " << fixedParam << ");";
 	}
 	else
 	{
-	    out << nl << "::Ice::ObjectPtr " << obj << ';';
-	    ClassDefPtr def = cl->definition();
-	    string factory;
-	    string type;
-	    if(def && !def->isAbstract())
-	    {
-		factory = fixKwd(cl->scoped());
-		factory += "::ice_factory()";
-		type = fixKwd(cl->scoped());
-		type += "::ice_staticId()";
-	    }
-	    else
-	    {
-		factory = "0";
-		type = "\"\"";
-	    }
-	    out << nl << stream << deref << func << type << ", " << factory << ", " << obj << ");";
-	    out << nl << fixedParam << " = " << fixKwd(cl->scoped()) << "Ptr::dynamicCast(" << obj << ");";
+	    out << nl << stream << deref << "read("
+		<< scope << "__patch__" << fixKwd(cl->name()) << "Ptr, &" << fixedParam << ");";
 	}
-	out << eb;
 
 	return;
     }
@@ -463,7 +433,7 @@ Slice::writeMarshalUnmarshalCode(Output& out, const TypePtr& type, const string&
     SequencePtr seq = SequencePtr::dynamicCast(type);
     if(seq)
     {
-	BuiltinPtr builtin = BuiltinPtr::dynamicCast(seq->type());
+	builtin = BuiltinPtr::dynamicCast(seq->type());
 	if(builtin && builtin->kind() != Builtin::KindObject && builtin->kind() != Builtin::KindObjectProxy)
 	{
 	    out << nl << stream << deref << func << fixedParam << ");";
@@ -503,11 +473,11 @@ Slice::writeMarshalCode(Output& out, const list<pair<TypePtr, string> >& params,
 {
     for(list<pair<TypePtr, string> >::const_iterator p = params.begin(); p != params.end(); ++p)
     {
-	writeMarshalUnmarshalCode(out, p->first, p->second, true);
+	writeMarshalUnmarshalCode(out, p->first, p->second, true, "", true);
     }
     if(ret)
     {
-	writeMarshalUnmarshalCode(out, ret, "__ret", true);
+	writeMarshalUnmarshalCode(out, ret, "__ret", true, "", true);
     }
 }
 
@@ -516,11 +486,11 @@ Slice::writeUnmarshalCode(Output& out, const list<pair<TypePtr, string> >& param
 {
     for(list<pair<TypePtr, string> >::const_iterator p = params.begin(); p != params.end(); ++p)
     {
-	writeMarshalUnmarshalCode(out, p->first, p->second, false);
+	writeMarshalUnmarshalCode(out, p->first, p->second, false, "", true);
     }
     if(ret)
     {
-	writeMarshalUnmarshalCode(out, ret, "__ret", false);
+	writeMarshalUnmarshalCode(out, ret, "__ret", false, "", true);
     }
 }
 
@@ -563,16 +533,6 @@ Slice::writeGenericMarshalUnmarshalCode(Output& out, const TypePtr& type, const 
 	deref = '.';
     }
     
-    string obj;
-    if(stream.find("__") == 0)
-    {
-	obj = "__obj";
-    }
-    else
-    {
-	obj = "obj";
-    }
-
     static const char* outputBuiltinTable[] =
     {
 	"Byte",
@@ -630,8 +590,8 @@ Slice::writeGenericMarshalUnmarshalCode(Output& out, const TypePtr& type, const 
             }
             else
             {
-                out << nl << fixedParam << " = " << stream << deref << streamFunc << outputBuiltinTable[builtin->kind()]
-                    << "(" << tagName << ");";
+                out << nl << fixedParam << " = " << stream << deref << streamFunc
+		    << outputBuiltinTable[builtin->kind()] << "(" << tagName << ");";
             }
 	    return;
 	}
@@ -640,33 +600,32 @@ Slice::writeGenericMarshalUnmarshalCode(Output& out, const TypePtr& type, const 
     ClassDeclPtr cl = ClassDeclPtr::dynamicCast(type);
     if(cl)
     {
+	string scope = fixKwd(cl->scope());
 	out << sb;
 	if(marshal)
 	{
-	    out << nl << "::Ice::ObjectPtr " << obj << " = " << fixedParam << ';';
-	    out << nl << stream << deref << streamFunc << "Object(" << tagName << ", " << obj << ");";
+	    out << nl << scope << "__" << streamFunc << "Object(" << stream << ", " << tagName << ", "
+		<< fixedParam << ");";
 	}
 	else
 	{
-	    out << nl << "::Ice::ObjectPtr " << obj << ';';
 	    ClassDefPtr def = cl->definition();
 	    string factory;
-	    string type;
+	    string typeName;
 	    if(def && !def->isAbstract())
 	    {
 		factory = fixKwd(cl->scoped());
 		factory += "::ice_factory()";
-		type = fixKwd(cl->scoped());
-		type += "::ice_staticId()";
+		typeName = fixKwd(cl->scoped());
+		typeName += "::ice_staticId()";
 	    }
 	    else
 	    {
 		factory = "0";
-		type = "\"\"";
+		typeName = "\"\"";
 	    }
-	    out << nl << obj << " = " << stream << deref << streamFunc << "Object(" << tagName << ", "
-		<< type << ", " << factory << ");";
-	    out << nl << fixedParam << " = " << fixKwd(cl->scoped()) << "Ptr::dynamicCast(" << obj << ");";
+	    out << nl << scope << "__" << streamFunc << "Object(" << stream << ", " << tagName << ", "
+		<< typeName << ", " << factory << ", " << fixedParam << ");";
 	}
 	out << eb;
 
@@ -683,7 +642,7 @@ Slice::writeGenericMarshalUnmarshalCode(Output& out, const TypePtr& type, const 
     SequencePtr seq = SequencePtr::dynamicCast(type);
     if(seq)
     {
-	BuiltinPtr builtin = BuiltinPtr::dynamicCast(seq->type());
+	builtin = BuiltinPtr::dynamicCast(seq->type());
 	if(builtin && builtin->kind() != Builtin::KindObject && builtin->kind() != Builtin::KindObjectProxy)
 	{
             if(marshal)
@@ -693,8 +652,8 @@ Slice::writeGenericMarshalUnmarshalCode(Output& out, const TypePtr& type, const 
             }
             else
             {
-                out << nl << fixedParam << " = " << stream << deref << streamFunc << outputBuiltinTable[builtin->kind()]
-                    << "Seq(" << tagName << ");";
+                out << nl << fixedParam << " = " << stream << deref << streamFunc
+		    << outputBuiltinTable[builtin->kind()] << "Seq(" << tagName << ");";
             }
 	}
 	else

@@ -38,6 +38,7 @@ toLower(string& s)
     transform(s.begin(), s.end(), s.begin(), ::tolower);
 }
 
+
 // ----------------------------------------------------------------------
 // SyntaxTreeBase
 // ----------------------------------------------------------------------
@@ -81,6 +82,77 @@ bool
 Slice::Builtin::isLocal() const
 {
     return _kind == KindLocalObject;
+}
+
+string
+Slice::Builtin::typeId() const
+{
+    switch(_kind)
+    {
+	case KindByte:
+	{
+	    return "::Ice::Byte";
+	    break;
+	}
+	case KindBool:
+	{
+	    return "::Ice::Bool";
+	    break;
+	}
+	case KindShort:
+	{
+	    return "::Ice::Short";
+	    break;
+	}
+	case KindInt:
+	{
+	    return "::Ice::Int";
+	    break;
+	}
+	case KindLong:
+	{
+	    return "::Ice::Long";
+	    break;
+	}
+	case KindFloat:
+	{
+	    return "::Ice::Float";
+	    break;
+	}
+	case KindDouble:
+	{
+	    return "::Ice::Double";
+	    break;
+	}
+	case KindString:
+	{
+	    return "::Ice::String";
+	    break;
+	}
+	case KindObject:
+	{
+	    return "::Ice::Object";
+	    break;
+	}
+	case KindObjectProxy:
+	{
+	    return "::Ice::Object*";
+	    break;
+	}
+	case KindLocalObject:
+	{
+	    return "::Ice::LocalObject";
+	    break;
+	}
+    }
+    assert(false);
+    return ""; // Keep the compiler happy
+}
+
+bool
+Slice::Builtin::usesClasses() const
+{
+    return _kind == KindObject;
 }
 
 Builtin::Kind
@@ -232,7 +304,7 @@ Slice::Contained::Contained(const ContainerPtr& container, const string& name) :
 void
 Slice::Container::destroy()
 {
-    for_each(_contents.begin(), _contents.end(), ::IceUtil::voidMemFun(&Contained::destroy));
+    for_each(_contents.begin(), _contents.end(), ::IceUtil::voidMemFun(&SyntaxTreeBase::destroy));
     _contents.clear();
     _introducedMap.clear();
     SyntaxTreeBase::destroy();
@@ -313,7 +385,7 @@ Slice::Container::createClassDef(const string& name, bool intf, const ClassList&
 	    }
 	    if(!differsOnlyInCase)
 	    {
-		string msg = "redefinition of ";
+		msg = "redefinition of ";
 		msg += intf ? "interface" : "class";
 		msg += " `" + name + "'";
 		_unit->error(msg);
@@ -1196,6 +1268,51 @@ Slice::Container::hasClassDefs() const
 }
 
 bool
+Slice::Container::hasDataOnlyClasses() const
+{
+    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
+    {
+	ClassDefPtr q = ClassDefPtr::dynamicCast(*p);
+	if(q)
+	{
+	    if(!q->isAbstract())
+	    {
+		return true;
+	    }
+	}
+
+	ContainerPtr container = ContainerPtr::dynamicCast(*p);
+	if(container && container->hasDataOnlyClasses())
+	{
+	    return true;
+	}
+    }
+
+    return false;
+}
+
+bool
+Slice::Container::hasNonLocalExceptions() const
+{
+    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
+    {
+	ExceptionPtr q = ExceptionPtr::dynamicCast(*p);
+	if(q && !q->isLocal())
+	{
+	    return true;
+	}
+
+	ContainerPtr container = ContainerPtr::dynamicCast(*p);
+	if(container && container->hasNonLocalExceptions())
+	{
+	    return true;
+	}
+    }
+
+    return false;
+}
+
+bool
 Slice::Container::hasOtherConstructedOrExceptions() const
 {
     for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
@@ -1357,44 +1474,72 @@ Slice::Container::checkIntroduced(const string& scoped, ContainedPtr namedThing)
     {
 	return true;
     }
-
+    
     //
-    // Split off first component of scoped name
+    // Split off first component.
     //
     string::size_type pos = scoped.find("::");
-    string firstComponent = scoped.substr(0, pos);
+    string firstComponent = pos == string::npos ? scoped : scoped.substr(0, pos);
 
     //
-    // If we don't have a type, use the Contained for the first component
+    // If we don't have a type, the thing that is introduced is the contained for
+    // the first component.
     //
     if(namedThing == 0)
     {
 	ContainedList cl = lookupContained(firstComponent, false);
-	if(cl.empty())
+	if(namedThing == 0)
 	{
-	    return true;	// Ignore types whose creation failed previously
+	    if(cl.empty())
+	    {
+		return true;	// Ignore types whose creation failed previously
+	    }
 	}
 	namedThing = cl.front();
     }
+    else
+    {
+	//
+	// For each scope, get the container until we have the container
+	// for the first scope (which is the introduced one).
+	//
+	ContainerPtr c;
+	while(pos != string::npos)
+	{
+	    c = namedThing->container();
+	    pos = scoped.find("::", pos + 2);
+	}
+	if(c)
+	{
+	    namedThing = ContainedPtr::dynamicCast(c);
+	    assert(namedThing);
+	}
+    }
 
     //
-    // Check if we have the introduced name in the map already...
+    // Check if the first component is in the introduced map of this scope.
     //
     map<string, ContainedPtr, CICompare>::const_iterator it = _introducedMap.find(firstComponent);
     if(it == _introducedMap.end())
     {
+	//
+	// We've just introduced the first component to the current scope.
+	//
 	_introducedMap[firstComponent] = namedThing;	// No, insert it
-	return true;
     }
     else
     {
+	//
+	// We've previously introduced the first component to the current scope,
+	// check that it has not changed meaning.
+	//
 	if(!_unit->caseSensitive() && it->second != namedThing)
 	{
-	    _unit->error("`" + scoped + "' has changed meaning");
+	    _unit->error("`" + firstComponent + "' has changed meaning");
 	    return false;
 	}
-	return true;
     }
+    return true;
 }
 
 Slice::Container::Container(const UnitPtr& unit) :
@@ -1532,12 +1677,30 @@ Slice::Constructed::isLocal() const
     return _local;
 }
 
+string
+Slice::Constructed::typeId() const
+{
+    return scoped();
+}
+
 ConstructedList
 Slice::Constructed::dependencies()
 {
-    set<ConstructedPtr> result;
-    recDependencies(result);
-    return ConstructedList(result.begin(), result.end());
+    set<ConstructedPtr> resultSet;
+    recDependencies(resultSet);
+
+#if defined(__SUNPRO_CC) && defined(_RWSTD_NO_MEMBER_TEMPLATES)
+    // TODO: find a more usable work-around for this std lib limitation
+    ConstructedList result;
+    set<ConstructedPtr>::iterator it = resultSet.begin();
+    while(it != resultSet.end())
+    {
+        result.push_back(*it++);
+    }
+    return result;
+#else
+    return ConstructedList(resultSet.begin(), resultSet.end());
+#endif
 }
 
 Slice::Constructed::Constructed(const ContainerPtr& container, const string& name, bool local) :
@@ -1581,6 +1744,12 @@ bool
 Slice::ClassDecl::uses(const ContainedPtr&) const
 {
     return false;
+}
+
+bool
+Slice::ClassDecl::usesClasses() const
+{
+    return !isLocal() && !_interface;
 }
 
 string
@@ -1634,7 +1803,7 @@ Slice::ClassDecl::checkBasesAreLegal(const string& name, bool local, const Class
 	    }
 	}
     }
-    
+
     //
     // Check whether, for multiple inheritance, any of the bases define
     // the same operations.
@@ -2135,6 +2304,58 @@ Slice::ClassDef::allDataMembers() const
     return result;
 }
 
+DataMemberList
+Slice::ClassDef::classDataMembers() const
+{
+    DataMemberList result;
+    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
+    {
+	DataMemberPtr q = DataMemberPtr::dynamicCast(*p);
+	if(q)
+	{
+	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(q->type());
+	    if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(q->type()))
+	    {
+		result.push_back(q);
+	    }
+	}
+    }
+    return result;
+}
+
+DataMemberList
+Slice::ClassDef::allClassDataMembers() const
+{
+    DataMemberList result;
+
+    //
+    // Check if we have a base class. If so, recursively
+    // get the class data members of the base(s).
+    //
+    ClassList::const_iterator p = _bases.begin();
+    if(p != _bases.end() && !(*p)->isInterface())
+    {
+	result = (*p)->allClassDataMembers();
+    }
+
+    //
+    // Append this class's class members.
+    //
+    for(ContainedList::const_iterator it = _contents.begin(); it != _contents.end(); ++it)
+    {
+	DataMemberPtr q = DataMemberPtr::dynamicCast(*it);
+	if(q)
+	{
+	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(q->type());
+	    if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(q->type()))
+	    {
+		result.push_back(q);
+	    }
+	}
+    }
+    return result;
+}
+
 bool
 Slice::ClassDef::isAbstract() const
 {
@@ -2243,6 +2464,18 @@ bool
 Slice::Proxy::isLocal() const
 {
     return __class->isLocal();
+}
+
+string
+Slice::Proxy::typeId() const
+{
+    return __class->scoped();
+}
+
+bool
+Slice::Proxy::usesClasses() const
+{
+    return false;
 }
 
 ClassDeclPtr
@@ -2387,6 +2620,57 @@ Slice::Exception::dataMembers() const
     return result;
 }
 
+DataMemberList
+Slice::Exception::classDataMembers() const
+{
+    DataMemberList result;
+    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
+    {
+	DataMemberPtr q = DataMemberPtr::dynamicCast(*p);
+	if(q)
+	{
+	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(q->type());
+	    if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(q->type()))
+	    {
+		result.push_back(q);
+	    }
+	}
+    }
+    return result;
+}
+
+DataMemberList
+Slice::Exception::allClassDataMembers() const
+{
+    DataMemberList result;
+
+    //
+    // Check if we have a base exception. If so, recursively
+    // get the class data members of the base exception(s).
+    //
+    if(base())
+    {
+	result = base()->allClassDataMembers();
+    }
+
+    //
+    // Append this exception's class members.
+    //
+    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
+    {
+	DataMemberPtr q = DataMemberPtr::dynamicCast(*p);
+	if(q)
+	{
+	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(q->type());
+	    if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(q->type()))
+	    {
+		result.push_back(q);
+	    }
+	}
+    }
+    return result;
+}
+
 ExceptionPtr
 Slice::Exception::base() const
 {
@@ -2421,6 +2705,24 @@ bool
 Slice::Exception::uses(const ContainedPtr&) const
 {
     // No uses() implementation here. DataMember has its own uses().
+    return false;
+}
+
+bool
+Slice::Exception::usesClasses() const
+{
+    DataMemberList dml = dataMembers();
+    for(DataMemberList::const_iterator i = dml.begin(); i != dml.end(); ++i)
+    {
+	if((*i)->type()->usesClasses())
+	{
+	    return true;
+	}
+    }
+    if(_base)
+    {
+	return _base->usesClasses();
+    }
     return false;
 }
 
@@ -2550,6 +2852,25 @@ Slice::Struct::dataMembers() const
     return result;
 }
 
+DataMemberList
+Slice::Struct::classDataMembers() const
+{
+    DataMemberList result;
+    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
+    {
+	DataMemberPtr q = DataMemberPtr::dynamicCast(*p);
+	if(q)
+	{
+	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(q->type());
+	    if((builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(q->type()))
+	    {
+		result.push_back(q);
+	    }
+	}
+    }
+    return result;
+}
+
 Contained::ContainedType
 Slice::Struct::containedType() const
 {
@@ -2559,6 +2880,24 @@ Slice::Struct::containedType() const
 bool
 Slice::Struct::uses(const ContainedPtr&) const
 {
+    return false;
+}
+
+bool
+Slice::Struct::usesClasses() const
+{
+    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
+    {
+	DataMemberPtr q = DataMemberPtr::dynamicCast(*p);
+	if(q)
+	{
+	    TypePtr t = q->type();
+	    if(t->usesClasses())
+	    {
+		return true;
+	    }
+	}
+    }
     return false;
 }
 
@@ -2619,6 +2958,12 @@ Slice::Sequence::uses(const ContainedPtr& contained) const
     }
 
     return false;
+}
+
+bool
+Slice::Sequence::usesClasses() const
+{
+    return _type->usesClasses();
 }
 
 string
@@ -2697,6 +3042,12 @@ Slice::Dictionary::uses(const ContainedPtr& contained) const
     return false;
 }
 
+bool
+Slice::Dictionary::usesClasses() const
+{
+    return _valueType->usesClasses();
+}
+
 string
 Slice::Dictionary::kindOf() const
 {
@@ -2732,53 +3083,12 @@ Slice::Dictionary::recDependencies(set<ConstructedPtr>& dependencies)
 }
 
 //
-// Check that the key type of a dictionary is legal. Legal types are integral types, string, and sequences and
-// structs containing only integral types or strings.
+// Check that the key type of a dictionary is legal. Legal types are
+// integral types, string, and sequences and structs containing only
+// other legal key types.
 //
 bool
 Slice::Dictionary::legalKeyType(const TypePtr& type)
-{
-    if(legalSimpleKeyType(type))
-    {
-	return true;
-    }
-
-    SequencePtr seqp = SequencePtr::dynamicCast(type);
-    if(seqp && legalSimpleKeyType(seqp->type()))
-    {
-	return true;
-    }
-
-    StructPtr strp = StructPtr::dynamicCast(type);
-    if(strp)
-    {
-	DataMemberList dml = strp->dataMembers();
-	for(DataMemberList::const_iterator mem = dml.begin(); mem != dml.end(); ++mem)
-	{
-	    if(!legalSimpleKeyType((*mem)->type()))
-	    {
-		return false;
-	    }
-	}
-	return true;
-    }
-
-    return false;
-}
-
-Slice::Dictionary::Dictionary(const ContainerPtr& container, const string& name, const TypePtr& keyType,
-			      const TypePtr& valueType, bool local) :
-    Constructed(container, name, local),
-    Type(container->unit()),
-    Contained(container, name),
-    SyntaxTreeBase(container->unit()),
-    _keyType(keyType),
-    _valueType(valueType)
-{
-}
-
-bool
-Slice::Dictionary::legalSimpleKeyType(const TypePtr& type)
 {
     BuiltinPtr bp = BuiltinPtr::dynamicCast(type);
     if(bp)
@@ -2814,7 +3124,38 @@ Slice::Dictionary::legalSimpleKeyType(const TypePtr& type)
 	return true;
     }
 
+    SequencePtr seqp = SequencePtr::dynamicCast(type);
+    if(seqp && legalKeyType(seqp->type()))
+    {
+	return true;
+    }
+
+    StructPtr strp = StructPtr::dynamicCast(type);
+    if(strp)
+    {
+	DataMemberList dml = strp->dataMembers();
+	for(DataMemberList::const_iterator mem = dml.begin(); mem != dml.end(); ++mem)
+	{
+	    if(!legalKeyType((*mem)->type()))
+	    {
+		return false;
+	    }
+	}
+	return true;
+    }
+
     return false;
+}
+
+Slice::Dictionary::Dictionary(const ContainerPtr& container, const string& name, const TypePtr& keyType,
+			      const TypePtr& valueType, bool local) :
+    Constructed(container, name, local),
+    Type(container->unit()),
+    Contained(container, name),
+    SyntaxTreeBase(container->unit()),
+    _keyType(keyType),
+    _valueType(valueType)
+{
 }
 
 // ----------------------------------------------------------------------
@@ -2841,6 +3182,12 @@ Slice::Enum::containedType() const
 
 bool
 Slice::Enum::uses(const ContainedPtr&) const
+{
+    return false;
+}
+
+bool
+Slice::Enum::usesClasses() const
 {
     return false;
 }
@@ -2991,7 +3338,15 @@ Slice::Const::typesAreCompatible(const string& name, const TypePtr& constType,
 				    const UnitPtr& unit)
 {
     BuiltinPtr ct = BuiltinPtr::dynamicCast(constType);
+
+#if defined(__SUNPRO_CC) && (__SUNPRO_CC <= 0x530)
+// Strange Sun C++ 5.3 bug
+    const IceUtil::HandleBase<SyntaxTreeBase>& hb = literalType;
+    BuiltinPtr lt = BuiltinPtr::dynamicCast(hb);
+#else
     BuiltinPtr lt = BuiltinPtr::dynamicCast(literalType);
+#endif
+
     if(ct && lt)
     {
 	switch(ct->kind())
@@ -3347,6 +3702,39 @@ Slice::Operation::uses(const ContainedPtr& contained) const
 	}
     }
 
+    return false;
+}
+
+bool
+Slice::Operation::sendsClasses() const
+{
+    ParamDeclList pdl = parameters();
+    for(ParamDeclList::const_iterator i = pdl.begin(); i != pdl.end(); ++i)
+    {
+	if(!(*i)->isOutParam() && (*i)->type()->usesClasses())
+	{
+	    return true;
+	}
+    }
+    return false;
+}
+
+bool
+Slice::Operation::returnsClasses() const
+{
+    TypePtr t = returnType();
+    if(t && t->usesClasses())
+    {
+	return true;
+    }
+    ParamDeclList pdl = parameters();
+    for(ParamDeclList::const_iterator i = pdl.begin(); i != pdl.end(); ++i)
+    {
+	if((*i)->isOutParam() && (*i)->type()->usesClasses())
+	{
+	    return true;
+	}
+    }
     return false;
 }
 

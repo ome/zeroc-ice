@@ -24,35 +24,47 @@ using namespace std;
 using namespace Ice;
 using namespace Freeze;
 
-static Byte alphabetChars[] = "abcdefghijklmnopqrstuvwxyz";
+#ifdef __SUNPRO_CC
+extern
+#else
+static 
+#endif
+Byte alphabetChars[] = "abcdefghijklmnopqrstuvwxyz";
+
 vector<Byte> alphabet;
 
-static void
-ForEachTest(const pair<Byte, Int>&)
+// The extern in the following function is due to a Sun C++ 5.4 template bug
+//
+extern void
+ForEachTest(const pair<const Byte, const Int>&)
 {
 }
 
-static bool
-FindIfTest(const pair<Byte, Int>& p)
+extern bool
+FindIfTest(const pair<const Byte, const Int>& p)
 {
     return p.first == 'b';
 }
 
-static bool
-FindFirstOfTest(const pair<Byte, Int>& p, Byte q)
+extern bool
+FindFirstOfTest(const pair<const Byte, const Int>& p, Byte q)
 {
     return p.first == q;
 }
 
 template<class MAP>
-static void
+void
 populateDB(MAP& m)
 {
     alphabet.assign(alphabetChars, alphabetChars + sizeof(alphabetChars) - 1);
 
     for(vector<Byte>::const_iterator j = alphabet.begin(); j != alphabet.end(); ++j)
     {
-	m.insert(make_pair(*j, j-alphabet.begin()));
+#if defined(_MSC_VER) || (defined(__SUNPRO_CC) && __SUNPRO_CC <= 0x530)
+	m.insert(MAP::value_type(*j, static_cast<Int>(j - alphabet.begin())));
+#else
+	m.insert(typename MAP::value_type(*j, static_cast<Int>(j - alphabet.begin())));
+#endif
     }
 }
 
@@ -84,7 +96,7 @@ private:
 };
 
 template<class MAP>
-static int
+int
 run(int argc, char* argv[], MAP& m)
 {
     //
@@ -207,7 +219,7 @@ run(int argc, char* argv[], MAP& m)
     // Verify cloned cursors are independent
     //
     test(p->first != 'n' && p->second != 13);
-    pair<Byte, Int> data = *p;
+    pair<const Byte, const Int> data = *p;
     ++p;
 
     test(p->first != data.first && p->second != data.second);
@@ -295,13 +307,13 @@ run(int argc, char* argv[], MAP& m)
     //
     j = find(alphabet.begin(), alphabet.end(), 'n');
     map<Byte, const Int> pairs;
-    pairs.insert(make_pair(*j, j - alphabet.begin()));
+    pairs.insert(pair<const Byte, const Int>(*j, static_cast<Int>(j - alphabet.begin())));
     ++j;
-    pairs.insert(make_pair(*j, j - alphabet.begin()));
+    pairs.insert(pair<const Byte, const Int>(*j, static_cast<Int>(j - alphabet.begin())));
     ++j;
-    pairs.insert(make_pair(*j, j - alphabet.begin()));
+    pairs.insert(pair<const Byte, const Int>(*j, static_cast<Int>(j - alphabet.begin())));
     ++j;
-    pairs.insert(make_pair(*j, j - alphabet.begin()));
+    pairs.insert(pair<const Byte, const Int>(*j, static_cast<Int>(j - alphabet.begin())));
 
     p = find_first_of(m.begin(), m.end(), pairs.begin(), pairs.end());
     test(p != m.end());
@@ -315,7 +327,7 @@ run(int argc, char* argv[], MAP& m)
     pairs.clear();
     for(p = m.begin(); p != m.end(); ++p)
     {
-        pairs.insert(make_pair(p->first, p->second));
+        pairs.insert(pair<const Byte, const Int>(p->first, p->second));
     }
     test(pairs.size() == m.size());
 

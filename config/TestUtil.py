@@ -50,6 +50,13 @@ def getIceVersion():
     config = open(os.path.join(toplevel, "include", "IceUtil", "Config.h"), "r")
     return re.search("ICE_STRING_VERSION \"([0-9\.]*)\"", config.read()).group(1)
 
+def getIceSoVersion():
+    config = open(os.path.join(toplevel, "include", "IceUtil", "Config.h"), "r")
+    intVersion = int(re.search("ICE_INT_VERSION ([0-9]*)", config.read()).group(1))
+    majorVersion = intVersion / 10000
+    minorVersion = intVersion / 100 - 100 * majorVersion    
+    return '%d' % (majorVersion * 10 + minorVersion)
+
 def isCygwin():
 
     # The substring on sys.platform is required because some cygwin
@@ -62,6 +69,13 @@ def isCygwin():
 def isWin32():
 
     if sys.platform == "win32" or isCygwin():
+        return 1
+    else:
+        return 0
+
+def isSolaris():
+
+    if sys.platform == "sunos5":
         return 1
     else:
         return 0
@@ -134,6 +148,7 @@ if isWin32():
     os.environ["PATH"] = os.path.join(toplevel, "bin") + ";" + os.getenv("PATH", "")
 else:
     os.environ["LD_LIBRARY_PATH"] = os.path.join(toplevel, "lib") + ":" + os.getenv("LD_LIBRARY_PATH", "")
+    os.environ["LD_LIBRARY_PATH_64"] = os.path.join(toplevel, "lib") + ":" + os.getenv("LD_LIBRARY_PATH_64", "")
 
 if protocol == "ssl":
     plugin		 = " --Ice.Plugin.IceSSL=IceSSL:create"

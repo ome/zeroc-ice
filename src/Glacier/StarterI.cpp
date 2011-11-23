@@ -16,6 +16,15 @@
 #   error Sorry, the Glacier Starter is not yet supported on WIN32.
 #endif
 
+//
+// crypt.h is necessary on older Linux distributions, but not with
+// OpenSSL 0.96x.
+//
+#if (defined(__linux__) || defined(__sun))
+#   include <crypt.h>
+#endif
+
+
 #include <IceUtil/UUID.h>
 #include <IceSSL/RSAKeyPair.h>
 #include <Glacier/StarterI.h>
@@ -48,7 +57,7 @@ Glacier::StarterI::StarterI(const CommunicatorPtr& communicator, const PasswordV
     Int bitStrength = _properties->getPropertyAsIntWithDefault(
 	"Glacier.Starter.Certificate.BitStrength", 1024);
     Int secondsValid = _properties->getPropertyAsIntWithDefault(
-	"Glacier.Starter.Certificate.SecondsValid", IceSSL::RSACertificateGenContext::daysToSeconds(1));
+	"Glacier.Starter.Certificate.SecondsValid", static_cast<Int>(IceSSL::RSACertificateGenContext::daysToSeconds(1)));
     Int issuedAdjust = _properties->getPropertyAsIntWithDefault("Glacier.Starter.Certificate.IssuedAdjust", 0);
     
     _certContext.setCountry(country);
@@ -154,9 +163,13 @@ Glacier::StarterI::startRouter(const string& userId, const string& password, Byt
 	    ex.error = getSystemErrno();
 	    throw ex;
 	}
+
 	pid = fork();
+
 	if(pid == -1)
 	{
+	    close(fds[0]);
+	    close(fds[1]);
 	    SyscallException ex(__FILE__, __LINE__);
 	    ex.error = getSystemErrno();
 	    throw ex;
@@ -275,7 +288,7 @@ Glacier::StarterI::startRouter(const string& userId, const string& password, Byt
 	//
 	// Convert to standard argc/argv.
 	//
-	int argc = args.size() + 1;
+	int argc = static_cast<int>(args.size()) + 1;
 	char** argv = static_cast<char**>(malloc((argc + 1) * sizeof(char*)));
 	StringSeq::iterator p;
 	int i;
@@ -305,13 +318,13 @@ Glacier::StarterI::startRouter(const string& userId, const string& password, Byt
     }
     else // Parent process.
     {
+	//
+	// Close the write side of the newly created pipe.
+	//
+	close(fds[1]);
+
 	try
 	{
-	    //
-	    // Close the write side of the newly created pipe.
-	    //
-	    close(fds[1]);
-	    
 	    //
 	    // Wait until data can be read from the newly started router,
 	    // with timeout.
@@ -382,6 +395,8 @@ Glacier::StarterI::startRouter(const string& userId, const string& password, Byt
 
 	    if(strncmp(buf, uuid.c_str(), uuid.length()) == 0)
 	    {
+		close(fds[0]);
+
 		//
 		// We got the stringified router proxy.
 		//
@@ -407,6 +422,8 @@ Glacier::StarterI::startRouter(const string& userId, const string& password, Byt
 	}
 	catch(const CannotStartRouterException& ex)
 	{
+	    close(fds[0]);
+
 	    if(_traceLevel >= 1)
 	    {
 		Trace out(_logger, "Glacier");
@@ -417,6 +434,8 @@ Glacier::StarterI::startRouter(const string& userId, const string& password, Byt
 	}
 	catch(const Exception& ex)
 	{
+	    close(fds[0]);
+
 	    Error out(_logger);
 	    out << ex;
 	    ex.ice_throw();

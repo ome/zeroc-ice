@@ -19,6 +19,8 @@
 #include <Ice/ServantLocator.ice>
 #include <Freeze/DBException.ice>
 #include <Freeze/DBF.ice>
+#include <Freeze/StrategyF.ice>
+#include <Freeze/ObjectRecord.ice>
 
 module Freeze
 {
@@ -149,6 +151,20 @@ local interface Evictor extends Ice::ServantLocator
      *
      **/
     DB getDB() throws EvictorDeactivatedException;
+
+    /**
+     *
+     * Get the persistence strategy for this evictor.
+     *
+     * @return The persistence strategy used by this evictor.
+     *
+     * @throws EvictorDeactivatedException Raised if the evictor has
+     * been deactivated.
+     *
+     * @see DB::createEvictor
+     *
+     **/
+    PersistenceStrategy getPersistenceStrategy() throws EvictorDeactivatedException;
 
     /**
      *

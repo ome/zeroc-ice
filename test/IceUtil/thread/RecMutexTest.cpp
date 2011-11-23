@@ -28,47 +28,44 @@ public:
     
     RecMutexTestThread(RecMutex& m) :
 	_mutex(m),
-	_trylock(false)
+	_tryLock(false)
     {
     }
 
     virtual void run()
     {
-	try
+	
+	RecMutex::TryLock tlock(_mutex);
+	test(!tlock.acquired());
+	
 	{
-	    RecMutex::TryLock lock(_mutex);
-	    test(false);
+	    Mutex::Lock lock(_tryLockMutex);
+	    _tryLock = true;
 	}
-	catch(const ThreadLockedException&)
-	{
-	    // Expected
-	}
-
-	_trylock = true;
-	_trylockCond.signal();
+	_tryLockCond.signal();
 
 	RecMutex::Lock lock(_mutex);
     }
 
     void
-    waitTrylock()
+    waitTryLock()
     {
-	Mutex::Lock lock(_trylockMutex);
-	while(!_trylock)
+	Mutex::Lock lock(_tryLockMutex);
+	while(!_tryLock)
 	{
-	    _trylockCond.wait(lock);
+	    _tryLockCond.wait(lock);
 	}
     }
 
 private:
 
     RecMutex& _mutex;
-    bool _trylock;
+    bool _tryLock;
     //
     // Use native Condition variable here, not Monitor.
     //
-    Cond _trylockCond;
-    Mutex _trylockMutex;
+    Cond _tryLockCond;
+    Mutex _tryLockMutex;
 };
 
 typedef Handle<RecMutexTestThread> RecMutexTestThreadPtr;
@@ -90,21 +87,25 @@ RecMutexTest::run()
 	
 	// TEST: lock twice
 	RecMutex::Lock lock2(mutex);
-	
+
 	// TEST: TryLock
 	RecMutex::TryLock lock3(mutex);
+	test(lock3.acquired());
 	
 	// TEST: Start thread, try to acquire the mutex.
 	t = new RecMutexTestThread(mutex);
 	control = t->start();
 	
-	// TEST: Wait until the trylock has been tested.
-	t->waitTrylock();
+	// TEST: Wait until the tryLock has been tested.
+	t->waitTryLock();
+	
     }
 
     //
     // TEST: Once the recursive mutex has been released, the thread
     // should acquire the mutex and then terminate.
     //
+
     control.join();
+   
 }

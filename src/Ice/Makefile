@@ -14,10 +14,11 @@
 
 top_srcdir	= ../..
 
-NAME		= $(top_srcdir)/lib/libIce.$(LIBEXT)
-VERSIONED_NAME	= $(NAME).$(VERSION)
+LIBFILENAME     = $(call mklibfilename,Ice,$(VERSION))
+SONAME          = $(call mksoname,Ice,$(SOVERSION))  
+LIBNAME		= $(call mklibname,Ice)
 
-TARGETS		= $(NAME) $(VERSIONED_NAME)
+TARGETS		= $(libdir)/$(LIBFILENAME) $(libdir)/$(SONAME) $(libdir)/$(LIBNAME)
 
 OBJS		= Initialize.o \
 		  Application.o \
@@ -46,8 +47,6 @@ OBJS		= Initialize.o \
 		  ObjectAdapterFactory.o \
 		  ServantManager.o \
 		  ServantLocator.o \
-		  UserExceptionFactory.o \
-		  UserExceptionFactoryManager.o \
 		  Endpoint.o \
 		  EndpointFactory.o \
 		  EndpointFactoryManager.o \
@@ -91,7 +90,9 @@ OBJS		= Initialize.o \
 		  ProtocolPluginFacade.o \
 		  Locator.o \
 		  LocatorInfo.o \
-		  StringUtil.o
+		  StringUtil.o \
+		  FactoryTableDef.o \
+		  FactoryTable.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
@@ -111,8 +112,6 @@ SLICE_SRCS	= $(SDIR)/LocalException.ice \
 		  $(SDIR)/PropertiesF.ice \
 		  $(SDIR)/ObjectFactory.ice \
 		  $(SDIR)/ObjectFactoryF.ice \
-		  $(SDIR)/UserExceptionFactory.ice \
-		  $(SDIR)/UserExceptionFactoryF.ice \
 		  $(SDIR)/Identity.ice \
 		  $(SDIR)/Facet.ice \
 		  $(SDIR)/Current.ice \
@@ -121,23 +120,37 @@ SLICE_SRCS	= $(SDIR)/LocalException.ice \
 		  $(SDIR)/Plugin.ice \
 		  $(SDIR)/PluginF.ice \
 		  $(SDIR)/Locator.ice \
-		  $(SDIR)/LocatorF.ice
+		  $(SDIR)/LocatorF.ice \
+                  $(SDIR)/StatsF.ice \
+                  $(SDIR)/Stats.ice
 
 HDIR		= $(includedir)/Ice
 SDIR		= $(slicedir)/Ice
 
 include $(top_srcdir)/config/Make.rules
 
-CPPFLAGS	:= -I.. $(CPPFLAGS)
+CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_API_EXPORTS -DICE_PROTOCOL_API_EXPORTS $(BZIP2_FLAGS)
 SLICE2CPPFLAGS	:= --ice --include-dir Ice --dll-export ICE_API $(SLICE2CPPFLAGS)
 
-$(VERSIONED_NAME): $(OBJS)
+LINKWITH        := $(BZIP2_LIBS) $(ICE_OS_LIBS)
+
+$(libdir)/$(LIBFILENAME): $(OBJS)
 	rm -f $@
-	$(CXX) $(SHLIB_LDFLAGS) $(LDFLAGS) -o $@ $(OBJS)
+	$(call mkshlib,$@,$(SONAME),$(OBJS),$(LINKWITH))
+
+$(libdir)/$(SONAME): $(libdir)/$(LIBFILENAME)
+	rm -f $@
+	ln -s $(LIBFILENAME) $@
+
+$(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
+	rm -f $@
+	ln -s $(SONAME) $@
 
 install:: all
-	$(INSTALL_LIBRARY) $(VERSIONED_NAME) $(install_libdir)
-	rm -f $(install_libdir)/$(notdir $(NAME))
-	ln -s $(notdir $(VERSIONED_NAME)) $(install_libdir)/$(notdir $(NAME))
+	$(INSTALL_LIBRARY) $(libdir)/$(LIBFILENAME) $(install_libdir)
+	rm -f $(install_libdir)/$(SONAME)
+	ln -s $(LIBFILENAME) $(install_libdir)/$(SONAME)
+	rm -f $(install_libdir)/$(LIBNAME)
+	ln -s $(SONAME) $(install_libdir)/$(LIBNAME)
 
 include .depend

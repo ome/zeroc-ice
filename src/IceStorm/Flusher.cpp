@@ -70,6 +70,11 @@ public:
 	    }
 	    flushAll();
 	}
+
+        //
+        // We break a cycle by clearing the subscriber list.
+        //
+        _subscribers.clear();
     }
 
     void
@@ -109,7 +114,6 @@ public:
 	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 	_subscribers.remove(subscriber);
     }
-
 
 private:
 
@@ -163,8 +167,6 @@ Flusher::Flusher(const Ice::CommunicatorPtr& communicator, const TraceLevelsPtr&
 
 Flusher::~Flusher()
 {
-    _thread->destroy();
-    _thread->getThreadControl().join();
 }
 
 void
@@ -183,5 +185,5 @@ void
 Flusher::stopFlushing()
 {
     _thread->destroy();
+    _thread->getThreadControl().join();
 }
-

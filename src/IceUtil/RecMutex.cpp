@@ -31,42 +31,37 @@ IceUtil::RecMutex::~RecMutex()
     DeleteCriticalSection(&_mutex);
 }
 
-bool
+void
 IceUtil::RecMutex::lock() const
 {
     EnterCriticalSection(&_mutex);
     if(++_count > 1)
     {
 	LeaveCriticalSection(&_mutex);
-	return false;
     }
-    return true;
 }
 
 bool
-IceUtil::RecMutex::trylock() const
+IceUtil::RecMutex::tryLock() const
 {
     if(!TryEnterCriticalSection(&_mutex))
     {
-	throw ThreadLockedException(__FILE__, __LINE__);
+	return false;
     }
     if(++_count > 1)
     {
 	LeaveCriticalSection(&_mutex);
-	return false;
     }
     return true;
 }
 
-bool
+void
 IceUtil::RecMutex::unlock() const
 {
     if(--_count == 0)
     {
 	LeaveCriticalSection(&_mutex);
-	return true;
     }
-    return false;
 }
 
 void
@@ -88,38 +83,39 @@ IceUtil::RecMutex::lock(LockState& state) const
 IceUtil::RecMutex::RecMutex() :
     _count(0)
 {
+    int rc;
+
+#if defined(__linux) && !defined(__USE_UNIX98)
+    const pthread_mutexattr_t attr = { PTHREAD_MUTEX_RECURSIVE_NP };
+#else
     pthread_mutexattr_t attr;
-    int rc = pthread_mutexattr_init(&attr);
+    rc = pthread_mutexattr_init(&attr);
     if(rc != 0)
     {
-	throw ThreadSyscallException(__FILE__, __LINE__);
+	throw ThreadSyscallException(__FILE__, __LINE__, rc);
     }
-    
     rc = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     if(rc != 0)
     {
-	throw ThreadSyscallException(__FILE__, __LINE__);
+	throw ThreadSyscallException(__FILE__, __LINE__, rc);
     }
+#endif
     
     rc = pthread_mutex_init(&_mutex, &attr);
     if(rc != 0)
     {
-	throw ThreadSyscallException(__FILE__, __LINE__);
+	throw ThreadSyscallException(__FILE__, __LINE__, rc);
     }
 
-/*
-#ifdef __linux__ 
-    const pthread_mutexattr_t attr = { PTHREAD_MUTEX_RECURSIVE_NP };
+#if defined(__linux) && !defined(__USE_UNIX98)
+// Nothing to do
 #else
-    const pthread_mutexattr_t attr = { PTHREAD_MUTEX_RECURSIVE };
-#endif
-
-    int rc = pthread_mutex_init(&_mutex, &attr);
+    rc = pthread_mutexattr_destroy(&attr);
     if(rc != 0)
     {
-	throw ThreadSyscallException(__FILE__, __LINE__);
+	throw ThreadSyscallException(__FILE__, __LINE__, rc);
     }
-*/
+#endif
 }
 
 IceUtil::RecMutex::~RecMutex()
@@ -130,45 +126,45 @@ IceUtil::RecMutex::~RecMutex()
     assert(rc == 0);
 }
 
-bool
+void
 IceUtil::RecMutex::lock() const
 {
     int rc = pthread_mutex_lock(&_mutex);
     if(rc != 0)
     {
-	throw ThreadSyscallException(__FILE__, __LINE__);
+	throw ThreadSyscallException(__FILE__, __LINE__, rc);
     }
     if(++_count > 1)
     {
 	rc = pthread_mutex_unlock(&_mutex);
 	assert(rc == 0);
-	return false;
     }
-    return true;
 }
 
 bool
-IceUtil::RecMutex::trylock() const
+IceUtil::RecMutex::tryLock() const
 {
     int rc = pthread_mutex_trylock(&_mutex);
-    if(rc != 0)
+    bool result = (rc == 0);
+    if(!result)
     {
-	if(rc == EBUSY)
+	if(rc != EBUSY)
 	{
-	    throw ThreadLockedException(__FILE__, __LINE__);
+	    throw ThreadSyscallException(__FILE__, __LINE__, rc);
 	}
-	throw ThreadSyscallException(__FILE__, __LINE__);
-    }
-    if(++_count > 1)
+    } 
+    else if(++_count > 1)
     {
 	rc = pthread_mutex_unlock(&_mutex);
-	assert(rc == 0);
-	return false;
+	if(rc != 0)
+	{
+	    throw ThreadSyscallException(__FILE__, __LINE__, rc);
+	}
     }
-    return true;
+    return result;
 }
 
-bool
+void
 IceUtil::RecMutex::unlock() const
 {
     if(--_count == 0)
@@ -176,9 +172,7 @@ IceUtil::RecMutex::unlock() const
 	int rc = 0; // Prevent warnings when NDEBUG is defined.
 	rc = pthread_mutex_unlock(&_mutex);
 	assert(rc == 0);
-	return true;
     }
-    return false;
 }
 
 void
@@ -196,3 +190,9 @@ IceUtil::RecMutex::lock(LockState& state) const
 }
 
 #endif
+
+bool
+IceUtil::RecMutex::willUnlock() const
+{
+    return _count == 1;
+}

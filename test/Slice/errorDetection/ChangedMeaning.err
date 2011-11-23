@@ -14,3 +14,7 @@ ChangedMeaning.ice:126: `counter' has changed meaning
 ChangedMeaning.ice:127: `counter' is not a type
 ChangedMeaning.ice:128: redefinition of parameter `param'
 ChangedMeaning.ice:134: `is' has changed meaning
+ChangedMeaning.ice:146: `E' is not an exception
+ChangedMeaning.ice:146: `E' has changed meaning
+ChangedMeaning.ice:153: `E' has changed meaning
+ChangedMeaning.ice:159: `E' has changed meaning

@@ -57,7 +57,7 @@ IceInternal::OutgoingConnectionFactory::destroy()
 			 (&Connection::destroy), Connection::CommunicatorDestroyed));
 #else
     for_each(_connections.begin(), _connections.end(),
-	     bind2nd(Ice::secondVoidMemFun1<EndpointPtr, Connection, Connection::DestructionReason>
+	     bind2nd(Ice::secondVoidMemFun1<const EndpointPtr, Connection, Connection::DestructionReason>
 		     (&Connection::destroy), Connection::CommunicatorDestroyed));
 #endif
 
@@ -83,7 +83,7 @@ IceInternal::OutgoingConnectionFactory::waitUntilFinished()
     // finished.
     //
     for_each(_connections.begin(), _connections.end(),
-	     Ice::secondConstVoidMemFun<EndpointPtr, Connection>(&Connection::waitUntilFinished));
+	     Ice::secondVoidMemFun<const EndpointPtr, Connection>(&Connection::waitUntilFinished));
 
     //
     // We're done, now we can throw away all connections.
@@ -144,8 +144,8 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	//
 	for(q = endpoints.begin(); q != endpoints.end(); ++q)
 	{
-	    pair<multimap<EndpointPtr, ConnectionPtr>::const_iterator,
-		 multimap<EndpointPtr, ConnectionPtr>::const_iterator> r = _connections.equal_range(*q);
+	    pair<multimap<EndpointPtr, ConnectionPtr>::iterator,
+		 multimap<EndpointPtr, ConnectionPtr>::iterator> r = _connections.equal_range(*q);
 	    
 	    while(r.first != r.second)
 	    {
@@ -201,8 +201,8 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	{	
 	    for(q = endpoints.begin(); q != endpoints.end(); ++q)
 	    {
-		pair<multimap<EndpointPtr, ConnectionPtr>::const_iterator,
- 		     multimap<EndpointPtr, ConnectionPtr>::const_iterator> r = _connections.equal_range(*q);
+		pair<multimap<EndpointPtr, ConnectionPtr>::iterator,
+ 		     multimap<EndpointPtr, ConnectionPtr>::iterator> r = _connections.equal_range(*q);
 		
 		while(r.first != r.second)
 		{
@@ -281,7 +281,6 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	// Signal other threads that we are done with trying to
 	// establish connections to our endpoints.
 	//
-	vector<EndpointPtr>::const_iterator q;
 	for(q = endpoints.begin(); q != endpoints.end(); ++q)
 	{
 	    _pending.erase(*q);
@@ -295,7 +294,7 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	}
 	else
 	{
-	    _connections.insert(_connections.end(), make_pair(connection->endpoint(), connection));
+	    _connections.insert(_connections.end(), pair<const EndpointPtr, ConnectionPtr>(connection->endpoint(), connection));
 
 	    if(_destroyed)
 	    {
@@ -350,8 +349,8 @@ IceInternal::OutgoingConnectionFactory::setRouter(const RouterPrx& router)
 		endpoint = endpoint->compress(defaultsAndOverrides->overrideCompressValue);
 	    }
 
-	    pair<multimap<EndpointPtr, ConnectionPtr>::const_iterator,
-		 multimap<EndpointPtr, ConnectionPtr>::const_iterator> r = _connections.equal_range(endpoint);
+	    pair<multimap<EndpointPtr, ConnectionPtr>::iterator,
+		 multimap<EndpointPtr, ConnectionPtr>::iterator> r = _connections.equal_range(endpoint);
 	    
 	    while(r.first != r.second)
 	    {
@@ -451,7 +450,7 @@ IceInternal::IncomingConnectionFactory::waitUntilFinished()
     // Now we wait until the destruction of each connection has
     // finished.
     //
-    for_each(_connections.begin(), _connections.end(), Ice::constVoidMemFun(&Connection::waitUntilFinished));
+    for_each(_connections.begin(), _connections.end(), Ice::voidMemFun(&Connection::waitUntilFinished));
 
     //
     // We're done, now we can throw away all connections.

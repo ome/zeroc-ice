@@ -9,11 +9,10 @@
 #define	ICE_STORM_CREATE	259
 #define	ICE_STORM_DESTROY	260
 #define	ICE_STORM_LIST	261
-#define	ICE_STORM_SHUTDOWN	262
-#define	ICE_STORM_LINK	263
-#define	ICE_STORM_UNLINK	264
-#define	ICE_STORM_GRAPH	265
-#define	ICE_STORM_STRING	266
+#define	ICE_STORM_LINK	262
+#define	ICE_STORM_UNLINK	263
+#define	ICE_STORM_GRAPH	264
+#define	ICE_STORM_STRING	265
 
 #line 1 "Grammar.y"
 
@@ -70,11 +69,11 @@ yyerror(const char* s)
 
 
 
-#define	YYFINAL		36
+#define	YYFINAL		34
 #define	YYFLAG		-32768
-#define	YYNTBASE	14
+#define	YYNTBASE	13
 
-#define YYTRANSLATE(x) ((unsigned)(x) <= 266 ? yytranslate[x] : 18)
+#define YYTRANSLATE(x) ((unsigned)(x) <= 265 ? yytranslate[x] : 17)
 
 static const char yytranslate[] = {     0,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -82,7 +81,7 @@ static const char yytranslate[] = {     0,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,    13,     2,
+     2,     2,     2,     2,     2,     2,     2,     2,    12,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -103,30 +102,29 @@ static const char yytranslate[] = {     0,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     1,     3,     4,     5,     6,
-     7,     8,     9,    10,    11,    12
+     7,     8,     9,    10,    11
 };
 
 #if YYDEBUG != 0
 static const short yyprhs[] = {     0,
      0,     2,     3,     6,     8,    11,    14,    18,    22,    26,
-    30,    34,    37,    41,    44,    47,    49,    52
+    30,    34,    37,    41,    44,    46,    49
 };
 
-static const short yyrhs[] = {    15,
-     0,     0,    15,    16,     0,    16,     0,     3,    13,     0,
-     4,    13,     0,     5,    17,    13,     0,     6,    17,    13,
-     0,     9,    17,    13,     0,    10,    17,    13,     0,    11,
-    17,    13,     0,     7,    13,     0,     7,    17,    13,     0,
-     8,    13,     0,     1,    13,     0,    13,     0,    12,    17,
-     0,    12,     0
+static const short yyrhs[] = {    14,
+     0,     0,    14,    15,     0,    15,     0,     3,    12,     0,
+     4,    12,     0,     5,    16,    12,     0,     6,    16,    12,
+     0,     8,    16,    12,     0,     9,    16,    12,     0,    10,
+    16,    12,     0,     7,    12,     0,     7,    16,    12,     0,
+     1,    12,     0,    12,     0,    11,    16,     0,    11,     0
 };
 
 #endif
 
 #if YYDEBUG != 0
 static const short yyrline[] = { 0,
-    58,    61,    69,    72,    80,    84,    88,    92,    96,   100,
-   104,   108,   113,   117,   121,   125,   133,   138
+    57,    60,    68,    71,    79,    83,    87,    91,    95,    99,
+   103,   107,   112,   116,   120,   128,   133
 };
 #endif
 
@@ -134,62 +132,62 @@ static const short yyrline[] = { 0,
 #if YYDEBUG != 0 || defined (YYERROR_VERBOSE)
 
 static const char * const yytname[] = {   "$","error","$undefined.","ICE_STORM_HELP",
-"ICE_STORM_EXIT","ICE_STORM_CREATE","ICE_STORM_DESTROY","ICE_STORM_LIST","ICE_STORM_SHUTDOWN",
-"ICE_STORM_LINK","ICE_STORM_UNLINK","ICE_STORM_GRAPH","ICE_STORM_STRING","';'",
-"start","commands","command","strings", NULL
+"ICE_STORM_EXIT","ICE_STORM_CREATE","ICE_STORM_DESTROY","ICE_STORM_LIST","ICE_STORM_LINK",
+"ICE_STORM_UNLINK","ICE_STORM_GRAPH","ICE_STORM_STRING","';'","start","commands",
+"command","strings", NULL
 };
 #endif
 
 static const short yyr1[] = {     0,
-    14,    14,    15,    15,    16,    16,    16,    16,    16,    16,
-    16,    16,    16,    16,    16,    16,    17,    17
+    13,    13,    14,    14,    15,    15,    15,    15,    15,    15,
+    15,    15,    15,    15,    15,    16,    16
 };
 
 static const short yyr2[] = {     0,
      1,     0,     2,     1,     2,     2,     3,     3,     3,     3,
-     3,     2,     3,     2,     2,     1,     2,     1
+     3,     2,     3,     2,     1,     2,     1
 };
 
 static const short yydefact[] = {     0,
-     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-    16,     0,     4,    15,     5,     6,    18,     0,     0,    12,
-     0,    14,     0,     0,     0,     3,    17,     7,     8,    13,
-     9,    10,    11,     0,     0,     0
+     0,     0,     0,     0,     0,     0,     0,     0,     0,    15,
+     0,     4,    14,     5,     6,    17,     0,     0,    12,     0,
+     0,     0,     0,     3,    16,     7,     8,    13,     9,    10,
+    11,     0,     0,     0
 };
 
-static const short yydefgoto[] = {    34,
-    12,    13,    18
+static const short yydefgoto[] = {    32,
+    11,    12,    17
 };
 
 static const short yypact[] = {     0,
-   -11,    -1,     3,    18,    18,    22,    13,    18,    18,    18,
--32768,    14,-32768,-32768,-32768,-32768,    18,    24,    25,-32768,
-    26,-32768,    28,    29,    30,-32768,-32768,-32768,-32768,-32768,
--32768,-32768,-32768,    36,    44,-32768
+   -10,    -1,     3,    22,    22,    20,    22,    22,    22,-32768,
+    13,-32768,-32768,-32768,-32768,    22,    12,    23,-32768,    24,
+    26,    27,    28,-32768,-32768,-32768,-32768,-32768,-32768,-32768,
+-32768,    34,    41,-32768
 };
 
 static const short yypgoto[] = {-32768,
--32768,    33,    23
+-32768,    31,    21
 };
 
 
-#define	YYLAST		45
+#define	YYLAST		42
 
 
 static const short yytable[] = {    -2,
-     1,    14,     2,     3,     4,     5,     6,     7,     8,     9,
-    10,    15,    11,    -1,     1,    16,     2,     3,     4,     5,
-     6,     7,     8,     9,    10,    22,    11,    19,    21,    17,
-    23,    24,    25,    17,    20,    35,    28,    29,    30,    27,
-    31,    32,    33,    36,    26
+     1,    13,     2,     3,     4,     5,     6,     7,     8,     9,
+    14,    10,    -1,     1,    15,     2,     3,     4,     5,     6,
+     7,     8,     9,    26,    10,    18,    20,    21,    22,    23,
+    16,    19,    16,    33,    27,    28,    25,    29,    30,    31,
+    34,    24
 };
 
 static const short yycheck[] = {     0,
-     1,    13,     3,     4,     5,     6,     7,     8,     9,    10,
-    11,    13,    13,     0,     1,    13,     3,     4,     5,     6,
-     7,     8,     9,    10,    11,    13,    13,     5,     6,    12,
-     8,     9,    10,    12,    13,     0,    13,    13,    13,    17,
-    13,    13,    13,     0,    12
+     1,    12,     3,     4,     5,     6,     7,     8,     9,    10,
+    12,    12,     0,     1,    12,     3,     4,     5,     6,     7,
+     8,     9,    10,    12,    12,     5,     6,     7,     8,     9,
+    11,    12,    11,     0,    12,    12,    16,    12,    12,    12,
+     0,    11
 };
 #define YYPURE 1
 
@@ -737,106 +735,100 @@ yyreduce:
   switch (yyn) {
 
 case 1:
-#line 59 "Grammar.y"
+#line 58 "Grammar.y"
 {
 ;
     break;}
 case 2:
-#line 62 "Grammar.y"
+#line 61 "Grammar.y"
 {
 ;
     break;}
 case 3:
-#line 70 "Grammar.y"
+#line 69 "Grammar.y"
 {
 ;
     break;}
 case 4:
-#line 73 "Grammar.y"
+#line 72 "Grammar.y"
 {
 ;
     break;}
 case 5:
-#line 81 "Grammar.y"
+#line 80 "Grammar.y"
 {
     parser->usage();
 ;
     break;}
 case 6:
-#line 85 "Grammar.y"
+#line 84 "Grammar.y"
 {
     return 0;
 ;
     break;}
 case 7:
-#line 89 "Grammar.y"
+#line 88 "Grammar.y"
 {
     parser->create(yyvsp[-1]);
 ;
     break;}
 case 8:
-#line 93 "Grammar.y"
+#line 92 "Grammar.y"
 {
     parser->destroy(yyvsp[-1]);
 ;
     break;}
 case 9:
-#line 97 "Grammar.y"
+#line 96 "Grammar.y"
 {
     parser->link(yyvsp[-1]);
 ;
     break;}
 case 10:
-#line 101 "Grammar.y"
+#line 100 "Grammar.y"
 {
     parser->unlink(yyvsp[-1]);
 ;
     break;}
 case 11:
-#line 105 "Grammar.y"
+#line 104 "Grammar.y"
 {
     parser->graph(yyvsp[-1]);
 ;
     break;}
 case 12:
-#line 109 "Grammar.y"
+#line 108 "Grammar.y"
 {
     std::list<std::string> args;
     parser->dolist(args);
 ;
     break;}
 case 13:
-#line 114 "Grammar.y"
+#line 113 "Grammar.y"
 {
     parser->dolist(yyvsp[-1]);
 ;
     break;}
 case 14:
-#line 118 "Grammar.y"
-{
-    parser->shutdown();
-;
-    break;}
-case 15:
-#line 122 "Grammar.y"
+#line 117 "Grammar.y"
 {
     yyerrok;
 ;
     break;}
-case 16:
-#line 126 "Grammar.y"
+case 15:
+#line 121 "Grammar.y"
 {
 ;
     break;}
-case 17:
-#line 134 "Grammar.y"
+case 16:
+#line 129 "Grammar.y"
 {
     yyval = yyvsp[0];
     yyval.push_front(yyvsp[-1].front());
 ;
     break;}
-case 18:
-#line 139 "Grammar.y"
+case 17:
+#line 134 "Grammar.y"
 {
     yyval = yyvsp[0];
 ;
@@ -1063,5 +1055,5 @@ yyerrhandle:
     }
   return 1;
 }
-#line 144 "Grammar.y"
+#line 139 "Grammar.y"
 

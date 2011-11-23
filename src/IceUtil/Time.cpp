@@ -16,6 +16,7 @@
 
 #ifdef _WIN32
 #   include <sys/timeb.h>
+#   include <time.h>
 #else
 #   include <sys/time.h>
 #endif
@@ -59,74 +60,6 @@ IceUtil::Time::microSeconds(Int64 t)
     return Time(t);
 }
 
-Time
-IceUtil::Time::operator-() const
-{
-    return Time(-_usec);
-}
-
-Time
-IceUtil::Time::operator-(const Time& rhs) const
-{
-    return Time(_usec - rhs._usec);
-}
-
-Time
-IceUtil::Time::operator+(const Time& rhs) const
-{
-    return Time(_usec + rhs._usec);
-}
-
-Time&
-IceUtil::Time::operator+=(const Time& rhs)
-{
-    _usec += rhs._usec;
-    return *this;
-}
-
-Time&
-IceUtil::Time::operator-=(const Time& rhs)
-{
-    _usec -= rhs._usec;
-    return *this;
-}
-
-bool
-IceUtil::Time::operator<(const Time& rhs) const
-{
-    return _usec < rhs._usec;
-}
-
-bool
-IceUtil::Time::operator<=(const Time& rhs) const
-{
-    return _usec <= rhs._usec;
-}
-
-bool
-IceUtil::Time::operator>(const Time& rhs) const
-{
-    return _usec > rhs._usec;
-}
-
-bool
-IceUtil::Time::operator>=(const Time& rhs) const
-{
-    return _usec >= rhs._usec;
-}
-
-bool
-IceUtil::Time::operator==(const Time& rhs) const
-{
-    return _usec == rhs._usec;
-}
-
-bool
-IceUtil::Time::operator!=(const Time& rhs) const
-{
-    return _usec != rhs._usec;
-}
-
 IceUtil::Time::operator timeval() const
 {
     timeval tv;
@@ -138,6 +71,49 @@ IceUtil::Time::operator timeval() const
 IceUtil::Time::operator double() const
 {
     return _usec / 1000000.0L;
+}
+
+Int64
+IceUtil::Time::toSeconds() const
+{
+    return _usec / 1000000;
+}
+
+Int64
+IceUtil::Time::toMilliSeconds() const
+{
+    return _usec / 1000;
+}
+
+Int64
+IceUtil::Time::toMicroSeconds() const
+{
+    return _usec;
+}
+
+std::string
+IceUtil::Time::toString() const
+{
+    time_t time = static_cast<long>(_usec / 1000000);
+
+    struct tm* t;
+#ifdef _WIN32
+    t = localtime(&time);
+#else
+    struct tm tr;
+    localtime_r(&time, &tr);
+    t = &tr;
+#endif
+
+    char buf[32];
+    strftime(buf, sizeof(buf), "%x %H:%M:%S", t);
+
+    std::ostringstream os;
+    os << buf << ":";
+    os.fill('0');
+    os.width(3);
+    os << static_cast<long>(_usec % 1000000 / 1000);
+    return os.str();
 }
 
 Time::Time(Int64 usec) :

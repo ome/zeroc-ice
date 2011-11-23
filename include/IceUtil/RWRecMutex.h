@@ -23,123 +23,235 @@ namespace IceUtil
 {
 
 template <typename T>
-class RLock
+class RLockT
 {
 public:
 
-    RLock(const T& mutex) :
+    RLockT(const T& mutex) :
 	_mutex(mutex)
     {
-	_mutex.readlock();
+	_mutex.readLock();
+	_acquired = true;
     }
 
-    ~RLock()
+    ~RLockT()
     {
+	if (_acquired)
+	{
+	    _mutex.unlock();
+	}
+    }
+
+    void acquire() const
+    {
+	if (_acquired)
+	{
+	    throw ThreadLockedException(__FILE__, __LINE__);
+	}
+	_mutex.readLock();
+	_acquired = true;
+    }
+
+    bool tryAcquire() const
+    {
+	if (_acquired)
+	{
+	    throw ThreadLockedException(__FILE__, __LINE__);
+	}
+	_acquired = _mutex.tryReadLock();
+	return _acquired;
+    }
+
+    bool timedAcquire(const Time& timeout) const
+    {
+	if (_acquired)
+	{
+	    throw ThreadLockedException(__FILE__, __LINE__);
+	}
+	_acquired = _mutex.timedReadLock(timeout);
+	return _acquired;
+    }
+
+    
+
+    void release() const
+    {
+	if (!_acquired)
+	{
+	    throw ThreadLockedException(__FILE__, __LINE__);
+	}
 	_mutex.unlock();
+	_acquired = false;
+    }
+
+    bool acquired() const
+    {
+	return _acquired;
     }
 
     void
-    upgrade()
+    upgrade() const
     {
 	_mutex.upgrade();
     }
 
-    void
-    timedUpgrade(const Time& timeout)
+    bool
+    timedUpgrade(const Time& timeout) const
     {
-	_mutex.timedUpgrade(timeout);
+	return _mutex.timedUpgrade(timeout);
     }
+
+protected:
+    
+    // TryRLockT's constructors
+
+    RLockT(const T& mutex, bool) :
+	_mutex(mutex)
+    {
+	_acquired = _mutex.tryReadLock();
+    }
+
+
+    RLockT(const T& mutex, const Time& timeout) :
+	_mutex(mutex)
+    {
+	_acquired = _mutex.timedReadLock(timeout);
+    }
+
 
 private:
 
+    // Not implemented; prevents accidental use.
+    //
+    RLockT(const RLockT&);
+    RLockT& operator=(const RLockT&);
+
     const T& _mutex;
+    mutable bool _acquired;
 };
 
 template <typename T>
-class TryRLock
+class TryRLockT : public RLockT<T>
 {
 public:
 
-    TryRLock(const T& mutex) :
-	_mutex(mutex)
+    TryRLockT(const T& mutex) :
+	RLockT<T>(mutex, true)
     {
-	_mutex.tryReadlock();
     }
 
-    TryRLock(const T& mutex, const Time& timeout) :
-	_mutex(mutex)
+    TryRLockT(const T& mutex, const Time& timeout) :
+	RLockT<T>(mutex, timeout)
     {
-	_mutex.timedTryReadlock(timeout);
     }
-
-    ~TryRLock()
-    {
-	_mutex.unlock();
-    }
-
-    void
-    upgrade()
-    {
-	_mutex.upgrade();
-    }
-
-    void
-    timedUpgrade(const Time& timeout)
-    {
-	_mutex.timedUpgrade(timeout);
-    }
-
-private:
-
-    const T& _mutex;
 };
 
 template <typename T>
-class WLock
+class WLockT
 {
 public:
 
-    WLock(const T& mutex) :
+    WLockT(const T& mutex) :
 	_mutex(mutex)
     {
-	_mutex.writelock();
+	_mutex.writeLock();
+	_acquired = true;
     }
 
-    ~WLock()
+    ~WLockT()
     {
+	if (_acquired)
+	{
+	    _mutex.unlock();
+	}
+    }
+
+    void acquire() const
+    {
+	if (_acquired)
+	{
+	    throw ThreadLockedException(__FILE__, __LINE__);
+	}
+	_mutex.writeLock();
+	_acquired = true;
+    }
+
+    bool tryAcquire() const
+    {
+	if (_acquired)
+	{
+	    throw ThreadLockedException(__FILE__, __LINE__);
+	}
+	_acquired = _mutex.tryWriteLock();
+	return _acquired;
+    }
+
+    bool timedAcquire(const Time& timeout) const
+    {
+	if (_acquired)
+	{
+	    throw ThreadLockedException(__FILE__, __LINE__);
+	}
+	_acquired = _mutex.timedWriteLock(timeout);
+	return _acquired;
+    }
+
+    void release() const
+    {
+	if (!_acquired)
+	{
+	    throw ThreadLockedException(__FILE__, __LINE__);
+	}
 	_mutex.unlock();
+	_acquired = false;
+    }
+
+    bool acquired() const
+    {
+	return _acquired;
+    }
+
+protected:
+
+    // TryWLockT's constructor
+
+    WLockT(const T& mutex, bool) :
+	_mutex(mutex)
+    {
+	_acquired = _mutex.tryWriteLock();
+    }
+
+    WLockT(const T& mutex, const Time& timeout) :
+	_mutex(mutex)
+    {
+	_acquired = _mutex.timedWriteLock(timeout);
     }
 
 private:
 
+    // Not implemented; prevents accidental use.
+    //
+    WLockT(const WLockT&);
+    WLockT& operator=(const WLockT&);
+
     const T& _mutex;
+    mutable bool _acquired;
 };
 
 template <typename T>
-class TryWLock
+class TryWLockT : public WLockT<T>
 {
 public:
 
-    TryWLock(const T& mutex) :
-	_mutex(mutex)
+    TryWLockT(const T& mutex) :
+	WLockT<T>(mutex, true)
     {
-	_mutex.tryWritelock();
     }
 
-    TryWLock(const T& mutex, const Time& timeout) :
-	_mutex(mutex)
+    TryWLockT(const T& mutex, const Time& timeout) :
+	WLockT<T>(mutex, timeout)
     {
-	_mutex.timedTryWritelock(timeout);
     }
-
-    ~TryWLock()
-    {
-	_mutex.unlock();
-    }
-
-private:
-
-    const T& _mutex;
 };
 
 //
@@ -159,48 +271,48 @@ public:
     //
     // RLock (reader) & WLock (writer) typedefs.
     //
-    typedef RLock<RWRecMutex> RLock;
-    typedef TryRLock<RWRecMutex> TryRLock;
-    typedef WLock<RWRecMutex> WLock;
-    typedef TryWLock<RWRecMutex> TryWLock;
+    typedef RLockT<RWRecMutex> RLock;
+    typedef TryRLockT<RWRecMutex> TryRLock;
+    typedef WLockT<RWRecMutex> WLock;
+    typedef TryWLockT<RWRecMutex> TryWLock;
 
     RWRecMutex();
     ~RWRecMutex();
 
     //
-    // Note that readlock/writelock & unlock in general should not be
+    // Note that readLock/writeLock & unlock in general should not be
     // used directly. Instead use RLock & WLock.
     //
 
     //
     // Acquire a read lock.
     //
-    void readlock() const;
+    void readLock() const;
 
     //
     // Try to acquire a read lock.
     //
-    void tryReadlock() const;
+    bool tryReadLock() const;
 
     //
     // Try to acquire a read lock for upto the given timeout.
     //
-    void timedTryReadlock(const Time&) const;
+    bool timedReadLock(const Time&) const;
 
     //
     // Acquire a write lock.
     //
-    void writelock() const;
+    void writeLock() const;
 
     //
     // Acquire a write lock.
     //
-    void tryWritelock() const;
+    bool tryWriteLock() const;
 
     //
     // Acquire a write lock for up to the given timeout.
     //
-    void timedTryWritelock(const Time&) const;
+    bool timedWriteLock(const Time&) const;
 
     //
     // Unlock the reader/writer lock.
@@ -218,7 +330,7 @@ public:
     // timeout Note that this method can only be called if the reader
     // lock is not held recursively.
     //
-    void timedUpgrade(const Time&) const;
+    bool timedUpgrade(const Time&) const;
 
 private:
 
@@ -234,9 +346,9 @@ private:
     mutable int _count;
 
     //
-    // If there is an active writer this is a control for thread.
+    // If there is an active writer this is the ID of the writer thread.
     //
-    mutable ThreadControl _writerControl;
+    mutable ThreadId _writerId;
 
     //
     // Number of waiting writers.

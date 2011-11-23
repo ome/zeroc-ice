@@ -99,13 +99,25 @@ IceInternal::Connection::waitUntilHolding() const
 }
 
 void
-IceInternal::Connection::waitUntilFinished() const
+IceInternal::Connection::waitUntilFinished()
 {
     IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
 
     while(_transceiver || _dispatchCount > 0)
     {
-	wait();
+	if(_endpoint->timeout() >= 0)
+	{
+	    if(!timedWait(IceUtil::Time::milliSeconds(_endpoint->timeout())))
+	    {
+		setState(StateClosed, CloseTimeoutException(__FILE__, __LINE__));
+		assert(_dispatchCount == 0);
+		// No return here, we must still wait until _transceiver becomes null.
+	    }
+	}
+	else
+	{
+	    wait();
+	}
     }
 
     assert(_state == StateClosed);
@@ -114,45 +126,43 @@ IceInternal::Connection::waitUntilFinished() const
 void
 IceInternal::Connection::monitor()
 {
-    try
+    
+    IceUtil::Monitor<IceUtil::RecMutex>::TryLock sync(*this);
+    if(!sync.acquired())
     {
-	IceUtil::Monitor<IceUtil::RecMutex>::TryLock sync(*this);
-	
-	if(_state != StateActive)
+	return;
+    }
+    
+    if(_state != StateActive)
+    {
+	return;
+    }
+    
+    //
+    // Check for timed out async requests.
+    //
+    for(map<Int, OutgoingAsyncPtr>::iterator p = _asyncRequests.begin(); p != _asyncRequests.end(); ++p)
+    {
+	if(p->second->__timedOut())
 	{
+	    setState(StateClosed, TimeoutException(__FILE__, __LINE__));
 	    return;
 	}
-
-	//
-	// Check for timed out async requests.
-	//
-	for(map<Int, OutgoingAsyncPtr>::iterator p = _asyncRequests.begin(); p != _asyncRequests.end(); ++p)
-	{
-	    if(p->second->__timedOut())
-	    {
-		setState(StateClosed, TimeoutException(__FILE__, __LINE__));
-		return;
-	    }
-	}
-
-	//
-	// Active connection management for idle connections.
-	//
-	if(_acmTimeout > 0 &&
-	   _requests.empty() && _asyncRequests.empty() &&
-	   _batchStream.b.empty() &&
-	   _dispatchCount == 0)
-	{
-	    if(IceUtil::Time::now() >= _acmAbsoluteTimeout)
-	    {
-		setState(StateClosing, ConnectionTimeoutException(__FILE__, __LINE__));
-		return;
-	    }
-	}
     }
-    catch(const IceUtil::ThreadLockedException&)
+    
+    //
+    // Active connection management for idle connections.
+    //
+    // TODO: Hack: ACM for incoming connections doesn't work right
+    // with AMI.
+    //
+    if(_acmTimeout > 0 && closeOK() && !_adapter)
     {
-	// Ignore.
+	if(IceUtil::Time::now() >= _acmAbsoluteTimeout)
+	{
+	    setState(StateClosing, ConnectionTimeoutException(__FILE__, __LINE__));
+	    return;
+	}
     }
 }
 
@@ -182,9 +192,13 @@ IceInternal::Connection::validate()
 		// connection validation.
 		//
 		BasicStream os(_instance.get());
-		os.write(protocolVersion);
-		os.write(encodingVersion);
+		os.writeBlob(magic, sizeof(magic));
+		os.write(protocolMajor);
+		os.write(protocolMinor);
+		os.write(encodingMajor);
+		os.write(encodingMinor);
 		os.write(validateConnectionMsg);
+		os.write((Byte)1); // Compression status.
 		os.write(headerSize); // Message size.
 		os.i = os.b.begin();
 		traceHeader("sending validate connection", os, _logger, _traceLevels);
@@ -193,7 +207,7 @@ IceInternal::Connection::validate()
 	    else
 	    {
 		//
-		// Outgoing connection play the passive role with respect to
+		// Outgoing connections play the passive role with respect to
 		// connection validation.
 		//
 		BasicStream is(_instance.get());
@@ -203,24 +217,72 @@ IceInternal::Connection::validate()
 		assert(is.i == is.b.end());
 		assert(is.i - is.b.begin() >= headerSize);
 		is.i = is.b.begin();
-		Byte protVer;
-		is.read(protVer);
-		if(protVer != protocolVersion)
+		ByteSeq m(sizeof(magic), 0);
+		is.readBlob(m, static_cast<Int>(sizeof(magic)));
+		if(!equal(m.begin(), m.end(), magic))
 		{
-		    throw UnsupportedProtocolException(__FILE__, __LINE__);
+		    BadMagicException ex(__FILE__, __LINE__);
+		    ex.badMagic = m;
+		    throw ex;
 		}
-		Byte encVer;
-		is.read(encVer);
-		if(encVer != encodingVersion)
+
+		Byte pMajor;
+		Byte pMinor;
+		is.read(pMajor);
+		is.read(pMinor);
+
+		//
+		// We only check the major version number here. The minor version
+		// number is irrelevant -- no matter what minor version number is offered
+		// by the server, we can be certain that the server supports at least minor version 0.
+		// As the client, we are obliged to never produce a message with a minor
+		// version number that is larger than what the server can understand, but we don't
+		// care if the server understands more than we do.
+		//
+		// Note: Once we add minor versions, we need to modify the client side to never produce
+		// a message with a minor number that is greater than what the server can handle. Similarly,
+		// the server side will have to be modified so it never replies with a minor version that is
+		// greater than what the client can handle.
+		//
+		if(pMajor != protocolMajor)
 		{
-		    throw UnsupportedEncodingException(__FILE__, __LINE__);
+		    UnsupportedProtocolException ex(__FILE__, __LINE__);
+		    ex.badMajor = static_cast<unsigned char>(pMajor);
+		    ex.badMinor = static_cast<unsigned char>(pMinor);
+		    ex.major = static_cast<unsigned char>(protocolMajor);
+		    ex.minor = static_cast<unsigned char>(protocolMinor);
+		    throw ex;
 		}
+
+		Byte eMajor;
+		Byte eMinor;
+		is.read(eMajor);
+		is.read(eMinor);
+
+		//
+		// The same applies here as above -- only the major version number
+		// of the encoding is relevant.
+		//
+		if(eMajor != encodingMajor)
+		{
+		    UnsupportedEncodingException ex(__FILE__, __LINE__);
+		    ex.badMajor = static_cast<unsigned char>(eMajor);
+		    ex.badMinor = static_cast<unsigned char>(eMinor);
+		    ex.major = static_cast<unsigned char>(encodingMajor);
+		    ex.minor = static_cast<unsigned char>(encodingMinor);
+		    throw ex;
+		}
+
 		Byte messageType;
 		is.read(messageType);
 		if(messageType != validateConnectionMsg)
 		{
 		    throw ConnectionNotValidatedException(__FILE__, __LINE__);
 		}
+
+                Byte compress;
+                is.read(compress);
+
 		Int size;
 		is.read(size);
 		if(size != headerSize)
@@ -279,15 +341,8 @@ IceInternal::Connection::decProxyCount()
     assert(_proxyCount > 0);
     --_proxyCount;
 
-    //
-    // We close the connection if
-    // - no proxy uses this connection anymore; and
-    // - there are not outstanding asynchronous requests; and
-    // - this is an outgoing connection only.
-    //
-    if(_proxyCount == 0 && _asyncRequests.empty() && !_adapter)
+    if(_proxyCount == 0 && !_adapter && closeOK())
     {
-	assert(_requests.empty());
 	setState(StateClosing, CloseConnectionException(__FILE__, __LINE__));
     }
 }
@@ -326,9 +381,12 @@ IceInternal::Connection::sendRequest(Outgoing* out, bool oneway)
 		_nextRequestId = 1;
 		requestId = _nextRequestId++;
 	    }
-	    const Byte* p;
-	    p = reinterpret_cast<const Byte*>(&requestId);
+	    const Byte* p = reinterpret_cast<const Byte*>(&requestId);
+#ifdef ICE_BIG_ENDIAN
+	    reverse_copy(p, p + sizeof(Int), os->b.begin() + headerSize);
+#else
 	    copy(p, p + sizeof(Int), os->b.begin() + headerSize);
+#endif
 	}
 
 	bool compress;
@@ -344,21 +402,21 @@ IceInternal::Connection::sendRequest(Outgoing* out, bool oneway)
 	if(compress)
 	{
 	    //
-	    // Change message type.
+	    // Set compression status.
 	    //
-	    os->b[2] = compressedRequestMsg;
+	    os->b[9] = 2; // Message is compressed.
 
 	    //
 	    // Do compression.
 	    //
 	    BasicStream cstream(_instance.get());
 	    doCompress(*os, cstream);
-	    
+
 	    //
 	    // Send the request.
 	    //
 	    os->i = os->b.begin();
-	    traceRequest("sending compressed request", *os, _logger, _traceLevels);
+	    traceRequest("sending request", *os, _logger, _traceLevels);
 	    cstream.i = cstream.b.begin();
 	    _transceiver->write(cstream, _endpoint->timeout());
 	}
@@ -367,10 +425,13 @@ IceInternal::Connection::sendRequest(Outgoing* out, bool oneway)
 	    //
 	    // No compression, just fill in the message size.
 	    //
-	    const Byte* p;
-	    Int sz = os->b.size();
-	    p = reinterpret_cast<const Byte*>(&sz);
-	    copy(p, p + sizeof(Int), os->b.begin() + 3);
+	    Int sz = static_cast<Int>(os->b.size());
+	    const Byte* p = reinterpret_cast<const Byte*>(&sz);
+#ifdef ICE_BIG_ENDIAN
+	    reverse_copy(p, p + sizeof(Int), os->b.begin() + 10);
+#else
+	    copy(p, p + sizeof(Int), os->b.begin() + 10);
+#endif
 
 	    //
 	    // Send the request.
@@ -393,7 +454,7 @@ IceInternal::Connection::sendRequest(Outgoing* out, bool oneway)
     //
     if(!_endpoint->datagram() && !oneway)
     {
-	_requestsHint = _requests.insert(_requests.end(), make_pair(requestId, out));
+	_requestsHint = _requests.insert(_requests.end(), pair<const Int, Outgoing*>(requestId, out));
     }
 
     if(_acmTimeout > 0)
@@ -428,9 +489,12 @@ IceInternal::Connection::sendAsyncRequest(const OutgoingAsyncPtr& out)
 	    _nextRequestId = 1;
 	    requestId = _nextRequestId++;
 	}
-	const Byte* p;
-	p = reinterpret_cast<const Byte*>(&requestId);
+	const Byte* p = reinterpret_cast<const Byte*>(&requestId);
+#ifdef ICE_BIG_ENDIAN
+	reverse_copy(p, p + sizeof(Int), os->b.begin() + headerSize);
+#else
 	copy(p, p + sizeof(Int), os->b.begin() + headerSize);
+#endif
 
 	bool compress;
 	if(os->b.size() < 100) // Don't compress if message size is smaller than 100 bytes.
@@ -445,9 +509,9 @@ IceInternal::Connection::sendAsyncRequest(const OutgoingAsyncPtr& out)
 	if(compress)
 	{
 	    //
-	    // Change message type.
+	    // Set compression status.
 	    //
-	    os->b[2] = compressedRequestMsg;
+	    os->b[9] = 2; // Message is compressed.
 
 	    //
 	    // Do compression.
@@ -459,7 +523,7 @@ IceInternal::Connection::sendAsyncRequest(const OutgoingAsyncPtr& out)
 	    // Send the request.
 	    //
 	    os->i = os->b.begin();
-	    traceRequest("sending compressed asynchronous request", *os, _logger, _traceLevels);
+	    traceRequest("sending asynchronous request", *os, _logger, _traceLevels);
 	    cstream.i = cstream.b.begin();
 	    _transceiver->write(cstream, _endpoint->timeout());
 	}
@@ -468,10 +532,13 @@ IceInternal::Connection::sendAsyncRequest(const OutgoingAsyncPtr& out)
 	    //
 	    // No compression, just fill in the message size.
 	    //
-	    const Byte* p;
-	    Int sz = os->b.size();
+	    Int sz = static_cast<Int>(os->b.size());
 	    p = reinterpret_cast<const Byte*>(&sz);
-	    copy(p, p + sizeof(Int), os->b.begin() + 3);
+#ifdef ICE_BIG_ENDIAN
+	    reverse_copy(p, p + sizeof(Int), os->b.begin() + 10);
+#else
+	    copy(p, p + sizeof(Int), os->b.begin() + 10);
+#endif
 
 	    //
 	    // Send the request.
@@ -491,7 +558,7 @@ IceInternal::Connection::sendAsyncRequest(const OutgoingAsyncPtr& out)
     //
     // Only add to the request map if there was no exception.
     //
-    _asyncRequestsHint = _asyncRequests.insert(_asyncRequests.end(), make_pair(requestId, out));
+    _asyncRequestsHint = _asyncRequests.insert(_asyncRequests.end(), pair<const Int, OutgoingAsyncPtr>(requestId, out));
 
     if(_acmTimeout > 0)
     {
@@ -560,116 +627,126 @@ IceInternal::Connection::flushBatchRequest()
 {
     IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
 
-    if(_batchStream.b.empty())
-    {
-	return; // Nothing to send.
-    }
-
     if(_exception.get())
     {
 	_exception->ice_throw();
     }
     assert(_state > StateNotValidated && _state < StateClosing);
     
-    try
+    if(!_batchStream.b.empty())
     {
-	_batchStream.i = _batchStream.b.begin();
-	
-	//
-	// Fill in the number of requests in the batch.
-	//
-	const Byte* p;
-	p = reinterpret_cast<const Byte*>(&_batchRequestNum);
-	copy(p, p + sizeof(Int), _batchStream.b.begin() + headerSize);
-
-	bool compress;
-	if(_batchStream.b.size() < 100) // Don't compress if message size is smaller than 100 bytes.
+	try
 	{
-	    compress = false;
-	}
-	else
-	{
-	    compress = _endpoint->compress();
-	}
-
-	if(compress)
-	{
-	    //
-	    // Change message type.
-	    //
-	    _batchStream.b[2] = compressedRequestBatchMsg;
-
-	    //
-	    // Do compression.
-	    //
-	    BasicStream cstream(_instance.get());
-	    doCompress(_batchStream, cstream);
+	    _batchStream.i = _batchStream.b.begin();
 	    
 	    //
-	    // Send the batch request.
+	    // Fill in the number of requests in the batch.
 	    //
-	    _batchStream.i = _batchStream.b.begin();
-	    traceBatchRequest("sending compressed batch request", _batchStream, _logger, _traceLevels);
-	    cstream.i = cstream.b.begin();
-	    _transceiver->write(cstream, _endpoint->timeout());
+	    const Byte* p = reinterpret_cast<const Byte*>(&_batchRequestNum);
+#ifdef ICE_BIG_ENDIAN
+            reverse_copy(p, p + sizeof(Int), _batchStream.b.begin() + headerSize);
+#else
+            copy(p, p + sizeof(Int), _batchStream.b.begin() + headerSize);
+#endif
+
+	    bool compress;
+	    if(_batchStream.b.size() < 100) // Don't compress if message size is smaller than 100 bytes.
+	    {
+		compress = false;
+	    }
+	    else
+	    {
+		compress = _endpoint->compress();
+	    }
+	    
+	    if(compress)
+	    {
+		//
+		// Set compression status.
+		//
+		_batchStream.b[9] = 2; // Message is compressed.
+		
+		//
+		// Do compression.
+		//
+		BasicStream cstream(_instance.get());
+		doCompress(_batchStream, cstream);
+		
+		//
+		// Send the batch request.
+		//
+		_batchStream.i = _batchStream.b.begin();
+		traceBatchRequest("sending batch request", _batchStream, _logger, _traceLevels);
+		cstream.i = cstream.b.begin();
+		_transceiver->write(cstream, _endpoint->timeout());
+	    }
+	    else
+	    {
+		//
+		// No compression, just fill in the message size.
+		//
+                Int sz = static_cast<Int>(_batchStream.b.size());
+		p = reinterpret_cast<const Byte*>(&sz);
+#ifdef ICE_BIG_ENDIAN
+                reverse_copy(p, p + sizeof(Int), _batchStream.b.begin() + 10);
+#else
+                copy(p, p + sizeof(Int), _batchStream.b.begin() + 10);
+#endif
+
+		//
+		// Send the batch request.
+		//
+		_batchStream.i = _batchStream.b.begin();
+		traceBatchRequest("sending batch request", _batchStream, _logger, _traceLevels);
+		_transceiver->write(_batchStream, _endpoint->timeout());
+	    }
+	    
+	    //
+	    // Reset _batchStream and _batchRequestNum, so that new batch
+	    // messages can be sent.
+	    //
+	    BasicStream dummy(_instance.get());
+	    _batchStream.swap(dummy);
+	    assert(_batchStream.b.empty());
+	    _batchRequestNum = 0;
 	}
-	else
+	catch(const LocalException& ex)
 	{
-	    //
-	    // No compression, just fill in the message size.
-	    //
-	    const Byte* p;
-	    Int sz = _batchStream.b.size();
-	    p = reinterpret_cast<const Byte*>(&sz);
-	    copy(p, p + sizeof(Int), _batchStream.b.begin() + 3);
-
-	    //
-	    // Send the batch request.
-	    //
-	    _batchStream.i = _batchStream.b.begin();
-	    traceBatchRequest("sending batch request", _batchStream, _logger, _traceLevels);
-	    _transceiver->write(_batchStream, _endpoint->timeout());
+	    setState(StateClosed, ex);
+	    assert(_exception.get());
+	    _exception->ice_throw();
 	}
-
-	//
-	// Reset _batchStream and _batchRequestNum, so that new batch
-	// messages can be sent.
-	//
-	BasicStream dummy(_instance.get());
-	_batchStream.swap(dummy);
-	assert(_batchStream.b.empty());
-	_batchRequestNum = 0;
+	
+	if(_acmTimeout > 0)
+	{
+	    _acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
+	}
     }
-    catch(const LocalException& ex)
+    
+    if(_proxyCount == 0 && !_adapter && closeOK())
     {
-	setState(StateClosed, ex);
-	assert(_exception.get());
-	_exception->ice_throw();
-    }
-
-    if(_acmTimeout > 0)
-    {
-	_acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
+	setState(StateClosing, CloseConnectionException(__FILE__, __LINE__));
     }
 }
 
 void
-IceInternal::Connection::sendResponse(BasicStream* os)
+IceInternal::Connection::sendResponse(BasicStream* os, Byte compressFlag)
 {
     IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
     
     try
     {
+	if(_state == StateClosed)
+	{
+	    assert(_dispatchCount == 0);
+	    return;
+	}
+	
 	if(--_dispatchCount == 0)
 	{
 	    notifyAll();
 	}
 
-	if(_state == StateClosed)
-	{
-	    return;
-	}
-	
 	bool compress;
 	if(os->b.size() < 100) // Don't compress if message size is smaller than 100 bytes.
 	{
@@ -677,16 +754,16 @@ IceInternal::Connection::sendResponse(BasicStream* os)
 	}
 	else
 	{
-	    compress = _endpoint->compress();
+	    compress = _endpoint->compress() && compressFlag > 0;
 	}
 	
 	if(compress)
 	{
 	    //
-	    // Change message type.
+	    // Set compression status.
 	    //
-	    os->b[2] = compressedReplyMsg;
-	    
+	    os->b[9] = 2; // Message is compressed.
+
 	    //
 	    // Do compression.
 	    //
@@ -697,7 +774,7 @@ IceInternal::Connection::sendResponse(BasicStream* os)
 	    // Send the reply.
 	    //
 	    os->i = os->b.begin();
-	    traceReply("sending compressed reply", *os, _logger, _traceLevels);
+	    traceReply("sending reply", *os, _logger, _traceLevels);
 	    cstream.i = cstream.b.begin();
 	    _transceiver->write(cstream, _endpoint->timeout());
 	}
@@ -706,10 +783,13 @@ IceInternal::Connection::sendResponse(BasicStream* os)
 	    //
 	    // No compression, just fill in the message size.
 	    //
-	    const Byte* p;
-	    Int sz = os->b.size();
-	    p = reinterpret_cast<const Byte*>(&sz);
-	    copy(p, p + sizeof(Int), os->b.begin() + 3);
+	    Int sz = static_cast<Int>(os->b.size());
+	    const Byte* p = reinterpret_cast<const Byte*>(&sz);
+#ifdef ICE_BIG_ENDIAN
+	    reverse_copy(p, p + sizeof(Int), os->b.begin() + 10);
+#else
+	    copy(p, p + sizeof(Int), os->b.begin() + 10);
+#endif    
 	    
 	    //
 	    // Send the reply.
@@ -742,6 +822,12 @@ IceInternal::Connection::sendNoResponse()
     
     try
     {
+	if(_state == StateClosed)
+	{
+	    assert(_dispatchCount == 0);
+	    return;
+	}
+	
 	if(--_dispatchCount == 0)
 	{
 	    notifyAll();
@@ -834,10 +920,17 @@ IceInternal::Connection::read(BasicStream& stream)
     }
 
     //
-    // Updating _acmAbsoluteTimeout is to expensive here, because we
+    // Updating _acmAbsoluteTimeout is too expensive here, because we
     // would have to acquire a lock just for this purpose. Instead, we
     // update _acmAbsoluteTimeout in message().
     //
+}
+
+// used for the COMPILERFIX below
+static void
+setAbsoluteTimeout(int timeout, IceUtil::Time& result)
+{
+    result = IceUtil::Time::now() + IceUtil::Time::seconds(timeout);
 }
 
 void
@@ -847,6 +940,7 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 
     Int invoke = 0;
     Int requestId = 0;
+    Byte compress = 0;
 
     {
 	IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
@@ -859,25 +953,67 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 	    return;
 	}
 	
+//	if(_acmTimeout > 0)
+//	{
+//	    _acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
+//	}
+// COMPILERFIX without this change VC6 sp5 + processor pack generates code that crashed on exceptions
 	if(_acmTimeout > 0)
 	{
-	    _acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
+	    setAbsoluteTimeout(_acmTimeout, _acmAbsoluteTimeout);
 	}
-
-	Byte messageType;
 
 	try
 	{
 	    assert(stream.i == stream.b.end());
-	    stream.i = stream.b.begin() + 2;
+	    stream.i = stream.b.begin();
+
+	    ByteSeq m(sizeof(magic), 0);
+	    stream.readBlob(m, static_cast<Int>(sizeof(magic)));
+	    if(!equal(m.begin(), m.end(), magic))
+	    {
+		BadMagicException ex(__FILE__, __LINE__);
+		ex.badMagic = m;
+		throw ex;
+	    }
+
+	    Byte pMajor;
+	    Byte pMinor;
+	    stream.read(pMajor);
+	    stream.read(pMinor);
+	    if(pMajor != protocolMajor
+	       || static_cast<unsigned char>(pMinor) > static_cast<unsigned char>(protocolMinor))
+	    {
+		UnsupportedProtocolException ex(__FILE__, __LINE__);
+		ex.badMajor = static_cast<unsigned char>(pMajor);
+		ex.badMinor = static_cast<unsigned char>(pMinor);
+		ex.major = static_cast<unsigned char>(protocolMajor);
+		ex.minor = static_cast<unsigned char>(protocolMinor);
+		throw ex;
+	    }
+	    Byte eMajor;
+	    Byte eMinor;
+	    stream.read(eMajor);
+	    stream.read(eMinor);
+	    if(eMajor != encodingMajor
+	       || static_cast<unsigned char>(eMinor) > static_cast<unsigned char>(encodingMinor))
+	    {
+		UnsupportedEncodingException ex(__FILE__, __LINE__);
+		ex.badMajor = static_cast<unsigned char>(eMajor);
+		ex.badMinor = static_cast<unsigned char>(eMinor);
+		ex.major = static_cast<unsigned char>(encodingMajor);
+		ex.minor = static_cast<unsigned char>(encodingMinor);
+		throw ex;
+	    }
+
+	    Byte messageType;
 	    stream.read(messageType);
 
 	    //
 	    // Uncompress if necessary.
 	    //
-	    if(messageType == compressedRequestMsg ||
-	       messageType == compressedRequestBatchMsg ||
-	       messageType == compressedReplyMsg)
+            stream.read(compress);
+	    if(compress == 2)
 	    {
 		BasicStream ustream(_instance.get());
 		doUncompress(stream, ustream);
@@ -906,24 +1042,6 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 		    break;
 		}
 		
-		case compressedRequestMsg:
-		{
-		    if(_state == StateClosing)
-		    {
-			traceRequest("received compressed request during closing\n"
-				     "(ignored by server, client will retry)",
-				     stream, _logger, _traceLevels);
-		    }
-		    else
-		    {
-			traceRequest("received compressed request", stream, _logger, _traceLevels);
-			stream.read(requestId);
-			invoke = 1;
-			++_dispatchCount;
-		    }
-		    break;
-		}
-		
 		case requestBatchMsg:
 		{
 		    if(_state == StateClosing)
@@ -945,38 +1063,9 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 		    break;
 		}
 		
-		case compressedRequestBatchMsg:
-		{
-		    if(_state == StateClosing)
-		    {
-			traceBatchRequest("received compressed batch request during closing\n"
-					  "(ignored by server, client will retry)",
-					  stream, _logger, _traceLevels);
-		    }
-		    else
-		    {
-			traceBatchRequest("received compressed batch request", stream, _logger, _traceLevels);
-			stream.read(invoke);
-			if(invoke < 0)
-			{
-			    throw NegativeSizeException(__FILE__, __LINE__);
-			}
-			_dispatchCount += invoke;
-		    }
-		    break;
-		}
-		
 		case replyMsg:
-		case compressedReplyMsg:
 		{
-		    if(messageType == compressedReplyMsg)
-		    {
-			traceReply("received compressed reply", stream, _logger, _traceLevels);
-		    }
-		    else
-		    {
-			traceReply("received reply", stream, _logger, _traceLevels);
-		    }
+                    traceReply("received reply", stream, _logger, _traceLevels);
 
 		    stream.read(requestId);
 		    
@@ -1047,15 +1136,8 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 			    _asyncRequests.erase(q);
 			}
 
-			//
-			// We close the connection if
-			// - no proxy uses this connection anymore; and
-			// - there are not outstanding asynchronous requests; and
-			// - this is an outgoing connection only.
-			//
-			if(_proxyCount == 0 && _asyncRequests.empty() && !_adapter)
+			if(_proxyCount == 0 && !_adapter && closeOK())
 			{
-			    assert(_requests.empty());
 			    setState(StateClosing, CloseConnectionException(__FILE__, __LINE__));
 			}
 		    }
@@ -1130,7 +1212,7 @@ IceInternal::Connection::message(BasicStream& stream, const ThreadPoolPtr& threa
 	// Prepare the invocation.
 	//
 	bool response = !_endpoint->datagram() && requestId != 0;
-	Incoming in(_instance.get(), this, _adapter, response);
+	Incoming in(_instance.get(), this, _adapter, response, compress);
 	BasicStream* is = in.is();
 	stream.swap(*is);
 	BasicStream* os = in.os();
@@ -1228,13 +1310,13 @@ IceInternal::Connection::Connection(const InstancePtr& instance,
     _transceiver(transceiver),
     _endpoint(endpoint),
     _adapter(adapter),
-    _logger(_instance->logger()), // Chached for better performance.
-    _traceLevels(_instance->traceLevels()), // Chached for better performance.
+    _logger(_instance->logger()), // Cached for better performance.
+    _traceLevels(_instance->traceLevels()), // Cached for better performance.
     _registeredWithPool(false),
     _warn(false),
     _acmTimeout(0),
-    _requestHdr(headerSize + 4, 0),
-    _requestBatchHdr(headerSize + 4, 0),
+    _requestHdr(headerSize + sizeof(Int), 0),
+    _requestBatchHdr(headerSize + sizeof(Int), 0),
     _replyHdr(headerSize, 0),
     _nextRequestId(1),
     _requestsHint(_requests.end()),
@@ -1255,19 +1337,40 @@ IceInternal::Connection::Connection(const InstancePtr& instance,
     }
 
     vector<Byte>& requestHdr = const_cast<vector<Byte>&>(_requestHdr);
-    requestHdr[0] = protocolVersion;
-    requestHdr[1] = encodingVersion;
-    requestHdr[2] = requestMsg;
+    requestHdr[0] = magic[0];
+    requestHdr[1] = magic[1];
+    requestHdr[2] = magic[2];
+    requestHdr[3] = magic[3];
+    requestHdr[4] = protocolMajor;
+    requestHdr[5] = protocolMinor;
+    requestHdr[6] = encodingMajor;
+    requestHdr[7] = encodingMinor;
+    requestHdr[8] = requestMsg;
+    requestHdr[9] = 1; // Default compression status: compression supported but not used.
 
     vector<Byte>& requestBatchHdr = const_cast<vector<Byte>&>(_requestBatchHdr);
-    requestBatchHdr[0] = protocolVersion;
-    requestBatchHdr[1] = encodingVersion;
-    requestBatchHdr[2] = requestBatchMsg;
+    requestBatchHdr[0] = magic[0];
+    requestBatchHdr[1] = magic[1];
+    requestBatchHdr[2] = magic[2];
+    requestBatchHdr[3] = magic[3];
+    requestBatchHdr[4] = protocolMajor;
+    requestBatchHdr[5] = protocolMinor;
+    requestBatchHdr[6] = encodingMajor;
+    requestBatchHdr[7] = encodingMinor;
+    requestBatchHdr[8] = requestBatchMsg;
+    requestBatchHdr[9] = 1; // Default compression status: compression supported but not used.
 
     vector<Byte>& replyHdr = const_cast<vector<Byte>&>(_replyHdr);
-    replyHdr[0] = protocolVersion;
-    replyHdr[1] = encodingVersion;
-    replyHdr[2] = replyMsg;
+    replyHdr[0] = magic[0];
+    replyHdr[1] = magic[1];
+    replyHdr[2] = magic[2];
+    replyHdr[3] = magic[3];
+    replyHdr[4] = protocolMajor;
+    replyHdr[5] = protocolMinor;
+    replyHdr[6] = encodingMajor;
+    replyHdr[7] = encodingMinor;
+    replyHdr[8] = replyMsg;
+    replyHdr[9] = 1; // Default compression status: compression supported but not used.
 }
 
 IceInternal::Connection::~Connection()
@@ -1393,6 +1496,12 @@ IceInternal::Connection::setState(State state)
 	case StateClosed:
 	{
 	    //
+	    // If we do a hard close, all outstanding requests are
+	    // disregarded.
+	    //
+	    _dispatchCount = 0;
+
+	    //
 	    // If we change from not validated, we can close right
 	    // away. Otherwise we first must make sure that we are
 	    // registered, then we unregister, and let finished() do
@@ -1441,9 +1550,13 @@ IceInternal::Connection::initiateShutdown() const
 	// Before we shut down, we send a close connection message.
 	//
 	BasicStream os(_instance.get());
-	os.write(protocolVersion);
-	os.write(encodingVersion);
+	os.writeBlob(magic, sizeof(magic));
+	os.write(protocolMajor);
+	os.write(protocolMinor);
+	os.write(encodingMajor);
+	os.write(encodingMinor);
 	os.write(closeConnectionMsg);
+	os.write((Byte)1); // Compression status: compression supported but not used.
 	os.write(headerSize); // Message size.
 	os.i = os.b.begin();
 	traceHeader("sending close connection", os, _logger, _traceLevels);
@@ -1569,8 +1682,8 @@ IceInternal::Connection::doCompress(BasicStream& uncompressed, BasicStream& comp
     //
     // Compress the message body, but not the header.
     //
-    unsigned int uncompressedLen = uncompressed.b.size() - headerSize;
-    unsigned int compressedLen = static_cast<int>(uncompressedLen * 1.01 + 600);
+    unsigned int uncompressedLen = static_cast<unsigned int>(uncompressed.b.size() - headerSize);
+    unsigned int compressedLen = static_cast<unsigned int>(uncompressedLen * 1.01 + 600);
     compressed.b.resize(headerSize + sizeof(Int) + compressedLen);
     int bzError = BZ2_bzBuffToBuffCompress(&compressed.b[0] + headerSize + sizeof(Int), &compressedLen,
 					   &uncompressed.b[0] + headerSize, uncompressedLen,
@@ -1588,17 +1701,25 @@ IceInternal::Connection::doCompress(BasicStream& uncompressed, BasicStream& comp
     // uncompressed stream. Since the header will be copied, this size
     // will also be in the header of the compressed stream.
     //
-    Int compressedSize = compressed.b.size();
+    Int compressedSize = static_cast<Int>(compressed.b.size());
     p = reinterpret_cast<const Byte*>(&compressedSize);
-    copy(p, p + sizeof(Int), uncompressed.b.begin() + 3);
+#ifdef ICE_BIG_ENDIAN
+    reverse_copy(p, p + sizeof(Int), uncompressed.b.begin() + 10);
+#else
+    copy(p, p + sizeof(Int), uncompressed.b.begin() + 10);
+#endif
 
     //
     // Add the size of the uncompressed stream before the message body
     // of the compressed stream.
     //
-    Int uncompressedSize = uncompressed.b.size();
+    Int uncompressedSize = static_cast<Int>(uncompressed.b.size());
     p = reinterpret_cast<const Byte*>(&uncompressedSize);
+#ifdef ICE_BIG_ENDIAN
+    reverse_copy(p, p + sizeof(Int), compressed.b.begin() + headerSize);
+#else
     copy(p, p + sizeof(Int), compressed.b.begin() + headerSize);
+#endif
     
     //
     // Copy the header from the uncompressed stream to the compressed one.
@@ -1619,7 +1740,7 @@ IceInternal::Connection::doUncompress(BasicStream& compressed, BasicStream& unco
 
     uncompressed.resize(uncompressedSize);
     unsigned int uncompressedLen = uncompressedSize - headerSize;
-    unsigned int compressedLen = compressed.b.size() - headerSize - sizeof(Int);
+    unsigned int compressedLen = static_cast<unsigned int>(compressed.b.size() - headerSize - sizeof(Int));
     int bzError = BZ2_bzBuffToBuffDecompress(&uncompressed.b[0] + headerSize,
 					     &uncompressedLen,
 					     &compressed.b[0] + headerSize + sizeof(Int),
@@ -1633,4 +1754,14 @@ IceInternal::Connection::doUncompress(BasicStream& compressed, BasicStream& unco
     }
 
     copy(compressed.b.begin(), compressed.b.begin() + headerSize, uncompressed.b.begin());
+}
+
+bool
+IceInternal::Connection::closeOK() const
+{
+    return
+	_requests.empty() &&
+	_asyncRequests.empty() &&
+	_batchStream.b.empty() &&
+	_dispatchCount == 0;
 }

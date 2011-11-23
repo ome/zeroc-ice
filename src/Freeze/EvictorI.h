@@ -18,21 +18,23 @@
 #include <IceUtil/IceUtil.h>
 #include <Ice/Ice.h>
 #include <Freeze/Evictor.h>
-#include <Freeze/IdentityObjectDict.h>
+#include <Freeze/Strategy.h>
+#include <Freeze/IdentityObjectRecordDict.h>
 
 #include <list>
 
 namespace Freeze
 {
 
-class EvictorI : public Evictor, public IceUtil::Mutex
+class EvictorI : virtual public Evictor, virtual public ObjectStore, virtual public IceUtil::Mutex
 {
 public:
 
-    EvictorI(const Freeze::DBPtr&, EvictorPersistenceMode);
+    EvictorI(const Freeze::DBPtr&, const PersistenceStrategyPtr&);
     virtual ~EvictorI();
 
     virtual DBPtr getDB();
+    virtual PersistenceStrategyPtr getPersistenceStrategy();
 
     virtual void setSize(Ice::Int);
     virtual Ice::Int getSize();
@@ -48,19 +50,22 @@ public:
     virtual void finished(const Ice::Current&, const Ice::ObjectPtr&, const Ice::LocalObjectPtr&);
     virtual void deactivate();
 
+    virtual void save(const Ice::Identity&, const Ice::ObjectPtr&);
+
 private:
 
     struct EvictorElement : public Ice::LocalObject
     {
-	Ice::ObjectPtr servant;
+	ObjectRecord rec;
 	std::list<Ice::Identity>::iterator position;
 	int usageCount;
         bool destroyed;
+        Ice::LocalObjectPtr strategyCookie;
     };
     typedef IceUtil::Handle<EvictorElement> EvictorElementPtr;
 
     void evict();
-    EvictorElementPtr add(const Ice::Identity&, const Ice::ObjectPtr&);
+    EvictorElementPtr add(const Ice::Identity&, const ObjectRecord&);
     EvictorElementPtr remove(const Ice::Identity&);
     
     std::map<Ice::Identity, EvictorElementPtr> _evictorMap;
@@ -68,9 +73,9 @@ private:
     std::map<Ice::Identity, EvictorElementPtr>::size_type _evictorSize;
 
     bool _deactivated;
-    IdentityObjectDict _dict;
-    Freeze::DBPtr _db;
-    EvictorPersistenceMode _persistenceMode;
+    IdentityObjectRecordDict _dict;
+    DBPtr _db;
+    PersistenceStrategyPtr _strategy;
     ServantInitializerPtr _initializer;
     int _trace;
 };

@@ -16,10 +16,8 @@
 #include <IceStorm/TraceLevels.h>
 #include <IceBox/IceBox.h>
 
-#if defined(_WIN32)
-#   define ICESTORM_SERVICE_API __declspec(dllexport)
-#else
-#   define ICESTORM_SERVICE_API /**/
+#ifndef ICESTORM_SERVICE_API
+#   define ICESTORM_SERVICE_API ICE_DECLSPEC_EXPORT
 #endif
 
 using namespace std;
@@ -47,7 +45,8 @@ public:
 private:
 
     TopicManagerIPtr _manager;
-    ObjectAdapterPtr _adapter;
+    ObjectAdapterPtr _topicAdapter;
+    ObjectAdapterPtr _publishAdapter;
 };
 
 } // End namespace IceStorm
@@ -83,18 +82,21 @@ IceStorm::ServiceI::start(const string& name,
     DBPtr dbTopicManager = dbEnv->openDB("topicmanager", true);
 
     TraceLevelsPtr traceLevels = new TraceLevels(name, communicator->getProperties(), communicator->getLogger());
-    _adapter = communicator->createObjectAdapter(name + ".TopicManager");
+    _topicAdapter = communicator->createObjectAdapter(name + ".TopicManager");
+    _publishAdapter = communicator->createObjectAdapter(name + ".Publish");
 
-    _manager = new TopicManagerI(communicator, _adapter, traceLevels, dbEnv, dbTopicManager);
-    _adapter->add(_manager, stringToIdentity(name + "/TopicManager"));
+    _manager = new TopicManagerI(communicator, _topicAdapter, _publishAdapter, traceLevels, dbEnv, dbTopicManager);
+    _topicAdapter->add(_manager, stringToIdentity(name + "/TopicManager"));
 
-    _adapter->activate();
+    _topicAdapter->activate();
+    _publishAdapter->activate();
 }
 
 void
 IceStorm::ServiceI::stop()
 {
-    _adapter->deactivate();
+    _topicAdapter->deactivate();
+    _publishAdapter->deactivate();
 
     //
     // It's necessary to reap all destroyed topics on shutdown.

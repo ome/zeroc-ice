@@ -17,7 +17,7 @@
 #include <RecMutexTest.h>
 #include <RWRecMutexTest.h>
 #include <CreateTest.h>
-#include <DetachTest.h>
+#include <AliveTest.h>
 #include <StartTest.h>
 #include <MonitorMutexTest.h>
 #include <MonitorRecMutexTest.h>
@@ -28,7 +28,7 @@ void
 initializeTestSuite()
 {
     allTests.push_back(new CreateTest);
-    allTests.push_back(new DetachTest);
+    allTests.push_back(new AliveTest);
     allTests.push_back(new StartTest);
     allTests.push_back(new MutexTest);
     allTests.push_back(new RecMutexTest);

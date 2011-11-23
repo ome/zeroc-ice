@@ -32,6 +32,7 @@ tests = [ \
     "IceUtil/thread", \
     "IceUtil/unicode", \
     "IceUtil/inputUtil", \
+    "IceUtil/uuid", \
     "Slice/errorDetection", \
     "Ice/operations", \
     "Ice/exceptions", \
@@ -41,6 +42,8 @@ tests = [ \
     "Ice/faultTolerance", \
     "Ice/location", \
     "Ice/adapterDeactivation", \
+    "Ice/slicing/exceptions", \
+    "Ice/slicing/objects", \
     "IceSSL/configuration", \
     "IceSSL/loadPEM", \
     "IceSSL/certificateAndKeyParsing", \
@@ -58,7 +61,7 @@ tests = [ \
     ]
 
 #
-# Certain tests only work on Linux.
+# Certain tests only work on Linux and Solaris
 #
 if TestUtil.isWin32() == 0:
     tests += [ \

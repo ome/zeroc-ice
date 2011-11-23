@@ -27,6 +27,18 @@ prefix			= /opt/Ice-$(VERSION)
 #OPTIMIZE		= yes
 
 #
+# Define LP64 as yes if you want to build in 64 bit mode on a platform
+# that supports both 32 and 64 bit.
+#
+#LP64                   := yes
+
+#
+# Define USER_READLINE as yes if you want to build parts of Ice using 
+# readline on platforms where readline is available.
+
+USE_READLINE            := yes
+
+#
 # The values below can be overridden by defining them as environment
 # variables. For example, if you are using a bourne shell or
 # compatible, you can override the location of STLport like this:
@@ -42,6 +54,16 @@ prefix			= /opt/Ice-$(VERSION)
 
 #STLPORT_HOME		?= /opt/STLport
 
+
+
+#
+# If libbzip2 is not installed in a standard location where the compiler 
+# can find it, set BZIP2_HOME to the bzip2 installation directory.
+#
+
+#BZIP2_HOME		?= /opt/bzip2
+
+
 #
 # If Berkeley DB is not installed in a standard location where the
 # compiler can find it, set DB_HOME to the Berkeley DB installation
@@ -56,7 +78,14 @@ prefix			= /opt/Ice-$(VERSION)
 # directory.
 #
 
-OPENSSL_HOME		?= /opt/openssl
+#OPENSSL_HOME		?= /opt/openssl
+
+#
+# Define if your OpenSSL requires Kerberos, and if Kerberos is not
+# installed in a standard location.
+#
+
+KERBEROS_HOME		?= /usr/kerberos
 
 #
 # If Xerces-C++ is not installed in a standard location where the
@@ -66,36 +95,66 @@ OPENSSL_HOME		?= /opt/openssl
 
 #XERCESC_HOME		?= /opt/xerces-c
 
+
+#
+# If readline is not installed in a standard location where the
+# compiler can find it, AND you want to use readline,
+# set READLINE_HOME to the readline installation directory.
+#
+#
+
+#READLINE_HOME		?= /opt/readline
+
+
 # ----------------------------------------------------------------------
 # Don't change anything below this line!
 # ----------------------------------------------------------------------
 
 SHELL			= /bin/sh
-VERSION			= 1.0.1
+VERSION			= 1.1.0
+SOVERSION               = 11
 bindir			= $(top_srcdir)/bin
 libdir			= $(top_srcdir)/lib
 includedir		= $(top_srcdir)/include
 slicedir		= $(top_srcdir)/slice
-export LD_LIBRARY_PATH	:= $(libdir):$(LD_LIBRARY_PATH)
 
-install_bindir		= $(prefix)/bin
-install_libdir		= $(prefix)/lib
+ifeq ($(LP64),yes)
+    install_bindir	= $(prefix)/bin$(lp64suffix)
+    install_libdir	= $(prefix)/lib$(lp64suffix)
+else
+    install_bindir	= $(prefix)/bin
+    install_libdir	= $(prefix)/lib
+endif
+
 install_includedir	= $(prefix)/include
 install_slicedir	= $(prefix)/slice
 install_schemadir	= $(prefix)/schema
 install_docdir		= $(prefix)/doc
 
-INSTALL			= /usr/bin/install -c
+INSTALL			= cp -fp
 INSTALL_PROGRAM		= ${INSTALL}
-INSTALL_LIBRARY		= ${INSTALL} -m 644
-INSTALL_DATA		= ${INSTALL} -m 644
+INSTALL_LIBRARY		= ${INSTALL}
+INSTALL_DATA		= ${INSTALL}
+
+UNAME                   := $(shell uname)
+
+#
+# Platform specific definitions
+#
+include  $(top_srcdir)/config/Make.rules.$(UNAME)
+
+ifeq ($(LP64),yes)
+    libsubdir             := lib$(lp64suffix)
+else
+    libsubdir             := lib
+endif
 
 ifneq ($(STLPORT_HOME),)
     STLPORT_FLAGS	= -I$(STLPORT_HOME)/include/stlport
     ifeq ($(OPTIMIZE),yes)
-        STLPORT_LIBS	= -L$(STLPORT_HOME)/lib -lstlport_gcc
+        STLPORT_LIBS	= -L$(STLPORT_HOME)/$(libsubdir) -lstlport_gcc
     else
-        STLPORT_LIBS	= -L$(STLPORT_HOME)/lib -lstlport_gcc_stldebug
+        STLPORT_LIBS	= -L$(STLPORT_HOME)/$(libsubdir) -lstlport_gcc_stldebug
     endif
 else
     STLPORT_FLAGS	=
@@ -104,15 +163,27 @@ endif
 
 ifneq ($(OPENSSL_HOME),)
     OPENSSL_FLAGS	= -I$(OPENSSL_HOME)/include
-    OPENSSL_LIBS	= -L$(OPENSSL_HOME)/lib -lssl -lcrypto
+    OPENSSL_LIBS	= -L$(OPENSSL_HOME)/$(libsubdir) -lssl -lcrypto
 else
     OPENSSL_FLAGS	=
     OPENSSL_LIBS	= -lssl -lcrypto
 endif
 
+ifneq ($(KERBEROS_HOME),)
+    OPENSSL_FLAGS	+= -I$(KERBEROS_HOME)/include
+endif
+
+ifneq ($(BZIP2_HOME),)
+    BZIP2_FLAGS		= -I$(BZIP2_HOME)/include
+    BZIP2_LIBS		= -L$(BZIP2_HOME)/$(libsubdir) -lbz2
+else
+    BZIP2_FLAGS		=
+    BZIP2_LIBS		= -lbz2
+endif
+
 ifneq ($(DB_HOME),)
     DB_FLAGS		= -I$(DB_HOME)/include
-    DB_LIBS		= -L$(DB_HOME)/lib -ldb
+    DB_LIBS		= -L$(DB_HOME)/$(libsubdir) -ldb
 else
     DB_FLAGS		=
     DB_LIBS		= -ldb
@@ -120,31 +191,60 @@ endif
 
 ifneq ($(XERCESC_HOME),)
     XERCESC_FLAGS	= -I$(XERCESC_HOME)/include
-    XERCESC_LIBS	= -L$(XERCESC_HOME)/lib -lxerces-c
+    XERCESC_LIBS	= -L$(XERCESC_HOME)/$(libsubdir) -lxerces-c
 else
     XERCESC_FLAGS	=
     XERCESC_LIBS	= -lxerces-c
 endif
 
-CXX			= c++
-CXXFLAGS 		= -ftemplate-depth-128 -fPIC -Wall
-ifeq ($(OPTIMIZE),yes)
-    CXXFLAGS		:= -O2 -DNDEBUG $(CXXFLAGS)
-else
-    CXXFLAGS		:= -g $(CXXFLAGS)
+ifeq ($(PLATFORM_HAS_READLINE),yes)
+    ifeq ($(USE_READLINE),yes)
+        ifneq ($(READLINE_HOME),)
+            READLINE_FLAGS	= -DHAVE_READLINE -I$(READLINE_HOME)/include
+            READLINE_LIBS	= -L$(READLINE_HOME)/$(libsubdir) -lreadline -lncurses
+        else
+            READLINE_FLAGS	= -DHAVE_READLINE
+            READLINE_LIBS	= -lreadline -lncurses
+        endif
+    endif
 endif
+
 
 CPPFLAGS		= -I$(includedir) $(STLPORT_FLAGS)
 ICECPPFLAGS		= -I$(slicedir)
 SLICE2CPPFLAGS		= $(ICECPPFLAGS)
 
-LDFLAGS			= -L$(libdir)
-SHLIB_LDFLAGS		= -shared -Xlinker -soname -Xlinker $(@F)
+LDFLAGS			=  $(CXXFLAGS) -L$(libdir)
 
-LIBEXT			= so
+ifeq ($(FLEX_NOLINE),yes)
+    FLEXFLAGS          := -L
+else
+    FLEXFLAGS          :=
+endif
 
-BASELIBS		= -lIceUtil -lpthread -luuid $(STLPORT_LIBS)
-LIBS			= -lIce -ldl -lbz2 $(BASELIBS)
+ifeq ($(BISON_NOLINE),yes)
+    BISONFLAGS          := -dvtl
+else
+    BISONFLAGS          := -dvt
+endif
+
+#
+# Default functions for shared library names
+#
+
+ifeq ($(mklibfilename),)
+    mklibfilename       = lib$(1).so.$(2)
+endif
+
+ifeq ($(mksoname),)
+    mksoname            = lib$(1).so.$(2)
+endif
+
+ifeq ($(mklibname),)
+    mklibname           = lib$(1).so
+endif
+
+
 
 SLICE2CPP		= $(bindir)/slice2cpp
 SLICE2XSD		= $(bindir)/slice2xsd
@@ -162,9 +262,6 @@ EVERYTHING		= all depend clean install
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
 
-%.$(LIBEXT): %.$(LIBEXT).$(VERSION)
-	rm -f $@
-	ln -s $(@F).$(VERSION) $@
 
 $(HDIR)/%F.h: $(SDIR)/%F.ice $(SLICE2CPP)
 	rm -f $(HDIR)/$(*F)F.h $(*F)F.cpp
@@ -183,13 +280,13 @@ $(HDIR)/%.h %.cpp: $(SDIR)/%.ice $(SLICE2CPP)
 
 #%.h %.cpp: %.y
 #	rm -f $(*F).h $(*F).cpp
-#	bison -dvt $<
+#	bison $(BISONFLAGS) $<
 #	mv $(*F).tab.c $(*F).cpp
 #	mv $(*F).tab.h $(*F).h
 #	rm -f $(*F).output
 
 #%.cpp: %.l
-#	flex $<
+#	flex $(FLEXFLAGS) $<
 #	rm -f $@
 #	echo '#include <IceUtil/Config.h>' > $@
 #	cat lex.yy.c >> $@
@@ -204,7 +301,7 @@ depend:: $(SRCS) $(SLICE_SRCS)
 	    $(top_srcdir)/config/makedepend.py >> .depend; \
 	fi
 	if test -n "$(SLICE_SRCS)" ; then \
-	    $(SLICE2CPP) --depend $(ICECPPFLAGS) $(SLICE_SRCS) | \
+	    $(SLICE2CPP) --depend $(SLICE2CPPFLAGS) $(SLICE_SRCS) | \
 	    $(top_srcdir)/config/makedepend.py >> .depend; \
 	fi
 
@@ -221,6 +318,11 @@ ifneq ($(HDIR),)
 clean::
 	rm -f $(addprefix $(HDIR), $(addsuffix .h, $(basename $(subst $(SDIR),, \
 	$(filter $(SDIR)/%.ice, $(SLICE_SRCS))))))
+endif
+
+ifneq ($(TEMPLATE_REPOSITORY),)
+clean::
+	rm -fr $(TEMPLATE_REPOSITORY)
 endif
 
 install::

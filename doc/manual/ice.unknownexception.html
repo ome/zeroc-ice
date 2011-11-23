@@ -1,0 +1,270 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Ice::UnknownException</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.59"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Ice::TwowayOnlyException"
+HREF="ice.twowayonlyexception.html"><LINK
+REL="NEXT"
+TITLE="Ice::UnknownLocalException"
+HREF="ice.unknownlocalexception.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="ice.twowayonlyexception.html"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="ice.unknownlocalexception.html"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICE.UNKNOWNEXCEPTION"
+><TT
+CLASS="LITERAL"
+>Ice::UnknownException</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN6842"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local exception <TT
+CLASS="CLASSNAME"
+>UnknownException</TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>This exception is raised if an operation call on a server raises an
+unknown exception. For example, for C++, this exception is raised
+if the server throws a C++ exception that is not directly or
+indirectly derived from <TT
+CLASS="LITERAL"
+>Ice::LocalException</TT
+> or
+<TT
+CLASS="LITERAL"
+>Ice::UserException</TT
+>.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN6849"
+>Derived Exceptions</A
+></H3
+><P
+>	    <A
+HREF="ice.unknownlocalexception.html"
+><TT
+CLASS="CLASSNAME"
+>UnknownLocalException</TT
+></A
+>, <A
+HREF="ice.unknownuserexception.html"
+><TT
+CLASS="CLASSNAME"
+>UnknownUserException</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN6859"
+>Data Member Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="ice.unknownexception.html#ICE.UNKNOWNEXCEPTION.UNKNOWN"
+><SPAN
+CLASS="TYPE"
+>unknown</SPAN
+></A
+></DT
+><DD
+><P
+>A textual representation of the unknown exception.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.UNKNOWNEXCEPTION.UNKNOWN"
+><TT
+CLASS="LITERAL"
+>unknown</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="STRUCTFIELD"
+><I
+>unknown</I
+></TT
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A textual representation of the unknown exception. This field may
+or may not be set, depending on the security policy of the
+server. Some servers may give this information to clients for
+debugging purposes, while others may not wish to disclose
+information about server internals.</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="ice.twowayonlyexception.html"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="ice.unknownlocalexception.html"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::TwowayOnlyException</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::UnknownLocalException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

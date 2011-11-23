@@ -23,18 +23,29 @@ namespace IceInternal
 //
 // Size of the Ice protocol header
 //
-// Protocol version (Byte)
-// Encoding version (Byte)
+// Magic number (4 Bytes)
+// Protocol version major (Byte)
+// Protocol version minor (Byte)
+// Encoding version major (Byte)
+// Encoding version minor (Byte)
 // Message type (Byte)
+// Compression status (Byte)
 // Message size (Int)
 //
-const ::Ice::Int headerSize = 7;
+const ::Ice::Int headerSize = 14;
+
+//
+// The magic number at the front of each message
+//
+const ::Ice::Byte magic[] = { 0x49, 0x63, 0x65, 0x50 };	// 'I', 'c', 'e', 'P'
 
 //
 // The current Ice protocol and encoding version
 //
-const ::Ice::Byte protocolVersion = 0;
-const ::Ice::Byte encodingVersion = 0;
+const ::Ice::Byte protocolMajor = 1;
+const ::Ice::Byte protocolMinor = 0;
+const ::Ice::Byte encodingMajor = 1;
+const ::Ice::Byte encodingMinor = 0;
 
 //
 // The Ice protocol message types
@@ -44,9 +55,6 @@ const ::Ice::Byte requestBatchMsg = 1;
 const ::Ice::Byte replyMsg = 2;
 const ::Ice::Byte validateConnectionMsg = 3;
 const ::Ice::Byte closeConnectionMsg = 4;
-const ::Ice::Byte compressedRequestMsg = 5;
-const ::Ice::Byte compressedRequestBatchMsg = 6;
-const ::Ice::Byte compressedReplyMsg = 7;
 
 }
 

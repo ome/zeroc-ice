@@ -32,7 +32,7 @@ void IceInternal::decRef(AMD_Object_ice_invoke* p) { p->__decRef(); }
 IceInternal::IncomingAsync::IncomingAsync(Incoming& in) :
     IncomingBase(in),
     _finished(false),
-    _instanceCopy(_is.instance()),
+    _instanceCopy(_os.instance()),
     _connectionCopy(_connection)
 {
 }
@@ -57,7 +57,7 @@ IceInternal::IncomingAsync::__response(bool ok)
 	}
     }
 
-    __finishInvoke(true);
+    __finishInvoke();
 }
 
 void
@@ -157,7 +157,7 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 	}
     }
 
-    __finishInvoke(false);
+    __finishInvoke();
 }
 
 void
@@ -176,7 +176,7 @@ IceInternal::IncomingAsync::__exception(const std::exception& ex)
 	_os.write(str.str());
     }
 
-    __finishInvoke(false);
+    __finishInvoke();
 }
 
 void
@@ -194,7 +194,7 @@ IceInternal::IncomingAsync::__exception()
 	_os.write(reason);
     }
 
-    __finishInvoke(false);
+    __finishInvoke();
 }
 
 IceAsync::Ice::AMD_Object_ice_invoke::AMD_Object_ice_invoke(Incoming& in) :

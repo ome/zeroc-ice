@@ -16,13 +16,9 @@
 
 using namespace std;
 
-IceUtil::ThreadSyscallException::ThreadSyscallException(const char* file, int line) : 
+IceUtil::ThreadSyscallException::ThreadSyscallException(const char* file, int line, int err ): 
     Exception(file, line),
-#ifdef _WIN32
-    _error(GetLastError())
-#else
-    _error(errno)
-#endif
+    _error(err)
 {
 }
     
@@ -80,6 +76,13 @@ IceUtil::ThreadSyscallException::ice_throw() const
     throw *this;
 }
 
+int
+IceUtil::ThreadSyscallException::error() const
+{
+    return _error;
+}
+
+
 IceUtil::ThreadLockedException::ThreadLockedException(const char* file, int line) :
     Exception(file, line)
 {
@@ -122,6 +125,29 @@ IceUtil::ThreadStartedException::ice_clone() const
 
 void
 IceUtil::ThreadStartedException::ice_throw() const
+{
+    throw *this;
+}
+
+IceUtil::ThreadNotStartedException::ThreadNotStartedException(const char* file, int line) :
+    Exception(file, line)
+{
+}
+
+string
+IceUtil::ThreadNotStartedException::ice_name() const
+{
+    return "IceUtil::ThreadNotStartedException";
+}
+
+IceUtil::Exception*
+IceUtil::ThreadNotStartedException::ice_clone() const
+{
+    return new ThreadNotStartedException(*this);
+}
+
+void
+IceUtil::ThreadNotStartedException::ice_throw() const
 {
     throw *this;
 }

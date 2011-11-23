@@ -14,17 +14,22 @@
 
 top_srcdir	= ../..
 
-NAME		= $(top_srcdir)/lib/libFreeze.$(LIBEXT)
-VERSIONED_NAME	= $(NAME).$(VERSION)
+LIBFILENAME     = $(call mklibfilename,Freeze,$(VERSION))
+SONAME          = $(call mksoname,Freeze,$(SOVERSION))  
+LIBNAME		= $(call mklibname,Freeze)
 
-TARGETS		= $(NAME) $(VERSIONED_NAME)
+TARGETS		= $(libdir)/$(LIBFILENAME) $(libdir)/$(SONAME) $(libdir)/$(LIBNAME)
+
 
 OBJS		= DB.o \
 		  DBException.o \
 		  Evictor.o \
+		  ObjectRecord.o \
+		  Strategy.o \
 	  	  DBI.o \
 		  EvictorI.o \
-		  IdentityObjectDict.o \
+		  StrategyI.o \
+		  IdentityObjectRecordDict.o \
 		  Application.o
 
 SRCS		= $(OBJS:.o=.cpp)
@@ -33,7 +38,10 @@ SLICE_SRCS	= $(SDIR)/DB.ice \
 		  $(SDIR)/DBF.ice \
 		  $(SDIR)/DBException.ice \
 		  $(SDIR)/Evictor.ice \
-		  $(SDIR)/EvictorF.ice
+		  $(SDIR)/EvictorF.ice \
+		  $(SDIR)/ObjectRecord.ice \
+		  $(SDIR)/Strategy.ice \
+		  $(SDIR)/StrategyF.ice
 
 HDIR		= $(includedir)/Freeze
 SDIR		= $(slicedir)/Freeze
@@ -42,24 +50,34 @@ SLICE2FREEZECMD = $(SLICE2FREEZE) --ice --include-dir Freeze $(ICECPPFLAGS)
 
 include $(top_srcdir)/config/Make.rules
 
-CPPFLAGS	:= -I.. $(DB_FLAGS) $(CPPFLAGS)
+CPPFLAGS	:= -I.. $(CPPFLAGS) -DFREEZE_API_EXPORTS $(DB_FLAGS) 
 SLICE2CPPFLAGS	:= --ice --include-dir Freeze --dll-export FREEZE_API $(SLICE2CPPFLAGS)
 
-$(VERSIONED_NAME): $(OBJS)
+$(libdir)/$(LIBFILENAME): $(OBJS)
 	rm -f $@
-	$(CXX) $(SHLIB_LDFLAGS) $(LDFLAGS) -o $@ $(OBJS)
+	$(call mkshlib,$@,$(SONAME),$(OBJS),$(LINKWITH))
 
-../Freeze/IdentityObjectDict.h IdentityObjectDict.cpp: $(SLICE2FREEZE)
-	rm -f IdentityObjectDict.h IdentityObjectDict.cpp
-	$(SLICE2FREEZECMD) --dict Freeze::IdentityObjectDict,Ice::Identity,Object IdentityObjectDict \
-	$(slicedir)/Ice/Identity.ice
+$(libdir)/$(SONAME): $(libdir)/$(LIBFILENAME)
+	rm -f $@
+	ln -s $(LIBFILENAME) $@
+
+$(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
+	rm -f $@
+	ln -s $(SONAME) $@
+
+../Freeze/IdentityObjectRecordDict.h IdentityObjectRecordDict.cpp: $(SLICE2FREEZE)
+	rm -f IdentityObjectRecordDict.h IdentityObjectRecordDict.cpp
+	$(SLICE2FREEZECMD) --dict Freeze::IdentityObjectRecordDict,Ice::Identity,Freeze::ObjectRecord \
+	    IdentityObjectRecordDict $(slicedir)/Ice/Identity.ice $(slicedir)/Freeze/ObjectRecord.ice
 
 clean::
-	rm -f IdentityObjectDict.h IdentityObjectDict.cpp
+	rm -f IdentityObjectRecordDict.h IdentityObjectRecordDict.cpp
 
 install:: all
-	$(INSTALL_LIBRARY) $(VERSIONED_NAME) $(install_libdir)
-	rm -f $(install_libdir)/$(notdir $(NAME))
-	ln -s $(notdir $(VERSIONED_NAME)) $(install_libdir)/$(notdir $(NAME))
+	$(INSTALL_LIBRARY) $(libdir)/$(LIBFILENAME) $(install_libdir)
+	rm -f $(install_libdir)/$(SONAME)
+	ln -s $(LIBFILENAME) $(install_libdir)/$(SONAME)
+	rm -f $(install_libdir)/$(LIBNAME)
+	ln -s $(SONAME) $(install_libdir)/$(LIBNAME)
 
 include .depend

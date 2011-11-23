@@ -26,7 +26,7 @@ class AddServer : public Task
 public:
     
     AddServer(const ServerDeployerPrx& deployer, const string& node, const string& name, const string& descriptor,
-	      const string& binpath, const string& libpath, const ServerTargets& targets) :
+	      const string& binpath, const string& libpath, const Ice::StringSeq& targets) :
 	_deployer(deployer),
 	_node(node),
 	_name(name),
@@ -96,7 +96,7 @@ private:
     string _descriptor;
     string _binpath;
     string _libpath;
-    ServerTargets _targets;
+    Ice::StringSeq _targets;
 };
 
 class ApplicationHandler : public ComponentHandler
@@ -170,12 +170,12 @@ IcePack::ApplicationHandler::startElement(const XMLCh* name, ICE_XERCES_NS Attri
 					  _locator);
 	}
 
-	string name = getAttributeValue(attrs, "name");
+	string serverName = getAttributeValue(attrs, "name");
 	string descriptor = _builder.toLocation(getAttributeValue(attrs, "descriptor"));
 	string binpath = _builder.toLocation(getAttributeValueWithDefault(attrs, "binpath", ""));
 	string libpath = getAttributeValueWithDefault(attrs, "libpath", "");
 	string targets = getAttributeValueWithDefault(attrs, "targets", "");
-	_builder.addServer(name, _currentNode, descriptor, binpath, libpath, targets);
+	_builder.addServer(serverName, _currentNode, descriptor, binpath, libpath, targets);
     }
 }
 

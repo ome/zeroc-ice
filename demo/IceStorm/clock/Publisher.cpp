@@ -70,12 +70,15 @@ Publisher::run(int argc, char* argv[])
     assert(topic);
 
     //
-    // Get a publisher object, create a oneway proxy (for efficiency
-    // reasons) and then cast to a Clock object. Note that the cast
-    // must be unchecked.
+    // Get the topic's publisher object, verify that it supports
+    // the Clock type, and create a oneway Clock proxy (for efficiency
+    // reasons).
     //
     Ice::ObjectPrx obj = topic->getPublisher();
-    obj = obj->ice_oneway();
+    if(!obj->ice_isDatagram())
+    {
+        obj = obj->ice_oneway();
+    }
     ClockPrx clock = ClockPrx::uncheckedCast(obj);
 
     cout << "publishing 10 tick events" << endl;

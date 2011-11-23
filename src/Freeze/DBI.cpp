@@ -16,8 +16,10 @@
 #include <Freeze/DBException.h>
 #include <Freeze/DBI.h>
 #include <Freeze/EvictorI.h>
+#include <Freeze/StrategyI.h>
 #include <Freeze/Initialize.h>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 using namespace std;
 using namespace Ice;
@@ -93,6 +95,8 @@ private:
 
 static DBEnvironmentMap _dbEnvMap;
 
+extern "C"
+{
 static void
 FreezeErrCallFcn(const char* prefix, char* msg)
 {
@@ -101,6 +105,7 @@ FreezeErrCallFcn(const char* prefix, char* msg)
 
     Error out(dbEnv->getCommunicator()->getLogger());
     out << "Freeze database error: " << dbEnv->getName() << ": " << msg;
+}
 }
 
 void
@@ -156,6 +161,11 @@ Freeze::DBEnvironmentI::DBEnvironmentI(const CommunicatorPtr& communicator, cons
     }
 
     checkBerkeleyDBReturn(db_env_create(&_dbEnv, 0), _errorPrefix, "db_env_create");
+
+#ifdef _WIN32
+    // Berkeley DB may use a different C++ runtime
+    checkBerkeleyDBReturn(_dbEnv->set_alloc(_dbEnv, ::malloc, ::realloc, ::free), _errorPrefix, "DB_ENV->set_alloc");
+#endif
 
     u_int32_t flags = DB_CREATE | DB_INIT_LOCK | DB_INIT_MPOOL;
     if(txn)
@@ -270,10 +280,9 @@ Freeze::DBEnvironmentI::sync()
 	return;
     }
 
-    while(!_dbMap.empty())
+    for(map<string, DBPtr>::iterator p = _dbMap.begin(); p != _dbMap.end(); ++p)
     {
-	DBPtr db = _dbMap.begin()->second;
-	db->sync();
+	p->second->sync();
     }
 }
 
@@ -523,7 +532,7 @@ DBCursorI::set(const Value& value)
     memset(&dbKey, 0, sizeof(dbKey));
     memset(&dbData, 0, sizeof(dbData));
     dbData.data = const_cast<void*>(static_cast<const void*>(&value[0]));
-    dbData.size = value.size();
+    dbData.size = (unsigned int) value.size();
 
     if(_trace >= 1)
     {
@@ -925,8 +934,20 @@ Freeze::DBI::sync()
     checkBerkeleyDBReturn(_db->sync(_db, 0), _errorPrefix, "DB->sync");
 }
 
+EvictionStrategyPtr
+Freeze::DBI::createEvictionStrategy()
+{
+    return new EvictionStrategyI;
+}
+
+IdleStrategyPtr
+Freeze::DBI::createIdleStrategy()
+{
+    return new IdleStrategyI;
+}
+
 EvictorPtr
-Freeze::DBI::createEvictor(EvictorPersistenceMode persistenceMode)
+Freeze::DBI::createEvictor(const PersistenceStrategyPtr& strategy)
 {
     IceUtil::Mutex::Lock sync(*this);
 
@@ -939,7 +960,7 @@ Freeze::DBI::createEvictor(EvictorPersistenceMode persistenceMode)
 	throw ex;
     }
 
-    return new EvictorI(this, persistenceMode);
+    return new EvictorI(this, strategy);
 }
 
 DBCursorPtr
@@ -1021,7 +1042,7 @@ Freeze::DBI::getCursorAtKeyImpl(::DB_TXN* txn, const Key& key)
     dbData.flags = DB_DBT_PARTIAL;
 
     dbKey.data = const_cast<void*>(static_cast<const void*>(&key[0]));
-    dbKey.size = key.size();
+    dbKey.size = (unsigned int) key.size();
     try
     {
 	checkBerkeleyDBReturn(cursor->c_get(cursor, &dbKey, &dbData, DB_SET), _errorPrefix, "DBcursor->c_get");
@@ -1056,9 +1077,9 @@ Freeze::DBI::putImpl(::DB_TXN* txn, const Key& key, const Value& value)
     memset(&dbKey, 0, sizeof(dbKey));
     memset(&dbData, 0, sizeof(dbData));
     dbKey.data = const_cast<void*>(static_cast<const void*>(&key[0]));
-    dbKey.size = key.size();
+    dbKey.size = (unsigned int) key.size();
     dbData.data = const_cast<void*>(static_cast<const void*>(&value[0]));
-    dbData.size = value.size();
+    dbData.size = (unsigned int) value.size();
 
     if(_trace >= 1)
     {
@@ -1086,7 +1107,7 @@ Freeze::DBI::containsImpl(::DB_TXN* txn, const Key& key)
     DBT dbKey;
     memset(&dbKey, 0, sizeof(dbKey));
     dbKey.data = const_cast<void*>(static_cast<const void*>(&key[0]));
-    dbKey.size = key.size();
+    dbKey.size = (unsigned int) key.size();
 
     DBT dbData;
     memset(&dbData, 0, sizeof(dbData));
@@ -1126,7 +1147,7 @@ Freeze::DBI::getImpl(::DB_TXN* txn, const Key& key)
     memset(&dbKey, 0, sizeof(dbKey));
     memset(&dbData, 0, sizeof(dbData));
     dbKey.data = const_cast<void*>(static_cast<const void*>(&key[0]));
-    dbKey.size = key.size();
+    dbKey.size = (unsigned int) key.size();
 
     if(_trace >= 1)
     {
@@ -1156,7 +1177,7 @@ Freeze::DBI::delImpl(::DB_TXN* txn, const Key& key)
     DBT dbKey;
     memset(&dbKey, 0, sizeof(dbKey));
     dbKey.data = const_cast<void*>(static_cast<const void*>(&key[0]));
-    dbKey.size = key.size();
+    dbKey.size = (unsigned int) key.size();
 
     if(_trace >= 1)
     {

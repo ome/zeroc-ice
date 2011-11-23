@@ -811,8 +811,8 @@ case 15:
 YY_RULE_SETUP
 #line 126 "Scanner.l"
 {
-    int len = strlen(yytext);
-    for(int i = 0; i < len; ++i)
+    size_t len = strlen(yytext);
+    for(size_t i = 0; i < len; ++i)
     {
 	if(yytext[i] == '\\')
 	{
@@ -829,8 +829,8 @@ case 16:
 YY_RULE_SETUP
 #line 141 "Scanner.l"
 {
-    int len = strlen(yytext);
-    for(int i = 0; i < len; ++i)
+    size_t len = strlen(yytext);
+    for(size_t i = 0; i < len; ++i)
     {
 	if(yytext[i] == '\n')
 	{

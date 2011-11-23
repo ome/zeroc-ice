@@ -81,16 +81,26 @@ run(int argc, char* argv[], const CommunicatorPtr& communicator)
 	
     }
 
-    ObjectPrx obj = fed1->getPublisher();
-    obj = obj->ice_oneway();
+    ObjectPrx obj;
+    obj = fed1->getPublisher();
+    if(!obj->ice_isDatagram())
+    {
+        obj = obj->ice_oneway();
+    }
     EventPrx eventFed1 = EventPrx::uncheckedCast(obj);
 
     obj = fed2->getPublisher();
-    obj = obj->ice_oneway();
+    if(!obj->ice_isDatagram())
+    {
+        obj = obj->ice_oneway();
+    }
     EventPrx eventFed2 = EventPrx::uncheckedCast(obj);
 
     obj = fed3->getPublisher();
-    obj = obj->ice_oneway();
+    if(!obj->ice_isDatagram())
+    {
+        obj = obj->ice_oneway();
+    }
     EventPrx eventFed3 = EventPrx::uncheckedCast(obj);
 
     Ice::Context context;

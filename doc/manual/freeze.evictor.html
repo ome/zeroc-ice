@@ -1,0 +1,1475 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Freeze::Evictor</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.59"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Freeze::EvictionStrategy"
+HREF="freeze.evictionstrategy.html"><LINK
+REL="NEXT"
+TITLE="Freeze::EvictorDeactivatedException"
+HREF="freeze.evictordeactivatedexception.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="freeze.evictionstrategy.html"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="freeze.evictordeactivatedexception.html"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR"
+><TT
+CLASS="LITERAL"
+>Freeze::Evictor</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN9203"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local interface <TT
+CLASS="CLASSNAME"
+>Evictor</TT
+>
+    extends 
+	<A
+HREF="ice.servantlocator.html"
+><SPAN
+CLASS="TYPE"
+>::Ice::ServantLocator</SPAN
+></A
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>A semi-automatic <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object persistence manager, based on the
+evictor pattern. The evictor is a servant locator implementation
+that stores the persistent state of its objects in a database. Any
+number of objects can be registered with an evictor, but only a
+configurable number of servants are active at a time.  These active
+servants reside in a queue; the least recently used servant in the
+queue is the first to be evicted when a new servant is activated.
+An evictor is created using the operation <A
+HREF="freeze.db.html#FREEZE.DB.CREATEEVICTOR"
+><TT
+CLASS="FUNCTION"
+>DB::createEvictor</TT
+></A
+> and
+must be registered with an object adapter just like any other
+servant locator.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9213"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="freeze.db.html#FREEZE.DB.CREATEEVICTOR"
+><TT
+CLASS="FUNCTION"
+>DB::createEvictor</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9220"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="freeze.servantinitializer.html"
+><TT
+CLASS="CLASSNAME"
+>ServantInitializer</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9227"
+>Operation Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.CREATEOBJECT"
+><TT
+CLASS="FUNCTION"
+>createObject</TT
+></A
+></DT
+><DD
+><P
+>Create a new <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object for this evictor.</P
+></DD
+><DT
+><A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.DESTROYOBJECT"
+><TT
+CLASS="FUNCTION"
+>destroyObject</TT
+></A
+></DT
+><DD
+><P
+>Permanently destroy an <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object by removing it from the
+evictor's persistent store.</P
+></DD
+><DT
+><A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.GETDB"
+><TT
+CLASS="FUNCTION"
+>getDB</TT
+></A
+></DT
+><DD
+><P
+>Get the database object that created this evictor, in which the
+evictor stores the persistent state of its objects.</P
+></DD
+><DT
+><A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.GETITERATOR"
+><TT
+CLASS="FUNCTION"
+>getIterator</TT
+></A
+></DT
+><DD
+><P
+>Get an iterator for the identities managed by the evictor.</P
+></DD
+><DT
+><A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.GETPERSISTENCESTRATEGY"
+><TT
+CLASS="FUNCTION"
+>getPersistenceStrategy</TT
+></A
+></DT
+><DD
+><P
+>Get the persistence strategy for this evictor.</P
+></DD
+><DT
+><A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.GETSIZE"
+><TT
+CLASS="FUNCTION"
+>getSize</TT
+></A
+></DT
+><DD
+><P
+>Get the size of the evictor's servant queue.</P
+></DD
+><DT
+><A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.HASOBJECT"
+><TT
+CLASS="FUNCTION"
+>hasObject</TT
+></A
+></DT
+><DD
+><P
+>Returns true if the given identity is managed by the evictor.</P
+></DD
+><DT
+><A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.INSTALLSERVANTINITIALIZER"
+><TT
+CLASS="FUNCTION"
+>installServantInitializer</TT
+></A
+></DT
+><DD
+><P
+>Install a servant initializer for this evictor.</P
+></DD
+><DT
+><A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.SETSIZE"
+><TT
+CLASS="FUNCTION"
+>setSize</TT
+></A
+></DT
+><DD
+><P
+>Set the size of the evictor's servant queue.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.CREATEOBJECT"
+><TT
+CLASS="LITERAL"
+>createObject</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>createObject</TT
+>(<A
+HREF="ice.identity.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+>)
+    throws
+	<A
+HREF="freeze.dbexception.html"
+><TT
+CLASS="CLASSNAME"
+>DBException</TT
+></A
+>,
+	<A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Create a new <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object for this evictor. The state of the
+servant passed to this operation is saved in the evictor's
+persistent store.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9303"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object to create.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+></DT
+><DD
+><P
+>			    The servant for the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9318"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="freeze.dbexception.html"
+><TT
+CLASS="CLASSNAME"
+>DBException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a database failure occurred.</P
+></DD
+><DT
+><A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9333"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="ice.identity.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+>, <A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.DESTROYOBJECT"
+><TT
+CLASS="FUNCTION"
+>destroyObject</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.DESTROYOBJECT"
+><TT
+CLASS="LITERAL"
+>destroyObject</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>destroyObject</TT
+>(<A
+HREF="ice.identity.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+>)
+    throws
+	<A
+HREF="freeze.dbexception.html"
+><TT
+CLASS="CLASSNAME"
+>DBException</TT
+></A
+>,
+	<A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Permanently destroy an <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object by removing it from the
+evictor's persistent store. Furthermore, if a servant is
+currently active for the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object, it will be removed.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9359"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object to destroy.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9368"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="freeze.dbexception.html"
+><TT
+CLASS="CLASSNAME"
+>DBException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a database failure occurred.</P
+></DD
+><DT
+><A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9383"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="ice.identity.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+>, <A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.CREATEOBJECT"
+><TT
+CLASS="FUNCTION"
+>createObject</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.GETDB"
+><TT
+CLASS="LITERAL"
+>getDB</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="freeze.db.html"
+><TT
+CLASS="CLASSNAME"
+>DB</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>getDB</TT
+>()
+    throws
+	<A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the database object that created this evictor, in which the
+evictor stores the persistent state of its objects.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9403"
+>Return Value</A
+></H3
+><P
+>		The database used by this evictor.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9406"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9415"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="freeze.db.html#FREEZE.DB.CREATEEVICTOR"
+><TT
+CLASS="FUNCTION"
+>DB::createEvictor</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.GETITERATOR"
+><TT
+CLASS="LITERAL"
+>getIterator</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="freeze.evictoriterator.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorIterator</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>getIterator</TT
+>()
+    throws
+	<A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get an iterator for the identities managed by the evictor.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9432"
+>Return Value</A
+></H3
+><P
+>		A new iterator.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9435"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.GETPERSISTENCESTRATEGY"
+><TT
+CLASS="LITERAL"
+>getPersistenceStrategy</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="freeze.persistencestrategy.html"
+><TT
+CLASS="CLASSNAME"
+>PersistenceStrategy</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>getPersistenceStrategy</TT
+>()
+    throws
+	<A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the persistence strategy for this evictor.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9454"
+>Return Value</A
+></H3
+><P
+>		The persistence strategy used by this evictor.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9457"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9466"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="freeze.db.html#FREEZE.DB.CREATEEVICTOR"
+><TT
+CLASS="FUNCTION"
+>DB::createEvictor</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.GETSIZE"
+><TT
+CLASS="LITERAL"
+>getSize</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>int</SPAN
+> <TT
+CLASS="FUNCTION"
+>getSize</TT
+>()
+    throws
+	<A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the size of the evictor's servant queue.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9482"
+>Return Value</A
+></H3
+><P
+>		The size of the servant queue.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9485"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9494"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.SETSIZE"
+><TT
+CLASS="FUNCTION"
+>setSize</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.HASOBJECT"
+><TT
+CLASS="LITERAL"
+>hasObject</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>bool</SPAN
+> <TT
+CLASS="FUNCTION"
+>hasObject</TT
+>(<A
+HREF="ice.identity.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>ident</I
+></TT
+>)
+    throws
+	<A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+>,
+	<A
+HREF="freeze.dbexception.html"
+><TT
+CLASS="CLASSNAME"
+>DBException</TT
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Returns true if the given identity is managed by the evictor.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9515"
+>Return Value</A
+></H3
+><P
+>		true if the identity is managed by the evictor, false
+otherwise.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9518"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="freeze.dbexception.html"
+><TT
+CLASS="CLASSNAME"
+>DBException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a database failure occurred.</P
+></DD
+><DT
+><A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.INSTALLSERVANTINITIALIZER"
+><TT
+CLASS="LITERAL"
+>installServantInitializer</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>installServantInitializer</TT
+>(<A
+HREF="freeze.servantinitializer.html"
+><TT
+CLASS="CLASSNAME"
+>ServantInitializer</TT
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>initializer</I
+></TT
+>)
+    throws
+	<A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Install a servant initializer for this evictor.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9545"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>initializer</I
+></TT
+></DT
+><DD
+><P
+>			    The servant initializer to install.
+Subsequent calls overwrite any previously set value. A null
+value removes an existing servant initializer.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9553"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9562"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="freeze.servantinitializer.html"
+><TT
+CLASS="CLASSNAME"
+>ServantInitializer</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.EVICTOR.SETSIZE"
+><TT
+CLASS="LITERAL"
+>setSize</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>setSize</TT
+>(<SPAN
+CLASS="TYPE"
+>int</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>sz</I
+></TT
+>)
+    throws
+	<A
+HREF="freeze.dbexception.html"
+><TT
+CLASS="CLASSNAME"
+>DBException</TT
+></A
+>,
+	<A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Set the size of the evictor's servant queue. This is the
+maximum number of servants the evictor keeps active. Requests
+to set the queue size to a value smaller than zero are ignored.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9582"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>sz</I
+></TT
+></DT
+><DD
+><P
+>			    The size of the servant queue. If the evictor
+currently holds more than <A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.SETSIZE"
+><TT
+CLASS="FUNCTION"
+>setSize</TT
+></A
+> servants in its queue, it evicts
+enough servants to match the new size. Note that this operation
+can block if the new queue size is smaller than the current
+number of servants that are servicing requests. In this case,
+the operation waits until a sufficient number of servants
+complete their requests.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9592"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="freeze.dbexception.html"
+><TT
+CLASS="CLASSNAME"
+>DBException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a database failure occurred.</P
+></DD
+><DT
+><A
+HREF="freeze.evictordeactivatedexception.html"
+><TT
+CLASS="CLASSNAME"
+>EvictorDeactivatedException</TT
+></A
+></DT
+><DD
+><P
+>			    Raised if a the evictor has
+been deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9607"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.GETSIZE"
+><TT
+CLASS="FUNCTION"
+>getSize</TT
+></A
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="freeze.evictionstrategy.html"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="freeze.evictordeactivatedexception.html"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Freeze::EvictionStrategy</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Freeze::EvictorDeactivatedException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

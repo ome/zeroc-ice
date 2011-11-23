@@ -19,10 +19,17 @@
 #include <Ice/IdentityUtil.h>
 #include <Ice/StringUtil.h>
 #include <Ice/Plugin.h>
+#include <iomanip>
 
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
+
+bool
+Ice::UserException::__usesClasses() const
+{
+    return false;
+}
 
 void
 Ice::UserException::ice_marshal(const ::std::string& __name, const ::Ice::StreamPtr& __os)
@@ -243,6 +250,13 @@ Ice::ConnectTimeoutException::ice_print(ostream& out) const
 }
 
 void
+Ice::CloseTimeoutException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\ntimeout while closing a connection";
+}
+
+void
 Ice::ConnectionTimeoutException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
@@ -257,17 +271,40 @@ Ice::ProtocolException::ice_print(ostream& out) const
 }
 
 void
+Ice::BadMagicException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\nunknown magic number: ";
+
+    ios_base::fmtflags originalFlags = out.flags();	// Save stream state
+    ostream::char_type originalFill = out.fill();
+
+    out.flags(ios_base::hex);				// Change to hex
+    out.fill('0');					// Fill with leading zeros
+
+    out << "0x" << setw(2) << static_cast<unsigned int>(static_cast<unsigned char>(badMagic[0])) << ", ";
+    out << "0x" << setw(2) << static_cast<unsigned int>(static_cast<unsigned char>(badMagic[1])) << ", ";
+    out << "0x" << setw(2) << static_cast<unsigned int>(static_cast<unsigned char>(badMagic[2])) << ", ";
+    out << "0x" << setw(2) << static_cast<unsigned int>(static_cast<unsigned char>(badMagic[3]));
+
+    out.fill(originalFill);				// Restore stream state
+    out.flags(originalFlags);
+}
+
+void
 Ice::UnsupportedProtocolException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\nprotocol error: unsupported protocol version";
+    out << ":\nprotocol error: unsupported protocol version: " << badMajor << "." << badMinor;
+    out << "\n(can only support protocols compatible with version " << major << "." << minor << ")";
 }
 
 void
 Ice::UnsupportedEncodingException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\nprotocol error: unsupported encoding version";
+    out << ":\nprotocol error: unsupported encoding version: " << badMajor << "." << badMinor;
+    out << "\n(can only support encodings compatible with version " << major << "." << major << ")";
 }
 
 void
@@ -349,13 +386,6 @@ Ice::NoObjectFactoryException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: no suitable object factory found for `" << type << "'";
-}
-
-void
-Ice::NoUserExceptionFactoryException::ice_print(ostream& out) const
-{
-    Exception::ice_print(out);
-    out << ":\nprotocol error: no suitable user exception factory found for `" << type << "'";
 }
 
 void

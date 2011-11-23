@@ -1,0 +1,1129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Freeze::PersistenceStrategy</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.59"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Freeze::ObjectStore"
+HREF="freeze.objectstore.html"><LINK
+REL="NEXT"
+TITLE="Freeze::ServantInitializer"
+HREF="freeze.servantinitializer.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="freeze.objectstore.html"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="freeze.servantinitializer.html"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="FREEZE.PERSISTENCESTRATEGY"
+><TT
+CLASS="LITERAL"
+>Freeze::PersistenceStrategy</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN9853"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local interface <TT
+CLASS="CLASSNAME"
+>PersistenceStrategy</TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>A persistence strategy determines when the evictor saves the
+persistent state of an object.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9858"
+>Derived Classes and Interfaces</A
+></H3
+><P
+>	    <A
+HREF="freeze.evictionstrategy.html"
+><SPAN
+CLASS="TYPE"
+>EvictionStrategy</SPAN
+></A
+>, <A
+HREF="freeze.idlestrategy.html"
+><SPAN
+CLASS="TYPE"
+>IdleStrategy</SPAN
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9868"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="freeze.db.html#FREEZE.DB.CREATEEVICTOR"
+><TT
+CLASS="FUNCTION"
+>DB::createEvictor</TT
+></A
+>, <A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.GETPERSISTENCESTRATEGY"
+><TT
+CLASS="FUNCTION"
+>Evictor::getPersistenceStrategy</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9878"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="freeze.evictor.html"
+><TT
+CLASS="CLASSNAME"
+>Evictor</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9885"
+>Operation Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="freeze.persistencestrategy.html#FREEZE.PERSISTENCESTRATEGY.ACTIVATEDOBJECT"
+><TT
+CLASS="FUNCTION"
+>activatedObject</TT
+></A
+></DT
+><DD
+><P
+>Called after the evictor activates a servant for an <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+><DT
+><A
+HREF="freeze.persistencestrategy.html#FREEZE.PERSISTENCESTRATEGY.DESTROY"
+><TT
+CLASS="FUNCTION"
+>destroy</TT
+></A
+></DT
+><DD
+><P
+>Called when the evictor is deactivated and there are no
+outstanding requests on the evictor's servants.</P
+></DD
+><DT
+><A
+HREF="freeze.persistencestrategy.html#FREEZE.PERSISTENCESTRATEGY.DESTROYEDOBJECT"
+><TT
+CLASS="FUNCTION"
+>destroyedObject</TT
+></A
+></DT
+><DD
+><P
+>Called after the evictor destroys an object.</P
+></DD
+><DT
+><A
+HREF="freeze.persistencestrategy.html#FREEZE.PERSISTENCESTRATEGY.EVICTEDOBJECT"
+><TT
+CLASS="FUNCTION"
+>evictedObject</TT
+></A
+></DT
+><DD
+><P
+>Called after the evictor has evicted a servant.</P
+></DD
+><DT
+><A
+HREF="freeze.persistencestrategy.html#FREEZE.PERSISTENCESTRATEGY.POSTOPERATION"
+><TT
+CLASS="FUNCTION"
+>postOperation</TT
+></A
+></DT
+><DD
+><P
+>Called after an operation has been invoked on an object.</P
+></DD
+><DT
+><A
+HREF="freeze.persistencestrategy.html#FREEZE.PERSISTENCESTRATEGY.PREOPERATION"
+><TT
+CLASS="FUNCTION"
+>preOperation</TT
+></A
+></DT
+><DD
+><P
+>Called before an operation is invoked on an object.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.PERSISTENCESTRATEGY.ACTIVATEDOBJECT"
+><TT
+CLASS="LITERAL"
+>activatedObject</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>LocalObject</SPAN
+> <TT
+CLASS="FUNCTION"
+>activatedObject</TT
+>(<A
+HREF="ice.identity.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>ident</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Called after the evictor activates a servant for an <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.
+This occurs when the object is first registered with the evictor,
+as well as when the evictor restores the object from persistent
+storage. If the evictor has a servant initializer, the initializer
+is invoked before <A
+HREF="freeze.persistencestrategy.html#FREEZE.PERSISTENCESTRATEGY.ACTIVATEDOBJECT"
+><TT
+CLASS="FUNCTION"
+>activatedObject</TT
+></A
+>.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9940"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>ident</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+></DT
+><DD
+><P
+>			    The servant incarnating the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9955"
+>Return Value</A
+></H3
+><P
+>		A local object representing private state that the
+strategy implementation associates with the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object. This
+"cookie" is supplied to the strategy in all subsequent
+invocations.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9959"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.CREATEOBJECT"
+><TT
+CLASS="FUNCTION"
+>Evictor::createObject</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.PERSISTENCESTRATEGY.DESTROY"
+><TT
+CLASS="LITERAL"
+>destroy</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>destroy</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Called when the evictor is deactivated and there are no
+outstanding requests on the evictor's servants.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.PERSISTENCESTRATEGY.DESTROYEDOBJECT"
+><TT
+CLASS="LITERAL"
+>destroyedObject</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>destroyedObject</TT
+>(<SPAN
+CLASS="TYPE"
+>LocalObject</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>cookie</I
+></TT
+>,
+    <A
+HREF="ice.identity.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>ident</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Called after the evictor destroys an object.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN9985"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>ident</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>cookie</I
+></TT
+></DT
+><DD
+><P
+>			    The strategy's private state associated with the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN10000"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.DESTROYOBJECT"
+><TT
+CLASS="FUNCTION"
+>Evictor::destroyObject</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.PERSISTENCESTRATEGY.EVICTEDOBJECT"
+><TT
+CLASS="LITERAL"
+>evictedObject</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>evictedObject</TT
+>(<SPAN
+CLASS="TYPE"
+>LocalObject</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>cookie</I
+></TT
+>,
+    <A
+HREF="ice.identity.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>ident</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+>,
+    <A
+HREF="freeze.objectstore.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectStore</TT
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>store</I
+></TT
+>)
+    throws
+	<A
+HREF="freeze.dbexception.html"
+><TT
+CLASS="CLASSNAME"
+>DBException</TT
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Called after the evictor has evicted a servant. The
+persistence strategy typically saves the object at this
+point, or may only save the object if it has been
+modified.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN10026"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>store</I
+></TT
+></DT
+><DD
+><P
+>			    The object store. This value may be retained
+by the strategy if necessary.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>ident</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+></DT
+><DD
+><P
+>			    The servant incarnating the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>cookie</I
+></TT
+></DT
+><DD
+><P
+>			    The strategy's private state associated with the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN10052"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="freeze.evictor.html#FREEZE.EVICTOR.DESTROYOBJECT"
+><TT
+CLASS="FUNCTION"
+>Evictor::destroyObject</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.PERSISTENCESTRATEGY.POSTOPERATION"
+><TT
+CLASS="LITERAL"
+>postOperation</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>postOperation</TT
+>(<SPAN
+CLASS="TYPE"
+>LocalObject</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>cookie</I
+></TT
+>,
+    <A
+HREF="ice.identity.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>ident</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>bool</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>mutating</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+>,
+    <A
+HREF="freeze.objectstore.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectStore</TT
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>store</I
+></TT
+>)
+    throws
+	<A
+HREF="freeze.dbexception.html"
+><TT
+CLASS="CLASSNAME"
+>DBException</TT
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Called after an operation has been invoked on an object.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN10080"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>store</I
+></TT
+></DT
+><DD
+><P
+>			    The object store. This value may be retained
+by the strategy if necessary.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+></DT
+><DD
+><P
+>			    The servant incarnating the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>mutating</I
+></TT
+></DT
+><DD
+><P
+>			    True if the operation was not declared as nonmutating, otherwise false.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>cookie</I
+></TT
+></DT
+><DD
+><P
+>			    The strategy's private state associated with the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.PERSISTENCESTRATEGY.PREOPERATION"
+><TT
+CLASS="LITERAL"
+>preOperation</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>preOperation</TT
+>(<SPAN
+CLASS="TYPE"
+>LocalObject</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>cookie</I
+></TT
+>,
+    <A
+HREF="ice.identity.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>ident</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>bool</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>mutating</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+>,
+    <A
+HREF="freeze.objectstore.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectStore</TT
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>store</I
+></TT
+>)
+    throws
+	<A
+HREF="freeze.dbexception.html"
+><TT
+CLASS="CLASSNAME"
+>DBException</TT
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Called before an operation is invoked on an object.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN10132"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>store</I
+></TT
+></DT
+><DD
+><P
+>			    The object store. This value may be retained
+by the strategy if necessary.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+></DT
+><DD
+><P
+>			    The servant incarnating the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>mutating</I
+></TT
+></DT
+><DD
+><P
+>			    True if the operation was not declared as nonmutating, otherwise false.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>cookie</I
+></TT
+></DT
+><DD
+><P
+>			    The strategy's private state associated with the <SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+> object.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="freeze.objectstore.html"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="freeze.servantinitializer.html"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Freeze::ObjectStore</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Freeze::ServantInitializer</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

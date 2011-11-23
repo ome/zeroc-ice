@@ -19,15 +19,17 @@
 #include <IceStorm/TraceLevels.h>
 
 #include <functional>
+#include <ctype.h>
 
 using namespace IceStorm;
 using namespace std;
 
-TopicManagerI::TopicManagerI(const Ice::CommunicatorPtr& communicator, const Ice::ObjectAdapterPtr& adapter,
-			     const TraceLevelsPtr& traceLevels, const Freeze::DBEnvironmentPtr& dbEnv,
-			     const Freeze::DBPtr& db) :
+TopicManagerI::TopicManagerI(const Ice::CommunicatorPtr& communicator, const Ice::ObjectAdapterPtr& topicAdapter,
+                             const Ice::ObjectAdapterPtr& publishAdapter, const TraceLevelsPtr& traceLevels,
+                             const Freeze::DBEnvironmentPtr& dbEnv, const Freeze::DBPtr& db) :
     _communicator(communicator),
-    _adapter(adapter),
+    _topicAdapter(topicAdapter),
+    _publishAdapter(publishAdapter),
     _traceLevels(traceLevels),
     _dbEnv(dbEnv),
     _topics(db)
@@ -39,7 +41,7 @@ TopicManagerI::TopicManagerI(const Ice::CommunicatorPtr& communicator, const Ice
     // Recreate each of the topics in the dictionary. If the topic
     // database doesn't exist then the topic was previously destroyed,
     // but not removed from the _topics dictionary. Normally this
-    // should only occur upon a crash.
+    // should only occur in the event of a crash.
     //
     StringBoolDict::iterator p = _topics.begin();
     while(p != _topics.end())
@@ -66,6 +68,7 @@ TopicManagerI::TopicManagerI(const Ice::CommunicatorPtr& communicator, const Ice
 
 TopicManagerI::~TopicManagerI()
 {
+    _flusher->stopFlushing();
 }
 
 TopicPrx
@@ -84,14 +87,14 @@ TopicManagerI::create(const string& name, const Ice::Current&)
     }
 
     installTopic("create", name, true);
-    _topics.insert(make_pair(name, true));
+    _topics.insert(pair<const string, const bool>(name, true));
 
     //
     // The identity is the name of the Topic.
     //
     Ice::Identity id;
     id.name = name;
-    return TopicPrx::uncheckedCast(_adapter->createProxy(id));
+    return TopicPrx::uncheckedCast(_topicAdapter->createProxy(id));
 }
 
 TopicPrx
@@ -106,7 +109,7 @@ TopicManagerI::retrieve(const string& name, const Ice::Current&) const
     {
 	Ice::Identity id;
 	id.name = name;
-	return TopicPrx::uncheckedCast(_adapter->createProxy(id));
+	return TopicPrx::uncheckedCast(_topicAdapter->createProxy(id));
     }
 
     NoSuchTopic ex;
@@ -119,21 +122,20 @@ TopicManagerI::retrieve(const string& name, const Ice::Current&) const
 //
 struct TransformToTopicDict : public std::unary_function<TopicIMap::value_type, TopicDict::value_type>
 {
+    TransformToTopicDict(const Ice::ObjectAdapterPtr& adapter) :
+        _adapter(adapter)
+    {
+    }
 
-  TransformToTopicDict(const Ice::ObjectAdapterPtr& adapter) :
-    _adapter(adapter)
-  {
-  }
+    TopicDict::value_type
+    operator()(TopicIMap::value_type p)
+    {
+        Ice::Identity id;
+        id.name = p.first;
+        return TopicDict::value_type(p.first, TopicPrx::uncheckedCast(_adapter->createProxy(id)));
+    }
 
-  TopicDict::value_type
-  operator()(TopicIMap::value_type p)
-  {
-    Ice::Identity id;
-    id.name = p.first;
-    return TopicDict::value_type(p.first, TopicPrx::uncheckedCast(_adapter->createProxy(id)));
-  }
-
-  Ice::ObjectAdapterPtr _adapter;
+    Ice::ObjectAdapterPtr _adapter;
 };
 
 TopicDict
@@ -146,112 +148,54 @@ TopicManagerI::retrieveAll(const Ice::Current&) const
 
     TopicDict all;
     transform(_topicIMap.begin(), _topicIMap.end(), inserter(all, all.begin()),
-	      TransformToTopicDict(_adapter));
+	      TransformToTopicDict(_topicAdapter));
 
     return all;
-}
-
-void
-TopicManagerI::subscribe(const QoS& qos, const Ice::ObjectPrx& subscriber, const Ice::Current&)
-{
-    IceUtil::Mutex::Lock sync(*this);
-
-    Ice::Identity ident = subscriber->ice_getIdentity();
-    if(_traceLevels->topicMgr > 0)
-    {
-	Ice::Trace out(_traceLevels->logger, _traceLevels->topicMgrCat);
-	out << "Subscribe: " << Ice::identityToString(ident);
-	if(_traceLevels->topicMgr > 1)
-	{
-	    out << " QoS: ";
-	    for(QoS::const_iterator qi = qos.begin(); qi != qos.end() ; ++qi)
-	    {
-		if(qi != qos.begin())
-		{
-		    out << ',';
-		}
-		out << '[' << qi->first << "," << qi->second << ']';
-	    }
-	}
-    }
-
-    //
-    // Ensure that the identities category refers to an existing
-    // channel.
-    //
-    TopicIMap::iterator elem = _topicIMap.find(ident.category);
-    if(elem == _topicIMap.end())
-    {
-	NoSuchTopic ex;
-	ex.name = ident.category;
-	throw ex;
-    }
-
-    //
-    // Subscribe to the topic.
-    //
-    elem->second->subscribe(subscriber, qos);
-}
-
-void
-TopicManagerI::unsubscribe(const Ice::ObjectPrx& subscriber, const Ice::Current&)
-{
-    IceUtil::Mutex::Lock sync(*this);
-
-    Ice::Identity ident = subscriber->ice_getIdentity();
-
-    if(_traceLevels->topicMgr > 0)
-    {
-	Ice::Trace out(_traceLevels->logger, _traceLevels->topicMgrCat);
-
-	out << "Unsubscribe: " << Ice::identityToString(ident);
-    }
-
-
-    TopicIMap::iterator elem = _topicIMap.find(ident.category);
-    if(elem != _topicIMap.end())
-    {
-	elem->second->unsubscribe(subscriber);
-    }
-}
-
-void
-TopicManagerI::shutdown(const Ice::Current&)
-{
-    _flusher->stopFlushing();
-    _communicator->shutdown();
 }
 
 void
 TopicManagerI::reap()
 {
     //
-    // Always Called with mutex locked
+    // Always called with mutex locked.
     //
     // IceUtil::Mutex::Lock sync(*this);
     //
     TopicIMap::iterator i = _topicIMap.begin();
     while(i != _topicIMap.end())
     {
-	if(i->second->destroyed())
-	{
-	    if(_traceLevels->topicMgr > 0)
-	    {
-		Ice::Trace out(_traceLevels->logger, _traceLevels->topicMgrCat);
-		out << "Reaping " << i->first;
-	    }
-	    _topics.erase(i->first);
-	    _topicIMap.erase(i++);
-	}
-	else
-	{
-	    ++i;
-	}
+        if(i->second->destroyed())
+        {
+            if(_traceLevels->topicMgr > 0)
+            {
+                Ice::Trace out(_traceLevels->logger, _traceLevels->topicMgrCat);
+                out << "Reaping " << i->first;
+            }
+
+            _topics.erase(i->first);
+
+            try
+            {
+                Ice::Identity id;
+                id.name = i->first;
+                _topicAdapter->remove(id);
+            }
+            catch(const Ice::ObjectAdapterDeactivatedException&)
+            {
+                // Ignore
+            }
+
+            _topicIMap.erase(i++);
+        }
+        else
+        {
+            ++i;
+        }
     }
 }
 
 void
-TopicManagerI::installTopic(const std::string& message, const std::string& name, bool create)
+TopicManagerI::installTopic(const string& message, const string& name, bool create)
 {
     if(_traceLevels->topicMgr > 0)
     {
@@ -259,21 +203,52 @@ TopicManagerI::installTopic(const std::string& message, const std::string& name,
 	out << message << ' ' << name;
     }
 
+    //
+    // Prepend "topic-" to the topic name in order to form a
+    // unique name for the Freeze database. Since the name we
+    // supply to openDB is also used as a filename, we call
+    // getDatabaseName to obtain a name with any questionable
+    // filename characters converted to hex.
+    //
     // TODO: instance
-    // TODO: reserved names?
     // TODO: failure? cleanup database?
-    Freeze::DBPtr db = _dbEnv->openDB(name, create);
+    //
+    string dbName = "topic-" + getDatabaseName(name);
+    Freeze::DBPtr db = _dbEnv->openDB(dbName, create);
     
     //
     // Create topic implementation
     //
-    TopicIPtr topicI = new TopicI(_adapter, _traceLevels, name, _factory, db);
+    TopicIPtr topicI = new TopicI(_publishAdapter, _traceLevels, name, _factory, db);
     
     //
     // The identity is the name of the Topic.
     //
     Ice::Identity id;
     id.name = name;
-    _adapter->add(topicI, id);
+    _topicAdapter->add(topicI, id);
     _topicIMap.insert(TopicIMap::value_type(name, topicI));
+}
+
+string
+TopicManagerI::getDatabaseName(const string& name)
+{
+    string result;
+    result.reserve(name.size());
+
+    for(string::size_type i = 0; i < name.size(); i++)
+    {
+        if(isalnum(name[i]) || name[i] == '.' || name[i] == '-' || name[i] == '_')
+        {
+            result.push_back(name[i]);
+        }
+        else
+        {
+            ostringstream ostr;
+            ostr << '%' << hex << static_cast<int>(name[i]);
+            result.append(ostr.str());
+        }
+    }
+
+    return result;
 }
