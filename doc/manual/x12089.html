@@ -1,0 +1,252 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>IceSSL::CertificateVerifier</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="IceSSL::CertificateVerificationException"
+HREF="x12079.html"><LINK
+REL="NEXT"
+TITLE="IceSSL::CertificateVerifierTypeException"
+HREF="x12123.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x12079.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x12123.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICESSL.CERTIFICATEVERIFIER"
+></A
+><TT
+CLASS="LITERAL"
+>IceSSL::CertificateVerifier</TT
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12092"
+></A
+>Overview</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local interface <TT
+CLASS="CLASSNAME"
+>CertificateVerifier</TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>The <A
+HREF="x12089.html"
+><TT
+CLASS="CLASSNAME"
+>CertificateVerifier</TT
+></A
+> is the base interface for all classes that define
+additional application-specific certificate verification rules.  These rules
+are evaluated during the SSL handshake by an instance of a class derived
+from <A
+HREF="x12089.html"
+><TT
+CLASS="CLASSNAME"
+>CertificateVerifier</TT
+></A
+>.  The methods defined in derived interfaces will
+depend upon the requirements of the underlying SSL implementation.
+Default certificate verifier implementations can be obtained via the
+<A
+HREF="x12309.html"
+><TT
+CLASS="CLASSNAME"
+>Plugin</TT
+></A
+>.
+As this is simply a base class for purposes of derivation, no methods are
+defined.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12103"
+></A
+>Used By</H3
+><P
+>	    <A
+HREF="x12309.html#ICESSL.PLUGIN.GETDEFAULTCERTVERIFIER"
+><TT
+CLASS="FUNCTION"
+>Plugin::getDefaultCertVerifier</TT
+></A
+>, <A
+HREF="x12309.html#ICESSL.PLUGIN.GETSINGLECERTVERIFIER"
+><TT
+CLASS="FUNCTION"
+>Plugin::getSingleCertVerifier</TT
+></A
+>, <A
+HREF="x12309.html#ICESSL.PLUGIN.SETCERTIFICATEVERIFIER"
+><TT
+CLASS="FUNCTION"
+>Plugin::setCertificateVerifier</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12116"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x12309.html"
+><TT
+CLASS="CLASSNAME"
+>Plugin</TT
+></A
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x12079.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x12123.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceSSL::CertificateVerificationException</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceSSL::CertificateVerifierTypeException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

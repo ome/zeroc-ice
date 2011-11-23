@@ -1,0 +1,16 @@
+<server kind="cpp">
+
+  <adapters>
+    <adapter name="TestAdapter" endpoints="default" id="TestAdapter">
+      <object identity="test" type="Test"/>
+    </adapter>
+  </adapters>
+
+  <target name="debug">
+    <properties>
+      <property name="Ice.Network.Trace" value="1"/>
+      <property name="Ice.Network.Protocol" value="1"/>
+    </properties>
+  </target>
+  
+</server>

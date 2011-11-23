@@ -1,0 +1,136 @@
+======================================================================
+Requirements
+======================================================================
+
+
+C++ compiler
+------------
+
+- GCC 3.2; or
+
+- GCC 2.96 with STLport 4.5
+
+The STL (Standard Template Library) that is included with GCC 2.96 is
+not supported! You must use STLport 4.5 with GCC 2.96. You can
+download STLport 4.5 from:
+
+http://www.stlport.org/download.html
+
+For STLport installation instructions, please see:
+
+http://www.stlport.org/doc/install.html
+
+For GCC 3.2, you can use the included STL library. Downloading and
+installing STLport is not required for this compiler version.
+
+
+Third-party libraries
+---------------------
+
+- Xerces-C++ 2.1.0
+
+- Berkeley DB 3.3, 4.0, or 4.1
+
+- OpenSSL 0.9.6
+
+- e2fsprogs 1.27 (only for the UUID library, which is part of this
+  package)
+
+- bzip2 1.0
+
+Xerces-C++ can be download from:
+
+http://xml.apache.org/xerces-c
+
+Berkeley DB, OpenSSL, e2fsprogs, and bzip2 are usually available with
+your Linux distribution. The RPMs for Redhat 8.0 are:
+
+db4-devel-4.0.14-14
+openssl-devel-0.9.6b-29
+e2fsprogs-devel-1.27-9
+bzip2-devel-1.0.2-5
+
+If you don't have them, you can download Berkeley DB from:
+
+http://www.sleepycat.com/download
+
+And OpenSSL from:
+
+http://www.openssl.org
+
+And bzip2 from:
+
+http://sources.redhat.com/bzip2
+
+We are not aware of any download possibilities for e2fsprogs (or the
+UUID routines included in this package). But to our knowledge, every
+Linux distribution includes this, so there should be no problem.
+
+
+Python 2
+--------
+
+To run the automated test suite, you will need Python 2. If you have
+no interest in running the test scripts, Python is not required.
+
+
+======================================================================
+Compilation and Testing
+======================================================================
+
+Extract the Ice archive in any directory you like (for example, in
+your home directory):
+
+$ tar xvfz Ice-<version>.tar.gz
+
+Change the working directory to Ice-<version>:
+
+$ cd Ice-<version>
+
+Edit the file config/Make.rules according to the comments in this
+file. Make sure that the paths for the third-party libraries are set
+correctly if they are not installed in the default location /usr/lib
+and /usr/include.
+
+Now you're ready to build Ice:
+
+$ make
+
+This will build the Ice core library, all add-ons, all tests, and all
+examples. After a successful build, you can run the test suite,
+provided that you installed Python 2:
+
+$ make test
+
+This is equivalent to:
+
+$ python allTests.py
+
+Note that on some Linux distributions (like Redhat 7.x), Python 2 is
+available as "python2", in which case you must use:
+
+$ python2 allTests.py
+
+If everything worked out, you should see lots of "ok". In case of a
+failure, the tests abort with "failed".
+
+If you want to try out any of the demos, make sure to add "bin" to
+PATH and "lib" to LD_LIBRARY_PATH:
+
+$ export PATH=`pwd`/bin:$PATH
+$ export LD_LIBRARY_PATH=`pwd`/bin:$LD_LIBRARY_PATH
+
+
+======================================================================
+Installation
+======================================================================
+
+Simply run "make install". This will install Ice in the "prefix"
+directory specified in the file Make.rules.
+
+After installation, make sure that the <prefix>/bin directory is in
+your PATH, and the <prefix>/lib directory is in your
+LD_LIBRARY_PATH. When compiling Ice programs, you must also make sure
+to pass the location of the <prefix>/include directory to the compiler
+with the -I option, and the location of the <prefix>/lib directory
+with the -L option.

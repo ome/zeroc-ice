@@ -1,0 +1,2319 @@
+<!--
+**********************************************************************
+Copyright (c) 2003
+ZeroC, Inc.
+Billerica, MA, USA
+
+All Rights Reserved
+**********************************************************************
+-->
+
+<para>
+If not stated otherwise in the description of the individual
+properties, the default value for all properties is the empty
+string. If the property takes a numeric value, the empty
+string is interpreted as zero.
+</para>
+
+<!-- ********************************************************************** -->
+<section><title>&Ice; Tracing Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>Ice.Trace.Network</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Trace.Network=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The network tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No network tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace connection establishment and closure.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Like 1, but more detailed.</entry>
+</row>
+<row>
+<entry>3</entry>
+<entry>Like 2, but also trace data transfer.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>Ice.Trace.Protocol</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Trace.Protocol=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The protocol tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No protocol tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace &Ice; protocol messages.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>Ice.Trace.Retry</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Trace.Retry=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The request retry tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No request retry tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace &Ice; operation call retries.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Also trace &Ice; endpoint usage.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&Ice; Warning Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>Ice.Warn.Connections</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Warn.Connections=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+Ice applications will print warning messages for certain exceptional
+conditions in connections. The default value is 0.
+</para>
+</section>
+</section>
+
+<section><title>Ice.Warn.Dispatch</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Warn.Dispatch=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+Ice applications will print warning messages for certain exceptions
+that are raised while an incoming request is dispatched.
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No warnings.</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Print warnings for unexpected
+<literal>Ice::LocalException</literal>, <literal>Ice::UserException</literal>,
+C++ exceptions, and Java runtime exceptions. (default)</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Like 1, but also issue warnings for
+<literal>Ice::ObjectNotExistException</literal>,
+<literal>Ice::FacetNotExistException</literal>, and
+<literal>Ice::OperationNotExistException</literal>.
+</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>Ice.Warn.AMICallback</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Warn.AMICallback=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+warnings are printed if an AMI callback raises an exception. The
+default value is 1.
+</para>
+</section>
+</section>
+
+<section><title>Ice.Warn.Leaks</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Warn.Leaks=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+the <literal>Ice::Communicator</literal> destructor will print a
+warning if some other Ice-related C++ objects are still in memory. The
+default value is 1. (C++ only.)
+</para>
+</section>
+</section>
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&Ice; Object Adapter Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title><replaceable>name</replaceable>.AdapterId</title>
+<section><title>Synopsis</title>
+<synopsis>
+<replaceable>name</replaceable>.AdapterId=<replaceable>id</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Specifies an identifier for the object adapter with the name
+<replaceable>name</replaceable>. This identifier must be unique among
+all object adapters using the same locator instance. If a locator
+proxy is defined using
+<literal><replaceable>name</replaceable>.Locator</literal> or
+<literal>Ice.Default.Locator</literal>, this object adapter will set
+its endpoints with the locator registry upon activation.
+</para>
+</section>
+</section>
+
+<section><title><replaceable>name</replaceable>.Endpoints</title>
+<section><title>Synopsis</title>
+<synopsis>
+<replaceable>name</replaceable>.Endpoints=<replaceable>endpoints</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Sets the endpoints for the object adapter
+<replaceable>name</replaceable> to
+<replaceable>endpoints</replaceable>.
+</para>
+</section>
+</section>
+
+<section><title><replaceable>name</replaceable>.Locator</title>
+<section><title>Synopsis</title>
+<synopsis>
+<replaceable>name</replaceable>.Locator=<replaceable>locator</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Specifies a locator for the object adapter with the name
+<replaceable>name</replaceable>. The value is a stringified proxy
+to the &Ice; locator interface.
+</para>
+</section>
+</section>
+
+<section><title><replaceable>name</replaceable>.Router</title>
+<section><title>Synopsis</title>
+<synopsis>
+<replaceable>name</replaceable>.Router=<replaceable>router</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Specifies a router for the object adapter with the name
+<replaceable>name</replaceable>. The value is a stringified proxy
+to the &Glacier; router control interface. Defining a router
+allows the object adapter to receive callbacks from the router over
+outgoing connections from this process to the router, thereby avoiding
+the need for the router to establish a connection back to the object
+adapter.
+<note><para> A router can only be assigned to one object adapter.
+Specifying the same router for more than one object adapter will result
+in undefined behavior. The default value is no router. </para></note>
+</para>
+</section>
+</section>
+
+<section><title><replaceable>name</replaceable>.ThreadPool.Size</title>
+<section><title>Synopsis</title>
+<synopsis>
+<replaceable>name</replaceable>.ThreadPool.Size=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+the object adapter creates its own, private thread pool with
+<replaceable>num</replaceable> threads for dispatching requests. This
+is useful to ensure that a minimum number of threads is available for
+dispatching requests on certain &Ice; objects, in order to avoid
+deadlocks because of thread starvation.
+</para>
+</section>
+</section>
+
+<section><title>Ice.PrintAdapterReady</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.PrintAdapterReady=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+an object adapter prints "<replaceable>adapter_name</replaceable>
+ready" on standard output after initialization is complete. This is
+useful for scripts that need to wait until an object adapter is ready
+to be used.
+</para>
+</section>
+</section>
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&Ice; Plug-in Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>Ice.Plugin.<replaceable>name</replaceable></title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Plugin.<replaceable>name</replaceable>=<replaceable>entry_point [args]</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines a plug-in to be installed during communicator initialization.
+</para>
+<para>
+In C++, <replaceable>entry_point</replaceable> has the form
+<literal>basename[,version]:function</literal>. The <literal>basename</literal>
+and optional <literal>version</literal> components are used to construct
+the name of a DLL or shared library. If no version is supplied, the &Ice; version
+is used. The <literal>function</literal> component is the name of a function with
+C linkage.
+</para>
+<para>
+For example, the entry point <literal>MyPlugin,2.3:create</literal> would
+imply a shared library name of <literal>libMyPlugin.so.2.3</literal>
+on Unix and <literal>MyPlugin23.dll</literal> on Windows. Furthermore,
+if &Ice; is built on Windows with debugging, a <literal>d</literal> will
+be automatically appended to the version (e.g., <literal>MyPlugin23d.dll</literal>).
+</para>
+<para>
+In Java, <replaceable>entry_point</replaceable> is the name of a class.
+</para>
+</section>
+</section>
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&Ice; Thread Pool Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>Ice.ThreadPool.Client.Size, Ice.ThreadPool.Server.Size</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.ThreadPool.Client.Size=<replaceable>num</replaceable>
+Ice.ThreadPool.Server.Size=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The number of threads in the client and server thread pools. Default
+is one thread for the client thread pool, and 10 threads for the
+server thread pool. The number of threads in each pool must be larger
+than zero. <note><para>Multiple threads for the client side thread
+pool are only required for nested AMI invocations. If AMI is not used, or
+AMI calls are not nested (i.e., AMI callbacks do not call any other
+methods on Ice objects), then there is no need to set the number of
+threads in the client thread pool to a value larger than
+one. </para></note>
+</para>
+</section>
+</section>
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&Ice; Default and Override Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>Ice.Default.Protocol</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Default.Protocol=<replaceable>protocol</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Sets the protocol that is being used if an endpoint uses
+<literal>default</literal> as the protocol specification. The
+default value is <literal>tcp</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Ice.Default.Host</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Default.Host=<replaceable>host</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If an endpoint is specified without a host name (i.e., without a
+<literal>-h <replaceable>host</replaceable></literal> option), the
+<replaceable>host</replaceable> value from this property is used
+instead. The default value is the local host name.
+</para>
+</section>
+</section>
+
+<section><title>Ice.Default.Router</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Default.Router=<replaceable>router</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Specifies the default router for all proxies. The value is a
+stringified proxy to the &Glacier; router control interface.
+The default router can be overridden on a proxy using the
+<literal>ice_router()</literal> operation. The default value
+is no router.
+</para>
+</section>
+</section>
+
+<section><title>Ice.Default.Locator</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Default.Locator=<replaceable>locator</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Specifies a default locator for all proxies and object adapters.
+The value is a stringified proxy to the &IcePack; locator interface.
+The default locator can be overridden on a proxy using the
+<literal>ice_locator()</literal> operation. The default value is no
+locator.
+</para>
+<note><para>The &IcePack; locator's object identity is
+<literal>IcePack/Locator</literal>. It is listening on the &IcePack;
+client endpoints. For example if
+<literal>IcePack.Registry.Client.Endpoints</literal> is set to
+<literal>tcp -p 12000 -h localhost</literal>, the stringified proxy
+for the &IcePack; locator will be <literal>IcePack/Locator:tcp -p
+12000 -h localhost</literal>.</para></note>
+</section>
+</section>
+
+<section><title>Ice.Override.Timeout</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Override.Timeout=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If set, this property overrides timeout settings in all
+endpoints. <replaceable>num</replaceable> is the timeout value in
+milliseconds, or -1 for no timeout.
+</para>
+</section>
+</section>
+
+<section><title>Ice.Override.Compression</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Override.Compression=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If set, this property overrides compression settings in all
+proxies. If <replaceable>num</replaceable> is set to a value larger
+than zero, compression is enabled. If zero, compression is disabled.
+</para>
+</section>
+</section>
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&Ice; Miscellaneous Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>Ice.RetryIntervals</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.RetryIntervals=<replaceable>num [num ...]</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property defines the number of times an operation is re-tried and
+the delay between each retry. For example, if the property is set to
+<replaceable>0 100 500</replaceable>, the operation will be re-tried 3
+times: immediately re-tried upon the first failure, after waiting 100
+(ms) upon the second failure, after waiting 500 (ms) upon the third
+failure. The default value is to retry once immediately (0). If set to
+-1, no retry will occur.
+</para>
+</section>
+</section>
+
+<section><title>Ice.Daemon, Ice.DaemonNoClose, Ice.DaemonNoChdir</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Daemon=<replaceable>num</replaceable>
+Ice.DaemonNoClose=<replaceable>no_close</replaceable>
+Ice.DaemonNoChdir=<replaceable>no_chdir</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+the &Ice; process daeamonizes itself with the
+<literal>daemon</literal> system call. If
+<replaceable>no_close</replaceable> is set to a value larger than zero,
+standard input, output, and error are not redirected to
+<literal>/dev/null</literal>. If <replaceable>no_chdir</replaceable> is
+set to a value larger than zero, &Ice; does not change its working
+directory to the root directory. (Unix only.)
+</para>
+</section>
+</section>
+
+<section><title>Ice.ChangeUser</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.ChangeUser=<replaceable>user</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If set, &Ice; will change the user and group id to the respective ids
+of <replaceable>user</replaceable> in
+<literal>/etc/passwd</literal>. This only works if the &Ice;
+application is executed by the super-user. (Unix only.)
+</para>
+</section>
+</section>
+
+<section><title>Ice.ConnectionIdleTime</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.ConnectionIdleTime=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+&Ice; connections that have been idle for
+<replaceable>num</replaceable> seconds are closed. The default value
+is zero, meaning that idle connections are not automatically closed.
+</para>
+</section>
+</section>
+
+<section><title>Ice.MonitorConnections</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.MonitorConnections=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+&Ice; will start a thread that monitors connections. This thread is
+responsible for shutting down idle connections (see
+<literal>Ice.ConnectionIdleTime</literal>), as well as for enforcing
+AMI timeouts. The default value is the value of
+<literal>Ice.ConnectionIdleTime</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Ice.PrintProcessId</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.PrintProcessId=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+the process ID is printed on standard output upon startup.
+</para>
+</section>
+</section>
+
+<section><title>Ice.ProgramName</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.ProgramName=<replaceable>name</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+<replaceable>name</replaceable> is the program name, which is set
+automatically from <literal>argv[0]</literal> during
+initialization. However, a different name can be used by setting
+this property.
+</para>
+</section>
+</section>
+
+<section><title>Ice.ServerIdleTime</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.ServerIdleTime=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+&Ice; will automatically call
+<literal>Communicator::shutdown</literal> after the Communicator has
+been idle for <replaceable>num</replaceable> seconds. This will shut
+down the Communicator's server side, and all threads waiting in
+<literal>Communicator::waitForShutdown</literal> will return. After
+that, a server will typically do some cleanup work, and then exit. The
+default value is zero, meaning that the server will not shut down
+automatically.
+</para>
+</section>
+</section>
+
+<section><title>Ice.UseSyslog</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.UseSyslog=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+a special logger is installed which logs to the syslog facility
+instead of standard error. The identifier for syslog is the
+value of <literal>Ice.ProgramName</literal>. (Unix only.)
+</para>
+</section>
+</section>
+
+<section><title>Ice.NullHandleAbort</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.NullHandleAbort=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+invoking an operation using a null smart pointer (i.e., a handle)
+causes the program to abort immediately instead of raising
+<literal>IceUtil::NullHandleException</literal>. (C++ only.)
+</para>
+</section>
+</section>
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&IceSSL; Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>IceSSL.Trace.Security</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceSSL.Trace.Security=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The SSL plug-in tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No security tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace security warnings.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Like 1, but more verbose, including warnings during
+configuration file parsing.
+</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>IceSSL.Client.CertPath, IceSSL.Server.CertPath</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceSSL.Client.CertPath=<replaceable>path</replaceable>
+IceSSL.Server.CertPath=<replaceable>path</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the path (relative or absolute) where the SSL plug-in can
+find PEM format certificate files (RSA and DSA) and Diffie-Hellman group
+parameter files.
+</para>
+<para>
+In the case that the <literal>IceSSL.Client.Config</literal> or
+<literal>IceSSL.Server.Config</literal> is a relative path, it
+will be relative to the value of <literal>IceSSL.Client.CertPath</literal>
+or <literal>IceSSL.Server.CertPath</literal>.
+</para>
+<para>
+If not specified, the application will use the current working directory
+as the certificate path.
+</para>
+</section>
+</section>
+
+<section><title>IceSSL.Client.Config, IceSSL.Server.Config</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceSSL.Client.Config=<replaceable>config_file</replaceable>
+IceSSL.Server.Config=<replaceable>config_file</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the XML-based configuration file from which the SSL plug-in will
+load initialization information and certificates. If the property
+contains a relative path, the path will be interpreted relative to
+the certificate path defined by <literal>IceSSL.Client.CertPath</literal>
+or <literal>IceSSL.Server.CertPath</literal>.
+</para>
+<para>
+Xerces-c, the XML parser used to read this file, will look for the DTD file
+in the same directory that it finds the XML configuration file.
+</para>
+<para>
+Depending on whether the application is running in client mode, server mode or
+both modes, a valid value for one or both of these parameters must be specified
+for the proper operation of the &IceSSL; plug-in.
+</para>
+</section>
+</section>
+
+<section><title>IceSSL.Client.Handshake.Retries</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceSSL.Client.Handshake.Retries=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+IceSSL clients attempt to perform an entire SSL handshake in the connection
+phase. When attempting this handshake, it is possible that the client will
+timeout waiting for a response from the server. This property specifies
+the number of handshake retries the client attempts before throwing a
+<literal>Ice::ConnectionFailedException</literal>.
+</para>
+<para>
+If not specified, the default value for this property is 10 retries.
+</para>
+</section>
+</section>
+
+<section><title>IceSSL.Client.Passphrase.Retries, IceSSL.Server.Passphrase.Retries</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceSSL.Client.Passphrase.Retries=<replaceable>num</replaceable>
+IceSSL.Server.Passphrase.Retries=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+When &IceSSL; is directed to use a private key in a PEM file that has
+been encrypted, a prompt is displayed <literal>Enter PEM pass
+phrase:</literal>. If the passphrase is entered incorrectly, these
+properties determine how many retries the user will be allowed before
+&IceSSL; shuts down.
+</para>
+<para>
+If not specified, the default value for these properties is 5 retries.
+</para>
+</section>
+</section>
+
+<section><title>IceSSL.Server.Overrides.RSA.PrivateKey, IceSSL.Server.Overrides.RSA.Certificate</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceSSL.Server.Overrides.RSA.PrivateKey=<replaceable>Base64 encoded DER string</replaceable>
+IceSSL.Server.Overrides.RSA.Certificate=<replaceable>Base64 encoded DER string</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+These properties override the RSA private key and public key (certificate)
+specified in the config file (<literal>IceSSL.Server.Config</literal>) for
+the Server context. The value must be the DER representation of the private
+and public keys, base64 encoded.
+</para>
+<para>
+There are no default values for these properties.
+</para>
+</section>
+</section>
+
+<section><title>IceSSL.Server.Overrides.DSA.PrivateKey, IceSSL.Server.Overrides.DSA.Certificate</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceSSL.Server.Overrides.DSA.PrivateKey=<replaceable>Base64 encoded DER string</replaceable>
+IceSSL.Server.Overrides.DSA.Certificate=<replaceable>Base64 encoded DER string</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+These properties override the DSA private key and public key (certificate)
+specified in the config file (<literal>IceSSL.Server.Config</literal>) for
+the Server context. The value must be the DER representation of the private
+and public keys, base64 encoded.
+</para>
+<para>
+There are no default values for these properties.
+</para>
+</section>
+</section>
+
+<section><title>IceSSL.Client.Overrides.RSA.PrivateKey, IceSSL.Client.Overrides.RSA.Certificate</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceSSL.Client.Overrides.RSA.PrivateKey=<replaceable>Base64 encoded DER string</replaceable>
+IceSSL.Client.Overrides.RSA.Certificate=<replaceable>Base64 encoded DER string</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+These properties provides a method by which the RSA private key and public key (certificate)
+used by the Client context may be overridden from those specified in the config file
+(specified in <literal>IceSSL.Client.Config</literal>).  The value must be
+the DER representation of the private and public keys, base64 encoded.
+</para>
+<para>
+There are no default values for these properties.
+</para>
+</section>
+</section>
+
+<section><title>IceSSL.Client.Overrides.DSA.PrivateKey, IceSSL.Client.Overrides.DSA.Certificate</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceSSL.Client.Overrides.DSA.PrivateKey=<replaceable>Base64 encoded DER string</replaceable>
+IceSSL.Client.Overrides.DSA.Certificate=<replaceable>Base64 encoded DER string</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+These properties override the RSA private key and public key (certificate)
+specified in the config file (<literal>IceSSL.Client.Config</literal>) for
+the Client context. The value must be the DER representation of the private
+and public keys, base64 encoded.
+</para>
+<para>
+There are no default values for these properties.
+</para>
+</section>
+</section>
+
+<section><title>IceSSL.Client.Overrides.CACertificate, IceSSL.Server.Overrides.CACertificate</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceSSL.Client.Overrides.CACertificate=<replaceable>Base64 encoded DER string</replaceable>
+IceSSL.Server.Overrides.CACertificate=<replaceable>Base64 encoded DER string</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+These properties override any trusted Certificate Authority (CA) certificates
+specified in <literal>IceSSL.Server.Config</literal> or
+<literal>IceSSL.Client.Config</literal>. The new certificate is represented
+as the base64 encoding of the DER binary representation of the certificate.
+</para>
+<para>
+There are no default values for these properties.
+</para>
+</section>
+</section>
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&IceBox; Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>IceBox.ServiceManager.Endpoints</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceBox.ServiceManager.Endpoints=<replaceable>endpoints</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the endpoints of the &IceBox; service manager interface. The
+service manager endpoints must be accessible to the &IceBox;
+administration tool to shutdown the &IceBox; server.
+</para>
+</section>
+</section>
+
+<section><title>IceBox.ServiceManager.Identity</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceBox.ServiceManager.Identity=<replaceable>identity</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The identity of the service manager interface. If not specified the
+default value <literal>ServiceManager</literal> is used.
+</para>
+</section>
+</section>
+
+<section><title>IceBox.PrintServicesReady</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceBox.PrintServicesReady=<replaceable>token</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The service manager will print "<replaceable>token</replaceable>
+ready" on standard output after initialization of all the services is
+done. This is useful for scripts that wish to wait until all services
+are ready to be used.
+</para>
+</section>
+</section>
+
+<section><title>IceBox.Service.<replaceable>name</replaceable></title>
+<section><title>Synopsis</title>
+<synopsis>
+IceBox.Service.<replaceable>name</replaceable>=<replaceable>entry_point [args]</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines a service to be loaded during &IceBox; initialization.
+</para>
+<para>
+In C++, <replaceable>entry_point</replaceable> has the form
+<literal>library:symbol</literal>. The <literal>library</literal>
+component is the name of a shared library or DLL. The
+<literal>symbol</literal> component is the name of a factory
+function used to create the service.
+</para>
+<para>
+In Java, <replaceable>entry_point</replaceable> is the name of the
+service implementation class.
+</para>
+</section>
+</section>
+
+<section><title>IceBox.DBEnvName.<replaceable>name</replaceable></title>
+<section><title>Synopsis</title>
+<synopsis>
+IceBox.DBEnvName.<replaceable>name</replaceable>=<replaceable>db</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the database environment directory for the &Freeze; service
+with the name <replaceable>name</replaceable>.
+</para>
+</section>
+</section>
+
+<section><title>IceBox.UseSharedCommunicator.<replaceable>name</replaceable></title>
+<section><title>Synopsis</title>
+<synopsis>
+IceBox.UseSharedCommunicator.<replaceable>name</replaceable>=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+the service manager will supply the service with the name
+<replaceable>name</replaceable> a communicator which might be shared by
+other services.
+</para>
+</section>
+</section>
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&IcePack; Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>IcePack.Registry.Client.Endpoints</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Client.Endpoints=<replaceable>endpoints</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the endpoints of the &IcePack; client interface. The client
+endpoints must be accessible to &Ice; clients that are using &IcePack;
+to locate objects (see <literal>Ice.Default.Locator</literal>).
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Server.Endpoints</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Server.Endpoints=<replaceable>endpoints</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the endpoints of the &IcePack; server interface. The server
+endpoints must be accessible to &Ice; servers that are using &IcePack;
+to register their object adapter endpoints.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Admin.Endpoints</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Admin.Endpoints=<replaceable>endpoints</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the optional administrative endpoints of the &IcePack; admin
+interface. The administrative endpoints must be accessible to clients
+which are using the &IcePack; administrative interface, such as the
+&IcePack; administrative tool.
+</para>
+<note><para>Allowing access to the &IcePack; admin interface is a
+security risk! If this property is not defined, the admin interface
+will be disabled.</para></note>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Internal.Endpoints</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Internal.Endpoints=<replaceable>endpoints</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the endpoints of the &IcePack; internal interface. The
+internal endpoints must be accessible to &IcePack; nodes. Nodes use
+this interface to communicate with the registry.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Data</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Data=<replaceable>path</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the path of the &IcePack; registry data directory.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.DynamicRegistration</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.DynamicRegistration=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+the locator registry will allow &Ice; servers to set endpoints for
+object adapters which have not been previously registered.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Trace.ServerRegistry</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Trace.ServerRegistry=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The server registry tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No server registry tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace server registration, removal.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Trace.AdapterRegistry</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Trace.AdapterRegistry=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The object adapter registry tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No object adapter registry tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace object adapter registration, removal.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Trace.NodeRegistry</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Trace.NodeRegistry=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The node registry tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No node registry tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace node registration, removal.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Trace.ObjectRegistry</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Trace.ObjectRegistry=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The object registry tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No object registry tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace object registration, removal.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Node.Endpoints</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.Endpoints=<replaceable>endpoints</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the endpoints of the &IcePack; node interface. The node
+endpoints must be accessible to the &IcePack; registry. The registry
+uses this interface to communicate with the node.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Node.Name</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.Name=<replaceable>name</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the name of the &IcePack; node. All nodes using the same
+registry must have unique names. The node will refuse to start if
+there is a node with the same name already running.
+</para>
+<note><para>The default value is the hostname as returned by
+<literal>gethostname()</literal>.</para></note>
+</section>
+</section>
+
+<section><title>IcePack.Node.Data</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.Data=<replaceable>path</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the path of the &IcePack; node data directory. The node will
+create <literal>db</literal> and <literal>servers</literal>
+subirectories in this directory if they do not already exist. The
+<literal>db</literal> directory contains the node database. The
+<literal>servers</literal> directory contains configuration data for
+each deployed server.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Node.PropertiesOverride</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.PropertiesOverride=<replaceable>overrides</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines a list of properties which override the properties defined in
+server deployment descriptors. For example, in some cases it is desirable
+to set the property <literal>Ice.Default.Host</literal> for servers, but
+not in server deployment descriptors. The property definitions should
+be separated by whitespace.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Node.WaitTime</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.WaitTime=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the interval in seconds that &IcePack; will wait for server
+activation and deactivation.</para>
+<para>If a server is automatically activated and does not register its object
+adapter endpoints within this time interval, the node will assume there is a
+problem with the server and return an emtpy set of endpoints to the client.
+</para>
+<para>If a server is being gracefully deactivated and &IcePack; does not
+detect the server deactivation during this time interval, &IcePack;
+will kill the server.</para>
+<note><para>The default value is 60 seconds.</para></note>
+</section>
+</section>
+
+<section><title>IcePack.Node.CollocateRegistry</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.CollocateRegistry=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+the node will also collocate the &IcePack; registry.
+</para>
+<note><para>The collocated registry is configured with the same
+properties as the standalone &IcePack; registry.</para></note>
+</section>
+</section>
+
+<section><title>IcePack.Node.Trace.Server</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.Trace.Server=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The server tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No server tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace server addition, removal.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Like 1, but more verbose, including server activation and
+deactivation and more diagnostic messages.</entry>
+</row>
+<row>
+<entry>3</entry>
+<entry>Like 2, but more verbose, including server transitional state
+change (activating and deactivating).</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Node.Trace.Adapter</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.Trace.Adapter=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The object adapter tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No object adapter tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace object adapter addition, removal.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Like 1, but more verbose, including object adapter activation and
+deactivation and more diagnostic messages.</entry>
+</row>
+<row>
+<entry>3</entry>
+<entry>Like 2, but more verbose, including object adapter transitional state
+change (e.g., `waiting for activation').</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Node.Trace.Activator</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.Trace.Activator=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The activator tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No activator tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace process activation, termination.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Like 1, but more verbose, including process signaling and more
+diagnostic messages on process activation.</entry>
+</row>
+<row>
+<entry>3</entry>
+<entry>Like 2, but more verbose, including more diagnostic messages on
+process activation (e.g., path, working directory and arguments of the
+activated process).</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&IceStorm; Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>IceStorm.TopicManager.Endpoints</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.TopicManager.Endpoints=<replaceable>endpoints</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the endpoints for the &IceStorm; topic manager.
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.Trace.TopicManager</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.Trace.TopicManager=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The topic manager tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No topic manager tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace topic creation, subscription, and unsubscription.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Like 1, but more verbose, including QoS information, and other
+diagnostic information.
+</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.Trace.Topic</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.Trace.Topic=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The topic tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No topic tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace topic diagnostic information.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.Trace.Flush</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.Trace.Flush=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Trace information on the thread that flushes batch reliability events to subscribers:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No flush tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace each flush.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.Trace.Subscriber</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.Trace.Subscriber=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The subscriber tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No subscriber tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace topic diagnostic information on subscription and
+unsubscription.
+</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.Flush.Timeout</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.Flush.Timeout=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the interval in milliseconds that batch reliability events are
+sent to subscribers. The default is 1000 ms. The minimum value of this
+property is 100 ms.
+</para>
+</section>
+</section>
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&Glacier; Router Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>Glacier.Router.Endpoints, Glacier.Router.Client.Endpoints, Glacier.Router.Server.Endpoints</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Endpoints=<replaceable>endpoints</replaceable>
+Glacier.Router.Client.Endpoints=<replaceable>endpoints</replaceable>
+Glacier.Router.Server.Endpoints=<replaceable>endpoints</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the endpoints of the &Glacier; router control interface, the
+client interface, and the server interface. The router endpoints and
+the client endpoints must be accessible to Glacier clients from which
+the router forwards requests, and to which the router sends
+callbacks. The server endpoints must be accessible to Glacier servers
+to which the router forwards requests, and from which the router
+accepts callbacks for the client.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.Identity</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Identity=<replaceable>identity</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The identity of the router control interface. If not specified, the
+default value <literal>router</literal> is used.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.PrintProxyOnFd</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.PrintProxyOnFd=<replaceable>fd</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If set, print the stringified router proxy on the filedescriptor
+<replaceable>fd</replaceable>, and close this filedescriptor. (Unix
+only.)
+<note><para> This operation is intended to be used by the &Glacier;
+router starter only. It should not be set manually.
+</para></note>
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.Trace.Client</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Trace.Client=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The client interface tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No client interface tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace exceptions during request forwarding from the client to
+the server.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Also trace detailed forward routing information from
+the client to the server.
+</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.Trace.Server</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Trace.Server=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The server interface tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No server interface tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace exceptions during callbacks from the server back
+to the client.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Also trace detailed reverse routing information for
+callbacks from the server to the client.
+</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.Trace.RoutingTable</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Trace.RoutingTable=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The routing table tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No routing table tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace additions to the &Glacier; routing table.
+</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.Client.ForwardContext, Glacier.Router.Server.ForwardContext</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Client.ForwardContext=<replaceable>num</replaceable>
+Glacier.Router.Server.ForwardContext=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+the context parameter is forwarded unmodified as received from the
+client or server, respectively. Otherwise an empty context is
+forwarded. Default is no context forwarding.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.Client.BatchSleepTime, Glacier.Router.Server.BatchSleepTime</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Client.BatchSleepTime=<replaceable>num</replaceable>
+Glacier.Router.Server.BatchSleepTime=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+<replaceable>num</replaceable> is the sleep time (delay) in
+milliseconds between forwarding client and server message batches. The
+default values are 250ms.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.SessionManager</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.SessionManager=<replaceable>proxy</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+A stringified proxy to a session manager. If not specified, it is not
+possible to use the <literal>Router::createSession()</literal> method.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.UserId</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.UserId=<replaceable>name</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The authenticated user id. This is usually passed from the &Glacier;
+router starter. The user id is used as an argument to
+<literal>Router::createSession()</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.AllowCategories</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.AllowCategories=<replaceable>list</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+A whitespace separated list of categories. If this property is set,
+then requests are only permitted to &Ice; objects with an identity
+that matches one of the categories from this list.
+</para>
+</section>
+</section>
+
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&Glacier; Router Starter Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>Glacier.Starter.Endpoints</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.Endpoints=<replaceable>endpoints</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the endpoints of the &Glacier; router starter. (Unix only.)
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.PasswordVerifier</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.PasswordVerifier=<replaceable>proxy</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If set, the specified password verifier will be used. If not set, a
+built-in <literal>crypt</literal>-based password verifier will be used.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.CryptPasswords</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.CryptPasswords=<replaceable>file</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The pathname of the file that contains user-id / password pairs, with
+the passwords being encrypted by the <literal>crypt</literal>
+algorithm. The default pathname is
+"<literal>passwords</literal>". This file is only used for the
+built-in <literal>crypt</literal>-based password verifier, meaning
+that the property is ignored if
+<literal>Glacier.Starter.PasswordVerifier</literal> is set.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.RouterPath</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.RouterPath=<replaceable>path</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Sets the path of the &Glacier; router executable to be started. The
+default is <literal>glacier</literal>. (Unix only.)
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.PropertiesOverride</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.PropertiesOverride=<replaceable>overrides</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+By default, the &Glacier; router starter starts new routers with the
+exact same property set as for the router
+starter. <replaceable>overrides</replaceable> can contain a list
+of properties for the router, which are used in addition to the router
+starter's properties, or which override the router starter's properties.
+The property definitions should be separated by whitespace.
+</para>
+<para>
+For example, in many cases it is desirable to set the property
+<literal>Ice.ServerIdleTime</literal> for the router, but not for the
+router starter. For an idle time of 60 seconds, this can be done by setting
+<literal>Glacier.Starter.PropertiesOverride=Ice.ServerIdleTime=60</literal>.
+(Unix only.)
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.StartupTimeout</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.StartupTimeout=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+<replaceable>num</replaceable> is the number of seconds the &Glacier;
+router starter will wait for the router to start up. If this timeout
+expires, a <literal>Glacier::CannotStartRouterException</literal> is
+returned to the caller. The default value is 10 seconds. Timeout
+values smaller than one second are silently changed to 1 second. (Unix
+only.)
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.AddUserToAllowCategories</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.AddUserToAllowCategories=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Control the addition of the user id authenticated by the &Glacier; router
+starter to the <literal>Glacier.Router.AllowCategories</literal> property 
+upon router startup:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>Do not add user id. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Add user id.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Add user id with prepended underscore.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.Trace</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.Trace=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The router starter tracing level: (Unix only.)
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No router starter tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace router startup exceptions.
+</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Also trace each successful router startup.
+</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.Certificate.Country</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.Certificate.Country=<replaceable>country code</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property specifies the country code portion of the Distinguished Name
+(DN) values that will be present in certificates generated by the Glacier
+Router Starter for client applications and the Glacier Router itself.
+Examples of valid values for this field are "US" for the United States and
+"CA" for Canada. The default value is "US".
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.Certificate.StateProvince</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.Certificate.StateProvince=<replaceable>state/province code</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property specifies the state or province code portion of the
+Distinguished Name (DN) values that will be present in certificates generated
+by the Glacier Router Starter for client applications and the Glacier Router
+itself. Examples of valid values for this field are "CA" for California and
+"British Columbia" for British Columbia, Canada. The default value is "DC".
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.Certificate.Locality</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.Certificate.Locality=<replaceable>city or town name</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property specifies the locality portion of the Distinguished Name (DN)
+values that will be present in certificates generated by the Glacier Router
+Starter for client applications and the Glacier Router itself. The locality
+is usually the name of the city or town. The default value is "Washington".
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.Certificate.Organization</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.Certificate.Organization=<replaceable>organization or company name</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property specifies the organization portion of the Distinguished Name
+(DN) values that will be present in certificates generated by the Glacier
+Router Starter for client applications and the Glacier Router itself. The
+organization is usually the name of the company or organization to which
+the certificate has been granted. The default value is "Some Company Inc.".
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.Certificate.OrganizationalUnit</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.Certificate.OrganizationalUnit=<replaceable>department</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property specifies the organizational unit portion of the Distinguished
+Name (DN) values that will be present in certificates generated by the
+Glacier Router Starter for client applications and the Glacier Router itself.
+The organization unit is usually the name of the department within the
+company or organization structure to which the certificate has been
+granted. The default value is "Sales".
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.Certificate.CommonName</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.Certificate.CommonName=<replaceable>contact name</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property specifies the common name portion of the Distinguished Name
+(DN) values that will be present in certificates generated by the Glacier
+Router Starter for client applications and the Glacier Router itself. The
+common name is usually the name of the contact (a person's name) within
+the company and department to which the certificate has been granted. The
+default value is "John Doe".
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.Certificate.BitStrength</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.Certificate.BitStrength=<replaceable>number of bits</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property specifies the bit strength which will be used in the generation
+of certificates by the Glacier Router Starter for client applications and the
+Glacier Router itself. This value is the modulus size of the RSA key.
+</para>
+<para>
+Although modulus size is determined by the needs of the particular application,
+care should be taken not to specify a size that is too large, as certificate
+generation is an expensive operation. Sizes less than 512 bits are not
+supported, and sizes that exceed 2048 bits should be chosen with generation
+times in mind. The default value is 1024 bits.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.Certificate.SecondsValid</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.Certificate.SecondsValid=<replaceable>seconds</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property specifies the number of seconds that certificates generated
+by the Glacier Router Starter are valid before they will expire. The default
+value of 1 day (86,400 seconds).
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.Certificate.IssuedAdjust</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.Certificate.IssuedAdjust=<replaceable>(+/-) seconds</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property adjusts the issued timestamp on dynamically generated
+certificates for the Glacier Router. The default value is 0, which
+sets the issued time based on the system time when the certificate is
+actually created. Positive adjustments will adjust the timestamp into the
+future, and negative adjustments will cause the timestamp to be in the past
+by the number of seconds indicated. This adjustment is relative to server
+time.
+</para>
+</section>
+</section>
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&Freeze; Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>Freeze.Trace.DB</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.Trace.DB=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The &Freeze; database activity tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No database activity tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace database activity.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Also trace database transactions.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+<section><title>Freeze.Trace.Evictor</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.Trace.Evictor=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The &Freeze; evictor activity tracing level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No evictor activity tracing. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Trace &Ice; object creation and destruction, as well as
+evictor deactivation.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Also trace evictor queue activity.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
+
+</section>

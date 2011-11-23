@@ -1,0 +1,226 @@
+# **********************************************************************
+#
+# Copyright (c) 2003
+# ZeroC, Inc.
+# Billerica, MA, USA
+#
+# All Rights Reserved.
+#
+# Ice is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License version 2 as published by
+# the Free Software Foundation.
+#
+# **********************************************************************
+
+#
+# Select an installation base directory. The directory will be created
+# if it does not exist.
+#
+
+prefix			= /opt/Ice-$(VERSION)
+
+#
+# Define OPTIMIZE as yes if you want to build with
+# optimization. Otherwise Ice is build with debug information.
+#
+
+#OPTIMIZE		= yes
+
+#
+# The values below can be overridden by defining them as environment
+# variables. For example, if you are using a bourne shell or
+# compatible, you can override the location of STLport like this:
+#
+# export STLPORT_HOME=/usr/local/STLport-4.5
+#
+
+#
+# If you want to use STLport, set STLPORT_HOME to the STLport
+# installation directory. If STLPORT_HOME is undefined or empty,
+# STLport is not used.
+#
+
+#STLPORT_HOME		?= /opt/STLport
+
+#
+# If Berkeley DB is not installed in a standard location where the
+# compiler can find it, set DB_HOME to the Berkeley DB installation
+# directory.
+#
+
+#DB_HOME		?= /opt/db
+
+#
+# If OpenSSL is not installed in a standard location where the
+# compiler can find it, set OPENSSL_HOME to the OpenSSL installation
+# directory.
+#
+
+#OPENSSL_HOME		?= /opt/openssl
+
+#
+# If Xerces-C++ is not installed in a standard location where the
+# compiler can find it, set XERCESC_HOME to the Xerces-C++
+# installation directory.
+#
+
+#XERCESC_HOME		?= /opt/xerces-c
+
+# ----------------------------------------------------------------------
+# Don't change anything below this line!
+# ----------------------------------------------------------------------
+
+SHELL			= /bin/sh
+VERSION			= 1.0.0
+bindir			= $(top_srcdir)/bin
+libdir			= $(top_srcdir)/lib
+includedir		= $(top_srcdir)/include
+slicedir		= $(top_srcdir)/slice
+export LD_LIBRARY_PATH	:= $(libdir):$(LD_LIBRARY_PATH)
+
+install_bindir		= $(prefix)/bin
+install_libdir		= $(prefix)/lib
+install_includedir	= $(prefix)/include
+install_slicedir	= $(prefix)/slice
+install_schemadir	= $(prefix)/schema
+install_docdir		= $(prefix)/doc
+
+INSTALL			= /usr/bin/install -c
+INSTALL_PROGRAM		= ${INSTALL}
+INSTALL_LIBRARY		= ${INSTALL} -m 644
+INSTALL_DATA		= ${INSTALL} -m 644
+
+ifneq ($(STLPORT_HOME),)
+    STLPORT_FLAGS	= -I$(STLPORT_HOME)/include/stlport
+    ifeq ($(OPTIMIZE),yes)
+        STLPORT_LIBS	= -L$(STLPORT_HOME)/lib -lstlport_gcc
+    else
+        STLPORT_LIBS	= -L$(STLPORT_HOME)/lib -lstlport_gcc_stldebug
+    endif
+else
+    STLPORT_FLAGS	=
+    STLPORT_LIBS	=
+endif
+
+ifneq ($(OPENSSL_HOME),)
+    OPENSSL_FLAGS	= -I$(OPENSSL_HOME)/include
+    OPENSSL_LIBS	= -L$(OPENSSL_HOME)/lib -lssl -lcrypto
+else
+    OPENSSL_FLAGS	=
+    OPENSSL_LIBS	= -lssl -lcrypto
+endif
+
+ifneq ($(DB_HOME),)
+    DB_FLAGS		= -I$(DB_HOME)/include
+    DB_LIBS		= -L$(DB_HOME)/lib -ldb
+else
+    DB_FLAGS		=
+    DB_LIBS		= -ldb
+endif
+
+ifneq ($(XERCESC_HOME),)
+    XERCESC_FLAGS	= -I$(XERCESC_HOME)/include
+    XERCESC_LIBS	= -L$(XERCESC_HOME)/lib -lxerces-c
+else
+    XERCESC_FLAGS	=
+    XERCESC_LIBS	= -lxerces-c
+endif
+
+CXX			= c++
+CXXFLAGS 		= -ftemplate-depth-128 -fPIC -Wall
+ifeq ($(OPTIMIZE),yes)
+    CXXFLAGS		:= -O2 -DNDEBUG $(CXXFLAGS)
+else
+    CXXFLAGS		:= -g $(CXXFLAGS)
+endif
+
+CPPFLAGS		= -I$(includedir) $(STLPORT_FLAGS)
+ICECPPFLAGS		= -I$(slicedir)
+SLICE2CPPFLAGS		= $(ICECPPFLAGS)
+
+LDFLAGS			= -L$(libdir)
+SHLIB_LDFLAGS		= -shared -Xlinker -soname -Xlinker $(@F)
+
+LIBEXT			= so
+
+BASELIBS		= -lIceUtil -lpthread -luuid $(STLPORT_LIBS)
+LIBS			= -lIce -ldl -lbz2 $(BASELIBS)
+
+SLICE2CPP		= $(bindir)/slice2cpp
+SLICE2XSD		= $(bindir)/slice2xsd
+SLICE2FREEZE		= $(bindir)/slice2freeze
+SLICE2DOCBOOK		= $(bindir)/slice2docbook
+
+EVERYTHING		= all depend clean install
+
+.SUFFIXES:
+.SUFFIXES:		.cpp .c .o
+
+.cpp.o:
+	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $<
+
+.c.o:
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
+
+%.$(LIBEXT): %.$(LIBEXT).$(VERSION)
+	rm -f $@
+	ln -s $(@F).$(VERSION) $@
+
+$(HDIR)/%F.h: $(SDIR)/%F.ice $(SLICE2CPP)
+	rm -f $(HDIR)/$(*F)F.h $(*F)F.cpp
+	$(SLICE2CPP) $(SLICE2CPPFLAGS) $<
+	mv $(*F)F.h $(HDIR)
+	rm -f $(*F)F.cpp
+
+$(HDIR)/%.h %.cpp: $(SDIR)/%.ice $(SLICE2CPP)
+	rm -f $(HDIR)/$(*F).h $(*F).cpp
+	$(SLICE2CPP) $(SLICE2CPPFLAGS) $<
+	mv $(*F).h $(HDIR)
+
+%.h %.cpp: %.ice $(SLICE2CPP)
+	rm -f $(*F).h $(*F).cpp
+	$(SLICE2CPP) $(SLICE2CPPFLAGS) $(*F).ice	
+
+#%.h %.cpp: %.y
+#	rm -f $(*F).h $(*F).cpp
+#	bison -dvt $<
+#	mv $(*F).tab.c $(*F).cpp
+#	mv $(*F).tab.h $(*F).h
+#	rm -f $(*F).output
+
+#%.cpp: %.l
+#	flex $<
+#	rm -f $@
+#	echo '#include <IceUtil/Config.h>' > $@
+#	cat lex.yy.c >> $@
+#	rm -f lex.yy.c
+
+all:: $(SRCS) $(TARGETS)
+
+depend:: $(SRCS) $(SLICE_SRCS)
+	-rm -f .depend
+	if test -n "$(SRCS)" ; then \
+	    $(CXX) -DMAKEDEPEND -M $(CXXFLAGS) $(CPPFLAGS) $(SRCS) | \
+	    $(top_srcdir)/config/makedepend.py >> .depend; \
+	fi
+	if test -n "$(SLICE_SRCS)" ; then \
+	    $(SLICE2CPP) --depend $(ICECPPFLAGS) $(SLICE_SRCS) | \
+	    $(top_srcdir)/config/makedepend.py >> .depend; \
+	fi
+
+clean::
+	-rm -f $(TARGETS)
+	-rm -f core *.o *.bak
+
+ifneq ($(SLICE_SRCS),)
+clean::
+	rm -f $(addsuffix .cpp, $(basename $(notdir $(SLICE_SRCS))))
+	rm -f $(addsuffix .h, $(basename $(notdir $(SLICE_SRCS))))
+endif
+ifneq ($(HDIR),)
+clean::
+	rm -f $(addprefix $(HDIR), $(addsuffix .h, $(basename $(subst $(SDIR),, \
+	$(filter $(SDIR)/%.ice, $(SLICE_SRCS))))))
+endif
+
+install::

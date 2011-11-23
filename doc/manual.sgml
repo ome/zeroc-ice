@@ -1,0 +1,57 @@
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V3.1//EN" [
+
+<!ENTITY Slice "<phrase>Slice</phrase>">
+<!ENTITY Ice "<phrase>Ice</phrase>">
+<!ENTITY IceSSL "<phrase>IceSSL</phrase>">
+<!ENTITY IcePack "<phrase>IcePack</phrase>">
+<!ENTITY IceBox "<phrase>IceBox</phrase>">
+<!ENTITY IceStorm "<phrase>IceStorm</phrase>">
+<!ENTITY IcePatch "<phrase>IcePatch</phrase>">
+<!ENTITY Glacier "<phrase>Glacier</phrase>">
+<!ENTITY Freeze "<phrase>Freeze</phrase>">
+
+<!ENTITY SliceDoc SYSTEM "SliceDoc.sgml">
+<!ENTITY Properties SYSTEM "Properties.sgml">
+<!ENTITY ProxiesEndpoints SYSTEM "ProxiesEndpoints.sgml">
+
+]>
+
+<!--
+**********************************************************************
+Copyright (c) 2003
+ZeroC, Inc.
+Billerica, MA, USA
+
+All Rights Reserved
+**********************************************************************
+-->
+
+<book><?dbhtml filename="index.html">
+<bookinfo>
+<title>Ice Reference Manual</title>
+<publisher>
+<publishername>ZeroC, Inc.</publishername>
+<address>
+<city>Billerica</city>
+<state>Massachusetts</state>
+<country>USA</country>
+</address>
+</publisher>
+<copyright>
+<year>2003</year>
+<holder>ZeroC, Inc. All rights reserved.</holder>
+</copyright>
+</bookinfo>
+<chapter>
+<title>Slice Documentation</title>
+&SliceDoc;
+</chapter>
+<chapter>
+<title>Properties</title>
+&Properties;
+</chapter>
+<chapter>
+<title>Proxies and Endpoints</title>
+&ProxiesEndpoints;
+</chapter>
+</book>

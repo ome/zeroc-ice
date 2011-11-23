@@ -1,0 +1,46 @@
+#ifndef BISON_GRAMMAR_TAB_H
+# define BISON_GRAMMAR_TAB_H
+
+# ifndef YYSTYPE
+#  define YYSTYPE int
+#  define YYSTYPE_IS_TRIVIAL 1
+# endif
+# define	ICE_MODULE	257
+# define	ICE_CLASS	258
+# define	ICE_INTERFACE	259
+# define	ICE_EXCEPTION	260
+# define	ICE_STRUCT	261
+# define	ICE_SEQUENCE	262
+# define	ICE_DICTIONARY	263
+# define	ICE_ENUM	264
+# define	ICE_OUT	265
+# define	ICE_EXTENDS	266
+# define	ICE_IMPLEMENTS	267
+# define	ICE_THROWS	268
+# define	ICE_VOID	269
+# define	ICE_BYTE	270
+# define	ICE_BOOL	271
+# define	ICE_SHORT	272
+# define	ICE_INT	273
+# define	ICE_LONG	274
+# define	ICE_FLOAT	275
+# define	ICE_DOUBLE	276
+# define	ICE_STRING	277
+# define	ICE_OBJECT	278
+# define	ICE_LOCAL_OBJECT	279
+# define	ICE_LOCAL	280
+# define	ICE_CONST	281
+# define	ICE_FALSE	282
+# define	ICE_TRUE	283
+# define	ICE_NONMUTATING	284
+# define	ICE_IDEMPOTENT	285
+# define	ICE_SCOPE_DELIMITER	286
+# define	ICE_IDENTIFIER	287
+# define	ICE_STRING_LITERAL	288
+# define	ICE_INTEGER_LITERAL	289
+# define	ICE_FLOATING_POINT_LITERAL	290
+# define	ICE_IDENT_OP	291
+# define	ICE_KEYWORD_OP	292
+
+
+#endif /* not BISON_GRAMMAR_TAB_H */

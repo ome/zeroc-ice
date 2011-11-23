@@ -1,0 +1,2810 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Ice::ObjectAdapter</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Ice::NotRegisteredException"
+HREF="x2832.html"><LINK
+REL="NEXT"
+TITLE="Ice::ObjectAdapterDeactivatedException"
+HREF="x3648.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x2832.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x3648.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER"
+></A
+><TT
+CLASS="LITERAL"
+>Ice::ObjectAdapter</TT
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN2872"
+></A
+>Overview</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local interface <TT
+CLASS="CLASSNAME"
+>ObjectAdapter</TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>The object adapter, which is responsible for receiving requests
+from endpoints, and for mapping between servants, identities, and
+proxies.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2877"
+></A
+>Used By</H3
+><P
+>	    <A
+HREF="x9748.html#FREEZE.SERVANTINITIALIZER.INITIALIZE"
+><TT
+CLASS="FUNCTION"
+>::Freeze::ServantInitializer::initialize</TT
+></A
+>, <A
+HREF="x1020.html#ICE.COMMUNICATOR.CREATEOBJECTADAPTER"
+><TT
+CLASS="FUNCTION"
+>Communicator::createObjectAdapter</TT
+></A
+>, <A
+HREF="x1020.html#OMMUNICATOR.CREATEOBJECTADAPTERWITHENDPOINTS"
+><TT
+CLASS="FUNCTION"
+>Communicator::createObjectAdapterWithEndpoints</TT
+></A
+>, <A
+HREF="x1983.html#ICE.CURRENT.ADAPTER"
+><SPAN
+CLASS="TYPE"
+>Current::adapter</SPAN
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2893"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1020.html"
+><TT
+CLASS="CLASSNAME"
+>Communicator</TT
+></A
+>, <A
+HREF="x4626.html"
+><TT
+CLASS="CLASSNAME"
+>ServantLocator</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2903"
+></A
+>Operation Index</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.ACTIVATE"
+><TT
+CLASS="FUNCTION"
+>activate</TT
+></A
+></DT
+><DD
+><P
+>Activate all endpoints that belong to this object
+adapter.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.ADD"
+><TT
+CLASS="FUNCTION"
+>add</TT
+></A
+></DT
+><DD
+><P
+>Add a servant to this object adapter's Active Servant Map.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.ADDROUTER"
+><TT
+CLASS="FUNCTION"
+>addRouter</TT
+></A
+></DT
+><DD
+><P
+>Add a router to this object adapter.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.ADDSERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>addServantLocator</TT
+></A
+></DT
+><DD
+><P
+>Add a Servant Locator to this object adapter.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.ADDWITHUUID"
+><TT
+CLASS="FUNCTION"
+>addWithUUID</TT
+></A
+></DT
+><DD
+><P
+>Add a servant to this object adapter's Active Servant Map,
+using an automatically generated UUID as its identity.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.CREATEDIRECTPROXY"
+><TT
+CLASS="FUNCTION"
+>createDirectProxy</TT
+></A
+></DT
+><DD
+><P
+>Create a "direct proxy" that matches this object adapter and
+the given identity.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.CREATEPROXY"
+><TT
+CLASS="FUNCTION"
+>createProxy</TT
+></A
+></DT
+><DD
+><P
+>Create a proxy that matches this object adapter and the given
+identity.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.CREATEREVERSEPROXY"
+><TT
+CLASS="FUNCTION"
+>createReverseProxy</TT
+></A
+></DT
+><DD
+><P
+>Create a "reverse proxy" that matches this object adapter and
+the given identity.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.DEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>deactivate</TT
+></A
+></DT
+><DD
+><P
+>Deactivate all endpoints that belong to this object
+adapter.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.FINDSERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>findServantLocator</TT
+></A
+></DT
+><DD
+><P
+>Find a Servant Locator installed with this object adapter.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.GETCOMMUNICATOR"
+><TT
+CLASS="FUNCTION"
+>getCommunicator</TT
+></A
+></DT
+><DD
+><P
+>Get the communicator this object adapter belongs to.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.GETNAME"
+><TT
+CLASS="FUNCTION"
+>getName</TT
+></A
+></DT
+><DD
+><P
+>Get the name of this object adapter.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.HOLD"
+><TT
+CLASS="FUNCTION"
+>hold</TT
+></A
+></DT
+><DD
+><P
+>Temporarily hold receiving and dispatching requests.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.IDENTITYTOSERVANT"
+><TT
+CLASS="FUNCTION"
+>identityToServant</TT
+></A
+></DT
+><DD
+><P
+>Look up a servant in this object adapter's Active Servant Map
+by the identity of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object it implements.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.PROXYTOSERVANT"
+><TT
+CLASS="FUNCTION"
+>proxyToServant</TT
+></A
+></DT
+><DD
+><P
+>Look up a servant in this object adapter's Active Servant Map,
+given a proxy.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.REMOVE"
+><TT
+CLASS="FUNCTION"
+>remove</TT
+></A
+></DT
+><DD
+><P
+>Remove a servant from the object adapter's Active Servant Map.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.REMOVESERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>removeServantLocator</TT
+></A
+></DT
+><DD
+><P
+>Remove a Servant Locator from this object adapter.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.SETLOCATOR"
+><TT
+CLASS="FUNCTION"
+>setLocator</TT
+></A
+></DT
+><DD
+><P
+>Set an <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> locator for this object adapter.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.WAITFORDEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>waitForDeactivate</TT
+></A
+></DT
+><DD
+><P
+>Wait until the object adapter has deactivated.</P
+></DD
+><DT
+><A
+HREF="x2869.html#ICE.OBJECTADAPTER.WAITFORHOLD"
+><TT
+CLASS="FUNCTION"
+>waitForHold</TT
+></A
+></DT
+><DD
+><P
+>Wait until the object adapter holds requests.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.ACTIVATE"
+></A
+><TT
+CLASS="LITERAL"
+>activate</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>activate</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Activate all endpoints that belong to this object
+adapter. After activation, the object adapter can dispatch
+requests received through its endpoints.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3035"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2869.html#ICE.OBJECTADAPTER.HOLD"
+><TT
+CLASS="FUNCTION"
+>hold</TT
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.DEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>deactivate</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.ADD"
+></A
+><TT
+CLASS="LITERAL"
+>add</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>Object*</SPAN
+> <TT
+CLASS="FUNCTION"
+>add</TT
+>(<A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Add a servant to this object adapter's Active Servant Map. Note
+that one servant can implement several <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> objects by
+registering the servant with multiple identities. Adding a
+servant with an identity that is in the map already throws
+<A
+HREF="x963.html"
+><TT
+CLASS="CLASSNAME"
+>AlreadyRegisteredException</TT
+></A
+>.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3060"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+></DT
+><DD
+><P
+>			    The servant to add.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object that is
+implemented by the servant.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3074"
+></A
+>Return Value</H3
+><P
+>		A proxy that matches the given identity and this object
+adapter.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3077"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.ADDWITHUUID"
+><TT
+CLASS="FUNCTION"
+>addWithUUID</TT
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.REMOVE"
+><TT
+CLASS="FUNCTION"
+>remove</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.ADDROUTER"
+></A
+><TT
+CLASS="LITERAL"
+>addRouter</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>addRouter</TT
+>(<TT
+CLASS="CLASSNAME"
+>Router*</TT
+> <TT
+CLASS="PARAMETER"
+><I
+>rtr</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Add a router to this object adapter. By doing so,
+this object adapter can receive callbacks from this router
+over connections that are established from this process to
+the router. This avoids the need for the router to establish
+a separate connection back to this object adapter.
+<DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> You can only add a particular router to one single
+object adapter. Adding a router to more than one object adapter
+will result in undefined behavior. However, it is possible to
+add different routers to different object
+adapters. </P
+></TD
+></TR
+></TABLE
+></DIV
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3101"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>rtr</I
+></TT
+></DT
+><DD
+><P
+>			    The router to add to this object adapter.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3109"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x4546.html"
+><TT
+CLASS="CLASSNAME"
+>Router</TT
+></A
+>, <A
+HREF="x1020.html#ICE.COMMUNICATOR.SETDEFAULTROUTER"
+><TT
+CLASS="FUNCTION"
+>Communicator::setDefaultRouter</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.ADDSERVANTLOCATOR"
+></A
+><TT
+CLASS="LITERAL"
+>addServantLocator</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>addServantLocator</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>category</I
+></TT
+>,
+    <A
+HREF="x4626.html"
+><TT
+CLASS="CLASSNAME"
+>ServantLocator</TT
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>locator</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Add a Servant Locator to this object adapter. Adding a servant
+locator for a category for which a servant locator is already
+registered throws <A
+HREF="x963.html"
+><TT
+CLASS="CLASSNAME"
+>AlreadyRegisteredException</TT
+></A
+>. To dispatch
+operation calls on servants, the object adapter tries to find a
+servant for a given <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object identity in the following order:
+<P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>The object adapter tries to find a servant for
+the identity in the Active Servant Map.</P
+></LI
+><LI
+><P
+>If no servant has been found in the Active
+Servant Map, the object adapter tries to find a locator for the
+category component of the identity. If a locator is found, the
+object adapter tries to find a servant using this
+locator.</P
+></LI
+><LI
+><P
+>If no servant has been found by any of the
+preceding steps, the object adapter tries to find a locator for
+an empty category, regardless of the category contained in the
+identity. If a locator is found, the object adapter tries to
+find a servant using this locator.</P
+></LI
+><LI
+><P
+>If no servant has been found with any of the
+preceding steps, the object adapter gives up and the caller
+receives <A
+HREF="x3807.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectNotExistException</TT
+></A
+>.</P
+></LI
+></OL
+>
+<DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Only one locator for the empty category can be
+installed.</P
+></TD
+></TR
+></TABLE
+></DIV
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3147"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>locator</I
+></TT
+></DT
+><DD
+><P
+>			    The locator to add.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>category</I
+></TT
+></DT
+><DD
+><P
+>			    The category for which the Servant Locator can
+locate servants, or an empty string if the Servant Locator does
+not belong to any specific category.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3160"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.REMOVESERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>removeServantLocator</TT
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.FINDSERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>findServantLocator</TT
+></A
+>, <A
+HREF="x4626.html"
+><TT
+CLASS="CLASSNAME"
+>ServantLocator</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.ADDWITHUUID"
+></A
+><TT
+CLASS="LITERAL"
+>addWithUUID</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>Object*</SPAN
+> <TT
+CLASS="FUNCTION"
+>addWithUUID</TT
+>(<SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Add a servant to this object adapter's Active Servant Map,
+using an automatically generated UUID as its identity. Note that
+the generated UUID identity can be accessed using the proxy's
+<TT
+CLASS="LITERAL"
+>ice_getIdentity</TT
+> operation.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3186"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+></DT
+><DD
+><P
+>			    The servant to add.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3194"
+></A
+>Return Value</H3
+><P
+>		A proxy that matches the generated UUID identity and
+this object adapter.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3197"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.ADD"
+><TT
+CLASS="FUNCTION"
+>add</TT
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.REMOVE"
+><TT
+CLASS="FUNCTION"
+>remove</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.CREATEDIRECTPROXY"
+></A
+><TT
+CLASS="LITERAL"
+>createDirectProxy</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>Object*</SPAN
+> <TT
+CLASS="FUNCTION"
+>createDirectProxy</TT
+>(<A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Create a "direct proxy" that matches this object adapter and
+the given identity. A direct proxy always contains the current
+adapter endpoints.
+<DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> This operation is intended to be used by locator
+implementations. Regular user code should not attempt to use
+this operation.</P
+></TD
+></TR
+></TABLE
+></DIV
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3222"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+></DT
+><DD
+><P
+>			    The identity for which a proxy is to be created.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3230"
+></A
+>Return Value</H3
+><P
+>		A proxy that matches the given identity and this object
+adapter.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3233"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.CREATEPROXY"
+></A
+><TT
+CLASS="LITERAL"
+>createProxy</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>Object*</SPAN
+> <TT
+CLASS="FUNCTION"
+>createProxy</TT
+>(<A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Create a proxy that matches this object adapter and the given
+identity.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3250"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+></DT
+><DD
+><P
+>			    The identity for which a proxy is to be created.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3258"
+></A
+>Return Value</H3
+><P
+>		A proxy that matches the given identity and this object
+adapter.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3261"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.CREATEREVERSEPROXY"
+></A
+><TT
+CLASS="LITERAL"
+>createReverseProxy</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>Object*</SPAN
+> <TT
+CLASS="FUNCTION"
+>createReverseProxy</TT
+>(<A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Create a "reverse proxy" that matches this object adapter and
+the given identity. A reverse proxy uses connections that have
+been established from a client to this object adapter.
+<DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> Like the <A
+HREF="x4546.html"
+><TT
+CLASS="CLASSNAME"
+>Router</TT
+></A
+> interface, this operation is
+intended to be used by router implementations. Regular user
+code should not attempt to use this operation.</P
+></TD
+></TR
+></TABLE
+></DIV
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3282"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+></DT
+><DD
+><P
+>			    The identity for which a proxy is to be created.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3290"
+></A
+>Return Value</H3
+><P
+>		A "reverse proxy" that matches the given identity and
+this object adapter.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3293"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.DEACTIVATE"
+></A
+><TT
+CLASS="LITERAL"
+>deactivate</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>deactivate</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Deactivate all endpoints that belong to this object
+adapter. After deactivation, the object adapter stops receiving
+requests through its endpoints. Object adapters that have been
+deactivated must not be reactivated again, i.e., the
+deactivation is permanent and <A
+HREF="x2869.html#ICE.OBJECTADAPTER.ACTIVATE"
+><TT
+CLASS="FUNCTION"
+>activate</TT
+></A
+> or <A
+HREF="x2869.html#ICE.OBJECTADAPTER.HOLD"
+><TT
+CLASS="FUNCTION"
+>hold</TT
+></A
+> must not be
+called after calling <A
+HREF="x2869.html#ICE.OBJECTADAPTER.DEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>deactivate</TT
+></A
+>; attempting to do so results
+in an <A
+HREF="x3648.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectAdapterDeactivatedException</TT
+></A
+> being thrown. Calls
+to <A
+HREF="x2869.html#ICE.OBJECTADAPTER.DEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>deactivate</TT
+></A
+> on an already deactivated object adapter are
+ignored.
+<DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> After <A
+HREF="x2869.html#ICE.OBJECTADAPTER.DEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>deactivate</TT
+></A
+> returns, no new requests are
+processed by the object adapter. However, requests that have
+been started before <A
+HREF="x2869.html#ICE.OBJECTADAPTER.DEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>deactivate</TT
+></A
+> was called might still be
+active. You can use <A
+HREF="x2869.html#ICE.OBJECTADAPTER.WAITFORDEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>waitForDeactivate</TT
+></A
+> to wait for the
+completion of all requests for this object
+adapter. </P
+></TD
+></TR
+></TABLE
+></DIV
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3325"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2869.html#ICE.OBJECTADAPTER.ACTIVATE"
+><TT
+CLASS="FUNCTION"
+>activate</TT
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.HOLD"
+><TT
+CLASS="FUNCTION"
+>hold</TT
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.WAITFORDEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>waitForDeactivate</TT
+></A
+>, <A
+HREF="x1020.html#ICE.COMMUNICATOR.SHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>Communicator::shutdown</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.FINDSERVANTLOCATOR"
+></A
+><TT
+CLASS="LITERAL"
+>findServantLocator</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x4626.html"
+><TT
+CLASS="CLASSNAME"
+>ServantLocator</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>findServantLocator</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>category</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Find a Servant Locator installed with this object adapter.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3351"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>category</I
+></TT
+></DT
+><DD
+><P
+>			    The category for which the Servant Locator can
+locate servants, or an empty string if the Servant Locator does
+not belong to any specific category.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3359"
+></A
+>Return Value</H3
+><P
+>		The Servant Locator, or null if no Servant Locator was
+found for the given category.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3362"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.ADDSERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>addServantLocator</TT
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.REMOVESERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>removeServantLocator</TT
+></A
+>, <A
+HREF="x4626.html"
+><TT
+CLASS="CLASSNAME"
+>ServantLocator</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.GETCOMMUNICATOR"
+></A
+><TT
+CLASS="LITERAL"
+>getCommunicator</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x1020.html"
+><TT
+CLASS="CLASSNAME"
+>Communicator</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>getCommunicator</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the communicator this object adapter belongs to.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3386"
+></A
+>Return Value</H3
+><P
+>		This object adapter's communicator.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3389"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1020.html"
+><TT
+CLASS="CLASSNAME"
+>Communicator</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.GETNAME"
+></A
+><TT
+CLASS="LITERAL"
+>getName</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="FUNCTION"
+>getName</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the name of this object adapter.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3403"
+></A
+>Return Value</H3
+><P
+>		This object adapter's name.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.HOLD"
+></A
+><TT
+CLASS="LITERAL"
+>hold</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>hold</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Temporarily hold receiving and dispatching requests. The object
+adapter can be reactivated with the <A
+HREF="x2869.html#ICE.OBJECTADAPTER.ACTIVATE"
+><TT
+CLASS="FUNCTION"
+>activate</TT
+></A
+> operation.
+<DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> Holding is not immediate, i.e., after <A
+HREF="x2869.html#ICE.OBJECTADAPTER.HOLD"
+><TT
+CLASS="FUNCTION"
+>hold</TT
+></A
+>
+returns, the object adapter might still be active for some
+time. You can use <A
+HREF="x2869.html#ICE.OBJECTADAPTER.WAITFORHOLD"
+><TT
+CLASS="FUNCTION"
+>waitForHold</TT
+></A
+> to wait until holding is
+complete. </P
+></TD
+></TR
+></TABLE
+></DIV
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3421"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2869.html#ICE.OBJECTADAPTER.ACTIVATE"
+><TT
+CLASS="FUNCTION"
+>activate</TT
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.DEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>deactivate</TT
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.WAITFORHOLD"
+><TT
+CLASS="FUNCTION"
+>waitForHold</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.IDENTITYTOSERVANT"
+></A
+><TT
+CLASS="LITERAL"
+>identityToServant</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="FUNCTION"
+>identityToServant</TT
+>(<A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Look up a servant in this object adapter's Active Servant Map
+by the identity of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object it implements.
+<DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>This operation only tries to lookup a servant in
+the Active Servant Map. It does not attempt to find a servant
+by using any installed <A
+HREF="x4626.html"
+><TT
+CLASS="CLASSNAME"
+>ServantLocator</TT
+></A
+>.</P
+></TD
+></TR
+></TABLE
+></DIV
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3449"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object for which the
+servant should be returned.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3458"
+></A
+>Return Value</H3
+><P
+>		The servant that implements the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object with the
+given identity, or null if no such servant has been found.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3462"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.PROXYTOSERVANT"
+><TT
+CLASS="FUNCTION"
+>proxyToServant</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.PROXYTOSERVANT"
+></A
+><TT
+CLASS="LITERAL"
+>proxyToServant</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="FUNCTION"
+>proxyToServant</TT
+>(<SPAN
+CLASS="TYPE"
+>Object*</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>proxy</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Look up a servant in this object adapter's Active Servant Map,
+given a proxy.
+<DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>This operation only tries to lookup a servant in
+the Active Servant Map. It does not attempt to find a servant
+via any installed <A
+HREF="x4626.html"
+><TT
+CLASS="CLASSNAME"
+>ServantLocator</TT
+></A
+>s.</P
+></TD
+></TR
+></TABLE
+></DIV
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3485"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>proxy</I
+></TT
+></DT
+><DD
+><P
+>			    The proxy for which the servant should be returned.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3493"
+></A
+>Return Value</H3
+><P
+>		The servant that matches the proxy, or null if no such
+servant has been found.
+see identityToServant</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.REMOVE"
+></A
+><TT
+CLASS="LITERAL"
+>remove</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>remove</TT
+>(<A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Remove a servant from the object adapter's Active Servant Map.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3506"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object that is
+implemented by the servant. If the servant implements multiple
+<SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> objects, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.REMOVE"
+><TT
+CLASS="FUNCTION"
+>remove</TT
+></A
+> has to be called for all those <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+>
+objects. Removing an identity that is not in the map throws
+<A
+HREF="x2832.html"
+><TT
+CLASS="CLASSNAME"
+>NotRegisteredException</TT
+></A
+>.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3521"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.ADD"
+><TT
+CLASS="FUNCTION"
+>add</TT
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.ADDWITHUUID"
+><TT
+CLASS="FUNCTION"
+>addWithUUID</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.REMOVESERVANTLOCATOR"
+></A
+><TT
+CLASS="LITERAL"
+>removeServantLocator</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>removeServantLocator</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>category</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Remove a Servant Locator from this object adapter. Removing
+a category for which no servant locator is registered throws
+<A
+HREF="x2832.html"
+><TT
+CLASS="CLASSNAME"
+>NotRegisteredException</TT
+></A
+>.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3545"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>category</I
+></TT
+></DT
+><DD
+><P
+>			    The category for which the Servant Locator can
+locate Servants, or an empty string if the Servant Locator does
+not belong to any specific category.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3553"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2188.html"
+><SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.ADDSERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>addServantLocator</TT
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.FINDSERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>findServantLocator</TT
+></A
+>, <A
+HREF="x4626.html"
+><TT
+CLASS="CLASSNAME"
+>ServantLocator</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.SETLOCATOR"
+></A
+><TT
+CLASS="LITERAL"
+>setLocator</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>setLocator</TT
+>(<TT
+CLASS="CLASSNAME"
+>Locator*</TT
+> <TT
+CLASS="PARAMETER"
+><I
+>loc</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Set an <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> locator for this object adapter. By doing so, the
+object adapter will register itself with the locator registry
+when it is activated for the first time. Furthermore, the proxies
+created by this object adapter will contain the adapter name instead
+of its endpoints.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3579"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>loc</I
+></TT
+></DT
+><DD
+><P
+>			    The locator used by this object adapter.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3587"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2869.html#ICE.OBJECTADAPTER.CREATEDIRECTPROXY"
+><TT
+CLASS="FUNCTION"
+>createDirectProxy</TT
+></A
+>, <A
+HREF="x2366.html"
+><TT
+CLASS="CLASSNAME"
+>Locator</TT
+></A
+>, <A
+HREF="x2474.html"
+><TT
+CLASS="CLASSNAME"
+>LocatorRegistry</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.WAITFORDEACTIVATE"
+></A
+><TT
+CLASS="LITERAL"
+>waitForDeactivate</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>waitForDeactivate</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Wait until the object adapter has deactivated. Calling
+<A
+HREF="x2869.html#ICE.OBJECTADAPTER.DEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>deactivate</TT
+></A
+> initiates object adapter deactivation, and
+<A
+HREF="x2869.html#ICE.OBJECTADAPTER.WAITFORDEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>waitForDeactivate</TT
+></A
+> only returns when deactivation has
+been completed.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3611"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2869.html#ICE.OBJECTADAPTER.DEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>deactivate</TT
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.WAITFORHOLD"
+><TT
+CLASS="FUNCTION"
+>waitForHold</TT
+></A
+>, <A
+HREF="x1020.html#ICE.COMMUNICATOR.WAITFORSHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>Communicator::waitForShutdown</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTADAPTER.WAITFORHOLD"
+></A
+><TT
+CLASS="LITERAL"
+>waitForHold</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>waitForHold</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Wait until the object adapter holds requests. Calling <A
+HREF="x2869.html#ICE.OBJECTADAPTER.HOLD"
+><TT
+CLASS="FUNCTION"
+>hold</TT
+></A
+>
+initiates holding of requests, and <A
+HREF="x2869.html#ICE.OBJECTADAPTER.WAITFORHOLD"
+><TT
+CLASS="FUNCTION"
+>waitForHold</TT
+></A
+> only returns
+when holding of requests has been completed.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN3635"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2869.html#ICE.OBJECTADAPTER.HOLD"
+><TT
+CLASS="FUNCTION"
+>hold</TT
+></A
+>, <A
+HREF="x2869.html#ICE.OBJECTADAPTER.WAITFORDEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>waitForDeactivate</TT
+></A
+>, <A
+HREF="x1020.html#ICE.COMMUNICATOR.WAITFORSHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>Communicator::waitForShutdown</TT
+></A
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x2832.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x3648.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::NotRegisteredException</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::ObjectAdapterDeactivatedException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

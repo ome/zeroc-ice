@@ -1,0 +1,32 @@
+<server kind="cpp">
+
+  <target name="manual">
+    <activation mode="manual"/>
+    <property name="Mode" value="manual"/>
+  </target>
+
+  <adapters>
+    <adapter name="Server" endpoints="default">
+      <object identity="${name}" type="::Test"/>
+    </adapter>
+  </adapters>
+
+  <properties>
+    <property name="Type" value="Server"/>
+    <property name="Name" value="${name}"/>
+    <property name="Ice.Warn.Connections" value="1"/>
+  </properties>
+
+  <target name="target1">
+    <properties>
+      <property name="Target1" value="1"/>
+    </properties>    
+  </target>
+
+  <target name="target2">
+    <properties>
+      <property name="Target2" value="1"/>
+    </properties>    
+  </target>
+
+</server>
