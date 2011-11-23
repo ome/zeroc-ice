@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,10 +15,16 @@
 namespace Slice
 {
 
-SLICE_API bool isAbsolute(const std::string&);
 SLICE_API std::string fullPath(const std::string&);
 SLICE_API std::string changeInclude(const std::string&, const std::vector<std::string>&);
-
+SLICE_API void setErrorStream(std::ostream&);
+SLICE_API std::ostream& getErrorStream();
+SLICE_API void emitError(const std::string&, int, const std::string&);
+SLICE_API void emitWarning(const std::string&, int, const std::string&);
+SLICE_API void emitError(const std::string&, const std::string&, const std::string&);
+SLICE_API void emitWarning(const std::string&, const std::string&, const std::string&);
+SLICE_API void emitRaw(const char*);
+SLICE_API std::vector<std::string> filterMcppWarnings(const std::string&);
 }
 
 #endif

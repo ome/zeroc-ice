@@ -10,7 +10,7 @@ Ice for .NET has been built and tested with:
   Framework Version 3.5.
 
 Unpack the archive. The .NET sources will be contained in the
-Ice-3.3.0\cs subdirectory.
+Ice-3.3.1\cs subdirectory.
 
 You will need the Slice to C# translator and supporting executables
 and libraries from the Ice for C++ distribution. You can download a
@@ -27,12 +27,12 @@ Follow these steps to build the source:
    ICE_HOME to the directory of your Ice for C++ installation.
    For example:
 
-   > set ICE_HOME=C:\Ice-3.3.0
+   > set ICE_HOME=C:\Ice-3.3.1
 
 2) Change to the top-level directory of the Ice for .NET source
    distribution.
 
-   > cd Ice-3.3.0\cs
+   > cd Ice-3.3.1\cs
 
 3) Open config\Make.rules.mak.cs and review the comments that describe
    the settings you can modify. For example, you may wish to enable
@@ -45,6 +45,16 @@ Follow these steps to build the source:
 The tests and sample programs are built automatically. If you modify
 the source code of a sample program, you can rebuild it using nmake,
 or you can open the Visual Studio solution located in demo\demo.sln.
+
+
+Managed Code
+------------
+
+By default, Ice for .NET uses unmanaged code for performing protocol
+compression and for handling signals in the Ice.Application class.
+You can build a managed version of Ice for .NET that lacks the
+aforementioned features by editing config/Make.rules.mak.cs and
+uncommenting the MANAGED=yes line before you build.
 
 
 SSL Notes
@@ -87,7 +97,7 @@ subdirectory then you need to set the ICE_HOME environment variable to
 the path where these applications are installed for these tests to run
 properly:
 
-  > set ICE_HOME=c:\Ice-3.3.0
+  > set ICE_HOME=c:\Ice-3.3.1
 
 Python is required to run the test suite:
 
@@ -114,7 +124,7 @@ To run the demos, you need to have the Ice bin directory in your PATH.
 See the README file in each demo directory for a description of the
 demo.
 
-Note that in demos that use IceSSL, the IceSSL plugin configuration
+Note that in demos that use IceSSL, the IceSSL plug-in configuration
 does not contain the fully-qualified name (FQN) for the IceSSL
 assembly. Instead it just contains the partial name:
 
@@ -123,10 +133,10 @@ assembly. Instead it just contains the partial name:
 The FQN is found in the *.exe.config files that are generated when the
 demos are built. If you want to run an application using the IceSSL
 assembly installed in the GAC without the use of the *.exe.config
-files, you must add the FQN to the IceSSL plugin configuration, as
+files, you must add the FQN to the IceSSL plug-in configuration, as
 shown below:
 
-  Ice.Plugin.IceSSL=IceSSL, Version=3.3.0.0, Culture=neutral, PublicKeyToken=1f998c50fec78381:IceSSL.PluginFactory
+  Ice.Plugin.IceSSL=IceSSL, Version=3.3.1.0, Culture=neutral, PublicKeyToken=1f998c50fec78381:IceSSL.PluginFactory
 
 
 Installation
@@ -144,7 +154,7 @@ GAC Installation
 You can add the assemblies to the Global Assembly Cache (GAC). To do
 this, open Windows Explorer and navigate to the directory
 C:\WINDOWS\assembly. Next, drag and drop (or copy and paste) the
-assemblies from IceNET-3.3.0\bin into the right-hand pane to install
+assemblies from IceNET-3.3.1\bin into the right-hand pane to install
 them in the cache.
 
 Or you can use gacutil from the command line to achieve the same
@@ -165,17 +175,17 @@ into the same directory as an executable.
 If you want line numbers for stack traces, you must also install the
 PDB (.pdb) files in the GAC. Unfortunately, you cannot do this using
 Explorer, so you have to do it from the command line. Open a command
-shell window and navigate to C:\WINDOWS\assembly\GAC\Ice. (Assuming
-C:\WINDOWS is your system root.) Doing a directory listing there, you
-will find a directory named @dotnetver@__<UUID>, for example:
+shell window and navigate to C:\WINDOWS\assembly\GAC_MSIL\Ice.
+(Assuming C:\WINDOWS is your system root.) Doing a directory listing
+there, you will find a directory named @dotnetver@__<UUID>, for 
+example:
 
   @dotnetver@__1f998c50fec78381
 
 Change to that directory (making sure that you use the correct version
-number for this release of Ice). In this directory, you will see a
-file called __AssemblyInfo__.ini and the Ice.dll you installed into
-the GAC in the preceding step. Now copy the Ice.pdb file into this
-directory:
+number for this release of Ice). In this directory, you will see the 
+Ice.dll you installed into the GAC in the preceding step. Now copy the
+Ice.pdb file into this directory:
 
   > copy <path_to_ice.pdb> .
 
@@ -188,24 +198,18 @@ protocol compression. On 64-bit Windows, you have to make sure that
 the 64-bit version of bzip2.dll is found instead of the 32-bit
 version. The bzip2 libraries are installed in <prefix>\bin\x64 and
 <prefix>\bin, respectively. For 64-bit Windows, you need to make sure
-that <prefix>\bin\x64 appears in the application's PATH instead of
-<prefix>\bin. (The Ice run time prints a warning to the console if it
-detects a bzip2.dll format mismatch during start-up.)
+that <prefix>\bin\x64 appears before <prefix>\bin in your
+application's PATH. (The Ice run time prints a warning to the console
+if it detects a bzip2.dll format mismatch during start-up.)
 
 
 Binary compatibility of patch releases
 --------------------------------------
 
-Patch releases of Ice are binary compatible. For example, version
-3.2.1 is compatible with 3.2.0, so you can run applications
-compiled with 3.2.0 with the 3.2.1 Ice assemblies without
-having to recompile.
+Ice patch releases are binary compatible. For example, Ice version 
+3.3.1 is compatible with 3.3.0: you can run an application built 
+against Ice 3.3.0 with Ice 3.3.1 (or later) without having to
+recompile or relink this application.
 
-Ice for .NET includes policy assemblies in Ice-3.3.0/cs/bin that
-supply the .NET run time with the required compatibility information.
-Policy assemblies have names of the form policy.<major>.<minor>.<package>.dll.
-For example, the policy assembly for IceBox 3.2 is called policy.3.2.IceBox.dll.
-
-To upgrade an existing application to a new patch release, the policy
-assemblies must be present in your PATH, or they must be
-installed into the GAC as described in the previous section.
+Please refer to the RELEASE_NOTES file included in this distribution
+for detailed upgrade instructions.

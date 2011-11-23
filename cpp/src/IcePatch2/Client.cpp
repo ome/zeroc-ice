@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <IceUtil/Options.h>
+#include <IceUtil/StringUtil.h>
 #include <Ice/Application.h>
 #include <IcePatch2/Util.h>
 #include <IcePatch2/ClientUtil.h>
@@ -54,7 +55,7 @@ public:
         {
             cout << "Do a thorough patch? (yes/no)" << endl;
             cin >> answer;
-            transform(answer.begin(), answer.end(), answer.begin(), ::tolower);
+            answer = IceUtilInternal::toLower(answer);
             if(answer == "no")
             {
                 return false;
@@ -245,6 +246,9 @@ Client::run(int argc, char* argv[])
     vector<string> args;
     try
     {
+#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
+        IceUtil::DummyBCC dummy;
+#endif
         args = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtilInternal::BadOptException& e)

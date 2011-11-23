@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -10,26 +10,27 @@
 
 import os, sys, shutil, glob
 
-def iceca(args):
+iceca = "iceca"
 
-    if(os.environ.has_key("ICE_HOME")):
-        cmd = os.path.join(os.environ["ICE_HOME"], "bin", "iceca") + " " + args
-    else:
-        cmd = "iceca " + args
-
-    if os.system(cmd):
+def runIceca(args):
+    os.environ['PYTHONUNBUFFERED'] = '1'
+    if os.system(iceca + " " + args):
         sys.exit(1)
 
 def createCertificate(filename, cn):
 
     print "======= Creating " + filename + " certificate ======="
 
-    iceca("request --no-password --overwrite %s \"%s\"" % (filename, cn))
-    iceca("sign --in %s_req.pem --out %s_cert.pem" % (filename, filename))
+    runIceca("request --no-password --overwrite %s \"%s\"" % (filename, cn))
+    runIceca("sign --in %s_req.pem --out %s_cert.pem" % (filename, filename))
     os.remove("%s_req.pem" % filename)
 
     print
     print
+
+for x in sys.argv[1:]:
+    if x[0:7] == "--iceca":
+        iceca = x[8:]
 
 cwd = os.getcwd()
 
@@ -45,7 +46,7 @@ os.chdir("certs")
 # First, create the certificate authority.
 #
 print "======= Creating Certificate Authority ======="
-iceca("init --overwrite --no-password")
+runIceca("init --overwrite --no-password")
 print
 print
 
@@ -61,6 +62,6 @@ try:
 except OSError:
     pass
 
-iceca("import --key-pass password --store-pass password --java ca_cert ca/db/ca_cert.pem ca/db/ca_key.pem certs.jks")
+runIceca("import --key-pass password --store-pass password --java ca_cert ca/db/ca_cert.pem ca/db/ca_key.pem certs.jks")
 
 os.chdir("..")

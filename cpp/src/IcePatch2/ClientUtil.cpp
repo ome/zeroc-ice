@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 #include <IceUtil/Unicode.h>
 #include <IceUtil/StringUtil.h>
+#include <IceUtil/FileUtil.h>
 #define ICE_PATCH2_API_EXPORTS
 #include <IcePatch2/ClientUtil.h>
 #include <IcePatch2/Util.h>
@@ -611,7 +612,7 @@ IcePatch2::Patcher::init(const FileServerPrx& server)
         const_cast<Int&>(_chunkSize) *= 1024;
     }
 
-    if(!isAbsolute(_dataDir))
+    if(!IceUtilInternal::isAbsolutePath(_dataDir))
     {
         string cwd;
         if(OS::getcwd(cwd) != 0)

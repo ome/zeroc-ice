@@ -1,7 +1,7 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
@@ -36,7 +36,11 @@
 	    <compilerarg value="${javac.lint}"/>
 	</javac>
 	<javac srcdir="." destdir="${class.dir}"
-	    classpathref="ice.classpath" excludes="generated/**" debug="${debug}">
+	    excludes="generated/**" debug="${debug}">
+            <classpath>
+                <path refid="ice.classpath"/>
+                <path refid="db.classpath"/>
+            </classpath>
 	    <compilerarg value="${javac.lint}"/>
 	</javac>
     </target>
@@ -48,6 +52,7 @@
         <delete dir="${class.dir}"/>
         <delete>
 	    <fileset dir="db" includes="log.*"/>
+            <fileset dir="db" includes="__catalog*"/>
             <fileset dir="db" includes="Test,__catalog"/>
         </delete>
     </target>

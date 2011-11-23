@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -101,7 +101,9 @@ public:
     Ice::ObjectPrx getAdapterDirectProxy(const std::string&);
 
     void removeAdapter(const std::string&);
-    AdapterEntryPtr getAdapter(const std::string&) const;
+    AdapterPrx getAdapterProxy(const std::string&, const std::string&, bool);
+    void getLocatorAdapterInfo(const std::string&, LocatorAdapterInfoSeq&, int&, bool&, bool&,
+                               const std::set<std::string>& = std::set<std::string>());
 
     std::vector<std::pair<std::string, AdapterPrx> > getAdapters(const std::string&, int&, bool&);
     AdapterInfoSeq getAdapterInfo(const std::string&);

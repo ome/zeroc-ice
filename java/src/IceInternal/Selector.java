@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -302,7 +302,7 @@ public final class Selector
                 //
                 try
                 {
-                    Thread.currentThread().sleep(1);
+                    Thread.sleep(1);
                 }
                 catch(java.lang.InterruptedException ex)
                 {

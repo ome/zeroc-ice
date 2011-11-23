@@ -1,14 +1,16 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_SERVANT_FACTORY_F_ICE
-#define ICE_SERVANT_FACTORY_F_ICE
+#ifndef ICE_OBJECT_FACTORY_F_ICE
+#define ICE_OBJECT_FACTORY_F_ICE
+
+[["cpp:header-ext:h"]]
 
 module Ice
 {

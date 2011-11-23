@@ -10,7 +10,7 @@ The code has been built and tested with:
   Version 3.5.
 
 Unpack the archive. The VB demo sources will be contained in the 
-Ice-3.3.0\vb subdirectory.
+Ice-3.3.1\vb subdirectory.
 
 Add the directory containing slice2cs to the list of "Executable
 files" directories in Visual Studio:

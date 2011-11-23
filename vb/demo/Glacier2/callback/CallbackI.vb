@@ -1,6 +1,6 @@
 ' **********************************************************************
 '
-' Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+' Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 '
 ' This copy of Ice is licensed to you under the terms described in the
 ' ICE_LICENSE file included in this distribution.
@@ -16,7 +16,7 @@ Public NotInheritable Class CallbackI
     Public Overloads Overrides Sub initiateCallback(ByVal proxy As CallbackReceiverPrx, ByVal current As Ice.Current)
         Console.WriteLine("initiating callback to: " + current.adapter.getCommunicator().proxyToString(proxy))
         Try
-            proxy.callback(current.ctx)
+            proxy.callback()
         Catch ex As System.Exception
             Console.Error.WriteLine(ex)
         End Try

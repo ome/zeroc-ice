@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,6 +10,7 @@
 #include <IceUtil/Options.h>
 #include <IceUtil/Unicode.h>
 #include <IceUtil/StringUtil.h>
+#include <IceUtil/FileUtil.h>
 #include <IcePatch2/Util.h>
 #include <OS.h>
 
@@ -42,7 +43,7 @@ struct IFileInfoPathEqual: public binary_function<const FileInfo&, const FileInf
 
         for(string::size_type i = 0; i < lhs.path.size(); ++i)
         {
-            if(::tolower(lhs.path[i]) != ::tolower(rhs.path[i]))
+            if(::tolower(static_cast<unsigned char>(lhs.path[i])) != ::tolower(static_cast<unsigned char>(rhs.path[i])))
             {
                 return false;
             }
@@ -59,11 +60,12 @@ struct IFileInfoPathLess: public binary_function<const FileInfo&, const FileInfo
     {
         for(string::size_type i = 0; i < lhs.path.size() && i < rhs.path.size(); ++i)
         {
-            if(::tolower(lhs.path[i]) < ::tolower(rhs.path[i]))
+            if(::tolower(static_cast<unsigned char>(lhs.path[i])) < ::tolower(static_cast<unsigned char>(rhs.path[i])))
             {
                 return true;
             }
-            else if(::tolower(lhs.path[i]) > ::tolower(rhs.path[i]))
+            else if(::tolower(static_cast<unsigned char>(lhs.path[i])) > 
+                    ::tolower(static_cast<unsigned char>(rhs.path[i])))
             {
                 return false;
             }
@@ -133,6 +135,9 @@ main(int argc, char* argv[])
     vector<string> args;
     try
     {
+#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
+        IceUtil::DummyBCC dummy;
+#endif
         args = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtilInternal::BadOptException& e)
@@ -195,14 +200,14 @@ main(int argc, char* argv[])
             throw "cannot get the current directory:\n" + IceUtilInternal::lastErrorToString();
         }
 
-        if(!isAbsolute(absDataDir))
+        if(!IceUtilInternal::isAbsolutePath(absDataDir))
         {
             absDataDir = simplify(cwd + '/' + absDataDir);
         }
         
         for(p = fileSeq.begin(); p != fileSeq.end(); ++p)
         {
-            if(!isAbsolute(*p))
+            if(!IceUtilInternal::isAbsolutePath(*p))
             {
                 *p = cwd + '/' + *p;
             }

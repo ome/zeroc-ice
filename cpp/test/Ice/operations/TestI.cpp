@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -332,6 +332,18 @@ MyDerivedClassI::opStringMyEnumD(const Test::StringMyEnumD& p1,
 {
     p3 = p1;
     Test::StringMyEnumD r = p1;
+    std::set_union(p1.begin(), p1.end(), p2.begin(), p2.end(), std::inserter(r, r.end()));
+    return r;
+}
+
+Test::MyStructMyEnumD
+MyDerivedClassI::opMyStructMyEnumD(const Test::MyStructMyEnumD& p1,
+                                   const Test::MyStructMyEnumD& p2,
+                                   Test::MyStructMyEnumD& p3,
+                                   const Ice::Current&)
+{
+    p3 = p1;
+    Test::MyStructMyEnumD r = p1;
     std::set_union(p1.begin(), p1.end(), p2.begin(), p2.end(), std::inserter(r, r.end()));
     return r;
 }

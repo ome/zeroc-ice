@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,7 +21,8 @@
 #include <IceUtil/UUID.h>
 #include <Slice/Checksum.h>
 #include <Slice/DotNetNames.h>
-#include <Slice/SignalHandler.h>
+#include <Slice/FileTracker.h>
+#include <string.h>
 
 using namespace std;
 using namespace Slice;
@@ -38,19 +39,6 @@ using IceUtilInternal::sb;
 using IceUtilInternal::eb;
 using IceUtilInternal::spar;
 using IceUtilInternal::epar;
-
-//
-// Callback for Crtl-C signal handling
-//
-static Gen* _gen = 0;
-
-static void closeCallback()
-{
-    if(_gen != 0)
-    {
-        _gen->closeOutput();
-    }
-}
 
 static string // Should be an anonymous namespace, but VC++ 6 can't handle that.
 sliceModeToIceMode(Operation::Mode opMode)
@@ -437,9 +425,9 @@ Slice::CsVisitor::writeDispatchAndMarshalling(const ClassDefPtr& p, bool stream)
                 for(t = throws.begin(); t != throws.end(); ++t)
                 {
                     string exS = fixId((*t)->scoped());
-                    _out << nl << "catch(" << exS << " ex)";
+                    _out << nl << "catch(" << exS << " ex__)";
                     _out << sb;
-                    _out << nl << "os__.writeUserException(ex);";
+                    _out << nl << "os__.writeUserException(ex__);";
                     _out << nl << "return Ice.DispatchStatus.DispatchUserException;";
                     _out << eb;
                 }
@@ -546,9 +534,9 @@ Slice::CsVisitor::writeDispatchAndMarshalling(const ClassDefPtr& p, bool stream)
             }
             _out << "current__" << epar << ';';
             _out << eb;
-            _out << nl << "catch(_System.Exception ex)";
+            _out << nl << "catch(_System.Exception ex__)";
             _out << sb;
-            _out << nl << "cb__.ice_exception(ex);";
+            _out << nl << "cb__.ice_exception(ex__);";
             _out << eb;
             _out << nl << "return Ice.DispatchStatus.DispatchAsync;";
 
@@ -1067,14 +1055,11 @@ Slice::CsVisitor::writeValue(const TypePtr& type)
 }
 
 
-Slice::Gen::Gen(const string& name, const string& base, const vector<string>& includePaths, const string& dir,
+Slice::Gen::Gen(const string& base, const vector<string>& includePaths, const string& dir,
                 bool impl, bool implTie, bool stream)
     : _includePaths(includePaths),
       _stream(stream)
 {
-    _gen = this;
-    SignalHandler::setCallback(closeCallback);
-
     string fileBase = base;
     string::size_type pos = base.find_last_of("/\\");
     if(pos != string::npos)
@@ -1089,15 +1074,15 @@ Slice::Gen::Gen(const string& name, const string& base, const vector<string>& in
         file = dir + '/' + file;
         fileImpl = dir + '/' + fileImpl;
     }
-    SignalHandler::addFile(file);
-    SignalHandler::addFile(fileImpl);
 
     _out.open(file.c_str());
     if(!_out)
     {
-        cerr << name << ": can't open `" << file << "' for writing" << endl;
-        return;
+        ostringstream os;
+        os << "cannot open `" << file << "': " << strerror(errno);
+        throw FileException(__FILE__, __LINE__, os.str());
     }
+    FileTracker::instance()->addFile(file);
     printHeader();
 
     _out << nl << "// Generated from file `" << fileBase << ".ice'";
@@ -1124,15 +1109,20 @@ Slice::Gen::Gen(const string& name, const string& base, const vector<string>& in
         struct stat st;
         if(stat(fileImpl.c_str(), &st) == 0)
         {
-            cerr << name << ": `" << fileImpl << "' already exists--will not overwrite" << endl;
-            return;
+            ostringstream os;
+            os << "`" << fileImpl << "' already exists - will not overwrite";
+            throw FileException(__FILE__, __LINE__, os.str());
         }
+
         _impl.open(fileImpl.c_str());
         if(!_impl)
         {
-            cerr << name << ": can't open `" << fileImpl << "' for writing" << endl;
-            return;
+            ostringstream os;
+            os << ": cannot open `" << fileImpl << "': " << strerror(errno);
+            throw FileException(__FILE__, __LINE__, os.str());
         }
+
+        FileTracker::instance()->addFile(fileImpl);
     }
 }
 
@@ -1146,23 +1136,14 @@ Slice::Gen::~Gen()
     {
         _impl << '\n';
     }
-
-    SignalHandler::setCallback(0);
-}
-
-bool
-Slice::Gen::operator!() const
-{
-    return !_out;
 }
 
 void
 Slice::Gen::generate(const UnitPtr& p)
 {
-
     CsGenerator::validateMetaData(p);
 
-    UnitVisitor unitVisitor(_out, _stream);
+    UnitVisitor unitVisitor(_out);
     p->visit(&unitVisitor, false);
 
     TypesVisitor typesVisitor(_out, _stream);
@@ -1223,7 +1204,7 @@ Slice::Gen::generateChecksums(const UnitPtr& u)
         string className = "X" + IceUtil::generateUUID();
         for(string::size_type pos = 1; pos < className.size(); ++pos)
         {
-            if(!isalnum(className[pos]))
+            if(!isalnum(static_cast<unsigned char>(className[pos])))
             {
                 className[pos] = '_';
             }
@@ -1270,7 +1251,7 @@ Slice::Gen::printHeader()
     static const char* header =
 "// **********************************************************************\n"
 "//\n"
-"// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.\n"
+"// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.\n"
 "//\n"
 "// This copy of Ice is licensed to you under the terms described in the\n"
 "// ICE_LICENSE file included in this distribution.\n"
@@ -1282,35 +1263,34 @@ Slice::Gen::printHeader()
     _out << "\n// Ice version " << ICE_STRING_VERSION;
 }
 
-Slice::Gen::UnitVisitor::UnitVisitor(IceUtilInternal::Output& out, bool stream)
-    : CsVisitor(out), _stream(stream), _globalMetaDataDone(false)
+Slice::Gen::UnitVisitor::UnitVisitor(IceUtilInternal::Output& out)
+    : CsVisitor(out)
 {
 }
 
 bool
-Slice::Gen::UnitVisitor::visitModuleStart(const ModulePtr& p)
+Slice::Gen::UnitVisitor::visitUnitStart(const UnitPtr& p)
 {
-    if(!_globalMetaDataDone)
+    DefinitionContextPtr dc = p->findDefinitionContext(p->topLevelFile());
+    assert(dc);
+    StringList globalMetaData = dc->getMetaData();
+
+    static const string attributePrefix = "cs:attribute:";
+
+    bool sep = false;
+    for(StringList::const_iterator q = globalMetaData.begin(); q != globalMetaData.end(); ++q)
     {
-        DefinitionContextPtr dc = p->definitionContext();
-        StringList globalMetaData = dc->getMetaData();
-
-        static const string attributePrefix = "cs:attribute:";
-
-        if(!globalMetaData.empty())
+        string::size_type pos = q->find(attributePrefix);
+        if(pos == 0 && q->size() > attributePrefix.size())
         {
-            _out << sp;
-        }
-        for(StringList::const_iterator q = globalMetaData.begin(); q != globalMetaData.end(); ++q)
-        {
-            string::size_type pos = q->find(attributePrefix);
-            if(pos == 0)
+            if(!sep)
             {
-                string attrib = q->substr(pos + attributePrefix.size());
-                _out << nl << '[' << attrib << ']';
+                _out << sp;
+                sep = true;
             }
+            string attrib = q->substr(pos + attributePrefix.size());
+            _out << nl << '[' << attrib << ']';
         }
-        _globalMetaDataDone = true; // Do this only once per source file.
     }
     return false;
 }
@@ -1680,6 +1660,15 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
     //
     string prefix = "clr:type:";
     string meta;
+    if(p->findMetaData(prefix, meta))
+    {
+        return;
+    }
+
+    //
+    // No need to generate anything for serializable sequences.
+    //
+    prefix = "clr:serializable:";
     if(p->findMetaData(prefix, meta))
     {
         return;
@@ -2156,7 +2145,7 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
             _out << eb;
         }
 
-        if(!base || (base && !base->usesClasses()))
+        if((!base || (base && !base->usesClasses())) && p->usesClasses())
         {
             _out << sp << nl << "public override bool usesClasses__()";
             _out << sb;
@@ -2687,8 +2676,6 @@ Slice::Gen::TypesVisitor::visitDataMember(const DataMemberPtr& p)
 
     emitDeprecate(p, cont, _out, "member");
 
-    emitAttributes(p);
-
     string type = typeToString(p->type());
     string propertyName = fixId(p->name(), baseTypes, isClass);
     string dataMemberName = propertyName;
@@ -2697,18 +2684,19 @@ Slice::Gen::TypesVisitor::visitDataMember(const DataMemberPtr& p)
         dataMemberName += "_prop";
     }
 
-    _out << nl;
     if(propertyMapping)
     {
-        _out << "private";
+        _out << nl << "private";
     }
     else if(isProtected)
     {
-        _out << "protected";
+        emitAttributes(p);
+        _out << nl << "protected";
     }
     else
     {
-        _out << "public";
+        emitAttributes(p);
+        _out << nl << "public";
     }
     _out << ' ' << type << ' ' << dataMemberName << ';';
 
@@ -2717,6 +2705,7 @@ Slice::Gen::TypesVisitor::visitDataMember(const DataMemberPtr& p)
         return;
     }
 
+    emitAttributes(p);
     _out << nl << (isProtected ? "protected" : "public");
     if(!isValue)
     {
@@ -2751,9 +2740,10 @@ Slice::Gen::TypesVisitor::writeMemberHashCode(const DataMemberList& dataMembers,
         SequencePtr seq = SequencePtr::dynamicCast(memberType);
         if(seq)
         {
-            string genericType;
-            bool isGeneric = seq->findMetaData("clr:generic:", genericType);
-            bool isArray = !isGeneric && !seq->hasMetaData("clr:collection");
+            string meta;
+            bool isSerializable = seq->findMetaData("clr:serializable", meta);
+            bool isGeneric = seq->findMetaData("clr:generic:", meta);
+            bool isArray = !isSerializable && !isGeneric && !seq->hasMetaData("clr:collection");
             if(isArray)
             {
                 //
@@ -2830,9 +2820,10 @@ Slice::Gen::TypesVisitor::writeMemberEquals(const DataMemberList& dataMembers, i
             SequencePtr seq = SequencePtr::dynamicCast(memberType);
             if(seq)
             {
-                string genericType;
-                bool isGeneric = seq->findMetaData("clr:generic:", genericType);
-                bool isArray = !isGeneric && !seq->hasMetaData("clr:collection");
+                string meta;
+                bool isSerializable = seq->findMetaData("clr:serializable:", meta);
+                bool isGeneric = seq->findMetaData("clr:generic:", meta);
+                bool isArray = !isSerializable && !isGeneric && !seq->hasMetaData("clr:collection");
                 if(isArray)
                 {
                     //
@@ -3655,7 +3646,6 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
     bool hasClassValue = (builtin && builtin->kind() == Builtin::KindObject) || ClassDeclPtr::dynamicCast(value);
     if(hasClassValue)
     {
-        string expectedType = ContainedPtr::dynamicCast(value)->scoped();
         _out << sp << nl << "public sealed class Patcher__ : IceInternal.Patcher<" << valueS << ">";
         _out << sb;
         _out << sp << nl << "internal Patcher__(string type, " << name << " m, " << keyS << " key) : base(type)";
@@ -3693,7 +3683,7 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
     {
         if(isValueType(key))
         {
-            _out << nl << "v__ = new " << typeToString(key) << "();";
+            _out << nl << "k__ = new " << typeToString(key) << "();";
         }
         else
         {
@@ -3767,7 +3757,7 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
         {
             if(isValueType(key))
             {
-                _out << nl << "v__ = new " << typeToString(key) << "();";
+                _out << nl << "k__ = new " << typeToString(key) << "();";
             }
             else
             {
@@ -4020,12 +4010,12 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
             _out << nl << "throw;";
             _out << eb;
         }
-        _out << nl << "catch(Ice.UserException ex)";
+        _out << nl << "catch(Ice.UserException ex__)";
         _out << sb;
-        _out << nl << "throw new Ice.UnknownUserException(ex.ice_name(), ex);";
+        _out << nl << "throw new Ice.UnknownUserException(ex__.ice_name(), ex__);";
         _out << eb;
         _out << eb;
-        if(op->returnsData())
+        if(ret || !outParams.empty())
         {
             _out << nl << "IceInternal.BasicStream is__ = og__.istr();";
             _out << nl << "is__.startReadEncaps();";
@@ -4625,7 +4615,7 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
         _out << eb;
         _out << "return;";
         _out << eb;
-        if(p->returnsData())
+        if(ret || !outParams.empty())
         {
             _out << nl << "is__.startReadEncaps();";
             for(q = outParams.begin(); q != outParams.end(); ++q)

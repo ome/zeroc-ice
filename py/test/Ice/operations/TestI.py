@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -149,6 +149,12 @@ class MyDerivedClassI(Test.MyDerivedClass):
         return (r, p3)
 
     def opStringMyEnumD(self, p1, p2, current=None):
+        p3 = p1.copy()
+        r = p1.copy()
+        r.update(p2)
+        return (r, p3)
+
+    def opMyStructMyEnumD(self, p1, p2, current=None):
         p3 = p1.copy()
         r = p1.copy()
         r.update(p2)

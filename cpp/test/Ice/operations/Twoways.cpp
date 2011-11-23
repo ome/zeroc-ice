@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,6 +24,34 @@
 
 using namespace std;
 
+namespace
+{
+
+class PerThreadContextInvokeThread : public IceUtil::Thread
+{
+public:
+    
+PerThreadContextInvokeThread(const Test::MyClassPrx& proxy) : _proxy(proxy)
+{
+}
+    
+virtual void
+run()
+{
+    Ice::Context ctx = _proxy->ice_getCommunicator()->getImplicitContext()->getContext();
+    test(ctx.empty());
+    ctx["one"] = "UN";
+    _proxy->ice_getCommunicator()->getImplicitContext()->setContext(ctx);
+    test(_proxy->opContext() == ctx);
+}
+    
+private:
+    
+    Test::MyClassPrx _proxy;
+};
+
+}
+    
 void
 twoways(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 {
@@ -599,9 +627,34 @@ twoways(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
     }
 
     {
+        Test::MyStruct s11 = { 1, 1 };
+        Test::MyStruct s12 = { 1, 2 };
+        Test::MyStructMyEnumD di1;
+        di1[s11] = Test::enum1;
+        di1[s12] = Test::enum2;
+
+        Test::MyStruct s22 = { 2, 2 };
+        Test::MyStruct s23 = { 2, 3 };
+        Test::MyStructMyEnumD di2;
+        di2[s11] = Test::enum1;
+        di2[s22] = Test::enum3;
+        di2[s23] = Test::enum2;
+
+        Test::MyStructMyEnumD _do;
+        Test::MyStructMyEnumD ro = p->opMyStructMyEnumD(di1, di2, _do);
+
+        test(_do == di1);
+        test(ro.size() == 4);
+        test(ro[s11] == Test::enum1);
+        test(ro[s12] == Test::enum2);
+        test(ro[s22] == Test::enum3);
+        test(ro[s23] == Test::enum2);
+    }
+
+    {
         const int lengths[] = { 0, 1, 2, 126, 127, 128, 129, 253, 254, 255, 256, 257, 1000 };
 
-        for(int l = 0; l != sizeof(lengths) / sizeof(*lengths); ++l)
+        for(unsigned int l = 0; l != sizeof(lengths) / sizeof(*lengths); ++l)
         {
             Test::IntS s;
             for(int i = 0; i < lengths[l]; ++i)
@@ -739,7 +792,15 @@ twoways(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
                 test(p->opContext() == combined);
 
                 test(ic->getImplicitContext()->remove("one") == "ONE");
-                
+
+                if(impls[i] == "PerThread")
+                {
+                    IceUtil::ThreadPtr thread = new PerThreadContextInvokeThread(p->ice_context(Ice::Context()));
+                    thread->start();
+                    thread->getThreadControl().join();
+                }
+
+                ic->getImplicitContext()->setContext(Ice::Context()); // Clear the context to avoid leak report.
                 ic->destroy();
             }
         }

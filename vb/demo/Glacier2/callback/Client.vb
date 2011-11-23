@@ -1,6 +1,6 @@
 ' **********************************************************************
 '
-' Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+' Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 '
 ' This copy of Ice is licensed to you under the terms described in the
 ' ICE_LICENSE file included in this distribution.
@@ -83,7 +83,7 @@ Module Glacier2callbackC
             Dim oneway As CallbackPrx = CallbackPrxHelper.uncheckedCast(twoway.ice_oneway())
             Dim batchOneway As CallbackPrx = CallbackPrxHelper.uncheckedCast(twoway.ice_batchOneway())
 
-            Dim adapter As Ice.ObjectAdapter = communicator().createObjectAdapter("Callback.Client")
+            Dim adapter As Ice.ObjectAdapter = communicator().createObjectAdapterWithRouter("Callback.Client", defaultRouter)
             adapter.add(New CallbackReceiverI, callbackReceiverIdent)
             adapter.add(New CallbackReceiverI, callbackReceiverFakeIdent)
             adapter.activate()

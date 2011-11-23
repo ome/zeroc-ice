@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -144,10 +144,17 @@ ServiceI::start(
             TransientTopicManagerImplPtr manager = new TransientTopicManagerImpl(_instance);
             _managerProxy = TopicManagerPrx::uncheckedCast(topicAdapter->add(manager, topicManagerId));
         }
-        catch(const Ice::Exception&)
+        catch(const Ice::Exception& ex)
         {
             _instance = 0;
-            throw;
+
+            ostringstream s;
+            s << "exception while starting IceStorm service " << name << ":\n";
+            s << ex;
+
+            IceBox::FailureException e(__FILE__, __LINE__);
+            e.reason = s.str();
+            throw e;
         }
         topicAdapter->activate();
         publishAdapter->activate();
@@ -163,10 +170,17 @@ ServiceI::start(
             _manager = new TopicManagerImpl(_instance);
             _managerProxy = TopicManagerPrx::uncheckedCast(topicAdapter->add(_manager->getServant(), topicManagerId));
         }
-        catch(const Ice::Exception&)
+        catch(const Ice::Exception& ex)
         {
             _instance = 0;
-            throw;
+
+            ostringstream s;
+            s << "exception while starting IceStorm service " << name << ":\n";
+            s << ex;
+
+            IceBox::FailureException e(__FILE__, __LINE__);
+            e.reason = s.str();
+            throw e;
         }
     }
     else
@@ -209,7 +223,7 @@ ServiceI::start(
                 Ice::Error error(communicator->getLogger());
                 error << "deployment error: `" << topicManagerAdapterId << "' prefix does not match `"
                       << nodeAdapterId << "'";
-                throw "IceGrid deployment is incorrect";
+                throw IceBox::FailureException(__FILE__, __LINE__, "IceGrid deployment is incorrect");
             }
 
             // Determine the set of node id and node proxies.
@@ -239,19 +253,19 @@ ServiceI::start(
                 {
                     Ice::Error error(communicator->getLogger());
                     error << "deployment error: `" << adapterid << "' does not start with `" << instanceName << "'";
-                    throw "IceGrid deployment is incorrect";
+                    throw IceBox::FailureException(__FILE__, __LINE__, "IceGrid deployment is incorrect");
                 }
 
                 // The node id follows. We find the first digit (the
                 // start of the node id, and then the end of the
                 // digits).
                 string::size_type start = instanceName.size();
-                while(start < adapterid.size() && !isdigit(adapterid[start]))
+                while(start < adapterid.size() && !isdigit(static_cast<unsigned char>(adapterid[start])))
                 {
                     ++start;
                 }
                 string::size_type end = start;
-                while(end < adapterid.size() && isdigit(adapterid[end]))
+                while(end < adapterid.size() && isdigit(static_cast<unsigned char>(adapterid[end])))
                 {
                     ++end;
                 }
@@ -262,7 +276,7 @@ ServiceI::start(
                     Ice::Error error(communicator->getLogger());
                     error << "deployment error: node id does not follow instance name. instance name:"
                           << instanceName << " adapter id: " << adapterid;
-                    throw "IceGrid deployment is incorrect";
+                    throw IceBox::FailureException(__FILE__, __LINE__, "IceGrid deployment is incorrect");
                 }
 
                 int nodeid = atoi(adapterid.substr(start, end-start).c_str());
@@ -280,7 +294,7 @@ ServiceI::start(
         {
             Ice::Error error(communicator->getLogger());
             error << "Replication requires at least 3 Nodes";
-            throw "error";
+            throw IceBox::FailureException(__FILE__, __LINE__, "Replication requires at least 3 Nodes");
         }
 
         try
@@ -343,10 +357,17 @@ ServiceI::start(
 
             node->start();
         }
-        catch(const Ice::Exception&)
+        catch(const Ice::Exception& ex)
         {
             _instance = 0;
-            throw;
+
+            ostringstream s;
+            s << "exception while starting IceStorm service " << name << ":\n";
+            s << ex;
+
+            IceBox::FailureException e(__FILE__, __LINE__);
+            e.reason = s.str();
+            throw e;
         }
     }
         
@@ -378,10 +399,16 @@ ServiceI::start(const CommunicatorPtr& communicator,
         TransientTopicManagerImplPtr manager = new TransientTopicManagerImpl(_instance);
         _managerProxy = TopicManagerPrx::uncheckedCast(topicAdapter->add(manager, id));
     }
-    catch(const Ice::Exception&)
+    catch(const Ice::Exception& ex)
     {
         _instance = 0;
-        throw;
+        ostringstream s;
+        s << "exception while starting IceStorm service " << name << ":\n";
+        s << ex;
+
+        IceBox::FailureException e(__FILE__, __LINE__);
+        e.reason = s.str();
+        throw e;
     }
 }
 

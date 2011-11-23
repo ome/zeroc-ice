@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -919,11 +919,13 @@ ZEND_FUNCTION(Ice_ObjectPrx_ice_endpoints)
 
     HashTable* arr = Z_ARRVAL_P(zv);
     HashPosition pos;
-    zval** val;
+    void* data;
 
     zend_hash_internal_pointer_reset_ex(arr, &pos);
-    while(zend_hash_get_current_data_ex(arr, reinterpret_cast<void**>(&val), &pos) != FAILURE)
+    while(zend_hash_get_current_data_ex(arr, &data, &pos) != FAILURE)
     {
+        zval** val = reinterpret_cast<zval**>(data);
+
         if(Z_TYPE_PP(val) != IS_OBJECT)
         {
             php_error_docref(0 TSRMLS_CC, E_ERROR, "expected an element of type Ice_Endpoint");
@@ -1305,7 +1307,7 @@ ZEND_FUNCTION(Ice_ObjectPrx_ice_router)
     Ice::RouterPrx router;
     if(proxy)
     {
-        if(!def || !def->isA("Ice::Router"))
+        if(!def || !def->isA("::Ice::Router"))
         {
             php_error_docref(0 TSRMLS_CC, E_ERROR, "ice_router requires a proxy narrowed to Ice::Router");
             RETURN_NULL();
@@ -1396,7 +1398,7 @@ ZEND_FUNCTION(Ice_ObjectPrx_ice_locator)
     Ice::LocatorPrx locator;
     if(proxy)
     {
-        if(!def || !def->isA("Ice::Locator"))
+        if(!def || !def->isA("::Ice::Locator"))
         {
             php_error_docref(0 TSRMLS_CC, E_ERROR, "ice_locator requires a proxy narrowed to Ice::Locator");
             RETURN_NULL();
@@ -1819,20 +1821,20 @@ lookupClass(const string& id, Slice::ClassDefPtr& def TSRMLS_DC)
 
     try
     {
-        Slice::TypeList l;
+        Slice::TypePtr type;
         Profile* profile = static_cast<Profile*>(ICE_G(profile));
         if(profile)
         {
-            l = profile->unit->lookupType(id, false);
+            type = profile->lookupType(id);
         }
 
-        if(l.empty())
+        if(!type)
         {
             php_error_docref(0 TSRMLS_CC, E_ERROR, "no Slice definition found for type %s", id.c_str());
             return false;
         }
 
-        Slice::BuiltinPtr b = Slice::BuiltinPtr::dynamicCast(l.front());
+        Slice::BuiltinPtr b = Slice::BuiltinPtr::dynamicCast(type);
         if(b && b->kind() != Slice::Builtin::KindObject && b->kind() != Slice::Builtin::KindObjectProxy)
         {
             php_error_docref(0 TSRMLS_CC, E_ERROR, "type %s is not a class or interface", id.c_str());
@@ -1845,7 +1847,6 @@ lookupClass(const string& id, Slice::ClassDefPtr& def TSRMLS_DC)
             // Allow the use of "::Type" (ClassDecl) or "::Type*" (Proxy).
             //
             Slice::ClassDeclPtr decl;
-            Slice::TypePtr type = l.front();
             Slice::ProxyPtr proxy = Slice::ProxyPtr::dynamicCast(type);
             if(proxy)
             {
@@ -2417,6 +2418,8 @@ IcePHP::Operation::throwUserException(Ice::InputStreamPtr& is TSRMLS_DC)
     is->readBool(); // usesClasses
 
     string id = is->readString();
+    const string origId = id;
+
     while(!id.empty())
     {
         //
@@ -2454,13 +2457,26 @@ IcePHP::Operation::throwUserException(Ice::InputStreamPtr& is TSRMLS_DC)
         else
         {
             is->skipSlice();
-            id = is->readString();
+
+            try
+            {
+                id = is->readString();
+            }
+            catch(Ice::UnmarshalOutOfBoundsException& ex)
+            {
+                //
+                // When readString raises this exception it means we've reached the last slice,
+                // so we set the reason member to a more helpful value.
+                //
+                ex.reason = "unknown exception type `" + origId + "'";
+                throw;
+            }
         }
     }
     //
     // Getting here should be impossible: we can get here only if the
     // sender has marshaled a sequence of type IDs, none of which we
-    // have factory for. This means that sender and receiver disagree
+    // have a factory for. This means that sender and receiver disagree
     // about the Slice definitions they use.
     //
     throw Ice::UnknownUserException(__FILE__, __LINE__);

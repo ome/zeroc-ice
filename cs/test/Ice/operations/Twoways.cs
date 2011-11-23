@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 class Twoways
 {
@@ -20,6 +21,37 @@ class Twoways
         }
     }
     
+    class PerThreadContextInvokeThread
+    {
+        public PerThreadContextInvokeThread(Test.MyClassPrx proxy)
+        {
+            _proxy = proxy;
+        }
+
+        public void Join()
+        {
+            _thread.Join();
+        }
+
+        public void Start()
+        {
+            _thread = new Thread(new ThreadStart(Run));
+            _thread.Start();
+        }
+
+        public void Run()
+        {
+            Dictionary<string, string> ctx = _proxy.ice_getCommunicator().getImplicitContext().getContext();
+            test(ctx.Count == 0);
+            ctx["one"] =  "ONE";
+            _proxy.ice_getCommunicator().getImplicitContext().setContext(ctx);
+            test(Ice.CollectionComparer.Equals(_proxy.opContext(), ctx));
+        }
+        
+        private Test.MyClassPrx _proxy;
+        private Thread _thread;
+    }
+
     internal static void twoways(Ice.Communicator communicator, Test.MyClassPrx p)
     {
         {
@@ -554,6 +586,31 @@ class Twoways
             test(ro[""] == Test.MyEnum.enum2);
             test(ro["Hello!!"] == Test.MyEnum.enum2);
         }
+
+        {
+            Test.MyStruct s11 = new Test.MyStruct(1, 1);
+            Test.MyStruct s12 = new Test.MyStruct(1, 2);
+            Dictionary<Test.MyStruct, Test.MyEnum> di1 = new Dictionary<Test.MyStruct, Test.MyEnum>();
+            di1[s11] = Test.MyEnum.enum1;
+            di1[s12] = Test.MyEnum.enum2;
+
+            Test.MyStruct s22 = new Test.MyStruct(2, 2);
+            Test.MyStruct s23 = new Test.MyStruct(2, 3);
+            Dictionary<Test.MyStruct, Test.MyEnum> di2 = new Dictionary<Test.MyStruct, Test.MyEnum>();
+            di2[s11] = Test.MyEnum.enum1;
+            di2[s22] = Test.MyEnum.enum3;
+            di2[s23] = Test.MyEnum.enum2;
+            
+            Dictionary<Test.MyStruct, Test.MyEnum> _do;
+            Dictionary<Test.MyStruct, Test.MyEnum> ro = p.opMyStructMyEnumD(di1, di2, out _do);
+            
+            test(Ice.CollectionComparer.Equals(_do, di1));
+            test(ro.Count == 4);
+            test(ro[s11] == Test.MyEnum.enum1);
+            test(ro[s12] == Test.MyEnum.enum2);
+            test(ro[s22] == Test.MyEnum.enum3);
+            test(ro[s23] == Test.MyEnum.enum2);
+        }
         
         {
             int[] lengths = new int[] { 0, 1, 2, 126, 127, 128, 129, 253, 254, 255, 256, 257, 1000 };
@@ -704,6 +761,13 @@ class Twoways
                 
                 test(ic.getImplicitContext().remove("one").Equals("ONE"));
 
+                if(impls[i].Equals("PerThread"))
+                {
+                    PerThreadContextInvokeThread thread = new PerThreadContextInvokeThread(
+                        Test.MyClassPrxHelper.uncheckedCast(p3.ice_context(null)));
+                    thread.Start();
+                    thread.Join();
+                }
                 ic.destroy();
             }
         }

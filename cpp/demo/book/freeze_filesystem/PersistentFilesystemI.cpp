@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,14 +17,12 @@ using namespace std;
 Freeze::EvictorPtr Filesystem::NodeI::_evictor;
 
 Filesystem::NodeI::NodeI()
-#ifdef __SUNPRO_CC
-  : _id(Ice::Identity())
-#endif
+  : _destroyed(false), _id(Ice::Identity())
 {
 }
 
 Filesystem::NodeI::NodeI(const Ice::Identity& id)
-    : _id(id)
+    : _destroyed(false), _id(id)
 {
 }
 
@@ -32,29 +30,58 @@ Filesystem::NodeI::NodeI(const Ice::Identity& id)
 // Filesystem::FileI
 //
 string
-Filesystem::FileI::name(const Ice::Current&)
+Filesystem::FileI::name(const Ice::Current& c)
 {
+    IceUtil::Mutex::Lock lock(*this);
+
+    if(_destroyed)
+    {
+        throw Ice::ObjectNotExistException(__FILE__, __LINE__, c.id, c.facet, c.operation);
+    }
+
     return nodeName;
 }
 
 void
-Filesystem::FileI::destroy(const Ice::Current&)
+Filesystem::FileI::destroy(const Ice::Current& c)
 {
+    {
+        IceUtil::Mutex::Lock lock(*this);
+
+	if(_destroyed)
+	{
+	    throw Ice::ObjectNotExistException(__FILE__, __LINE__, c.id, c.facet, c.operation);
+	}
+	_destroyed = true;
+    }
+
     parent->removeNode(nodeName);
     _evictor->remove(_id);
 }
 
 Filesystem::Lines
-Filesystem::FileI::read(const Ice::Current&)
+Filesystem::FileI::read(const Ice::Current& c)
 {
     IceUtil::Mutex::Lock lock(*this);
+
+    if(_destroyed)
+    {
+        throw Ice::ObjectNotExistException(__FILE__, __LINE__, c.id, c.facet, c.operation);
+    }
+
     return text;
 }
 
 void
-Filesystem::FileI::write(const Filesystem::Lines& text, const Ice::Current&)
+Filesystem::FileI::write(const Filesystem::Lines& text, const Ice::Current& c)
 {
     IceUtil::Mutex::Lock lock(*this);
+
+    if(_destroyed)
+    {
+        throw Ice::ObjectNotExistException(__FILE__, __LINE__, c.id, c.facet, c.operation);
+    }
+
     this->text = text;
 }
 
@@ -91,8 +118,6 @@ Filesystem::DirectoryI::destroy(const Ice::Current& c)
         throw Filesystem::PermissionDenied("cannot destroy root directory");
     }
 
-    NodeDict children;
-
     {
         IceUtil::Mutex::Lock lock(*this);
 
@@ -100,20 +125,12 @@ Filesystem::DirectoryI::destroy(const Ice::Current& c)
         {
             throw Ice::ObjectNotExistException(__FILE__, __LINE__, c.id, c.facet, c.operation);
         }
-
-        children = nodes;
+        if(!nodes.empty())
+        {
+            throw Filesystem::PermissionDenied("cannot destroy non-empty directory");
+        }
         _destroyed = true;
     }
-
-    //
-    // We must iterate over the children outside the synchronization.
-    //
-    for(NodeDict::iterator p = children.begin(); p != children.end(); ++p)
-    {
-        p->second.proxy->destroy();
-    }
-
-    assert(nodes.empty());
 
     parent->removeNode(nodeName);
     _evictor->remove(_id);
@@ -171,7 +188,8 @@ Filesystem::DirectoryI::createDirectory(const string& name, const Ice::Current& 
         throw NameInUse(name);
     }
 
-    Ice::Identity id = c.adapter->getCommunicator()->stringToIdentity(IceUtil::generateUUID());
+    Ice::Identity id;
+    id.name = IceUtil::generateUUID();
     PersistentDirectoryPtr dir = new DirectoryI(id);
     dir->nodeName = name;
     dir->parent = PersistentDirectoryPrx::uncheckedCast(c.adapter->createProxy(c.id));
@@ -201,7 +219,8 @@ Filesystem::DirectoryI::createFile(const string& name, const Ice::Current& c)
         throw NameInUse(name);
     }
 
-    Ice::Identity id = c.adapter->getCommunicator()->stringToIdentity(IceUtil::generateUUID());
+    Ice::Identity id;
+    id.name = IceUtil::generateUUID();
     PersistentFilePtr file = new FileI(id);
     file->nodeName = name;
     file->parent = PersistentDirectoryPrx::uncheckedCast(c.adapter->createProxy(c.id));
@@ -226,13 +245,12 @@ Filesystem::DirectoryI::removeNode(const string& name, const Ice::Current&)
     nodes.erase(p);
 }
 
-Filesystem::DirectoryI::DirectoryI() :
-    _destroyed(false)
+Filesystem::DirectoryI::DirectoryI()
 {
 }
 
 Filesystem::DirectoryI::DirectoryI(const Ice::Identity& id) :
-    NodeI(id), _destroyed(false)
+    NodeI(id)
 {
 }
 
@@ -242,11 +260,11 @@ Filesystem::DirectoryI::DirectoryI(const Ice::Identity& id) :
 Ice::ObjectPtr
 Filesystem::NodeFactory::create(const string& type)
 {
-    if(type == "::Filesystem::PersistentFile")
+    if(type == PersistentFile::ice_staticId())
     {
         return new FileI;
     }
-    else if(type == "::Filesystem::PersistentDirectory")
+    else if(type == PersistentDirectory::ice_staticId())
     {
         return new DirectoryI;
     }

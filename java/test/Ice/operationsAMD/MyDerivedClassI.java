@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -316,6 +316,18 @@ public final class MyDerivedClassI extends Test.MyDerivedClass
     {
         java.util.Map<String, Test.MyEnum> p3 = p1;
         java.util.Map<String, Test.MyEnum> r = new java.util.HashMap<String, Test.MyEnum>();
+        r.putAll(p1);
+        r.putAll(p2);
+        cb.ice_response(r, p3);
+    }
+
+    public void
+    opMyStructMyEnumD_async(Test.AMD_MyClass_opMyStructMyEnumD cb,
+                            java.util.Map p1, java.util.Map p2,
+                            Ice.Current current)
+    {
+        java.util.Map<Test.MyStruct, Test.MyEnum> p3 = p1;
+        java.util.Map<Test.MyStruct, Test.MyEnum> r = new java.util.HashMap<Test.MyStruct, Test.MyEnum>();
         r.putAll(p1);
         r.putAll(p2);
         cb.ice_response(r, p3);

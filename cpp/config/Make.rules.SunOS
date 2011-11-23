@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -100,16 +100,6 @@ ifeq ($(CXX),CC)
     # C++ run-time libraries, necessary for linking some shared libraries.
     #
     CXXLIBS		    = -lCstd -lCrun
-
-    #
-    # For some tests, we need to link with Cstd statically. See
-    # http://forum.java.sun.com/thread.jspa?threadID=5277939
-    #
-    ifeq ($(MACHINE_TYPE),i86pc)
-    	ifneq ($(LP64),yes)
-       		STATICLIBSTDFLAG  = -staticlib=Cstd
-	endif
-    endif
 
     mkshlib		    = $(CXX) -G $(LDFLAGS) -o $(1) -h $(2) $(3) $(4)
 

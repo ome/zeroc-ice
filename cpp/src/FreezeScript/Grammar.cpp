@@ -123,12 +123,12 @@
 
 
 /* Copy the first part of user declarations.  */
-#line 1 "Grammar.y"
+#line 1 "../FreezeScript/Grammar.y"
 
 
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -1134,140 +1134,140 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 85 "Grammar.y"
+#line 85 "../FreezeScript/Grammar.y"
     {
     parseResult = yyvsp[0];
 ;}
     break;
 
   case 3:
-#line 94 "Grammar.y"
+#line 94 "../FreezeScript/Grammar.y"
     {
     yyval = yyvsp[0];
 ;}
     break;
 
   case 4:
-#line 103 "Grammar.y"
+#line 103 "../FreezeScript/Grammar.y"
     {
     yyval = new BinaryNode(BinOpLess, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;}
     break;
 
   case 5:
-#line 107 "Grammar.y"
+#line 107 "../FreezeScript/Grammar.y"
     {
     yyval = new BinaryNode(BinOpGreater, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;}
     break;
 
   case 6:
-#line 111 "Grammar.y"
+#line 111 "../FreezeScript/Grammar.y"
     {
     yyval = new BinaryNode(BinOpLessEq, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;}
     break;
 
   case 7:
-#line 115 "Grammar.y"
+#line 115 "../FreezeScript/Grammar.y"
     {
     yyval = new BinaryNode(BinOpGrEq, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;}
     break;
 
   case 8:
-#line 119 "Grammar.y"
+#line 119 "../FreezeScript/Grammar.y"
     {
     yyval = new BinaryNode(BinOpEq, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;}
     break;
 
   case 9:
-#line 123 "Grammar.y"
+#line 123 "../FreezeScript/Grammar.y"
     {
     yyval = new BinaryNode(BinOpNotEq, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;}
     break;
 
   case 10:
-#line 127 "Grammar.y"
+#line 127 "../FreezeScript/Grammar.y"
     {
     yyval = new BinaryNode(BinOpOr, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;}
     break;
 
   case 11:
-#line 131 "Grammar.y"
+#line 131 "../FreezeScript/Grammar.y"
     {
     yyval = new BinaryNode(BinOpAnd, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;}
     break;
 
   case 12:
-#line 135 "Grammar.y"
+#line 135 "../FreezeScript/Grammar.y"
     {
     yyval = new BinaryNode(BinOpMul, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;}
     break;
 
   case 13:
-#line 139 "Grammar.y"
+#line 139 "../FreezeScript/Grammar.y"
     {
     yyval = new BinaryNode(BinOpDiv, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;}
     break;
 
   case 14:
-#line 143 "Grammar.y"
+#line 143 "../FreezeScript/Grammar.y"
     {
     yyval = new BinaryNode(BinOpMod, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;}
     break;
 
   case 15:
-#line 147 "Grammar.y"
+#line 147 "../FreezeScript/Grammar.y"
     {
     yyval = new BinaryNode(BinOpAdd, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;}
     break;
 
   case 16:
-#line 151 "Grammar.y"
+#line 151 "../FreezeScript/Grammar.y"
     {
     yyval = new BinaryNode(BinOpSub, parseDataFactory, yyvsp[-2], yyvsp[0]);
 ;}
     break;
 
   case 17:
-#line 155 "Grammar.y"
+#line 155 "../FreezeScript/Grammar.y"
     {
     yyval = yyvsp[0];
 ;}
     break;
 
   case 18:
-#line 164 "Grammar.y"
+#line 164 "../FreezeScript/Grammar.y"
     {
     yyval = yyvsp[-1];
 ;}
     break;
 
   case 19:
-#line 168 "Grammar.y"
+#line 168 "../FreezeScript/Grammar.y"
     {
     yyval = new UnaryNode(UnaryOpNeg, parseDataFactory, yyvsp[0]);
 ;}
     break;
 
   case 20:
-#line 172 "Grammar.y"
+#line 172 "../FreezeScript/Grammar.y"
     {
     yyval = new UnaryNode(UnaryOpNot, parseDataFactory, yyvsp[0]);
 ;}
     break;
 
   case 21:
-#line 176 "Grammar.y"
+#line 176 "../FreezeScript/Grammar.y"
     {
     IntegerTokPtr intVal = IntegerTokPtr::dynamicCast(yyvsp[0]);
     assert(intVal);
@@ -1276,7 +1276,7 @@ yyreduce:
     break;
 
   case 22:
-#line 182 "Grammar.y"
+#line 182 "../FreezeScript/Grammar.y"
     {
     FloatingTokPtr floatVal = FloatingTokPtr::dynamicCast(yyvsp[0]);
     assert(floatVal);
@@ -1285,7 +1285,7 @@ yyreduce:
     break;
 
   case 23:
-#line 188 "Grammar.y"
+#line 188 "../FreezeScript/Grammar.y"
     {
     StringTokPtr stringVal = StringTokPtr::dynamicCast(yyvsp[0]);
     assert(stringVal);
@@ -1294,35 +1294,35 @@ yyreduce:
     break;
 
   case 24:
-#line 194 "Grammar.y"
+#line 194 "../FreezeScript/Grammar.y"
     {
     yyval = new DataNode(parseDataFactory->createBoolean(true, true));
 ;}
     break;
 
   case 25:
-#line 198 "Grammar.y"
+#line 198 "../FreezeScript/Grammar.y"
     {
     yyval = new DataNode(parseDataFactory->createBoolean(false, true));
 ;}
     break;
 
   case 26:
-#line 202 "Grammar.y"
+#line 202 "../FreezeScript/Grammar.y"
     {
     yyval = new DataNode(parseDataFactory->createNil(true));
 ;}
     break;
 
   case 27:
-#line 206 "Grammar.y"
+#line 206 "../FreezeScript/Grammar.y"
     {
     yyval = yyvsp[0];
 ;}
     break;
 
   case 28:
-#line 210 "Grammar.y"
+#line 210 "../FreezeScript/Grammar.y"
     {
     EntityNodePtr entity = EntityNodePtr::dynamicCast(yyvsp[-2]);
     assert(entity);
@@ -1334,14 +1334,14 @@ yyreduce:
     break;
 
   case 29:
-#line 219 "Grammar.y"
+#line 219 "../FreezeScript/Grammar.y"
     {
     yyval = yyvsp[0];
 ;}
     break;
 
   case 30:
-#line 223 "Grammar.y"
+#line 223 "../FreezeScript/Grammar.y"
     {
     StringTokPtr stringVal = StringTokPtr::dynamicCast(yyvsp[0]);
     assert(stringVal);
@@ -1350,7 +1350,7 @@ yyreduce:
     break;
 
   case 31:
-#line 234 "Grammar.y"
+#line 234 "../FreezeScript/Grammar.y"
     {
     EntityNodePtr entity = EntityNodePtr::dynamicCast(yyvsp[-3]);
     assert(entity);
@@ -1360,7 +1360,7 @@ yyreduce:
     break;
 
   case 32:
-#line 241 "Grammar.y"
+#line 241 "../FreezeScript/Grammar.y"
     {
     StringTokPtr stringVal = StringTokPtr::dynamicCast(yyvsp[0]);
     assert(stringVal);
@@ -1372,7 +1372,7 @@ yyreduce:
     break;
 
   case 33:
-#line 250 "Grammar.y"
+#line 250 "../FreezeScript/Grammar.y"
     {
     StringTokPtr stringVal = StringTokPtr::dynamicCast(yyvsp[0]);
     assert(stringVal);
@@ -1381,7 +1381,7 @@ yyreduce:
     break;
 
   case 34:
-#line 261 "Grammar.y"
+#line 261 "../FreezeScript/Grammar.y"
     {
     StringTokPtr func = StringTokPtr::dynamicCast(yyvsp[-3]);
     assert(func);
@@ -1392,7 +1392,7 @@ yyreduce:
     break;
 
   case 35:
-#line 274 "Grammar.y"
+#line 274 "../FreezeScript/Grammar.y"
     {
     NodeListTokPtr l = NodeListTokPtr::dynamicCast(yyvsp[-2]);
     assert(l);
@@ -1402,7 +1402,7 @@ yyreduce:
     break;
 
   case 36:
-#line 281 "Grammar.y"
+#line 281 "../FreezeScript/Grammar.y"
     {
     NodeListTokPtr result = new NodeListTok;
     result->v.push_back(yyvsp[0]);
@@ -1411,14 +1411,14 @@ yyreduce:
     break;
 
   case 37:
-#line 287 "Grammar.y"
+#line 287 "../FreezeScript/Grammar.y"
     {
     yyval = new NodeListTok;
 ;}
     break;
 
   case 38:
-#line 296 "Grammar.y"
+#line 296 "../FreezeScript/Grammar.y"
     {
     StringTokPtr stringVal = StringTokPtr::dynamicCast(yyvsp[-2]);
     assert(stringVal);
@@ -1430,7 +1430,7 @@ yyreduce:
     break;
 
   case 39:
-#line 305 "Grammar.y"
+#line 305 "../FreezeScript/Grammar.y"
     {
     StringTokPtr idVal = StringTokPtr::dynamicCast(yyvsp[0]);
     assert(idVal);
@@ -1669,6 +1669,6 @@ yyreturn:
 }
 
 
-#line 314 "Grammar.y"
+#line 314 "../FreezeScript/Grammar.y"
 
 

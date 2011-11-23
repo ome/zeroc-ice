@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -92,6 +92,9 @@ CallbackClient::run(int argc, char* argv[])
     
         try
         {
+#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
+            IceUtil::DummyBCC dummy;
+#endif
             router->createSession(id, pw);
             break;
         }
@@ -113,7 +116,7 @@ CallbackClient::run(int argc, char* argv[])
     CallbackPrx oneway = CallbackPrx::uncheckedCast(twoway->ice_oneway());
     CallbackPrx batchOneway = CallbackPrx::uncheckedCast(twoway->ice_batchOneway());
     
-    Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Callback.Client");
+    Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapterWithRouter("Callback.Client", defaultRouter);
     adapter->add(new CallbackReceiverI, callbackReceiverIdent);
     adapter->add(new CallbackReceiverI, callbackReceiverFakeIdent); // Should never be called for the fake identity. 
     adapter->activate();

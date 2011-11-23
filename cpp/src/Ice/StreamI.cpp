@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 #include <Ice/StreamI.h>
 #include <Ice/Initialize.h>
+#include <Ice/LocalException.h>
 
 using namespace std;
 using namespace Ice;
@@ -305,7 +306,7 @@ Ice::InputStreamI::startEncapsulation()
 void
 Ice::InputStreamI::endEncapsulation()
 {
-    _is->endReadEncaps();
+    _is->endReadEncapsChecked();
 }
 
 void
@@ -562,6 +563,11 @@ Ice::OutputStreamI::writeWstringSeq(const vector<wstring>& v)
 void
 Ice::OutputStreamI::writeSize(Int sz)
 {
+    if(sz < 0)
+    {
+        throw NegativeSizeException(__FILE__, __LINE__);
+    }
+
     _os->writeSize(sz);
 }
 
@@ -610,7 +616,7 @@ Ice::OutputStreamI::startEncapsulation()
 void
 Ice::OutputStreamI::endEncapsulation()
 {
-    _os->endWriteEncaps();
+    _os->endWriteEncapsChecked();
 }
 
 void
@@ -698,7 +704,14 @@ Ice::UserExceptionWriter::~UserExceptionWriter() throw()
 void
 Ice::UserExceptionWriter::__write(BasicStream* os) const
 {
-    OutputStreamPtr stream = new OutputStreamI(_communicator, os);
+    OutputStreamI* stream = reinterpret_cast<OutputStreamI*>(os->closure());
+    if(!stream)
+    {
+        //
+        // Required for IcePy usage
+        //
+        stream = new OutputStreamI(_communicator, os);
+    }
     write(stream);
 }
 

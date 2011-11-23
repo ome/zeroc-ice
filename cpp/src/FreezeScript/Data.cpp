@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -859,8 +859,12 @@ string
 FreezeScript::IntegerData::toString(Ice::Long value)
 {
     char buf[64];
-#if defined(_WIN32)
+#ifdef _WIN32
+#if defined(_MSC_VER) && (_MSC_VER >= 1400)
+    sprintf_s(buf, "%I64d", value);
+#else
     sprintf(buf, "%I64d", value);
+#endif
 #elif defined(ICE_64)
     sprintf(buf, "%ld", value);
 #else

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -48,6 +48,7 @@ SLICE_API void writeAllocateCode(::IceUtilInternal::Output&, const ParamDeclList
                                  const StringList&, bool = false, bool = false);
 SLICE_API void writeStreamMarshalUnmarshalCode(::IceUtilInternal::Output&, const TypePtr&, const std::string&, bool,
                                                const std::string& = "", bool = false, const StringList& = StringList());
+SLICE_API std::string findMetaData(const SequencePtr&, const StringList&, bool, bool&);
 SLICE_API std::string findMetaData(const StringList&, bool);
 SLICE_API bool inWstringModule(const SequencePtr&);
 

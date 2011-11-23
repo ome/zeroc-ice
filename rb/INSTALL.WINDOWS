@@ -14,7 +14,7 @@ Build Environment
 
 To build Ice for Ruby you must have the following:
 
- - Ice 3.3.0 for C++
+ - Ice 3.3.1 for C++
  - Visual C++ 6.0 SP5 with STLport 4.6.2 (or later)*
  - Ruby 1.8.6
 
@@ -24,12 +24,12 @@ To build Ice for Ruby you must have the following:
 The instructions in this file make the following assumptions about
 your build environment:
 
-1. You have installed the Ice 3.3.0 for Visual C++ 6.0 distribution
+1. You have installed the Ice 3.3.1 for Visual C++ 6.0 distribution
    using the installer available at the link below:
 
    http://www.zeroc.com/download.html
 
-   The default installation directory is C:\Ice-3.3.0-VC60.
+   The default installation directory is C:\Ice-3.3.1-VC60.
 
 2. You have installed Ruby using the Windows installer available at
    RubyForge:
@@ -61,13 +61,13 @@ Follow these steps to build the Ice extension for Ruby:
 
 2) Change to the Ice for Ruby source directory.
 
-   > cd Ice-3.3.0\rb
+   > cd Ice-3.3.1\rb
 
-3) If you installed the Ice 3.3.0 for Visual C++ 6.0 distribution in a 
+3) If you installed the Ice 3.3.1 for Visual C++ 6.0 distribution in a 
    non-standard location, set the ICE_HOME environment variable with
    the Ice installation directory. For example:
 
-   > set ICE_HOME=C:\Ice-3.3.0
+   > set ICE_HOME=C:\Ice-3.3.1
 
 4) Edit config\Make.rules.mak and review the settings. In particular
    you must set CPP_COMPILER to the appropriate compiler.
@@ -144,20 +144,20 @@ The Ruby interpreter must be able to locate the Ice extension. One way
 to configure the interpreter is to define the RUBYLIB environment
 variable as follows:
 
-  > set RUBYLIB=C:\Ice-3.3.0\ruby
+  > set RUBYLIB=C:\Ice-3.3.1\ruby
 
 This example assumes your Ice for Ruby installation is located in the
-C:\Ice-3.3.0 directory.
+C:\Ice-3.3.1 directory.
 
 In addition, you must modify your PATH environment variable to include
 the following directories:
 
-  C:\Ice-3.3.0-VC60\bin
-  C:\Ice-3.3.0\bin
+  C:\Ice-3.3.1-VC60\bin
+  C:\Ice-3.3.1\bin
 
 At a command prompt, you can set your PATH as shown below:
 
-  > set PATH=C:\Ice-3.3.0-VC60\bin;C:\Ice-3.3.0\bin;%PATH%
+  > set PATH=C:\Ice-3.3.1-VC60\bin;C:\Ice-3.3.1\bin;%PATH%
 
 
 Testing your installation
@@ -188,15 +188,15 @@ mapping, such as C++.
 
 As an example, let's run the hello application in demo\Ice\hello using
 the C++ server. Assuming that your Ice installation is located in
-C:\Ice-3.3.0, and that you have already compiled the sample C++
+C:\Ice-3.3.1, and that you have already compiled the sample C++
 programs, we begin by starting the server:
 
-  > cd \Ice-3.3.0-VC60\demo\Ice\hello
+  > cd \Ice-3.3.1-VC60\demo\Ice\hello
   > server
 
 In a separate window, start the client:
 
-  > cd Ice-3.3.0\rb\demo\Ice\hello
+  > cd Ice-3.3.1\rb\demo\Ice\hello
   > ruby Client.rb
 
 Some demo directories contain README files if additional requirements

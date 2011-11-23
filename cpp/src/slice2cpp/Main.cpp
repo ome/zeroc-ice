@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,12 +8,26 @@
 // **********************************************************************
 
 #include <IceUtil/Options.h>
+#include <IceUtil/CtrlCHandler.h>
+#include <IceUtil/StaticMutex.h>
 #include <Slice/Preprocessor.h>
-#include <Slice/SignalHandler.h>
+#include <Slice/FileTracker.h>
+#include <Slice/Util.h>
 #include <Gen.h>
 
 using namespace std;
 using namespace Slice;
+
+static IceUtil::StaticMutex _mutex = ICE_STATIC_MUTEX_INITIALIZER;
+static bool _interrupted = false;
+
+void
+interruptedCallback(int signal)
+{
+    IceUtil::StaticMutex::Lock lock(_mutex);
+
+    _interrupted = true;
+}
 
 void
 usage(const char* n)
@@ -71,6 +85,9 @@ main(int argc, char* argv[])
     vector<string> args;
     try
     {
+#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
+        IceUtil::DummyBCC dummy;
+#endif
         args = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtilInternal::BadOptException& e)
@@ -88,7 +105,7 @@ main(int argc, char* argv[])
 
     if(opts.isSet("version"))
     {
-        cout << ICE_STRING_VERSION << endl;
+        cerr << ICE_STRING_VERSION << endl;
         return EXIT_SUCCESS;
     }
 
@@ -142,21 +159,25 @@ main(int argc, char* argv[])
 
     if(args.empty())
     {
-        cerr << argv[0] << ": no input file" << endl;
+        getErrorStream() << argv[0] << ": error: no input file" << endl;
         usage(argv[0]);
         return EXIT_FAILURE;
     }
 
     int status = EXIT_SUCCESS;
 
+    IceUtil::CtrlCHandler ctrlCHandler;
+    ctrlCHandler.setCallback(interruptedCallback);
+
     for(i = args.begin(); i != args.end(); ++i)
     {
-        SignalHandler sigHandler;
-
         if(depend)
         {
             Preprocessor icecpp(argv[0], *i, cppArgs);
-            icecpp.printMakefileDependencies(Preprocessor::CPlusPlus, includePaths);
+            if(!icecpp.printMakefileDependencies(Preprocessor::CPlusPlus, includePaths, sourceExtension))
+            {
+                return EXIT_FAILURE;
+            }
         }
         else
         {
@@ -200,17 +221,34 @@ main(int argc, char* argv[])
                 }
                 else
                 {
-                    Gen gen(argv[0], icecpp.getBaseName(), headerExtension, sourceExtension, extraHeaders, include,
-                            includePaths, dllExport, output, impl, checksum, stream, ice);
-                    if(!gen)
+                    try
                     {
+                        Gen gen(icecpp.getBaseName(), headerExtension, sourceExtension, extraHeaders, include,
+                                includePaths, dllExport, output, impl, checksum, stream, ice);
+                        gen.generate(u);
+                    }
+                    catch(const Slice::FileException& ex)
+                    {
+                        // If a file could not be created, then
+                        // cleanup any created files.
+                        FileTracker::instance()->cleanup();
                         u->destroy();
+                        getErrorStream() << argv[0] << ": error: " << ex.reason() << endl;
                         return EXIT_FAILURE;
                     }
-                    gen.generate(u);
                 }
 
                 u->destroy();
+            }
+        }
+
+        {
+            IceUtil::StaticMutex::Lock lock(_mutex);
+
+            if(_interrupted)
+            {
+                FileTracker::instance()->cleanup();
+                return EXIT_FAILURE;
             }
         }
     }

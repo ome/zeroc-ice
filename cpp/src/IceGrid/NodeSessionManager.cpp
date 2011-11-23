@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -322,19 +322,29 @@ NodeSessionManager::destroy()
     NodeSessionMap sessions;
     {
         Lock sync(*this);
+        if(_destroyed)
+        {
+            return;
+        }
         _destroyed = true;
         _sessions.swap(sessions);
         notifyAll();
     }
 
-    _thread->terminate();
+    if(_thread)
+    {
+        _thread->terminate();
+    }
     NodeSessionMap::const_iterator p;
     for(p = sessions.begin(); p != sessions.end(); ++p)
     {
         p->second->terminate();
     }
 
-    _thread->getThreadControl().join();
+    if(_thread)
+    {
+        _thread->getThreadControl().join();
+    }
     for(p = sessions.begin(); p != sessions.end(); ++p)
     {
         p->second->getThreadControl().join();
@@ -581,7 +591,7 @@ NodeSessionManager::createdSession(const NodeSessionPrx& session)
     //
     for(vector<NodeSessionKeepAliveThreadPtr>::const_iterator p = sessions.begin(); p != sessions.end(); ++p)
     {
-        (*p)->tryCreateSession(true);
+        (*p)->tryCreateSession(true, IceUtil::Time::seconds(5));
     }
 }
 

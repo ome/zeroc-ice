@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -43,10 +43,10 @@ public:
     
     AdapterEntry(AdapterCache&, const std::string&, const std::string&);
 
-    virtual void getLocatorAdapterInfo(LocatorAdapterInfoSeq&, int&, bool&, bool&) = 0;
-    virtual void increaseRoundRobinCount(int) = 0;
+    virtual void getLocatorAdapterInfo(LocatorAdapterInfoSeq&, int&, bool&, bool&, const std::set<std::string>&) = 0;
     virtual float getLeastLoadedNodeLoad(LoadSample) const = 0;
     virtual AdapterInfoSeq getAdapterInfo() const = 0;
+    virtual AdapterPrx getProxy(const std::string&, bool) const = 0;
 
     virtual bool canRemove();
 
@@ -68,13 +68,12 @@ public:
     ServerAdapterEntry(AdapterCache&, const std::string&, const std::string&, const std::string&, int, 
                        const ServerEntryPtr&);
 
-    virtual void getLocatorAdapterInfo(LocatorAdapterInfoSeq&, int&, bool&, bool&);
-    virtual void increaseRoundRobinCount(int);
+    virtual void getLocatorAdapterInfo(LocatorAdapterInfoSeq&, int&, bool&, bool&, const std::set<std::string>&);
     virtual float getLeastLoadedNodeLoad(LoadSample) const;
     virtual AdapterInfoSeq getAdapterInfo() const;
-    virtual const std::string& getReplicaGroupId() const { return _replicaGroupId; }
+    virtual AdapterPrx getProxy(const std::string&, bool) const;
 
-    AdapterPrx getProxy(const std::string&, bool) const;
+    const std::string& getReplicaGroupId() const { return _replicaGroupId; }
     int getPriority() const;
     
 private:
@@ -91,10 +90,10 @@ public:
 
     ReplicaGroupEntry(AdapterCache&, const std::string&, const std::string&, const LoadBalancingPolicyPtr&);
 
-    virtual void getLocatorAdapterInfo(LocatorAdapterInfoSeq&, int&, bool&, bool&);
-    virtual void increaseRoundRobinCount(int);
+    virtual void getLocatorAdapterInfo(LocatorAdapterInfoSeq&, int&, bool&, bool&, const std::set<std::string>&);
     virtual float getLeastLoadedNodeLoad(LoadSample) const;
     virtual AdapterInfoSeq getAdapterInfo() const;
+    virtual AdapterPrx getProxy(const std::string&, bool) const { return 0; }
 
     void addReplica(const std::string&, const ServerAdapterEntryPtr&);
     void removeReplica(const std::string&);

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -52,7 +52,7 @@ CPDBFLAGS       = /pdb:$(CLIENT:.exe=.pdb)
 CAPDBFLAGS      = /pdb:$(CALC:.exe=.pdb)
 !endif
 
-!if "$(CPP_COMPILER)" == "BCC2007"
+!if "$(BCPLUSPLUS)" == "yes"
 RES_FILE        = ,, IcePatch2.res
 SRES_FILE       = ,, IcePatch2Server.res
 CRES_FILE       = ,, IcePatch2Client.res
@@ -93,13 +93,12 @@ $(CALC): $(CALCOBJS) IcePatch2Calc.res
 	    $(MT) -nologo -manifest $@.manifest security.manifest -outputresource:$@;#1 && del /q $@.manifest
 
 clean::
-	del /q FileInfo.cpp $(HDIR)\FileInfo.h
-	del /q FileServer.cpp $(HDIR)\FileServer.h
-	del /q $(DLLNAME:.dll=.*)
-	del /q $(SERVER:.exe=.*)
-	del /q $(CLIENT:.exe=.*)
-	del /q $(CALC:.exe=.*)
-	del /q IcePatch.res IcePatch2Server.res IcePatch2Client.res IcePatch2Calc.res
+	-del /q FileInfo.cpp $(HDIR)\FileInfo.h
+	-del /q FileServer.cpp $(HDIR)\FileServer.h
+	-del /q $(SERVER:.exe=.*)
+	-del /q $(CLIENT:.exe=.*)
+	-del /q $(CALC:.exe=.*)
+	-del /q IcePatch.res IcePatch2Server.res IcePatch2Client.res IcePatch2Calc.res
 
 install:: all
 	copy $(LIBNAME) $(install_libdir)
@@ -109,7 +108,7 @@ install:: all
 	copy $(CALC) $(install_bindir)
 
 
-!if "$(CPP_COMPILER)" == "BCC2007" && "$(OPTIMIZE)" != "yes"
+!if "$(BCPLUSPLUS)" == "yes" && "$(OPTIMIZE)" != "yes"
 
 install:: all
 	copy $(DLLNAME:.dll=.tds) $(install_bindir)

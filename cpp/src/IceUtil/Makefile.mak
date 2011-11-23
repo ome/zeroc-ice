@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -20,13 +20,14 @@ OBJS		= ArgVector.obj \
 		  CountDownLatch.obj \
 		  CtrlCHandler.obj \
 		  Exception.obj \
-		  Shared.obj \
+		  FileUtil.obj \
 		  InputUtil.obj \
 		  Options.obj \
 		  OutputUtil.obj \
 		  Random.obj \
 		  RWRecMutex.obj \
 		  RecMutex.obj \
+		  Shared.obj \
 		  StaticMutex.obj \
 		  StringUtil.obj \
 		  Thread.obj \
@@ -46,7 +47,7 @@ CPPFLAGS        = $(CPPFLAGS) -DICE_UTIL_API_EXPORTS -I.. -DWIN32_LEAN_AND_MEAN
 PDBFLAGS	= /pdb:$(DLLNAME:.dll=.pdb)
 !endif
 
-!if "$(CPP_COMPILER)" == "BCC2007"
+!if "$(BCPLUSPLUS)" == "yes"
 RES_FILE	= ,, IceUtil.res
 !else
 RES_FILE	= IceUtil.res
@@ -73,15 +74,14 @@ $(DLLNAME): $(OBJS) IceUtil.res
 !endif
 
 clean::
-	del /q $(DLLNAME:.dll=.*)
-	del /q IceUtil.res
+	-del /q IceUtil.res
 
 install:: all
 	copy $(LIBNAME) $(install_libdir)
 	copy $(DLLNAME) $(install_bindir)
 
 
-!if "$(CPP_COMPILER)" == "BCC2007" && "$(OPTIMIZE)" != "yes"
+!if "$(BCPLUSPLUS)" == "yes" && "$(OPTIMIZE)" != "yes"
 
 install:: all
 	copy $(DLLNAME:.dll=.tds) $(install_bindir)

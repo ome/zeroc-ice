@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -123,7 +123,7 @@ public class Client extends Ice.Application
         CallbackPrx oneway = CallbackPrxHelper.uncheckedCast(twoway.ice_oneway());
         CallbackPrx batchOneway = CallbackPrxHelper.uncheckedCast(twoway.ice_batchOneway());
 
-        Ice.ObjectAdapter adapter = communicator().createObjectAdapter("Callback.Client");
+        Ice.ObjectAdapter adapter = communicator().createObjectAdapterWithRouter("Callback.Client", defaultRouter);
         adapter.add(new CallbackReceiverI(), callbackReceiverIdent);
         adapter.add(new CallbackReceiverI(), callbackReceiverFakeIdent);
         adapter.activate();

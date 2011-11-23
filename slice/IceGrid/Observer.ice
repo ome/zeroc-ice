@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,8 @@
 
 #ifndef ICE_GRID_OBSERVER_ICE
 #define ICE_GRID_OBSERVER_ICE
+
+[["cpp:header-ext:h"]]
 
 #include <Glacier2/Session.ice>
 #include <IceGrid/Exception.ice>
@@ -133,7 +135,7 @@ sequence<NodeDynamicInfo> NodeDynamicInfoSeq;
  * nodes.
  * 
  **/
-interface NodeObserver
+["ami"] interface NodeObserver
 {
     /**
      *
@@ -143,7 +145,7 @@ interface NodeObserver
      * @param nodes The current state of the nodes.
      *
      **/
-    ["ami"] void nodeInit(NodeDynamicInfoSeq nodes);
+    void nodeInit(NodeDynamicInfoSeq nodes);
 
     /**
      *
@@ -187,7 +189,7 @@ interface NodeObserver
      * @param updatedInfo The new adapter state.
      * 
      **/
-    void updateAdapter(string node, AdapterDynamicInfo updatedInfo);
+     void updateAdapter(string node, AdapterDynamicInfo updatedInfo);
 };
 
 /**

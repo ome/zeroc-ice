@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -11,6 +11,12 @@ top_srcdir	= ..\..
 
 LIBNAME		= $(top_srcdir)\lib\icestorm$(LIBSUFFIX).lib
 DLLNAME		= $(top_srcdir)\bin\icestorm$(SOVERSION)$(LIBSUFFIX).dll
+
+SVCLIBNAME_D	= $(top_srcdir)\lib\icestormserviced.lib
+SVCDLLNAME_D	= $(top_srcdir)\bin\icestormservice$(SOVERSION)d.dll
+
+SVCLIBNAME_R	= $(top_srcdir)\lib\icestormservice.lib
+SVCDLLNAME_R	= $(top_srcdir)\bin\icestormservice$(SOVERSION).dll
 
 SVCLIBNAME	= $(top_srcdir)\lib\icestormservice$(LIBSUFFIX).lib
 SVCDLLNAME	= $(top_srcdir)\bin\icestormservice$(SOVERSION)$(LIBSUFFIX).dll
@@ -84,7 +90,7 @@ APDBFLAGS       = /pdb:$(ADMIN:.exe=.pdb)
 MPDBFLAGS       = /pdb:$(MIGRATE:.exe=.pdb)
 !endif
 
-!if "$(CPP_COMPILER)" == "BCC2007"
+!if "$(BCPLUSPLUS)" == "yes"
 RES_FILE        = ,, IceStorm.res
 SRES_FILE       = ,, IceStormService.res
 ARES_FILE       = ,, IceStormAdmin.res
@@ -175,22 +181,18 @@ clean::
 	del /q V32FormatDB.cpp V31FormatDB.cpp V31FormatDB.h V31FormatDB.h
 
 clean::
-	del /q IceStorm.cpp $(HDIR)\IceStorm.h
-	del /q IceStormInternal.cpp IceStormInternal.h
-	del /q V32Migrate.cpp V32Migrate.h
-	del /q V31Migrate.cpp V31Migrate.h
-	del /q LinkRecord.cpp LinkRecord.h
-	del /q Election.cpp Election.h
-	del /q SubscriberRecord.cpp SubscriberRecord.h
-	del /q $(DLLNAME:.dll=.*)
-	del /q $(SVCDLLNAME:.dll=.*)
-	del /q $(ADMIN:.exe=.*)
-	del /q $(MIGRATE:.exe=.*)
-	del /q IceStormAdmin.res IceStormMigrate.res IceStorm.res IceStormService.res
-
-clean::
-#	del /q Grammar.cpp Grammar.h
-#	del /q Scanner.cpp
+	-del /q IceStorm.cpp $(HDIR)\IceStorm.h
+	-del /q IceStormInternal.cpp IceStormInternal.h
+	-del /q V32Migrate.cpp V32Migrate.h
+	-del /q V31Migrate.cpp V31Migrate.h
+	-del /q LinkRecord.cpp LinkRecord.h
+	-del /q Election.cpp Election.h
+	-del /q SubscriberRecord.cpp SubscriberRecord.h
+	-del /q $(SVCDLLNAME_R:.dll=.*) $(SVCDLLNAME_D:.dll=.*)
+	-del /q $(SVCLIBNAME_R) $(SVCLIBNAME_D)
+	-del /q $(ADMIN:.exe=.*)
+	-del /q $(MIGRATE:.exe=.*)
+	-del /q IceStormAdmin.res IceStormMigrate.res IceStorm.res IceStormService.res
 
 install:: all
 	copy $(LIBNAME) $(install_libdir)
@@ -201,7 +203,7 @@ install:: all
 	copy $(MIGRATE) $(install_bindir)
 
 
-!if "$(CPP_COMPILER)" == "BCC2007" && "$(OPTIMIZE)" != "yes"
+!if "$(BCPLUSPLUS)" == "yes" && "$(OPTIMIZE)" != "yes"
 
 install:: all
 	copy $(DLLNAME:.dll=.tds) $(install_bindir)

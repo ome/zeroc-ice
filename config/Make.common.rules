@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -14,7 +14,8 @@
 SHELL			= /bin/sh
 VERSION_MAJOR   	= 3
 VERSION_MINOR   	= 3
-VERSION			= 3.3.0
+VERSION_PATCH           = 1
+VERSION			= 3.3.1
 SHORT_VERSION           = 3.3
 SOVERSION		= 33
 
@@ -156,6 +157,7 @@ $(warning Found $(slice_translator) in both /usr/bin and /opt/Ice-$(VERSION)/bin
 $(error Unable to find a valid Ice distribution, please verify ICE_HOME is properly configured and Ice is correctly installed.)
     endif
     ice_bin_dist = 1
+    ice_cpp_dir = $(ice_dir)
 endif
 
 #
@@ -294,7 +296,7 @@ ifeq ($(installprogram),)
 endif
 
 ifeq ($(mkdir),)
-    mkdir		= mkdir $(1) ; \
+    mkdir		= mkdir $(1) $(2); \
 			  chmod a+rx $(1)
 endif
 
@@ -304,13 +306,13 @@ install-common::
 	@if test ! -d $(prefix) ; \
 	then \
 	    echo "Creating $(prefix)..." ; \
-	    $(call mkdir,$(prefix)) ; \
+	    $(call mkdir,$(prefix), -p) ; \
 	fi
 
 	@if test ! -d $(install_slicedir) ; \
 	then \
 	    echo "Creating $(install_slicedir)..." ; \
-	    $(call mkdir,$(install_slicedir)) ; \
+	    $(call mkdir, $(install_slicedir)) ; \
 	    cd $(top_srcdir)/../slice ; \
 	    for subdir in * ; \
 	    do \

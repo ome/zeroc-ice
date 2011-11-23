@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,13 +8,28 @@
 // **********************************************************************
 
 #include <IceUtil/Options.h>
+#include <IceUtil/StringUtil.h>
+#include <IceUtil/CtrlCHandler.h>
+#include <IceUtil/StaticMutex.h>
 #include <Slice/Preprocessor.h>
-#include <Slice/SignalHandler.h>
+#include <Slice/FileTracker.h>
+#include <Slice/Util.h>
 #include <Gen.h>
 
 using namespace std;
 using namespace Slice;
 using namespace IceUtil;
+
+static IceUtil::StaticMutex _mutex = ICE_STATIC_MUTEX_INITIALIZER;
+static bool _interrupted = false;
+
+void
+interruptedCallback(int signal)
+{
+    IceUtil::StaticMutex::Lock lock(_mutex);
+
+    _interrupted = true;
+}
 
 void
 usage(const char* n)
@@ -61,11 +76,14 @@ main(int argc, char* argv[])
     vector<string> args;
     try
     {
+#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
+        IceUtil::DummyBCC dummy;
+#endif
         args = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtilInternal::BadOptException& e)
     {
-        cerr << argv[0] << ": " << e.reason << endl;
+        cerr << argv[0] << ": error: " << e.reason << endl;
         usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -78,7 +96,7 @@ main(int argc, char* argv[])
 
     if(opts.isSet("version"))
     {
-        cout << ICE_STRING_VERSION << endl;
+        cerr << ICE_STRING_VERSION << endl;
         return EXIT_SUCCESS;
     }
 
@@ -120,7 +138,7 @@ main(int argc, char* argv[])
 
     if(args.empty())
     {
-        cerr << argv[0] << ": no docbook file specified" << endl;
+        getErrorStream() << argv[0] << ": error: no docbook file specified" << endl;
         usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -130,18 +148,17 @@ main(int argc, char* argv[])
     string::size_type pos = docbook.rfind('.');
     if(pos != string::npos)
     {
-        suffix = docbook.substr(pos);
-        transform(suffix.begin(), suffix.end(), suffix.begin(), ::tolower);
+        suffix = IceUtilInternal::toLower(docbook.substr(pos));
     }
     if(suffix != ".sgml")
     {
-        cerr << argv[0] << ": docbook file must end with `.sgml'" << endl;
+        getErrorStream() << argv[0] << ": error: docbook file must end with `.sgml'" << endl;
         return EXIT_FAILURE;
     }
 
     if(args.size() < 2)
     {
-        cerr << argv[0] << ": no input file" << endl;
+        getErrorStream() << argv[0] << ": error: no input file" << endl;
         usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -150,7 +167,8 @@ main(int argc, char* argv[])
 
     int status = EXIT_SUCCESS;
 
-    SignalHandler sigHandler;
+    IceUtil::CtrlCHandler ctrlCHandler;
+    ctrlCHandler.setCallback(interruptedCallback);
 
     for(vector<string>::size_type idx = 1; idx < args.size(); ++idx)
     {
@@ -184,22 +202,46 @@ main(int argc, char* argv[])
             p->destroy();
             return EXIT_FAILURE;
         }
+
+        {
+            IceUtil::StaticMutex::Lock lock(_mutex);
+
+            if(_interrupted)
+            {
+                return EXIT_FAILURE;
+            }
+        }
     }
 
     if(status == EXIT_SUCCESS && !preprocess)
     {
-        SignalHandler::addFile(docbook);
-
-        Gen gen(argv[0], docbook, standAlone, chapter, noIndex, sortFields);
-        if(!gen)
+        try
         {
+            Gen gen(docbook, standAlone, chapter, noIndex, sortFields);
+            gen.generate(p);
+        }
+        catch(const Slice::FileException& ex)
+        {
+            // If a file could not be created, then
+            // cleanup any created files.
+            FileTracker::instance()->cleanup();
             p->destroy();
+            getErrorStream() << argv[0] << ": error: " << ex.reason() << endl;
             return EXIT_FAILURE;
         }
-        gen.generate(p);
     }
 
     p->destroy();
+
+    {
+        IceUtil::StaticMutex::Lock lock(_mutex);
+
+        if(_interrupted)
+        {
+            FileTracker::instance()->cleanup();
+            return EXIT_FAILURE;
+        }
+    }
 
     return status;
 }

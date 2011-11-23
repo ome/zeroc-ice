@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -35,12 +35,13 @@ interface char
     void explicit();
 };
 
-class compl
+class switch
 {
+    int if;
     ["ami"] void foo(char* export, out int volatile);
 };
 
-class do extends compl implements char, break
+class do extends switch implements char, break
 {
 };
 
@@ -60,8 +61,8 @@ exception sizeof extends return
 
 local interface friend
 {
-	auto goto(continue if, auto d, delete inline, compl private, do mutable, break* namespace,
-		  char* new, compl* not, do* operator, int or, int protected, int public, int register)
+	auto goto(continue if, auto d, delete inline, switch private, do mutable, break* namespace,
+		  char* new, switch* not, do* operator, int or, int protected, int public, int register)
             throws return, sizeof;
 };
 

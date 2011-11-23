@@ -1,18 +1,22 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
 #include <Slice/JavaUtil.h>
-#include <Slice/SignalHandler.h>
+#include <Slice/FileTracker.h>
+#include <Slice/Util.h>
 #include <IceUtil/Functional.h>
+#include <IceUtil/DisableWarnings.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <string.h>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -26,20 +30,6 @@ using namespace std;
 using namespace Slice;
 using namespace IceUtil;
 using namespace IceUtilInternal;
-
-//
-// Callback for Crtl-C signal handling
-//
-static Slice::JavaGenerator* _javaGen = 0;
-
-static void closeCallback()
-{
-    if(_javaGen != 0)
-    {
-        _javaGen->close();
-    }
-}
-
 
 Slice::JavaOutput::JavaOutput()
 {
@@ -55,7 +45,7 @@ Slice::JavaOutput::JavaOutput(const char* s) :
 {
 }
 
-bool
+void
 Slice::JavaOutput::openClass(const string& cls, const string& prefix)
 {
     string package;
@@ -96,6 +86,13 @@ Slice::JavaOutput::openClass(const string& cls, const string& prefix)
             result = stat(path.c_str(), &st);
             if(result == 0)
             {
+                if(!(st.st_mode & S_IFDIR))
+                {
+                    ostringstream os;
+                    os << "failed to create package directory `" << path
+                       << "': file already exists and is not a directory";
+                    throw FileException(__FILE__, __LINE__, os.str());
+                }
                 continue;
             }
 #ifdef _WIN32
@@ -105,8 +102,11 @@ Slice::JavaOutput::openClass(const string& cls, const string& prefix)
 #endif
             if(result != 0)
             {
-                return false;
+                ostringstream os;
+                os << "cannot create directory `" << path << "': " << strerror(errno);
+                throw FileException(__FILE__, __LINE__, os.str());
             }
+            FileTracker::instance()->addDirectory(path);
         }
         while(pos != string::npos);
     }
@@ -124,11 +124,11 @@ Slice::JavaOutput::openClass(const string& cls, const string& prefix)
         path += "/";
     }
     path += file;
-    SignalHandler::addFile(path);
 
     open(path.c_str());
     if(isOpen())
     {
+        FileTracker::instance()->addFile(path);
         printHeader();
 
         if(!package.empty())
@@ -139,11 +139,13 @@ Slice::JavaOutput::openClass(const string& cls, const string& prefix)
             print(package.c_str());
             print(";");
         }
-
-        return true;
     }
-
-    return false;
+    else
+    {
+        ostringstream os;
+        os << "cannot open file `" << path << "': " << strerror(errno);
+        throw FileException(__FILE__, __LINE__, os.str());
+    }
 }
 
 void
@@ -152,7 +154,7 @@ Slice::JavaOutput::printHeader()
     static const char* header =
 "// **********************************************************************\n"
 "//\n"
-"// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.\n"
+"// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.\n"
 "//\n"
 "// This copy of Ice is licensed to you under the terms described in the\n"
 "// ICE_LICENSE file included in this distribution.\n"
@@ -174,7 +176,6 @@ Slice::JavaGenerator::JavaGenerator(const string& dir) :
     _dir(dir),
     _out(0)
 {
-    SignalHandler::setCallback(closeCallback);
 }
 
 Slice::JavaGenerator::JavaGenerator(const string& dir, Slice::FeatureProfile profile) :
@@ -186,26 +187,31 @@ Slice::JavaGenerator::JavaGenerator(const string& dir, Slice::FeatureProfile pro
 
 Slice::JavaGenerator::~JavaGenerator()
 {
+    // If open throws an exception other generators could be left open
+    // during the stack unwind.
+    if(_out != 0)
+    {
+        close();
+    }
     assert(_out == 0);
 }
 
-bool
+void
 Slice::JavaGenerator::open(const string& absolute)
 {
     assert(_out == 0);
 
     JavaOutput* out = createOutput();
-    if(out->openClass(absolute, _dir))
+    try
     {
-        _out = out;
-        _javaGen = this; // For Ctrl-C handling
+        out->openClass(absolute, _dir);
     }
-    else
+    catch(const FileException&)
     {
         delete out;
+        throw;
     }
-
-    return _out != 0;
+    _out = out;
 }
 
 void
@@ -215,7 +221,6 @@ Slice::JavaGenerator::close()
     *_out << nl;
     delete _out;
     _out = 0;
-    _javaGen = 0; // For Ctrl-C handling
 }
 
 Output&
@@ -367,25 +372,44 @@ Slice::JavaGenerator::convertScopedName(const string& scoped, const string& pref
 }
 
 string
+Slice::JavaGenerator::getPackagePrefix(const ContainedPtr& cont) const
+{
+    UnitPtr unit = cont->container()->unit();
+    string file = cont->file();
+    assert(!file.empty());
+
+    map<string, string>::const_iterator p = _filePackagePrefix.find(file);
+    if(p != _filePackagePrefix.end())
+    {
+        return p->second;
+    }
+
+    static const string prefix = "java:package:";
+    DefinitionContextPtr dc = unit->findDefinitionContext(file);
+    assert(dc);
+    string q = dc->findMetaData(prefix);
+    if(!q.empty())
+    {
+        q = q.substr(prefix.size());
+    }
+    _filePackagePrefix[file] = q;
+    return q;
+}
+
+string
 Slice::JavaGenerator::getPackage(const ContainedPtr& cont) const
 {
     string scope = convertScopedName(cont->scope());
-
-    DefinitionContextPtr dc = cont->definitionContext();
-    if(dc)
+    string prefix = getPackagePrefix(cont);
+    if(!prefix.empty())
     {
-        static const string prefix = "java:package:";
-        string package = dc->findMetaData(prefix);
-        if(!package.empty())
+        if(!scope.empty())
         {
-            if(!scope.empty())
-            {
-                return package.substr(prefix.size()) + "." + scope;
-            }
-            else
-            {
-                return package.substr(prefix.size());
-            }
+            return prefix + "." + scope;
+        }
+        else
+        {
+            return prefix;
         }
     }
 
@@ -546,6 +570,22 @@ Slice::JavaGenerator::typeToString(const TypePtr& type,
             }
             else
             {
+                BuiltinPtr builtin = BuiltinPtr::dynamicCast(seq->type());
+                if(builtin && builtin->kind() == Builtin::KindByte)
+                {
+                    string prefix = "java:serializable:";
+                    string meta;
+                    if(seq->findMetaData(prefix, meta))
+                    {
+                        return string("Ice.Holder<") + meta.substr(prefix.size()) + " >";
+                    }
+                    prefix = "java:protobuf:";
+                    if(seq->findMetaData(prefix, meta))
+                    {
+                        return string("Ice.Holder<") + meta.substr(prefix.size()) + " >";
+                    }
+                }
+
                 //
                 // Only use the type's generated holder if the instance and
                 // formal types match.
@@ -590,6 +630,22 @@ Slice::JavaGenerator::typeToString(const TypePtr& type,
         }
         else
         {
+            BuiltinPtr builtin = BuiltinPtr::dynamicCast(seq->type());
+            if(builtin && builtin->kind() == Builtin::KindByte)
+            {
+                string prefix = "java:serializable:";
+                string meta;
+                if(seq->findMetaData(prefix, meta))
+                {
+                    return meta.substr(prefix.size());
+                }
+                prefix = "java:protobuf:";
+                if(seq->findMetaData(prefix, meta))
+                {
+                    return meta.substr(prefix.size());
+                }
+            }
+
             string instanceType, formalType;
             getSequenceTypes(seq, package, metaData, instanceType, formalType);
             return formal ? formalType : instanceType;
@@ -1236,15 +1292,64 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 {
     string stream = marshal ? "__os" : "__is";
     string v = param;
+    bool java2 = seq->definitionContext()->findMetaData(_java2MetaData) == _java2MetaData;
 
-    bool java2 = false;
+    //
+    // If the sequence is a byte sequence, check if there's the serializable or protobuf metadata to
+    // get rid of these two easy cases first.
+    //
+    BuiltinPtr builtin = BuiltinPtr::dynamicCast(seq->type());
+    if(builtin && builtin->kind() == Builtin::KindByte)
+    {
+        string meta;
+        static const string protobuf = "java:protobuf:";
+        static const string serializable = "java:serializable:";
+        if(seq->findMetaData(serializable, meta))
+        {
+            if(marshal)
+            {
+                out << nl << stream << ".writeSerializable(" << v << ");";
+            }
+            else
+            {
+                string type = typeToString(seq, TypeModeIn, package);
+                out << nl << v << " = (" << type << ")" << stream << ".readSerializable();";
+            }
+            return;
+        }
+        else if(seq->findMetaData(protobuf, meta))
+        {
+            if(marshal)
+            {
+                out << nl << "if(!" << v << ".isInitialized())";
+                out << sb;
+                out << nl << "throw new Ice.MarshalException(\"type not fully initialized\");";
+                out << eb;
+                out << nl << stream << ".writeByteSeq(" << v << ".toByteArray());";
+            }
+            else
+            {
+                string type = typeToString(seq, TypeModeIn, package);
+                out << nl << "try";
+                out << sb;
+                out << nl << v << " = " << type << ".parseFrom(" << stream << ".readByteSeq());";
+                out << eb;
+                out << nl << "catch(com.google.protobuf.InvalidProtocolBufferException __ex)";
+                out << sb;
+                out << nl << "Ice.MarshalException __mex = new Ice.MarshalException();";
+                out << nl << "__mex.initCause(__ex);";
+                out << nl << "throw __mex;";
+                out << eb;
+            }
+            return;
+        }
+    }
+
     bool customType = false;
     string instanceType;
 
     if(_featureProfile != Slice::IceE)
     {
-        java2 = seq->definitionContext()->findMetaData(_java2MetaData) == _java2MetaData;
-
         //
         // We have to determine whether it's possible to use the
         // type's generated helper class for this marshal/unmarshal
@@ -1295,7 +1400,7 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
     while(s)
     {
         //
-        // Stop if the inner sequence type has a custom type.
+        // Stop if the inner sequence type has a custom, serializable or protobuf type.
         //
         if(hasTypeMetaData(s) && _featureProfile != Slice::IceE)
         {
@@ -2491,8 +2596,58 @@ Slice::JavaGenerator::writeStreamSequenceMarshalUnmarshalCode(Output& out,
 {
     string stream = marshal ? "__outS" : "__inS";
     string v = param;
-
     bool java2 = seq->definitionContext()->findMetaData(_java2MetaData) == _java2MetaData;
+
+    //
+    // If the sequence is a byte sequence, check if there's the serializable or protobuf metadata to
+    // get rid of these two easy cases first.
+    //
+    BuiltinPtr builtin = BuiltinPtr::dynamicCast(seq->type());
+    if(builtin && builtin->kind() == Builtin::KindByte)
+    {
+        string meta;
+        static const string protobuf = "java:protobuf:";
+        static const string serializable = "java:serializable:";
+        if(seq->findMetaData(serializable, meta))
+        {
+            if(marshal)
+            {
+                out << nl << stream << ".writeSerializable(" << v << ");";
+            }
+            else
+            {
+                string type = typeToString(seq, TypeModeIn, package);
+                out << nl << v << " = (" << type << ")" << stream << ".readSerializable();";
+            }
+            return;
+        }
+        else if(seq->findMetaData(protobuf, meta))
+        {
+            if(marshal)
+            {
+                out << nl << "if(!" << v << ".isInitialized())";
+                out << sb;
+                out << nl << "throw new Ice.MarshalException(\"type not fully initialized\");";
+                out << eb;
+                out << nl << stream << ".writeByteSeq(" << v << ".toByteArray());";
+            }
+            else
+            {
+                string type = meta.substr(protobuf.size());
+                out << nl << "try";
+                out << sb;
+                out << nl << v << " = " << type << ".parseFrom(" << stream << ".readByteSeq());";
+                out << eb;
+                out << nl << "catch(com.google.protobuf.InvalidProtocolBufferException __ex)";
+                out << sb;
+                out << nl << "Ice.MarshalException __mex = new Ice.MarshalException();";
+                out << nl << "__mex.initCause(__ex);";
+                out << nl << "throw __mex;";
+                out << eb;
+            }
+            return;
+        }
+    }
 
     //
     // We have to determine whether it's possible to use the
@@ -2543,7 +2698,7 @@ Slice::JavaGenerator::writeStreamSequenceMarshalUnmarshalCode(Output& out,
     while(s)
     {
         //
-        // Stop if the inner sequence type has a custom type.
+        // Stop if the inner sequence type has a custom, serializable or protobuf type.
         //
         if(hasTypeMetaData(s))
         {
@@ -3140,6 +3295,18 @@ Slice::JavaGenerator::hasTypeMetaData(const TypePtr& type, const StringList& loc
             {
                 return true;
             }
+            else if(str.find("java:protobuf:") == 0 || str.find("java:serializable:") == 0)
+            {
+                SequencePtr seq = SequencePtr::dynamicCast(cont);
+                if(seq)
+                {
+                    BuiltinPtr builtin = BuiltinPtr::dynamicCast(seq->type());
+                    if(builtin && builtin->kind() == Builtin::KindByte)
+                    {
+                            return true;
+                    }
+                }
+            }
         }
     }
 
@@ -3387,51 +3554,62 @@ Slice::JavaGenerator::validateMetaData(const UnitPtr& u)
 }
 
 bool
-Slice::JavaGenerator::MetaDataVisitor::visitModuleStart(const ModulePtr& p)
+Slice::JavaGenerator::MetaDataVisitor::visitUnitStart(const UnitPtr& p)
 {
-    //
-    // Validate global metadata.
-    //
-    DefinitionContextPtr dc = p->definitionContext();
-    assert(dc);
-    StringList globalMetaData = dc->getMetaData();
-    string file = dc->filename();
     static const string prefix = "java:";
-    for(StringList::const_iterator q = globalMetaData.begin(); q != globalMetaData.end(); ++q)
+
+    //
+    // Validate global metadata in the top-level file and all included files.
+    //
+    StringList files = p->allFiles();
+
+    for(StringList::iterator q = files.begin(); q != files.end(); ++q)
     {
-        string s = *q;
-        if(_history.count(s) == 0)
+        string file = *q;
+        DefinitionContextPtr dc = p->findDefinitionContext(file);
+        assert(dc);
+        StringList globalMetaData = dc->getMetaData();
+        for(StringList::const_iterator r = globalMetaData.begin(); r != globalMetaData.end(); ++r)
         {
-            if(s.find(prefix) == 0)
+            string s = *r;
+            if(_history.count(s) == 0)
             {
-                bool ok = false;
+                if(s.find(prefix) == 0)
+                {
+                    bool ok = false;
 
-                static const string packagePrefix = "java:package:";
-                if(s.find(packagePrefix) == 0 && s.size() > packagePrefix.size())
-                {
-                    ok = true;
-                }
-                else if(s == _java2MetaData)
-                {
-                    ok = true;
-                }
-                else if(s == _java5MetaData)
-                {
-                    ok = true;
-                }
+                    static const string packagePrefix = "java:package:";
+                    if(s.find(packagePrefix) == 0 && s.size() > packagePrefix.size())
+                    {
+                        ok = true;
+                    }
+                    else if(s == _java2MetaData)
+                    {
+                        ok = true;
+                    }
+                    else if(s == _java5MetaData)
+                    {
+                        ok = true;
+                    }
 
-                if(!ok)
-                {
-                    cout << file << ": warning: ignoring invalid global metadata `" << s << "'" << endl;
+                    if(!ok)
+                    {
+                        emitWarning(file, "",  "ignoring invalid global metadata `" + s + "'");
+                    }
                 }
+                _history.insert(s);
             }
-            _history.insert(s);
         }
     }
+    return true;
+}
 
+bool
+Slice::JavaGenerator::MetaDataVisitor::visitModuleStart(const ModulePtr& p)
+{
     StringList metaData = getMetaData(p);
-    validateType(p, metaData, p->definitionContext()->filename(), p->line());
-    validateGetSet(p, metaData, p->definitionContext()->filename(), p->line());
+    validateType(p, metaData, p->file(), p->line());
+    validateGetSet(p, metaData, p->file(), p->line());
     return true;
 }
 
@@ -3439,16 +3617,16 @@ void
 Slice::JavaGenerator::MetaDataVisitor::visitClassDecl(const ClassDeclPtr& p)
 {
     StringList metaData = getMetaData(p);
-    validateType(p, metaData, p->definitionContext()->filename(), p->line());
-    validateGetSet(p, metaData, p->definitionContext()->filename(), p->line());
+    validateType(p, metaData, p->file(), p->line());
+    validateGetSet(p, metaData, p->file(), p->line());
 }
 
 bool
 Slice::JavaGenerator::MetaDataVisitor::visitClassDefStart(const ClassDefPtr& p)
 {
     StringList metaData = getMetaData(p);
-    validateType(p, metaData, p->definitionContext()->filename(), p->line());
-    validateGetSet(p, metaData, p->definitionContext()->filename(), p->line());
+    validateType(p, metaData, p->file(), p->line());
+    validateGetSet(p, metaData, p->file(), p->line());
     return true;
 }
 
@@ -3456,8 +3634,8 @@ bool
 Slice::JavaGenerator::MetaDataVisitor::visitExceptionStart(const ExceptionPtr& p)
 {
     StringList metaData = getMetaData(p);
-    validateType(p, metaData, p->definitionContext()->filename(), p->line());
-    validateGetSet(p, metaData, p->definitionContext()->filename(), p->line());
+    validateType(p, metaData, p->file(), p->line());
+    validateGetSet(p, metaData, p->file(), p->line());
     return true;
 }
 
@@ -3465,8 +3643,8 @@ bool
 Slice::JavaGenerator::MetaDataVisitor::visitStructStart(const StructPtr& p)
 {
     StringList metaData = getMetaData(p);
-    validateType(p, metaData, p->definitionContext()->filename(), p->line());
-    validateGetSet(p, metaData, p->definitionContext()->filename(), p->line());
+    validateType(p, metaData, p->file(), p->line());
+    validateGetSet(p, metaData, p->file(), p->line());
     return true;
 }
 
@@ -3478,10 +3656,11 @@ Slice::JavaGenerator::MetaDataVisitor::visitOperation(const OperationPtr& p)
         ClassDefPtr cl = ClassDefPtr::dynamicCast(p->container());
         if(!cl->isLocal())
         {
-            cout << p->definitionContext()->filename() << ":" << p->line()
-                 << ": warning: metadata directive `UserException' applies only to local operations "
-                 << "but enclosing " << (cl->isInterface() ? "interface" : "class") << "`" << cl->name()
-                 << "' is not local" << endl;
+            ostringstream os;
+            os << "ignoring invalid metadata `UserException': directive applies only to local operations "
+               << "but enclosing " << (cl->isInterface() ? "interface" : "class") << " `" << cl->name()
+               << "' is not local";
+            emitWarning(p->file(), p->line(), os.str());
         }
     }
     StringList metaData = getMetaData(p);
@@ -3494,15 +3673,15 @@ Slice::JavaGenerator::MetaDataVisitor::visitOperation(const OperationPtr& p)
             {
                 if(q->find("java:type:", 0) == 0)
                 {
-                    cout << p->definitionContext()->filename() << ":" << p->line()
-                         << ": warning: invalid metadata for operation" << endl;
+                    emitWarning(p->file(), p->line(), "ignoring invalid metadata `" + *q +
+                                "' for operation with void return type");
                     break;
                 }
             }
         }
         else
         {
-            validateType(returnType, metaData, p->definitionContext()->filename(), p->line());
+            validateType(returnType, metaData, p->file(), p->line());
         }
     }
 
@@ -3510,62 +3689,86 @@ Slice::JavaGenerator::MetaDataVisitor::visitOperation(const OperationPtr& p)
     for(ParamDeclList::iterator q = params.begin(); q != params.end(); ++q)
     {
         metaData = getMetaData(*q);
-        validateType((*q)->type(), metaData, p->definitionContext()->filename(), (*q)->line());
+        validateType((*q)->type(), metaData, p->file(), (*q)->line());
     }
 
-    validateGetSet(p, metaData, p->definitionContext()->filename(), p->line());
+    validateGetSet(p, metaData, p->file(), p->line());
 }
 
 void
 Slice::JavaGenerator::MetaDataVisitor::visitDataMember(const DataMemberPtr& p)
 {
     StringList metaData = getMetaData(p);
-    validateType(p->type(), metaData, p->definitionContext()->filename(), p->line());
-    validateGetSet(p, metaData, p->definitionContext()->filename(), p->line());
+    validateType(p->type(), metaData, p->file(), p->line());
+    validateGetSet(p, metaData, p->file(), p->line());
 }
 
 void
 Slice::JavaGenerator::MetaDataVisitor::visitSequence(const SequencePtr& p)
 {
+    static const string protobuf = "java:protobuf:";
+    static const string serializable = "java:serializable:";
     StringList metaData = getMetaData(p);
-    validateType(p, metaData, p->definitionContext()->filename(), p->line());
-    validateGetSet(p, metaData, p->definitionContext()->filename(), p->line());
+    const string file =  p->file();
+    const string line = p->line();
+    for(StringList::const_iterator q = metaData.begin(); q != metaData.end(); )
+    {
+        string s = *q++;
+        if(_history.count(s) == 0) // Don't complain about the same metadata more than once.
+        {
+            if(s.find(protobuf) == 0 || s.find(serializable) == 0)
+            {
+                //
+                // Remove from list so validateType does not try to handle as well.
+                //
+                metaData.remove(s);
+
+                BuiltinPtr builtin = BuiltinPtr::dynamicCast(p->type());
+                if(!builtin || builtin->kind() != Builtin::KindByte)
+                {
+                    _history.insert(s);
+                    emitWarning(file, line, "ignoring invalid metadata `" + s + "': " +
+                                "this metadata can only be used with a byte sequence");
+                }
+            }
+        }
+    }
+
+    validateType(p, metaData, file, line);
+    validateGetSet(p, metaData, file, line);
 }
 
 void
 Slice::JavaGenerator::MetaDataVisitor::visitDictionary(const DictionaryPtr& p)
 {
     StringList metaData = getMetaData(p);
-    validateType(p, metaData, p->definitionContext()->filename(), p->line());
-    validateGetSet(p, metaData, p->definitionContext()->filename(), p->line());
+    validateType(p, metaData, p->file(), p->line());
+    validateGetSet(p, metaData, p->file(), p->line());
 }
 
 void
 Slice::JavaGenerator::MetaDataVisitor::visitEnum(const EnumPtr& p)
 {
     StringList metaData = getMetaData(p);
-    validateType(p, metaData, p->definitionContext()->filename(), p->line());
-    validateGetSet(p, metaData, p->definitionContext()->filename(), p->line());
+    validateType(p, metaData, p->file(), p->line());
+    validateGetSet(p, metaData, p->file(), p->line());
 }
 
 void
 Slice::JavaGenerator::MetaDataVisitor::visitConst(const ConstPtr& p)
 {
     StringList metaData = getMetaData(p);
-    validateType(p, metaData, p->definitionContext()->filename(), p->line());
-    validateGetSet(p, metaData, p->definitionContext()->filename(), p->line());
+    validateType(p, metaData, p->file(), p->line());
+    validateGetSet(p, metaData, p->file(), p->line());
 }
 
 StringList
 Slice::JavaGenerator::MetaDataVisitor::getMetaData(const ContainedPtr& cont)
 {
-    StringList metaData = cont->getMetaData();
-    DefinitionContextPtr dc = cont->definitionContext();
-    assert(dc);
-    string file = dc->filename();
-
-    StringList result;
     static const string prefix = "java:";
+
+    StringList metaData = cont->getMetaData();
+    StringList result;
 
     for(StringList::const_iterator p = metaData.begin(); p != metaData.end(); ++p)
     {
@@ -3592,8 +3795,18 @@ Slice::JavaGenerator::MetaDataVisitor::getMetaData(const ContainedPtr& cont)
                     result.push_back(s);
                     continue;
                 }
+                else if(s.substr(prefix.size(), pos - prefix.size()) == "serializable")
+                {
+                    result.push_back(s);
+                    continue;
+                }
+                else if(s.substr(prefix.size(), pos - prefix.size()) == "protobuf")
+                {
+                    result.push_back(s);
+                    continue;
+                }
 
-                cout << file << ":" << cont->line() << ": warning: ignoring invalid metadata `" << s << "'" << endl;
+                emitWarning(cont->file(), cont->line(), "ignoring invalid metadata `" + s + "'");
             }
 
             _history.insert(s);
@@ -3626,7 +3839,14 @@ Slice::JavaGenerator::MetaDataVisitor::validateType(const SyntaxTreeBasePtr& p, 
                 assert(b);
                 str = b->typeId();
             }
-            cout << file << ":" << line << ": warning: invalid metadata for " << str << endl;
+            emitWarning(file, line, "invalid metadata for " + str);
+        }
+        else if(i->find("java:protobuf:") == 0 || i->find("java:serializable:") == 0)
+        {
+            //
+            // Only valid in sequence defintion which is checked in visitSequence
+            //
+            emitWarning(file, line, "ignoring invalid metadata `" + *i + "'");
         }
     }
 }
@@ -3656,7 +3876,7 @@ Slice::JavaGenerator::MetaDataVisitor::validateGetSet(const SyntaxTreeBasePtr& p
                 assert(b);
                 str = b->typeId();
             }
-            cout << file << ":" << line << ": warning: invalid metadata for " << str << endl;
+            emitWarning(file, line, "invalid metadata for " + str);
         }
     }
 }

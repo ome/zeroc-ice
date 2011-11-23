@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,8 +19,10 @@
 #include <Ice/IncomingAsync.h>
 #include <Ice/Initialize.h>
 #include <Ice/LocalException.h>
+#include <Ice/Logger.h>
 #include <Ice/ObjectAdapter.h>
 #include <Ice/OutgoingAsync.h>
+#include <Ice/Properties.h>
 #include <Ice/Proxy.h>
 #include <Slice/PythonUtil.h>
 
@@ -901,6 +903,7 @@ IcePy::TypedInvocation::prepareRequest(PyObject* args, bool async, vector<Ice::B
         }
         catch(const AbortMarshaling&)
         {
+            assert(PyErr_Occurred());
             return false;
         }
         catch(const Ice::Exception& ex)
@@ -950,11 +953,15 @@ IcePy::TypedInvocation::unmarshalResults(const pair<const Ice::Byte*, const Ice:
 PyObject*
 IcePy::TypedInvocation::unmarshalException(const pair<const Ice::Byte*, const Ice::Byte*>& bytes)
 {
+    int traceSlicing = -1;
+
     Ice::InputStreamPtr is = Ice::createInputStream(_communicator, bytes);
 
     is->readBool(); // usesClasses
 
     string id = is->readString();
+    const string origId = id;
+
     while(!id.empty())
     {
         ExceptionInfoPtr info = lookupExceptionInfo(id);
@@ -978,18 +985,41 @@ IcePy::TypedInvocation::unmarshalException(const pair<const Ice::Byte*, const Ic
         }
         else
         {
-            is->skipSlice();
-            id = is->readString();
+            if(traceSlicing == -1)
+            {
+                traceSlicing = _communicator->getProperties()->getPropertyAsInt("Ice.Trace.Slicing") > 0;
+            }
+
+            if(traceSlicing > 0)
+            {
+                _communicator->getLogger()->trace("Slicing", "unknown exception type `" + id + "'");
+            }
+
+            is->skipSlice(); // Slice off what we don't understand.
+
+            try
+            {
+                id = is->readString(); // Read type id for next slice.
+            }
+            catch(Ice::UnmarshalOutOfBoundsException& ex)
+            {
+                //
+                // When readString raises this exception it means we've seen the last slice,
+                // so we set the reason member to a more helpful message.
+                //
+                ex.reason = "unknown exception type `" + origId + "'";
+                throw;
+            }
         }
     }
 
     //
     // Getting here should be impossible: we can get here only if the
     // sender has marshaled a sequence of type IDs, none of which we
-    // have factory for. This means that sender and receiver disagree
+    // have a factory for. This means that sender and receiver disagree
     // about the Slice definitions they use.
     //
-    throw Ice::UnknownUserException(__FILE__, __LINE__);
+    throw Ice::UnknownUserException(__FILE__, __LINE__, "unknown exception type `" + origId + "'");
 }
 
 bool
@@ -1127,14 +1157,22 @@ IcePy::SyncTypedInvocation::invoke(PyObject* args)
                 else
                 {
                     PyObject* ret = PyTuple_GET_ITEM(results.get(), 0);
-                    Py_INCREF(ret);
-                    return ret;
+                    if(!ret)
+                    {
+                        return 0;
+                    }
+                    else
+                    {
+                        Py_INCREF(ret);
+                        return ret;
+                    }
                 }
             }
         }
     }
     catch(const AbortMarshaling&)
     {
+        assert(PyErr_Occurred());
         return 0;
     }
     catch(const Ice::Exception& ex)
@@ -1400,14 +1438,11 @@ IcePy::SyncBlobjectInvocation::invoke(PyObject* args)
     //
 #if PY_VERSION_HEX < 0x02050000
     const char* charBuf = 0;
-    Py_ssize_t sz = inParams->ob_type->tp_as_buffer->bf_getcharbuffer(
-        inParams, 0, &charBuf);
-    const Ice::Byte* mem = reinterpret_cast<const Ice::Byte*>(charBuf);
 #else
-    Ice::Byte* mem;
-    Py_ssize_t sz = inParams->ob_type->tp_as_buffer->bf_getcharbuffer(
-        inParams, 0, reinterpret_cast<char**>(&mem));
+    char* charBuf = 0;
 #endif
+    Py_ssize_t sz = inParams->ob_type->tp_as_buffer->bf_getcharbuffer(inParams, 0, &charBuf);
+    const Ice::Byte* mem = reinterpret_cast<const Ice::Byte*>(charBuf);
     pair<const ::Ice::Byte*, const ::Ice::Byte*> in(0, 0);
     if(sz > 0)
     {
@@ -1525,14 +1560,11 @@ IcePy::AsyncBlobjectInvocation::invoke(PyObject* args)
     //
 #if PY_VERSION_HEX < 0x02050000
     const char* charBuf = 0;
-    Py_ssize_t sz = inParams->ob_type->tp_as_buffer->bf_getcharbuffer(
-        inParams, 0, &charBuf);
-    const Ice::Byte* mem = reinterpret_cast<const Ice::Byte*>(charBuf);
 #else
-    Ice::Byte* mem;
-    Py_ssize_t sz = inParams->ob_type->tp_as_buffer->bf_getcharbuffer(
-        inParams, 0, reinterpret_cast<char**>(&mem));
+    char* charBuf = 0;
 #endif
+    Py_ssize_t sz = inParams->ob_type->tp_as_buffer->bf_getcharbuffer(inParams, 0, &charBuf);
+    const Ice::Byte* mem = reinterpret_cast<const Ice::Byte*>(charBuf);
     pair<const ::Ice::Byte*, const ::Ice::Byte*> in(0, 0);
     if(sz > 0)
     {
@@ -2201,13 +2233,11 @@ IcePy::BlobjectUpcall::response(PyObject* args)
 
 #if PY_VERSION_HEX < 0x02050000
     const char* charBuf = 0;
+#else
+    char* charBuf = 0;
+#endif
     Py_ssize_t sz = arg->ob_type->tp_as_buffer->bf_getcharbuffer(arg, 0, &charBuf);
     const Ice::Byte* mem = reinterpret_cast<const Ice::Byte*>(charBuf);
-
-#else
-    Ice::Byte* mem;
-    Py_ssize_t sz = arg->ob_type->tp_as_buffer->bf_getcharbuffer(arg, 0, reinterpret_cast<char**>(&mem));
-#endif
     const pair<const ::Ice::Byte*, const ::Ice::Byte*> bytes(mem, mem + sz);
 
     AllowThreads allowThreads; // Release Python's global interpreter lock during blocking calls.

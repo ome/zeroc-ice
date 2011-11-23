@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -212,7 +212,10 @@ ConnectRequestHandler::abortBatchRequest()
 Ice::ConnectionI*
 ConnectRequestHandler::sendRequest(Outgoing* out)
 {
-    if(!getConnection(true)->sendRequest(out, _compress, _response) || _response)
+    // Must be called first, _compress might not be initialized before this returns.
+    Ice::ConnectionIPtr connection = getConnection(true);
+    assert(connection);
+    if(!connection->sendRequest(out, _compress, _response) || _response)
     {
         return _connection.get(); // The request has been sent or we're expecting a response.
     }
@@ -278,7 +281,7 @@ ConnectRequestHandler::getConnection(bool waitInit)
     if(_exception.get())
     {
         _exception->ice_throw();
-        return false; // Keep the compiler happy.
+        return 0; // Keep the compiler happy.
     }
     else
     {

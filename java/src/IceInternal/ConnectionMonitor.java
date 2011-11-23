@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -79,6 +79,7 @@ public final class ConnectionMonitor implements IceInternal.TimerTask
         // so that connections can be added or removed during
         // monitoring.
         //
+        long now = IceInternal.Time.currentMonotonicTimeMillis();
         java.util.Iterator<Ice.ConnectionI> iter = connections.iterator();
         while(iter.hasNext())
         {
@@ -86,7 +87,7 @@ public final class ConnectionMonitor implements IceInternal.TimerTask
             
             try
             {              
-                connection.monitor();
+                connection.monitor(now);
             }
             catch(Ice.LocalException ex)
             {

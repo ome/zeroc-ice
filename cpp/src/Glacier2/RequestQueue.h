@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,6 +17,9 @@
 namespace Glacier2
 {
 
+class Instance;
+typedef IceUtil::Handle<Instance> InstancePtr;
+
 class Request;
 typedef IceUtil::Handle<Request> RequestPtr;
 
@@ -30,7 +33,7 @@ public:
     Request(const Ice::ObjectPrx&, const std::pair<const Ice::Byte*, const Ice::Byte*>&, const Ice::Current&, bool,
             const Ice::Context&, const Ice::AMD_Array_Object_ice_invokePtr&);
     
-    bool invoke();
+    bool invoke(const InstancePtr&, const Ice::ConnectionPtr&);
     bool override(const RequestPtr&) const;
     const Ice::ObjectPrx& getProxy() const { return _proxy; }
     bool hasOverride() const { return !_override.empty(); }
@@ -50,7 +53,7 @@ class RequestQueue : public IceUtil::Mutex, public IceUtil::Shared
 {
 public:
 
-    RequestQueue(const RequestQueueThreadPtr&);
+    RequestQueue(const RequestQueueThreadPtr&, const InstancePtr&, const Ice::ConnectionPtr&);
 
     bool addRequest(const RequestPtr&);
     void flushRequests(std::set<Ice::ObjectPrx>&);
@@ -58,6 +61,8 @@ public:
 private:
     
     const RequestQueueThreadPtr _requestQueueThread;
+    const InstancePtr _instance;
+    const Ice::ConnectionPtr _connection;
     std::vector<RequestPtr> _requests;
 };
 typedef IceUtil::Handle<RequestQueue> RequestQueuePtr;

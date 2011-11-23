@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -34,7 +34,7 @@ end
 
 class ObjectFactory
     def create(type)
-        if type == "::Demo::DerivedPrinter"
+        if type == Demo::DerivedPrinter::ice_staticId()
             return DerivedPrinterI.new
         end
 
@@ -147,7 +147,7 @@ class Ice::Application
 	STDOUT.flush
         STDIN.readline
 
-        Ice::Application::communicator().addObjectFactory(ObjectFactory.new, "::Demo::DerivedPrinter")
+        Ice::Application::communicator().addObjectFactory(ObjectFactory.new, Demo::DerivedPrinter::ice_staticId())
 
         derived = initial.getDerivedPrinter()
         puts "==> The type ID of the received object is \"" + derived.ice_id() + "\""

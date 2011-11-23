@@ -1,7 +1,7 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
@@ -177,7 +177,8 @@
             source="1.5" debug="${debug}"
             excludes="IceGridGUI/**"
             includes="**"
-            deprecation="on">
+            deprecation="on"
+            classpathref="db.classpath">
             <compilerarg value="${javac.lint}"/>
         </javac>
     </target>
@@ -190,7 +191,7 @@
             <exclude name="*.jar"/>
             <manifest>
                 <attribute name="Built-By" value="ZeroC, Inc."/>
-                <attribute name="Class-Path" value="db.jar /usr/share/java/db-${db.version}.jar ../db.jar"/>
+                <attribute name="Class-Path" value="db.jar db-${db.version}.jar /usr/share/java/db-${db.version}.jar ../db.jar"/>
             </manifest>
         </jar>
     </target>
@@ -221,10 +222,14 @@
 
     <target name="icegridadmin-plain-jar" depends="icegridadmin-compile" if="build-icegridadmin-plain-jar">
         <manifest file="${lib.dir}/icegridgui.mf">
-            <attribute name="Class-Path" value="Ice.jar ../resources/"/>
+            <attribute name="Main-Class" value="IceGridGUI.Main"/>
+            <attribute name="Class-Path" value="Ice.jar ${jgoodies.forms} ${jgoodies.looks} ../resources/ "/>
         </manifest>
         <jar jarfile="${lib.dir}/IceGridGUI.jar" manifest="${lib.dir}/icegridgui.mf" basedir="${lib.dir}">
             <include name="IceGridGUI/**"/>
+        </jar>
+        <jar jarfile="${lib.dir}/IceGridGUI.jar" basedir="resources" update="true">
+            <include name="icons/**"/>
         </jar>
         <delete file="${lib.dir}/icegridgui.mf" />
     </target>
@@ -237,7 +242,7 @@
             <!-- Library jar files for Sun JDK -->
             <available file="${java.home}/lib/rt.jar"/>
         </condition>
-        <condition property="library.jarfiles" value="vm.jar,core.jar,graphics.jar,security.jar">
+        <condition property="library.jarfiles" value="vm.jar,core.jar,graphics.jar,security.jar,server.jar">
             <!-- Library jar files for IBM J9 (from Linux SuSE) -->
             <available file="${java.home}/lib/vm.jar"/>
         </condition>

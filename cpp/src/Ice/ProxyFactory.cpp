@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,32 +25,8 @@ using namespace std;
 using namespace Ice;
 using namespace IceInternal;
 
-namespace
-{
-
-class RetryTask : public IceUtil::TimerTask
-{
-public:
-    
-    RetryTask(const OutgoingAsyncPtr& out) : _out(out)
-    {
-    }
-                    
-    virtual void
-    runTimerTask()
-    {
-        _out->__send();
-    }
-
-private:
-
-    const OutgoingAsyncPtr _out;
-};
-
-}
-
 IceUtil::Shared* IceInternal::upCast(ProxyFactory* p) { return p; }
-    
+
 ObjectPrx
 IceInternal::ProxyFactory::stringToProxy(const string& str) const
 {
@@ -142,16 +118,7 @@ IceInternal::ProxyFactory::checkRetryAfterException(const LocalException& ex,
 
     if(one)
     {
-        LocatorInfoPtr li = ref->getLocatorInfo();
-        if(li && ref->isIndirect())
-        {
-            //
-            // We retry ObjectNotExistException if the reference is
-            // indirect.
-            //
-            li->clearObjectCache(ref);
-        }
-        else if(ref->getRouterInfo() && one->operation == "ice_add_proxy")
+        if(ref->getRouterInfo() && one->operation == "ice_add_proxy")
         {
             //
             // If we have a router, an ObjectNotExistException with an
@@ -172,6 +139,22 @@ IceInternal::ProxyFactory::checkRetryAfterException(const LocalException& ex,
                 out->__send();
             }
             return; // We must always retry, so we don't look at the retry count.
+        }
+        else if(ref->isIndirect())
+        {
+            //
+            // We retry ObjectNotExistException if the reference is
+            // indirect.
+            //
+
+            if(ref->isWellKnown())
+            {
+                LocatorInfoPtr li = ref->getLocatorInfo();
+                if(li)
+                {
+                    li->clearCache(ref);
+                }
+            }
         }
         else
         {
@@ -243,34 +226,17 @@ IceInternal::ProxyFactory::checkRetryAfterException(const LocalException& ex,
         }
         out << " because of exception\n" << ex;
     }
-    
-    if(interval > 0)
+
+    if(out)
     {
-        if(out)
-        {
-            try
-            {
-                _instance->timer()->schedule(new RetryTask(out), IceUtil::Time::milliSeconds(interval));
-            }
-            catch(const IceUtil::IllegalArgumentException&) // Expected if the communicator destroyed the timer.
-            {
-                throw CommunicatorDestroyedException(__FILE__, __LINE__); 
-            }
-        }
-        else
-        {
-            //
-            // Sleep before retrying.
-            //
-            IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(interval));
-        }
+        out->__retry(interval);
     }
-    else
+    else if(interval > 0)
     {
-        if(out)
-        {
-            out->__send();
-        }
+        //
+        // Sleep before retrying.
+        //
+        IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(interval));
     }
 }
 

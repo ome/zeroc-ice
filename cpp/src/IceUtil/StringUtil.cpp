@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -171,7 +171,6 @@ checkChar(char c)
 static char
 decodeChar(const string& s, string::size_type start, string::size_type end, string::size_type& nextStart)
 {
-    assert(start >= 0);
     assert(start < end);
     assert(end <= s.size());
 
@@ -282,10 +281,6 @@ static void decodeString(const string& s, string::size_type start, string::size_
 bool
 IceUtilInternal::unescapeString(const string& s, string::size_type start, string::size_type end, string& result)
 {
-    if(start < 0)
-    {
-        throw IllegalArgumentException(__FILE__, __LINE__, "start offset must be >= 0");
-    }
     if(end > s.size())
     {
         throw IllegalArgumentException(__FILE__, __LINE__, "end offset must be <= s.size()");
@@ -324,7 +319,6 @@ IceUtilInternal::splitString(const string& str, const string& delim, vector<stri
             quoteChar = str[pos];
             ++pos;
         }
-        bool trim = true;
         while(pos < length)
         {
             if(quoteChar != '\0' && str[pos] == '\\' && pos + 1 < length && str[pos + 1] == quoteChar)
@@ -333,7 +327,6 @@ IceUtilInternal::splitString(const string& str, const string& delim, vector<stri
             }
             else if(quoteChar != '\0' && str[pos] == quoteChar)
             {
-                trim = false;
                 ++pos;
                 quoteChar = '\0';
                 break;
@@ -688,3 +681,41 @@ IceUtilInternal::lastErrorToString()
 }
 
 #endif
+
+string
+IceUtilInternal::toLower(const std::string& s)
+{
+    string result;
+    result.reserve(s.size());
+    for(unsigned int i = 0; i < s.length(); ++i)
+    {
+         result += tolower(static_cast<unsigned char>(s[i]));
+    }
+    return result;
+}
+
+string
+IceUtilInternal::toUpper(const std::string& s)
+{
+    string result;
+    result.reserve(s.size());
+    for(unsigned int i = 0; i < s.length(); ++i)
+    {
+         result += toupper(static_cast<unsigned char>(s[i]));
+    }
+    return result;
+}
+
+string
+IceUtilInternal::removeWhitespace(const std::string& s)
+{
+    string result;
+    for(unsigned int i = 0; i < s.length(); ++ i)
+    {
+         if(!isspace(static_cast<unsigned char>(s[i])))
+         {
+             result += s[i];
+         }
+    }
+    return result;
+}

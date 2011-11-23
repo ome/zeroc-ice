@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,8 +8,11 @@
 // **********************************************************************
 
 #include <IceUtil/Options.h>
+#include <IceUtil/CtrlCHandler.h>
+#include <IceUtil/StaticMutex.h>
 #include <Slice/Preprocessor.h>
-#include <Slice/SignalHandler.h>
+#include <Slice/FileTracker.h>
+#include <Slice/Util.h>
 #include <Gen.h>
 
 #ifdef __BCPLUSPLUS__
@@ -18,6 +21,17 @@
 
 using namespace std;
 using namespace Slice;
+
+static IceUtil::StaticMutex _mutex = ICE_STATIC_MUTEX_INITIALIZER;
+static bool _interrupted = false;
+
+void
+interruptedCallback(int signal)
+{
+    IceUtil::StaticMutex::Lock lock(_mutex);
+
+    _interrupted = true;
+}
 
 void
 usage(const char* n)
@@ -37,6 +51,8 @@ usage(const char* n)
         "--impl                  Generate sample implementations.\n"
         "--impl-tie              Generate sample TIE implementations.\n"
         "--depend                Generate Makefile dependencies.\n"
+        "--depend-xml            Generate dependencies in XML format.\n"
+        "--list-generated        Emit list of generated files in XML format.\n"
         "-d, --debug             Print debug messages.\n"
         "--ice                   Permit `Ice' prefix (for building Ice source code only)\n"
         "--checksum CLASS        Generate checksums for Slice definitions into CLASS.\n"
@@ -61,6 +77,8 @@ main(int argc, char* argv[])
     opts.addOpt("", "impl");
     opts.addOpt("", "impl-tie");
     opts.addOpt("", "depend");
+    opts.addOpt("", "depend-xml");
+    opts.addOpt("", "list-generated");
     opts.addOpt("d", "debug");
     opts.addOpt("", "ice");
     opts.addOpt("", "checksum", IceUtilInternal::Options::NeedArg);
@@ -71,11 +89,14 @@ main(int argc, char* argv[])
     vector<string>args;
     try
     {
+#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
+        IceUtil::DummyBCC dummy;
+#endif
         args = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtilInternal::BadOptException& e)
     {
-        cerr << argv[0] << ": " << e.reason << endl;
+        cerr << argv[0] << ": error: " << e.reason << endl;
         usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -88,7 +109,7 @@ main(int argc, char* argv[])
 
     if(opts.isSet("version"))
     {
-        cout << ICE_STRING_VERSION << endl;
+        cerr << ICE_STRING_VERSION << endl;
         return EXIT_SUCCESS;
     }
 
@@ -123,6 +144,7 @@ main(int argc, char* argv[])
     bool implTie = opts.isSet("impl-tie");
 
     bool depend = opts.isSet("depend");
+    bool dependxml = opts.isSet("depend-xml");
 
     bool debug = opts.isSet("debug");
 
@@ -131,6 +153,8 @@ main(int argc, char* argv[])
     string checksumClass = opts.optArg("checksum");
 
     bool stream = opts.isSet("stream");
+
+    bool listGenerated = opts.isSet("list-generated");
 
     StringList globalMetadata;
     vector<string> v = opts.argVec("meta");
@@ -149,23 +173,23 @@ main(int argc, char* argv[])
         }
     }
 
-    if(java2)
+    if(java2 && !listGenerated && !depend && !dependxml)
     {
-        cerr << argv[0] << ": warning: The Java2 mapping is deprecated." << endl;
+        getErrorStream() << argv[0] << ": warning: The Java2 mapping is deprecated." << endl;
     }
 
     bool caseSensitive = opts.isSet("case-sensitive");
 
     if(args.empty())
     {
-        cerr << argv[0] << ": no input file" << endl;
+        getErrorStream() << argv[0] << ": error: no input file" << endl;
         usage(argv[0]);
         return EXIT_FAILURE;
     }
 
     if(impl && implTie)
     {
-        cerr << argv[0] << ": cannot specify both --impl and --impl-tie" << endl;
+        getErrorStream() << argv[0] << ": error: cannot specify both --impl and --impl-tie" << endl;
         usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -174,23 +198,42 @@ main(int argc, char* argv[])
 
     ChecksumMap checksums;
 
+    IceUtil::CtrlCHandler ctrlCHandler;
+    ctrlCHandler.setCallback(interruptedCallback);
+
+    if(dependxml)
+    {
+        cout << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<dependencies>" << endl;
+    }
+
     for(i = args.begin(); i != args.end(); ++i)
     {
-        SignalHandler sigHandler;
-
-        if(depend)
+        if(depend || dependxml)
         {
             Preprocessor icecpp(argv[0], *i, cppArgs);
-            icecpp.printMakefileDependencies(Preprocessor::Java, includePaths);
+            if(!icecpp.printMakefileDependencies(depend ? Preprocessor::Java : Preprocessor::JavaXML, includePaths))
+            {
+                return EXIT_FAILURE;
+            }
         }
         else
         {
+            ostringstream os;
+            if(listGenerated)
+            {
+                Slice::setErrorStream(os);
+            }
+
+            FileTracker::instance()->setSource(*i);
+
             Preprocessor icecpp(argv[0], *i, cppArgs);
             FILE* cppHandle = icecpp.preprocess(false);
 
             if(cppHandle == 0)
             {
-                return EXIT_FAILURE;
+                FileTracker::instance()->setOutput(os.str(), true);
+                status = EXIT_FAILURE;
+                break;
             }
 
             if(preprocess)
@@ -218,49 +261,96 @@ main(int argc, char* argv[])
                     p->destroy();
                     return EXIT_FAILURE;
                 }           
-                
+
                 if(parseStatus == EXIT_FAILURE)
                 {
+                    p->destroy();
+                    FileTracker::instance()->setOutput(os.str(), true);
                     status = EXIT_FAILURE;
                 }
                 else
                 {
-                    Gen gen(argv[0], icecpp.getBaseName(), includePaths, output);
-                    if(!gen)
+                    try
                     {
+                        Gen gen(argv[0], icecpp.getBaseName(), includePaths, output);
+                        gen.generate(p, stream);
+                        if(tie)
+                        {
+                            gen.generateTie(p);
+                        }
+                        if(impl)
+                        {
+                            gen.generateImpl(p);
+                        }
+                        if(implTie)
+                        {
+                            gen.generateImplTie(p);
+                        }
+                        if(!checksumClass.empty())
+                        {
+                            //
+                            // Calculate checksums for the Slice definitions in the unit.
+                            //
+                            ChecksumMap m = createChecksums(p);
+                            copy(m.begin(), m.end(), inserter(checksums, checksums.begin()));
+                        }
+                        FileTracker::instance()->setOutput(os.str(), false);
+                    }
+                    catch(const Slice::FileException& ex)
+                    {
+                        //
+                        // If a file could not be created then cleanup any files we've already created.
+                        //
+                        FileTracker::instance()->cleanup();
                         p->destroy();
-                        return EXIT_FAILURE;
-                    }
-                    gen.generate(p, stream);
-                    if(tie)
-                    {
-                        gen.generateTie(p);
-                    }
-                    if(impl)
-                    {
-                        gen.generateImpl(p);
-                    }
-                    if(implTie)
-                    {
-                        gen.generateImplTie(p);
-                    }
-                    if(!checksumClass.empty())
-                    {
-                        //
-                        // Calculate checksums for the Slice definitions in the unit.
-                        //
-                        ChecksumMap m = createChecksums(p);
-                        copy(m.begin(), m.end(), inserter(checksums, checksums.begin()));
+                        os << argv[0] << ": error: " << ex.reason() << endl;
+                        FileTracker::instance()->setOutput(os.str(), true);
+                        status = EXIT_FAILURE;
+                        break;
                     }
                 }
                 p->destroy();
             }
         }
+
+        {
+            IceUtil::StaticMutex::Lock lock(_mutex);
+
+            if(_interrupted)
+            {
+                //
+                // If the translator was interrupted then cleanup any files we've already created.
+                //
+                FileTracker::instance()->cleanup();
+                return EXIT_FAILURE;
+            }
+        }
     }
 
-    if(!checksumClass.empty())
+    if(dependxml)
     {
-        Gen::writeChecksumClass(checksumClass, output, checksums, java2);
+        cout << "</dependencies>\n";
+    }
+
+    if(status == EXIT_SUCCESS && !checksumClass.empty())
+    {
+        try
+        {
+            Gen::writeChecksumClass(checksumClass, output, checksums, java2);
+        }
+        catch(const Slice::FileException& ex)
+        {
+            // If a file could not be created, then
+            // cleanup any created files.
+            FileTracker::instance()->cleanup();
+            getErrorStream() << argv[0] << ": error: " << ex.reason() << endl;
+            return EXIT_FAILURE;
+        }
+    }
+
+    if(listGenerated)
+    {
+        FileTracker::instance()->dumpxml();
     }
 
     return status;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -361,6 +361,19 @@ public class Client
             @in = Ice.Util.createInputStream(communicator, data);
             byte[] arr2 = Test.ByteSHelper.read(@in);
             test(Compare(arr2, arr));
+            @out.destroy();
+            @in.destroy();
+        }
+
+        {
+            Serialize.Small small = new Serialize.Small();
+            small.i = 99;
+            @out = Ice.Util.createOutputStream(communicator);
+            @out.writeSerializable(small);
+            byte[] data = @out.finished();
+            @in = Ice.Util.createInputStream(communicator, data);
+            Serialize.Small small2 = (Serialize.Small)@in.readSerializable();
+            test(small2.i == 99);
             @out.destroy();
             @in.destroy();
         }

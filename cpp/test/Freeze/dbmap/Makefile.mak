@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -61,6 +61,6 @@ clean::
 	del /q IntIdentityMapWithIndex.h IntIdentityMapWithIndex.cpp
         del /q SortedMap.h SortedMap.cpp
 	del /q WstringWstringMap.h WstringWstringMap.cpp
-	for %f in (db\*) do if not %f == db\.gitignore del /q %f
+	-for %f in (db\*) do if not %f == db\.gitignore del /q %f
 
 !include .depend

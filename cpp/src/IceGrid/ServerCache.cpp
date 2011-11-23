@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -287,7 +287,12 @@ ServerEntry::update(const ServerInfo& info)
 
     _load = descriptor;
     _loaded.reset(0);
-    _allocatable = info.descriptor->allocatable || info.descriptor->activation == "session";
+    _allocatable = info.descriptor->allocatable;
+    if(info.descriptor->activation == "session")
+    {
+        _allocatable = true;
+        _load->sessionId = _session ? _session->getId() : string("");
+    }
 }
 
 void

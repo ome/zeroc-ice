@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -12,9 +12,10 @@
 # ----------------------------------------------------------------------
 
 SHELL			= /bin/sh
-VERSION			= 3.3.0
-INTVERSION		= 3.3.0
+VERSION			= 3.3.1
+INTVERSION		= 3.3.1
 SHORT_VERSION           = 3.3
+PATCH_VERSION           = 1
 SOVERSION		= 33
 
 OBJEXT			= .obj
@@ -111,6 +112,7 @@ ice_dir = C:\Ice-$(VERSION)
 !error Unable to find a valid Ice distribution, please verify ICE_HOME is properly configured and Ice is correctly installed.
 !endif
 ice_bin_dist = 1
+ice_cpp_dir = $(ice_dir)
 !endif
 
 #
@@ -146,13 +148,13 @@ install-common::
 !if "$(install_slicedir)" != ""
 	@if not exist $(install_slicedir) \
 	    @echo "Creating $(install_slicedir)..." && \
-	    mkdir $(install_slicedir)
-	@echo "Copying slice files..." && \
-	cmd /c "xcopy /s /y $(top_srcdir)\..\slice $(install_slicedir)" || exit 1
+	    mkdir $(install_slicedir) && \
+	    @echo "Copying slice files..." && \
+	    cmd /c "xcopy /s /y $(top_srcdir)\..\slice $(install_slicedir)" || exit 1
 !endif
 
-	@if exist $(top_srcdir)\..\ICE_LICENSE \
-	    @copy ..\ICE_LICENSE $(prefix)
-	@if exist $(top_srcdir)\..\LICENSE \
-	    @copy ..\LICENSE $(prefix)
+	@if not exist $(prefix)\ICE_LICENSE \
+	    @copy $(top_srcdir)\..\ICE_LICENSE $(prefix)
+	@if not exist $(prefix)\LICENSE \
+	    @copy $(top_srcdir)\..\LICENSE $(prefix)
 

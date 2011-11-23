@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -137,7 +137,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
         //
         // Expect ConnectTimeoutException.
         //
-        TimeoutPrx to = TimeoutPrx::uncheckedCast(obj->ice_timeout(500));
+        TimeoutPrx to = TimeoutPrx::uncheckedCast(obj->ice_timeout(250));
         to->holdAdapter(750);
         to->ice_getConnection()->close(true); // Force a reconnect.
         try
@@ -190,7 +190,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
         // Expect success.
         //
         timeout->op(); // Ensure adapter is active.
-        TimeoutPrx to = TimeoutPrx::uncheckedCast(obj->ice_timeout(1000));
+        TimeoutPrx to = TimeoutPrx::uncheckedCast(obj->ice_timeout(2000));
         try
         {
             to->sleep(500);

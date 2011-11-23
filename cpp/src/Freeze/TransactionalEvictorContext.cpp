@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -65,7 +65,8 @@ Freeze::TransactionalEvictorDeadlockException::ice_print(ostream& out) const
 
 Freeze::TransactionalEvictorContext::TransactionalEvictorContext(const SharedDbEnvPtr& dbEnv) :
     _tx((new ConnectionI(dbEnv))->beginTransactionI()),
-    _deadlockExceptionDetected(false)
+    _deadlockExceptionDetected(false),
+    _userExceptionDetected(false)
 { 
     _tx->setPostCompletionCallback(this);
 }

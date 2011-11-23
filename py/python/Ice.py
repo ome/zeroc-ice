@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -12,20 +12,6 @@ Ice module
 """
 
 import sys, exceptions, string, imp, os, threading, warnings, datetime
-
-try:
-    import dl
-    #
-    # This is necessary for proper operation of Ice plug-ins.
-    # Without it, RTTI problems can occur.
-    #
-    sys.setdlopenflags(dl.RTLD_NOW|dl.RTLD_GLOBAL)
-except ImportError:
-    # If the dl module is not available and we're running on a linux
-    # platform, use the hard coded value of RTLD_NOW|RTLD_GLOBAL.
-    if sys.platform.startswith("linux"):
-        sys.setdlopenflags(258)
-    pass
 
 #
 # Import the Python extension.
@@ -40,6 +26,13 @@ stringVersion = IcePy.stringVersion
 intVersion = IcePy.intVersion
 generateUUID = IcePy.generateUUID
 loadSlice = IcePy.loadSlice
+
+#
+# This value is used as the default value for struct types in the constructors
+# of user-defined types. It allows us to determine whether the application has
+# supplied a value. (See bug 3676)
+#
+_struct_marker = object()
 
 #
 # Core Ice types.
@@ -103,14 +96,6 @@ class UserException(Exception):
 #
 def getSliceDir():
     #
-    # Check for <ICE_HOME>/slice first.
-    #
-    if os.environ.has_key("ICE_HOME"):
-        dir = os.path.join(os.environ["ICE_HOME"], "slice")
-        if os.path.exists(dir):
-            return dir
-
-    #
     # Get the parent of the directory containing this file (Ice.py).
     #
     pyHome = os.path.join(os.path.dirname(__file__), "..")
@@ -133,28 +118,11 @@ def getSliceDir():
 
     iceVer = stringVersion()
 
-    #
-    # Check platform-specific locations.
-    #
-    if sys.platform[:6] == "cygwin" or sys.platform == "win32":
-        dir = os.path.join("\\", "Ice-" + iceVer, "slice")
-        if os.path.exists(dir):
-            return dir
-        dir = os.path.join("C:\\", "Ice-" + iceVer, "slice")
-        if os.path.exists(dir):
-            return dir
-    else:
-        if sys.platform[:5] == "linux":
-            #
-            # Check the default RPM location.
-            #
-            dir = os.path.join("/", "usr", "share", "Ice-" + iceVer, "slice")
-            if os.path.exists(dir):
-                return dir
+    if sys.platform[:5] == "linux":
         #
-        # Check in /opt.
+        # Check the default RPM location.
         #
-        dir = os.path.join("/", "opt", "Ice-" + iceVer, "slice")
+        dir = os.path.join("/", "usr", "share", "Ice-" + iceVer, "slice")
         if os.path.exists(dir):
             return dir
 
@@ -327,7 +295,11 @@ class CommunicatorI(Communicator):
         return self._impl.getDefaultContext()
 
     def getImplicitContext(self):
-        return ImplicitContextI(self._impl.getImplicitContext())
+        context = self._impl.getImplicitContext()
+        if context == None:
+            return None;
+        else:
+            return ImplicitContextI(context)
 
     def getProperties(self):
         properties = self._impl.getProperties()
@@ -624,6 +596,8 @@ class CtrlCHandler(threading.Thread):
         #
         if signal.__dict__.has_key('SIGHUP'):
             signal.signal(signal.SIGHUP, CtrlCHandler.signalHandler)
+        if signal.__dict__.has_key('SIGBREAK'):
+            signal.signal(signal.SIGBREAK, CtrlCHandler.signalHandler)
         signal.signal(signal.SIGINT, CtrlCHandler.signalHandler)
         signal.signal(signal.SIGTERM, CtrlCHandler.signalHandler)
 
@@ -659,6 +633,8 @@ class CtrlCHandler(threading.Thread):
         #
         if signal.__dict__.has_key('SIGHUP'):
             signal.signal(signal.SIGHUP, signal.SIG_DFL)
+        if signal.__dict__.has_key('SIGBREAK'):
+            signal.signal(signal.SIGBREAK, signal.SIG_DFL)
         signal.signal(signal.SIGINT, signal.SIG_DFL)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
         CtrlCHandler._self = None

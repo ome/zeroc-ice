@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -130,5 +130,4 @@ class TcpAcceptor implements Acceptor
     private java.nio.channels.ServerSocketChannel _fd;
     private int _backlog;
     private java.net.InetSocketAddress _addr;
-    private java.nio.channels.Selector _selector;
 }

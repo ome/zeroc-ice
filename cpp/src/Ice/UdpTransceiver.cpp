@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -65,7 +65,6 @@ IceInternal::UdpTransceiver::write(Buffer& buf)
         //
         // We don't log a warning here because the client gets an exception anyway.
         //
-        cerr << packetSize << " " << _maxPacketSize << " " << _sndSize << endl;
         throw DatagramLimitException(__FILE__, __LINE__);
     }
 
@@ -230,11 +229,9 @@ IceInternal::UdpTransceiver::type() const
 string
 IceInternal::UdpTransceiver::toString() const
 {
-    if(_mcastServer && _fd != INVALID_SOCKET)
+    if(_mcastAddr.ss_family != AF_UNSPEC && _fd != INVALID_SOCKET)
     {
-        struct sockaddr_storage remoteAddr;
-        bool peerConnected = fdToRemoteAddress(_fd, remoteAddr);
-        return addressesToString(_addr, remoteAddr, peerConnected);
+        return fdToString(_fd) + "\nmulticast address = " + addrToString(_mcastAddr);
     }
     else
     {
@@ -301,6 +298,9 @@ IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const s
 {
     try
     {
+        // AF_UNSPEC means not multicast.
+        _mcastAddr.ss_family = AF_UNSPEC;
+
         _fd = createSocket(true, _addr.ss_family);
         setBufSize(instance);
         setBlock(_fd, false);
@@ -327,11 +327,6 @@ IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const s
         _fd = INVALID_SOCKET;
         throw;
     }
-
-#ifdef _WIN32
-    FD_ZERO(&_rFdSet);
-    FD_ZERO(&_wFdSet);
-#endif
 }
 
 IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const string& host, int port,
@@ -364,14 +359,28 @@ IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const s
             // Windows does not allow binding to the mcast address itself
             // so we bind to INADDR_ANY (0.0.0.0) instead.
             //
-            struct sockaddr_storage addr;
-            getAddressForServer("", getPort(_addr), addr, _addr.ss_family == AF_INET ? EnableIPv4 : EnableIPv6);
-            doBind(_fd, addr);
+            _mcastAddr = _addr;
+            getAddressForServer("", getPort(_mcastAddr), _addr,
+                                _mcastAddr.ss_family == AF_INET ? EnableIPv4 : EnableIPv6);
+            doBind(_fd, _addr);
+
+            if(getPort(_mcastAddr) == 0)
+            {
+                int port = getPort(_addr);
+                if(_mcastAddr.ss_family == AF_INET)
+                {
+                    reinterpret_cast<sockaddr_in*>(&_mcastAddr)->sin_port = htons(port);
+                }
+                else
+                {
+                    reinterpret_cast<sockaddr_in6*>(&_mcastAddr)->sin6_port = htons(port);
+                }
+            }
 #else
             doBind(_fd, _addr);
+            _mcastAddr = _addr;
 #endif
-            setMcastGroup(_fd, _addr, mcastInterface);
-            _mcastServer = true;
+            setMcastGroup(_fd, _mcastAddr, mcastInterface);
         }
         else
         {
@@ -391,6 +400,9 @@ IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const s
             setReuseAddress(_fd, true);
 #endif
             doBind(_fd, _addr);
+
+            // AF_UNSPEC means not multicast.
+            _mcastAddr.ss_family = AF_UNSPEC;
         }
 
         if(_traceLevels->network >= 1)
@@ -404,11 +416,6 @@ IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const s
         _fd = INVALID_SOCKET;
         throw;
     }
-
-#ifdef _WIN32
-    FD_ZERO(&_rFdSet);
-    FD_ZERO(&_wFdSet);
-#endif
 }
 
 IceInternal::UdpTransceiver::~UdpTransceiver()

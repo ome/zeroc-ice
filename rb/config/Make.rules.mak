@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -40,8 +40,12 @@ RUBY_HOME		= C:\ruby
 # STLPort is required if using MSVC++ 6.0. Change if STLPort
 # is located in a different location.
 #
-!if "$(CPP_COMPILER)" == "VC60"
+!if "$(CPP_COMPILER)" == "VC60" && "$(STLPORT_HOME)" == ""
+!if "$(THIRDPARTY_HOME)" != ""
+STLPORT_HOME            = $(THIRDPARTY_HOME)
+!else
 STLPORT_HOME            = C:\Ice-$(VERSION)-ThirdParty-VC60
+!endif
 !endif
 
 
@@ -66,13 +70,22 @@ libdir			= $(top_srcdir)\ruby
 install_rubydir		= $(prefix)\ruby
 install_libdir		= $(prefix)\ruby
 
-THIRDPARTY_HOME 	= $(STLPORT_HOME)
-
 !if "$(CPP_COMPILER)" != "VC60"
 !error Invalid setting for CPP_COMPILER: $(CPP_COMPILER)
 !endif
 
 !include $(top_srcdir)\..\cpp\config\Make.rules.msvc
+
+!if "$(ice_src_dist)" != ""
+!if "$(STLPORT_HOME)" != ""
+CPPFLAGS        = -I"$(STLPORT_HOME)\include\stlport" $(CPPFLAGS)
+LDFLAGS         = /LIBPATH:"$(STLPORT_HOME)\lib$(x64suffix)" $(LDFLAGS)
+!endif
+!else
+!if "$(CPP_COMPILER)" == "VC60"
+CPPFLAGS        = -I"$(ice_dir)\include\stlport" $(CPPFLAGS)
+!endif
+!endif
 
 !if "$(OPTIMIZE)" != "yes"
 LIBSUFFIX       = $(LIBSUFFIX)d

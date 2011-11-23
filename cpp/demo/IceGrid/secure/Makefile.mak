@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -54,5 +54,7 @@ clean::
 	-for %d in (node1 node2) do \
 	  for %f in (db\%d\*) do if not %f == db\%d\.gitignore del /q %f
 	-for %f in (distrib servers tmp) do if exist db\%d\%f rmdir /s /q db\%d\%f
+        -for %f in (certs\*) do if not %f == certs\.gitignore del /q %f
+	-if exist certs\ca rmdir /s /q certs\ca
 
 !include .depend

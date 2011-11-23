@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -41,7 +41,7 @@ CPPFLAGS        = -I.. $(CPPFLAGS)
 PDBFLAGS        = /pdb:$(DLLNAME:.dll=.pdb)
 !endif
 
-!if "$(CPP_COMPILER)" == "BCC2007"
+!if "$(BCPLUSPLUS)" == "yes"
 RES_FILE        = ,, IceGrid.res
 !else
 RES_FILE        = IceGrid.res
@@ -57,25 +57,24 @@ $(DLLNAME): $(LIB_OBJS) IceGrid.res
 	@if exist $(DLLNAME:.dll=.exp) del /q $(DLLNAME:.dll=.exp)
 
 clean::
-	del /q FileParser.cpp $(HDIR)\FileParser.h
-	del /q Admin.cpp $(HDIR)\Admin.h
-	del /q Descriptor.cpp $(HDIR)\Descriptor.h
-	del /q Exception.cpp $(HDIR)\Exception.h
-	del /q Locator.cpp $(HDIR)\Locator.h
-	del /q Observer.cpp $(HDIR)\Observer.h
-	del /q Query.cpp $(HDIR)\Query.h
-	del /q Session.cpp $(HDIR)\Session.h
-	del /q Registry.cpp $(HDIR)\Registry.h
-	del /q UserAccountMapper.cpp $(HDIR)\UserAccountMapper.h
-	del /q $(DLLNAME:.dll=.*)
-	del /q IceGrid.res
+	-del /q FileParser.cpp $(HDIR)\FileParser.h
+	-del /q Admin.cpp $(HDIR)\Admin.h
+	-del /q Descriptor.cpp $(HDIR)\Descriptor.h
+	-del /q Exception.cpp $(HDIR)\Exception.h
+	-del /q Locator.cpp $(HDIR)\Locator.h
+	-del /q Observer.cpp $(HDIR)\Observer.h
+	-del /q Query.cpp $(HDIR)\Query.h
+	-del /q Session.cpp $(HDIR)\Session.h
+	-del /q Registry.cpp $(HDIR)\Registry.h
+	-del /q UserAccountMapper.cpp $(HDIR)\UserAccountMapper.h
+	-del /q IceGrid.res
 
 install:: all
 	copy $(LIBNAME) $(install_libdir)
 	copy $(DLLNAME) $(install_bindir)
 
 
-!if "$(CPP_COMPILER)" == "BCC2007" && "$(OPTIMIZE)" != "yes"
+!if "$(BCPLUSPLUS)" == "yes" && "$(OPTIMIZE)" != "yes"
 
 install:: all
 	copy $(DLLNAME:.dll=.tds) $(install_bindir)

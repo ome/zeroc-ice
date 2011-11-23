@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,14 +8,28 @@
 // **********************************************************************
 
 #include <IceUtil/Options.h>
+#include <IceUtil/CtrlCHandler.h>
+#include <IceUtil/StaticMutex.h>
 #include <Slice/Preprocessor.h>
-#include <Slice/SignalHandler.h>
+#include <Slice/FileTracker.h>
+#include <Slice/Util.h>
 #include <Gen.h>
 #include <stdlib.h>
 
 using namespace std;
 using namespace Slice;
 using namespace IceUtil;
+
+static IceUtil::StaticMutex _mutex = ICE_STATIC_MUTEX_INITIALIZER;
+static bool _interrupted = false;
+
+void
+interruptedCallback(int signal)
+{
+    IceUtil::StaticMutex::Lock lock(_mutex);
+
+    _interrupted = true;
+}
 
 void
 usage(const char* n)
@@ -71,11 +85,14 @@ main(int argc, char* argv[])
     vector<string> args;
     try
     {
+#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
+        IceUtil::DummyBCC dummy;
+#endif
         args = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtilInternal::BadOptException& e)
     {
-        cerr << argv[0] << ": " << e.reason << endl;
+        cerr << argv[0] << ": error: " << e.reason << endl;
         usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -88,7 +105,7 @@ main(int argc, char* argv[])
 
     if(opts.isSet("version"))
     {
-        cout << ICE_STRING_VERSION << endl;
+        cerr << ICE_STRING_VERSION << endl;
         return EXIT_SUCCESS;
     }
 
@@ -132,7 +149,8 @@ main(int argc, char* argv[])
         s >>  indexCount;
         if(!s)
         {
-            cerr << argv[0] << ": the --index operation requires a positive integer argument" << endl;
+            getErrorStream() << argv[0] << ": error: the --index operation requires a positive integer argument"
+                             << endl;
             usage(argv[0]);
             return EXIT_FAILURE;
         }
@@ -152,7 +170,8 @@ main(int argc, char* argv[])
         s >>  summaryCount;
         if(!s)
         {
-            cerr << argv[0] << ": the --summary operation requires a positive integer argument" << endl;
+            getErrorStream() << argv[0] << ": error: the --summary operation requires a positive integer argument"
+                             << endl;
             usage(argv[0]);
             return EXIT_FAILURE;
         }
@@ -164,7 +183,7 @@ main(int argc, char* argv[])
 
     if(args.empty())
     {
-        cerr << argv[0] << ": no input file" << endl;
+        getErrorStream() << argv[0] << ": error: no input file" << endl;
         usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -173,7 +192,8 @@ main(int argc, char* argv[])
 
     int status = EXIT_SUCCESS;
 
-    SignalHandler sigHandler;
+    IceUtil::CtrlCHandler ctrlCHandler;
+    ctrlCHandler.setCallback(interruptedCallback);
 
     for(vector<string>::size_type idx = 0; idx < args.size(); ++idx)
     {
@@ -207,6 +227,15 @@ main(int argc, char* argv[])
             p->destroy();
             return EXIT_FAILURE;
         }
+
+        {
+            IceUtil::StaticMutex::Lock lock(_mutex);
+
+            if(_interrupted)
+            {
+                return EXIT_FAILURE;
+            }
+        }
     }
 
     if(status == EXIT_SUCCESS && !preprocess)
@@ -216,19 +245,40 @@ main(int argc, char* argv[])
             Slice::generate(p, output, header, footer, indexHeader, indexFooter, imageDir, logoURL,
                             searchAction, indexCount, summaryCount);
         }
+        catch(const Slice::FileException& ex)
+        {
+            // If a file could not be created, then cleanup any
+            // created files.
+            FileTracker::instance()->cleanup();
+            p->destroy();
+            getErrorStream() << argv[0] << ": error: " << ex.reason() << endl;
+            return EXIT_FAILURE;
+        }
         catch(const string& err)
         {
-            cerr << argv[0] << ": " << err << endl;
+            FileTracker::instance()->cleanup();
+            getErrorStream() << argv[0] << ": error: " << err << endl;
             status = EXIT_FAILURE;
         }
         catch(const char* err)
         {
-            cerr << argv[0] << ": " << err << endl;
+            FileTracker::instance()->cleanup();
+            getErrorStream() << argv[0] << ": error: " << err << endl;
             status = EXIT_FAILURE;
         }
     }
 
     p->destroy();
+
+    {
+        IceUtil::StaticMutex::Lock lock(_mutex);
+
+        if(_interrupted)
+        {
+            FileTracker::instance()->cleanup();
+            return EXIT_FAILURE;
+        }
+    }
 
     return status;
 }

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -45,7 +45,7 @@ SDIR		= $(slicedir)\Glacier2
 
 CPPFLAGS	= -I.. $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 LINKWITH 	= $(LIBS) $(OPENSSL_LIBS) glacier2$(LIBSUFFIX).lib icessl$(LIBSUFFIX).lib
-!if "$(CPP_COMPILER)" != "BCC2007"
+!if "$(BCPLUSPLUS)" != "yes"
 LINKWITH	= $(LINKWITH) ws2_32.lib
 !endif
 
@@ -54,7 +54,7 @@ PDBFLAGS        = /pdb:$(DLLNAME:.dll=.pdb)
 RPDBFLAGS       = /pdb:$(ROUTER:.exe=.pdb)
 !endif
 
-!if "$(CPP_COMPILER)" == "BCC2007"
+!if "$(BCPLUSPLUS)" == "yes"
 RES_FILE        = ,, Glacier2.res
 RRES_FILE       = ,, Glacier2Router.res
 !else
@@ -79,16 +79,15 @@ $(ROUTER): $(ROBJS) Glacier2Router.res
 	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
 clean::
-	del /q PermissionsVerifierF.cpp $(HDIR)\PermissionsVerifierF.h
-	del /q PermissionsVerifier.cpp $(HDIR)\PermissionsVerifier.h
-	del /q RouterF.cpp $(HDIR)\RouterF.h
-	del /q Router.cpp $(HDIR)\Router.h
-	del /q SessionF.cpp $(HDIR)\SessionF.h
-	del /q Session.cpp $(HDIR)\Session.h
-	del /q SSLInfo.cpp $(HDIR)\SSLInfo.h
-	del /q Glacier2Router.res Glacier2.res
-	del /q $(DLLNAME:.dll=.*)
-	del /q $(ROUTER:.exe=.*)
+	-del /q PermissionsVerifierF.cpp $(HDIR)\PermissionsVerifierF.h
+	-del /q PermissionsVerifier.cpp $(HDIR)\PermissionsVerifier.h
+	-del /q RouterF.cpp $(HDIR)\RouterF.h
+	-del /q Router.cpp $(HDIR)\Router.h
+	-del /q SessionF.cpp $(HDIR)\SessionF.h
+	-del /q Session.cpp $(HDIR)\Session.h
+	-del /q SSLInfo.cpp $(HDIR)\SSLInfo.h
+	-del /q Glacier2Router.res Glacier2.res
+	-del /q $(ROUTER:.exe=.*)
 
 install:: all
 	copy $(LIBNAME) $(install_libdir)
@@ -96,7 +95,7 @@ install:: all
 	copy $(ROUTER) $(install_bindir)
 
 
-!if "$(CPP_COMPILER)" == "BCC2007" && "$(OPTIMIZE)" != "yes"
+!if "$(BCPLUSPLUS)" == "yes" && "$(OPTIMIZE)" != "yes"
 
 install:: all
 	copy $(DLLNAME:.dll=.tds) $(install_bindir)

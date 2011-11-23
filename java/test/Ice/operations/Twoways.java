@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,6 +16,26 @@ class Twoways
         {
             throw new RuntimeException();
         }
+    }
+
+    static class PerThreadContextInvokeThread extends Thread
+    {
+        public PerThreadContextInvokeThread(Test.MyClassPrx proxy)
+        {
+            _proxy = proxy;
+        }
+
+        public void
+        run()
+        {
+            java.util.Map<String, String> ctx = _proxy.ice_getCommunicator().getImplicitContext().getContext();
+            test(ctx.isEmpty());
+            ctx.put("one", "ONE");
+            _proxy.ice_getCommunicator().getImplicitContext().setContext(ctx);
+            test(_proxy.opContext().equals(ctx));
+        }
+        
+        final private Test.MyClassPrx _proxy;
     }
 
     static void
@@ -579,6 +599,31 @@ class Twoways
         }
 
         {
+            Test.MyStruct s11 = new Test.MyStruct(1, 1);
+            Test.MyStruct s12 = new Test.MyStruct(1, 2);
+            java.util.Map<Test.MyStruct, Test.MyEnum> di1 = new java.util.HashMap<Test.MyStruct, Test.MyEnum>();
+            di1.put(s11, Test.MyEnum.enum1);
+            di1.put(s12, Test.MyEnum.enum2);
+
+            Test.MyStruct s22 = new Test.MyStruct(2, 2);
+            Test.MyStruct s23 = new Test.MyStruct(2, 3);
+            java.util.Map<Test.MyStruct, Test.MyEnum> di2 = new java.util.HashMap<Test.MyStruct, Test.MyEnum>();
+            di2.put(s11, Test.MyEnum.enum1);
+            di2.put(s22, Test.MyEnum.enum3);
+            di2.put(s23, Test.MyEnum.enum2);
+
+            Test.MyStructMyEnumDHolder _do = new Test.MyStructMyEnumDHolder();
+            java.util.Map<Test.MyStruct, Test.MyEnum> ro = p.opMyStructMyEnumD(di1, di2, _do);
+
+            test(_do.value.equals(di1));
+            test(ro.size() == 4);
+            test(ro.get(s11) == Test.MyEnum.enum1);
+            test(ro.get(s12) == Test.MyEnum.enum2);
+            test(ro.get(s22) == Test.MyEnum.enum3);
+            test(ro.get(s23) == Test.MyEnum.enum2);
+        }
+
+        {
             int[] lengths = { 0, 1, 2, 126, 127, 128, 129, 253, 254, 255, 256, 257, 1000 };
 
             for(int l = 0; l < lengths.length; ++l)
@@ -717,6 +762,20 @@ class Twoways
                 test(p3.opContext().equals(combined));
 
                 test(ic.getImplicitContext().remove("one").equals("ONE"));
+
+                if(impls[i].equals("PerThread"))
+                {
+                    Thread thread = new PerThreadContextInvokeThread(
+                        Test.MyClassPrxHelper.uncheckedCast(p3.ice_context(null)));
+                    thread.start();
+                    try
+                    {
+                        thread.join();
+                    }
+                    catch(InterruptedException ex)
+                    {
+                    }
+                }
 
                 ic.destroy();
             }

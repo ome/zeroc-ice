@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -46,6 +46,6 @@ $(SERVER): $(OBJS) $(SOBJS)
 
 clean::
 	del /q Test.cpp Test.h
-	for %f in (db\*) do if not %f == db\DB_CONFIG del /q %f
+	-for %f in (db\*) do if not %f == db\DB_CONFIG del /q %f
 
 !include .depend

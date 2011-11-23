@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -440,6 +440,27 @@ public sealed class MyClassI : MyClass
     }
 
     public override void opCustomCVSS_async(AMD_MyClass_opCustomCVSS cb, Custom<Custom<CV>> i, Ice.Current current)
+    {
+        cb.ice_response(i, i);
+    }
+
+    public override void opSerialSmallCSharp_async(AMD_MyClass_opSerialSmallCSharp cb,
+                                                   Serialize.Small i,
+                                                   Ice.Current current)
+    {
+        cb.ice_response(i, i);
+    }
+
+    public override void opSerialLargeCSharp_async(AMD_MyClass_opSerialLargeCSharp cb,
+                                                   Serialize.Large i,
+                                                   Ice.Current current)
+    {
+        cb.ice_response(i, i);
+    }
+
+    public override void opSerialStructCSharp_async(AMD_MyClass_opSerialStructCSharp cb,
+                                                    Serialize.Struct i,
+                                                    Ice.Current current)
     {
         cb.ice_response(i, i);
     }

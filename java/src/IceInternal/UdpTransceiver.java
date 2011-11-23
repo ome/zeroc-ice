@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -226,10 +226,9 @@ final class UdpTransceiver implements Transceiver
     public String
     toString()
     {
-        if(mcastServer && _fd != null)
+        if(_mcastAddr != null && _fd != null)
         {
-            return Network.addressesToString(_addr.getAddress(), _addr.getPort(), 
-                                             _fd.socket().getInetAddress(), _fd.socket().getPort());
+            return Network.fdToString(_fd) + "\nmulticast address = " + Network.addrToString(_mcastAddr);
         }
         else
         {
@@ -265,7 +264,6 @@ final class UdpTransceiver implements Transceiver
         _traceLevels = instance.traceLevels();
         _logger = instance.initializationData().logger;
         _stats = instance.initializationData().stats;
-        _incoming = false;
         _connect = true;
         _warn = instance.initializationData().properties.getPropertyAsInt("Ice.Warn.Datagrams") > 0;
         _addr = addr;
@@ -303,7 +301,6 @@ final class UdpTransceiver implements Transceiver
         _traceLevels = instance.traceLevels();
         _logger = instance.initializationData().logger;
         _stats = instance.initializationData().stats;
-        _incoming = true;
         _connect = connect;
         _warn = instance.initializationData().properties.getPropertyAsInt("Ice.Warn.Datagrams") > 0;
 
@@ -321,9 +318,13 @@ final class UdpTransceiver implements Transceiver
             if(_addr.getAddress().isMulticastAddress())
             {
                 Network.setReuseAddress(_fd, true);
-                Network.doBind(_fd, Network.getAddress("0.0.0.0", port, Network.EnableIPv4));
-                configureMulticast(_addr, mcastInterface, -1);
-                mcastServer = true;
+                _mcastAddr = _addr;
+                _addr = Network.doBind(_fd, Network.getAddress("0.0.0.0", port, Network.EnableIPv4));
+                if(port == 0)
+                {
+                    _mcastAddr = new java.net.InetSocketAddress(_mcastAddr.getAddress(), _addr.getPort());
+                }
+                configureMulticast(_mcastAddr, mcastInterface, -1);
             }
             else
             {
@@ -439,8 +440,8 @@ final class UdpTransceiver implements Transceiver
     {
         try
         {
-            java.lang.reflect.Constructor c =
-                Class.forName("java.net.PlainDatagramSocketImpl").getDeclaredConstructor((Class[])null);
+            java.lang.reflect.Constructor<?> c =
+                Class.forName("java.net.PlainDatagramSocketImpl").getDeclaredConstructor((Class<?>[])null);
             c.setAccessible(true);
             java.net.DatagramSocketImpl socketImpl = (java.net.DatagramSocketImpl)c.newInstance((Object[])null);
 
@@ -449,7 +450,7 @@ final class UdpTransceiver implements Transceiver
             // that this hack works properly when IPv6 is enabled on Windows.
             //
             java.lang.reflect.Method m =
-                Class.forName("java.net.PlainDatagramSocketImpl").getDeclaredMethod("create", (Class[])null);
+                Class.forName("java.net.PlainDatagramSocketImpl").getDeclaredMethod("create", (Class<?>[])null);
             m.setAccessible(true);
             m.invoke(socketImpl);
 
@@ -476,7 +477,7 @@ final class UdpTransceiver implements Transceiver
 
                 if(group != null)
                 {
-                    Class[] types = new Class[]{ java.net.SocketAddress.class, java.net.NetworkInterface.class };
+                    Class<?>[] types = new Class<?>[]{ java.net.SocketAddress.class, java.net.NetworkInterface.class };
                     m = socketImpl.getClass().getDeclaredMethod("joinGroup", types);
                     m.setAccessible(true);
                     Object[] args = new Object[]{ group, intf };
@@ -484,7 +485,7 @@ final class UdpTransceiver implements Transceiver
                 }
                 else if(intf != null)
                 {
-                    Class[] types = new Class[]{ Integer.TYPE, Object.class };
+                    Class<?>[] types = new Class<?>[]{ Integer.TYPE, Object.class };
                     m = socketImpl.getClass().getDeclaredMethod("setOption", types);
                     m.setAccessible(true);
                     Object[] args = new Object[]{ new Integer(java.net.SocketOptions.IP_MULTICAST_IF2), intf };
@@ -493,7 +494,7 @@ final class UdpTransceiver implements Transceiver
 
                 if(ttl != -1)
                 {
-                    Class[] types = new Class[]{ Integer.TYPE };
+                    Class<?>[] types = new Class<?>[]{ Integer.TYPE };
                     m = java.net.DatagramSocketImpl.class.getDeclaredMethod("setTimeToLive", types);
                     m.setAccessible(true);
                     Object[] args = new Object[]{ new Integer(ttl) };
@@ -513,11 +514,6 @@ final class UdpTransceiver implements Transceiver
         }
     }
 
-    private void
-    closeSocket()
-    {
-    }
-
     protected synchronized void
     finalize()
         throws Throwable
@@ -530,14 +526,13 @@ final class UdpTransceiver implements Transceiver
     private TraceLevels _traceLevels;
     private Ice.Logger _logger;
     private Ice.Stats _stats;
-    private boolean _incoming;
     private boolean _connect;
     private final boolean _warn;
     private int _rcvSize;
     private int _sndSize;
     private java.nio.channels.DatagramChannel _fd;
     private java.net.InetSocketAddress _addr;
-    private boolean mcastServer = false;
+    private java.net.InetSocketAddress _mcastAddr = null;
 
     //
     // The maximum IP datagram size is 65535. Subtract 20 bytes for the IP header and 8 bytes for the UDP header

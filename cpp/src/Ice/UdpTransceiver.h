@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -65,11 +65,7 @@ private:
 
     SOCKET _fd;
     struct sockaddr_storage _addr;
-    bool _mcastServer;
-#ifdef _WIN32
-    fd_set _rFdSet;
-    fd_set _wFdSet;
-#endif
+    struct sockaddr_storage _mcastAddr;
     bool _connect;
     int _rcvSize;
     int _sndSize;

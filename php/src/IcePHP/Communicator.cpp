@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -105,9 +105,10 @@ IcePHP::getCommunicator(TSRMLS_D)
 {
     Ice::CommunicatorPtr result;
 
-    zval **zv;
-    if(zend_hash_find(&EG(symbol_table), "ICE", sizeof("ICE"), reinterpret_cast<void **>(&zv)) == SUCCESS)
+    void* data;
+    if(zend_hash_find(&EG(symbol_table), "ICE", sizeof("ICE"), &data) == SUCCESS)
     {
+        zval** zv = reinterpret_cast<zval**>(data);
         ice_object* obj = getObject(*zv TSRMLS_CC);
         assert(obj);
 
@@ -139,9 +140,10 @@ IcePHP::getCommunicator(TSRMLS_D)
 zval*
 IcePHP::getCommunicatorZval(TSRMLS_D)
 {
-    zval **zv = 0;
-    zend_hash_find(&EG(symbol_table), "ICE", sizeof("ICE"), reinterpret_cast<void **>(&zv));
-    assert(zv);
+    void* data = 0;
+    zend_hash_find(&EG(symbol_table), "ICE", sizeof("ICE"), &data);
+    assert(data);
+    zval **zv = reinterpret_cast<zval**>(data);
     return *zv;
 }
 

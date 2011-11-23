@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -45,16 +45,6 @@ namespace Slice
 
 Unit* unit;
 
-}
-
-// ----------------------------------------------------------------------
-// toLower() helper function
-// ----------------------------------------------------------------------
-
-static void
-toLower(string& s)
-{
-    transform(s.begin(), s.end(), s.begin(), ::tolower);
 }
 
 // ----------------------------------------------------------------------
@@ -1361,6 +1351,13 @@ Slice::Container::lookupException(const string& scoped, bool printError)
     return exceptions.front();
 }
 
+UnitPtr
+Slice::Container::unit() const
+{
+    return SyntaxTreeBase::unit();
+}
+
+
 ModuleList
 Slice::Container::modules() const
 {
@@ -2044,10 +2041,8 @@ Slice::Container::nameIsLegal(const string& newName, const char* newConstruct)
         }
         if(!_unit->caseSensitive())
         {
-            string name = newName;
-            toLower(name);
-            string thisName = module->name();
-            toLower(thisName);
+            string name = IceUtilInternal::toLower(newName);
+            string thisName = IceUtilInternal::toLower(module->name());
             if(name == thisName)
             {
                 string msg = newConstruct;
@@ -2075,10 +2070,8 @@ Slice::Container::nameIsLegal(const string& newName, const char* newConstruct)
         }
         if(!_unit->caseSensitive())
         {
-            string name = newName;
-            toLower(name);
-            string thisName = module->name();
-            toLower(thisName);
+            string name = IceUtilInternal::toLower(newName);
+            string thisName = IceUtilInternal::toLower(module->name());
             if(name == thisName)
             {
                 string msg = newConstruct;
@@ -2125,9 +2118,9 @@ Slice::Container::checkPrefix(const string& name) const
         if(name.size() >= 3)
         {
             string prefix3;
-            prefix3 += ::tolower(name[0]);
-            prefix3 += ::tolower(name[1]);
-            prefix3 += ::tolower(name[2]);
+            prefix3 += ::tolower(static_cast<unsigned char>(name[0]));
+            prefix3 += ::tolower(static_cast<unsigned char>(name[1]));
+            prefix3 += ::tolower(static_cast<unsigned char>(name[2]));
             if(prefix3 == "ice")
             {
                 _unit->error("illegal identifier `" + name + "': `" + name.substr(0, 3) + "' prefix is reserved");
@@ -2649,10 +2642,8 @@ Slice::ClassDef::createOperation(const string& name,
     }
     if(!_unit->caseSensitive())
     {
-        string newName = name;
-        toLower(newName);
-        string thisName = this->name();
-        toLower(thisName);
+        string newName = IceUtilInternal::toLower(name);
+        string thisName = IceUtilInternal::toLower(this->name());
         if(newName == thisName)
         {
             string msg = "operation `" + name + "' differs only in capitalization from enclosing ";
@@ -2690,10 +2681,8 @@ Slice::ClassDef::createOperation(const string& name,
             }
             if(!_unit->caseSensitive())
             {
-                string baseName = (*q)->name();
-                toLower(baseName);
-                string newName = name;
-                toLower(newName);
+                string baseName = IceUtilInternal::toLower((*q)->name());
+                string newName = IceUtilInternal::toLower(name);
                 if(baseName == newName)
                 {
                     string msg = "operation `" + name + "' differs only in capitalization from " + (*q)->kindOf();
@@ -2788,10 +2777,8 @@ Slice::ClassDef::createDataMember(const string& name, const TypePtr& type)
     }
     if(!_unit->caseSensitive())
     {
-        string newName = name;
-        toLower(newName);
-        string thisName = this->name();
-        toLower(thisName);
+        string newName = IceUtilInternal::toLower(name);
+        string thisName = IceUtilInternal::toLower(this->name());
         if(newName == thisName)
         {
             string msg = "data member `" + name + "' differs only in capitalization from enclosing class name `";
@@ -2828,10 +2815,8 @@ Slice::ClassDef::createDataMember(const string& name, const TypePtr& type)
             }
             if(!_unit->caseSensitive())
             {
-                string baseName = (*q)->name();
-                toLower(baseName);
-                string newName = name;
-                toLower(newName);
+                string baseName = IceUtilInternal::toLower((*q)->name());
+                string newName = IceUtilInternal::toLower(name);
                 if(baseName == newName)
                 {
                     string msg = "data member `" + name + "' differs only in capitalization from " + (*q)->kindOf();
@@ -3266,10 +3251,8 @@ Slice::Exception::createDataMember(const string& name, const TypePtr& type)
     }
     if(!_unit->caseSensitive())
     {
-        string newName = name;
-        toLower(newName);
-        string thisName = this->name();
-        toLower(thisName);
+        string newName = IceUtilInternal::toLower(name);
+        string thisName = IceUtilInternal::toLower(this->name());
         if(newName == thisName)
         {
             string msg = "exception member `" + name + "' differs only in capitalization ";
@@ -3297,10 +3280,8 @@ Slice::Exception::createDataMember(const string& name, const TypePtr& type)
             }
             if(!_unit->caseSensitive())
             {
-                string baseName = (*r)->name();
-                toLower(baseName);
-                string newName = name;
-                toLower(newName);
+                string baseName = IceUtilInternal::toLower((*r)->name());
+                string newName = IceUtilInternal::toLower(name);
                 if(baseName == newName)
                 {
                     string msg = "exception member `" + name + "' differs only in capitalization from exception member `";
@@ -3578,10 +3559,8 @@ Slice::Struct::createDataMember(const string& name, const TypePtr& type)
     }
     if(!_unit->caseSensitive())
     {
-        string newName = name;
-        toLower(newName);
-        string thisName = this->name();
-        toLower(thisName);
+        string newName = IceUtilInternal::toLower(name);
+        string thisName = IceUtilInternal::toLower(this->name());
         if(newName == thisName)
         {
             string msg = "struct member `" + name + "' differs only in capitalization from enclosing struct name `";
@@ -4503,10 +4482,8 @@ Slice::Operation::createParamDecl(const string& name, const TypePtr& type, bool 
     }
     if(!_unit->caseSensitive())
     {
-        string newName = name;
-        toLower(newName);
-        string thisName = this->name();
-        toLower(thisName);
+        string newName = IceUtilInternal::toLower(name);
+        string thisName = IceUtilInternal::toLower(this->name());
         if(newName == thisName)
         {
             string msg = "parameter `" + name + "' differs only in capitalization from operation name `";
@@ -4744,8 +4721,7 @@ Slice::Operation::attributes() const
         }
         if(i == 2)
         {
-            cout << definitionContext()->filename() << ":" << line()
-                 << ": warning: invalid freeze metadata for operation" << endl;
+            emitWarning(definitionContext()->filename(), line(), "invalid freeze metadata for operation");
         }
         else
         {
@@ -4766,8 +4742,7 @@ Slice::Operation::attributes() const
                 {
                     if(result != 0 && (i == int(Supports) || i == int(Never)))
                     {
-                        cout << definitionContext()->filename() << ":" << line()
-                             << ": warning: invalid freeze metadata for operation" << endl;
+                        emitWarning(definitionContext()->filename(), line(), "invalid freeze metadata for operation");
                     }
                     else
                     {
@@ -4781,8 +4756,7 @@ Slice::Operation::attributes() const
             
             if(i == 4)
             {
-                cout << definitionContext()->filename() << ":" << line()
-                     << ": warning: invalid freeze metadata for operation" << endl;
+                emitWarning(definitionContext()->filename(), line(), "invalid freeze metadata for operation");
 
                 //
                 // Set default
@@ -5034,6 +5008,12 @@ Slice::Unit::currentFile() const
     }
 }
 
+string
+Slice::Unit::topLevelFile() const
+{
+    return _topLevelFile;
+}
+
 int
 Slice::Unit::currentLine() const
 {
@@ -5087,23 +5067,13 @@ Slice::Unit::scanPosition(const char* s)
         }
     }
 
-    //
-    // Cache full paths to avoid too many full path computations.
-    //
-    map<string, string>::const_iterator p = _fullPaths.find(currentFile);
-    if(p == _fullPaths.end())
-    {
-        p =  _fullPaths.insert(make_pair(currentFile, fullPath(currentFile))).first;
-    }
-    currentFile = p->second;
-
     enum LineType { File, Push, Pop };
 
     LineType type = File;
 
     if(_currentLine == 0)
     {
-        if(currentFile != _topLevelFile)
+        if(_currentIncludeLevel > 0 || currentFile != _topLevelFile)
         {
             type = Push;
             line.erase(idx);
@@ -5153,6 +5123,7 @@ Slice::Unit::scanPosition(const char* s)
         DefinitionContextPtr dc = currentDefinitionContext();
         assert(dc);
         dc->setFilename(currentFile);
+        _definitionContextMap.insert(make_pair(currentFile, dc));
     }
 }
 
@@ -5180,6 +5151,9 @@ Slice::Unit::addGlobalMetaData(const StringList& metaData)
     }
     else
     {
+        //
+        // Append the global metadata to any existing metadata (e.g., default global metadata).
+        //
         StringList l = dc->getMetaData();
         copy(metaData.begin(), metaData.end(), back_inserter(l));
         dc->setMetaData(l);
@@ -5197,36 +5171,27 @@ Slice::Unit::setSeenDefinition()
 void
 Slice::Unit::error(const char* s)
 {
-    string file = currentFile();
-    if(!file.empty())
-    {
-        cout << file << ':' << _currentLine << ": ";
-    }
-    cout << s << endl;
+    emitError(currentFile(), _currentLine, s);
     _errors++;
 }
 
 void
 Slice::Unit::error(const string& s)
 {
-    error(s.c_str());
+    emitError(currentFile(), _currentLine, s);
+    _errors++;
 }
 
 void
 Slice::Unit::warning(const char* s) const
 {
-    string file = currentFile();
-    if(!file.empty())
-    {
-        cout << file << ':' << _currentLine << ": ";
-    }
-    cout << "warning: " << s << endl;
+    emitWarning(currentFile(), _currentLine, s);
 }
 
 void
 Slice::Unit::warning(const string& s) const
 {
-    warning(s.c_str());
+    emitWarning(currentFile(), _currentLine, s);
 }
 
 ContainerPtr
@@ -5263,7 +5228,7 @@ Slice::Unit::currentDefinitionContext() const
 void
 Slice::Unit::pushDefinitionContext()
 {
-    _definitionContextStack.push(new DefinitionContext(_currentIncludeLevel, _defaultGlobalMetadata));
+    _definitionContextStack.push(new DefinitionContext(_currentIncludeLevel, _defaultGlobalMetaData));
 }
 
 void
@@ -5273,13 +5238,24 @@ Slice::Unit::popDefinitionContext()
     _definitionContextStack.pop();
 }
 
+DefinitionContextPtr
+Slice::Unit::findDefinitionContext(const string& file) const
+{
+    map<string, DefinitionContextPtr>::const_iterator p = _definitionContextMap.find(file);
+    if(p != _definitionContextMap.end())
+    {
+        return p->second;
+    }
+    return 0;
+}
+
 void
 Slice::Unit::addContent(const ContainedPtr& contained)
 {
     string scoped = contained->scoped();
     if(!caseSensitive())
     {
-        toLower(scoped);
+        scoped = IceUtilInternal::toLower(scoped);
     }
     _contentMap[scoped].push_back(contained);
 }
@@ -5290,7 +5266,7 @@ Slice::Unit::removeContent(const ContainedPtr& contained)
     string scoped = contained->scoped();
     if(!caseSensitive())
     {
-        toLower(scoped);
+        scoped = IceUtilInternal::toLower(scoped);
     }
     map<string, ContainedList>::iterator p = _contentMap.find(scoped);
     assert(p != _contentMap.end());
@@ -5315,7 +5291,7 @@ Slice::Unit::findContents(const string& scoped) const
     string name = scoped;
     if(!_unit->caseSensitive())
     {
-        toLower(name);
+        name = IceUtilInternal::toLower(name);
     }
 
     map<string, ContainedList>::const_iterator p = _contentMap.find(name);
@@ -5483,6 +5459,18 @@ Slice::Unit::includeFiles() const
     return _includeFiles;
 }
 
+StringList
+Slice::Unit::allFiles() const
+{
+    StringList result;
+    for(map<string, DefinitionContextPtr>::const_iterator p = _definitionContextMap.begin();
+        p != _definitionContextMap.end(); ++p)
+    {
+        result.push_back(p->first);
+    }
+    return result;
+}
+
 int
 Slice::Unit::parse(const string& filename, FILE* file, bool debug, Slice::FeatureProfile profile)
 {
@@ -5496,7 +5484,6 @@ Slice::Unit::parse(const string& filename, FILE* file, bool debug, Slice::Featur
     _currentIncludeLevel = 0;
     _featureProfile = profile;
     _topLevelFile = fullPath(filename);
-    _fullPaths[filename] = _topLevelFile;
     pushContainer(this);
     pushDefinitionContext();
 
@@ -5569,7 +5556,7 @@ Slice::Unit::Unit(bool ignRedefs, bool all, bool allowIcePrefix, bool caseSensit
     _all(all),
     _allowIcePrefix(allowIcePrefix),
     _caseSensitive(caseSensitive),
-    _defaultGlobalMetadata(defaultGlobalMetadata),
+    _defaultGlobalMetaData(defaultGlobalMetadata),
     _errors(0)
 
 {
@@ -5600,7 +5587,8 @@ Slice::CICompare::operator()(const string& s1, const string& s2) const
 {
     string::const_iterator p1 = s1.begin();
     string::const_iterator p2 = s2.begin();
-    while(p1 != s1.end() && p2 != s2.end() && ::tolower(*p1) == ::tolower(*p2))
+    while(p1 != s1.end() && p2 != s2.end() &&
+          ::tolower(static_cast<unsigned char>(*p1)) == ::tolower(static_cast<unsigned char>(*p2)))
     {
         ++p1;
         ++p2;
@@ -5619,7 +5607,7 @@ Slice::CICompare::operator()(const string& s1, const string& s2) const
     }
     else
     {
-        return ::tolower(*p1) < ::tolower(*p2);
+        return ::tolower(static_cast<unsigned char>(*p1)) < ::tolower(static_cast<unsigned char>(*p2));
     }
 }
 

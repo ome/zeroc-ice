@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,12 +17,6 @@ package IceInternal;
 // regular basis is required to allow canceled timer task objects to
 // be garbage collected.
 //
-
-interface TimerTask
-{
-    void runTimerTask();
-}
-
 public final class Timer extends Thread
 {
     //
@@ -254,7 +248,7 @@ public final class Timer extends Thread
         }
     }
 
-    static private class Token implements Comparable
+    static private class Token implements Comparable<Token>
     {
         public
         Token(long scheduledTime, int id, long delay, TimerTask task)
@@ -266,12 +260,11 @@ public final class Timer extends Thread
         }
 
         public int
-        compareTo(Object o)
+        compareTo(Token r)
         {
             //
             // Token are sorted by scheduled time and token id.
             //
-            Token r = (Token)o;
             if(scheduledTime < r.scheduledTime)
             {
                 return -1;

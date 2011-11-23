@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -356,6 +356,18 @@ MyDerivedClassI::opStringMyEnumD_async(const Test::AMD_MyClass_opStringMyEnumDPt
 {
     Test::StringMyEnumD p3 = p1;
     Test::StringMyEnumD r = p1;
+    std::set_union(p1.begin(), p1.end(), p2.begin(), p2.end(), std::inserter(r, r.end()));
+    cb->ice_response(r, p3);
+}
+
+void
+MyDerivedClassI::opMyStructMyEnumD_async(const Test::AMD_MyClass_opMyStructMyEnumDPtr& cb,
+                                       const Test::MyStructMyEnumD& p1,
+                                       const Test::MyStructMyEnumD& p2,
+                                       const Ice::Current&)
+{
+    Test::MyStructMyEnumD p3 = p1;
+    Test::MyStructMyEnumD r = p1;
     std::set_union(p1.begin(), p1.end(), p2.begin(), p2.end(), std::inserter(r, r.end()));
     cb->ice_response(r, p3);
 }

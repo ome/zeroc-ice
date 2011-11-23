@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -524,6 +524,7 @@ public final class ThreadPool
                             }
                             catch(Ice.DatagramLimitException ex) // Expected.
                             {
+                                handler._stream.resize(0, true);
                                 continue;
                             }
                             catch(Ice.SocketException ex)
@@ -548,6 +549,7 @@ public final class ThreadPool
                                         _instance.initializationData().logger.warning(
                                             "datagram connection exception:\n" + ex + "\n" + handler.toString());
                                     }
+                                    handler._stream.resize(0, true);
                                 }
                                 else
                                 {
@@ -614,82 +616,92 @@ public final class ThreadPool
                             handler._serializing = false;
                         }
 
-                        //
-                        // First we reap threads that have been
-                        // destroyed before.
-                        //
-                        int sz = _threads.size();
-                        assert(_running <= sz);
-                        if(_running < sz)
-                        {
-                            java.util.Iterator<EventHandlerThread> i = _threads.iterator();
-                            while(i.hasNext())
-                            {
-                                EventHandlerThread thread = i.next();
 
-                                if(!thread.isAlive())
+                        if(_size < _sizeMax) // Dynamic thread pool
+                        {
+                            //
+                            // First we reap threads that have been
+                            // destroyed before.
+                            //
+                            int sz = _threads.size();
+                            assert(_running <= sz);
+                            if(_running < sz)
+                            {
+                                java.util.Iterator<EventHandlerThread> i = _threads.iterator();
+                                while(i.hasNext())
                                 {
-                                    try
+                                    EventHandlerThread thread = i.next();
+
+                                    if(!thread.isAlive())
                                     {
-                                        thread.join();
-                                        i.remove();
-                                    }
-                                    catch(InterruptedException ex)
-                                    {
+                                        try
+                                        {
+                                            thread.join();
+                                            i.remove();
+                                        }
+                                        catch(InterruptedException ex)
+                                        {
+                                        }
                                     }
                                 }
                             }
-                        }
                         
-                        //
-                        // Now we check if this thread can be destroyed, based
-                        // on a load factor.
-                        //
-
-                        //
-                        // The load factor jumps immediately to the number of
-                        // threads that are currently in use, but decays
-                        // exponentially if the number of threads in use is
-                        // smaller than the load factor. This reflects that we
-                        // create threads immediately when they are needed,
-                        // but want the number of threads to slowly decline to
-                        // the configured minimum.
-                        //
-                        double inUse = (double)_inUse;
-                        if(_load < inUse)
-                        {
-                            _load = inUse;
-                        }
-                        else
-                        {
-                            final double loadFactor = 0.05; // TODO: Configurable?
-                            final double oneMinusLoadFactor = 1 - loadFactor;
-                            _load = _load * oneMinusLoadFactor + _inUse * loadFactor;
-                        }
-
-                        if(_running > _size)
-                        {
-                            int load = (int)(_load + 0.5);
+                            //
+                            // Now we check if this thread can be destroyed, based
+                            // on a load factor.
+                            //
 
                             //
-                            // We add one to the load factor because one
-                            // additional thread is needed for select().
+                            // The load factor jumps immediately to the number of
+                            // threads that are currently in use, but decays
+                            // exponentially if the number of threads in use is
+                            // smaller than the load factor. This reflects that we
+                            // create threads immediately when they are needed,
+                            // but want the number of threads to slowly decline to
+                            // the configured minimum.
                             //
-                            if(load + 1 < _running)
+                            double inUse = (double)_inUse;
+                            if(_load < inUse)
                             {
-                                assert(_inUse > 0);
-                                --_inUse;
+                                _load = inUse;
+                            }
+                            else
+                            {
+                                final double loadFactor = 0.05; // TODO: Configurable?
+                                final double oneMinusLoadFactor = 1 - loadFactor;
+                                _load = _load * oneMinusLoadFactor + _inUse * loadFactor;
+                            }
+
+                            if(_running > _size)
+                            {
+                                int load = (int)(_load + 0.5);
+
+                                //
+                                // We add one to the load factor because one
+                                // additional thread is needed for select().
+                                //
+                                if(load + 1 < _running)
+                                {
+                                    assert(_inUse > 0);
+                                    --_inUse;
                                 
-                                assert(_running > 0);
-                                --_running;
+                                    assert(_running > 0);
+                                    --_running;
                                 
-                                return false;
+                                    return false;
+                                }
                             }
                         }
-                        
+
                         assert(_inUse > 0);
                         --_inUse;
                     }
+
+                    //
+                    // Do not wait to be promoted again to release these objects.
+                    //
+                    handler = null;
+                    workItem = null;
 
                     while(!_promote)
                     {
@@ -717,6 +729,16 @@ public final class ThreadPool
     read(EventHandler handler)
     {
         BasicStream stream = handler._stream;
+
+        if(stream.pos() >= Protocol.headerSize)
+        {
+            if(!handler.read(stream))
+            {
+                return false;
+            }
+            assert(stream.pos() == stream.size());
+            return true;
+        }
 
         if(stream.size() == 0)
         {
@@ -779,8 +801,8 @@ public final class ThreadPool
             throw e;
         }
 
-        byte messageType = stream.readByte();
-        byte compress = stream.readByte();
+        stream.readByte(); // messageType
+        stream.readByte(); // compress
         int size = stream.readInt();
         if(size < Protocol.headerSize)
         {
@@ -805,8 +827,6 @@ public final class ThreadPool
                     _instance.initializationData().logger.warning("DatagramLimitException: maximum size of "
                                                                   + stream.pos() + " exceeded");
                 }
-                stream.pos(0);
-                stream.resize(0, true);
                 throw new Ice.DatagramLimitException();
             }
             else
@@ -950,23 +970,13 @@ public final class ThreadPool
             {
                 promote = ThreadPool.this.run(stream);
             }
-            catch(Ice.LocalException ex)
-            {
-                java.io.StringWriter sw = new java.io.StringWriter();
-                java.io.PrintWriter pw = new java.io.PrintWriter(sw);
-                ex.printStackTrace(pw);
-                pw.flush();
-                String s = "exception in `" + _prefix + "' thread " + getName() + ":\n" + sw.toString();
-                _instance.initializationData().logger.error(s);
-                promote = true;
-            }
             catch(java.lang.Exception ex)
             {
                 java.io.StringWriter sw = new java.io.StringWriter();
                 java.io.PrintWriter pw = new java.io.PrintWriter(sw);
                 ex.printStackTrace(pw);
                 pw.flush();
-                String s = "unknown exception in `" + _prefix + "' thread " + getName() + ":\n" + sw.toString();
+                String s = "exception in `" + _prefix + "' thread " + getName() + ":\n" + sw.toString();
                 _instance.initializationData().logger.error(s);
                 promote = true;
             }

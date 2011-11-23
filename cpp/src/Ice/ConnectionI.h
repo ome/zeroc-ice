@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -81,7 +81,7 @@ public:
     void waitUntilHolding() const;
     void waitUntilFinished(); // Not const, as this might close the connection upon timeout.
 
-    void monitor();
+    void monitor(const IceUtil::Time&);
 
     bool sendRequest(IceInternal::Outgoing*, bool, bool);
     bool sendAsyncRequest(const IceInternal::OutgoingAsyncPtr&, bool, bool);
@@ -154,10 +154,6 @@ private:
 
     struct OutgoingMessage
     {
-        OutgoingMessage()
-	{
-	}
-
         OutgoingMessage(IceInternal::BasicStream* str, bool comp) : 
 	    stream(str), out(0), compress(comp), response(false), adopted(false)
 	{

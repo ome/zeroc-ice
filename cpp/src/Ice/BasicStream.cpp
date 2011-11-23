@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -291,6 +291,26 @@ IceInternal::BasicStream::ReadEncaps::swap(ReadEncaps& other)
     std::swap(previous, other.previous);
 }
 
+void
+IceInternal::BasicStream::endWriteEncapsChecked()
+{
+    if(!_currentWriteEncaps)
+    {
+        throw EncapsulationException(__FILE__, __LINE__, "not in an encapsulation");
+    }
+    endWriteEncaps();
+}
+
+void
+IceInternal::BasicStream::endReadEncapsChecked()
+{
+    if(!_currentReadEncaps)
+    {
+        throw EncapsulationException(__FILE__, __LINE__, "not in an encapsulation");
+    }
+    endReadEncaps();
+}
+
 Int
 IceInternal::BasicStream::getReadEncapsSize()
 {
@@ -377,6 +397,14 @@ IceInternal::BasicStream::skipSlice()
 void
 IceInternal::BasicStream::writeTypeId(const string& id)
 {
+    if(!_currentWriteEncaps || !_currentWriteEncaps->typeIdMap)
+    {
+        //
+        // write(ObjectPtr) must be called first.
+        //
+        throw MarshalException(__FILE__, __LINE__, "type ids require an encapsulation");
+    }
+
     TypeIdWriteMap::const_iterator k = _currentWriteEncaps->typeIdMap->find(id);
     if(k != _currentWriteEncaps->typeIdMap->end())
     {
@@ -394,6 +422,14 @@ IceInternal::BasicStream::writeTypeId(const string& id)
 void
 IceInternal::BasicStream::readTypeId(string& id)
 {
+    if(!_currentReadEncaps || !_currentReadEncaps->typeIdMap)
+    {
+        //
+        // read(PatchFunc, void*) must be called first.
+        //
+        throw MarshalException(__FILE__, __LINE__, "type ids require an encapsulation");
+    }
+
     bool isIndex;
     read(isIndex);
     if(isIndex)
@@ -1225,6 +1261,16 @@ IceInternal::BasicStream::write(Double v)
     *dest = *src;
 #else
     const Byte* src = reinterpret_cast<const Byte*>(&v);
+#  if defined(__arm__) && defined(__linux)
+    dest[4] = *src++;
+    dest[5] = *src++;
+    dest[6] = *src++;
+    dest[7] = *src++;
+    dest[0] = *src++;
+    dest[1] = *src++;
+    dest[2] = *src++;
+    dest[3] = *src;
+#  else
     *dest++ = *src++;
     *dest++ = *src++;
     *dest++ = *src++;
@@ -1233,6 +1279,7 @@ IceInternal::BasicStream::write(Double v)
     *dest++ = *src++;
     *dest++ = *src++;
     *dest = *src;
+#  endif
 #endif
 }
 
@@ -1259,6 +1306,21 @@ IceInternal::BasicStream::write(const Double* begin, const Double* end)
             *dest++ = *src--;
             *dest++ = *src--;
             src += 2 * sizeof(Double);
+        }
+#elif defined(__arm__) && defined(__linux)
+        const Byte* src = reinterpret_cast<const Byte*>(begin);
+        Byte* dest = &(*(b.begin() + pos));
+        for(int j = 0 ; j < sz ; ++j)
+        {
+            dest[4] = *src++;
+            dest[5] = *src++;
+            dest[6] = *src++;
+            dest[7] = *src++;
+            dest[0] = *src++;
+            dest[1] = *src++;
+            dest[2] = *src++;
+            dest[3] = *src++;
+            dest += sizeof(Double);
         }
 #else
         memcpy(&b[pos], reinterpret_cast<const Byte*>(begin), sz * sizeof(Double));
@@ -1287,6 +1349,16 @@ IceInternal::BasicStream::read(Double& v)
     *dest = *src;
 #else
     Byte* dest = reinterpret_cast<Byte*>(&v);
+#  if defined(__arm__) && defined(__linux)
+    dest[4] = *src++;
+    dest[5] = *src++;
+    dest[6] = *src++;
+    dest[7] = *src++;
+    dest[0] = *src++;
+    dest[1] = *src++;
+    dest[2] = *src++;
+    dest[3] = *src;
+#  else
     *dest++ = *src++;
     *dest++ = *src++;
     *dest++ = *src++;
@@ -1295,6 +1367,7 @@ IceInternal::BasicStream::read(Double& v)
     *dest++ = *src++;
     *dest++ = *src++;
     *dest = *src;
+#  endif
 #endif
 }
 
@@ -1323,6 +1396,21 @@ IceInternal::BasicStream::read(vector<Double>& v)
             *dest-- = *src++;
             *dest-- = *src++;
             dest += 2 * sizeof(Double);
+        }
+#elif defined(__arm__) && defined(__linux)
+        const Byte* src = &(*begin);
+        Byte* dest = reinterpret_cast<Byte*>(&v[0]);
+        for(int j = 0 ; j < sz ; ++j)
+        {
+            dest[4] = *src++;
+            dest[5] = *src++;
+            dest[6] = *src++;
+            dest[7] = *src++;
+            dest[0] = *src++;
+            dest[1] = *src++;
+            dest[2] = *src++;
+            dest[3] = *src++;
+            dest += sizeof(Double);
         }
 #else
         copy(begin, i, reinterpret_cast<Byte*>(&v[0]));
@@ -1369,6 +1457,22 @@ IceInternal::BasicStream::read(pair<const Double*, const Double*>& v)
             *dest-- = *src++;
             dest += 2 * sizeof(Double);
         }
+#  elif defined(__arm__) && defined(__linux)
+        const Byte* src = &(*begin);
+        Byte* dest = reinterpret_cast<Byte*>(&result[0]);
+        for(int j = 0 ; j < sz ; ++j)
+        {
+            dest[4] = *src++;
+            dest[5] = *src++;
+            dest[6] = *src++;
+            dest[7] = *src++;
+            dest[0] = *src++;
+            dest[1] = *src++;
+            dest[2] = *src++;
+            dest[3] = *src++;
+            dest += sizeof(Double);
+        }
+
 #  else
         copy(begin, i, reinterpret_cast<Byte*>(&result[0]));
 #  endif
@@ -1675,34 +1779,42 @@ IceInternal::BasicStream::read(PatchFunc patchFunc, void* patchAddr)
     Int index;
     read(index);
 
-    if(index == 0)
+    if(patchAddr)
     {
-        patchFunc(patchAddr, v); // Null Ptr.
-        return;
-    }
-
-    if(index < 0 && patchAddr)
-    {
-        PatchMap::iterator p = _currentReadEncaps->patchMap->find(-index);
-        if(p == _currentReadEncaps->patchMap->end())
+        if(index == 0)
         {
-            //
-            // We have no outstanding instances to be patched for this
-            // index, so make a new entry in the patch map.
-            //
-            p = _currentReadEncaps->patchMap->insert(make_pair(-index, PatchList())).first;
+	    // Calling the patch function for null instances is necessary for correct functioning of Ice for
+	    // Python and Ruby.
+            patchFunc(patchAddr, v); // Null Ptr.
+            return;
         }
-        //
-        // Append a patch entry for this instance.
-        //
-        PatchEntry e;
-        e.patchFunc = patchFunc;
-        e.patchAddr = patchAddr;
-        p->second.push_back(e);
-        patchPointers(-index, _currentReadEncaps->unmarshaledMap->end(), p);
-        return;
+
+        if(index < 0)
+        {
+            PatchMap::iterator p = _currentReadEncaps->patchMap->find(-index);
+            if(p == _currentReadEncaps->patchMap->end())
+            {
+                //
+                // We have no outstanding instances to be patched for this
+                // index, so make a new entry in the patch map.
+                //
+                p = _currentReadEncaps->patchMap->insert(make_pair(-index, PatchList())).first;
+            }
+            //
+            // Append a patch entry for this instance.
+            //
+            PatchEntry e;
+            e.patchFunc = patchFunc;
+            e.patchAddr = patchAddr;
+            p->second.push_back(e);
+            patchPointers(-index, _currentReadEncaps->unmarshaledMap->end(), p);
+            return;
+        }
     }
-    assert(index > 0);
+    if(index <= 0)
+    {
+        throw MarshalException(__FILE__, __LINE__, "Invalid class instance index");
+    }
 
     string mostDerivedId;
     readTypeId(mostDerivedId);
@@ -1828,6 +1940,8 @@ IceInternal::BasicStream::throwException()
 
     string id;
     read(id, false);
+    const string origId = id;
+
     for(;;)
     {
         //
@@ -1870,8 +1984,22 @@ IceInternal::BasicStream::throwException()
             {
                 traceSlicing("exception", id, _slicingCat, _instance->initializationData().logger);
             }
+
             skipSlice(); // Slice off what we don't understand.
-            read(id, false); // Read type id for next slice.
+
+            try
+            {
+                read(id, false); // Read type id for next slice.
+            }
+            catch(UnmarshalOutOfBoundsException& ex)
+            {
+                //
+                // When read() raises this exception it means we've seen the last slice,
+                // so we set the reason member to a more helpful message.
+                //
+                ex.reason = "unknown exception type `" + origId + "'";
+                throw;
+            }
         }
     }
 
@@ -1935,6 +2063,15 @@ IceInternal::BasicStream::readPendingObjects()
         }
     }
     while(num);
+
+    if(_currentReadEncaps && _currentReadEncaps->patchMap && _currentReadEncaps->patchMap->size() != 0)
+    {
+        //
+        // If any entries remain in the patch map, the sender has sent an index for an object, but failed
+        // to supply the object.
+        //
+        throw MarshalException(__FILE__, __LINE__, "Index for class received, but no instance");
+    }
 
     //
     // Iterate over the object list and invoke ice_postUnmarshal on

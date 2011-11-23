@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -199,6 +199,17 @@ public final class Instance
         }
 
         return _endpointHostResolver;
+    }
+
+    synchronized public RetryQueue
+    retryQueue()
+    {
+        if(_state == StateDestroyed)
+        {
+            throw new Ice.CommunicatorDestroyedException();
+        }        
+
+        return _retryQueue;
     }
 
     synchronized public Timer
@@ -421,29 +432,35 @@ public final class Instance
                 // (can't call again getAdmin() after fixing the problem)
                 // since all the facets (servants) in the adapter are lost
                 //
+                adapter.destroy();
                 synchronized(this)
                 {
                     _adminAdapter = null;
-                    adapter.destroy();
                 }
                 throw ex;
             }
 
+            Ice.ObjectPrx admin = adapter.createProxy(_adminIdentity);
             if(defaultLocator != null && serverId.length() > 0)
             {    
-                Ice.ProcessPrx process = Ice.ProcessPrxHelper.uncheckedCast(
-                    adapter.createProxy(_adminIdentity).ice_facet("Process"));
+                Ice.ProcessPrx process = Ice.ProcessPrxHelper.uncheckedCast(admin.ice_facet("Process"));
                 
                 try
                 {
+                    //
+                    // Note that as soon as the process proxy is registered, the communicator might be 
+                    // shutdown by a remote client and admin facets might start receiving calls.
+                    //
                     defaultLocator.getRegistry().setServerProcessProxy(serverId, process);
                 }
                 catch(Ice.ServerNotFoundException ex)
                 {
                     if(_traceLevels.location >= 1)
                     {
-                        StringBuffer s = new StringBuffer();
-                        s.append("couldn't register server `" + serverId + "' with the locator registry:\n");
+                        StringBuilder s = new StringBuilder(128);
+                        s.append("couldn't register server `");
+                        s.append(serverId);
+                        s.append("' with the locator registry:\n");
                         s.append("the server is not known to the locator registry");
                         _initData.logger.trace(_traceLevels.locationCat, s.toString());
                     }
@@ -454,8 +471,11 @@ public final class Instance
                 {
                     if(_traceLevels.location >= 1)
                     {
-                        StringBuffer s = new StringBuffer();
-                        s.append("couldn't register server `" + serverId + "' with the locator registry:\n" + ex);
+                        StringBuilder s = new StringBuilder(128);
+                        s.append("couldn't register server `");
+                        s.append(serverId);
+                        s.append("' with the locator registry:\n");
+                        s.append(ex.toString());
                         _initData.logger.trace(_traceLevels.locationCat, s.toString());
                     }
                     throw ex;
@@ -463,12 +483,14 @@ public final class Instance
 
                 if(_traceLevels.location >= 1)
                 {
-                    StringBuffer s = new StringBuffer();
-                    s.append("registered server `" + serverId + "' with the locator registry");
+                    StringBuilder s = new StringBuilder(128);
+                    s.append("registered server `");
+                    s.append(serverId);
+                    s.append("' with the locator registry");
                     _initData.logger.trace(_traceLevels.locationCat, s.toString());
                 }
             }
-            return adapter.createProxy(_adminIdentity);
+            return admin;
         }
     }
     
@@ -545,7 +567,7 @@ public final class Instance
     setLogger(Ice.Logger logger)
     {
         // 
-        // No locking, as it can only be called during plugin loading
+        // No locking, as it can only be called during plug-in loading
         //
         _initData.logger = logger;
     }
@@ -673,7 +695,7 @@ public final class Instance
 
             _routerManager = new RouterManager();
 
-            _locatorManager = new LocatorManager();
+            _locatorManager = new LocatorManager(_initData.properties);
 
             _referenceFactory = new ReferenceFactory(this, communicator);
 
@@ -712,6 +734,8 @@ public final class Instance
             _servantFactoryManager = new ObjectFactoryManager();
 
             _objectAdapterFactory = new ObjectAdapterFactory(this, communicator);
+
+            _retryQueue = new RetryQueue(this);
 
             //
             // Add Process and Properties facets
@@ -753,6 +777,7 @@ public final class Instance
         IceUtilInternal.Assert.FinalizerAssert(_locatorManager == null);
         IceUtilInternal.Assert.FinalizerAssert(_endpointFactoryManager == null);
         IceUtilInternal.Assert.FinalizerAssert(_pluginManager == null);
+        IceUtilInternal.Assert.FinalizerAssert(_retryQueue == null);
 
         super.finalize();
     }
@@ -782,14 +807,11 @@ public final class Instance
         {
             _referenceFactory = _referenceFactory.setDefaultLocator(loc);
         }
-        
-        if(_initData.properties.getPropertyAsIntWithDefault("Ice.Admin.DelayCreation", 0) <= 0)
-        {
-            getAdmin();
-        }
 
         //
-        // Start connection monitor if necessary.
+        // Start connection monitor if necessary. Set the check interval to
+        // 1/10 of the ACM timeout with a minmal value of 1 second and a
+        // maximum value of 5 minutes.
         //
         int interval = 0;
         if(_clientACM > 0 && _serverACM > 0)
@@ -811,6 +833,10 @@ public final class Instance
         {
             interval = _serverACM;
         }
+        if(interval > 0)
+        {
+            interval = java.lang.Math.min(300, java.lang.Math.max(5, (int)interval / 10));
+        }
         interval = _initData.properties.getPropertyAsIntWithDefault("Ice.MonitorConnections", interval);
         if(interval > 0)
         {
@@ -821,6 +847,16 @@ public final class Instance
         // Thread pool initialization is now lazy initialization in
         // clientThreadPool() and serverThreadPool().
         //
+        
+        //
+        // This must be done last as this call creates the Ice.Admin object adapter
+        // and eventually registers a process proxy with the Ice locator (allowing 
+        // remote clients to invoke on Ice.Admin facets as soon as it's registered).
+        //
+        if(_initData.properties.getPropertyAsIntWithDefault("Ice.Admin.DelayCreation", 0) <= 0)
+        {
+            getAdmin();
+        }
     }
 
     //
@@ -868,6 +904,11 @@ public final class Instance
         {
             _outgoingConnectionFactory.waitUntilFinished();
         }
+
+        if(_retryQueue != null)
+        {
+            _retryQueue.destroy();
+        }
         
         ThreadPool serverThreadPool = null;
         ThreadPool clientThreadPool = null;
@@ -877,8 +918,8 @@ public final class Instance
         synchronized(this)
         {
             _objectAdapterFactory = null;
-
             _outgoingConnectionFactory = null;
+            _retryQueue = null;
 
             if(_connectionMonitor != null)
             {
@@ -1054,6 +1095,7 @@ public final class Instance
     private ThreadPool _serverThreadPool;
     private SelectorThread _selectorThread;
     private EndpointHostResolver _endpointHostResolver;
+    private RetryQueue _retryQueue;
     private Timer _timer;
     private EndpointFactoryManager _endpointFactoryManager;
     private Ice.PluginManager _pluginManager;

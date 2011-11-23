@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -20,12 +20,6 @@ prefix			= C:\Ice-$(VERSION)
 #OPTIMIZE		= yes
 
 #
-# Define if you want to build the Ice-E/Ice-SL slice compilers with
-# static libraries.
-#
-#STATICLIBS             = yes
-
-#
 # Define if you want pdb files to be generated for optimized/release
 # builds
 #
@@ -33,7 +27,7 @@ prefix			= C:\Ice-$(VERSION)
 
 #
 # Specify your C++ compiler. Supported values are:
-# VC60, VC80, VC80_EXPRESS, VC90, VC90_EXPRESS, BCC2007
+# VC60, VC80, VC80_EXPRESS, VC90, VC90_EXPRESS, BCC2007, BCC2009
 #
 !if "$(CPP_COMPILER)" == ""
 CPP_COMPILER		= VC80
@@ -44,9 +38,7 @@ CPP_COMPILER		= VC80
 # or THIRDPARTY_HOME is not set in your environment variables then
 # change the following setting to reflect the installation location.
 #
-!if "$(CPP_COMPILER)" == "BCC2007"
-THIRDPARTY_HOME_EXT 	= BCC
-!elseif "$(CPP_COMPILER)" == "VC80_EXPRESS"
+!if "$(CPP_COMPILER)" == "VC80_EXPRESS"
 THIRDPARTY_HOME_EXT	= VC80
 !elseif "$(CPP_COMPILER)" == "VC90_EXPRESS"
 THIRDPARTY_HOME_EXT	= VC90
@@ -59,18 +51,11 @@ THIRDPARTY_HOME		= C:\Ice-$(VERSION)-ThirdParty-$(THIRDPARTY_HOME_EXT)
 !endif
 
 #
-# For VC80 and VC80 Express it is necessary to set the location of the
-# manifest tool. This must be the 6.x version of mt.exe, not the 5.x
-# version!
-#
-# For VC80 Express mt.exe 6.x is provided by the Windows Platform SDK. 
-# It is necessary to set the location of the Platform SDK through the
-# PDK_HOME environment variable (see INSTALL.WINDOWS for details).
+# For VC80 it is necessary to set the location of the manifest tool.
+# This must be the 6.x version of mt.exe, not the 5.x # version!
 #
 !if "$(CPP_COMPILER)" == "VC80"
 MT = "$(VS80COMNTOOLS)bin\mt.exe"
-!elseif "$(CPP_COMPILER)" == "VC80_EXPRESS"
-MT = "$(PDK_HOME)\bin\mt.exe"
 !else
 MT = mt.exe
 !endif
@@ -113,7 +98,11 @@ install_configdir	= $(prefix)\config
 
 SETARGV			= setargv.obj
 
-!if "$(CPP_COMPILER)" == "BCC2007"
+#
+# Compiler specific definitions
+#
+!if "$(CPP_COMPILER)" == "BCC2007" || "$(CPP_COMPILER)" == "BCC2009"
+BCPLUSPLUS		= yes
 !include 	$(top_srcdir)/config/Make.rules.bcc
 !elseif "$(CPP_COMPILER)" == "VC60" || "$(CPP_COMPILER)" == "VC71" || \
         "$(CPP_COMPILER)" == "VC80" || "$(CPP_COMPILER)" == "VC80_EXPRESS" || \
@@ -121,6 +110,20 @@ SETARGV			= setargv.obj
 !include        $(top_srcdir)/config/Make.rules.msvc
 ! else
 !error Invalid setting for CPP_COMPILER: $(CPP_COMPILER)
+!endif
+
+!if "$(ice_src_dist)" != ""
+!if "$(THIRDPARTY_HOME)" != ""
+CPPFLAGS        = -I"$(THIRDPARTY_HOME)\include" $(CPPFLAGS)
+LDFLAGS         = $(PRELIBPATH)"$(THIRDPARTY_HOME)\lib$(x64suffix)" $(LDFLAGS)
+!if "$(CPP_COMPILER)" == "VC60"
+CPPFLAGS        = -I"$(THIRDPARTY_HOME)\include\stlport" $(CPPFLAGS)
+!endif
+!endif
+!else
+!if "$(CPP_COMPILER)" == "VC60"
+CPPFLAGS        = -I"$(ice_dir)\include\stlport" $(CPPFLAGS)
+!endif
 !endif
 
 !if "$(OPTIMIZE)" != "yes"
@@ -135,6 +138,11 @@ CPPFLAGS		= $(CPPFLAGS) -I$(includedir)
 ICECPPFLAGS		= -I$(slicedir)
 SLICE2CPPFLAGS		= $(ICECPPFLAGS)
 
+!if "$(ice_src_dist)" != ""
+LDFLAGS			= $(LDFLAGS) $(PRELIBPATH)"$(libdir)"
+!else
+LDFLAGS			= $(LDFLAGS) $(PRELIBPATH)"$(ice_dir)\lib$(x64suffix)"
+!endif
 LDFLAGS			= $(LDFLAGS) $(LDPLATFORMFLAGS) $(CXXFLAGS)
 
 !if "$(ice_src_dist)" != ""
@@ -182,6 +190,35 @@ all:: $(SRCS) $(TARGETS)
 
 clean::
 	-del /q $(TARGETS)
+
+!endif
+
+# Suffix set, we're using a debug build.
+!if "$(LIBSUFFIX)" != ""
+
+!if "$(LIBNAME)" != ""
+clean::
+	-del /q $(LIBNAME:d.lib=.lib)
+	-del /q $(LIBNAME)
+!endif
+!if "$(DLLNAME)" != ""
+clean::
+	-del /q $(DLLNAME:d.dll=.*)
+	-del /q $(DLLNAME:.dll=.*)
+!endif
+
+!else
+
+!if "$(LIBNAME)" != ""
+clean::
+	-del /q $(LIBNAME:.lib=d.lib)
+	-del /q $(LIBNAME)
+!endif
+!if "$(DLLNAME)" != ""
+clean::
+	-del /q $(DLLNAME:.dll=d.*)
+	-del /q $(DLLNAME:.dll=.*)
+!endif
 
 !endif
 

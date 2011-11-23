@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -9,19 +9,6 @@
 # **********************************************************************
 
 require 'pathname'
-
-rubyDir = nil
-for toplevel in [".", "..", "../..", "../../..", "../../../.."]
-    path = Pathname.new(toplevel).join("ruby", "Ice.rb")
-    if path.file?
-        rubyDir = Pathname.new(toplevel).join("ruby")
-        break
-    end
-end
-if not rubyDir
-    fail "can't find toplevel directory!"
-end
-
 require 'AllTests'
 
 def run(args, communicator)

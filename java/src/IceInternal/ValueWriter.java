@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -130,7 +130,7 @@ public final class ValueWriter
                         {
                             break;
                         }
-                        java.lang.reflect.Method valueMethod = c.getDeclaredMethod("value", new Class[0]);
+                        java.lang.reflect.Method valueMethod = c.getDeclaredMethod("value", new Class<?>[0]);
                         if(!valueMethod.getReturnType().equals(Integer.TYPE) ||
                            !java.lang.reflect.Modifier.isPublic(valueMethod.getModifiers()) ||
                            java.lang.reflect.Modifier.isStatic(valueMethod.getModifiers()))
@@ -179,7 +179,7 @@ public final class ValueWriter
     }
 
     private static void
-    writeFields(String name, java.lang.Object obj, Class c,
+    writeFields(String name, java.lang.Object obj, Class<?> c,
                 java.util.Map<java.lang.Object, java.lang.Object> objectTable, IceUtilInternal.OutputBase out)
     {
         if(!c.equals(java.lang.Object.class))
@@ -190,9 +190,28 @@ public final class ValueWriter
             writeFields(name, obj, c.getSuperclass(), objectTable, out);
 
             //
-            // Write the declared fields of the given class.
+            // Write the declared fields of the given class. We prefer to use the declared
+            // fields because it includes protected fields that may have been defined using
+            // the Slice "protected" metadata. However, if a security manager prevents us
+            // from obtaining the declared fields, we will fall back to using the public ones.
             //
-            java.lang.reflect.Field[] fields = c.getDeclaredFields();
+            java.lang.reflect.Field[] fields = null;
+            try
+            {
+                fields = c.getDeclaredFields();
+            }
+            catch(java.lang.SecurityException ex)
+            {
+                try
+                {
+                    fields = c.getFields();
+                }
+                catch(java.lang.SecurityException e)
+                {
+                    return; // Nothing else we can do.
+                }
+            }
+            assert(fields != null);
             for(int i = 0; i < fields.length; i++)
             {
                 //

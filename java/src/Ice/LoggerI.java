@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,7 +19,7 @@ public class LoggerI implements Logger
             _prefix = prefix + ": ";
         }
 
-        _lineSeparator = System.getProperties().getProperty("line.separator");
+        _lineSeparator = System.getProperty("line.separator");
         _date = java.text.DateFormat.getDateInstance(java.text.DateFormat.SHORT);
         _time = new java.text.SimpleDateFormat(" HH:mm:ss:SSS");
     }
@@ -33,7 +33,8 @@ public class LoggerI implements Logger
     public void
     trace(String category, String message)
     {
-        StringBuffer s = new StringBuffer("[ ");
+        StringBuilder s = new StringBuilder(256);
+        s.append("[ ");
         s.append(_date.format(new java.util.Date()));
         s.append(_time.format(new java.util.Date()));
         s.append(' ');
@@ -48,35 +49,40 @@ public class LoggerI implements Logger
             s.insert(idx + 1, "  ");
             ++idx;
         }
-        System.err.print(s.toString() + _lineSeparator);
+        s.append(_lineSeparator);
+        System.err.print(s.toString());
     }
 
     public void
     warning(String message)
     {
-        StringBuffer s = new StringBuffer();
+        StringBuilder s = new StringBuilder(256);
         s.append(_date.format(new java.util.Date()));
         s.append(_time.format(new java.util.Date()));
         s.append(' ');
         s.append(_prefix);
         s.append("warning: ");
-        s.append(Thread.currentThread().getName() + ": ");
+        s.append(Thread.currentThread().getName());
+        s.append(": ");
         s.append(message);
-        System.err.print(s.toString() + _lineSeparator);
+        s.append(_lineSeparator);
+        System.err.print(s.toString());
     }
 
     public void
     error(String message)
     {
-        StringBuffer s = new StringBuffer();
+        StringBuilder s = new StringBuilder(256);
         s.append(_date.format(new java.util.Date()));
         s.append(_time.format(new java.util.Date()));
         s.append(' ');
         s.append(_prefix);
         s.append("error: ");
-        s.append(Thread.currentThread().getName() + ": ");
+        s.append(Thread.currentThread().getName());
+        s.append(": ");
         s.append(message);
-        System.err.print(s.toString() + _lineSeparator);
+        s.append(_lineSeparator);
+        System.err.print(s.toString());
     }
 
     String _prefix = "";

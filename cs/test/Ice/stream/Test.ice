@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -64,6 +64,8 @@ dictionary<long, float> LongFloatD;
 dictionary<string, string> StringStringD;
 dictionary<string, MyClass> StringMyClassD;
 
+["clr:serializable:Serialize.Small"] sequence<byte> SerialSmall;
+
 class MyClass
 {
     MyClass c;
@@ -80,6 +82,7 @@ class MyClass
     MyEnumS seq9;
     MyClassS seq10;
     StringMyClassD d;
+    SerialSmall ss;
 };
 
 interface MyInterface

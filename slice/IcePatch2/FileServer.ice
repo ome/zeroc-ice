@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,8 @@
 
 #ifndef ICE_PATCH2_FILE_SERVER_ICE
 #define ICE_PATCH2_FILE_SERVER_ICE
+
+[["cpp:header-ext:h"]]
 
 #include <IcePatch2/FileInfo.ice>
 

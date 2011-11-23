@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,7 +22,14 @@ ServerLocatorRegistry::setAdapterDirectProxy_async(const Ice::AMD_LocatorRegistr
                                                    const std::string& adapter, const ::Ice::ObjectPrx& object, 
                                                    const ::Ice::Current&)
 {
-    _adapters[adapter] = object;
+    if(!object)
+    {
+        _adapters.erase(adapter);
+    }
+    else
+    {
+        _adapters[adapter] = object;
+    }
     cb->ice_response();
 }
 
@@ -32,8 +39,16 @@ ServerLocatorRegistry::setReplicatedAdapterDirectProxy_async(
     const std::string& adapter, const ::std::string& replicaGroup, const ::Ice::ObjectPrx& object, 
     const ::Ice::Current&)
 {
-    _adapters[adapter] = object;
-    _adapters[replicaGroup] = object;
+    if(!object)
+    {
+        _adapters.erase(adapter);
+        _adapters.erase(replicaGroup);
+    }
+    else
+    {
+        _adapters[adapter] = object;
+        _adapters[replicaGroup] = object;
+    }
     cb->ice_response();
 }
 
@@ -91,6 +106,9 @@ ServerLocator::findObjectById_async(const Ice::AMD_Locator_findObjectByIdPtr& re
                                     const Ice::Current& current) const
 {
     ++const_cast<int&>(_requestCount);
+    // We add a small delay to make sure locator request queuing gets tested when
+    // running the test on a fast machine
+    IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(1));
     response->ice_response(_registry->getObject(id));
 }
 
@@ -99,6 +117,9 @@ ServerLocator::findAdapterById_async(const Ice::AMD_Locator_findAdapterByIdPtr& 
                                      const Ice::Current& current) const
 {
     ++const_cast<int&>(_requestCount);
+    // We add a small delay to make sure locator request queuing gets tested when
+    // running the test on a fast machine
+    IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(1));
     response->ice_response(_registry->getAdapter(id));
 }
 

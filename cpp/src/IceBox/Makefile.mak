@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -12,7 +12,11 @@ top_srcdir	= ..\..
 LIBNAME		= $(top_srcdir)\lib\icebox$(LIBSUFFIX).lib
 DLLNAME		= $(top_srcdir)\bin\icebox$(SOVERSION)$(LIBSUFFIX).dll
 
+SERVER_D	= $(top_srcdir)\bin\iceboxd.exe
+SERVER_R	= $(top_srcdir)\bin\icebox.exe
+
 SERVER		= $(top_srcdir)\bin\icebox$(LIBSUFFIX).exe
+
 ADMIN		= $(top_srcdir)\bin\iceboxadmin.exe
 
 TARGETS         = $(LIBNAME) $(DLLNAME) $(SERVER) $(ADMIN)
@@ -44,7 +48,7 @@ SPDBFLAGS       = /pdb:$(SERVER:.exe=.pdb)
 APDBFLAGS       = /pdb:$(ADMIN:.exe=.pdb)
 !endif
 
-!if "$(CPP_COMPILER)" == "BCC2007"
+!if "$(BCPLUSPLUS)" == "yes"
 RES_FILE        = ,, IceBox.res
 SRES_FILE       = ,, IceBoxExe.res
 ARES_FILE       = ,, IceBoxAdmin.res
@@ -76,11 +80,10 @@ $(ADMIN): $(AOBJS) IceBoxAdmin.res
 	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
 clean::
-	del /q IceBox.cpp $(HDIR)\IceBox.h
-	del /q $(DLLNAME:.dll=.*)
-	del /q $(SERVER:.exe=.*)
-	del /q $(ADMIN:.exe=.*)
-	del /q IceBox.res IceBoxAdmin.res IceBoxExe.res
+	-del /q IceBox.cpp $(HDIR)\IceBox.h
+	-del /q $(SERVER_D:.exe=.*) $(SERVER_R:.exe=.*)
+	-del /q $(ADMIN:.exe=.*)
+	-del /q IceBox.res IceBoxAdmin.res IceBoxExe.res
 
 install:: all
 	copy $(LIBNAME) $(install_libdir)
@@ -89,7 +92,7 @@ install:: all
 	copy $(ADMIN) $(install_bindir)
 
 
-!if "$(CPP_COMPILER)" == "BCC2007" && "$(OPTIMIZE)" != "yes"
+!if "$(BCPLUSPLUS)" == "yes" && "$(OPTIMIZE)" != "yes"
 
 install:: all
 	copy $(DLLNAME:.dll=.tds) $(install_bindir)

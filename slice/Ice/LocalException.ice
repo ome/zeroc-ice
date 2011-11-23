@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,8 @@
 
 #ifndef ICE_LOCAL_EXCEPTION_ICE
 #define ICE_LOCAL_EXCEPTION_ICE
+
+[["cpp:header-ext:h"]]
 
 #include <Ice/Identity.ice>
 #include <Ice/BuiltinSequences.ice>
@@ -168,11 +170,8 @@ local exception UnknownException
 {
     /**
      *
-     * A textual representation of the unknown exception. This field may
-     * or may not be set, depending on the security policy of the
-     * server. Some servers may give this information to clients for
-     * debugging purposes, while others may not wish to disclose
-     * information about server internals.
+     * This field is set to the textual representation of the unknown 
+     * exception if available.
      *
      **/
     string unknown;
@@ -897,7 +896,7 @@ local exception FeatureNotSupportedException
 /**
  *
  * This exception indicates a failure in a security subsystem,
- * such as the IceSSL plugin.
+ * such as the IceSSL plug-in.
  *
  **/
 local exception SecurityException

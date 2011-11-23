@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -118,6 +118,10 @@ public:
     virtual void opStringMyEnumD_async(const Test::AMD_MyClass_opStringMyEnumDPtr&,
                                        const Test::StringMyEnumD&, const Test::StringMyEnumD&,
                                        const Ice::Current&);
+
+    virtual void opMyStructMyEnumD_async(const Test::AMD_MyClass_opMyStructMyEnumDPtr&,
+                                         const Test::MyStructMyEnumD&, const Test::MyStructMyEnumD&,
+                                         const Ice::Current&);
 
     virtual void opIntS_async(const Test::AMD_MyClass_opIntSPtr&, const Test::IntS&, const Ice::Current&);
 

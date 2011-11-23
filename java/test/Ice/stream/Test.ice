@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,6 +22,8 @@ enum MyEnum
 
 class MyClass;
 
+["java:serializable:Serialize.Small"] sequence<byte> SerialSmall;
+
 struct SmallStruct
 {
     bool bo;
@@ -34,6 +36,7 @@ struct SmallStruct
     string str;
     MyEnum e;
     MyClass* p;
+    SerialSmall ss;
 };
 
 sequence<bool> BoolS;

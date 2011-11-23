@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -88,11 +88,12 @@ IceInternal::ConnectionMonitor::runTimerTask()
     // Monitor connections outside the thread synchronization, so
     // that connections can be added or removed during monitoring.
     //
+    IceUtil::Time now = IceUtil::Time::now(IceUtil::Time::Monotonic);
     for(set<ConnectionIPtr>::const_iterator p = connections.begin(); p != connections.end(); ++p)
     {
         try
         {          
-            (*p)->monitor();
+            (*p)->monitor(now);
         }
         catch(const Exception& ex)
         {   

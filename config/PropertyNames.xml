@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <!--
-**********************************************************************
+ **********************************************************************
 
-Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 
-This copy of Ice is licensed to you under the terms described in the
-ICE_LICENSE file included in this distribution.
+ This copy of Ice is licensed to you under the terms described in the
+ ICE_LICENSE file included in this distribution.
 
-**********************************************************************
+ **********************************************************************
 -->
 
 <!--
@@ -299,6 +299,7 @@ generated from the section label.
         <property name="Admin.Facets" />
         <property name="Admin.InstanceName" />
         <property name="Admin.ServerId" />
+        <property name="BackgroundLocatorCacheUpdates"/>
         <property name="BatchAutoFlush" />
         <property name="ChangeUser" />
         <property name="Compression.Level" />
@@ -321,7 +322,7 @@ generated from the section label.
         <property name="ImplicitContext" />
         <property name="InitPlugins" />
         <property name="MessageSizeMax" />
-        <property name="MonitorConnections" deprecated="true" />
+        <property name="MonitorConnections" />
         <property name="Nohup" />
         <property name="NullHandleAbort" />
         <property name="Override.Compress" />
@@ -438,8 +439,11 @@ generated from the section label.
         <property name="Registry.Trace.Replica" />
         <property name="Registry.Trace.Server" />
         <property name="Registry.Trace.Session" />
+        <property name="Registry.Trace.Subscriber"/>
+        <property name="Registry.Trace.Topic"/>
+        <property name="Registry.Trace.TopicManager"/>
         <property name="Registry.UserAccounts" />
-    </section>
+</section>
     
     <section name="IcePatch2">
         <property class="objectadapter" />

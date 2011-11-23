@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -109,6 +109,7 @@ public:
     void update();
     void destroy();
     void terminated(const std::string&, int);
+    void shutdown();
 
     //
     // A proxy to the Process facet of the real Admin object; called by the AdminFacade servant implementation
@@ -120,7 +121,7 @@ private:
     void updateImpl(const InternalServerDescriptorPtr&);
     void checkRevision(const std::string&, const std::string&, int) const;
     void updateRevision(const std::string&, int);
-    void checkActivation();
+    bool checkActivation();
     void checkDestroyed() const;
     void disableOnFailure();
     void enableAfterFailure(bool);

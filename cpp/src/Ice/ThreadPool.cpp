@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -480,6 +480,8 @@ IceInternal::ThreadPool::run()
                     }
                     catch(const DatagramLimitException&) // Expected.
                     {
+                        handler->_stream.resize(0);
+                        handler->_stream.i = stream.b.begin();
                         continue;
                     }
                     catch(const SocketException& ex)
@@ -496,6 +498,8 @@ IceInternal::ThreadPool::run()
                                 Warning out(_instance->initializationData().logger);
                                 out << "datagram connection exception:\n" << ex << '\n' << handler->toString();
                             }
+                            handler->_stream.resize(0);
+                            handler->_stream.i = stream.b.begin();
                         }
                         else
                         {
@@ -550,74 +554,84 @@ IceInternal::ThreadPool::run()
                     handler->_serializing = false;
                 }
 
-                //
-                // First we reap threads that have been destroyed before.
-                //
-                int sz = static_cast<int>(_threads.size());
-                assert(_running <= sz);
-                if(_running < sz)
+                if(_size < _sizeMax) // Dynamic thread pool
                 {
-                    vector<IceUtil::ThreadPtr>::iterator start =
-                        partition(_threads.begin(), _threads.end(), IceUtil::constMemFun(&IceUtil::Thread::isAlive));
-
-                    for(vector<IceUtil::ThreadPtr>::iterator p = start; p != _threads.end(); ++p)
+                    //
+                    // First we reap threads that have been destroyed before.
+                    //
+                    int sz = static_cast<int>(_threads.size());
+                    assert(_running <= sz);
+                    if(_running < sz)
                     {
-                        (*p)->getThreadControl().join();
+                        vector<IceUtil::ThreadPtr>::iterator start =
+                            partition(_threads.begin(), _threads.end(), 
+                                      IceUtil::constMemFun(&IceUtil::Thread::isAlive));
+
+                        for(vector<IceUtil::ThreadPtr>::iterator p = start; p != _threads.end(); ++p)
+                        {
+                            (*p)->getThreadControl().join();
+                        }
+
+                        _threads.erase(start, _threads.end());
                     }
-
-                    _threads.erase(start, _threads.end());
-                }
                 
-                //
-                // Now we check if this thread can be destroyed, based
-                // on a load factor.
-                //
-
-                //
-                // The load factor jumps immediately to the number of
-                // threads that are currently in use, but decays
-                // exponentially if the number of threads in use is
-                // smaller than the load factor. This reflects that we
-                // create threads immediately when they are needed,
-                // but want the number of threads to slowly decline to
-                // the configured minimum.
-                //
-                double inUse = static_cast<double>(_inUse);
-                if(_load < inUse)
-                {
-                    _load = inUse;
-                }
-                else
-                {
-                    const double loadFactor = 0.05; // TODO: Configurable?
-                    const double oneMinusLoadFactor = 1 - loadFactor;
-                    _load = _load * oneMinusLoadFactor + inUse * loadFactor;
-                }
-                
-                if(_running > _size)
-                {
-                    int load = static_cast<int>(_load + 0.5);
+                    //
+                    // Now we check if this thread can be destroyed, based
+                    // on a load factor.
+                    //
 
                     //
-                    // We add one to the load factor because on
-                    // additional thread is needed for select().
+                    // The load factor jumps immediately to the number of
+                    // threads that are currently in use, but decays
+                    // exponentially if the number of threads in use is
+                    // smaller than the load factor. This reflects that we
+                    // create threads immediately when they are needed,
+                    // but want the number of threads to slowly decline to
+                    // the configured minimum.
                     //
-                    if(load + 1 < _running)
+                    double inUse = static_cast<double>(_inUse);
+                    if(_load < inUse)
                     {
-                        assert(_inUse > 0);
-                        --_inUse;
+                        _load = inUse;
+                    }
+                    else
+                    {
+                        const double loadFactor = 0.05; // TODO: Configurable?
+                        const double oneMinusLoadFactor = 1 - loadFactor;
+                        _load = _load * oneMinusLoadFactor + inUse * loadFactor;
+                    }
+                
+                    if(_running > _size)
+                    {
+                        int load = static_cast<int>(_load + 0.5);
+
+                        //
+                        // We add one to the load factor because on
+                        // additional thread is needed for select().
+                        //
+                        if(load + 1 < _running)
+                        {
+                            assert(_inUse > 0);
+                            --_inUse;
                         
-                        assert(_running > 0);
-                        --_running;
+                            assert(_running > 0);
+                            --_running;
                         
-                        return false;
+                            return false;
+                        }
                     }
                 }
-                
+
                 assert(_inUse > 0);
                 --_inUse;
             }
-            
+
+            //
+            // Do not wait to be promoted again to release these objects.
+            //
+            handler = 0;
+            workItem = 0;
+
             while(!_promote)
             {
                 wait();
@@ -632,7 +646,17 @@ bool
 IceInternal::ThreadPool::read(const EventHandlerPtr& handler)
 {
     BasicStream& stream = handler->_stream;
-    
+
+    if(stream.i - stream.b.begin() >= headerSize)
+    {
+        if(!handler->read(stream))
+        {
+            return false;
+        }
+        assert(stream.i == stream.b.end());
+        return true;
+    }
+
     if(stream.b.size() == 0)
     {
         stream.b.resize(headerSize);
@@ -656,6 +680,7 @@ IceInternal::ThreadPool::read(const EventHandlerPtr& handler)
         //
         throw IllegalMessageSizeException(__FILE__, __LINE__);
     }
+
     stream.i = stream.b.begin();
     const Byte* m;
     stream.readBlob(m, static_cast<Int>(sizeof(magic)));
@@ -721,8 +746,6 @@ IceInternal::ThreadPool::read(const EventHandlerPtr& handler)
             {
                 Warning out(_instance->initializationData().logger);
                 out << "DatagramLimitException: maximum size of " << pos << " exceeded";
-                stream.resize(0);
-                stream.i = stream.b.begin();
             }
             throw DatagramLimitException(__FILE__, __LINE__);
         }

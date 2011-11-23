@@ -8,7 +8,7 @@ Operating System
 
 Ice is expected to build and run properly on Solaris 8, Solaris 9
 and Solaris 10 on SPARC and x86/x64. However, Ice is officially
-supported only on Solaris 10 update 2 or greater on Sparc and
+supported only on Solaris 10 update 2 or greater on SPARC and
 Solaris 10 update 3 or greater on x86/x64.
 
 You also need to have /dev/urandom installed. This is installed by
@@ -21,8 +21,8 @@ C++ compiler
 
 The following Sun compiler is supported:
 
-- Sun C++ 5.9 (part of Sun Studio 12) with Patch 124863-01 on Sparc 
-  and Patch 124864-01 on x86/x64
+- Sun C++ 5.9 (part of Sun Studio 12) with Patch 124863-01 on SPARC
+  and Patch 124864-07 on x86/x64
 
 Builds with the following compilers are expected to succeed, but these
 compilers are not supported at this time:
@@ -42,7 +42,7 @@ Ice has dependencies on a number of third-party libraries:
 - expat 1.95.7 or 2.0.0
 - OpenSSL 0.9.7 or later (OpenSSL 0.9.8 or later recommended)
 - bzip2 1.0.x
-- mcpp 2.7 with patch
+- mcpp 2.7.2
 
 We recommend downloading the Ice third-party source archive from
 
@@ -78,11 +78,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ gtar xvfz Ice-3.3.0.tar.gz
+$ gtar xvfz Ice-3.3.1.tar.gz
 
-Change the working directory to Ice-3.3.0/cpp:
+Change the working directory to Ice-3.3.1/cpp:
 
-$ cd Ice-3.3.0/cpp
+$ cd Ice-3.3.1/cpp
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular

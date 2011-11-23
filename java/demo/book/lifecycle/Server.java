@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,7 +9,7 @@
 
 import FilesystemI.*;
 
-class FilesystemApp extends Ice.Application
+class Server extends Ice.Application
 {
     public int
     run(String[] args)
@@ -27,15 +27,17 @@ class FilesystemApp extends Ice.Application
         // Create the root directory.
         //
         DirectoryI root = new DirectoryI();
-        root.activate(adapter);
+        Ice.Identity id = new Ice.Identity();
+        id.name = "RootDir";
+        adapter.add(root, id);
 
 
         // All objects are created, allow client requests now.
         //
         adapter.activate();
 
-        //
         // Wait until we are done.
+        //
         communicator().waitForShutdown();
         if(interrupted())
         {
@@ -44,14 +46,11 @@ class FilesystemApp extends Ice.Application
 
         return 0;
     }
-}
 
-public class Server
-{
     static public void
     main(String[] args)
     {
-        FilesystemApp app = new FilesystemApp();
+        Server app = new Server();
         app.main("demo.book.lifecycle.Server", args);
     }
 }

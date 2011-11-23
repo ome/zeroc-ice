@@ -26,7 +26,7 @@ Ice has dependencies on a number of third-party libraries:
 - expat 1.95.7 or 2.0.0
 - OpenSSL 0.9.7 or later (OpenSSL 0.9.8 or later recommended)
 - bzip2 1.0.x
-- mcpp 2.7 with patch
+- mcpp 2.7.2
 
 Some of these packages are included with your system. For those
 packages that are not installed or have an older version than what
@@ -56,11 +56,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ tar xvfz Ice-3.3.0.tar.gz
+$ tar xvfz Ice-3.3.1.tar.gz
 
-Change the working directory to Ice-3.3.0/cpp:
+Change the working directory to Ice-3.3.1/cpp:
 
-$ cd Ice-3.3.0/cpp
+$ cd Ice-3.3.1/cpp
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular

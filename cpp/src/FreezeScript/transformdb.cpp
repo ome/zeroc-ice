@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -259,6 +259,9 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
     vector<string> args;
     try
     {
+#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
+        IceUtil::DummyBCC dummy;
+#endif
         args = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtilInternal::BadOptException& e)
@@ -707,6 +710,7 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
     DbEnv dbEnv(0);
     DbEnv dbEnvNew(0);
     Freeze::TransactionPtr txNew = 0;
+    Freeze::ConnectionPtr connectionNew = 0;
     vector<Db*> dbs;
     int status = EXIT_SUCCESS;
     try
@@ -756,7 +760,7 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
         //
         // Open the catalog of the new environment, and start a transaction.
         //
-        Freeze::ConnectionPtr connectionNew = Freeze::createConnection(communicator, dbEnvNameNew, dbEnvNew);
+        connectionNew = Freeze::createConnection(communicator, dbEnvNameNew, dbEnvNew);
         txNew = connectionNew->beginTransaction();
         DbTxn* txnNew = Freeze::getTxn(txNew);
 
@@ -789,6 +793,12 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
             if(txNew != 0)
             {
                 txNew->rollback();
+                txNew = 0;
+            }
+            if(connectionNew)
+            {
+                connectionNew->close();
+                connectionNew = 0;
             }
             for(vector<Db*>::iterator p = dbs.begin(); p != dbs.end(); ++p)
             {
@@ -796,8 +806,20 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
                 db->close(0);
                 delete db;
             }
-            dbEnv.close(0);
-            dbEnvNew.close(0);
+            try
+            {
+                dbEnv.close(0);
+            }
+            catch(const DbException&)
+            {
+            }
+            try
+            {
+                dbEnvNew.close(0);
+            }
+            catch(const DbException&)
+            {
+            }
         }
         catch(const DbException& ex)
         {
@@ -822,13 +844,13 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
                 // Checkpoint to migrate changes from the log to the database(s).
                 //
                 dbEnvNew.txn_checkpoint(0, 0, DB_FORCE);
+            }
 
-                for(vector<Db*>::iterator p = dbs.begin(); p != dbs.end(); ++p)
-                {
-                    Db* db = *p;
-                    db->close(0);
-                    delete db;
-                }
+            for(vector<Db*>::iterator p = dbs.begin(); p != dbs.end(); ++p)
+            {
+                Db* db = *p;
+                db->close(0);
+                delete db;
             }
         }
         catch(const DbException& ex)
@@ -840,8 +862,27 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
     // Clear the transaction before closing the database environment.
     txNew = 0;
 
-    dbEnv.close(0);
-    dbEnvNew.close(0);
+    if(connectionNew)
+    {
+        connectionNew->close();
+        connectionNew = 0;
+    }
+
+    try
+    {
+        dbEnv.close(0);
+    }
+    catch(const DbException&)
+    {
+    }
+
+    try
+    {
+        dbEnvNew.close(0);
+    }
+    catch(const DbException&)
+    {
+    }
 
     return status;
 }
@@ -864,12 +905,22 @@ main(int argc, char* argv[])
         {
             cerr << endl;
         }
-        return EXIT_FAILURE;
+        status = EXIT_FAILURE;
     }
     catch(const IceUtil::Exception& ex)
     {
         cerr << argv[0] << ": " << ex << endl;
-        return EXIT_FAILURE;
+        status = EXIT_FAILURE;
+    }
+    catch(const std::exception& ex)
+    {
+        cerr << argv[0] << ": " << ex.what() << endl;
+        status = EXIT_FAILURE;
+    }
+    catch(...)
+    {
+        cerr << argv[0] << ": unknown exception" << endl;
+        status = EXIT_FAILURE;
     }
 
     if(communicator)

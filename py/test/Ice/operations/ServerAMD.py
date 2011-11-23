@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -10,20 +10,9 @@
 
 import os, sys, traceback, threading
 
-for toplevel in [".", "..", "../..", "../../..", "../../../.."]:
-    toplevel = os.path.normpath(toplevel)
-    if os.path.exists(os.path.join(toplevel, "python", "Ice.py")):
-        break
-else:
-    raise "can't find toplevel directory!"
-
 import Ice
-
-#
-# Get Slice directory.
-#
-slice_dir = os.path.join(os.path.join(toplevel, "..", "slice"))
-if not os.path.exists(slice_dir):
+slice_dir = Ice.getSliceDir()
+if not slice_dir:
     print sys.argv[0] + ': Slice directory not found.'
     sys.exit(1)
 
@@ -41,22 +30,27 @@ class Thread_opVoid(threading.Thread):
 class MyDerivedClassI(Test.MyDerivedClass):
     def __init__(self):
         self.opVoidThread = None
+        self.opVoidThreadLock = threading.Lock()
 
     def shutdown_async(self, cb, current=None):
+        self.opVoidThreadLock.acquire()
         if self.opVoidThread:
             self.opVoidThread.join()
             self.opVoidThread = None
+        self.opVoidThreadLock.release()
 
         current.adapter.getCommunicator().shutdown()
         cb.ice_response()
 
     def opVoid_async(self, cb, current=None):
+        self.opVoidThreadLock.acquire()
         if self.opVoidThread:
             self.opVoidThread.join()
             self.opVoidThread = None
 
         self.opVoidThread = Thread_opVoid(cb)
         self.opVoidThread.start()
+        self.opVoidThreadLock.release()
 
     def opByte_async(self, cb, p1, p2, current=None):
         cb.ice_response(p1, p1 ^ p2)
@@ -192,6 +186,12 @@ class MyDerivedClassI(Test.MyDerivedClass):
         cb.ice_response(r, p3)
 
     def opStringMyEnumD_async(self, cb, p1, p2, current=None):
+        p3 = p1.copy()
+        r = p1.copy()
+        r.update(p2)
+        cb.ice_response(r, p3)
+
+    def opMyStructMyEnumD_async(self, cb, p1, p2, current=None):
         p3 = p1.copy()
         r = p1.copy()
         r.update(p2)

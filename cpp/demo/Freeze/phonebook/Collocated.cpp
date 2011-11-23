@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -52,7 +52,7 @@ PhoneBookCollocated::run(int argc, char* argv[])
     // Create and install a factory for contacts.
     //
     ContactFactoryPtr contactFactory = new ContactFactory();
-    communicator()->addObjectFactory(contactFactory, "::Demo::Contact");
+    communicator()->addObjectFactory(contactFactory, Demo::Contact::ice_staticId());
 
     //
     // Create the name index.

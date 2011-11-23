@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -513,11 +513,6 @@ final class TransceiverI implements IceInternal.Transceiver
         {
             _instance.traceConnection(_fd, _engine, _incoming);
         }
-    }
-
-    private void
-    shutdown()
-    {
     }
 
     private IceInternal.SocketStatus

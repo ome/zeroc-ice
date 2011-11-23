@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,6 @@ public:
     Gen(const std::string&,
         const std::string&,
         const std::string&,
-        const std::string&,
         const std::vector<std::string>&,
         const std::string&,
         const std::vector<std::string>&,
@@ -35,8 +34,6 @@ public:
         bool);
     ~Gen();
 
-    bool operator!() const; // Returns true if there was a constructor error
-
     void generate(const UnitPtr&);
     void closeOutput();
     
@@ -47,6 +44,13 @@ private:
 
     void writeExtraHeaders(::IceUtilInternal::Output&);
 
+
+    //
+    // Returns the header extension defined in the global metadata for a given file,
+    // or an empty string if no global metadata was found.
+    //
+    std::string getHeaderExt(const std::string& file, const UnitPtr& unit);
+
     ::IceUtilInternal::Output H;
     ::IceUtilInternal::Output C;
 
@@ -55,30 +59,17 @@ private:
 
     std::string _base;
     std::string _headerExtension;
+    std::string _implHeaderExtension;
     std::string _sourceExtension;
     std::vector<std::string> _extraHeaders;
     std::string _include;
     std::vector<std::string> _includePaths;
     std::string _dllExport;
+    std::string _dir;
     bool _impl;
     bool _checksum;
     bool _stream;
     bool _ice;
-
-    class GlobalIncludeVisitor : private ::IceUtil::noncopyable, public ParserVisitor
-    {
-    public:
-
-        GlobalIncludeVisitor(::IceUtilInternal::Output&);
-
-        virtual bool visitModuleStart(const ModulePtr&);
-
-    private:
-
-        ::IceUtilInternal::Output& H;
-
-        bool _finished;
-    };
 
     class TypesVisitor : private ::IceUtil::noncopyable, public ParserVisitor
     {
@@ -403,6 +394,7 @@ private:
     {
     public:
 
+        virtual bool visitUnitStart(const UnitPtr&);
         virtual bool visitModuleStart(const ModulePtr&);
         virtual void visitModuleEnd(const ModulePtr&);
         virtual void visitClassDecl(const ClassDeclPtr&);

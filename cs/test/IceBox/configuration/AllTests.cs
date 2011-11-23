@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -59,13 +59,13 @@ public class AllTests
             test(service3.getProperty("Service").Equals("4"));
             test(service3.getProperty("Prop").Equals(""));
             test(service3.getProperty("Service3.Prop").Equals("1"));
-            test(service3.getProperty("Ice.Trace.Network").Equals("3"));
+            test(service3.getProperty("Ice.Trace.Slicing").Equals("3"));
 
             test(service4.getProperty("Ice.ProgramName").Equals("IceBox-SharedCommunicator"));
             test(service4.getProperty("Service").Equals("4"));
             test(service4.getProperty("Prop").Equals(""));
             test(service4.getProperty("Service3.Prop").Equals("1"));
-            test(service4.getProperty("Ice.Trace.Network").Equals("3"));
+            test(service4.getProperty("Ice.Trace.Slicing").Equals("3"));
 
             string[] args4 = {"--Service3.Prop=2"};
             test(IceUtilInternal.Arrays.Equals(service4.getArgs(), args4));

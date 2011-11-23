@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -37,7 +37,7 @@ public final class Options
 
         int state = NormalState;
 
-        StringBuffer arg = new StringBuffer();
+        StringBuilder arg = new StringBuilder(128);
         java.util.List<String> vec = new java.util.ArrayList<String>();
 
         for(int i = 0; i < line.length(); ++i)
@@ -113,7 +113,7 @@ public final class Options
                     if(IFS.indexOf(line.charAt(i)) != -1)
                     {
                         vec.add(arg.toString());
-                        arg = new StringBuffer();
+                        arg = new StringBuilder(128);
                         
                         //
                         // Move to start of next argument.

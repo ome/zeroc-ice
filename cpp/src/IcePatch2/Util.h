@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,7 +27,6 @@ ICE_PATCH2_API Ice::ByteSeq stringToBytes(const std::string&);
 
 ICE_PATCH2_API std::string simplify(const std::string&);
 
-ICE_PATCH2_API bool isAbsolute(const std::string&);
 ICE_PATCH2_API bool isRoot(const std::string&);
 
 ICE_PATCH2_API std::string getSuffix(const std::string&);

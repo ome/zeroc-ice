@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -417,6 +417,33 @@ def twoways(communicator, p)
     test(ro["qwerty"] == Test::MyEnum::Enum3)
     test(ro[""] == Test::MyEnum::Enum2)
     test(ro["Hello!!"] == Test::MyEnum::Enum2)
+
+    #
+    # opMyStructMyEnumD
+    #
+    s11 = Test::MyStruct.new
+    s11.i = 1
+    s11.j = 1
+    s12 = Test::MyStruct.new
+    s12.i = 1
+    s12.j = 2
+    s22 = Test::MyStruct.new
+    s22.i = 2
+    s22.j = 2
+    s23 = Test::MyStruct.new
+    s23.i = 2
+    s23.j = 3
+    di1 = {s11=>Test::MyEnum::Enum1, s12=>Test::MyEnum::Enum2}
+    di2 = {s11=>Test::MyEnum::Enum1, s22=>Test::MyEnum::Enum3, s23=>Test::MyEnum::Enum2}
+
+    ro, d = p.opMyStructMyEnumD(di1, di2)
+
+    test(d == di1)
+    test(ro.length == 4)
+    test(ro[s11] == Test::MyEnum::Enum1)
+    test(ro[s12] == Test::MyEnum::Enum2)
+    test(ro[s22] == Test::MyEnum::Enum3)
+    test(ro[s23] == Test::MyEnum::Enum2)
 
     #
     # opIntS

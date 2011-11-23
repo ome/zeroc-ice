@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -648,6 +648,23 @@ Glacier2::SessionRouterI::SessionRouterI(const InstancePtr& instance,
     routerId.category = _instance->properties()->getPropertyWithDefault("Glacier2.InstanceName", "Glacier2");
     routerId.name = "router";
 
+    if(_sessionThread)
+    {
+        __setNoDelete(true);
+        try
+        {
+            _sessionThread->start();
+        }
+        catch(const IceUtil::Exception&)
+        {
+            _sessionThread->destroy();
+            _sessionThread = 0;
+            __setNoDelete(false);
+            throw;
+        }
+        __setNoDelete(false);
+    }
+
     try
     {
         _instance->clientObjectAdapter()->add(this, routerId);
@@ -673,10 +690,7 @@ Glacier2::SessionRouterI::SessionRouterI(const InstancePtr& instance,
         // Ignore.
     }
 
-    if(_sessionThread)
-    {
-        _sessionThread->start();
-    }
+    _instance->setSessionRouter(this);
 }
 
 Glacier2::SessionRouterI::~SessionRouterI()

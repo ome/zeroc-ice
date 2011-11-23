@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -46,6 +46,8 @@ static PyMethodDef methods[] =
     { STRCAST("defineStruct"), reinterpret_cast<PyCFunction>(IcePy_defineStruct), METH_VARARGS,
         PyDoc_STR(STRCAST("internal function")) },
     { STRCAST("defineSequence"), reinterpret_cast<PyCFunction>(IcePy_defineSequence), METH_VARARGS,
+        PyDoc_STR(STRCAST("internal function")) },
+    { STRCAST("defineCustom"), reinterpret_cast<PyCFunction>(IcePy_defineCustom), METH_VARARGS,
         PyDoc_STR(STRCAST("internal function")) },
     { STRCAST("defineDictionary"), reinterpret_cast<PyCFunction>(IcePy_defineDictionary), METH_VARARGS,
         PyDoc_STR(STRCAST("internal function")) },

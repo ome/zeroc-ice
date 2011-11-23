@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -257,7 +257,7 @@ public abstract class Reference implements Cloneable
         // these features. Please review for all features that depend on the
         // format of proxyToString() before changing this and related code.
         //
-        StringBuffer s = new StringBuffer();
+        StringBuilder s = new StringBuilder(128);
 
         //
         // If the encoded identity string contains characters which

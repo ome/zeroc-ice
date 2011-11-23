@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -36,7 +36,7 @@ public:
     // printHeader() and then emits a "package" statement if
     // necessary.
     //
-    bool openClass(const std::string&, const std::string& = std::string());
+    void openClass(const std::string&, const std::string& = std::string());
 
     virtual void printHeader();
 };
@@ -64,7 +64,7 @@ protected:
     // Given the fully-scoped Java class name, create any intermediate
     // package directories and open the class file
     //
-    bool open(const std::string&);
+    void open(const std::string&);
 
     ::IceUtilInternal::Output& output() const;
 
@@ -80,6 +80,12 @@ protected:
     std::string convertScopedName(const std::string&,
                                   const std::string& = std::string(),
                                   const std::string& = std::string()) const;
+
+
+    //
+    // Returns the package prefix for a give Slice file.
+    //
+    std::string getPackagePrefix(const ContainedPtr&) const;
 
     //
     // Returns the Java package of a Contained entity.
@@ -181,8 +187,7 @@ protected:
     //
     bool getDictionaryTypes(const DictionaryPtr&, const std::string&, const StringList&,
                             std::string&, std::string&) const;
-    bool getSequenceTypes(const SequencePtr&, const std::string&, const StringList&,
-                          std::string&, std::string&) const;
+    bool getSequenceTypes(const SequencePtr&, const std::string&, const StringList&, std::string&, std::string&) const;
 
     virtual JavaOutput* createOutput();
 
@@ -198,6 +203,7 @@ private:
     {
     public:
 
+        virtual bool visitUnitStart(const UnitPtr&);
         virtual bool visitModuleStart(const ModulePtr&);
         virtual void visitClassDecl(const ClassDeclPtr&);
         virtual bool visitClassDefStart(const ClassDefPtr&);
@@ -223,6 +229,7 @@ private:
 
     std::string _dir;
     ::IceUtilInternal::Output* _out;
+    mutable std::map<std::string, std::string> _filePackagePrefix;
 };
 
 }

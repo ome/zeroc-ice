@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -41,22 +41,19 @@ PYTHON_HOME		= C:\Python25
 # is located in a different location.
 #
 !if "$(CPP_COMPILER)" == "VC60" && "$(STLPORT_HOME)" == ""
+!if "$(THIRDPARTY_HOME)" != ""
+STLPORT_HOME            = $(THIRDPARTY_HOME)
+!else
 STLPORT_HOME            = C:\Ice-$(VERSION)-ThirdParty-VC60
+!endif
 !endif
 
 #
-# For VC80 and VC80 Express it is necessary to set the location of the
-# manifest tool. This must be the 6.x version of mt.exe, not the 5.x
-# version!
-#
-# For VC80 Express mt.exe 6.x is provided by the Windows Platform SDK.
-# It is necessary to set the location of the Platform SDK through the
-# PDK_HOME environment variable (see INSTALL for details).
+# For VC80 it is necessary to set the location of the manifest tool.
+# This must be the 6.x version of mt.exe, not the 5.x version!
 #
 !if "$(CPP_COMPILER)" == "VC80"
 MT = "$(VS80COMNTOOLS)bin\mt.exe"
-!elseif "$(CPP_COMPILER)" == "VC80_EXPRESS"
-MT = "$(PDK_HOME)\bin\mt.exe"
 !else
 MT = mt.exe
 !endif
@@ -82,16 +79,24 @@ libdir			= $(top_srcdir)\python
 install_pythondir	= $(prefix)\python
 install_libdir		= $(prefix)\python
 
-THIRDPARTY_HOME 	= $(STLPORT_HOME)
-
 !if "$(CPP_COMPILER)" != "VC60" && "$(CPP_COMPILER)" != "VC71" && \
     "$(CPP_COMPILER)" != "VC80" && "$(CPP_COMPILER)" != "VC80_EXPRESS" && \
     "$(CPP_COMPILER)" != "VC90" && "$(CPP_COMPILER)" != "VC90_EXPRESS"
 !error Invalid setting for CPP_COMPILER: $(CPP_COMPILER)
 !endif
 
-
 !include $(top_srcdir)\..\cpp\config\Make.rules.msvc
+
+!if "$(ice_src_dist)" != ""
+!if "$(STLPORT_HOME)" != ""
+CPPFLAGS        = -I"$(STLPORT_HOME)\include\stlport" $(CPPFLAGS)
+LDFLAGS         = /LIBPATH:"$(STLPORT_HOME)\lib$(x64suffix)" $(LDFLAGS)
+!endif
+!else
+!if "$(CPP_COMPILER)" == "VC60"
+CPPFLAGS        = -I"$(ice_dir)\include\stlport" $(CPPFLAGS)
+!endif
+!endif
 
 !if "$(OPTIMIZE)" != "yes"
 LIBSUFFIX       = $(LIBSUFFIX)d

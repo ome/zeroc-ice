@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -53,6 +53,12 @@ public class OutputStreamI implements OutputStream
     writeByteSeq(byte[] v)
     {
         _os.writeByteSeq(v);
+    }
+
+    public void
+    writeSerializable(java.io.Serializable v)
+    {
+        _os.writeSerializable(v);
     }
 
     public void
@@ -130,6 +136,11 @@ public class OutputStreamI implements OutputStream
     public void
     writeSize(int sz)
     {
+        if(sz < 0)
+        {
+            throw new NegativeSizeException();
+        }
+
         _os.writeSize(sz);
     }
 
@@ -178,7 +189,7 @@ public class OutputStreamI implements OutputStream
     public void
     endEncapsulation()
     {
-        _os.endWriteEncaps();
+        _os.endWriteEncapsChecked();
     }
 
     public void
