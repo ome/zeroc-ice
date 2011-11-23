@@ -1,0 +1,485 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Ice::Identity</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Ice::FacetNotExistException"
+HREF="x2075.html"><LINK
+REL="NEXT"
+TITLE="Ice::IdentityParseException"
+HREF="x2208.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x2075.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x2208.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICE.IDENTITY"
+></A
+><TT
+CLASS="LITERAL"
+>Ice::Identity</TT
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN2088"
+></A
+>Overview</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>struct <SPAN
+CLASS="STRUCTNAME"
+>Identity</SPAN
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>The identity of an <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object. An empty <SPAN
+CLASS="TYPE"
+>name</SPAN
+> denotes a null
+object.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2095"
+></A
+>Used By</H3
+><P
+>	    <A
+HREF="x9209.html#FREEZE.EVICTOR.CREATEOBJECT"
+><TT
+CLASS="FUNCTION"
+>::Freeze::Evictor::createObject</TT
+></A
+>, <A
+HREF="x9209.html#FREEZE.EVICTOR.DESTROYOBJECT"
+><TT
+CLASS="FUNCTION"
+>::Freeze::Evictor::destroyObject</TT
+></A
+>, <A
+HREF="x9209.html#FREEZE.EVICTOR.HASOBJECT"
+><TT
+CLASS="FUNCTION"
+>::Freeze::Evictor::hasObject</TT
+></A
+>, <A
+HREF="x9631.html#FREEZE.EVICTORITERATOR.NEXT"
+><TT
+CLASS="FUNCTION"
+>::Freeze::EvictorIterator::next</TT
+></A
+>, <A
+HREF="x9784.html#FREEZE.OBJECTSTORE.SAVE"
+><TT
+CLASS="FUNCTION"
+>::Freeze::ObjectStore::save</TT
+></A
+>, <A
+HREF="x9859.html#FREEZE.PERSISTENCESTRATEGY.ACTIVATEDOBJECT"
+><TT
+CLASS="FUNCTION"
+>::Freeze::PersistenceStrategy::activatedObject</TT
+></A
+>, <A
+HREF="x9859.html#FREEZE.PERSISTENCESTRATEGY.DESTROYEDOBJECT"
+><TT
+CLASS="FUNCTION"
+>::Freeze::PersistenceStrategy::destroyedObject</TT
+></A
+>, <A
+HREF="x9859.html#FREEZE.PERSISTENCESTRATEGY.EVICTEDOBJECT"
+><TT
+CLASS="FUNCTION"
+>::Freeze::PersistenceStrategy::evictedObject</TT
+></A
+>, <A
+HREF="x9859.html#FREEZE.PERSISTENCESTRATEGY.POSTOPERATION"
+><TT
+CLASS="FUNCTION"
+>::Freeze::PersistenceStrategy::postOperation</TT
+></A
+>, <A
+HREF="x9859.html#FREEZE.PERSISTENCESTRATEGY.PREOPERATION"
+><TT
+CLASS="FUNCTION"
+>::Freeze::PersistenceStrategy::preOperation</TT
+></A
+>, <A
+HREF="x10172.html#FREEZE.SERVANTINITIALIZER.INITIALIZE"
+><TT
+CLASS="FUNCTION"
+>::Freeze::ServantInitializer::initialize</TT
+></A
+>, <A
+HREF="x1880.html#ICE.CURRENT.ID"
+><SPAN
+CLASS="TYPE"
+>Current::id</SPAN
+></A
+>, <A
+HREF="x2232.html#ICE.ILLEGALIDENTITYEXCEPTION.ID"
+><SPAN
+CLASS="TYPE"
+>IllegalIdentityException::id</SPAN
+></A
+>, <A
+HREF="x2281.html#ICE.LOCATOR.FINDOBJECTBYID"
+><TT
+CLASS="FUNCTION"
+>Locator::findObjectById</TT
+></A
+>, <A
+HREF="x2737.html#ICE.OBJECTADAPTER.ADD"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::add</TT
+></A
+>, <A
+HREF="x2737.html#ICE.OBJECTADAPTER.CREATEDIRECTPROXY"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::createDirectProxy</TT
+></A
+>, <A
+HREF="x2737.html#ICE.OBJECTADAPTER.CREATEPROXY"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::createProxy</TT
+></A
+>, <A
+HREF="x2737.html#ICE.OBJECTADAPTER.CREATEREVERSEPROXY"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::createReverseProxy</TT
+></A
+>, <A
+HREF="x2737.html#ICE.OBJECTADAPTER.IDENTITYTOSERVANT"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::identityToServant</TT
+></A
+>, <A
+HREF="x2737.html#ICE.OBJECTADAPTER.REMOVE"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::remove</TT
+></A
+>, <SPAN
+CLASS="TYPE"
+>ObjectDict</SPAN
+>, <A
+HREF="x4346.html#ICE.REQUESTFAILEDEXCEPTION.ID"
+><SPAN
+CLASS="TYPE"
+>RequestFailedException::id</SPAN
+></A
+>, <A
+HREF="x11833.html#ICEPACK.QUERY.FINDOBJECTBYID"
+><TT
+CLASS="FUNCTION"
+>::IcePack::Query::findObjectById</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2167"
+></A
+>Data Member Index</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><SPAN
+CLASS="TYPE"
+>category</SPAN
+></DT
+><DD
+><P
+>The <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object category.</P
+></DD
+><DT
+><SPAN
+CLASS="TYPE"
+>name</SPAN
+></DT
+><DD
+><P
+>The name of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.IDENTITY.CATEGORY"
+></A
+><TT
+CLASS="LITERAL"
+>category</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="STRUCTFIELD"
+><I
+>category</I
+></TT
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>The <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object category.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN2190"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x4494.html"
+><TT
+CLASS="CLASSNAME"
+>ServantLocator</TT
+></A
+>, <A
+HREF="x2737.html#ICE.OBJECTADAPTER.ADDSERVANTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::addServantLocator</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.IDENTITY.NAME"
+></A
+><TT
+CLASS="LITERAL"
+>name</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="STRUCTFIELD"
+><I
+>name</I
+></TT
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>The name of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object.</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x2075.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x2208.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::FacetNotExistException</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::IdentityParseException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

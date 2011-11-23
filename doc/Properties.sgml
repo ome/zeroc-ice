@@ -1463,6 +1463,23 @@ properties as the standalone &IcePack; registry.</para></note>
 </section>
 </section>
 
+<section><title>IcePack.Node.PrintServersReady</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.PrintServersReady=<replaceable>token</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The &IcePack; node will print "<replaceable>token</replaceable> ready"
+on standard output after all the servers managed by the node are
+ready. This is useful for scripts that wish to wait until all servers
+are ready to be used.
+</para>
+</section>
+</section>
+
 <section><title>IcePack.Node.Trace.Server</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -1744,6 +1761,21 @@ IceStorm.Flush.Timeout=<replaceable>num</replaceable>
 Defines the interval in milliseconds that batch reliability events are
 sent to subscribers. The default is 1000 ms. The minimum value of this
 property is 100 ms.
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.TopicManager.Proxy</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.TopicManager.Proxy=<replaceable>proxy</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the proxy for the &IceStorm; topic manager. This property is used by
+the &IceStorm; administration tool, and may also be used by applications.
 </para>
 </section>
 </section>

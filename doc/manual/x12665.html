@@ -1,0 +1,425 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>IceSSL::ContextType</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="IceSSL::ContextNotConfiguredException"
+HREF="x12654.html"><LINK
+REL="NEXT"
+TITLE="IceSSL::Plugin"
+HREF="x12753.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x12654.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x12753.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICESSL.CONTEXTTYPE"
+></A
+><TT
+CLASS="LITERAL"
+>IceSSL::ContextType</TT
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN12668"
+></A
+>Overview</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>enum <SPAN
+CLASS="TYPE"
+>ContextType</SPAN
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>A <A
+HREF="x12753.html"
+><TT
+CLASS="CLASSNAME"
+>Plugin</TT
+></A
+> may serve as a Client, Server or both (ClientServer).  A
+<TT
+CLASS="LITERAL"
+>Context</TT
+> is set up inside the <A
+HREF="x12753.html"
+><TT
+CLASS="CLASSNAME"
+>Plugin</TT
+></A
+> in order to handle
+either Client or Server roles.  The <TT
+CLASS="LITERAL"
+>Context</TT
+> represents a
+role-specific configuration.
+Some <A
+HREF="x12753.html"
+><TT
+CLASS="CLASSNAME"
+>Plugin</TT
+></A
+> operations require a <TT
+CLASS="LITERAL"
+>ContextType</TT
+> argument to
+identify the <TT
+CLASS="LITERAL"
+>Context</TT
+>.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12683"
+></A
+>Used By</H3
+><P
+>	    <A
+HREF="x12753.html#ICESSL.PLUGIN.ADDTRUSTEDCERTIFICATE"
+><TT
+CLASS="FUNCTION"
+>Plugin::addTrustedCertificate</TT
+></A
+>, <A
+HREF="x12753.html#ICESSL.PLUGIN.ADDTRUSTEDCERTIFICATEBASE64"
+><TT
+CLASS="FUNCTION"
+>Plugin::addTrustedCertificateBase64</TT
+></A
+>, <A
+HREF="x12753.html#ICESSL.PLUGIN.CONFIGURE"
+><TT
+CLASS="FUNCTION"
+>Plugin::configure</TT
+></A
+>, <A
+HREF="x12753.html#ICESSL.PLUGIN.LOADCONFIG"
+><TT
+CLASS="FUNCTION"
+>Plugin::loadConfig</TT
+></A
+>, <A
+HREF="x12753.html#ICESSL.PLUGIN.SETCERTIFICATEVERIFIER"
+><TT
+CLASS="FUNCTION"
+>Plugin::setCertificateVerifier</TT
+></A
+>, <A
+HREF="x12753.html#ICESSL.PLUGIN.SETRSAKEYS"
+><TT
+CLASS="FUNCTION"
+>Plugin::setRSAKeys</TT
+></A
+>, <A
+HREF="x12753.html#ICESSL.PLUGIN.SETRSAKEYSBASE64"
+><TT
+CLASS="FUNCTION"
+>Plugin::setRSAKeysBase64</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN12708"
+></A
+>Enumerator Index</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x12665.html#ICESSL.CLIENT"
+><TT
+CLASS="CONSTANT"
+>Client</TT
+></A
+></DT
+><DD
+><P
+>Select only the Client <TT
+CLASS="LITERAL"
+>Context</TT
+>, no modifications to the Server.</P
+></DD
+><DT
+><A
+HREF="x12665.html#ICESSL.SERVER"
+><TT
+CLASS="CONSTANT"
+>Server</TT
+></A
+></DT
+><DD
+><P
+>Select only the Server <TT
+CLASS="LITERAL"
+>Context</TT
+>, no modifications to the Client.</P
+></DD
+><DT
+><A
+HREF="x12665.html#ICESSL.CLIENTSERVER"
+><TT
+CLASS="CONSTANT"
+>ClientServer</TT
+></A
+></DT
+><DD
+><P
+>Select and affect changes on both the Client and Server <TT
+CLASS="LITERAL"
+>Context</TT
+>s.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.CLIENT"
+></A
+><TT
+CLASS="LITERAL"
+>Client</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><TT
+CLASS="CONSTANT"
+>Client</TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>Select only the Client <TT
+CLASS="LITERAL"
+>Context</TT
+>, no modifications to the Server.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.SERVER"
+></A
+><TT
+CLASS="LITERAL"
+>Server</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><TT
+CLASS="CONSTANT"
+>Server</TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>Select only the Server <TT
+CLASS="LITERAL"
+>Context</TT
+>, no modifications to the Client.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.CLIENTSERVER"
+></A
+><TT
+CLASS="LITERAL"
+>ClientServer</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><TT
+CLASS="CONSTANT"
+>ClientServer</TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>Select and affect changes on both the Client and Server <TT
+CLASS="LITERAL"
+>Context</TT
+>s.</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x12654.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x12753.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceSSL::ContextNotConfiguredException</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceSSL::Plugin</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>
