@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,7 +27,7 @@ using namespace Freeze;
 static int
 validate(const Complex::ComplexDict& m)
 {
-    cout << "testing database expressions... ";
+    cout << "testing database expressions... " << flush;
     Complex::ComplexDict::const_iterator p;
     Parser myParser;
     for(p = m.begin(); p != m.end(); ++p)
@@ -67,7 +67,7 @@ static const size_t nexpressions = sizeof(expressions)/sizeof(expressions[0]);
 static int
 populate(Complex::ComplexDict& m)
 {
-    cout << "populating the database... ";
+    cout << "populating the database... " << flush;
     Parser myParser;
     for(size_t i = 0 ; i < nexpressions; ++i)
     {

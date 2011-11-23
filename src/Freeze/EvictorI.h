@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,6 +20,7 @@
 #include <list>
 #include <vector>
 #include <deque>
+#include <IceUtil/DisableWarnings.h>
 
 
 namespace Freeze
@@ -157,6 +158,7 @@ public:
 
     bool deadlockWarning() const;
     Ice::Int trace() const;
+    Ice::Int txTrace() const;
 
 
     void initialize(const Ice::Identity&, const std::string&, const Ice::ObjectPtr&);
@@ -226,6 +228,7 @@ private:
     bool _createDb;
 
     Ice::Int _trace;
+    Ice::Int _txTrace;
 
     //
     // Threads that have requested a "saveNow" and are waiting for

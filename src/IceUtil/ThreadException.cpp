@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -151,6 +151,32 @@ IceUtil::ThreadNotStartedException::ice_clone() const
 
 void
 IceUtil::ThreadNotStartedException::ice_throw() const
+{
+    throw *this;
+}
+
+
+IceUtil::BadThreadControlException::BadThreadControlException(const char* file, int line) :
+    Exception(file, line)
+{
+}
+
+const char* IceUtil::BadThreadControlException::_name = "IceUtil::BadThreadControlException";
+
+const string
+IceUtil::BadThreadControlException::ice_name() const
+{
+    return _name;
+}
+
+IceUtil::Exception*
+IceUtil::BadThreadControlException::ice_clone() const
+{
+    return new BadThreadControlException(*this);
+}
+
+void
+IceUtil::BadThreadControlException::ice_throw() const
 {
     throw *this;
 }

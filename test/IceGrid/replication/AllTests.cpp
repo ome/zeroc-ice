@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,7 @@ instantiateServer(const AdminPrx& admin, const string& templ, const map<string, 
     nodeUpdate.name = "localnode";
     nodeUpdate.serverInstances.push_back(desc);
     ApplicationUpdateDescriptor update;
-    update.name = "test";
+    update.name = "Test";
     update.nodes.push_back(nodeUpdate);
     try
     {
@@ -49,7 +49,10 @@ removeServer(const AdminPrx& admin, const string& id)
     {
 	admin->stopServer(id);
     }
-    catch(Ice::UserException& ex)
+    catch(const ServerStopException&)
+    {
+    }
+    catch(const Ice::UserException& ex)
     {
 	cerr << ex << endl;
 	test(false);
@@ -59,7 +62,7 @@ removeServer(const AdminPrx& admin, const string& id)
     nodeUpdate.name = "localnode";
     nodeUpdate.removeServers.push_back(id);
     ApplicationUpdateDescriptor update;
-    update.name = "test";
+    update.name = "Test";
     update.nodes.push_back(nodeUpdate);
     try
     {

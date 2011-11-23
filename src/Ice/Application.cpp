@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -48,6 +48,14 @@ static bool _nohup = false;
 const DWORD SIGHUP = CTRL_LOGOFF_EVENT;
 #else
 #   include <csignal>
+#endif
+
+//
+// Compaq C++ defines signal() as a macro, causing problems with the _condVar->signal()
+// statement, which the compiler for some reason replaces by the macro.
+//
+#if defined (__digital__) && defined (__unix__)
+#   undef signal
 #endif
 
 //
@@ -211,19 +219,85 @@ Ice::Application::~Application()
 }
 
 int
-Ice::Application::main(int argc, char* argv[], const char* configFile, const LoggerPtr& logger)
+Ice::Application::main(int argc, char* argv[])
+{
+    return main(argc, argv, InitializationData());
+}
+
+int
+Ice::Application::main(int argc, char* argv[], const char* configFile)
+{
+    //
+    // We don't call the main below to avoid a deprecated warning
+    //
+
+    InitializationData initData;
+    if(configFile)
+    {
+	try
+	{
+	    initData.properties = createProperties();
+	    initData.properties->load(configFile);
+	}
+	catch(const IceUtil::Exception& ex)
+	{
+	    cerr << argv[0] << ": " << ex << endl;
+	    return EXIT_FAILURE;
+	}
+	catch(const std::exception& ex)
+	{
+	    cerr << argv[0] << ": std::exception: " << ex.what() << endl;
+	    return EXIT_FAILURE;
+	}
+	catch(...)
+	{
+	    cerr << argv[0] << ": unknown exception" << endl;
+	    return EXIT_FAILURE;
+	}
+    }
+    return main(argc, argv, initData);
+}
+
+
+int
+Ice::Application::main(int argc, char* argv[], const char* configFile, const Ice::LoggerPtr& logger)
+{
+    InitializationData initData;
+    if(configFile)
+    {
+	try
+	{
+	    initData.properties = createProperties();
+	    initData.properties->load(configFile);
+	}
+	catch(const IceUtil::Exception& ex)
+	{
+	    cerr << argv[0] << ": " << ex << endl;
+	    return EXIT_FAILURE;
+	}
+	catch(const std::exception& ex)
+	{
+	    cerr << argv[0] << ": std::exception: " << ex.what() << endl;
+	    return EXIT_FAILURE;
+	}
+	catch(...)
+	{
+	    cerr << argv[0] << ": unknown exception" << endl;
+	    return EXIT_FAILURE;
+	}
+    }
+    initData.logger = logger;
+    return main(argc, argv, initData);
+}
+
+int
+Ice::Application::main(int argc, char* argv[], const InitializationData& initData)
 {
     if(_communicator != 0)
     {
 	cerr << argv[0] << ": only one instance of the Application class can be used" << endl;
 	return EXIT_FAILURE;
     }
-
-    if(_condVar.get() == 0)
-    {
-	_condVar.reset(new Cond);
-    }
-
     int status;
 
     try
@@ -237,20 +311,15 @@ Ice::Application::main(int argc, char* argv[], const char* configFile, const Log
 
 	try
 	{
+	    if(_condVar.get() == 0)
+	    {
+		_condVar.reset(new Cond);
+	    }
+
 	    _interrupted = false;
 	    _appName = argv[0];
 	  	
-	
-	    if(configFile)
-	    {
-		PropertiesPtr properties = createProperties();
-		properties->load(configFile);
-		_communicator = initializeWithPropertiesAndLogger(argc, argv, properties, logger);
-	    }
-	    else
-	    {
-		_communicator = initializeWithLogger(argc, argv, logger);
-	    }
+	    _communicator = initialize(argc, argv, initData);
 	    _destroyed = false;
 
 	    //

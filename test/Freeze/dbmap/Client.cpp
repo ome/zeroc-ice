@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,6 +14,7 @@
 #include <IntIdentityMap.h>
 #include <IntIdentityMapWithIndex.h>
 #include <SortedMap.h>
+#include <WstringWstringMap.h>
 #include <Freeze/TransactionHolder.h>
 
 #include <algorithm>
@@ -215,7 +216,7 @@ run(const CommunicatorPtr& communicator, const string& envName)
     ByteIntMap::iterator p;
     ByteIntMap::const_iterator cp;
 
-    cout << "testing populate... ";
+    cout << "testing populate... " << flush;
     //
     // First try non-const iterator
     //
@@ -239,7 +240,7 @@ run(const CommunicatorPtr& communicator, const string& envName)
     test(m.size() == alphabet.size());
     cout << "ok" << endl;
 
-    cout << "testing map::find... ";
+    cout << "testing map::find... " << flush;
     j = find(alphabet.begin(), alphabet.end(), 'n');
     
     cp = m.find(*j);
@@ -247,7 +248,7 @@ run(const CommunicatorPtr& communicator, const string& envName)
     test(cp->first == 'n' && cp->second == j - alphabet.begin());
     cout << "ok" << endl;
 
-    cout << "testing erase... ";
+    cout << "testing erase... " << flush;
 
     //
     // erase first offset characters (first offset characters is
@@ -289,12 +290,12 @@ run(const CommunicatorPtr& communicator, const string& envName)
     //
     // Get an iterator for the deleted element - this should fail.
     //
-    cout << "testing map::find (again)... ";
+    cout << "testing map::find (again)... " << flush;
     cp = m.find('a');
     test(cp == m.end());
     cout << "ok" << endl;
 
-    cout << "testing iterators... ";
+    cout << "testing iterators... " << flush;
     p = m.begin();
     ByteIntMap::iterator p2 = p;
 
@@ -354,7 +355,7 @@ run(const CommunicatorPtr& communicator, const string& envName)
     //
     // Test writing into an iterator.
     //
-    cout << "testing iterator.set... ";
+    cout << "testing iterator.set... " << flush;
 
     p = m.find('d');
     test(p != m.end() && p->second == 3);
@@ -430,7 +431,7 @@ run(const CommunicatorPtr& communicator, const string& envName)
     //
     populateDB(connection, m);
 
-    cout << "testing algorithms... ";
+    cout << "testing algorithms... " << flush;
 
     for_each(m.begin(), m.end(), ForEachTest);
 
@@ -723,6 +724,35 @@ run(const CommunicatorPtr& communicator, const string& envName)
 	sm.clear();
     }
 
+    cout << "ok" << endl;
+
+    cout << "testing wstring... " << flush;
+
+    { 
+	WstringWstringMap wsm(connection, "wstringMap");
+	    
+	TransactionHolder txHolder(connection);
+	wsm.put(WstringWstringMap::value_type(L"AAAAA", L"aaaaa"));
+	wsm.put(WstringWstringMap::value_type(L"BBBBB", L"bbbbb"));
+	wsm.put(WstringWstringMap::value_type(L"CCCCC", L"ccccc"));
+	wsm.put(WstringWstringMap::value_type(L"DDDDD", L"ddddd"));
+	wsm.put(WstringWstringMap::value_type(L"EEEEE", L"eeeee"));
+	txHolder.commit();
+    }
+
+    { 
+	WstringWstringMap wsm(connection, "wstringMap");
+	{
+	     WstringWstringMap::iterator p = wsm.find(L"BBBBB");
+	     test(p != wsm.end());
+	     test(p->second == L"bbbbb");
+	     
+	     p = wsm.findByValue(L"ddddd");
+	     test(p != wsm.end());
+	     test(p->first == L"DDDDD");
+	}
+	wsm.clear();
+    }
 
     cout << "ok" << endl;
 

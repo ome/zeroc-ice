@@ -2,7 +2,7 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -277,6 +277,10 @@ floating_literal	(({fractional_constant}{exponent_part}?)|((\+|-)?[[:digit:]]+{e
 		    {
 		    	unput(next);
 		    }
+		    if(us == 0)
+		    {
+			unit->error("illegal NUL character in string constant");
+		    }
 		    str->v += static_cast<char>(us);
 		    break;
 		}
@@ -300,6 +304,10 @@ floating_literal	(({fractional_constant}{exponent_part}?)|((\+|-)?[[:digit:]]+{e
 			}
 		    }
 		    unput(next);
+		    if(ull == 0)
+		    {
+			unit->error("illegal NUL character in string constant");
+		    }
 		    str->v += static_cast<char>(ull);
 		    break;
 		}
@@ -374,6 +382,17 @@ floating_literal	(({fractional_constant}{exponent_part}?)|((\+|-)?[[:digit:]]+{e
 }
 
 . {
+    if(yytext[0] < 32 || yytext[0] > 126)
+    {
+	stringstream s;
+	s << "illegal input character: '\\";
+	s.width(3);
+	s.fill('0');
+	s << oct << static_cast<int>(static_cast<unsigned char>(yytext[0]));
+	s << "'";
+	unit->error(s.str());
+	return BAD_CHAR;
+    }
     return yytext[0];
 }
 
@@ -431,6 +450,9 @@ checkIdentifier(const string& id)
 	unit->error("illegal underscore in identifier `" + id + "'");
     }
 
+    //
+    // Weed out identifiers with reserved suffixes.
+    //
     static const string suffixBlacklist[] = { "Helper", "Holder", "Prx", "Ptr" };
     for(size_t i = 0; i < sizeof(suffixBlacklist) / sizeof(*suffixBlacklist); ++i)
     {

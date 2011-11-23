@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,12 +16,12 @@
 // Most CPUs support only one endianness, with the notable exceptions
 // of Itanium (IA64) and MIPS.
 //
-#if defined(__i386)   || defined(_M_IX86)    || \
-    defined(__x86_64) || defined(_M_X64)     || \
-    defined(_M_IA64)  || defined(__alpha__)
+#if defined(__i386)     || defined(_M_IX86) || defined(__x86_64)  || \
+    defined(_M_X64)     || defined(_M_IA64) || defined(__alpha__) || \
+    defined(__MIPSEL__)
 #   define ICE_LITTLE_ENDIAN
-#elif defined(__sparc) || defined(__sparc__) || defined(__hppa) || \
-      defined(__ppc__) || defined(_ARCH_COM)
+#elif defined(__sparc) || defined(__sparc__) || defined(__hppa)      || \
+      defined(__ppc__) || defined(_ARCH_COM) || defined(__MIPSEB__)
 #   define ICE_BIG_ENDIAN
 #else
 #   error "Unknown architecture"
@@ -36,11 +36,11 @@
 // the architecture
 //
 #   define  ICE_32
-#elif defined(__sun) && defined(__sparcv9)      || \
-      defined(__linux) && defined(__x86_64)     || \
-      defined(__hppa) && defined(__LP64__)      || \
-      defined(_ARCH_COM) && defined(__64BIT__)  || \
-      defined(__alpha__)                        || \
+#elif defined(__sun) && (defined(__sparcv9) || defined(__x86_64))  || \
+      defined(__linux) && defined(__x86_64)                        || \
+      defined(__hppa) && defined(__LP64__)                         || \
+      defined(_ARCH_COM) && defined(__64BIT__)                     || \
+      defined(__alpha__)                                           || \
       defined(_WIN64)
 #   define ICE_64
 #else
@@ -63,6 +63,14 @@
 #else
 #   define ICE_DECLSPEC_EXPORT /**/
 #   define ICE_DECLSPEC_IMPORT /**/
+#endif
+
+#if defined(_MSC_VER) && (_MSC_VER >= 1300)
+#   define ICE_DEPRECATED_API __declspec(deprecated)
+#elif defined(__GNUC__)
+#   define ICE_DEPRECATED_API __attribute__((deprecated))
+#else
+#   define ICE_DEPRECATED_API /**/
 #endif
 
 //
@@ -198,7 +206,7 @@ typedef long long Int64;
 //
 // The Ice version.
 //
-#define ICE_STRING_VERSION "3.0.1" // "A.B.C", with A=major, B=minor, C=patch
-#define ICE_INT_VERSION 30001      // AABBCC, with AA=major, BB=minor, CC=patch
+#define ICE_STRING_VERSION "3.1.0" // "A.B.C", with A=major, B=minor, C=patch
+#define ICE_INT_VERSION 30100      // AABBCC, with AA=major, BB=minor, CC=patch
 
 #endif

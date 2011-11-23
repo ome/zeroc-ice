@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -118,21 +118,13 @@ StaticMutexTest::run()
 	}
 	
 	StaticMutex::TryLock lock2(staticMutex);
-#ifdef __FreeBSD__
 	try
 	{
 	    test(lock.tryAcquire() == false);
 	}
-	catch(const IceUtil::ThreadSyscallException& ex)
+	catch(const ThreadLockedException&)
 	{
-	    //
-	    // pthread_mutex_trylock returns EDEADLK in FreeBSD's new threading implementation.
-	    //
-	    test(ex.error() == EDEADLK);
 	}
-#else
-	test(lock.tryAcquire() == false);
-#endif
 	lock2.release();
 	test(lock.tryAcquire() == true);
 	test(lock.acquired());	

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,14 +20,17 @@ namespace Glacier2
 class Request;
 typedef IceUtil::Handle<Request> RequestPtr;
 
+class RequestQueue;
+typedef IceUtil::Handle<RequestQueue> RequestQueuePtr;
+
 class Request : public IceUtil::Shared
 {
 public:
 
-    Request(const Ice::ObjectPrx&, const Ice::ByteSeq&, const Ice::Current&, bool,
-	    const Ice::AMD_Object_ice_invokePtr&);
+    Request(const Ice::ObjectPrx&, const std::pair<const Ice::Byte*, const Ice::Byte*>&, const Ice::Current&, bool,
+	    const Ice::AMD_Array_Object_ice_invokePtr&);
     
-    void invoke();
+    bool invoke(const RequestQueuePtr&);
     bool override(const RequestPtr&) const;
     bool isBatch() const;
     Ice::ConnectionPtr getConnection() const;
@@ -39,11 +42,28 @@ private:
     const Ice::Current _current;
     const bool _forwardContext;
     const std::string _override;
-    const Ice::AMD_Object_ice_invokePtr _amdCB;
+    const Ice::AMD_Array_Object_ice_invokePtr _amdCB;
 };
 
-class RequestQueue;
-typedef IceUtil::Handle<RequestQueue> RequestQueuePtr;
+class Response : public IceUtil::Shared
+{
+public:
+
+    Response(const Ice::AMD_Array_Object_ice_invokePtr&, bool, const std::pair<const Ice::Byte*, const Ice::Byte*>&);
+    Response(const Ice::AMD_Array_Object_ice_invokePtr&, const Ice::Exception&);
+
+    void invoke();
+    
+private:
+
+    const Ice::AMD_Array_Object_ice_invokePtr _amdCB;
+    const bool _ok;
+    const Ice::ByteSeq _outParams;
+    const std::auto_ptr<Ice::Exception> _exception;
+};
+
+class Response;
+typedef IceUtil::Handle<Response> ResponsePtr;
 
 class RequestQueue : public IceUtil::Thread, public IceUtil::Monitor<IceUtil::Mutex>
 {
@@ -54,6 +74,7 @@ public:
     
     void destroy();
     bool addRequest(const RequestPtr&);
+    void addResponse(const ResponsePtr&);
 
     virtual void run();
 
@@ -61,7 +82,10 @@ private:
 
     const IceUtil::Time _sleepTime;
     std::vector<RequestPtr> _requests;
+    std::vector<ResponsePtr> _responses;
     bool _destroy;
+    bool _sleep;
+    IceUtil::Time _sleepDuration;
 };
 
 }

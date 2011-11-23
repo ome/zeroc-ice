@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -17,17 +17,18 @@ OBJS		= Client.o \
                   ByteIntMap.o \
                   IntIdentityMap.o \
                   IntIdentityMapWithIndex.o \
-                  SortedMap.o
+                  SortedMap.o \
+		  WstringWstringMap.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
 include $(top_srcdir)/config/Make.rules
 
-CPPFLAGS	:= -I. -I../../include $(DB_FLAGS) $(CPPFLAGS)
+CPPFLAGS	:= -I. -I../../include $(CPPFLAGS)
 
 $(CLIENT): $(OBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) -lFreeze $(DB_LIBS) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(DB_RPATH_LINK) -lFreeze $(LIBS)
 
 ByteIntMap.h ByteIntMap.cpp: $(SLICE2FREEZE)
 	rm -f ByteIntMap.h ByteIntMap.cpp
@@ -45,8 +46,12 @@ SortedMap.h SortedMap.cpp: $(SLICE2FREEZE)
 	rm -f SortedMap.h SortedMap.cpp
 	$(SLICE2FREEZE)  --ice $(SLICE2CPPFLAGS) --dict Test::SortedMap,int,Ice::Identity,sort SortedMap --dict-index "Test::SortedMap,category,sort,std::greater<std::string>" $(slicedir)/Ice/Identity.ice
 
+WstringWstringMap.h WstringWstringMap.cpp: $(SLICE2FREEZE)
+	rm -f WstringWstringMap.h WstringWstringMap.cpp
+	$(SLICE2FREEZE) --dict 'Test::WstringWstringMap,["cpp:type:wstring"]string,["cpp:type:wstring"]string' --dict-index Test::WstringWstringMap WstringWstringMap
+
 clean::
-	rm -f ByteIntMap.h ByteIntMap.cpp IntIdentityMap.h IntIdentityMap.cpp IntIdentityMapWithIndex.h IntIdentityMapWithIndex.cpp SortedMap.h SortedMap.cpp
+	rm -f ByteIntMap.h ByteIntMap.cpp IntIdentityMap.h IntIdentityMap.cpp IntIdentityMapWithIndex.h IntIdentityMapWithIndex.cpp SortedMap.h SortedMap.cpp WstringWstringMap.h WstringWstringMap.cpp
 
 clean::
 	rm -f db/binary db/binary.* db/intIdentity db/intIdentity.* db/__catalog db/log.*

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -166,13 +166,13 @@ IcePatch2::Patcher::Patcher(const CommunicatorPtr& communicator, const PatcherFe
 	const char* instanceProperty = "IcePatch2.InstanceName";
 	idStr = properties->getPropertyWithDefault(instanceProperty, "IcePatch2") + "/server";
     }
-    const Identity id = stringToIdentity(idStr);
+    const Identity id = communicator->stringToIdentity(idStr);
     
-    ObjectPrx serverBase = communicator->stringToProxy(identityToString(id) + ':' + endpoints);
+    ObjectPrx serverBase = communicator->stringToProxy(communicator->identityToString(id) + ':' + endpoints);
     FileServerPrx server = FileServerPrx::checkedCast(serverBase);
     if(!server)
     {
-	throw "proxy `" + identityToString(id) + ':' + endpoints + "' is not a file server.";
+	throw "proxy `" + communicator->identityToString(id) + ':' + endpoints + "' is not a file server.";
     }
 
     init(server);
@@ -591,7 +591,8 @@ IcePatch2::Patcher::init(const FileServerPrx& server)
     // Make sure that _chunkSize doesn't exceed MessageSizeMax, otherwise
     // it won't work at all.
     //
-    int sizeMax = server->ice_communicator()->getProperties()->getPropertyAsIntWithDefault("Ice.MessageSizeMax", 1024);
+    int sizeMax = 
+        server->ice_getCommunicator()->getProperties()->getPropertyAsIntWithDefault("Ice.MessageSizeMax", 1024);
     if(_chunkSize < 1)
     {
 	const_cast<Int&>(_chunkSize) = 1;
@@ -738,10 +739,10 @@ public:
     }
 
     virtual void
-    ice_response(const ByteSeq& bytes)
+    ice_response(const pair<const Ice::Byte*, const Ice::Byte*>& bytes)
     {
 	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-	_bytes = bytes;
+	ByteSeq(bytes.first, bytes.second).swap(_bytes);
 	_done = true;
 	notify();
     }

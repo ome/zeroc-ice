@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -44,7 +44,7 @@ private:
 
 typedef ::IceInternal::Handle< ServerLocatorRegistry> ServerLocatorRegistryPtr;
 
-class ServerLocator : public ::Ice::Locator
+class ServerLocator : public Test::TestLocator
 {
 public:
 
@@ -58,10 +58,13 @@ public:
 
     virtual ::Ice::LocatorRegistryPrx getRegistry(const ::Ice::Current&) const;
 
+    virtual int getRequestCount(const Ice::Current&) const;
+
 private:
     
     ServerLocatorRegistryPtr _registry;
     ::Ice::LocatorRegistryPrx _registryPrx;
+    int _requestCount;
 };
 
 #endif

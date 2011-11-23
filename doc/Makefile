@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -20,7 +20,6 @@ SLICEFILES	= $(wildcard ../slice/Ice/*.ice) \
 		  $(wildcard ../slice/Freeze/*.ice) \
 		  $(wildcard ../slice/IceBox/*.ice) \
 		  $(wildcard ../slice/IceGrid/*.ice) \
-		  $(wildcard ../slice/IceSSL/*.ice) \
 		  $(wildcard ../slice/Glacier2/*.ice) \
 		  $(wildcard ../slice/IceStorm/*.ice) \
 		  $(wildcard ../slice/IcePatch2/*.ice)

@@ -1,12 +1,11 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
-
 
 #include "stdafx.h"
 #include "HelloServer.h"
@@ -52,11 +51,12 @@ BOOL CHelloServerApp::InitInstance()
     try
     {
         int argc = 0;
-        Ice::PropertiesPtr properties = Ice::createProperties();
-	properties->load("config");
-        communicator = Ice::initializeWithProperties(argc, 0, properties);
+	Ice::InitializationData initData;
+        initData.properties = Ice::createProperties();
+	initData.properties->load("config");
         log = new LogI;
-        communicator->setLogger(log);
+	initData.logger = log;
+        communicator = Ice::initialize(argc, 0, initData);
         adapter = communicator->createObjectAdapter("Hello");
     }
     catch(const IceUtil::Exception& ex)
@@ -77,7 +77,7 @@ BOOL CHelloServerApp::InitInstance()
     // Instantiate the servant.
     //
     Ice::ObjectPtr servant = new HelloI(log, &dlg);
-    adapter->add(servant, Ice::stringToIdentity("hello"));
+    adapter->add(servant, communicator->stringToIdentity("hello"));
     adapter->activate();
     log->message("Ready to receive requests.");
 

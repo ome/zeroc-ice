@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -36,7 +36,7 @@ int
 main(int argc, char* argv[])
 {
     CallbackClient app;
-    return app.main(argc, argv, "config");
+    return app.main(argc, argv, "config.client");
 }
 
 int
@@ -64,7 +64,7 @@ CallbackClient::run(int argc, char* argv[])
     ident.category = "";
     adapter->add(new CallbackReceiverI, ident);
     adapter->activate();
-    server->ice_connection()->setAdapter(adapter);
+    server->ice_getConnection()->setAdapter(adapter);
     server->addClient(ident);
     communicator()->waitForShutdown();
 

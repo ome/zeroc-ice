@@ -1,0 +1,2752 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>IceSSL Properties</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Properties"
+HREF="c17145.html"><LINK
+REL="PREVIOUS"
+TITLE="Ice Miscellaneous Properties"
+HREF="x17806.html"><LINK
+REL="NEXT"
+TITLE="IceBox Properties"
+HREF="x18685.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x17806.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Properties</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x18685.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="AEN18107"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+> Properties</A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.ALIAS"
+>IceSSL.Alias</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18112"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Alias=<TT
+CLASS="REPLACEABLE"
+><I
+>alias</I
+></TT
+> (Java)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18116"
+>Description</A
+></H3
+><P
+>Selects a particular certificate from the keystore specified by
+<A
+HREF="x18107.html#ICESSL.KEYSTORE"
+>IceSSL.Keystore</A
+>.
+The certificate identified by <TT
+CLASS="REPLACEABLE"
+><I
+>alias</I
+></TT
+> is
+presented to the peer upon request during authentication.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.CERTAUTHDIR"
+>IceSSL.CertAuthDir</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18123"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.CertAuthDir=<TT
+CLASS="REPLACEABLE"
+><I
+>path</I
+></TT
+> (C++)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18127"
+>Description</A
+></H3
+><P
+>Specifies the directory containing the certificates of trusted Certificate
+Authorities. The directory must be prepared in advance using the OpenSSL
+utility <TT
+CLASS="LITERAL"
+>c_rehash</TT
+>.
+The pathname may be specified relative to the default directory defined by
+<A
+HREF="x18107.html#ICESSL.DEFAULTDIR"
+>IceSSL.DefaultDir</A
+>.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.CERTAUTHFILE"
+>IceSSL.CertAuthFile</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18134"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.CertAuthFile=<TT
+CLASS="REPLACEABLE"
+><I
+>file</I
+></TT
+> (C++)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18138"
+>Description</A
+></H3
+><P
+>Specifies a file containing the certificate of a trusted Certificate
+Authority. The filename may be specified relative to the default directory defined
+by <A
+HREF="x18107.html#ICESSL.DEFAULTDIR"
+>IceSSL.DefaultDir</A
+>.
+The certificate must be encoded using the PEM format.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.CERTFILE"
+>IceSSL.CertFile</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18144"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.CertFile=<TT
+CLASS="REPLACEABLE"
+><I
+>file</I
+></TT
+> (C++, .NET)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18148"
+>Description</A
+></H3
+><P
+>Specifies a file that contains the program's certificate, and may also contain
+the corresponding private key.
+The filename may be specified relative to the default directory defined by
+<A
+HREF="x18107.html#ICESSL.DEFAULTDIR"
+>IceSSL.DefaultDir</A
+>.
+<P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><P
+><B
+>Platform Notes</B
+></P
+><DL
+><DT
+>C++</DT
+><DD
+><P
+>The private key is optional; if not present, the file containing the private key
+must be identified by <A
+HREF="x18107.html#ICESSL.KEYFILE"
+>IceSSL.KeyFile</A
+>.
+If a password is required, OpenSSL will prompt the user at the terminal unless the
+application has installed a password handler or supplied the password using
+<A
+HREF="x18107.html#ICESSL.PASSWORD"
+>IceSSL.Password</A
+>.
+The certificate must be encoded using the PEM format.</P
+></DD
+><DT
+>.NET</DT
+><DD
+><P
+>The file must use the PFX (PKCS#12) format and contain the certificate and its
+private key. The password for the file must be supplied using
+<A
+HREF="x18107.html#ICESSL.PASSWORD"
+>IceSSL.Password</A
+>.</P
+></DD
+></DL
+></DIV
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.CHECKCERTNAME"
+>IceSSL.CheckCertName</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18167"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.CheckCertName=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18171"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is a value greater than zero, IceSSL
+compares the server's hostname as specified in the proxy against the 
+DNS or IP address fields of the server's certificate. If no match is
+found, IceSSL aborts the connection attempt and raises an exception.
+If not defined, the default value is zero.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.CHECKCRL"
+>IceSSL.CheckCRL</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18177"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.CheckCRL=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> (.NET)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18181"
+>Description</A
+></H3
+><P
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> is a value greater than zero, IceSSL
+checks the certificate revocation list to determine if the peer's
+certificate has been revoked. If so, IceSSL aborts the connection
+and raises an exception.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.CIPHERS"
+>IceSSL.Ciphers</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18187"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Ciphers=<TT
+CLASS="REPLACEABLE"
+><I
+>ciphers</I
+></TT
+> (C++, Java)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18191"
+>Description</A
+></H3
+><P
+>Specifies the ciphersuites that IceSSL is allowed to negotiate. A ciphersuite
+is a set of algorithms that satisfies the four requirements for establishing
+a secure connection: signing and authentication, key exchange, secure hashing,
+and encryption. Some algorithms satisfy more than one requirement, and there
+are many possible combinations.
+<P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><P
+><B
+>Platform Notes</B
+></P
+><DL
+><DT
+>C++</DT
+><DD
+><P
+>The value of this attribute is given directly to the OpenSSL library and is
+dependent on how OpenSSL was compiled. You can obtain a complete list of the
+supported cipher suites using the command <TT
+CLASS="LITERAL"
+>openssl ciphers</TT
+>.
+This command will likely generate a long list. To simplify the selection
+process, OpenSSL supports several classes of ciphers:
+<DIV
+CLASS="INFORMALTABLE"
+><P
+></P
+><A
+NAME="AEN18201"
+></A
+><TABLE
+BORDER="1"
+BGCOLOR="#E0E0E0"
+CELLSPACING="0"
+CELLPADDING="4"
+CLASS="CALSTABLE"
+><TBODY
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>ALL</TT
+></TD
+><TD
+>Enables all supported ciphersuites. This class should be used with caution,
+as it may enable low-security ciphersuites.</TD
+></TR
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>ADH</TT
+></TD
+><TD
+>Anonymous ciphers.</TD
+></TR
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>LOW</TT
+></TD
+><TD
+>Low bit-strength ciphers.</TD
+></TR
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>EXP</TT
+></TD
+><TD
+>Export-crippled ciphers.</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+>
+Classes and ciphers can be excluded by prefixing them with an exclamation point.
+The special keyword <TT
+CLASS="LITERAL"
+>@STRENGTH</TT
+> sorts the cipher list in order
+of their strength, so that SSL gives preference to the more secure ciphers when
+negotiating a ciphersuite. The <TT
+CLASS="LITERAL"
+>@STRENGTH</TT
+> keyword must be the
+last element in the list. For example, here is a good value for the property:</P
+><P
+><TT
+CLASS="LITERAL"
+>ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH</TT
+></P
+><P
+>This value excludes the ciphers with low bit-strength and known problems, and
+orders the remaining ciphers according to their strength. Note that no warning
+is given if an unrecognized cipher is specified.</P
+></DD
+><DT
+>Java</DT
+><DD
+><P
+>The property value is interpreted as a list of tokens delimited by whitespace.
+The plugin executes the tokens in the order of appearance in order to assemble
+the list of enabled ciphersuites. The table below describes the tokens:
+<DIV
+CLASS="INFORMALTABLE"
+><P
+></P
+><A
+NAME="AEN18229"
+></A
+><TABLE
+BORDER="1"
+BGCOLOR="#E0E0E0"
+CELLSPACING="0"
+CELLPADDING="4"
+CLASS="CALSTABLE"
+><TBODY
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>NONE</TT
+></TD
+><TD
+>Disables all ciphersuites. If specified, it must be the first token in the list.</TD
+></TR
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>ALL</TT
+></TD
+><TD
+>Enables all supported ciphersuites. If specified, it must be the first token
+in the list. This token should be used with caution, as it may enable low-security
+ciphersuites.</TD
+></TR
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+><TT
+CLASS="REPLACEABLE"
+><I
+>NAME</I
+></TT
+></TT
+></TD
+><TD
+>Enables the ciphersuite matching the given name.</TD
+></TR
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>!<TT
+CLASS="REPLACEABLE"
+><I
+>NAME</I
+></TT
+></TT
+></TD
+><TD
+>Disables the ciphersuite matching the given name.</TD
+></TR
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>(<TT
+CLASS="REPLACEABLE"
+><I
+>EXP</I
+></TT
+>)</TT
+></TD
+><TD
+>Enables ciphersuites whose names contain the regular expression
+<TT
+CLASS="REPLACEABLE"
+><I
+>EXP</I
+></TT
+>. For example, the value
+<TT
+CLASS="LITERAL"
+>NONE (.*DH_anon.*)</TT
+> selects only ciphersuites that
+use anonymous Diffie-Hellman authentication.</TD
+></TR
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>!(<TT
+CLASS="REPLACEABLE"
+><I
+>EXP</I
+></TT
+>)</TT
+></TD
+><TD
+>Disables ciphersuites whose names contain the regular expression
+<TT
+CLASS="REPLACEABLE"
+><I
+>EXP</I
+></TT
+>. For example, the value
+<TT
+CLASS="LITERAL"
+>ALL !(.*DH_anon.*)</TT
+> enables all ciphersuites except
+those that use anonymous Diffie-Hellman authentication.</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+></P
+><P
+>If not specified, the plugin uses the security provider's default ciphersuites.
+Set <TT
+CLASS="LITERAL"
+>IceSSL.Trace.Security=1</TT
+> to determine which ciphersuites
+are enabled by default, or to verify your ciphersuite configuration.</P
+></DD
+></DL
+></DIV
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.DEFAULTDIR"
+>IceSSL.DefaultDir</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18268"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.DefaultDir=<TT
+CLASS="REPLACEABLE"
+><I
+>path</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18272"
+>Description</A
+></H3
+><P
+>Specifies the default directory in which to look for certificate, key, and
+keystore files. See the descriptions of the relevant properties for more
+information.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.DH"
+>IceSSL.DH.<TT
+CLASS="REPLACEABLE"
+><I
+>bits</I
+></TT
+></A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18278"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.DH.<TT
+CLASS="REPLACEABLE"
+><I
+>bits</I
+></TT
+>=<TT
+CLASS="REPLACEABLE"
+><I
+>file</I
+></TT
+> (C++)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18283"
+>Description</A
+></H3
+><P
+>Specifies a file containing Diffie Hellman parameters whose key length
+is <TT
+CLASS="REPLACEABLE"
+><I
+>bits</I
+></TT
+>, as shown in the following example:</P
+><P
+><TT
+CLASS="LITERAL"
+>IceSSL.DH.1024=dhparams1024.pem</TT
+></P
+><P
+>IceSSL supplies default parameters for key lengths of 512, 1024, 2048
+and 4096 bits, which are used if no user-defined parameters of the desired
+key length are specified. The filename may be specified relative to the
+default directory defined by <A
+HREF="x18107.html#ICESSL.DEFAULTDIR"
+>IceSSL.DefaultDir</A
+>.
+The parameters must be encoded using the PEM format.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.ENTROPYDAEMON"
+>IceSSL.EntropyDaemon</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18293"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.EntropyDaemon=<TT
+CLASS="REPLACEABLE"
+><I
+>file</I
+></TT
+> (C++)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18297"
+>Description</A
+></H3
+><P
+>Specifies a Unix domain socket for the Entropy Gathering Daemon, from
+which OpenSSL gathers entropy data to initialize its random number
+generator.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.FINDCERT"
+>IceSSL.FindCert.<TT
+CLASS="REPLACEABLE"
+><I
+>location</I
+></TT
+>.<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+></A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18304"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.FindCert.<TT
+CLASS="REPLACEABLE"
+><I
+>location</I
+></TT
+>.<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>=<TT
+CLASS="REPLACEABLE"
+><I
+>criteria</I
+></TT
+> (.NET)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18310"
+>Description</A
+></H3
+><P
+>Queries the certificate repository for matching certificates and adds them to the application's
+collection of certificates that are used for authentication. The value for <TT
+CLASS="REPLACEABLE"
+><I
+>location</I
+></TT
+>
+must be <TT
+CLASS="LITERAL"
+>LocalMachine</TT
+> or <TT
+CLASS="LITERAL"
+>CurrentUser</TT
+>. The <TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>
+corresponds to the .NET enumeration <TT
+CLASS="LITERAL"
+>StoreName</TT
+> and may be one of the following values:
+<TT
+CLASS="LITERAL"
+>AddressBook</TT
+>, <TT
+CLASS="LITERAL"
+>AuthRoot</TT
+>, <TT
+CLASS="LITERAL"
+>CertificateAuthority</TT
+>,
+<TT
+CLASS="LITERAL"
+>Disallowed</TT
+>, <TT
+CLASS="LITERAL"
+>My</TT
+>, <TT
+CLASS="LITERAL"
+>Root</TT
+>, <TT
+CLASS="LITERAL"
+>TrustedPeople</TT
+>,
+<TT
+CLASS="LITERAL"
+>TrustedPublisher</TT
+>. It is also possible to use an arbitrary value for
+<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.</P
+><P
+>The value for <TT
+CLASS="REPLACEABLE"
+><I
+>criteria</I
+></TT
+> may be <TT
+CLASS="LITERAL"
+>*</TT
+>, in which case all of the
+certificates in the store are selected. Otherwise, criteria must be one or more
+<TT
+CLASS="REPLACEABLE"
+><I
+>field</I
+></TT
+>:<TT
+CLASS="REPLACEABLE"
+><I
+>value</I
+></TT
+> pairs separated by whitespace. The
+valid field names are described below:
+
+<P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="LITERAL"
+>Issuer</TT
+></DT
+><DD
+><P
+>Matches a substring of the issuer's name.</P
+></DD
+><DT
+><TT
+CLASS="LITERAL"
+>IssuerDN</TT
+></DT
+><DD
+><P
+>Matches the issuer's entire distinguished name.</P
+></DD
+><DT
+><TT
+CLASS="LITERAL"
+>Serial</TT
+></DT
+><DD
+><P
+>Matches the certificate's serial number.</P
+></DD
+><DT
+><TT
+CLASS="LITERAL"
+>Subject</TT
+></DT
+><DD
+><P
+>Matches a substring of the subject's name.</P
+></DD
+><DT
+><TT
+CLASS="LITERAL"
+>SubjectDN</TT
+></DT
+><DD
+><P
+>Matches the subject's entire distinguished name.</P
+></DD
+><DT
+><TT
+CLASS="LITERAL"
+>SubjectKeyId</TT
+></DT
+><DD
+><P
+>Matches the certificate's subject key identifier.</P
+></DD
+><DT
+><TT
+CLASS="LITERAL"
+>Thumbprint</TT
+></DT
+><DD
+><P
+>Matches the certificate's thumbprint.</P
+></DD
+></DL
+></DIV
+></P
+><P
+>The field names are case-insensitive. If multiple criteria are specified, only certificates that
+match all criteria are selected. Values must be enclosed in single or double quotes to preserve
+whitespace.</P
+><P
+>Multiple occurrences of the property are allowed, but only one query is possible for each
+location/name combination. The certificates from all queries are combined to form the certificate
+collection, including a certificate loaded using <A
+HREF="x18107.html#ICESSL.CERTFILE"
+>IceSSL.CertFile</A
+>.</P
+><P
+>Some sample queries are shown below:
+<P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="LITERAL"
+>IceSSL.FindCert.LocalMachine.My=issuer:verisign serial:219336</TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="LITERAL"
+>IceSSL.FindCert.CurrentUser.Root=subject:"Joe's Certificate"</TT
+></P
+></LI
+></UL
+></P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>A server requires a certificate for authentication purposes, therefore <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+> selects the first
+certificate in the accumulated collection. This is normally the certificate loaded via
+<A
+HREF="x18107.html#ICESSL.CERTFILE"
+>IceSSL.CertFile</A
+>, if that property was defined.
+Otherwise, one of the certificates from <TT
+CLASS="LITERAL"
+>IceSSL.FindCert</TT
+> is selected. Since
+<SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+> does not guarantee the order in which it evaluates <TT
+CLASS="LITERAL"
+>IceSSL.FindCert</TT
+>
+properties, it is recommended that the criteria select only one certificate.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.IMPORTCERT"
+>IceSSL.ImportCert.<TT
+CLASS="REPLACEABLE"
+><I
+>location</I
+></TT
+>.<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+></A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18390"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.ImportCert.<TT
+CLASS="REPLACEABLE"
+><I
+>location</I
+></TT
+>.<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>=<TT
+CLASS="REPLACEABLE"
+><I
+>file</I
+></TT
+>[;<TT
+CLASS="REPLACEABLE"
+><I
+>password</I
+></TT
+>] (.NET)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18397"
+>Description</A
+></H3
+><P
+>Imports the certificate in <TT
+CLASS="REPLACEABLE"
+><I
+>file</I
+></TT
+> into the specified certificate store.
+The value for <TT
+CLASS="REPLACEABLE"
+><I
+>location</I
+></TT
+> must be <TT
+CLASS="LITERAL"
+>LocalMachine</TT
+> or
+<TT
+CLASS="LITERAL"
+>CurrentUser</TT
+>. The <TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+> corresponds to the .NET enumeration
+<TT
+CLASS="LITERAL"
+>StoreName</TT
+> and may be one of the following values:
+<TT
+CLASS="LITERAL"
+>AddressBook</TT
+>,
+<TT
+CLASS="LITERAL"
+>AuthRoot</TT
+>,
+<TT
+CLASS="LITERAL"
+>CertificateAuthority</TT
+>,
+<TT
+CLASS="LITERAL"
+>Disallowed</TT
+>,
+<TT
+CLASS="LITERAL"
+>My</TT
+>,
+<TT
+CLASS="LITERAL"
+>Root</TT
+>,
+<TT
+CLASS="LITERAL"
+>TrustedPeople</TT
+>,
+<TT
+CLASS="LITERAL"
+>TrustedPublisher</TT
+>.
+It is also possible to use an arbitrary value for <TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>, which adds a
+new store to the repository. If you are importing a trusted CA certificate, it must be added to
+<TT
+CLASS="LITERAL"
+>AuthRoot</TT
+> or <TT
+CLASS="LITERAL"
+>Root</TT
+>.</P
+><P
+>The password is optional; it is only necessary if the certificate file also contains a private
+key or uses a secure storage format such as PFX.</P
+><P
+>The filename and password may be enclosed in single or double quotes if necessary.
+The filename may be specified relative to the default directory defined by
+<A
+HREF="x18107.html#ICESSL.DEFAULTDIR"
+>IceSSL.DefaultDir</A
+>.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Importing a certificate into <TT
+CLASS="LITERAL"
+>LocalMachine</TT
+> requires administrator privileges,
+while importing into <TT
+CLASS="LITERAL"
+>CurrentUser</TT
+> may cause the platform to prompt the user for
+confirmation.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.KEYFILE"
+>IceSSL.KeyFile</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18426"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.KeyFile=<TT
+CLASS="REPLACEABLE"
+><I
+>file</I
+></TT
+> (C++)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18430"
+>Description</A
+></H3
+><P
+>Specifies a file containing the private key associated with the certificate
+identified by <A
+HREF="x18107.html#ICESSL.CERTFILE"
+>IceSSL.CertFile</A
+>.
+The filename may be specified relative to the default directory defined
+by <A
+HREF="x18107.html#ICESSL.DEFAULTDIR"
+>IceSSL.DefaultDir</A
+>.
+The key must be encoded using the PEM format.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.KEYSTORE"
+>IceSSL.Keystore</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18437"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Keystore=<TT
+CLASS="REPLACEABLE"
+><I
+>file</I
+></TT
+> (Java)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18441"
+>Description</A
+></H3
+><P
+>Specifies a keystore file containing certificates and their private
+keys. If the keystore contains multiple certificates, you should
+specify a particular one to use for authentication using
+<A
+HREF="x18107.html#ICESSL.ALIAS"
+>IceSSL.Alias</A
+>.
+The filename may be specified relative to the default directory defined
+by <A
+HREF="x18107.html#ICESSL.DEFAULTDIR"
+>IceSSL.DefaultDir</A
+>.
+The format of the file is determined by
+<A
+HREF="x18107.html#ICESSL.KEYSTORETYPE"
+>IceSSL.KeystoreType</A
+>.</P
+><P
+>If this property is not defined, the application will not be able to supply a
+certificate during SSL handshaking. As a result, the application may not
+be able to negotiate a secure connection, or might be required to use an
+anonymous ciphersuite.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.KEYSTOREPASSWORD"
+>IceSSL.KeystorePassword</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18450"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.KeystorePassword=<TT
+CLASS="REPLACEABLE"
+><I
+>password</I
+></TT
+> (Java)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18454"
+>Description</A
+></H3
+><P
+>Specifies the password used to verify the integrity of the keystore defined
+by <A
+HREF="x18107.html#ICESSL.KEYSTORE"
+>IceSSL.Keystore</A
+>. The integrity
+check is skipped if this property is not defined.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>It is a security risk to use a plain-text password in a configuration file.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.KEYSTORETYPE"
+>IceSSL.KeystoreType</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18462"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.KeystoreType=<TT
+CLASS="REPLACEABLE"
+><I
+>type</I
+></TT
+> (Java)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18466"
+>Description</A
+></H3
+><P
+>Specifies the format of the keystore file defined by
+<A
+HREF="x18107.html#ICESSL.KEYSTORE"
+>IceSSL.Keystore</A
+>. Legal values are
+<TT
+CLASS="LITERAL"
+>JKS</TT
+> and <TT
+CLASS="LITERAL"
+>PKCS12</TT
+>. If not defined,
+the JVM's default value is used (normally <TT
+CLASS="LITERAL"
+>JKS</TT
+>).</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.PASSWORD"
+>IceSSL.Password</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18475"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Password=<TT
+CLASS="REPLACEABLE"
+><I
+>password</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18479"
+>Description</A
+></H3
+><P
+>Specifies the password necessary to decrypt the private key.
+<P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><P
+><B
+>Platform Notes</B
+></P
+><DL
+><DT
+>C++</DT
+><DD
+><P
+>This property supplies the password that was used to secure the private key
+contained in the file defined by <A
+HREF="x18107.html#ICESSL.CERTFILE"
+>IceSSL.CertFile</A
+>
+or <A
+HREF="x18107.html#ICESSL.KEYFILE"
+>IceSSL.KeyFile</A
+>.
+If this property is not defined and you have not installed a password
+callback object, OpenSSL will prompt the user for a password if one
+is necessary.</P
+></DD
+><DT
+>Java</DT
+><DD
+><P
+>This property supplies the password that was used to secure the private key
+contained in the keystore defined by
+<A
+HREF="x18107.html#ICESSL.KEYSTORE"
+>IceSSL.Keystore</A
+>.
+All of the keys in the keystore must use the same password.</P
+></DD
+><DT
+>.NET</DT
+><DD
+><P
+>This property supplies the password that was used to secure the file defined by
+<A
+HREF="x18107.html#ICESSL.CERTFILE"
+>IceSSL.CertFile</A
+>.</P
+></DD
+></DL
+></DIV
+></P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>It is a security risk to use a plain-text password in a configuration file.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.PASSWORDRETRYMAX"
+>IceSSL.PasswordRetryMax</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18504"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.PasswordRetryMax=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+> (C++)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18508"
+>Description</A
+></H3
+><P
+>Specifies the number of attempts IceSSL should allow the user to make
+when entering a password. If not defined, the default value is 3.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.PROTOCOLS"
+>IceSSL.Protocols</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18513"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Protocols=<TT
+CLASS="REPLACEABLE"
+><I
+>list</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18517"
+>Description</A
+></H3
+><P
+>Specifies the protocols to allow during SSL handshaking. Legal values
+are <TT
+CLASS="LITERAL"
+>SSL3</TT
+> and <TT
+CLASS="LITERAL"
+>TLS1</TT
+>. You may also
+specify both values, separate by commas or whitespace. If this property
+is not defined, the platform's default is used.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.RANDOM"
+>IceSSL.Random</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18524"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Random=<TT
+CLASS="REPLACEABLE"
+><I
+>filelist</I
+></TT
+> (C++, Java)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18528"
+>Description</A
+></H3
+><P
+>Specifies one or more files containing data to use when seeding the random number
+generator. The filenames should be separated using the platform's path separator
+(a colon on Unix and a semicolon on Windows).
+The filenames may be specified relative to the default directory defined
+by <A
+HREF="x18107.html#ICESSL.DEFAULTDIR"
+>IceSSL.DefaultDir</A
+>.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.TRACE.SECURITY"
+>IceSSL.Trace.Security</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18534"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Trace.Security=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18538"
+>Description</A
+></H3
+><P
+>The SSL plugin trace level:
+<DIV
+CLASS="INFORMALTABLE"
+><P
+></P
+><A
+NAME="AEN18541"
+></A
+><TABLE
+BORDER="1"
+BGCOLOR="#E0E0E0"
+CELLSPACING="0"
+CELLPADDING="4"
+CLASS="CALSTABLE"
+><TBODY
+><TR
+><TD
+>0</TD
+><TD
+>No security tracing. (default)</TD
+></TR
+><TR
+><TD
+>1</TD
+><TD
+>Display diagnostic information about SSL connections.</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.TRUSTONLY"
+>IceSSL.TrustOnly</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18552"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.TrustOnly=<TT
+CLASS="REPLACEABLE"
+><I
+>ENTRY</I
+></TT
+>[;<TT
+CLASS="REPLACEABLE"
+><I
+>ENTRY</I
+></TT
+>;...]</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18557"
+>Description</A
+></H3
+><P
+>Identifies trusted peers. This family of properties provides an additional level of
+authentication by restricting connections to trusted peers. After the SSL engine has
+successfully completed its authentication process, IceSSL compares the peer's
+distinguished name (DN) with each <TT
+CLASS="REPLACEABLE"
+><I
+>ENTRY</I
+></TT
+> in the property value
+and allows the connection to succeed if the peer's DN matches any of the entries.
+<TT
+CLASS="REPLACEABLE"
+><I
+>ENTRY</I
+></TT
+> must contain only those relative distinguished name (RDN)
+components that a peer is required to have in its DN. IceSSL rejects a connection
+if no match is found for the peer's DN, or if the peer did not supply a certificate.</P
+><P
+>For example, you can limit access to people in the sales and marketing departments
+using the following configuration:</P
+><P
+><TT
+CLASS="LITERAL"
+>IceSSL.TrustOnly=O="Acme, Inc.",OU="Sales"; O="Acme, Inc.",OU="Marketing"</TT
+></P
+><P
+>The peer's DN must match one of these entries in order to establish a connection.</P
+><P
+>An entry may contain as many RDN components as you wish, depending on how narrowly you need
+to restrict access. The order of the RDN components is not important.</P
+><P
+>To specify more than one entry, separate them using semicolons. IceSSL expects each entry to
+be formatted according to the rules defined by RFC2253.</P
+><P
+>While testing your trust configuration, you may find it helpful to set the
+<A
+HREF="x18107.html#ICESSL.TRACE.SECURITY"
+>IceSSL.Trace.Security</A
+> property to a nonzero value,
+which causes IceSSL to display the DN of each peer during connection establishment.</P
+><P
+>This property affects incoming and outgoing connections. IceSSL also supports similar
+properties that affect only incoming connections or only outgoing connections.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.TRUSTONLY.CLIENT"
+>IceSSL.TrustOnly.Client</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18573"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.TrustOnly.Client=<TT
+CLASS="REPLACEABLE"
+><I
+>ENTRY</I
+></TT
+>[;<TT
+CLASS="REPLACEABLE"
+><I
+>ENTRY</I
+></TT
+>;...]</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18578"
+>Description</A
+></H3
+><P
+>Identifies trusted peers for outgoing ("client") connections. For a connection to
+succeed, the peer's distinguished name (DN) must match an entry in this property or
+in <A
+HREF="x18107.html#ICESSL.TRUSTONLY"
+>IceSSL.TrustOnly</A
+>. See the description of
+<A
+HREF="x18107.html#ICESSL.TRUSTONLY"
+>IceSSL.TrustOnly</A
+> for more information.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.TRUSTONLY.SERVER"
+>IceSSL.TrustOnly.Server</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18585"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.TrustOnly.Server=<TT
+CLASS="REPLACEABLE"
+><I
+>ENTRY</I
+></TT
+>[;<TT
+CLASS="REPLACEABLE"
+><I
+>ENTRY</I
+></TT
+>;...]</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18590"
+>Description</A
+></H3
+><P
+>Identifies trusted peers for incoming ("server") connections. For a connection to
+succeed, the peer's distinguished name (DN) must match an entry in this property or
+in <A
+HREF="x18107.html#ICESSL.TRUSTONLY"
+>IceSSL.TrustOnly</A
+>. See the description of
+<A
+HREF="x18107.html#ICESSL.TRUSTONLY"
+>IceSSL.TrustOnly</A
+> for more information. To
+configure trusted peers for a particular object adapter, use
+<A
+HREF="x18107.html#ICESSL.TRUSTONLY.SERVER.ADAPTERNAME"
+>IceSSL.TrustOnly.Server.<TT
+CLASS="REPLACEABLE"
+><I
+>AdapterName</I
+></TT
+></A
+>.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.TRUSTONLY.SERVER.ADAPTERNAME"
+>IceSSL.TrustOnly.Server.AdapterName</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18599"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.TrustOnly.Server.<TT
+CLASS="REPLACEABLE"
+><I
+>AdapterName</I
+></TT
+>=<TT
+CLASS="REPLACEABLE"
+><I
+>ENTRY</I
+></TT
+>[;<TT
+CLASS="REPLACEABLE"
+><I
+>ENTRY</I
+></TT
+>;...]</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18605"
+>Description</A
+></H3
+><P
+>Identifies trusted peers for incoming ("server") connections to the object adapter
+<TT
+CLASS="REPLACEABLE"
+><I
+>AdapterName</I
+></TT
+>. For a connection to
+succeed, the peer's distinguished name (DN) must match an entry in this property,
+an entry in <A
+HREF="x18107.html#ICESSL.TRUSTONLY.SERVER"
+>IceSSL.TrustOnly.Server</A
+>,
+or an entry in <A
+HREF="x18107.html#ICESSL.TRUSTONLY"
+>IceSSL.TrustOnly</A
+>.
+See the description of <A
+HREF="x18107.html#ICESSL.TRUSTONLY"
+>IceSSL.TrustOnly</A
+> for
+more information.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.TRUSTSTORE"
+>IceSSL.Truststore</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18614"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Truststore=<TT
+CLASS="REPLACEABLE"
+><I
+>file</I
+></TT
+> (Java)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18618"
+>Description</A
+></H3
+><P
+>Specifies a keystore file containing the certificates of trusted certificate
+authorities.
+The filename may be specified relative to the default directory defined
+by <A
+HREF="x18107.html#ICESSL.DEFAULTDIR"
+>IceSSL.DefaultDir</A
+>.
+The format of the file is determined by
+<A
+HREF="x18107.html#ICESSL.TRUSTSTORETYPE"
+>IceSSL.TruststoreType</A
+>.</P
+><P
+>If this property is not defined, the application will not be able to authenticate
+the peer's certificate during SSL handshaking. As a result, the application may not
+be able to negotiate a secure connection, or might be required to use an
+anonymous ciphersuite.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.TRUSTSTOREPASSWORD"
+>IceSSL.TruststorePassword</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18626"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.TruststorePassword=<TT
+CLASS="REPLACEABLE"
+><I
+>password</I
+></TT
+> (Java)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18630"
+>Description</A
+></H3
+><P
+>Specifies the password used to verify the integrity of the keystore defined
+by <A
+HREF="x18107.html#ICESSL.TRUSTSTORE"
+>IceSSL.Truststore</A
+>. The integrity
+check is skipped if this property is not defined.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>It is a security risk to use a plain-text password in a configuration file.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.TRUSTSTORETYPE"
+>IceSSL.TruststoreType</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18638"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.TruststoreType=<TT
+CLASS="REPLACEABLE"
+><I
+>type</I
+></TT
+> (Java)</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18642"
+>Description</A
+></H3
+><P
+>Specifies the format of the keystore file defined by
+<A
+HREF="x18107.html#ICESSL.TRUSTSTORE"
+>IceSSL.Truststore</A
+>. Legal values are
+<TT
+CLASS="LITERAL"
+>JKS</TT
+> and <TT
+CLASS="LITERAL"
+>PKCS12</TT
+>. If not defined,
+the default value is <TT
+CLASS="LITERAL"
+>JKS</TT
+>.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.VERIFYDEPTHMAX"
+>IceSSL.VerifyDepthMax</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18651"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.VerifyDepthMax=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18655"
+>Description</A
+></H3
+><P
+>Specifies the maximum depth of a trusted peer's certificate chain, including
+the peer's certificate. A value of zero accepts chains of any length. If not
+defined, the default value is 2.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.VERIFYPEER"
+>IceSSL.VerifyPeer</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18660"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.VerifyPeer=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN18664"
+>Description</A
+></H3
+><P
+>Specifies the verification requirements to use during SSL handshaking. The legal values
+are shown in the table below:
+<DIV
+CLASS="INFORMALTABLE"
+><P
+></P
+><A
+NAME="AEN18667"
+></A
+><TABLE
+BORDER="1"
+BGCOLOR="#E0E0E0"
+CELLSPACING="0"
+CELLPADDING="4"
+CLASS="CALSTABLE"
+><TBODY
+><TR
+><TD
+>0</TD
+><TD
+>For an outgoing connection, the client verifies the server's certificate (if
+an anonymous cipher is not used) but does not abort the connection if verification
+fails. For an incoming connection, the server does not request a certificate from
+the client.</TD
+></TR
+><TR
+><TD
+>1</TD
+><TD
+>For an outgoing connection, the client verifies the server's certificate (if
+an anonymous cipher is not used) and aborts the connection if verification fails.
+For an incoming connection, the server requests a certificate from the client and
+verifies it if one is provided, aborting the connection if verification fails.</TD
+></TR
+><TR
+><TD
+>2</TD
+><TD
+>For an outgoing connection, the semantics are the same as for value 1.
+For an incoming connection, the server requires a certificate from the client and
+aborts the connection if verification fails.</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+>
+If this property is not defined, the default value is 2.
+<P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><P
+><B
+>Platform Notes</B
+></P
+><DL
+><DT
+>.NET</DT
+><DD
+><P
+>This property has no effect on outgoing connections, since .NET always
+uses the semantics of value 2. For an incoming connection, value 0 has
+the same semantics as value 1.</P
+></DD
+></DL
+></DIV
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x17806.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x18685.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> Miscellaneous Properties</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c17145.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceBox</SPAN
+></SPAN
+> Properties</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

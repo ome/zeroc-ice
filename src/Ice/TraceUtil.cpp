@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,7 +17,6 @@
 #include <Ice/Logger.h>
 #include <Ice/BasicStream.h>
 #include <Ice/Protocol.h>
-#include <Ice/IdentityUtil.h>
 #include <set>
 
 using namespace std;
@@ -29,7 +28,7 @@ printIdentityFacetOperation(ostream& s, BasicStream& stream)
 {
     Identity identity;
     identity.__read(&stream);
-    s << "\nidentity = " << identity;
+    s << "\nidentity = " << stream.instance()->identityToString(identity);
 
     vector<string> facet;
     stream.read(facet);
@@ -40,7 +39,7 @@ printIdentityFacetOperation(ostream& s, BasicStream& stream)
     }
 
     string operation;
-    stream.read(operation);
+    stream.read(operation, false);
     s << "\noperation = " << operation;
 }
 
@@ -377,7 +376,7 @@ IceInternal::traceReply(const char* heading, const BasicStream& str, const Logge
 		}
 		
 		string unknown;
-		stream.read(unknown);
+		stream.read(unknown, false);
 		s << "\nunknown = " << unknown;
 		break;
 	    }

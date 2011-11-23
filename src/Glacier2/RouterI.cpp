@@ -1,13 +1,14 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#include <Ice/RoutingTable.h>
+#include <IceUtil/Random.h>
+
 #include <Glacier2/RouterI.h>
 #include <Glacier2/Session.h>
 
@@ -16,59 +17,34 @@ using namespace Ice;
 using namespace Glacier2;
 
 Glacier2::RouterI::RouterI(const ObjectAdapterPtr& clientAdapter, const ObjectAdapterPtr& serverAdapter,
-			   const ConnectionPtr& connection, const string& userId, const SessionPrx& session) :
+			   const ObjectAdapterPtr& adminAdapter, const ConnectionPtr& connection, 
+			   const string& userId, const SessionPrx& session,
+			   const Identity& controlId, const FilterManagerPtr& filters) :
     _communicator(clientAdapter->getCommunicator()),
-    _routingTable(new IceInternal::RoutingTable),
-    _routingTableTraceLevel(_communicator->getProperties()->getPropertyAsInt("Glacier2.Trace.RoutingTable")),
-    _clientProxy(clientAdapter->createProxy(stringToIdentity("dummy"))),
+    _clientProxy(clientAdapter->createProxy(_communicator->stringToIdentity("dummy"))),
+    _clientBlobject(new ClientBlobject(_communicator, filters)),
+    _adminAdapter(adminAdapter),
     _connection(connection),
     _userId(userId),
     _session(session),
-    _timestamp(IceUtil::Time::now()),
-    _destroy(false)
+    _controlId(controlId),
+    _timestamp(IceUtil::Time::now())
 {
-    string allow = _communicator->getProperties()->getProperty("Glacier2.AllowCategories");
-    StringSeq allowCategories;
-    
-    const string ws = " \t";
-    string::size_type current = allow.find_first_not_of(ws, 0);
-    while(current != string::npos)
-    {
-	string::size_type pos = allow.find_first_of(ws, current);
-	string::size_type len = (pos == string::npos) ? string::npos : pos - current;
-	string category = allow.substr(current, len);
-	allowCategories.push_back(category);
-	current = allow.find_first_not_of(ws, pos);
-    }
-
-    int addUserMode = _communicator->getProperties()->getPropertyAsInt("Glacier2.AddUserToAllowCategories");
-    if(addUserMode == 1)
-    {
-	allowCategories.push_back(_userId); // Add user id to allowed categories.
-    }
-    else if(addUserMode == 2)
-    {
-	allowCategories.push_back('_' + _userId); // Add user id with prepended underscore to allowed categories.
-    }
-
-    sort(allowCategories.begin(), allowCategories.end()); // Must be sorted.
-    allowCategories.erase(unique(allowCategories.begin(), allowCategories.end()), allowCategories.end());
-
-    const_cast<ClientBlobjectPtr&>(_clientBlobject) = new ClientBlobject(_communicator, _routingTable,
-									 allowCategories);
-
     if(serverAdapter)
     {
 	ObjectPrx& serverProxy = const_cast<ObjectPrx&>(_serverProxy);
 	Identity ident;
 	ident.name = "dummy";
 	ident.category.resize(20);
-	for(string::iterator p = ident.category.begin(); p != ident.category.end(); ++p)
+	char buf[20];
+	IceUtil::generateRandom(buf, static_cast<int>(sizeof(buf)));
+	for(unsigned int i = 0; i < sizeof(buf); ++i)
 	{
-	    *p = static_cast<char>(33 + rand() % (127-33)); // We use ASCII 33-126 (from ! to ~, w/o space).
+	    const unsigned char c = static_cast<unsigned char>(buf[i]); // A value between 0-255
+	    ident.category[i] = 33 + c % (127-33); // We use ASCII 33-126 (from ! to ~, w/o space).
 	}
 	serverProxy = serverAdapter->createProxy(ident);
-	
+
 	ServerBlobjectPtr& serverBlobject = const_cast<ServerBlobjectPtr&>(_serverBlobject);
 	serverBlobject = new ServerBlobject(_communicator, _connection);
     }
@@ -76,19 +52,11 @@ Glacier2::RouterI::RouterI(const ObjectAdapterPtr& clientAdapter, const ObjectAd
 
 Glacier2::RouterI::~RouterI()
 {
-    IceUtil::Mutex::Lock lock(*this);
-
-    assert(_destroy);
 }
 
 void
 Glacier2::RouterI::destroy()
 {
-    IceUtil::Mutex::Lock lock(*this);
-
-    assert(!_destroy);
-    _destroy = true;
-
     _connection->close(true);
 
     _clientBlobject->destroy();
@@ -100,6 +68,20 @@ Glacier2::RouterI::destroy()
 
     if(_session)
     {
+        if(_adminAdapter)
+	{
+	    try
+	    {
+	        //
+	        // Remove the session control object.
+	        //
+	        _adminAdapter->remove(_controlId);
+	    }
+	    catch(const NotRegisteredException&)
+	    {
+	    }
+	}
+
 	//
 	// This can raise an exception, therefore it must be the last
 	// statement in this destroy() function.
@@ -125,19 +107,26 @@ Glacier2::RouterI::getServerProxy(const Current&) const
 void
 Glacier2::RouterI::addProxy(const ObjectPrx& proxy, const Current& current)
 {
+    ObjectProxySeq proxies;
+    proxies.push_back(proxy);
+    addProxies(proxies, current);
+}
+
+ObjectProxySeq
+Glacier2::RouterI::addProxies(const ObjectProxySeq& proxies, const Current& current)
+{
     IceUtil::Mutex::Lock lock(*this);
-
-    assert(!_destroy);
-
-    if(_routingTableTraceLevel)
-    {
-	Trace out(_communicator->getLogger(), "Glacier2");
-	out << "adding proxy to routing table:\n" << _communicator->proxyToString(proxy);
-    }
 
     _timestamp = IceUtil::Time::now();
 
-    _routingTable->add(proxy);
+    return _clientBlobject->add(proxies, current);
+}
+
+string
+Glacier2::RouterI::getCategoryForClient(const Ice::Current&) const
+{
+    assert(false); // Must not be called in this router implementation.
+    return 0;
 }
 
 SessionPrx
@@ -147,18 +136,30 @@ Glacier2::RouterI::createSession(const std::string&, const std::string&, const C
     return 0;
 }
 
-void
-Glacier2::RouterI::destroySession_async(const AMD_Router_destroySessionPtr&, const Current&)
+SessionPrx
+Glacier2::RouterI::createSessionFromSecureConnection(const Current&)
 {
     assert(false); // Must not be called in this router implementation.
+    return 0;
+}
+
+void
+Glacier2::RouterI::destroySession(const Current&)
+{
+    assert(false); // Must not be called in this router implementation.
+}
+
+Ice::Long
+Glacier2::RouterI::getSessionTimeout(const Current&) const
+{
+    assert(false); // Must not be called in this router implementation.
+    return 0;
 }
 
 ClientBlobjectPtr
 Glacier2::RouterI::getClientBlobject() const
 {
     IceUtil::Mutex::Lock lock(*this);
-
-    assert(!_destroy);
 
     _timestamp = IceUtil::Time::now();
 
@@ -168,10 +169,6 @@ Glacier2::RouterI::getClientBlobject() const
 ServerBlobjectPtr
 Glacier2::RouterI::getServerBlobject() const
 {
-    IceUtil::Mutex::Lock lock(*this);
-
-    assert(!_destroy);
-
     //
     // We do not update the timestamp for callbacks from the
     // server. We only update the timestamp for client activity.
@@ -193,11 +190,11 @@ Glacier2::RouterI::getTimestamp() const
 
     if(lock.acquired())
     {
-	return _timestamp;
+        return _timestamp;
     }
     else
     {
-	return IceUtil::Time::now();
+        return IceUtil::Time::now();
     }
 }
 
@@ -206,7 +203,7 @@ Glacier2::RouterI::toString() const
 {
     ostringstream out;
 
-    out << "user-id = " << _userId << '\n';
+    out << "id = " << _userId << '\n';
     if(_serverProxy)
     {
 	out << "category = " << _serverProxy->ice_getIdentity().category << '\n';

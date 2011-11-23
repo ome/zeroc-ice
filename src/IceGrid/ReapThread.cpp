@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,7 +8,6 @@
 // **********************************************************************
 
 #include <Ice/Ice.h>
-#include <Glacier2/Session.h>
 #include <IceGrid/ReapThread.h>
 
 using namespace std;
@@ -23,68 +22,77 @@ ReapThread::ReapThread(int timeout) :
 void
 ReapThread::run()
 {
-    Lock sync(*this);
-
-    while(!_terminated)
+    vector<ReapablePtr> reap;
+    while(true)
     {
-	list<pair<SessionIPtr, Glacier2::SessionPrx> >::iterator p = _sessions.begin();
-	while(p != _sessions.end())
 	{
-	    try
+	    Lock sync(*this);
+	    timedWait(_timeout);
+	    
+	    if(_terminated)
 	    {
-		if((IceUtil::Time::now() - p->first->timestamp()) > _timeout)
+		break;
+	    }
+
+	    list<ReapablePtr>::iterator p = _sessions.begin();
+	    while(p != _sessions.end())
+	    {
+		try
 		{
-		    try
+		    if((IceUtil::Time::now() - (*p)->timestamp()) > _timeout)
 		    {
-			p->second->destroy();
+			reap.push_back(*p);
+			p = _sessions.erase(p);
 		    }
-		    catch(const Ice::LocalException&)
+		    else
 		    {
+			++p;
 		    }
+		}
+		catch(const Ice::ObjectNotExistException&)
+		{
 		    p = _sessions.erase(p);
 		}
-		else
-		{
-		    ++p;
-		}
-	    }
-	    catch(const Ice::ObjectNotExistException&)
-	    {
-		p = _sessions.erase(p);
 	    }
 	}
 
-	timedWait(_timeout);
+	for(vector<ReapablePtr>::const_iterator p = reap.begin(); p != reap.end(); ++p)
+	{
+	    (*p)->destroy(false);
+	}
+	reap.clear();
     }
 }
 
 void
 ReapThread::terminate()
 {
-    Lock sync(*this);
-
-    _terminated = true;
-    notify();
-
-    for(list<pair<SessionIPtr, Glacier2::SessionPrx> >::const_iterator p = _sessions.begin(); p != _sessions.end(); ++p)
+    list<ReapablePtr> reap;
     {
-	try
+	Lock sync(*this);
+	if(_terminated)
 	{
-	    p->second->destroy();
+	    return;
 	}
-	catch(const Ice::Exception&)
-	{
-	    // Ignore.
-	}
+	_terminated = true;
+	notify();
+	reap.swap(_sessions);
     }
 
-    _sessions.clear();
+    for(list<ReapablePtr>::const_iterator p = reap.begin(); p != reap.end(); ++p)
+    {
+	(*p)->destroy(true);
+    }
 }
 
 void
-ReapThread::add(const Glacier2::SessionPrx& proxy, const SessionIPtr& session)
+ReapThread::add(const ReapablePtr& reapable)
 {
     Lock sync(*this);
-    _sessions.push_back(make_pair(session, proxy));
+    if(_terminated)
+    {
+	return;
+    }
+    _sessions.push_back(reapable);
 }
 

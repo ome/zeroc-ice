@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,10 +15,10 @@ using namespace std;
 int
 run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 {
-    communicator->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12345 -t 10000:udp");
+    communicator->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000:udp");
     Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("TestAdapter");
     Ice::ObjectPtr object = new HoldI;
-    adapter->add(object, Ice::stringToIdentity("hold"));
+    adapter->add(object, communicator->stringToIdentity("hold"));
     adapter->activate();
     communicator->waitForShutdown();
     return EXIT_SUCCESS;

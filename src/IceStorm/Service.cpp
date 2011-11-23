@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -55,7 +55,7 @@ extern "C"
 {
 
 ICE_STORM_SERVICE_API ::IceBox::Service*
-create(CommunicatorPtr communicator)
+createIceStorm(CommunicatorPtr communicator)
 {
     return new ServiceI;
 }
@@ -98,7 +98,7 @@ IceStorm::ServiceI::start(const string& name,
     // We use the name of the service for the name of the database environment.
     //
     string topicManagerId = properties->getPropertyWithDefault(name + ".InstanceName", "IceStorm") + "/TopicManager";
-    Ice::Identity id = stringToIdentity(topicManagerId);
+    Ice::Identity id = communicator->stringToIdentity(topicManagerId);
     _manager = new TopicManagerI(communicator, _topicAdapter, _publishAdapter, traceLevels, name, "topics");
     _managerProxy = TopicManagerPrx::uncheckedCast(_topicAdapter->add(_manager, id));
 

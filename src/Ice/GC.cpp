@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,8 +11,6 @@
 #include <Ice/GC.h>
 #include <Ice/GCRecMutex.h>
 #include <Ice/GCShared.h>
-#include <map>
-
 
 namespace IceInternal
 {
@@ -24,18 +22,17 @@ recursivelyReachable(GCShared* p, GCObjectSet& o)
     {
 	assert(p);
 	o.insert(p);
-	GCObjectMultiSet tmp;
+	GCCountMap tmp;
 	p->__gcReachable(tmp);
-	for(GCObjectMultiSet::const_iterator i = tmp.begin(); i != tmp.end(); ++i)
+	for(GCCountMap::const_iterator i = tmp.begin(); i != tmp.end(); ++i)
 	{
-	    recursivelyReachable(*i, o);
+	    recursivelyReachable(i->first, o);
 	}
     }
 }
 
 }
 
-using namespace std;
 using namespace IceUtil;
 
 int IceInternal::GC::_numCollectors = 0;
@@ -160,77 +157,91 @@ IceInternal::GC::collectGarbage()
 	stats.examined = static_cast<int>(gcObjects.size());
     }
 
-    //
-    // gcObjects contains the set of class instances that have at least one member of class type,
-    // that is, gcObjects contains all those instances that can point at other instances.
-    // Call this the the candiate set.
-    // Build a multiset of instances that are immediately (not recursively) reachable from instances
-    // in the candidate set. This adds leaf nodes (class instances that are pointed at, but cannot
-    // point at anything themselves) to the multiset.
-    //
-    GCObjectMultiSet reachable;
-    {
-	for(GCObjectSet::const_iterator i = gcObjects.begin(); i != gcObjects.end(); ++i)
-	{
-	    (*i)->__gcReachable(reachable);
-	}
-    }
+    GCCountMap counts;
 
-    //
-    // Create a map of reference counts.
-    //
-    typedef map<GCShared*, int> ObjectCounts;
-    ObjectCounts counts;
     {
-	ObjectCounts::iterator pos;
-	for(GCObjectMultiSet::const_iterator i = reachable.begin(); i != reachable.end(); ++i)
+	//
+	// gcObjects contains the set of class instances that have at least one member of class type,
+	// that is, gcObjects contains all those instances that can point at other instances.
+	//
+	// Create a map that, for each object in gcObjects, contains an <object, refcount> pair.
+	// In addition, for each object in gcObjects, add the objects that are immediately (not
+	// recursively) reachable from that object to a reachable map that counts how many times
+	// the object is pointed at.
+	//
+	GCCountMap reachable;
 	{
-	    pos = counts.find(*i);
-
-	    //
-	    // If this instance is not in the counts set yet, insert it with its reference count - 1;
-	    // otherwise, decrement its reference count.
-	    //
-	    if(pos == counts.end())
+	    for(GCObjectSet::const_iterator i = gcObjects.begin(); i != gcObjects.end(); ++i)
 	    {
-		counts.insert(pos, ObjectCounts::value_type(*i, (*i)->__getRefUnsafe() - 1));
+		counts.insert(GCCountMap::value_type(*i, (*i)->__getRefUnsafe()));
+		(*i)->__gcReachable(reachable);
 	    }
-	    else
+	}
+
+	//
+	// Decrement the reference count for each object in the counts map by the count in the reachable
+	// map. This drops the reference count of each object in the counts map by the number of times that
+	// the object is pointed at by other objects in the counts map.
+        //
+	{
+	    for(GCCountMap::const_iterator i = reachable.begin(); i != reachable.end(); ++i)
 	    {
-		--(pos->second);
+		GCCountMap::iterator pos = counts.find(i->first);
+		assert(pos != counts.end());
+		pos->second -= i->second;
 	    }
 	}
     }
 
-    //
-    // Any instances with a ref count > 0 are referenced from outside the set of class instances (and therefore
-    // reachable from the program, for example, via Ptr variable on the stack). Remove these instances
-    // (and all instances reachable from them) from the overall set of objects.
-    //
     {
+	//
+	// Any instances in the counts map with a ref count > 0 are referenced from outside the objects in
+	// gcObjects (and are therefore reachable from the program, for example, via Ptr variable on the stack).
+	// The set of live objects therefore are all the objects with a reference count > 0, as well as all
+	// objects that are (recursively) reachable from these objects.
+	//
 	GCObjectSet liveObjects;
-	for(ObjectCounts::const_iterator i = counts.begin(); i != counts.end(); ++i)
 	{
-	    if(i->second > 0)
+	    for(GCCountMap::const_iterator i = counts.begin(); i != counts.end(); ++i)
 	    {
-		recursivelyReachable(i->first, liveObjects);
+		if(i->second > 0)
+		{
+		    recursivelyReachable(i->first, liveObjects);
+		}
 	    }
 	}
 
-	for(GCObjectSet::const_iterator j = liveObjects.begin(); j != liveObjects.end(); ++j)
+	//
+	// Remove all live objects from the counts map.
+	//
 	{
-	    counts.erase(*j);
+	    for(GCObjectSet::const_iterator i = liveObjects.begin(); i != liveObjects.end(); ++i)
+	    {
+#ifndef NDEBUG
+		size_t erased =
+#endif
+		    counts.erase(*i);
+		assert(erased != 0);
+	    }
 	}
     }
 
     //
-    // What is left in the counts set can be garbage collected.
+    // What is left in the counts map can be garbage collected.
     //
     {
-	ObjectCounts::const_iterator i;
+	GCCountMap::const_iterator i;
 	for(i = counts.begin(); i != counts.end(); ++i)
 	{
-	    i->first->__gcClear(); // Decrement ref count of objects pointed at by this object.
+	    //
+	    // For classes with members that point at potentially-cyclic instances, __gcClear()
+	    // decrements the reference count of the pointed-at instances as many times as they are
+	    // pointed at and clears the corresponding Ptr members in the pointing class.
+	    // For classes that cannot be part of a cycle (because they do not contain class members)
+	    // and are therefore true leaves, __gcClear() assigns 0 to the corresponding class member,
+	    // which either decrements the ref count or, if it reaches zero, deletes the instance as usual.
+	    //
+	    i->first->__gcClear();
 	}
 	for(i = counts.begin(); i != counts.end(); ++i)
 	{
@@ -255,7 +266,7 @@ IceInternal::GC::collectGarbage()
     counts.clear();
 
     {
-	Monitor<Mutex>::Lock sync2(*this);
+	Monitor<Mutex>::Lock sync(*this);
 
 	_collecting = false;
     }

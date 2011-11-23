@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -47,6 +47,7 @@ Glacier2::Blobject::Blobject(const CommunicatorPtr& communicator, bool reverse) 
 			_properties->getPropertyAsInt(serverTraceOverride) :
 			_properties->getPropertyAsInt(clientTraceOverride))
 {
+
     if(_buffered)
     {
 	try
@@ -54,8 +55,8 @@ Glacier2::Blobject::Blobject(const CommunicatorPtr& communicator, bool reverse) 
 	    IceUtil::Time sleepTime = _reverse ?
 		IceUtil::Time::milliSeconds(_properties->getPropertyAsInt(serverSleepTime)) :
 		IceUtil::Time::milliSeconds(_properties->getPropertyAsInt(clientSleepTime));
-	    
-	    _requestQueue = new RequestQueue(sleepTime);
+
+	    const_cast<RequestQueuePtr&>(_requestQueue) = new RequestQueue(sleepTime);
 	    
 	    Int threadStackSize = _properties->getPropertyAsInt("Ice.ThreadPerConnection.StackSize");
 	    
@@ -76,8 +77,7 @@ Glacier2::Blobject::Blobject(const CommunicatorPtr& communicator, bool reverse) 
 
 	    if(_requestQueue)
 	    {
-		_requestQueue->destroy();
-		_requestQueue = 0;
+	        _requestQueue->destroy();
 	    }
 	    
 	    throw;
@@ -87,29 +87,44 @@ Glacier2::Blobject::Blobject(const CommunicatorPtr& communicator, bool reverse) 
 
 Glacier2::Blobject::~Blobject()
 {
-    assert(!_requestQueue);
 }
 
 void
 Glacier2::Blobject::destroy()
 {
-    if(_requestQueue)
-    {
-	_requestQueue->destroy();
-	_requestQueue = 0;
-    }
+    _requestQueue->destroy();
 }
 
 void
-Glacier2::Blobject::invoke(ObjectPrx& proxy, const AMD_Object_ice_invokePtr& amdCB, const ByteSeq& inParams,
-			   const Current& current)
+Glacier2::Blobject::invoke(ObjectPrx& proxy, const AMD_Array_Object_ice_invokePtr& amdCB, 
+			   const std::pair<const Ice::Byte*, const Ice::Byte*>& inParams, const Current& current)
 {
     //
     // Set the correct facet on the proxy.
     //
     if(!current.facet.empty())
     {
-	proxy = proxy->ice_newFacet(current.facet);
+	proxy = proxy->ice_facet(current.facet);
+    }
+
+    //
+    // Modify the proxy according to the request id. This can
+    // be overridden by the _fwd context.
+    //
+    if(current.requestId == 0)
+    {
+        if(_alwaysBatch && _buffered)
+	{
+	    proxy = proxy->ice_batchOneway();
+	}
+	else
+	{
+            proxy = proxy->ice_oneway();
+	}
+    }
+    else if(current.requestId > 0)
+    {
+        proxy = proxy->ice_twoway();
     }
 
     //
@@ -221,7 +236,7 @@ Glacier2::Blobject::invoke(ObjectPrx& proxy, const AMD_Object_ice_invokePtr& amd
 	}
 	if(_reverse)
 	{
-	    out << "\nidentity = " << identityToString(proxy->ice_getIdentity());
+	    out << "\nidentity = " << _communicator->identityToString(proxy->ice_getIdentity());
 	}
 	else
 	{
@@ -248,7 +263,16 @@ Glacier2::Blobject::invoke(ObjectPrx& proxy, const AMD_Object_ice_invokePtr& amd
 	// AMI.
 	//
 
-	bool override = _requestQueue->addRequest(new Request(proxy, inParams, current, _forwardContext, amdCB));
+	bool override;
+	try
+	{
+	    override = _requestQueue->addRequest(new Request(proxy, inParams, current, _forwardContext, amdCB));
+	}
+	catch(const ObjectNotExistException& ex)
+	{
+	    amdCB->ice_exception(ex);
+	    return;
+	}
 
 	if(override && _overrideTraceLevel >= 1)
 	{
@@ -260,7 +284,7 @@ Glacier2::Blobject::invoke(ObjectPrx& proxy, const AMD_Object_ice_invokePtr& amd
 	    out << "routing override";
 	    if(_reverse)
 	    {
-	        out << "\nidentity = " << identityToString(proxy->ice_getIdentity());
+	        out << "\nidentity = " << _communicator->identityToString(proxy->ice_getIdentity());
 	    }
 	    else
 	    {
@@ -300,7 +324,17 @@ Glacier2::Blobject::invoke(ObjectPrx& proxy, const AMD_Object_ice_invokePtr& amd
 		ok = proxy->ice_invoke(current.operation, current.mode, inParams, outParams);
 	    }
 
-	    amdCB->ice_response(ok, outParams);
+	    pair<const Byte*, const Byte*> outPair;
+	    if(outParams.size() == 0)
+	    {
+	        outPair.first = outPair.second = 0;
+	    }
+	    else
+	    {
+	        outPair.first = &outParams[0];
+		outPair.second = outPair.first + outParams.size();
+	    }
+	    amdCB->ice_response(ok, outPair);
 	}
 	catch(const LocalException& ex)
 	{

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -24,21 +24,17 @@ import TestUtil
 name = os.path.join("IceStorm", "federation")
 testdir = os.path.join(toplevel, "test", name)
 
-if TestUtil.isWin32() and os.path.exists(os.path.join(toplevel, "bin", "iceboxd.exe")):
-    iceBox = os.path.join(toplevel, "bin", "iceboxd")
-else:
-    iceBox = os.path.join(toplevel, "bin", "icebox")
-
+iceBox = TestUtil.getIceBox(testdir)
 iceBoxAdmin = os.path.join(toplevel, "bin", "iceboxadmin")
 iceStormAdmin = os.path.join(toplevel, "bin", "icestormadmin")
 
-iceBoxEndpoints = ' --IceBox.ServiceManager.Endpoints="default -p 12345" --Ice.Default.Locator='
+iceBoxEndpoints = ' --IceBox.ServiceManager.Endpoints="default -p 12010" --Ice.Default.Locator='
 
-iceStormService = " --IceBox.Service.IceStorm=IceStormService," + TestUtil.getIceSoVersion() + ":create" + \
-                  ' --IceStorm.TopicManager.Endpoints="default -p 12346"' + \
+iceStormService = " --IceBox.Service.IceStorm=IceStormService," + TestUtil.getIceSoVersion() + ":createIceStorm" + \
+                  ' --IceStorm.TopicManager.Endpoints="default -p 12011"' + \
                   ' --IceStorm.Publish.Endpoints="default"' + \
                   " --IceBox.PrintServicesReady=IceStorm"
-iceStormReference = ' --IceStorm.TopicManager.Proxy="IceStorm/TopicManager: default -p 12346"'
+iceStormReference = ' --IceStorm.TopicManager.Proxy="IceStorm/TopicManager: default -p 12011"'
 
 def doTest(batch):
     global testdir
@@ -68,7 +64,7 @@ def doTest(batch):
     command = subscriber + batchOptions + TestUtil.clientServerOptions + iceStormReference + r' ' + subscriberLockFile + " 2>&1"
     subscriberPipe = os.popen(command)
     TestUtil.getServerPid(subscriberPipe)
-    TestUtil.getAdapterReady(subscriberPipe)
+    TestUtil.getAdapterReady(subscriberPipe, False)
     print "ok"
 
     print "checking " + name + " lockfile creation...",
@@ -107,8 +103,8 @@ def doTest(batch):
         lockCount = lockCount + 1    
     print "ok"
 
-    subscriberStatus = subscriberPipe.close()
-    publisherStatus = publisherPipe.close()
+    subscriberStatus = TestUtil.closePipe(subscriberPipe)
+    publisherStatus = TestUtil.closePipe(publisherPipe)
 
     return subscriberStatus or publisherStatus
 
@@ -126,7 +122,7 @@ print "ok"
 print "creating topics...",
 command = iceStormAdmin + TestUtil.clientOptions + iceStormReference + r' -e "create fed1 fed2 fed3"' + " 2>&1"
 iceStormAdminPipe = os.popen(command)
-iceStormAdminStatus = iceStormAdminPipe.close()
+iceStormAdminStatus = TestUtil.closePipe(iceStormAdminPipe)
 if iceStormAdminStatus:
     TestUtil.killServers()
     sys.exit(1)
@@ -135,13 +131,13 @@ print "ok"
 print "linking topics...",
 command = iceStormAdmin + TestUtil.clientOptions + iceStormReference + r' -e "link fed1 fed2 10"' + " 2>&1"
 iceStormAdminPipe = os.popen(command)
-iceStormAdminStatus = iceStormAdminPipe.close()
+iceStormAdminStatus = TestUtil.closePipe(iceStormAdminPipe)
 if iceStormAdminStatus:
     TestUtil.killServers()
     sys.exit(1)
 command = iceStormAdmin + TestUtil.clientOptions + iceStormReference + r' -e "link fed2 fed3 5"' + " 2>&1"
 iceStormAdminPipe = os.popen(command)
-iceStormAdminStatus = iceStormAdminPipe.close()
+iceStormAdminStatus = TestUtil.closePipe(iceStormAdminPipe)
 if iceStormAdminStatus:
     TestUtil.killServers()
     sys.exit(1)
@@ -163,7 +159,7 @@ batchStatus = doTest(1)
 print "destroying topics...",
 command = iceStormAdmin + TestUtil.clientOptions + iceStormReference + r' -e "destroy fed1 fed2 fed3"' + " 2>&1"
 iceStormAdminPipe = os.popen(command)
-iceStormAdminStatus = iceStormAdminPipe.close()
+iceStormAdminStatus = TestUtil.closePipe(iceStormAdminPipe)
 if iceStormAdminStatus:
     TestUtil.killServers()
     sys.exit(1)
@@ -175,15 +171,13 @@ print "ok"
 print "shutting down icestorm service...",
 command = iceBoxAdmin + TestUtil.clientOptions + iceBoxEndpoints + r' shutdown' + " 2>&1"
 iceBoxAdminPipe = os.popen(command)
-iceBoxAdminStatus = iceBoxAdminPipe.close()
+iceBoxAdminStatus = TestUtil.closePipe(iceBoxAdminPipe)
 if iceBoxAdminStatus:
     TestUtil.killServers()
     sys.exit(1)
 print "ok"
 
-iceBoxStatus = iceBoxPipe.close()
-
-if iceBoxStatus or onewayStatus or batchStatus:
+if TestUtil.serverStatus() or onewayStatus or batchStatus:
     TestUtil.killServers()
     sys.exit(1)
 

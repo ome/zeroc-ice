@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -125,7 +125,9 @@ local interface ObjectAdapter
      * Wait until the object adapter has deactivated. Calling
      * [deactivate] initiates object adapter deactivation, and
      * [waitForDeactivate] only returns when deactivation has
-     * been completed.
+     * been completed. Once waitForDeactivate has returned it
+     * is possible to recreate an object adapter with the
+     * same name.
      *
      * @see deactivate
      * @see waitForHold
@@ -508,45 +510,6 @@ local interface ObjectAdapter
      *
      **/
     nonmutating Object* createReverseProxy(Identity id);
-
-    /**
-     *
-     * Add a router to this object adapter. By doing so,
-     * this object adapter can receive callbacks from this router
-     * over connections that are established from this process to
-     * the router. This avoids the need for the router to establish
-     * a separate connection back to this object adapter.
-     *
-     * <note><para> You can add a particular router to only a single
-     * object adapter. Adding the same router to more than one object
-     * adapter results in undefined behavior. However, it is possible
-     * to add different routers to different object
-     * adapters. </para></note>
-     *
-     * @param rtr The router to add to this object adapter.
-     *
-     * @see removeRouter
-     * @see Router
-     * @see Communicator::setDefaultRouter
-     *
-     **/
-    void addRouter(Router* rtr);
-
-    /**
-     *
-     * Remove a router from this object adapter. By doing so, this
-     * object adapter can no longer receive callbacks from this router
-     * over connections that are established from this process to the
-     * router.
-     *
-     * @param rtr The router to remove from this object adapter.
-     *
-     * @see addRouter
-     * @see Router
-     * @see Communicator::setDefaultRouter
-     *
-     **/
-    void removeRouter(Router* rtr);
 
     /**
      * Set an &Ice; locator for this object adapter. By doing so, the

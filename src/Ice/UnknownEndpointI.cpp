@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -115,14 +115,14 @@ IceInternal::UnknownEndpointI::connector() const
 }
 
 AcceptorPtr
-IceInternal::UnknownEndpointI::acceptor(EndpointIPtr& endp) const
+IceInternal::UnknownEndpointI::acceptor(EndpointIPtr& endp, const string&) const
 {
     endp = const_cast<UnknownEndpointI*>(this);
     return 0;
 }
 
 vector<EndpointIPtr>
-IceInternal::UnknownEndpointI::expand() const
+IceInternal::UnknownEndpointI::expand(bool loopback) const
 {
     assert(false);
     vector<EndpointIPtr> ret;

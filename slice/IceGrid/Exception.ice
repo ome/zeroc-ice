@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,7 @@
 #define ICE_GRID_EXCEPTION_ICE
 
 #include <Ice/Identity.ice>
+#include <Ice/BuiltinSequences.ice>
 
 module IceGrid
 {
@@ -46,7 +47,21 @@ exception ServerStartException
     /** The identifier of the server. */
     string id;
     
-    /** The reason of the failure. */
+    /** The reason for the failure. */
+    string reason;
+};
+
+/**
+ *
+ * This exception is raised if a server failed to stop.
+ *
+ **/
+exception ServerStopException
+{
+    /** The identifier of the server. */
+    string id;
+
+    /** The reason for the failure. */
     string reason;
 };
 
@@ -128,6 +143,7 @@ exception NodeUnreachableException
  **/
 exception BadSignalException
 {
+    string reason;
 };
 
 /**
@@ -137,18 +153,58 @@ exception BadSignalException
  **/
 exception PatchException
 {
-    string reason;
+    /** The reasons why the patch failed. */
+    Ice::StringSeq reasons;
 };
 
 /**
  *
  * This exception is raised if an operation can't be performed because
- * the regitry lock wasn't acquired or is already acquired by a session.
+ * the registry lock wasn't acquired or is already acquired by a session.
  *
  **/
 exception AccessDeniedException
 {
     string lockUserId;
+};
+
+/**
+ *
+ * This exception is raised if the allocation of an object failed.
+ *
+ **/
+exception AllocationException
+{
+    /** The reason why the object couldn't be allocated. */
+    string reason;
+};
+
+/**
+ *
+ * This exception is raised if the request to allocate an object times
+ * out.
+ *
+ **/
+exception AllocationTimeoutException extends AllocationException
+{
+};
+
+/**
+ *
+ * This exception is raised if a client is denied the ability to create
+ * a session with IceGrid.
+ *
+ * @see SessionFactory::createSession
+ *
+ **/
+exception PermissionDeniedException
+{
+    /**
+     *
+     * The reason why permission was denied.
+     *
+     **/
+    string reason;
 };
 
 };

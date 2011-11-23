@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,8 +11,7 @@
 #include <Ice/ProxyFactory.h>
 #include <Ice/LocalException.h>
 #include <Ice/Instance.h>
-#include <Ice/IdentityUtil.h>
-#include <Ice/Endpoint.h>
+#include <Ice/EndpointI.h>
 #include <Ice/EndpointFactoryManager.h>
 #include <Ice/RouterInfo.h>
 #include <Ice/LocatorInfo.h>
@@ -86,7 +85,8 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
 				      const string& adapterId,
 				      const RouterInfoPtr& routerInfo,
 				      const LocatorInfoPtr& locatorInfo,
-				      bool collocationOptimization)
+				      bool collocationOptimization,
+				      int locatorCacheTimeout)
 {
     Mutex::Lock sync(*this);
 
@@ -104,7 +104,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
     // Create new reference
     //
     return new IndirectReference(_instance, _communicator, ident, context, facet, mode, secure,
-				 adapterId, routerInfo, locatorInfo, collocationOptimization);
+				 adapterId, routerInfo, locatorInfo, collocationOptimization, locatorCacheTimeout);
 }
 
 ReferencePtr
@@ -140,7 +140,7 @@ IceInternal::ReferenceFactory::create(const string& str)
         return 0;
     }
 
-    const string delim = " \t\n\r";
+    const string delim = " \t\r\n";
 
     string s(str);
     string::size_type beg;
@@ -192,8 +192,7 @@ IceInternal::ReferenceFactory::create(const string& str)
     //
     // Parsing the identity may raise IdentityParseException.
     //
-    Identity ident = stringToIdentity(idstr);
-
+    Identity ident = _instance->stringToIdentity(idstr);
     if(ident.name.empty())
     {
         //
@@ -320,6 +319,15 @@ IceInternal::ReferenceFactory::create(const string& str)
 		    throw ex;
 		}
 
+    	        if(_instance->initializationData().stringConverter)
+    		{
+		    string tmpFacet;
+        	    _instance->initializationData().stringConverter->fromUTF8(
+		    		reinterpret_cast<const Byte*>(facet.data()),
+				reinterpret_cast<const Byte*>(facet.data() + facet.size()), tmpFacet);
+		    facet = tmpFacet;
+    		}
+
 		break;
 	    }
 
@@ -409,8 +417,9 @@ IceInternal::ReferenceFactory::create(const string& str)
 
     if(beg == string::npos)
     {
-	return create(ident, _instance->getDefaultContext(), facet, mode, secure, "", routerInfo, locatorInfo,
-		      _instance->defaultsAndOverrides()->defaultCollocationOptimization);
+	return create(ident, _instance->initializationData().defaultContext, facet, mode, secure, "", routerInfo,
+		      locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization, 
+		      _instance->defaultsAndOverrides()->defaultLocatorCacheTimeout);
     }
 
     vector<EndpointIPtr> endpoints;
@@ -433,10 +442,11 @@ IceInternal::ReferenceFactory::create(const string& str)
 		}
 		
 		string es = s.substr(beg, end - beg);
-		EndpointIPtr endp = _instance->endpointFactoryManager()->create(es, false);
+		EndpointIPtr endp = _instance->endpointFactoryManager()->create(es);
 		if(endp != 0)
 		{
-		    endpoints.push_back(endp);
+		    vector<EndpointIPtr> endps = endp->expand(false);
+		    endpoints.insert(endpoints.end(), endps.begin(), endps.end());
 		}
 		else
 		{
@@ -449,10 +459,11 @@ IceInternal::ReferenceFactory::create(const string& str)
 		ex.str = unknownEndpoints.front();
 		throw ex;
 	    }
-	    else if(unknownEndpoints.size() != 0 && 
-	    	    _instance->properties()->getPropertyAsIntWithDefault("Ice.Warn.Endpoints", 1) > 0)
+	    else if(unknownEndpoints.size() != 0 &&
+	    	    _instance->initializationData().properties->
+		    		getPropertyAsIntWithDefault("Ice.Warn.Endpoints", 1) > 0)
 	    {
-		Warning out(_instance->logger());
+		Warning out(_instance->initializationData().logger);
 	        out << "Proxy contains unknown endpoints:";
 	        for(unsigned int idx = 0; idx < unknownEndpoints.size(); ++idx)
 		{
@@ -460,8 +471,8 @@ IceInternal::ReferenceFactory::create(const string& str)
 		}
 	    }
 
-	    return create(ident, _instance->getDefaultContext(), facet, mode, secure, endpoints, routerInfo,
-			  _instance->defaultsAndOverrides()->defaultCollocationOptimization);
+	    return create(ident, _instance->initializationData().defaultContext, facet, mode, secure, endpoints, 
+	    		  routerInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization);
 	    break;
 	}
 	case '@':
@@ -494,14 +505,26 @@ IceInternal::ReferenceFactory::create(const string& str)
 		beg++; // Skip leading quote
 	    }
 
+
 	    if(!IceUtil::unescapeString(s, beg, end, adapter) || adapter.size() == 0)
 	    {
 		ProxyParseException ex(__FILE__, __LINE__);
 		ex.str = str;
 		throw ex;
 	    }
-	    return create(ident, _instance->getDefaultContext(), facet, mode, secure, adapter, routerInfo,
-			  locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization);
+
+            if(_instance->initializationData().stringConverter)
+            {
+	        string tmpAdapter;
+                _instance->initializationData().stringConverter->fromUTF8(
+				reinterpret_cast<const Byte*>(adapter.data()), 
+				reinterpret_cast<const Byte*>(adapter.data() + adapter.size()), tmpAdapter);
+		adapter = tmpAdapter;
+            }
+	    
+	    return create(ident, _instance->initializationData().defaultContext, facet, mode, secure, adapter,
+	    		  routerInfo, locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization,
+			  _instance->defaultsAndOverrides()->defaultLocatorCacheTimeout);
 	    break;
 	}
 	default:
@@ -540,7 +563,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
 	{
 	    throw ProxyUnmarshalException(__FILE__, __LINE__);
 	}
-	facet.swap(facetPath[0]);
+        facet.swap(facetPath[0]);
     }
 
     Byte modeAsByte;
@@ -571,14 +594,15 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
 	    EndpointIPtr endpoint = _instance->endpointFactoryManager()->read(s);
 	    endpoints.push_back(endpoint);
 	}
-	return create(ident, _instance->getDefaultContext(), facet, mode, secure, endpoints, routerInfo,
-		      _instance->defaultsAndOverrides()->defaultCollocationOptimization);
+	return create(ident, _instance->initializationData().defaultContext, facet, mode, secure, endpoints, 
+		      routerInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization);
     }
     else
     {
 	s->read(adapterId);
-	return create(ident, _instance->getDefaultContext(), facet, mode, secure, adapterId, routerInfo,
-		      locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization);
+	return create(ident, _instance->initializationData().defaultContext, facet, mode, secure, adapterId,
+	  	      routerInfo, locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization,
+		      _instance->defaultsAndOverrides()->defaultLocatorCacheTimeout);
     }
 }
 

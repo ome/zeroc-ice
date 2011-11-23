@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,7 +22,7 @@ class CallbackSenderI : public Demo::CallbackSender, public IceUtil::Monitor<Ice
 {
 public:
     
-    CallbackSenderI();
+    CallbackSenderI(const Ice::CommunicatorPtr&);
 
     void destroy();
 
@@ -33,6 +33,7 @@ public:
 
 private:
 
+    Ice::CommunicatorPtr _communicator;
     bool _destroy;
     Ice::Int _num;
     std::set<Demo::CallbackReceiverPrx> _clients;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,7 +24,7 @@ int
 main(int argc, char* argv[])
 {
     LatencyServer app;
-    return app.main(argc, argv, "config");
+    return app.main(argc, argv, "config.server");
 }
 
 int
@@ -32,7 +32,7 @@ LatencyServer::run(int argc, char* argv[])
 {
     Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Latency");
     Ice::ObjectPtr object = new Ping;
-    adapter->add(new Ping, Ice::stringToIdentity("ping"));
+    adapter->add(new Ping, communicator()->stringToIdentity("ping"));
     adapter->activate();
     communicator()->waitForShutdown();
     return EXIT_SUCCESS;

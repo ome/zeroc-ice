@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -25,15 +25,15 @@ SRCS		= $(COBJS:.o=.cpp) \
 include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I. -I../../include $(CPPFLAGS)
-LINKWITH	:= -lIce -lIceUtil
+LINKWITH	:= $(BZIP2_RPATH_LINK) -lIce -lIceUtil
 
 $(CLIENT): $(COBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(COBJS) -lIceGrid -lGlacier2 $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(COBJS) $(OPENSSL_RPATH_LINK) -lIceGrid -lGlacier2 $(LIBS)
 
 $(SERVER): $(SOBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) -lGlacier2 -lIceSSL $(LIBS) $(OPENSSL_RPATH_LINK)
 
 clean::
 	rm -rf db/node db/registry db/node-1

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -19,18 +19,35 @@
 #
 CXX   = CC
 
+# This variable is used to determine the machine type.
+# For SUN UltraSPARC machines: sun4u
+# For x86/x64 machines:        i86pc
+#
+MACHINE_TYPE                := $(shell uname -m)
+
+
 ifeq ($(CXX),CC)
-#
-# Sun CC
-#
+    #
+    # Sun CC
+    #
 
     #
     # Which version of CC are we using?
     #
     CCVERSION		    = $(filter 5.%, $(shell CC -V 2>&1))
 
-    ifeq ($(LP64),yes)
-        CXXARCHFLAGS	    = -xarch=v9
+    ifeq ($(MACHINE_TYPE),sun4u)
+        ifeq ($(LP64),yes)
+            CXXARCHFLAGS    = -xarch=v9
+        else
+            CXXARCHFLAGS    = -xarch=v8plus
+        endif
+    endif
+
+    ifeq ($(MACHINE_TYPE),i86pc)
+        ifeq ($(LP64),yes)
+            CXXARCHFLAGS    = -xarch=amd64
+        endif
     endif
 
     ifeq ($(CCVERSION),5.3)
@@ -48,7 +65,9 @@ ifeq ($(CXX),CC)
             # -erroff=hidef is a (bad) work-around for
             # for Sun CC 5.5 bug #4852754
             #
-            CXXWARNFLAGS    = +w -erroff=hidef
+            # wvarhidenmem,wvarhidemem: various name hiding
+            #
+            CXXWARNFLAGS    = +w -erroff=hidef,wvarhidenmem,wvarhidemem
             CXXSCOPEFLAGS   = -xldscope=hidden
         endif
     endif
@@ -81,8 +100,12 @@ ifeq ($(CXX),CC)
 
     mklib		    = $(CXX) -xar -o $(1) $(2)
 
-    LDPLATFORMFLAGS	    = -R $(install_libdir)
-
+    ifeq ($(ADD_LIBDIR_TO_RPATH),yes)
+         LDPLATFORMFLAGS    = -R $(install_libdir) -z text
+    else
+         LDPLATFORMFLAGS    = -z text
+    endif
+    
 endif
 
 ifeq ($(CXX),gcc)
@@ -110,16 +133,22 @@ ifeq ($(CXX),g++)
     mkshlib		    = $(CXX) -shared $(LDFLAGS) -o $(1) -h $(2) $(3) $(4)
 
     mklib		    = ar cr $(1) $(2)
-
 endif
 
+rpathlink                   = -L$(1)
+
 BASELIBS		    = -lIceUtil -lpthread
-LIBS			    = -lIce $(BASELIBS)
+LIBS			    = $(BZIP2_RPATH_LINK) -lIce $(BASELIBS)
 
 ICEUTIL_OS_LIBS		    = -lpthread -lrt
 ICE_OS_LIBS		    = -ldl -lsocket
 
-lp64suffix		    = /sparcv9
+ifeq ($(MACHINE_TYPE),sun4u)
+   lp64suffix		    = /sparcv9
+endif
+ifeq ($(MACHINE_TYPE),i86pc)
+    lp64suffix		    = /amd64
+endif
 
 ifeq ($(LP64),yes)
     export LD_LIBRARY_PATH_64	:= $(libdir):$(LD_LIBRARY_PATH_64)

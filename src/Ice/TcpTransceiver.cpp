@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -78,8 +78,8 @@ IceInternal::TcpTransceiver::shutdownReadWrite()
 void
 IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
 {
-    Buffer::Container::difference_type packetSize = 
-        static_cast<Buffer::Container::difference_type>(buf.b.end() - buf.i);
+    // Its impossible for the packetSize to be more than an Int.
+    int packetSize = static_cast<int>(buf.b.end() - buf.i);
     
 #ifdef _WIN32
     //
@@ -185,7 +185,7 @@ IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
 
 	if(packetSize > buf.b.end() - buf.i)
 	{
-	    packetSize = static_cast<Buffer::Container::difference_type>(buf.b.end() - buf.i);
+	    packetSize = static_cast<int>(buf.b.end() - buf.i);
 	}
     }
 }
@@ -193,8 +193,8 @@ IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
 void
 IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 {
-    Buffer::Container::difference_type packetSize = 
-        static_cast<Buffer::Container::difference_type>(buf.b.end() - buf.i);
+    // Its impossible for the packetSize to be more than an Int.
+    int packetSize = static_cast<int>(buf.b.end() - buf.i);
     
     while(buf.i != buf.b.end())
     {
@@ -309,7 +309,7 @@ IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 
 	if(packetSize > buf.b.end() - buf.i)
 	{
-	    packetSize = static_cast<Buffer::Container::difference_type>(buf.b.end() - buf.i);
+	    packetSize = static_cast<int>(buf.b.end() - buf.i);
 	}
     }
 }
@@ -333,8 +333,8 @@ IceInternal::TcpTransceiver::initialize(int)
 
 IceInternal::TcpTransceiver::TcpTransceiver(const InstancePtr& instance, SOCKET fd) :
     _traceLevels(instance->traceLevels()),
-    _logger(instance->logger()),
-    _stats(instance->stats()),
+    _logger(instance->initializationData().logger),
+    _stats(instance->initializationData().stats),
     _fd(fd),
     _desc(fdToString(fd))
 #ifdef _WIN32

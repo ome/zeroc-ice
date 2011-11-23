@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,7 @@ int
 main(int argc, char* argv[])
 {
     HelloClient app;
-    return app.main(argc, argv, "config");
+    return app.main(argc, argv, "config.client");
 }
 
 void
@@ -58,7 +58,7 @@ HelloClient::run(int argc, char* argv[])
     }
     catch(const Ice::NotRegisteredException&)
     {
-	string proxy = communicator()->getProperties()->getProperty("IceGrid.InstanceName") + "/Query";
+	string proxy = "DemoIceGrid/Query";
 	IceGrid::QueryPrx query = IceGrid::QueryPrx::checkedCast(communicator()->stringToProxy(proxy));
 	hello = HelloPrx::checkedCast(query->findObjectByType("::Demo::Hello"));
     }

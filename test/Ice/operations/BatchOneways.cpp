@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,9 +16,9 @@ using namespace std;
 void
 batchOneways(const Test::MyClassPrx& p)
 {
-    const Test::ByteS bs1(10  * 1024, 0);
-    const Test::ByteS bs2(99  * 1024, 0);
-    const Test::ByteS bs3(100  * 1024, 0);
+    const Test::ByteS bs1(10  * 1024);
+    const Test::ByteS bs2(99  * 1024);
+    const Test::ByteS bs3(100  * 1024);
     
     try
     {
@@ -66,7 +66,7 @@ batchOneways(const Test::MyClassPrx& p)
 	    test(false);
 	}
 	
-	batch->ice_connection()->flushBatchRequests();
+	batch->ice_getConnection()->flushBatchRequests();
     }
     
     for(i = 0 ; i < 10 ; ++i)
@@ -94,6 +94,6 @@ batchOneways(const Test::MyClassPrx& p)
 	    test(false);
 	}
 	
-	batch->ice_connection()->flushBatchRequests();
+	batch->ice_getConnection()->flushBatchRequests();
     }
 }

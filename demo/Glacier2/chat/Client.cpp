@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,9 +18,9 @@ class SessionPingThread : public IceUtil::Thread, public IceUtil::Monitor<IceUti
 {
 public:
 
-    SessionPingThread(const Glacier2::SessionPrx& session) :
+    SessionPingThread(const Glacier2::SessionPrx& session, long timeout) :
         _session(session),
-        _timeout(IceUtil::Time::seconds(20)),
+        _timeout(IceUtil::Time::seconds(timeout)),
         _destroy(false)
     {
     }
@@ -70,7 +70,19 @@ public:
     virtual void
     message(const string& data, const Ice::Current&)
     {
+#ifdef __xlC__
+
+	//
+	// The xlC compiler synchronizes cin and cout; to see the messages
+	// while accepting input through cin, we have to print the messages
+	// with printf
+	//
+
+	printf("%s\n", data.c_str());
+	fflush(0);
+#else
 	cout << data << endl;
+#endif
     }
 };
 
@@ -123,13 +135,12 @@ public:
 	    }
 	}
 
-	SessionPingThreadPtr ping = new SessionPingThread(session);
+	SessionPingThreadPtr ping = new SessionPingThread(session, (long)router->getSessionTimeout() / 2);
 	ping->start();
 
-	string category = router->getServerProxy()->ice_getIdentity().category;
 	Ice::Identity callbackReceiverIdent;
 	callbackReceiverIdent.name = "callbackReceiver";
-	callbackReceiverIdent.category = category;
+	callbackReceiverIdent.category = router->getCategoryForClient();
 
 	Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Chat.Client");
 	ChatCallbackPrx callback = ChatCallbackPrx::uncheckedCast(
@@ -165,7 +176,17 @@ public:
 		}
 	    }
 	    while(cin.good());
-	    router->destroySession();
+
+	    try
+	    {
+		router->destroySession();
+	    }
+	    catch(const Ice::ConnectionLostException&)
+	    {
+		//
+		// Expected: the router closed the connection.
+		//
+	    }
 	}
 	catch(const Ice::Exception& ex)
 	{
@@ -208,5 +229,5 @@ int
 main(int argc, char* argv[])
 {
     ChatClient app;
-    return app.main(argc, argv, "config");
+    return app.main(argc, argv, "config.client");
 }

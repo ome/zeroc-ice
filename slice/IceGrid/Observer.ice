@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -59,7 +59,7 @@ struct ServerDynamicInfo
  * A sequence of server dynamic information structures.
  * 
  **/
-sequence<ServerDynamicInfo> ServerDynamicInfoSeq;
+["java:type:{java.util.LinkedList}"] sequence<ServerDynamicInfo> ServerDynamicInfoSeq;
 
 /**
  *
@@ -88,7 +88,7 @@ struct AdapterDynamicInfo
  * A sequence of adapter dynamic information structures.
  *
  **/
-sequence<AdapterDynamicInfo> AdapterDynamicInfoSeq;
+["java:type:{java.util.LinkedList}"] sequence<AdapterDynamicInfo> AdapterDynamicInfoSeq;
 
 /**
  *
@@ -144,7 +144,7 @@ interface NodeObserver
 {
     /**
      *
-     * The init method is called after the registration of the
+     * The init operation is called after the registration of the
      * observer to communicate the current state of the node to the
      * observer implementation.
      *
@@ -155,7 +155,7 @@ interface NodeObserver
 
     /**
      *
-     * The nodeUp method is called to notify the observer that a node
+     * The nodeUp operation is called to notify the observer that a node
      * came up.
      * 
      * @param node The node state.
@@ -165,7 +165,7 @@ interface NodeObserver
 
     /**
      *
-     * The nodeDown method is called to notify the observer that a node
+     * The nodeDown operation is called to notify the observer that a node
      * went down.
      * 
      * @param name The node name.
@@ -175,7 +175,7 @@ interface NodeObserver
 
     /**
      *
-     * The updateServer method is called to notify the observer that
+     * The updateServer operation is called to notify the observer that
      * the state of a server changed.
      *
      * @param node The node hosting the server.
@@ -187,7 +187,7 @@ interface NodeObserver
 
     /**
      *
-     * The updateAdapter method is called to notify the observer that
+     * The updateAdapter operation is called to notify the observer that
      * the state of an adapter changed.
      * 
      * @param node The node hosting the adapter.
@@ -209,7 +209,7 @@ interface RegistryObserver
 {
     /**
      *
-     * The init method is called after the registration of the
+     * The init operation is called after the registration of the
      * observer to communicate the current state of the registry to the
      * observer implementation.
      *
@@ -220,12 +220,18 @@ interface RegistryObserver
      * @param applications The applications currently registered with
      * the registry.
      *
+     * @param adapters The adapters that were dynamically registered
+     * with the registry (not through the deployment mechanism).
+     *
+     * @param objects The objects registered with the [Admin]
+     * interface (not through the deployment mechanism).
+     *
      **/
-    ["ami"] void init(int serial, ApplicationDescriptorSeq applications);
+    ["ami"] void init(int serial, ApplicationDescriptorSeq applications, AdapterInfoSeq adpts, ObjectInfoSeq objects);
 
     /**
      * 
-     * The applicationAdded method is called to notify the observer
+     * The applicationAdded operation is called to notify the observer
      * that an application was added.
      *
      * @param serial The new serial number of the registry database.
@@ -237,7 +243,7 @@ interface RegistryObserver
 
     /**
      *
-     * The applicationRemoved method is called to notify the observer
+     * The applicationRemoved operation is called to notify the observer
      * that an application was removed.
      *
      * @param serial The new serial number of the registry database.
@@ -249,7 +255,7 @@ interface RegistryObserver
 
     /**
      * 
-     * The applicationUpdated method is called to notify the observer
+     * The applicationUpdated operation is called to notify the observer
      * that an application was updated.
      *
      * @param serial The new serial number of the registry database.
@@ -258,156 +264,54 @@ interface RegistryObserver
      * 
      **/
     void applicationUpdated(int serial, ApplicationUpdateDescriptor desc);
-};
-
-interface Query;
-interface Admin;
-
-interface Session extends Glacier2::Session
-{
-    /**
-     *
-     * Keep the session alive. Clients should call this method
-     * regularly to prevent the server from reaping the session.
-     *
-     **/
-    void keepAlive();
 
     /**
      *
-     * Get the session timeout configured for the node.
+     * The adapterAdded operation is called to notify the observer when
+     * a dynamically-registered adapter was added.
      *
      **/
-    nonmutating int getTimeout();
+    void adapterAdded(int serial, AdapterInfo info);
 
     /**
      *
-     * Get the query interface.
+     * The adapterUpdated operation is called to notify the observer when
+     * a dynamically-registered adapter was updated.
      *
      **/
-    nonmutating Query* getQuery();
+    void adapterUpdated(int serial, AdapterInfo info);
 
     /**
      *
-     * Get the admin interface.
+     * The adapterRemoved operation is called to notify the observer when
+     * a dynamically-registered adapter was removed.
      *
      **/
-    nonmutating Admin* getAdmin();
+    void adapterRemoved(int serial, string id);
 
     /**
      *
-     * Set the proxies of the observer objects that will receive
-     * notifications from the servers when the state of the registry
-     * or nodes changes.
-     *
-     * @param registryObs The registry observer.
-     *
-     * @param nodeObs The node observer.
+     * The objectAdded operation is called to notify the observer when an
+     * object was added through the [Admin] interface.
      *
      **/
-    void setObservers(RegistryObserver* registryObs, NodeObserver* nodeObs);
+    void objectAdded(int serial, ObjectInfo info);
 
     /**
      *
-     * Set the identities of the observer objects that will receive
-     * notifications from the servers when the state of the registry
-     * or nodes changes. This method should be used by clients which
-     * are using a bidirectional connection to communicate with the
-     * session.
-     *
-     * @param registryObs The registry observer identity.
-     *
-     * @param nodeObs The node observer identity.
+     * The objectUpdated operation is called to notify the observer when
+     * an object registered through the [Admin] interface was updated.
      *
      **/
-    void setObserversByIdentity(Ice::Identity registryObs, Ice::Identity nodeObs);
+    void objectUpdated(int serial, ObjectInfo info);
 
     /**
      *
-     * Acquires an exclusive lock to start updating the registry applications.
-     *
-     * @return The current serial.
-     * 
-     * @throws AccessDeniedException Raised if the exclusive lock can't be
-     * acquired. This might be because it's already acquired by
-     * another session.
+     * The objectRemoved operation is called to notify the observer when
+     * an object registered through the [Admin] interface was removed.
      *
      **/
-    int startUpdate()
-	throws AccessDeniedException;
-    
-    /**
-     *
-     * Add an application. This method must be called to update the
-     * registry applications using the lock mechanism.
-     *
-     * @throws AccessDeniedException Raised if the session doesn't hold the
-     * exclusive lock.
-     *
-     **/
-    void addApplication(ApplicationDescriptor application)
-	throws AccessDeniedException, DeploymentException;
-
-    /**
-     *
-     * Update an application. This method must be called to update the
-     * registry applications using the lock mechanism.
-     *
-     * @throws AccessDeniedException Raised if the session doesn't hold the
-     * exclusive lock.
-     *
-     **/
-    void syncApplication(ApplicationDescriptor app)
-	throws AccessDeniedException, DeploymentException, ApplicationNotExistException;
-
-    /**
-     *
-     * Update an application. This method must be called to update the
-     * registry applications using the lock mechanism.
-     *
-     * @throws AccessDeniedException Raised if the session doesn't hold the
-     * exclusive lock.
-     *
-     **/
-    void updateApplication(ApplicationUpdateDescriptor update)
-	throws AccessDeniedException, DeploymentException, ApplicationNotExistException;
-
-    /**
-     *
-     * Update an application. This method must be called to update the
-     * registry applications using the lock mechanism.
-     *
-     * @throws AccessDeniedException Raised if the session doesn't hold the
-     * exclusive lock.
-     *
-     **/
-    void removeApplication(string name)
-	throws AccessDeniedException, ApplicationNotExistException;
-
-    /**
-     *
-     * Finish updating the registry and release the exclusive lock.
-     *
-     * @throws AccessDeniedException Raised if the session doesn't hold the
-     * exclusive lock.
-     *
-     **/
-    void finishUpdate()
-	throws AccessDeniedException;
-};
-
-interface SessionManager extends Glacier2::SessionManager
-{
-    /**
-     *
-     * Create a local session.
-     *
-     * @param userId Identifies the session user.
-     *
-     * @return The proxy of the local session.
-     *
-     **/
-    Session* createLocalSession(string userId);
+    void objectRemoved(int serial, Ice::Identity id);
 };
 
 };

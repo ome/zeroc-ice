@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,15 +15,20 @@
 using namespace std;
 using namespace IceGrid;
 
-NodeSessionI::NodeSessionI(const DatabasePtr& database, const string& name, const NodePrx& node, 
-			   const NodeInfo& info) : 
+NodeSessionI::NodeSessionI(const DatabasePtr& database, 
+			   const string& name, 
+			   const NodePrx& node, 
+			   const NodeInfo& info,
+			   const NodeObserverPrx& observer,
+			   int timeout) : 
     _database(database),
     _traceLevels(database->getTraceLevels()),
     _name(name),
-    _node(node),
+    _node(NodePrx::uncheckedCast(node->ice_timeout(timeout * 1000))),
     _info(info),
-    _startTime(IceUtil::Time::now()),
-    _timestamp(_startTime),
+    _observer(observer),
+    _timeout(timeout),
+    _timestamp(IceUtil::Time::now()),
     _destroy(false)
 {
     __setNoDelete(true);
@@ -59,6 +64,13 @@ NodeSessionI::keepAlive(const LoadInfo& load, const Ice::Current& current)
     }
 }
 
+int
+NodeSessionI::getTimeoutAndObserver(NodeObserverPrx& observer, const Ice::Current& current) const
+{
+    observer = _observer;
+    return _timeout;
+}
+
 Ice::StringSeq
 NodeSessionI::getServers(const Ice::Current& current)
 {
@@ -78,12 +90,15 @@ NodeSessionI::destroy(const Ice::Current& current)
 
     _database->removeNode(_name);
 
-    try
+    if(current.adapter)
     {
-	current.adapter->remove(current.id);
-    }
-    catch(const Ice::ObjectAdapterDeactivatedException&)
-    {
+	try
+	{
+	    current.adapter->remove(current.id);
+	}
+	catch(const Ice::ObjectAdapterDeactivatedException&)
+	{
+	}
     }
 }
 

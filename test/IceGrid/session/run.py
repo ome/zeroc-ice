@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -23,39 +23,21 @@ import IceGridAdmin
 
 name = os.path.join("IceGrid", "session")
 testdir = os.path.join(toplevel, "test", name)
-client = os.path.join(testdir, "client")
-
-#
-# Add locator options for the client and server. Since the server
-# invokes on the locator it's also considered to be a client.
-#
-additionalOptions = " --Ice.Default.Locator=\"IceGrid/Locator:default -p 12345\" " + \
-    "--Ice.PrintAdapterReady=0 --Ice.PrintProcessId=0 --IceDir=\"" + toplevel + "\" --TestDir=\"" + testdir + "\""
-
-IceGridAdmin.cleanDbDir(os.path.join(testdir, "db"))
-iceGridRegistryThread = IceGridAdmin.startIceGridRegistry("12345", testdir, 0)
-iceGridNodeThread = IceGridAdmin.startIceGridNode(testdir)
 
 node1Dir = os.path.join(testdir, "db", "node-1")
-os.mkdir(node1Dir)
-    
-print "starting client...",
-clientPipe = os.popen(client + TestUtil.clientServerOptions + additionalOptions + " 2>&1")
-print "ok"
-
-try:
-    TestUtil.printOutputFromPipe(clientPipe)
-except:
-    pass
-    
-clientStatus = clientPipe.close()
-
-IceGridAdmin.shutdownIceGridNode()
-iceGridNodeThread.join()
-IceGridAdmin.shutdownIceGridRegistry()
-iceGridRegistryThread.join()
-
-if clientStatus:
-    sys.exit(1)
+if not os.path.exists(node1Dir):
+    os.mkdir(node1Dir)
 else:
-    sys.exit(0)
+    IceGridAdmin.cleanDbDir(node1Dir)
+
+IceGridAdmin.registryOptions += \
+                             r' --IceGrid.Registry.DynamicRegistration' + \
+                             r' --IceGrid.Registry.PermissionsVerifier="ClientPermissionsVerifier"' + \
+                             r' --IceGrid.Registry.AdminPermissionsVerifier="AdminPermissionsVerifier"' + \
+                             r' --IceGrid.Registry.SSLPermissionsVerifier="SSLPermissionsVerifier"' + \
+                             r' --IceGrid.Registry.AdminSSLPermissionsVerifier="SSLPermissionsVerifier"'
+
+IceGridAdmin.iceGridTest(name, "application.xml", \
+                         "--IceDir=\"" + toplevel + "\" --TestDir=\"" + testdir + "\"", \
+                         '\\"properties-override=' + TestUtil.clientServerOptions.replace("--", "") + '\\"')
+sys.exit(0)

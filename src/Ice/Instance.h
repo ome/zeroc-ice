@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -32,6 +32,7 @@
 #include <Ice/EndpointFactoryManagerF.h>
 #include <Ice/DynamicLibraryF.h>
 #include <Ice/PluginF.h>
+#include <Ice/Initialize.h>
 #include <list>
 
 namespace Ice
@@ -49,10 +50,7 @@ class Instance : public IceUtil::Shared, public IceUtil::RecMutex
 public:
 
     bool destroyed() const;
-    Ice::PropertiesPtr properties() const;
-    Ice::LoggerPtr logger() const;
-    void logger(const Ice::LoggerPtr&);
-    Ice::StatsPtr stats() const;
+    const Ice::InitializationData& initializationData() const { return _initData; }
     void stats(const Ice::StatsPtr&);
     TraceLevelsPtr traceLevels() const;
     DefaultsAndOverridesPtr defaultsAndOverrides() const;
@@ -71,16 +69,16 @@ public:
     EndpointFactoryManagerPtr endpointFactoryManager() const;
     DynamicLibraryListPtr dynamicLibraryList() const;
     Ice::PluginManagerPtr pluginManager() const;
-    size_t messageSizeMax() const;
+    size_t messageSizeMax() const { return _messageSizeMax; }
     Ice::Int clientACM() const;
     Ice::Int serverACM() const;
     void flushBatchRequests();
-    void setDefaultContext(const ::Ice::Context&);
-    ::Ice::Context getDefaultContext() const;
+    Ice::Identity stringToIdentity(const std::string&) const;
+    std::string identityToString(const Ice::Identity&) const;
     
 private:
 
-    Instance(const Ice::CommunicatorPtr&, const Ice::PropertiesPtr&, const Ice::LoggerPtr&);
+    Instance(const Ice::CommunicatorPtr&, const Ice::InitializationData&);
     virtual ~Instance();
     void finishSetup(int&, char*[]);
     bool destroy();
@@ -93,9 +91,7 @@ private:
 	StateDestroyed
     };
     State _state;
-    const Ice::PropertiesPtr _properties; // Immutable, not reset by destroy().
-    Ice::LoggerPtr _logger; // Not reset by destroy().
-    Ice::StatsPtr _stats; // Not reset by destroy().
+    Ice::InitializationData _initData;
     const TraceLevelsPtr _traceLevels; // Immutable, not reset by destroy().
     const DefaultsAndOverridesPtr _defaultsAndOverrides; // Immutable, not reset by destroy().
     const size_t _messageSizeMax; // Immutable, not reset by destroy().
@@ -116,7 +112,23 @@ private:
     EndpointFactoryManagerPtr _endpointFactoryManager;
     DynamicLibraryListPtr _dynamicLibraryList;
     Ice::PluginManagerPtr _pluginManager;
-    Ice::Context _defaultContext;
+};
+
+class UTF8BufferI : public Ice::UTF8Buffer
+{
+public:
+
+   UTF8BufferI();
+   ~UTF8BufferI();
+
+   Ice::Byte* getMoreBytes(size_t howMany, Ice::Byte* firstUnused);
+   Ice::Byte* getBuffer();
+   void reset();
+
+private:
+
+    Ice::Byte* _buffer;
+    size_t _offset;
 };
 
 }

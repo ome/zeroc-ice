@@ -6,13 +6,15 @@ Requirements
 Operating System
 ----------------
 
-MacOS X 10.3.x or 10.4.x
+Ice is expected to build and run properly on any recent Mac OS X
+version. However, Ice is officially supported only on Mac OS X 10.4.x.
 
 
 C++ compiler
 ------------
 
-GCC 3.3 or 4.0.1
+Ice is expected to build properly with GCC 3.3 or later. However, only
+the GCC 4.0.1 compiler is officially supported on Mac OS X 10.4.x.
 
 
 Third-party libraries
@@ -39,11 +41,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ tar xvfz Ice-3.0.1.tar.gz
+$ tar xvfz Ice-3.1.0.tar.gz
 
-Change the working directory to Ice-3.0.1:
+Change the working directory to Ice-3.1.0:
 
-$ cd Ice-3.0.1
+$ cd Ice-3.1.0
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular

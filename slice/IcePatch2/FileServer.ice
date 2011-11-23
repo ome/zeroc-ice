@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -113,7 +113,7 @@ interface FileServer
      * @return A sequence containing the compressed file contents.
      *
      **/
-    ["ami"] nonmutating Ice::ByteSeq getFileCompressed(string path, int pos, int num)
+    ["ami", "amd", "cpp:array"] nonmutating Ice::ByteSeq getFileCompressed(string path, int pos, int num)
 	throws FileAccessException;
 };
 

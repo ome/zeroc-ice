@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -82,8 +82,9 @@ Ice::InputStreamI::readByte()
 vector<Byte>
 Ice::InputStreamI::readByteSeq()
 {
-    vector<Byte> v;
-    _is.read(v);
+    pair<const Byte*, const Byte*> p;
+    _is.read(p);
+    vector<Byte> v(p.first, p.second);
     return v;
 }
 
@@ -179,6 +180,22 @@ vector<string>
 Ice::InputStreamI::readStringSeq()
 {
     vector<string> v;
+    _is.read(v);
+    return v;
+}
+
+wstring
+Ice::InputStreamI::readWstring()
+{
+    wstring v;
+    _is.read(v);
+    return v;
+}
+
+vector<wstring>
+Ice::InputStreamI::readWstringSeq()
+{
+    vector<wstring> v;
     _is.read(v);
     return v;
 }
@@ -303,7 +320,14 @@ Ice::OutputStreamI::writeByte(Byte v)
 void
 Ice::OutputStreamI::writeByteSeq(const vector<Byte>& v)
 {
-    _os.write(v);
+    if(v.size() == 0)
+    {
+        _os.writeSize(0);
+    }
+    else
+    {
+        _os.write(&v[0], &v[0] + v.size());
+    }
 }
 
 void
@@ -315,7 +339,14 @@ Ice::OutputStreamI::writeShort(Short v)
 void
 Ice::OutputStreamI::writeShortSeq(const vector<Short>& v)
 {
-    _os.write(v);
+    if(v.size() == 0)
+    {
+        _os.writeSize(0);
+    }
+    else
+    {
+        _os.write(&v[0], &v[0] + v.size());
+    }
 }
 
 void
@@ -327,7 +358,14 @@ Ice::OutputStreamI::writeInt(Int v)
 void
 Ice::OutputStreamI::writeIntSeq(const vector<Int>& v)
 {
-    _os.write(v);
+    if(v.size() == 0)
+    {
+        _os.writeSize(0);
+    }
+    else
+    {
+        _os.write(&v[0], &v[0] + v.size());
+    }
 }
 
 void
@@ -339,7 +377,14 @@ Ice::OutputStreamI::writeLong(Long v)
 void
 Ice::OutputStreamI::writeLongSeq(const vector<Long>& v)
 {
-    _os.write(v);
+    if(v.size() == 0)
+    {
+        _os.writeSize(0);
+    }
+    else
+    {
+        _os.write(&v[0], &v[0] + v.size());
+    }
 }
 
 void
@@ -351,7 +396,14 @@ Ice::OutputStreamI::writeFloat(Float v)
 void
 Ice::OutputStreamI::writeFloatSeq(const vector<Float>& v)
 {
-    _os.write(v);
+    if(v.size() == 0)
+    {
+        _os.writeSize(0);
+    }
+    else
+    {
+        _os.write(&v[0], &v[0] + v.size());
+    }
 }
 
 void
@@ -363,7 +415,14 @@ Ice::OutputStreamI::writeDouble(Double v)
 void
 Ice::OutputStreamI::writeDoubleSeq(const vector<Double>& v)
 {
-    _os.write(v);
+    if(v.size() == 0)
+    {
+        _os.writeSize(0);
+    }
+    else
+    {
+        _os.write(&v[0], &v[0] + v.size());
+    }
 }
 
 void
@@ -375,7 +434,33 @@ Ice::OutputStreamI::writeString(const string& v)
 void
 Ice::OutputStreamI::writeStringSeq(const vector<string>& v)
 {
+    if(v.size() == 0)
+    {
+        _os.writeSize(0);
+    }
+    else
+    {
+        _os.write(&v[0], &v[0] + v.size());
+    }
+}
+
+void
+Ice::OutputStreamI::writeWstring(const wstring& v)
+{
     _os.write(v);
+}
+
+void
+Ice::OutputStreamI::writeWstringSeq(const vector<wstring>& v)
+{
+    if(v.size() == 0)
+    {
+        _os.writeSize(0);
+    }
+    else
+    {
+        _os.write(&v[0], &v[0] + v.size());
+    }
 }
 
 void

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,7 +14,8 @@
 using namespace std;
 
 int
-run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
+run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator,
+    const Ice::InitializationData& initData)
 {
     //
     // Register the server manager. The server manager creates a new
@@ -23,7 +24,7 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
     //
     Ice::PropertiesPtr properties = communicator->getProperties();
     properties->setProperty("Ice.ThreadPool.Server.Size", "2");
-    properties->setProperty("ServerManager.Endpoints", "default -p 12345:udp");
+    properties->setProperty("ServerManager.Endpoints", "default -p 12010:udp");
 
     Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("ServerManager");
 
@@ -33,15 +34,15 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
     // 'servers' created with the server manager interface.
     //
     ServerLocatorRegistryPtr registry = new ServerLocatorRegistry();
-    registry->addObject(adapter->createProxy(Ice::stringToIdentity("ServerManager")));
-    Ice::ObjectPtr object = new ServerManagerI(adapter, registry);
-    adapter->add(object, Ice::stringToIdentity("ServerManager"));
+    registry->addObject(adapter->createProxy(communicator->stringToIdentity("ServerManager")));
+    Ice::ObjectPtr object = new ServerManagerI(adapter, registry, initData);
+    adapter->add(object, communicator->stringToIdentity("ServerManager"));
 
     Ice::LocatorRegistryPrx registryPrx = 
-	Ice::LocatorRegistryPrx::uncheckedCast(adapter->add(registry, Ice::stringToIdentity("registry")));
+	Ice::LocatorRegistryPrx::uncheckedCast(adapter->add(registry, communicator->stringToIdentity("registry")));
 
     Ice::LocatorPtr locator = new ServerLocator(registry, registryPrx);
-    adapter->add(locator, Ice::stringToIdentity("locator"));
+    adapter->add(locator, communicator->stringToIdentity("locator"));
 
     adapter->activate();
     communicator->waitForShutdown();
@@ -57,8 +58,12 @@ main(int argc, char* argv[])
 
     try
     {
-	communicator = Ice::initialize(argc, argv);
-	status = run(argc, argv, communicator);
+	Ice::InitializationData initData;
+	initData.properties = Ice::createProperties(argc, argv);
+	communicator = Ice::initialize(argc, argv, initData);
+	assert(initData.properties != communicator->getProperties());
+
+	status = run(argc, argv, communicator, initData);
     }
     catch(const Ice::Exception& ex)
     {

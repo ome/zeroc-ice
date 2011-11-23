@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,6 +18,8 @@
 #include <Ice/LocatorInfo.h>
 #include <Ice/ProxyFactory.h>
 #include <Ice/RouterInfo.h>
+#include <Ice/Outgoing.h> // For LocalExceptionWrapper.
+#include <Ice/Protocol.h>
 
 using namespace std;
 using namespace Ice;
@@ -28,6 +30,9 @@ void IceInternal::decRef(OutgoingAsync* p) { p->__decRef(); }
 
 void IceInternal::incRef(AMI_Object_ice_invoke* p) { p->__incRef(); }
 void IceInternal::decRef(AMI_Object_ice_invoke* p) { p->__decRef(); }
+
+void IceInternal::incRef(AMI_Array_Object_ice_invoke* p) { p->__incRef(); }
+void IceInternal::decRef(AMI_Array_Object_ice_invoke* p) { p->__decRef(); }
 
 IceInternal::OutgoingAsync::OutgoingAsync() :
     __is(0),
@@ -88,7 +93,7 @@ IceInternal::OutgoingAsync::__finished(BasicStream& is)
 		}
 		
 		string operation;
-		__is->read(operation);
+		__is->read(operation, false);
 		
 		auto_ptr<RequestFailedException> ex;
 		switch(static_cast<DispatchStatus>(status))
@@ -129,7 +134,7 @@ IceInternal::OutgoingAsync::__finished(BasicStream& is)
 	    case DispatchUnknownUserException:
 	    {
 		string unknown;
-		__is->read(unknown);
+		__is->read(unknown, false);
 		
 		auto_ptr<UnknownException> ex;
 		switch(static_cast<DispatchStatus>(status))
@@ -202,10 +207,8 @@ IceInternal::OutgoingAsync::__finished(const LocalException& exc)
 {
     IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(_monitor);
 
-    if(_reference)
+    if(__os) // Don't retry if cleanup() was already called.
     {
-	bool doRetry = false;
-	
 	//
 	// A CloseConnectionException indicates graceful server
 	// shutdown, and is therefore always repeatable without
@@ -223,28 +226,13 @@ IceInternal::OutgoingAsync::__finished(const LocalException& exc)
 	{
 	    try
 	    {
-		ProxyFactoryPtr proxyFactory = _reference->getInstance()->proxyFactory();
-		if(proxyFactory)
-		{
-		    proxyFactory->checkRetryAfterException(exc, _reference, _cnt);
-		}
-		else
-		{
-		    exc.ice_throw(); // The communicator is already destroyed, so we cannot retry.
-		}
-		
-		doRetry = true;
+		_proxy->__handleException(exc, _cnt);
+		__send();
+		return;
 	    }
 	    catch(const LocalException&)
 	    {
 	    }
-	}
-	
-	if(doRetry)
-	{
-	    _connection = 0;
-	    __send();
-	    return;
 	}
     }
     
@@ -279,7 +267,7 @@ IceInternal::OutgoingAsync::__prepare(const ObjectPrx& prx, const string& operat
 	//
 	// We must first wait for other requests to finish.
 	//
-	while(_reference)
+	while(__os)
 	{
 	    _monitor.wait();
 	}
@@ -287,46 +275,36 @@ IceInternal::OutgoingAsync::__prepare(const ObjectPrx& prx, const string& operat
 	//
 	// Can't call async via a oneway proxy.
 	//
-	prx->__checkTwowayOnly(operation.c_str());
+	prx->__checkTwowayOnly(operation);
 
-	_reference = prx->__reference();
-	assert(!_connection);
-	_connection = _reference->getConnection(_compress);
+	_proxy = prx;
 	_cnt = 0;
 	_mode = mode;
+
+	ReferencePtr ref = _proxy->__reference();
 	assert(!__is);
-	__is = new BasicStream(_reference->getInstance().get());
+	__is = new BasicStream(ref->getInstance().get());
 	assert(!__os);
-	__os = new BasicStream(_reference->getInstance().get());
+	__os = new BasicStream(ref->getInstance().get());
 	
-	//
-	// If we are using a router, then add the proxy to the router info object.
-	//
-	RoutableReferencePtr rr = RoutableReferencePtr::dynamicCast(_reference);
-	if(rr && rr->getRouterInfo())
-	{
-	    rr->getRouterInfo()->addProxy(prx);
-	}
+	__os->writeBlob(requestHdr, sizeof(requestHdr));
 
-	_connection->prepareRequest(__os);
-
-	_reference->getIdentity().__write(__os);
+	ref->getIdentity().__write(__os);
 
 	//
 	// For compatibility with the old FacetPath.
 	//
-	if(_reference->getFacet().empty())
+	if(ref->getFacet().empty())
 	{
-	    __os->write(vector<string>());
+	    __os->write(static_cast<string*>(0), static_cast<string*>(0));
 	}
 	else
 	{
-	    vector<string> facetPath;
-	    facetPath.push_back(_reference->getFacet());
-	    __os->write(facetPath);
+	    string facet = ref->getFacet();
+	    __os->write(&facet, &facet + 1);
 	}
 
-	__os->write(operation);
+	__os->write(operation, false);
 
 	__os->write(static_cast<Byte>(_mode));
 
@@ -356,14 +334,11 @@ IceInternal::OutgoingAsync::__send()
     {
 	while(true)
 	{
-	    if(!_connection)
-	    {
-		_connection = _reference->getConnection(_compress);
-	    }
-	    
+	    bool compress;
+	    Ice::ConnectionIPtr connection = _proxy->__getDelegate()->__getConnection(compress);
 	    try
 	    {
-		_connection->sendAsyncRequest(__os, this, _compress);
+		connection->sendAsyncRequest(__os, this, compress);
 		
 		//
 		// Don't do anything after sendAsyncRequest() returned
@@ -374,20 +349,14 @@ IceInternal::OutgoingAsync::__send()
 		//
 		return;
 	    }
+	    catch(const LocalExceptionWrapper& ex)
+	    {
+		_proxy->__handleExceptionWrapper(ex);
+	    }
 	    catch(const LocalException& ex)
 	    {
-		ProxyFactoryPtr proxyFactory = _reference->getInstance()->proxyFactory();
-		if(proxyFactory)
-		{
-		    proxyFactory->checkRetryAfterException(ex, _reference, _cnt);
-		}
-		else
-		{
-		    ex.ice_throw(); // The communicator is already destroyed, so we cannot retry.
-		}
+		_proxy->__handleException(ex, _cnt);
 	    }
-
-	    _connection = 0;
 	}
     }
     catch(const LocalException& ex)
@@ -399,11 +368,13 @@ IceInternal::OutgoingAsync::__send()
 void
 IceInternal::OutgoingAsync::warning(const Exception& ex) const
 {
-    if(_reference) // Don't print anything if cleanup() was already called.
+    if(__os) // Don't print anything if cleanup() was already called.
     {
-	if(_reference->getInstance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.AMICallback", 1) > 0)
+	ReferencePtr ref = _proxy->__reference();
+	if(ref->getInstance()->initializationData().properties->
+		getPropertyAsIntWithDefault("Ice.Warn.AMICallback", 1) > 0)
 	{
-	    Warning out(_reference->getInstance()->logger());
+	    Warning out(ref->getInstance()->initializationData().logger);
 	    out << "Ice::Exception raised by AMI callback:\n" << ex;
 	}
     }
@@ -412,11 +383,13 @@ IceInternal::OutgoingAsync::warning(const Exception& ex) const
 void
 IceInternal::OutgoingAsync::warning(const std::exception& ex) const
 {
-    if(_reference) // Don't print anything if cleanup() was already called.
+    if(__os) // Don't print anything if cleanup() was already called.
     {
-	if(_reference->getInstance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.AMICallback", 1) > 0)
+	ReferencePtr ref = _proxy->__reference();
+	if(ref->getInstance()->initializationData().properties->
+		getPropertyAsIntWithDefault("Ice.Warn.AMICallback", 1) > 0)
 	{
-	    Warning out(_reference->getInstance()->logger());
+	    Warning out(ref->getInstance()->initializationData().logger);
 	    out << "std::exception raised by AMI callback:\n" << ex.what();
 	}
     }
@@ -425,11 +398,13 @@ IceInternal::OutgoingAsync::warning(const std::exception& ex) const
 void
 IceInternal::OutgoingAsync::warning() const
 {
-    if(_reference) // Don't print anything if cleanup() was already called.
+    if(__os) // Don't print anything if cleanup() was already called.
     {
-	if(_reference->getInstance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.AMICallback", 1) > 0)
+	ReferencePtr ref = _proxy->__reference();
+	if(ref->getInstance()->initializationData().properties->
+		getPropertyAsIntWithDefault("Ice.Warn.AMICallback", 1) > 0)
 	{
-	    Warning out(_reference->getInstance()->logger());
+	    Warning out(ref->getInstance()->initializationData().logger);
 	    out << "unknown exception raised by AMI callback";
 	}
     }
@@ -438,8 +413,6 @@ IceInternal::OutgoingAsync::warning() const
 void
 IceInternal::OutgoingAsync::cleanup()
 {
-    _reference = 0;
-    _connection = 0;
     delete __is;
     __is = 0;
     delete __os;
@@ -474,6 +447,42 @@ Ice::AMI_Object_ice_invoke::__response(bool ok) // ok == true means no user exce
     {
 	Int sz = __is->getReadEncapsSize();
 	__is->readBlob(outParams, sz);
+    }
+    catch(const LocalException& ex)
+    {
+	__finished(ex);
+	return;
+    }
+    ice_response(ok, outParams);
+}
+
+void
+Ice::AMI_Array_Object_ice_invoke::__invoke(const ObjectPrx& prx, const string& operation, OperationMode mode,
+				           const pair<const Byte*, const Byte*>& inParams, const Context& context)
+{
+    try
+    {
+	__prepare(prx, operation, mode, context);
+	__os->writeBlob(inParams.first, static_cast<Int>(inParams.second - inParams.first));
+	__os->endWriteEncaps();
+    }
+    catch(const LocalException& ex)
+    {
+	__finished(ex);
+	return;
+    }
+    __send();
+}
+
+void
+Ice::AMI_Array_Object_ice_invoke::__response(bool ok) // ok == true means no user exception.
+{
+    pair<const Byte*, const Byte*> outParams;
+    try
+    {
+	Int sz = __is->getReadEncapsSize();
+	__is->readBlob(outParams.first, sz);
+	outParams.second = outParams.first + sz;
     }
     catch(const LocalException& ex)
     {

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -132,6 +132,32 @@ local interface Communicator
 
     /**
      *
+     * Convert a string into an identity.
+     *
+     * @param str The string to convert into an identity.
+     *
+     * @return The identity.
+     *
+     * @see identityToString
+     *
+     **/
+    nonmutating Identity stringToIdentity(string str);
+
+    /**
+     *
+     * Convert an identity into a string.
+     *
+     * @param ident The identity to convert into a string.
+     *
+     * @return The "stringified" identity.
+     *
+     * @see stringToIdentity
+     *
+     **/
+    nonmutating string identityToString(Identity ident);
+
+    /**
+     *
      * Create a new object adapter. The endpoints for the object
      * adapter are taken from the property
      * <literal><replaceable>name</replaceable>.Endpoints</literal>.
@@ -149,7 +175,7 @@ local interface Communicator
 
     /**
      *
-     * Create a new object adapter with endpoints. This method sets
+     * Create a new object adapter with endpoints. This operation sets
      * the property
      * <literal><replaceable>name</replaceable>.Endpoints</literal>,
      * and then calls [createObjectAdapter]. It is provided as a
@@ -167,6 +193,24 @@ local interface Communicator
      *
      **/
     ObjectAdapter createObjectAdapterWithEndpoints(string name, string endpoints);
+
+    /**
+     *
+     * Create a new object adapter with a router. This operation
+     * creates a routed object adapter.
+     * 
+     * @param name The object adapter name.
+     *
+     * @param router The router.
+     *
+     * @return The new object adapter.
+     *
+     * @see createObjectAdapter
+     * @see ObjectAdapter
+     * @see Properties
+     *
+     **/
+    ObjectAdapter createObjectAdapterWithRouter(string name, Router* rtr);
 
     /**
      *
@@ -205,27 +249,11 @@ local interface Communicator
      * @param id The type id for which the factory can create instances, or
      * an empty string for the default factory.
      *
-     * @see removeObjectFactory
      * @see findObjectFactory
      * @see ObjectFactory
      *
      **/
     void addObjectFactory(ObjectFactory factory, string id);
-
-    /**
-     *
-     * Remove a servant factory from this communicator. Removing an id
-     * for which no factory is registered throws [NotRegisteredException].
-     *
-     * @param id The type id for which the factory can create instances,
-     * or an empty string for the default factory.
-     *
-     * @see addObjectFactory
-     * @see findObjectFactory
-     * @see ObjectFactory
-     *
-     **/
-    void removeObjectFactory(string id);
 
     /**
      *
@@ -238,23 +266,10 @@ local interface Communicator
      * found for the given id.
      *
      * @see addObjectFactory
-     * @see removeObjectFactory
      * @see ObjectFactory
      *
      **/
     nonmutating ObjectFactory findObjectFactory(string id);
-
-    /**
-     *
-     * Set a default context on this communicator. Once set,
-     * all proxies that do not explicitly override the context
-     * on a per-proxy or per-invocation basis send this context
-     * with every invocation. To clear a context, call
-     * [setContext] with an empty context.
-     *
-     * @param ctx The default context to be set.
-     **/
-    void setDefaultContext(Context ctx);
 
     /**
      *
@@ -284,7 +299,6 @@ local interface Communicator
      *
      * @return This communicator's logger.
      *
-     * @see setLogger
      * @see Logger
      *
      **/
@@ -292,40 +306,14 @@ local interface Communicator
 
     /**
      *
-     * Set the logger for this communicator.
-     *
-     * @param log The logger to use for this communicator.
-     *
-     * @see getLogger
-     * @see Logger
-     *
-     **/
-    void setLogger(Logger log);
-
-    /**
-     *
      * Get the statistics callback object for this communicator.
      *
      * @return This communicator's statistics callback object.
      *
-     * @see setStats
      * @see Stats
      *
      **/
     nonmutating Stats getStats();
-
-    /**
-     *
-     * Set the statistics callback object for this communicator.
-     *
-     * @param st The statistics callback object to use for this
-     * communicator.
-     *
-     * @see getStats
-     * @see Stats
-     *
-     **/
-    void setStats(Stats st);
 
     /**
      *
@@ -352,8 +340,8 @@ local interface Communicator
      * @param rtr The default router to use for this communicator.
      *
      * @see getDefaultRouter
+     * @see createObjectAdapterWithRouter
      * @see Router
-     * @see ObjectAdapter::addRouter
      *
      **/
     void setDefaultRouter(Router* rtr);

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -83,93 +83,27 @@ Ice::stringSeqToArgs(const StringSeq& args, int& argc, char* argv[])
 }
 
 PropertiesPtr
-Ice::createProperties()
+Ice::createProperties(const StringConverterPtr& converter)
 {
-    return new PropertiesI();
+    return new PropertiesI(converter);
 }
 
 PropertiesPtr
-Ice::createProperties(StringSeq& args)
+Ice::createProperties(StringSeq& args, const PropertiesPtr& defaults, const StringConverterPtr& converter)
 {
-    return new PropertiesI(args);
+    return new PropertiesI(args, defaults, converter);
 }
 
 PropertiesPtr
-Ice::createProperties(int& argc, char* argv[])
+Ice::createProperties(int& argc, char* argv[], const PropertiesPtr& defaults, const StringConverterPtr& converter)
 {
     StringSeq args = argsToStringSeq(argc, argv);
-    PropertiesPtr properties = createProperties(args);
+    PropertiesPtr properties = createProperties(args, defaults, converter);
     stringSeqToArgs(args, argc, argv);
     return properties;
 }
 
-static PropertiesPtr defaultProperties;
-class DefaultPropertiesDestroyer
-{
-public:
-
-    ~DefaultPropertiesDestroyer()
-    {
-	defaultProperties = 0;
-    }
-};
-static DefaultPropertiesDestroyer defaultPropertiesDestroyer;
-static IceUtil::StaticMutex defaultPropMutex = ICE_STATIC_MUTEX_INITIALIZER;
-
-PropertiesPtr
-Ice::getDefaultProperties()
-{
-    IceUtil::StaticMutex::Lock sync(defaultPropMutex);
-    if(!defaultProperties)
-    {
-	defaultProperties = createProperties();
-    }
-    return defaultProperties;
-}
-
-PropertiesPtr
-Ice::getDefaultProperties(StringSeq& args)
-{
-    IceUtil::StaticMutex::Lock sync(defaultPropMutex);
-    if(!defaultProperties)
-    {
-	defaultProperties = createProperties(args);
-    }
-    return defaultProperties;
-}
-
-PropertiesPtr
-Ice::getDefaultProperties(int& argc, char* argv[])
-{
-    StringSeq args = argsToStringSeq(argc, argv);
-    PropertiesPtr properties = getDefaultProperties(args);
-    stringSeqToArgs(args, argc, argv);
-    return properties;
-}
-
-CommunicatorPtr
-Ice::initialize(int& argc, char* argv[], Int version)
-{
-    PropertiesPtr properties = getDefaultProperties(argc, argv);
-    return initializeWithPropertiesAndLogger(argc, argv, properties, 0, version);
-}
-
-CommunicatorPtr
-Ice::initializeWithProperties(int& argc, char* argv[], const PropertiesPtr& properties, Int version)
-{
-    return initializeWithPropertiesAndLogger(argc, argv, properties, 0, version);
-}
-
-CommunicatorPtr
-Ice::initializeWithLogger(int& argc, char* argv[], const LoggerPtr& logger, Int version)
-{
-    PropertiesPtr properties = getDefaultProperties(argc, argv);
-    return initializeWithPropertiesAndLogger(argc, argv, properties, logger, version);
-}
-
-CommunicatorPtr
-Ice::initializeWithPropertiesAndLogger(int& argc, char* argv[], const PropertiesPtr& properties,
-				       const LoggerPtr& logger, Int version)
+inline void checkIceVersion(Int version)
 {
 #ifndef ICE_IGNORE_VERSION
     //
@@ -188,15 +122,65 @@ Ice::initializeWithPropertiesAndLogger(int& argc, char* argv[], const Properties
 	throw VersionMismatchException(__FILE__, __LINE__);
     }
 #endif
+}
 
-    StringSeq args = argsToStringSeq(argc, argv);
-    args = properties->parseIceCommandLineOptions(args);
-    stringSeqToArgs(args, argc, argv);
 
-    CommunicatorI* communicatorI = new CommunicatorI(properties, logger);
+CommunicatorPtr
+Ice::initialize(int& argc, char* argv[], const InitializationData& initializationData, Int version)
+{
+    checkIceVersion(version);
+
+    InitializationData initData = initializationData;
+    initData.properties = createProperties(argc, argv, initData.properties, initData.stringConverter);
+
+    CommunicatorI* communicatorI = new CommunicatorI(initData);
     CommunicatorPtr result = communicatorI; // For exception safety.
     communicatorI->finishSetup(argc, argv);
     return result;
+}
+
+CommunicatorPtr
+Ice::initialize(const InitializationData& initData, Int version)
+{
+    //
+    // We can't simply call the other initialize() because this one does NOT read
+    // the config file, while the other one always does.
+    //
+    checkIceVersion(version);
+
+    CommunicatorI* communicatorI = new CommunicatorI(initData);
+    CommunicatorPtr result = communicatorI; // For exception safety.
+    int argc = 0;
+    char* argv[] = { 0 };
+    communicatorI->finishSetup(argc, argv);
+    return result;
+}
+
+
+CommunicatorPtr
+Ice::initializeWithProperties(int& argc, char* argv[], const PropertiesPtr& properties, Int version)
+{
+    InitializationData initData;
+    initData.properties = properties;
+    return initialize(argc, argv, initData, version);
+}
+
+CommunicatorPtr
+Ice::initializeWithLogger(int& argc, char* argv[], const LoggerPtr& logger, Int version)
+{
+    InitializationData initData;
+    initData.logger = logger;
+    return initialize(argc, argv, initData, version);
+}
+
+CommunicatorPtr
+Ice::initializeWithPropertiesAndLogger(int& argc, char* argv[], const PropertiesPtr& properties,
+				       const LoggerPtr& logger, Int version)
+{
+    InitializationData initData;
+    initData.properties = properties;
+    initData.logger = logger;
+    return initialize(argc, argv, initData, version);
 }
 
 InputStreamPtr

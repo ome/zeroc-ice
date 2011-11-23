@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,7 @@ using namespace IceUtil;
 Slice::Gen::Gen(const string& name, const string& base,	const string& headerExtension,
 	        const string& sourceExtension, const vector<string>& extraHeaders, const string& include,
 		const vector<string>& includePaths, const string& dllExport, const string& dir,
-		bool imp, bool checksum, bool stream) :
+		bool imp, bool checksum, bool stream, bool ice) :
     _base(base),
     _headerExtension(headerExtension),
     _sourceExtension(sourceExtension),
@@ -33,7 +33,8 @@ Slice::Gen::Gen(const string& name, const string& base,	const string& headerExte
     _dllExport(dllExport),
     _impl(imp),
     _checksum(checksum),
-    _stream(stream)
+    _stream(stream),
+    _ice(ice)
 {
     for(vector<string>::iterator p = _includePaths.begin(); p != _includePaths.end(); ++p)
     {
@@ -43,11 +44,7 @@ Slice::Gen::Gen(const string& name, const string& base,	const string& headerExte
 	}
     }
 
-    string::size_type pos = _base.rfind('/');
-    if(pos == string::npos)
-    {
-        pos = _base.rfind('\\');
-    }
+    string::size_type pos = _base.find_last_of("/\\");
     if(pos != string::npos)
     {
 	_base.erase(0, pos + 1);
@@ -243,6 +240,8 @@ Slice::Gen::generate(const UnitPtr& p)
         C << "\n#include <Ice/SliceChecksums.h>";
     }
 
+    C << "\n#include <IceUtil/Iterator.h>";
+
     StringList includes = p->includeFiles();
 
     for(StringList::const_iterator q = includes.begin(); q != includes.end(); ++q)
@@ -251,6 +250,14 @@ Slice::Gen::generate(const UnitPtr& p)
     }
 
     H << "\n#include <Ice/UndefSysMacros.h>";
+
+    if(_ice)
+    {
+        C << "\n#include <IceUtil/DisableWarnings.h>";
+    }
+
+    GlobalIncludeVisitor globalIncludeVisitor(H);
+    p->visit(&globalIncludeVisitor, false);
 
     printVersionCheck(H);
     printVersionCheck(C);
@@ -376,14 +383,46 @@ Slice::Gen::writeExtraHeaders(IceUtil::Output& out)
     }
 }
 
+Slice::Gen::GlobalIncludeVisitor::GlobalIncludeVisitor(Output& h) :
+    H(h), _finished(false)
+{
+}
+
+bool
+Slice::Gen::GlobalIncludeVisitor::visitModuleStart(const ModulePtr& p)
+{
+    if(!_finished)
+    {
+        DefinitionContextPtr dc = p->definitionContext();
+        assert(dc);
+        StringList globalMetaData = dc->getMetaData();
+
+        static const string includePrefix = "cpp:include:";
+    
+        for(StringList::const_iterator q = globalMetaData.begin(); q != globalMetaData.end(); ++q)
+        {
+            string s = *q;
+            if(s.find(includePrefix) == 0)
+            {
+	        H << nl << "#include <" << s.substr(includePrefix.size()) << ">";
+            }
+        }
+	_finished = true;
+    }
+
+    return false;
+}
+
 Slice::Gen::TypesVisitor::TypesVisitor(Output& h, Output& c, const string& dllExport, bool stream) :
-    H(h), C(c), _dllExport(dllExport), _stream(stream), _doneStaticSymbol(false)
+    H(h), C(c), _dllExport(dllExport), _stream(stream), _doneStaticSymbol(false), _useWstring(false)
 {
 }
 
 bool
 Slice::Gen::TypesVisitor::visitModuleStart(const ModulePtr& p)
 {
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
+
     string name = fixKwd(p->name());
     
     H << sp << nl << "namespace " << name << nl << '{';
@@ -395,17 +434,50 @@ void
 Slice::Gen::TypesVisitor::visitModuleEnd(const ModulePtr& p)
 {
     H << sp << nl << '}';
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 bool
-Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr&)
+Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
 {
+    if(!p->isInterface() && !p->isLocal())
+    {
+	string name = fixKwd(p->name());
+	string scope = fixKwd(p->scope());
+
+	C << sp << nl << "void";
+	C << nl << scope.substr(2) << "__addObject(const " << name << "Ptr& p, ::IceInternal::GCCountMap& c)";
+	C << sb;
+	C << nl << "p->__addObject(c);";
+	C << eb;
+
+	C << sp << nl << "bool";
+	C << nl << scope.substr(2) << "__usesClasses(const " << name << "Ptr& p)";
+	C << sb;
+	C << nl << "return p->__usesClasses();";
+	C << eb;
+
+	C << sp << nl << "void";
+	C << nl << scope.substr(2) << "__decRefUnsafe(" << name << "Ptr& p)";
+	C << sb;
+	C << nl << "p->__decRefUnsafe();";
+	C << eb;
+
+	C << sp << nl << "void";
+	C << nl << scope.substr(2) << "__clearHandleUnsafe(" << name << "Ptr& p)";
+	C << sb;
+	C << nl << "p.__clearHandleUnsafe();";
+	C << eb;
+    }
     return false;
 }
 
 bool
 Slice::Gen::TypesVisitor::visitExceptionStart(const ExceptionPtr& p)
 {
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
+
     string name = fixKwd(p->name());
     string scoped = fixKwd(p->scoped());
     ExceptionPtr base = p->base();
@@ -426,10 +498,9 @@ Slice::Gen::TypesVisitor::visitExceptionStart(const ExceptionPtr& p)
 
     for(q = allDataMembers.begin(); q != allDataMembers.end(); ++q)
     {
-	string paramName = fixKwd((*q)->name());
-	string typeName = inputTypeToString((*q)->type());
+	string typeName = inputTypeToString((*q)->type(), _useWstring, (*q)->getMetaData());
 	allTypes.push_back(typeName);
-	allParamDecls.push_back(typeName + " __ice_" + paramName);
+	allParamDecls.push_back(typeName + " __ice_" + (*q)->name());
     }
 
     if(base)
@@ -437,7 +508,7 @@ Slice::Gen::TypesVisitor::visitExceptionStart(const ExceptionPtr& p)
 	DataMemberList baseDataMembers = base->allDataMembers();
 	for(q = baseDataMembers.begin(); q != baseDataMembers.end(); ++q)
 	{
-	    baseParams.push_back("__ice_" + fixKwd((*q)->name()));
+	    baseParams.push_back("__ice_" + (*q)->name());
 	}
     }
 
@@ -469,7 +540,10 @@ Slice::Gen::TypesVisitor::visitExceptionStart(const ExceptionPtr& p)
     {
 	H << " {}";
     }
-    H << ';';
+    else
+    {
+	H << ';';
+    }
     if(!allTypes.empty())
     {
 	H << nl;
@@ -609,16 +683,14 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
         H << sp << nl << "virtual void __write(const ::Ice::OutputStreamPtr&) const;";
         H << nl << "virtual void __read(const ::Ice::InputStreamPtr&, bool);";
 
-	TypeStringList memberList;
-	for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
-	{
-	    memberList.push_back(make_pair((*q)->type(), (*q)->name()));
-	}
 	C << sp << nl << "void" << nl << scoped.substr(2) << "::__write(::IceInternal::BasicStream* __os) const";
 	C << sb;
-	C << nl << "__os->write(::std::string(\"" << p->scoped() << "\"));";
+	C << nl << "__os->write(::std::string(\"" << p->scoped() << "\"), false);";
 	C << nl << "__os->startWriteSlice();";
-	writeMarshalCode(C, memberList, 0);
+	for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+	{
+	    writeMarshalUnmarshalCode(C, (*q)->type(), fixKwd((*q)->name()), true, "", true, (*q)->getMetaData());
+	}
 	C << nl << "__os->endWriteSlice();";
 	if(base)
 	{
@@ -631,10 +703,13 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	C << nl << "if(__rid)";
 	C << sb;
 	C << nl << "::std::string myId;";
-	C << nl << "__is->read(myId);";
+	C << nl << "__is->read(myId, false);";
 	C << eb;
 	C << nl << "__is->startReadSlice();";
-	writeUnmarshalCode(C, memberList, 0);
+	for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+	{
+	    writeMarshalUnmarshalCode(C, (*q)->type(), fixKwd((*q)->name()), false, "", true, (*q)->getMetaData());
+	}
 	C << nl << "__is->endReadSlice();";
 	if(base)
 	{
@@ -644,11 +719,16 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 
         if(_stream)
         {
-            C << sp << nl << "void" << nl << scoped.substr(2) << "::__write(const ::Ice::OutputStreamPtr& __outS) const";
+            C << sp << nl << "void" << nl << scoped.substr(2) 
+	      << "::__write(const ::Ice::OutputStreamPtr& __outS) const";
             C << sb;
             C << nl << "__outS->writeString(::std::string(\"" << p->scoped() << "\"));";
             C << nl << "__outS->startSlice();";
-            writeStreamMarshalCode(C, memberList, 0);
+	    for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+	    {
+	        writeStreamMarshalUnmarshalCode(C, (*q)->type(), (*q)->name(), true, "", _useWstring, 
+						(*q)->getMetaData());
+	    }
             C << nl << "__outS->endSlice();";
 	    if(base)
 	    {
@@ -664,7 +744,11 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
             C << nl << "__inS->readString();";
             C << eb;
             C << nl << "__inS->startSlice();";
-            writeStreamUnmarshalCode(C, memberList, 0);
+	    for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+	    {
+	        writeStreamMarshalUnmarshalCode(C, (*q)->type(), (*q)->name(), false, "", _useWstring, 
+						(*q)->getMetaData());
+	    }
             C << nl << "__inS->endSlice();";
 	    if(base)
 	    {
@@ -763,11 +847,15 @@ Slice::Gen::TypesVisitor::visitExceptionEnd(const ExceptionPtr& p)
 	    H << sp << nl << "static " << name << " __" << p->name() << "_init;";
 	}
     }
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 bool
 Slice::Gen::TypesVisitor::visitStructStart(const StructPtr& p)
 {
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
+
     string name = fixKwd(p->name());
 
     H << sp << nl << "struct " << name;
@@ -798,6 +886,18 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
     H << nl << _dllExport << "bool operator==(const " << name << "&) const;";
     H << nl << _dllExport << "bool operator!=(const " << name << "&) const;";
     H << nl << _dllExport << "bool operator<(const " << name << "&) const;";
+    H << nl << _dllExport << "bool operator<=(const " << name << "& __rhs) const";
+    H << sb;
+    H << nl << "return operator<(__rhs) || operator==(__rhs);";
+    H << eb;
+    H << nl << _dllExport << "bool operator>(const " << name << "& __rhs) const";
+    H << sb;
+    H << nl << "return !operator<(__rhs) && !operator==(__rhs);";
+    H << eb;
+    H << nl << _dllExport << "bool operator>=(const " << name << "& __rhs) const";
+    H << sb;
+    H << nl << "return !operator<(__rhs);";
+    H << eb;
     
     C << sp << nl << "bool" << nl << scoped.substr(2) << "::operator==(const " << name << "& __rhs) const";
     C << sb;
@@ -848,35 +948,45 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 
         if(_stream)
         {
-            H << sp << nl << _dllExport << "void __write(const ::Ice::OutputStreamPtr&) const;";
-            H << nl << _dllExport << "void __read(const ::Ice::InputStreamPtr&);";
+            H << sp << nl << _dllExport << "void ice_write(const ::Ice::OutputStreamPtr&) const;";
+            H << nl << _dllExport << "void ice_read(const ::Ice::InputStreamPtr&);";
         }
 
-	TypeStringList memberList;
-	for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
-	{
-	    memberList.push_back(make_pair((*q)->type(), (*q)->name()));
-	}
 	C << sp << nl << "void" << nl << scoped.substr(2) << "::__write(::IceInternal::BasicStream* __os) const";
 	C << sb;
-	writeMarshalCode(C, memberList, 0);
+        for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+        {
+            writeMarshalUnmarshalCode(C, (*q)->type(), fixKwd((*q)->name()), true, "", true, (*q)->getMetaData());
+        }
 	C << eb;
 
 	C << sp << nl << "void" << nl << scoped.substr(2) << "::__read(::IceInternal::BasicStream* __is)";
 	C << sb;
-	writeUnmarshalCode(C, memberList, 0);
+        for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+        {
+            writeMarshalUnmarshalCode(C, (*q)->type(), fixKwd((*q)->name()), false, "", true, (*q)->getMetaData());
+        }
 	C << eb;
 
 	if(_stream)
 	{
-	    C << sp << nl << "void" << nl << scoped.substr(2) << "::__write(const ::Ice::OutputStreamPtr& __outS) const";
+	    C << sp << nl << "void" << nl << scoped.substr(2)
+	      << "::ice_write(const ::Ice::OutputStreamPtr& __outS) const";
 	    C << sb;
-	    writeStreamMarshalCode(C, memberList, 0);
+	    for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+	    {
+	        writeStreamMarshalUnmarshalCode(C, (*q)->type(), (*q)->name(), true, "", _useWstring, 
+						(*q)->getMetaData());
+	    }
 	    C << eb;
 
-	    C << sp << nl << "void" << nl << scoped.substr(2) << "::__read(const ::Ice::InputStreamPtr& __inS)";
+	    C << sp << nl << "void" << nl << scoped.substr(2) << "::ice_read(const ::Ice::InputStreamPtr& __inS)";
 	    C << sb;
-	    writeStreamUnmarshalCode(C, memberList, 0);
+	    for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+	    {
+	        writeStreamMarshalUnmarshalCode(C, (*q)->type(), (*q)->name(), false, "", _useWstring,
+						(*q)->getMetaData());
+	    }
 	    C << eb;
 	}
     }
@@ -892,22 +1002,24 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
         C << sp << nl << "void" << nl << scope.substr(2) << "ice_write" << p->name()
           << "(const ::Ice::OutputStreamPtr& __outS, const " << scoped << "& __v)";
         C << sb;
-        C << nl << "__v.__write(__outS);";
+        C << nl << "__v.ice_write(__outS);";
         C << eb;
 
         C << sp << nl << "void" << nl << scope.substr(2) << "ice_read" << p->name()
           << "(const ::Ice::InputStreamPtr& __inS, " << scoped << "& __v)";
         C << sb;
-        C << nl << "__v.__read(__inS);";
+        C << nl << "__v.ice_read(__inS);";
         C << eb;
     }
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 void
 Slice::Gen::TypesVisitor::visitDataMember(const DataMemberPtr& p)
 {
     string name = fixKwd(p->name());
-    string s = typeToString(p->type());
+    string s = typeToString(p->type(), _useWstring, p->getMetaData());
     H << nl << s << ' ' << name << ';';
 }
 
@@ -916,113 +1028,221 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
 {
     string name = fixKwd(p->name());
     TypePtr type = p->type();
-    string s = typeToString(type);
-    if(s[0] == ':')
+    string s = typeToString(type, _useWstring, p->typeMetaData());
+    StringList metaData = p->getMetaData();
+    string seqType = findMetaData(metaData, false);
+    if(!seqType.empty())
     {
-	s.insert(0, " ");
+        H << sp << nl << "typedef " << seqType << ' ' << name << ';';
     }
-    H << sp << nl << "typedef ::std::vector<" << s << "> " << name << ';';
+    else
+    {
+        H << sp << nl << "typedef ::std::vector<" << (s[0] == ':' ? " " : "") << s << "> " << name << ';';
+    }
 
     BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
-    if(!p->isLocal() &&
-	(!builtin || builtin->kind() == Builtin::KindObject || builtin->kind() == Builtin::KindObjectProxy))
+    if(!p->isLocal())
     {
 	string scoped = fixKwd(p->scoped());
 	string scope = fixKwd(p->scope());
 
 	H << sp << nl << "class __U__" << name << " { };";
-	H << nl << _dllExport << "void __write(::IceInternal::BasicStream*, const " << name << "&, __U__" << name
-	  << ");";
-	H << nl << _dllExport << "void __read(::IceInternal::BasicStream*, " << name << "&, __U__" << name << ");";
 
-        if(_stream)
+        if(!seqType.empty())
         {
-            H << nl << _dllExport << "void ice_write" << p->name() << "(const ::Ice::OutputStreamPtr&, const "
-              << name << "&);";
-            H << nl << _dllExport << "void ice_read" << p->name() << "(const ::Ice::InputStreamPtr&, " << name << "&);";
+            H << nl << _dllExport << "void __write(::IceInternal::BasicStream*, const " << name << "&, __U__"
+              << name << ");";
+            H << nl << _dllExport << "void __read(::IceInternal::BasicStream*, " << name << "&, __U__" << name << ");";
+
+            if(_stream)
+            {
+                H << nl << _dllExport << "void ice_write" << p->name() << "(const ::Ice::OutputStreamPtr&, const "
+                  << name << "&);";
+                H << nl << _dllExport << "void ice_read" << p->name() << "(const ::Ice::InputStreamPtr&, " << name 
+		  << "&);";
+            }
+
+            C << sp << nl << "void" << nl << scope.substr(2) << "__write(::IceInternal::BasicStream* __os, const "
+              << scoped << "& v, " << scope << "__U__" << name << ")";
+            C << sb;
+            C << nl << "::Ice::Int size = static_cast< ::Ice::Int>(v.size());";
+            C << nl << "__os->writeSize(size);";
+            C << nl << "for(" << name << "::const_iterator p = v.begin(); p != v.end(); ++p)";
+            C << sb;
+            writeMarshalUnmarshalCode(C, type, "(*p)", true);
+            C << eb;
+            C << eb;
+
+            C << sp << nl << "void" << nl << scope.substr(2) << "__read(::IceInternal::BasicStream* __is, " << scoped
+              << "& v, " << scope << "__U__" << name << ')';
+            C << sb;
+            C << nl << "::Ice::Int sz;";
+            C << nl << "__is->readSize(sz);";
+            C << nl << name << "(sz).swap(v);";
+            if(type->isVariableLength())
+            {
+                // Protect against bogus sequence sizes.
+                C << nl << "__is->startSeq(sz, " << type->minWireSize() << ");";
+            }
+            else
+            {
+                C << nl << "__is->checkFixedSeq(sz, " << type->minWireSize() << ");";
+            }
+            C << nl << "for(" << name << "::iterator p = v.begin(); p != v.end(); ++p)";
+            C << sb;
+            writeMarshalUnmarshalCode(C, type, "(*p)", false);
+
+            //
+            // After unmarshaling each element, check that there are still enough bytes left in the stream
+            // to unmarshal the remainder of the sequence, and decrement the count of elements
+            // yet to be unmarshaled for sequences with variable-length element type (that is, for sequences
+            // of classes, structs, dictionaries, sequences, strings, or proxies). This allows us to
+            // abort unmarshaling for bogus sequence sizes at the earliest possible moment.
+            // (For fixed-length sequences, we don't need to do this because the prediction of how many
+            // bytes will be taken up by the sequence is accurate.)
+            //
+            if(type->isVariableLength())
+            {
+                if(!SequencePtr::dynamicCast(type))
+                {
+                    //
+                    // No need to check for directly nested sequences because, at the start of each
+                    // sequence, we check anyway.
+                    //
+                    C << nl << "__is->checkSeq();";
+                }
+                C << nl << "__is->endElement();";
+            }
+            C << eb;
+            if(type->isVariableLength())
+            {
+                C << nl << "__is->endSeq(sz);";
+            }
+            C << eb;
+
+            if(_stream)
+            {
+                C << sp << nl << "void" << nl << scope.substr(2) << "ice_write" << p->name()
+                  << "(const ::Ice::OutputStreamPtr& __outS, const " << scoped << "& v)";
+                C << sb;
+                C << nl << "__outS->writeSize(::Ice::Int(v.size()));";
+                C << nl << scoped << "::const_iterator p;";
+                C << nl << "for(p = v.begin(); p != v.end(); ++p)";
+                C << sb;
+                writeStreamMarshalUnmarshalCode(C, type, "(*p)", true, "", _useWstring);
+                C << eb;
+                C << eb;
+
+                C << sp << nl << "void" << nl << scope.substr(2) << "ice_read" << p->name()
+                  << "(const ::Ice::InputStreamPtr& __inS, " << scoped << "& v)";
+                C << sb;
+                C << nl << "::Ice::Int sz = __inS->readSize();";
+                C << nl << scoped << "(sz).swap(v);";
+                C << nl << scoped << "::iterator p;";
+                C << nl << "for(p = v.begin(); p != v.end(); ++p)";
+                C << sb;
+                writeStreamMarshalUnmarshalCode(C, type, "(*p)", false, "", _useWstring);
+                C << eb;
+                C << eb;
+            }
         }
+        else if(!builtin || builtin->kind() == Builtin::KindObject || builtin->kind() == Builtin::KindObjectProxy)
+        {
+	    H << nl << _dllExport << "void __write(::IceInternal::BasicStream*, const " << s << "*, const " << s
+	      << "*, __U__" << name << ");";
+	    H << nl << _dllExport << "void __read(::IceInternal::BasicStream*, " << name << "&, __U__" << name << ");";
 
-	C << sp << nl << "void" << nl << scope.substr(2) << "__write(::IceInternal::BasicStream* __os, const "
-	  << scoped << "& v, " << scope << "__U__" << name << ")";
-	C << sb;
-	C << nl << "__os->writeSize(::Ice::Int(v.size()));";
-	C << nl << scoped << "::const_iterator p;";
-	C << nl << "for(p = v.begin(); p != v.end(); ++p)";
-	C << sb;
-	writeMarshalUnmarshalCode(C, type, "(*p)", true);
-	C << eb;
-	C << eb;
+            if(_stream)
+            {
+                H << nl << _dllExport << "void ice_write" << p->name() << "(const ::Ice::OutputStreamPtr&, const "
+                  << name << "&);";
+                H << nl << _dllExport << "void ice_read" << p->name() << "(const ::Ice::InputStreamPtr&, " << name 
+		  << "&);";
+            }
 
-	C << sp << nl << "void" << nl << scope.substr(2) << "__read(::IceInternal::BasicStream* __is, " << scoped
-	  << "& v, " << scope << "__U__" << name << ')';
-	C << sb;
-	C << nl << "::Ice::Int sz;";
-	C << nl << "__is->readSize(sz);";
-	if(type->isVariableLength())
-	{
-	    C << nl << "__is->startSeq(sz, " << type->minWireSize() << ");"; // Protect against bogus sequence sizes.
-	}
-	else
-	{
-	    C << nl << "__is->checkFixedSeq(sz, " << type->minWireSize() << ");";
-	}
-	C << nl << "v.resize(sz);";
-	C << nl << "for(int i = 0; i < sz; ++i)";
-	C << sb;
-	writeMarshalUnmarshalCode(C, type, "v[i]", false);
+	    C << sp << nl << "void" << nl << scope.substr(2) << "__write(::IceInternal::BasicStream* __os, const "
+	      << s << "* begin, const " << s << "* end, " << scope << "__U__" << name << ")";
+	    C << sb;
+	    C << nl << "::Ice::Int size = static_cast< ::Ice::Int>(end - begin);";
+	    C << nl << "__os->writeSize(size);";
+	    C << nl << "for(int i = 0; i < size; ++i)";
+	    C << sb;
+	    writeMarshalUnmarshalCode(C, type, "begin[i]", true);
+	    C << eb;
+	    C << eb;
 
-	//
-	// After unmarshaling each element, check that there are still enough bytes left in the stream
-	// to unmarshal the remainder of the sequence, and decrement the count of elements
-	// yet to be unmarshaled for sequences with variable-length element type (that is, for sequences
-	// of classes, structs, dictionaries, sequences, strings, or proxies). This allows us to
-	// abort unmarshaling for bogus sequence sizes at the earliest possible moment.
-	// (For fixed-length sequences, we don't need to do this because the prediction of how many
-	// bytes will be taken up by the sequence is accurate.)
-	//
-	if(type->isVariableLength())
-	{
-	    if(!SequencePtr::dynamicCast(type))
+	    C << sp << nl << "void" << nl << scope.substr(2) << "__read(::IceInternal::BasicStream* __is, " << scoped
+	      << "& v, " << scope << "__U__" << name << ')';
+	    C << sb;
+	    C << nl << "::Ice::Int sz;";
+	    C << nl << "__is->readSize(sz);";
+	    if(type->isVariableLength())
 	    {
-		//
-		// No need to check for directly nested sequences because, at the start of each
-		// sequence, we check anyway.
-		//
-		C << nl << "__is->checkSeq();";
+		// Protect against bogus sequence sizes.
+	        C << nl << "__is->startSeq(sz, " << type->minWireSize() << ");";
 	    }
-	    C << nl << "__is->endElement();";
-	}
-	C << eb;
-	if(type->isVariableLength())
-	{
-	    C << nl << "__is->endSeq(sz);";
-	}
-	C << eb;
+	    else
+	    {
+	        C << nl << "__is->checkFixedSeq(sz, " << type->minWireSize() << ");";
+	    }
+	    C << nl << "v.resize(sz);";
+	    C << nl << "for(int i = 0; i < sz; ++i)";
+	    C << sb;
+	    writeMarshalUnmarshalCode(C, type, "v[i]", false);
 
-        if(_stream)
-        {
-            C << sp << nl << "void" << nl << scope.substr(2) << "ice_write" << p->name()
-              << "(const ::Ice::OutputStreamPtr& __outS, const " << scoped << "& v)";
-            C << sb;
-            C << nl << "__outS->writeSize(::Ice::Int(v.size()));";
-            C << nl << scoped << "::const_iterator p;";
-            C << nl << "for(p = v.begin(); p != v.end(); ++p)";
-            C << sb;
-            writeStreamMarshalUnmarshalCode(C, type, "(*p)", true);
-            C << eb;
-            C << eb;
+	    //
+	    // After unmarshaling each element, check that there are still enough bytes left in the stream
+	    // to unmarshal the remainder of the sequence, and decrement the count of elements
+	    // yet to be unmarshaled for sequences with variable-length element type (that is, for sequences
+	    // of classes, structs, dictionaries, sequences, strings, or proxies). This allows us to
+	    // abort unmarshaling for bogus sequence sizes at the earliest possible moment.
+	    // (For fixed-length sequences, we don't need to do this because the prediction of how many
+	    // bytes will be taken up by the sequence is accurate.)
+	    //
+	    if(type->isVariableLength())
+	    {
+	        if(!SequencePtr::dynamicCast(type))
+	        {
+		    //
+		    // No need to check for directly nested sequences because, at the start of each
+		    // sequence, we check anyway.
+		    //
+		    C << nl << "__is->checkSeq();";
+	        }
+	        C << nl << "__is->endElement();";
+	    }
+	    C << eb;
+	    if(type->isVariableLength())
+	    {
+	        C << nl << "__is->endSeq(sz);";
+	    }
+	    C << eb;
 
-            C << sp << nl << "void" << nl << scope.substr(2) << "ice_read" << p->name()
-              << "(const ::Ice::InputStreamPtr& __inS, " << scoped << "& v)";
-            C << sb;
-            C << nl << "::Ice::Int sz = __inS->readSize();";
-            C << nl << "v.resize(sz);";
-            C << nl << "for(int i = 0; i < sz; ++i)";
-            C << sb;
-            writeStreamMarshalUnmarshalCode(C, type, "v[i]", false);
-            C << eb;
-            C << eb;
-        }
+            if(_stream)
+            {
+                C << sp << nl << "void" << nl << scope.substr(2) << "ice_write" << p->name()
+                  << "(const ::Ice::OutputStreamPtr& __outS, const " << scoped << "& v)";
+                C << sb;
+                C << nl << "__outS->writeSize(::Ice::Int(v.size()));";
+                C << nl << scoped << "::const_iterator p;";
+                C << nl << "for(p = v.begin(); p != v.end(); ++p)";
+                C << sb;
+                writeStreamMarshalUnmarshalCode(C, type, "(*p)", true, "", _useWstring);
+                C << eb;
+                C << eb;
+
+                C << sp << nl << "void" << nl << scope.substr(2) << "ice_read" << p->name()
+                  << "(const ::Ice::InputStreamPtr& __inS, " << scoped << "& v)";
+                C << sb;
+                C << nl << "::Ice::Int sz = __inS->readSize();";
+                C << nl << "v.resize(sz);";
+                C << nl << "for(int i = 0; i < sz; ++i)";
+                C << sb;
+                writeStreamMarshalUnmarshalCode(C, type, "v[i]", false, "", _useWstring);
+                C << eb;
+                C << eb;
+            }
+	}
     }
 }
 
@@ -1032,12 +1252,12 @@ Slice::Gen::TypesVisitor::visitDictionary(const DictionaryPtr& p)
     string name = fixKwd(p->name());
     TypePtr keyType = p->keyType();
     TypePtr valueType = p->valueType();
-    string ks = typeToString(keyType);
+    string ks = typeToString(keyType, _useWstring, p->keyMetaData());
     if(ks[0] == ':')
     {
 	ks.insert(0, " ");
     }
-    string vs = typeToString(valueType);
+    string vs = typeToString(valueType, _useWstring, p->valueMetaData());
     H << sp << nl << "typedef ::std::map<" << ks << ", " << vs << "> " << name << ';';
 
     if(!p->isLocal())
@@ -1094,8 +1314,8 @@ Slice::Gen::TypesVisitor::visitDictionary(const DictionaryPtr& p)
 	    C << nl << scoped << "::const_iterator p;";
 	    C << nl << "for(p = v.begin(); p != v.end(); ++p)";
 	    C << sb;
-	    writeStreamMarshalUnmarshalCode(C, keyType, "p->first", true);
-	    writeStreamMarshalUnmarshalCode(C, valueType, "p->second", true);
+	    writeStreamMarshalUnmarshalCode(C, keyType, "p->first", true, "", _useWstring, p->keyMetaData());
+	    writeStreamMarshalUnmarshalCode(C, valueType, "p->second", true, "", _useWstring, p->valueMetaData());
 	    C << eb;
 	    C << eb;
 
@@ -1106,9 +1326,9 @@ Slice::Gen::TypesVisitor::visitDictionary(const DictionaryPtr& p)
 	    C << nl << "while(sz--)";
 	    C << sb;
 	    C << nl << "::std::pair<const " << ks << ", " << vs << "> pair;";
-	    writeStreamMarshalUnmarshalCode(C, keyType, pf, false);
+	    writeStreamMarshalUnmarshalCode(C, keyType, pf, false, "", _useWstring, p->keyMetaData());
 	    C << nl << scoped << "::iterator __i = v.insert(v.end(), pair);";
-	    writeStreamMarshalUnmarshalCode(C, valueType, "__i->second", false);
+	    writeStreamMarshalUnmarshalCode(C, valueType, "__i->second", false, "", _useWstring, p->valueMetaData());
 	    C << eb;
 	    C << eb;
 	}
@@ -1237,7 +1457,8 @@ void
 Slice::Gen::TypesVisitor::visitConst(const ConstPtr& p)
 {
     H << sp;
-    H << nl << "const " << typeToString(p->type()) << " " << fixKwd(p->name()) << " = ";
+    H << nl << "const " << typeToString(p->type(), _useWstring, p->typeMetaData()) << " " << fixKwd(p->name()) 
+      << " = ";
 
     BuiltinPtr bp = BuiltinPtr::dynamicCast(p->type());
     if(bp && bp->kind() == Builtin::KindString)
@@ -1252,6 +1473,10 @@ Slice::Gen::TypesVisitor::visitConst(const ConstPtr& p)
 					       "_{}[]#()<>%:;.?*+-/^&|~!=,\\\"' ";
     	static const set<char> charSet(basicSourceChars.begin(), basicSourceChars.end());
 
+	if(_useWstring || findMetaData(p->typeMetaData(), true) == "wstring")
+	{
+	    H << 'L';
+	}
 	H << "\"";					// Opening "
 
 	const string val = p->value();
@@ -1371,10 +1596,13 @@ Slice::Gen::ProxyDeclVisitor::visitClassDecl(const ClassDeclPtr& p)
     H << nl << _dllExport << "bool operator==(const " << name << "&, const " << name << "&);";
     H << nl << _dllExport << "bool operator!=(const " << name << "&, const " << name << "&);";
     H << nl << _dllExport << "bool operator<(const " << name << "&, const " << name << "&);";
+    H << nl << _dllExport << "bool operator<=(const " << name << "&, const " << name << "&);";
+    H << nl << _dllExport << "bool operator>(const " << name << "&, const " << name << "&);";
+    H << nl << _dllExport << "bool operator>=(const " << name << "&, const " << name << "&);";
 }
 
 Slice::Gen::ProxyVisitor::ProxyVisitor(Output& h, Output& c, const string& dllExport) :
-    H(h), C(c), _dllExport(dllExport)
+    H(h), C(c), _dllExport(dllExport), _useWstring(false)
 {
 }
 
@@ -1405,6 +1633,8 @@ Slice::Gen::ProxyVisitor::visitModuleStart(const ModulePtr& p)
 	return false;
     }
 
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
+
     string name = fixKwd(p->name());
     
     H << sp << nl << "namespace " << name << nl << '{';
@@ -1416,6 +1646,8 @@ void
 Slice::Gen::ProxyVisitor::visitModuleEnd(const ModulePtr& p)
 {
     H << sp << nl << '}';
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 bool
@@ -1425,6 +1657,8 @@ Slice::Gen::ProxyVisitor::visitClassDefStart(const ClassDefPtr& p)
     {
 	return false;
     }
+
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
 
     string name = fixKwd(p->name());
     string scoped = fixKwd(p->scoped());
@@ -1511,6 +1745,26 @@ Slice::Gen::ProxyVisitor::visitClassDefEnd(const ClassDefPtr& p)
     C << nl << "return static_cast<const ::IceProxy::Ice::Object&>(l) < "
       << "static_cast<const ::IceProxy::Ice::Object&>(r);";
     C << eb;
+    C << sp;
+    C << nl << "bool" << nl << "IceProxy" << scope << "operator<=(const ::IceProxy" << scoped
+      << "& l, const ::IceProxy" << scoped << "& r)";
+    C << sb;
+    C << nl << "return l < r || l == r;";
+    C << eb;
+    C << sp;
+    C << nl << "bool" << nl << "IceProxy" << scope << "operator>(const ::IceProxy" << scoped
+      << "& l, const ::IceProxy" << scoped << "& r)";
+    C << sb;
+    C << nl << "return !(l < r) && !(l == r);";
+    C << eb;
+    C << sp;
+    C << nl << "bool" << nl << "IceProxy" << scope << "operator>=(const ::IceProxy" << scoped
+      << "& l, const ::IceProxy" << scoped << "& r)";
+    C << sb;
+    C << nl << "return !(l < r);";
+    C << eb;
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 void
@@ -1521,7 +1775,10 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
     string scope = fixKwd(p->scope());
 
     TypePtr ret = p->returnType();
-    string retS = returnTypeToString(ret);
+    string retS = returnTypeToString(ret, _useWstring, p->getMetaData());
+
+    ContainerPtr container = p->container();
+    ClassDefPtr cl = ClassDefPtr::dynamicCast(container);
 
     vector<string> params;
     vector<string> paramsDecl;
@@ -1536,6 +1793,7 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
     {
 	string paramName = fixKwd((*q)->name());
 
+	StringList metaData = (*q)->getMetaData();
 #if defined(__SUNPRO_CC) && (__SUNPRO_CC==0x550)
 	//
 	// Work around for Sun CC 5.5 bug #4853566
@@ -1543,14 +1801,15 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
 	string typeString;
 	if((*q)->isOutParam())
 	{
-	    typeString = outputTypeToString((*q)->type());
+	    typeString = outputTypeToString((*q)->type(), _useWstring, metaData);
 	}
 	else
 	{
-	    typeString = inputTypeToString((*q)->type());
+	    typeString = inputTypeToString((*q)->type(), _useWstring, metaData);
 	}
 #else
-	string typeString = (*q)->isOutParam() ? outputTypeToString((*q)->type()) : inputTypeToString((*q)->type());
+	string typeString = (*q)->isOutParam() ?  outputTypeToString((*q)->type(), _useWstring, metaData) 
+					       : inputTypeToString((*q)->type(), _useWstring, metaData);
 #endif
 
 	params.push_back(typeString);
@@ -1559,7 +1818,7 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
 
 	if(!(*q)->isOutParam())
 	{
-	    string inputTypeString = inputTypeToString((*q)->type());
+	    string inputTypeString = inputTypeToString((*q)->type(), _useWstring, metaData);
 
 	    paramsAMI.push_back(inputTypeString);
 	    paramsDeclAMI.push_back(inputTypeString + ' ' + paramName);
@@ -1569,19 +1828,21 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
 
     string thisPointer = fixKwd(scope.substr(0, scope.size() - 2)) + "*";
 
-    H << sp;
-    H << nl << retS << ' ' << fixKwd(name) << spar << params << epar << ';';
-    H << nl << retS << ' ' << fixKwd(name) << spar << params << "const ::Ice::Context&" << epar << ';';
-
-    C << sp << nl << retS << nl << "IceProxy" << scoped << spar << paramsDecl << epar;
-    C << sb;
-    C << nl;
+    string deprecateMetadata, deprecateSymbol;
+    if(p->findMetaData("deprecate", deprecateMetadata) || cl->findMetaData("deprecate", deprecateMetadata))
+    {
+	deprecateSymbol = "ICE_DEPRECATED_API ";
+    }
+    H << sp << nl << deprecateSymbol << retS << ' ' << fixKwd(name) << spar << paramsDecl << epar;
+    H << sb;
+    H << nl;
     if(ret)
     {
-	C << "return ";
+	H << "return ";
     }
-    C << fixKwd(name) << spar << args << "__defaultContext()" << epar << ';';
-    C << eb;
+    H << fixKwd(name) << spar << args << "__defaultContext()" << epar << ';';
+    H << eb;
+    H << nl << retS << ' ' << fixKwd(name) << spar << params << "const ::Ice::Context&" << epar << ';';
 
     C << sp << nl << retS << nl << "IceProxy" << scoped << spar << paramsDecl << "const ::Ice::Context& __ctx" << epar;
     C << sb;
@@ -1592,7 +1853,7 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
     C << sb;
     if(p->returnsData())
     {
-        C << nl << "__checkTwowayOnly(\"" << name << "\");";
+        C << nl << "__checkTwowayOnly(" << p->flattenedScope() + p->name() + "_name);";
     }
     C << nl << "::IceInternal::Handle< ::IceDelegate::Ice::Object> __delBase = __getDelegate();";
     C << nl << "::IceDelegate" << thisPointer << " __del = dynamic_cast< ::IceDelegate"
@@ -1608,15 +1869,15 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
 	C << nl << "return;";
     }
     C << eb;
-    C << nl << "catch(const ::IceInternal::NonRepeatable& __ex)";
+    C << nl << "catch(const ::IceInternal::LocalExceptionWrapper& __ex)";
     C << sb;
     if(p->mode() == Operation::Idempotent || p->mode() == Operation::Nonmutating)
     {
-	C << nl << "__handleException(*__ex.get(), __cnt);";
+	C << nl << "__handleExceptionWrapperRelaxed(__ex, __cnt);";
     }
     else
     {
-	C << nl << "__rethrowException(*__ex.get());";
+	C << nl << "__handleExceptionWrapper(__ex);";
     }
     C << eb;
     C << nl << "catch(const ::Ice::LocalException& __ex)";
@@ -1626,17 +1887,15 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
     C << eb;
     C << eb;
 
-    ContainerPtr container = p->container();
-    ClassDefPtr cl = ClassDefPtr::dynamicCast(container);
     if(cl->hasMetaData("ami") || p->hasMetaData("ami"))
     {
 	string classNameAMI = "AMI_" + cl->name();
 	string classScope = fixKwd(cl->scope());
 	string classScopedAMI = classScope + classNameAMI;
 
-	H << nl << "void " << name << "_async" << spar << ("const" + classScopedAMI + '_' + name + "Ptr&")
+	H << nl << "void " << name << "_async" << spar << ("const " + classScopedAMI + '_' + name + "Ptr&")
 	  << paramsAMI << epar << ';';
-	H << nl << "void " << name << "_async" << spar << ("const" + classScopedAMI + '_' + name + "Ptr&")
+	H << nl << "void " << name << "_async" << spar << ("const " + classScopedAMI + '_' + name + "Ptr&")
 	  << paramsAMI << "const ::Ice::Context&" << epar << ';';
 
 	C << sp << nl << "void" << nl << "IceProxy" << scope << name << "_async" << spar
@@ -1655,7 +1914,7 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
 }
 
 Slice::Gen::DelegateVisitor::DelegateVisitor(Output& h, Output& c, const string& dllExport) :
-    H(h), C(c), _dllExport(dllExport)
+    H(h), C(c), _dllExport(dllExport), _useWstring(false)
 {
 }
 
@@ -1686,6 +1945,8 @@ Slice::Gen::DelegateVisitor::visitModuleStart(const ModulePtr& p)
 	return false;
     }
 
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
+
     string name = fixKwd(p->name());
     
     H << sp << nl << "namespace " << name << nl << '{';
@@ -1697,6 +1958,8 @@ void
 Slice::Gen::DelegateVisitor::visitModuleEnd(const ModulePtr& p)
 {
     H << sp << nl << '}';
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 bool
@@ -1706,6 +1969,8 @@ Slice::Gen::DelegateVisitor::visitClassDefStart(const ClassDefPtr& p)
     {
 	return false;
     }
+
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
 
     string name = fixKwd(p->name());
     ClassList bases = p->bases();
@@ -1741,6 +2006,8 @@ void
 Slice::Gen::DelegateVisitor::visitClassDefEnd(const ClassDefPtr& p)
 {
     H << eb << ';';
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 void
@@ -1749,13 +2016,14 @@ Slice::Gen::DelegateVisitor::visitOperation(const OperationPtr& p)
     string name = fixKwd(p->name());
 
     TypePtr ret = p->returnType();
-    string retS = returnTypeToString(ret);
+    string retS = returnTypeToString(ret, _useWstring, p->getMetaData());
 
     vector<string> params;
 
     ParamDeclList paramList = p->parameters();
     for(ParamDeclList::const_iterator q = paramList.begin(); q != paramList.end(); ++q)
     {
+        StringList metaData = (*q)->getMetaData();
 #if defined(__SUNPRO_CC) && (__SUNPRO_CC==0x550)
 	//
 	// Work around for Sun CC 5.5 bug #4853566
@@ -1763,14 +2031,15 @@ Slice::Gen::DelegateVisitor::visitOperation(const OperationPtr& p)
 	string typeString;
 	if((*q)->isOutParam())
 	{
-	    typeString = outputTypeToString((*q)->type());
+	    typeString = outputTypeToString((*q)->type(), _useWstring, metaData);
 	}
 	else
 	{
-	    typeString = inputTypeToString((*q)->type());
+	    typeString = inputTypeToString((*q)->type(), _useWstring, metaData);
 	}
 #else
-	string typeString = (*q)->isOutParam() ? outputTypeToString((*q)->type()) : inputTypeToString((*q)->type());
+	string typeString = (*q)->isOutParam() ?  outputTypeToString((*q)->type(), _useWstring, metaData)
+					       : inputTypeToString((*q)->type(), _useWstring, metaData);
 #endif
 
 	params.push_back(typeString);
@@ -1782,7 +2051,7 @@ Slice::Gen::DelegateVisitor::visitOperation(const OperationPtr& p)
 }
 
 Slice::Gen::DelegateMVisitor::DelegateMVisitor(Output& h, Output& c, const string& dllExport) :
-    H(h), C(c), _dllExport(dllExport)
+    H(h), C(c), _dllExport(dllExport), _useWstring(false)
 {
 }
 
@@ -1813,6 +2082,8 @@ Slice::Gen::DelegateMVisitor::visitModuleStart(const ModulePtr& p)
 	return false;
     }
 
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
+
     string name = fixKwd(p->name());
     
     H << sp << nl << "namespace " << name << nl << '{';
@@ -1824,6 +2095,8 @@ void
 Slice::Gen::DelegateMVisitor::visitModuleEnd(const ModulePtr& p)
 {
     H << sp << nl << '}';
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 bool
@@ -1833,6 +2106,8 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
     {
 	return false;
     }
+
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
 
     string name = fixKwd(p->name());
     string scoped = fixKwd(p->scoped());
@@ -1870,6 +2145,8 @@ void
 Slice::Gen::DelegateMVisitor::visitClassDefEnd(const ClassDefPtr& p)
 {
     H << eb << ';';
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 void
@@ -1879,29 +2156,30 @@ Slice::Gen::DelegateMVisitor::visitOperation(const OperationPtr& p)
     string scoped = fixKwd(p->scoped());
 
     TypePtr ret = p->returnType();
-    string retS = returnTypeToString(ret);
+    string retS = returnTypeToString(ret, _useWstring, p->getMetaData());
 
     vector<string> params;
     vector<string> paramsDecl;
 
-    TypeStringList inParams;
-    TypeStringList outParams;
+    ParamDeclList inParams;
+    ParamDeclList outParams;
     ParamDeclList paramList = p->parameters();
     for(ParamDeclList::const_iterator q = paramList.begin(); q != paramList.end(); ++q)
     {
 	string paramName = fixKwd((*q)->name());
 	TypePtr type = (*q)->type();
 	bool isOutParam = (*q)->isOutParam();
+	StringList metaData = (*q)->getMetaData();
 	string typeString;
 	if(isOutParam)
 	{
-	    outParams.push_back(make_pair(type, paramName));
-	    typeString = outputTypeToString(type);
+	    outParams.push_back(*q);
+	    typeString = outputTypeToString(type, _useWstring, metaData);
 	}
 	else
 	{
-	    inParams.push_back(make_pair(type, paramName));
-	    typeString = inputTypeToString(type);
+	    inParams.push_back(*q);
+	    typeString = inputTypeToString(type, _useWstring, metaData);
 	}
 
 	params.push_back(typeString);
@@ -1912,7 +2190,6 @@ Slice::Gen::DelegateMVisitor::visitOperation(const OperationPtr& p)
     paramsDecl.push_back("const ::Ice::Context& __context");
 
     string flatName = p->flattenedScope() + p->name() + "_name";
-    C << sp << nl << "static const ::std::string " << flatName << " = \"" << p->name() << "\";";
 
     H << sp << nl << "virtual " << retS << ' ' << name << spar << params << epar << ';';
     C << sp << nl << retS << nl << "IceDelegateM" << scoped << spar << paramsDecl << epar;
@@ -1924,7 +2201,7 @@ Slice::Gen::DelegateMVisitor::visitOperation(const OperationPtr& p)
 	C << nl << "try";
 	C << sb;
 	C << nl << "::IceInternal::BasicStream* __os = __og.os();";
-	writeMarshalCode(C, inParams, 0);
+	writeMarshalCode(C, inParams, 0, StringList(), true);
 	if(p->sendsClasses())
 	{
 	    C << nl << "__os->writePendingObjects();";
@@ -1990,8 +2267,8 @@ Slice::Gen::DelegateMVisitor::visitOperation(const OperationPtr& p)
     C << eb;
     C << eb;
 
-    writeAllocateCode(C, TypeStringList(), ret);
-    writeUnmarshalCode(C, outParams, ret);
+    writeAllocateCode(C, ParamDeclList(), ret, p->getMetaData(), _useWstring);
+    writeUnmarshalCode(C, outParams, ret, p->getMetaData());
     if(p->returnsClasses())
     {
 	C << nl << "__is->readPendingObjects();";
@@ -2003,13 +2280,13 @@ Slice::Gen::DelegateMVisitor::visitOperation(const OperationPtr& p)
     C << eb;
     C << nl << "catch(const ::Ice::LocalException& __ex)";
     C << sb;
-    C << nl << "throw ::IceInternal::NonRepeatable(__ex);";
+    C << nl << "throw ::IceInternal::LocalExceptionWrapper(__ex, false);";
     C << eb;
     C << eb;
 }
 
 Slice::Gen::DelegateDVisitor::DelegateDVisitor(Output& h, Output& c, const string& dllExport) :
-    H(h), C(c), _dllExport(dllExport)
+    H(h), C(c), _dllExport(dllExport), _useWstring(false)
 {
 }
 
@@ -2040,6 +2317,8 @@ Slice::Gen::DelegateDVisitor::visitModuleStart(const ModulePtr& p)
 	return false;
     }
 
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
+
     string name = fixKwd(p->name());
     
     H << sp << nl << "namespace " << name << nl << '{';
@@ -2051,6 +2330,8 @@ void
 Slice::Gen::DelegateDVisitor::visitModuleEnd(const ModulePtr& p)
 {
     H << sp << nl << '}';
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 bool
@@ -2060,6 +2341,8 @@ Slice::Gen::DelegateDVisitor::visitClassDefStart(const ClassDefPtr& p)
     {
 	return false;
     }
+
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
 
     string name = fixKwd(p->name());
     string scoped = fixKwd(p->scoped());
@@ -2097,6 +2380,8 @@ void
 Slice::Gen::DelegateDVisitor::visitClassDefEnd(const ClassDefPtr& p)
 {
     H << eb << ';';
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 void
@@ -2106,7 +2391,7 @@ Slice::Gen::DelegateDVisitor::visitOperation(const OperationPtr& p)
     string scoped = fixKwd(p->scoped());
 
     TypePtr ret = p->returnType();
-    string retS = returnTypeToString(ret);
+    string retS = returnTypeToString(ret, _useWstring, p->getMetaData());
 
     vector<string> params;
     vector<string> paramsDecl;
@@ -2117,6 +2402,7 @@ Slice::Gen::DelegateDVisitor::visitOperation(const OperationPtr& p)
     {
 	string paramName = fixKwd((*q)->name());
 
+	StringList metaData = (*q)->getMetaData();
 #if defined(__SUNPRO_CC) && (__SUNPRO_CC==0x550)
 	//
 	// Work around for Sun CC 5.5 bug #4853566
@@ -2124,14 +2410,15 @@ Slice::Gen::DelegateDVisitor::visitOperation(const OperationPtr& p)
 	string typeString;
 	if((*q)->isOutParam())
 	{
-	    typeString = outputTypeToString((*q)->type());
+	    typeString = outputTypeToString((*q)->type(), _useWstring, metaData);
 	}
 	else
 	{
-	    typeString = inputTypeToString((*q)->type());
+	    typeString = inputTypeToString((*q)->type(), _useWstring, metaData);
 	}
 #else
-	string typeString = (*q)->isOutParam() ? outputTypeToString((*q)->type()) : inputTypeToString((*q)->type());
+	string typeString = (*q)->isOutParam() ?  outputTypeToString((*q)->type(), _useWstring, metaData) 
+					       : inputTypeToString((*q)->type(), _useWstring, metaData);
 #endif
 
 	params.push_back(typeString);
@@ -2156,6 +2443,10 @@ Slice::Gen::DelegateDVisitor::visitOperation(const OperationPtr& p)
 	C << sp << nl << retS << nl << "IceDelegateD" << scoped << spar << params << epar;
 	C << sb;
 	C << nl << "throw ::Ice::CollocationOptimizationException(__FILE__, __LINE__);";
+	if(ret != 0)
+	{
+	    C << nl << "return " << retS << "(); // to avoid a warning with some compilers;";
+	}
 	C << eb;
     }
     else
@@ -2163,8 +2454,8 @@ Slice::Gen::DelegateDVisitor::visitOperation(const OperationPtr& p)
 	C << sp << nl << retS << nl << "IceDelegateD" << scoped << spar << paramsDecl << epar;
 	C << sb;
 	C << nl << "::Ice::Current __current;";
-	C << nl << "__initCurrent(__current, \"" << p->name()
-	  << "\", " << operationModeToString(p->mode()) << ", __context);";
+	C << nl << "__initCurrent(__current, " << p->flattenedScope() + p->name() + "_name, "
+	  << operationModeToString(p->mode()) << ", __context);";
 	C << nl << "while(true)";
 	C << sb;
 	C << nl << "::IceInternal::Direct __direct(__current);";
@@ -2192,7 +2483,7 @@ Slice::Gen::DelegateDVisitor::visitOperation(const OperationPtr& p)
 	C << eb;
         C << nl << "catch(const ::Ice::LocalException& __ex)";
         C << sb;
-        C << nl << "throw ::IceInternal::NonRepeatable(__ex);";
+        C << nl << "throw ::IceInternal::LocalExceptionWrapper(__ex, false);";
 	C << eb;
 	C << eb;
 	C << eb;
@@ -2234,10 +2525,20 @@ Slice::Gen::ObjectDeclVisitor::visitClassDecl(const ClassDeclPtr& p)
     H << nl << _dllExport << "bool operator==(const " << name << "&, const " << name << "&);";
     H << nl << _dllExport << "bool operator!=(const " << name << "&, const " << name << "&);";
     H << nl << _dllExport << "bool operator<(const " << name << "&, const " << name << "&);";
+    H << nl << _dllExport << "bool operator<=(const " << name << "&, const " << name << "&);";
+    H << nl << _dllExport << "bool operator>(const " << name << "&, const " << name << "&);";
+    H << nl << _dllExport << "bool operator>=(const " << name << "&, const " << name << "&);";
+}
+
+void
+Slice::Gen::ObjectDeclVisitor::visitOperation(const OperationPtr& p)
+{
+    string flatName = p->flattenedScope() + p->name() + "_name";
+    C << sp << nl << "static const ::std::string " << flatName << " = \"" << p->name() << "\";";
 }
 
 Slice::Gen::ObjectVisitor::ObjectVisitor(Output& h, Output& c, const string& dllExport, bool stream) :
-    H(h), C(c), _dllExport(dllExport), _stream(stream), _doneStaticSymbol(false)
+    H(h), C(c), _dllExport(dllExport), _stream(stream), _doneStaticSymbol(false), _useWstring(false)
 {
 }
 
@@ -2248,6 +2549,8 @@ Slice::Gen::ObjectVisitor::visitModuleStart(const ModulePtr& p)
     {
 	return false;
     }
+
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
 
     string name = fixKwd(p->name());
     
@@ -2261,11 +2564,15 @@ Slice::Gen::ObjectVisitor::visitModuleEnd(const ModulePtr& p)
 {
     H << sp;
     H << nl << '}';
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 bool
 Slice::Gen::ObjectVisitor::visitClassDefStart(const ClassDefPtr& p)
 {
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
+
     string name = fixKwd(p->name());
     string scoped = fixKwd(p->scoped());
     ClassList bases = p->bases();
@@ -2308,10 +2615,16 @@ Slice::Gen::ObjectVisitor::visitClassDefStart(const ClassDefPtr& p)
     H << nl << "public:" << sp;
     H.inc();
 
+    if(!p->isLocal())
+    {
+        H << nl << "typedef " << name << "Prx ProxyType;";
+    }
+    H << nl << "typedef " << name << "Ptr PointerType;";
+    H << nl;
+
     vector<string> params;
     vector<string> allTypes;
     vector<string> allParamDecls;
-    vector<string>::const_iterator pi;
     DataMemberList::const_iterator q;
 
     for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
@@ -2321,15 +2634,14 @@ Slice::Gen::ObjectVisitor::visitClassDefStart(const ClassDefPtr& p)
 
     for(q = allDataMembers.begin(); q != allDataMembers.end(); ++q)
     {
-	string paramName = fixKwd((*q)->name());
-	string typeName = inputTypeToString((*q)->type());
+	string typeName = inputTypeToString((*q)->type(), _useWstring, (*q)->getMetaData());
 	allTypes.push_back(typeName);
-	allParamDecls.push_back(typeName + " __ice_" + paramName);
+	allParamDecls.push_back(typeName + " __ice_" + (*q)->name());
     }
 
     if(!p->isInterface())
     {
-	H << nl << name << "() {};";
+	H << nl << name << "() {}";
 	if(!allParamDecls.empty())
 	{
 	    H << nl;
@@ -2380,46 +2692,7 @@ Slice::Gen::ObjectVisitor::visitClassDefStart(const ClassDefPtr& p)
 	 * Strong guarantee
 	 */
 
-	if(!allParamDecls.empty())
-	{
-	    C << sp << nl << scoped.substr(2) << "::" << name << spar << allParamDecls << epar << " :";
-	    C.inc();
-	    if(base)
-	    {
-		string upcall;
-		if(!allParamDecls.empty() && base)
-		{
-		    upcall = "(";
-		    DataMemberList baseDataMembers = bases.front()->allDataMembers();
-		    for(q = baseDataMembers.begin(); q != baseDataMembers.end(); ++q)
-		    {
-			if(q != baseDataMembers.begin())
-			{
-			    upcall += ", ";
-			}
-			upcall += fixKwd((*q)->name());
-		    }
-		    upcall += ")";
-		}
-		if(!params.empty())
-		{
-		    upcall += ",";
-		}
-		emitUpcall(base, upcall);
-	    }
-	    C << nl;
-	    for(pi = params.begin(); pi != params.end(); ++pi)
-	    {
-		if(pi != params.begin())
-		{
-		    C << ',' << nl;
-		}
-		C << *pi << '(' << "__ice_" << *pi << ')';
-	    }
-	    C.dec();
-	    C << sb;
-	    C << eb;
-	}
+        emitOneShotConstructor(p);
 
 	/*
 	 * Strong guarantee
@@ -2514,6 +2787,7 @@ Slice::Gen::ObjectVisitor::visitClassDefStart(const ClassDefPtr& p)
 	else
 	{
 	    C << nl << "throw ::Ice::CloneNotImplementedException(__FILE__, __LINE__);";
+	    C << nl << "return 0; // to avoid a warning with some compilers";
 	}
 	C << eb;
 
@@ -2695,19 +2969,18 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
         H << nl << "virtual void __write(const ::Ice::OutputStreamPtr&) const;";
         H << nl << "virtual void __read(const ::Ice::InputStreamPtr&, bool);";
 
-	TypeStringList memberList;
-	DataMemberList dataMembers = p->dataMembers();
-	for(DataMemberList::const_iterator q = dataMembers.begin(); q != dataMembers.end(); ++q)
-	{
-	    memberList.push_back(make_pair((*q)->type(), (*q)->name()));
-	}
 	C << sp;
 	C << nl << "void" << nl << scoped.substr(2)
           << "::__write(::IceInternal::BasicStream* __os) const";
 	C << sb;
 	C << nl << "__os->writeTypeId(ice_staticId());";
 	C << nl << "__os->startWriteSlice();";
-	writeMarshalCode(C, memberList, 0);
+	DataMemberList dataMembers = p->dataMembers();
+	DataMemberList::const_iterator q;
+        for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+        {
+            writeMarshalUnmarshalCode(C, (*q)->type(), fixKwd((*q)->name()), true, "", true, (*q)->getMetaData());
+        }
 	C << nl << "__os->endWriteSlice();";
 	emitUpcall(base, "::__write(__os);");
 	C << eb;
@@ -2720,7 +2993,10 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	C << nl << "__is->readTypeId(myId);";
 	C << eb;
 	C << nl << "__is->startReadSlice();";
-	writeUnmarshalCode(C, memberList, 0);
+        for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+        {
+            writeMarshalUnmarshalCode(C, (*q)->type(), fixKwd((*q)->name()), false, "", true, (*q)->getMetaData());
+        }
 	C << nl << "__is->endReadSlice();";
 	emitUpcall(base, "::__read(__is, true);");
 	C << eb;
@@ -2732,7 +3008,11 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	    C << sb;
 	    C << nl << "__outS->writeTypeId(ice_staticId());";
 	    C << nl << "__outS->startSlice();";
-	    writeStreamMarshalCode(C, memberList, 0);
+	    for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+	    {
+	        writeStreamMarshalUnmarshalCode(C, (*q)->type(), (*q)->name(), true, "", _useWstring, 
+						(*q)->getMetaData());
+	    }
 	    C << nl << "__outS->endSlice();";
 	    emitUpcall(base, "::__write(__outS);");
 	    C << eb;
@@ -2744,7 +3024,11 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	    C << nl << "__inS->readTypeId();";
 	    C << eb;
 	    C << nl << "__inS->startSlice();";
-	    writeStreamUnmarshalCode(C, memberList, 0);
+	    for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+	    {
+	        writeStreamMarshalUnmarshalCode(C, (*q)->type(), (*q)->name(), false, "", _useWstring,
+						(*q)->getMetaData());
+	    }
 	    C << nl << "__inS->endSlice();";
 	    emitUpcall(base, "::__read(__inS, true);");
 	    C << eb;
@@ -2902,6 +3186,24 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	C << nl << "return static_cast<const ::Ice::Object&>(l) < static_cast<const ::Ice::Object&>(r);";
 	C << eb;
     }
+
+    C << sp;
+    C << nl << "bool" << nl << scope.substr(2) << "operator<=(const " << scoped << "& l, const " << scoped << "& r)";
+    C << sb;
+    C << nl << "return l < r || l == r;";
+    C << eb;
+    C << sp;
+    C << nl << "bool" << nl << scope.substr(2) << "operator>(const " << scoped << "& l, const " << scoped << "& r)";
+    C << sb;
+    C << nl << "return !(l < r) && !(l == r);";
+    C << eb;
+    C << sp;
+    C << nl << "bool" << nl << scope.substr(2) << "operator>=(const " << scoped << "& l, const " << scoped << "& r)";
+    C << sb;
+    C << nl << "return !(l < r);";
+    C << eb;
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 bool
@@ -2924,7 +3226,7 @@ Slice::Gen::ObjectVisitor::visitOperation(const OperationPtr& p)
     string scope = fixKwd(p->scope());
 
     TypePtr ret = p->returnType();
-    string retS = returnTypeToString(ret);
+    string retS = returnTypeToString(ret, _useWstring, p->getMetaData());
 
     string params = "(";
     string paramsDecl = "(";
@@ -2940,8 +3242,8 @@ Slice::Gen::ObjectVisitor::visitOperation(const OperationPtr& p)
     string paramsDeclAMD = "(const " + classScopedAMD + '_' + name + "Ptr& __cb, ";
     string argsAMD = "(__cb, ";
 
-    TypeStringList inParams;
-    TypeStringList outParams;
+    ParamDeclList inParams;
+    ParamDeclList outParams;
     ParamDeclList paramList = p->parameters();
     for(ParamDeclList::const_iterator q = paramList.begin(); q != paramList.end(); ++q)
     {
@@ -2951,13 +3253,13 @@ Slice::Gen::ObjectVisitor::visitOperation(const OperationPtr& p)
 	string typeString;
 	if(isOutParam)
 	{
-	    outParams.push_back(make_pair(type, paramName));
-	    typeString = outputTypeToString(type);
+	    outParams.push_back(*q);
+	    typeString = outputTypeToString(type, _useWstring, (*q)->getMetaData());
 	}
 	else
 	{
-	    inParams.push_back(make_pair(type, paramName));
-	    typeString = inputTypeToString((*q)->type());
+	    inParams.push_back(*q);
+	    typeString = inputTypeToString((*q)->type(), _useWstring, (*q)->getMetaData());
 	}
 
 	if(q != paramList.begin())
@@ -3013,15 +3315,21 @@ Slice::Gen::ObjectVisitor::visitOperation(const OperationPtr& p)
     bool nonmutating = p->mode() == Operation::Nonmutating;
     bool amd = !cl->isLocal() && (cl->hasMetaData("amd") || p->hasMetaData("amd"));
 
+    string deprecateMetadata, deprecateSymbol;
+    if(p->findMetaData("deprecate", deprecateMetadata) || cl->findMetaData("deprecate", deprecateMetadata))
+    {
+	deprecateSymbol = "ICE_DEPRECATED_API ";
+    }
+
     H << sp;
     if(!amd)
     {
-	H << nl << "virtual " << retS << ' ' << fixKwd(name) << params
+	H << nl << deprecateSymbol << "virtual " << retS << ' ' << fixKwd(name) << params
 	  << (nonmutating ? " const" : "") << " = 0;";
     }
     else
     {
-	H << nl << "virtual void " << name << "_async" << paramsAMD
+	H << nl << deprecateSymbol << "virtual void " << name << "_async" << paramsAMD
 	  << (nonmutating ? " const" : "") << " = 0;";
     }	
 
@@ -3032,7 +3340,12 @@ Slice::Gen::ObjectVisitor::visitOperation(const OperationPtr& p)
 
 	C << sp;
 	C << nl << "::IceInternal::DispatchStatus" << nl << scope.substr(2) << "___" << name
-	  << "(::IceInternal::Incoming& __inS, const ::Ice::Current& __current)" << (nonmutating ? " const" : "");
+	  << "(::IceInternal::Incoming&";
+	if(!paramList.empty() || !p->throws().empty() || ret || amd)
+	{
+	    C << "__inS";
+	}
+	C << ", const ::Ice::Current& __current)" << (nonmutating ? " const" : "");
 	C << sb;
 	if(!amd)
 	{
@@ -3063,13 +3376,13 @@ Slice::Gen::ObjectVisitor::visitOperation(const OperationPtr& p)
 	    {
 		C << nl << "::IceInternal::BasicStream* __os = __inS.os();";
 	    }
-	    writeAllocateCode(C, inParams, 0);
-	    writeUnmarshalCode(C, inParams, 0);
+	    writeAllocateCode(C, inParams, 0, StringList(), _useWstring, true);
+	    writeUnmarshalCode(C, inParams, 0, StringList(), true);
 	    if(p->sendsClasses())
 	    {
 		C << nl << "__is->readPendingObjects();";
 	    }
-	    writeAllocateCode(C, outParams, 0);
+	    writeAllocateCode(C, outParams, 0, StringList(), _useWstring);
 	    if(!throws.empty())
 	    {
 		C << nl << "try";
@@ -3081,7 +3394,7 @@ Slice::Gen::ObjectVisitor::visitOperation(const OperationPtr& p)
 		C << retS << " __ret = ";
 	    }
 	    C << fixKwd(name) << args << ';';
-	    writeMarshalCode(C, outParams, ret);
+	    writeMarshalCode(C, outParams, ret, p->getMetaData());
 	    if(p->returnsClasses())
 	    {
 		C << nl << "__os->writePendingObjects();";
@@ -3109,8 +3422,8 @@ Slice::Gen::ObjectVisitor::visitOperation(const OperationPtr& p)
 	    {
 		C << nl << "::IceInternal::BasicStream* __is = __inS.is();";
 	    }
-	    writeAllocateCode(C, inParams, 0);
-	    writeUnmarshalCode(C, inParams, 0);
+	    writeAllocateCode(C, inParams, 0, StringList(), _useWstring, true);
+	    writeUnmarshalCode(C, inParams, 0, StringList(), true);
 	    if(p->sendsClasses())
 	    {
 		C << nl << "__is->readPendingObjects();";
@@ -3143,7 +3456,7 @@ void
 Slice::Gen::ObjectVisitor::visitDataMember(const DataMemberPtr& p)
 {
     string name = fixKwd(p->name());
-    string s = typeToString(p->type());
+    string s = typeToString(p->type(), _useWstring, p->getMetaData());
     H << nl << s << ' ' << name << ';';
 }
 
@@ -3156,10 +3469,10 @@ Slice::Gen::ObjectVisitor::emitGCFunctions(const ClassDefPtr& p)
 
     //
     // A class can potentially be part of a cycle if it (recursively) contains class
-    // members. If so, we override __incRef() and __decRef() and, hence, consider instances
-    // of the class as candidates for collection by the garbage collector.
-    // We override __incRef() and __decRef() only once, in the basemost potentially cyclic class
-    // in an inheritance hierarchy.
+    // members. If so, we override __incRef(), __decRef(), and __addObject() and, hence, consider
+    // instances of the class as candidates for collection by the garbage collector.
+    // We override __incRef(), __decRef(), and __addObject() only once, in the basemost potentially
+    // cyclic class in an inheritance hierarchy.
     //
     bool hasBaseClass = !bases.empty() && !bases.front()->isInterface();
     bool canBeCyclic = p->canBeCyclic();
@@ -3222,6 +3535,28 @@ Slice::Gen::ObjectVisitor::emitGCFunctions(const ClassDefPtr& p)
 	C << nl << "delete this;";
 	C << eb;
 	C << eb;
+
+	H << nl << "virtual void __addObject(::IceInternal::GCCountMap&);";
+
+	C << sp << nl << "void" << nl << scoped.substr(2) << "::__addObject(::IceInternal::GCCountMap& _c)";
+	C << sb;
+	C << nl << "::IceInternal::GCCountMap::iterator pos = _c.find(this);";
+	C << nl << "if(pos == _c.end())";
+	C << sb;
+	C << nl << "_c[this] = 1;";
+	C << eb;
+	C << nl << "else";
+	C << sb;
+	C << nl << "++pos->second;";
+	C << eb;
+	C << eb;
+
+	H << nl << "virtual bool __usesClasses();";
+
+	C << sp << nl << "bool" << nl << scoped.substr(2) << "::__usesClasses()";
+	C << sb;
+	C << nl << "return true;";
+	C << eb;
     }
 
     //
@@ -3230,13 +3565,10 @@ Slice::Gen::ObjectVisitor::emitGCFunctions(const ClassDefPtr& p)
     //
     if(canBeCyclic)
     {
-	H << nl << "virtual void __gcReachable(::IceInternal::GCObjectMultiSet&) const;";
+	H << nl << "virtual void __gcReachable(::IceInternal::GCCountMap&) const;";
 
-	C << sp << nl << "void" << nl << scoped.substr(2) << "::__gcReachable(::IceInternal::GCObjectMultiSet& _c) const";
+	C << sp << nl << "void" << nl << scoped.substr(2) << "::__gcReachable(::IceInternal::GCCountMap& _c) const";
 	C << sb;
-
-	string vc6Prefix;
-	string otherPrefix;
 
 	bool hasCyclicBase = hasBaseClass && bases.front()->canBeCyclic();
 	if(hasCyclicBase)
@@ -3277,7 +3609,18 @@ Slice::Gen::ObjectVisitor::emitGCInsertCode(const TypePtr& p, const string& pref
     if((BuiltinPtr::dynamicCast(p) && BuiltinPtr::dynamicCast(p)->kind() == Builtin::KindObject)
        || ClassDeclPtr::dynamicCast(p))
     {
-	C << nl << "__addObject(_c, " << prefix << name << ".get());";
+	C << nl << "if(" << prefix << name << ')';
+	C << sb;
+	ClassDeclPtr decl = ClassDeclPtr::dynamicCast(p);
+	if(decl)
+	{
+	    C << nl << decl->scope() << "__addObject(" << prefix << name << ", _c);";
+	}
+	else
+	{
+	    C << nl << prefix << name << "->__addObject(_c);";
+	}
+	C << eb;
     }
     else if(StructPtr s = StructPtr::dynamicCast(p))
     {
@@ -3328,8 +3671,26 @@ Slice::Gen::ObjectVisitor::emitGCClearCode(const TypePtr& p, const string& prefi
     {
 	C << nl << "if(" << prefix << name << ")";
 	C << sb;
-	C << nl << prefix << name << "->__decRefUnsafe();";
-	C << nl << prefix << name << ".__clearHandleUnsafe();";
+	ClassDeclPtr decl = ClassDeclPtr::dynamicCast(p);
+	if(decl)
+	{
+	    C << nl << "if(" << decl->scope() << "__usesClasses(" << prefix << name << "))";
+	    C << sb;
+	    C << nl << decl->scope() << "__decRefUnsafe(" << prefix << name << ");";
+	    C << nl << decl->scope() << "__clearHandleUnsafe(" << prefix << name << ");";
+	}
+	else
+	{
+	    C << nl << "if(" << prefix << name << "->__usesClasses())";
+	    C << sb;
+	    C << nl << prefix << name << "->__decRefUnsafe();";
+	    C << nl << prefix << name << ".__clearHandleUnsafe();";
+	}
+	C << eb;
+	C << nl << "else";
+	C << sb;
+	C << nl << prefix << name << " = 0;";
+	C << eb;
 	C << eb;
     }
     else if(StructPtr s = StructPtr::dynamicCast(p))
@@ -3370,6 +3731,106 @@ Slice::Gen::ObjectVisitor::emitGCClearCode(const TypePtr& p, const string& prefi
 	emitGCClearCode(s->type(), "", string("(*") + iterName + ")", ++level);
 	C << eb;
 	C << eb;;
+    }
+}
+
+bool
+Slice::Gen::ObjectVisitor::emitVirtualBaseInitializers(const ClassDefPtr& p)
+{
+    DataMemberList allDataMembers = p->allDataMembers();
+    if(allDataMembers.empty())
+    {
+        return false;
+    }
+
+    ClassList bases = p->bases();
+    if(!bases.empty() && !bases.front()->isInterface())
+    {
+	if(emitVirtualBaseInitializers(bases.front()))
+	{
+	    C << ',';
+	}
+    }
+
+    string upcall = "(";
+    DataMemberList::const_iterator q;
+    for(q = allDataMembers.begin(); q != allDataMembers.end(); ++q)
+    {
+	if(q != allDataMembers.begin())
+	{
+	    upcall += ", ";
+	}
+	upcall += "__ice_" + (*q)->name();
+    }
+    upcall += ")";
+
+    C.zeroIndent();
+    C << nl << "#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug";
+    C.restoreIndent();
+    C << nl << fixKwd(p->name()) << upcall;
+    C.zeroIndent();
+    C << nl << "#else";
+    C.restoreIndent();
+    C << nl << fixKwd(p->scoped()) << upcall;
+    C.zeroIndent();
+    C << nl << "#endif";
+    C << nl;
+    C.restoreIndent();
+
+    return true;
+}
+
+void
+Slice::Gen::ObjectVisitor::emitOneShotConstructor(const ClassDefPtr& p)
+{
+    DataMemberList allDataMembers = p->allDataMembers();
+    DataMemberList::const_iterator q;
+
+    vector<string> allParamDecls;
+
+    for(q = allDataMembers.begin(); q != allDataMembers.end(); ++q)
+    {
+	string typeName = inputTypeToString((*q)->type(), _useWstring, (*q)->getMetaData());
+	allParamDecls.push_back(typeName + " __ice_" + (*q)->name());
+    }
+
+    if(!allDataMembers.empty())
+    {
+	C << sp << nl << p->scoped().substr(2) << "::" << fixKwd(p->name()) << spar << allParamDecls << epar << " :";
+	C.inc();
+
+	DataMemberList dataMembers = p->dataMembers();
+
+	ClassList bases = p->bases();
+	ClassDefPtr base;
+	if(!bases.empty() && !bases.front()->isInterface())
+	{
+	    if(emitVirtualBaseInitializers(bases.front()))
+	    {
+	        if(!dataMembers.empty())
+		{
+		    C << ',';
+		}
+	    }
+	}
+
+	if(!dataMembers.empty())
+	{
+	    C << nl;
+	}
+	for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
+	{
+	    if(q != dataMembers.begin())
+	    {
+		C << ',' << nl;
+	    }
+	    string memberName = fixKwd((*q)->name());
+	    C << memberName << '(' << "__ice_" << memberName << ')';
+	}
+
+	C.dec();
+	C << sb;
+	C << eb;
     }
 }
 
@@ -3502,6 +3963,7 @@ Slice::Gen::HandleVisitor::visitClassDecl(const ClassDeclPtr& p)
     
     H << sp;
     H << nl << "typedef ::IceInternal::Handle< " << scoped << "> " << name << "Ptr;";
+    
     if(!p->isLocal())
     {
 	H << nl << "typedef ::IceInternal::ProxyHandle< ::IceProxy" << scoped << "> " << name << "Prx;";
@@ -3522,6 +3984,14 @@ Slice::Gen::HandleVisitor::visitClassDecl(const ClassDeclPtr& p)
             H << nl << _dllExport << "void ice_write" << name << "(const ::Ice::OutputStreamPtr&, const "
               << name << "Ptr&);";
             H << nl << _dllExport << "void ice_read" << name << "(const ::Ice::InputStreamPtr&, " << name << "Ptr&);";
+	}
+
+	if(!p->isInterface())
+	{
+	    H << sp << nl << "void __addObject(const " << name << "Ptr&, ::IceInternal::GCCountMap&);";
+	    H << nl << "bool __usesClasses(const " << name << "Ptr&);";
+	    H << nl << "void __decRefUnsafe(" << name << "Ptr&);";
+	    H << nl << "void __clearHandleUnsafe(" << name << "Ptr&);";
 	}
     }
 }
@@ -3627,14 +4097,14 @@ Slice::Gen::HandleVisitor::visitClassDefStart(const ClassDefPtr& p)
 
 Slice::Gen::ImplVisitor::ImplVisitor(Output& h, Output& c,
                                      const string& dllExport) :
-    H(h), C(c), _dllExport(dllExport)
+    H(h), C(c), _dllExport(dllExport), _useWstring(false)
 {
 }
 
 void
-Slice::Gen::ImplVisitor::writeDecl(Output& out, const string& name, const TypePtr& type)
+Slice::Gen::ImplVisitor::writeDecl(Output& out, const string& name, const TypePtr& type, const StringList& metaData)
 {
-    out << nl << typeToString(type) << ' ' << name;
+    out << nl << typeToString(type, _useWstring, metaData) << ' ' << name;
 
     BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
     if(builtin)
@@ -3681,7 +4151,7 @@ Slice::Gen::ImplVisitor::writeDecl(Output& out, const string& name, const TypePt
 }
 
 void
-Slice::Gen::ImplVisitor::writeReturn(Output& out, const TypePtr& type)
+Slice::Gen::ImplVisitor::writeReturn(Output& out, const TypePtr& type, const StringList& metaData)
 {
     BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
     if(builtin)
@@ -3755,7 +4225,7 @@ Slice::Gen::ImplVisitor::writeReturn(Output& out, const TypePtr& type)
 			SequencePtr seq = SequencePtr::dynamicCast(type);
 			if(seq)
 			{
-			    out << nl << "return " << fixKwd(seq->scoped()) << "();";
+			    out << nl << "return " << typeToString(seq, _useWstring, metaData) << "();";
 			}
 			else
 			{
@@ -3778,6 +4248,8 @@ Slice::Gen::ImplVisitor::visitModuleStart(const ModulePtr& p)
         return false;
     }
 
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
+
     string name = fixKwd(p->name());
     
     H << sp << nl << "namespace " << name << nl << '{';
@@ -3790,6 +4262,8 @@ Slice::Gen::ImplVisitor::visitModuleEnd(const ModulePtr& p)
 {
     H << sp;
     H << nl << '}';
+
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 bool
@@ -3799,6 +4273,8 @@ Slice::Gen::ImplVisitor::visitClassDefStart(const ClassDefPtr& p)
     {
         return false;
     }
+
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
 
     string name = p->name();
     string scope = fixKwd(p->scope());
@@ -3844,7 +4320,7 @@ Slice::Gen::ImplVisitor::visitClassDefStart(const ClassDefPtr& p)
         string opName = op->name();
 
         TypePtr ret = op->returnType();
-        string retS = returnTypeToString(ret);
+        string retS = returnTypeToString(ret, _useWstring, op->getMetaData());
 
         if(!p->isLocal() && (p->hasMetaData("amd") || op->hasMetaData("amd")))
         {
@@ -3857,7 +4333,7 @@ Slice::Gen::ImplVisitor::visitClassDefStart(const ClassDefPtr& p)
             {
                 if(!(*q)->isOutParam())
                 {
-                    H << ',' << nl << inputTypeToString((*q)->type());
+                    H << ',' << nl << inputTypeToString((*q)->type(), _useWstring, (*q)->getMetaData());
                 }
             }
             H << ',' << nl << "const Ice::Current&";
@@ -3874,7 +4350,8 @@ Slice::Gen::ImplVisitor::visitClassDefStart(const ClassDefPtr& p)
             {
                 if(!(*q)->isOutParam())
                 {
-                    C << ',' << nl << inputTypeToString((*q)->type()) << ' ' << fixKwd((*q)->name());
+                    C << ',' << nl << inputTypeToString((*q)->type(), _useWstring, (*q)->getMetaData()) << ' ' 
+		      << fixKwd((*q)->name());
                 }
             }
             C << ',' << nl << "const Ice::Current& current";
@@ -3893,13 +4370,13 @@ Slice::Gen::ImplVisitor::visitClassDefStart(const ClassDefPtr& p)
             }
             if(ret)
             {
-                writeDecl(C, result, ret);
+                writeDecl(C, result, ret, op->getMetaData());
             }
             for(q = paramList.begin(); q != paramList.end(); ++q)
             {
                 if((*q)->isOutParam())
                 {
-                    writeDecl(C, fixKwd((*q)->name()), (*q)->type());
+                    writeDecl(C, fixKwd((*q)->name()), (*q)->type(), (*q)->getMetaData());
                 }
             }
 
@@ -3935,6 +4412,7 @@ Slice::Gen::ImplVisitor::visitClassDefStart(const ClassDefPtr& p)
                 {
                     H << ',' << nl;
                 }
+		StringList metaData = (*q)->getMetaData();
 #if defined(__SUNPRO_CC) && (__SUNPRO_CC==0x550)
 		//
 		// Work around for Sun CC 5.5 bug #4853566
@@ -3942,15 +4420,15 @@ Slice::Gen::ImplVisitor::visitClassDefStart(const ClassDefPtr& p)
 		string typeString;
 		if((*q)->isOutParam())
 		{
-		    typeString = outputTypeToString((*q)->type());
+		    typeString = outputTypeToString((*q)->type(), _useWstring, metaData);
 		}
 		else
 		{
-		    typeString = inputTypeToString((*q)->type());
+		    typeString = inputTypeToString((*q)->type(), _useWstring, metaData);
 		}
 #else
-                string typeString = (*q)->isOutParam() ?
-                    outputTypeToString((*q)->type()) : inputTypeToString((*q)->type());
+                string typeString = (*q)->isOutParam() ? outputTypeToString((*q)->type(), _useWstring, metaData) 
+						       : inputTypeToString((*q)->type(), _useWstring, metaData);
 #endif
                 H << typeString;
             }
@@ -3977,6 +4455,7 @@ Slice::Gen::ImplVisitor::visitClassDefStart(const ClassDefPtr& p)
                 {
                     C << ',' << nl;
                 }
+		StringList metaData = (*q)->getMetaData();
 #if defined(__SUNPRO_CC) && (__SUNPRO_CC==0x550)
 		//
 		// Work around for Sun CC 5.5 bug #4853566
@@ -3984,15 +4463,15 @@ Slice::Gen::ImplVisitor::visitClassDefStart(const ClassDefPtr& p)
 		string typeString;
 		if((*q)->isOutParam())
 		{
-		    typeString = outputTypeToString((*q)->type());
+		    typeString = outputTypeToString((*q)->type(), _useWstring, metaData);
 		}
 		else
 		{
-		    typeString = inputTypeToString((*q)->type());
+		    typeString = inputTypeToString((*q)->type(), _useWstring, metaData);
 		}
 #else
-                string typeString = (*q)->isOutParam() ?
-                    outputTypeToString((*q)->type()) : inputTypeToString((*q)->type());
+                string typeString = (*q)->isOutParam() ? outputTypeToString((*q)->type(), _useWstring, metaData) 
+						       : inputTypeToString((*q)->type(), _useWstring, metaData);
 #endif
                 C << typeString << ' ' << fixKwd((*q)->name());
             }
@@ -4011,7 +4490,7 @@ Slice::Gen::ImplVisitor::visitClassDefStart(const ClassDefPtr& p)
 
             if(ret)
             {
-                writeReturn(C, ret);
+                writeReturn(C, ret, op->getMetaData());
             }
 
             C << eb;
@@ -4020,11 +4499,13 @@ Slice::Gen::ImplVisitor::visitClassDefStart(const ClassDefPtr& p)
 
     H << eb << ';';
 
+    _useWstring = resetUseWstring(_useWstringHist);
+
     return true;
 }
 
 Slice::Gen::AsyncVisitor::AsyncVisitor(Output& h, Output& c, const string& dllExport) :
-    H(h), C(c), _dllExport(dllExport)
+    H(h), C(c), _dllExport(dllExport), _useWstring(false)
 {
 }
 
@@ -4035,6 +4516,8 @@ Slice::Gen::AsyncVisitor::visitModuleStart(const ModulePtr& p)
     {
 	return false;
     }
+
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
 
     string name = fixKwd(p->name());
     
@@ -4047,6 +4530,21 @@ void
 Slice::Gen::AsyncVisitor::visitModuleEnd(const ModulePtr& p)
 {
     H << sp << nl << '}';
+
+    _useWstring = resetUseWstring(_useWstringHist);
+}
+
+bool
+Slice::Gen::AsyncVisitor::visitClassDefStart(const ClassDefPtr& p)
+{
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
+    return true;
+}
+
+void
+Slice::Gen::AsyncVisitor::visitClassDefEnd(const ClassDefPtr&)
+{
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 void
@@ -4072,6 +4570,7 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
     string proxyName = classScope + className + "Prx";
     
     vector<string> params;
+    vector<string> paramsAMD;
     vector<string> paramsDecl;
     vector<string> args;
     
@@ -4082,38 +4581,40 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
     paramsDeclInvoke.push_back("const " + proxyName + "& __prx");
 
     TypePtr ret = p->returnType();
-    string retS = inputTypeToString(ret);
+    string retS = inputTypeToString(ret, _useWstring, p->getMetaData());
     
     if(ret)
     {
 	params.push_back(retS);
+	paramsAMD.push_back(inputTypeToString(ret, _useWstring, p->getMetaData()));
 	paramsDecl.push_back(retS + " __ret");
 	args.push_back("__ret");
     }
     
-    TypeStringList inParams;
-    TypeStringList outParams;
+    ParamDeclList inParams;
+    ParamDeclList outParams;
     ParamDeclList paramList = p->parameters();
     for(ParamDeclList::const_iterator q = paramList.begin(); q != paramList.end(); ++q)
     {
 	string paramName = fixKwd((*q)->name());
 	TypePtr type = (*q)->type();
-	string typeString = inputTypeToString(type);
+	string typeString = inputTypeToString(type, _useWstring, (*q)->getMetaData());
 
 	if((*q)->isOutParam())
 	{
 	    params.push_back(typeString);
+	    paramsAMD.push_back(inputTypeToString(type, _useWstring, (*q)->getMetaData()));
 	    paramsDecl.push_back(typeString + ' ' + paramName);
 	    args.push_back(paramName);
 
-	    outParams.push_back(make_pair(type, paramName));
+	    outParams.push_back(*q);
 	}
 	else
 	{
 	    paramsInvoke.push_back(typeString);
 	    paramsDeclInvoke.push_back(typeString + ' ' + paramName);
 
-	    inParams.push_back(make_pair(type, paramName));
+	    inParams.push_back(*q);
 	}
     }
 
@@ -4143,17 +4644,15 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	H << sp << nl << "typedef ::IceUtil::Handle< " << classScopedAMI << '_' << name << "> " << classNameAMI
 	  << '_' << name  << "Ptr;";
 	
-	string flatName = "AMI" + p->flattenedScope() + name + "_name";
-	C << sp << nl << "static const ::std::string " << flatName << " = \"" << name << "\";";
+	string flatName = p->flattenedScope() + name + "_name";
 
 	C << sp << nl << "void" << nl << classScopedAMI.substr(2) << '_' << name << "::__invoke" << spar
 	  << paramsDeclInvoke << epar;
 	C << sb;
 	C << nl << "try";
 	C << sb;
-	C << nl << "static const ::std::string __operation(\"" << name << "\");";
 	C << nl << "__prepare(__prx, " << flatName << ", " << operationModeToString(p->mode()) << ", __ctx);";
-	writeMarshalCode(C, inParams, 0);
+	writeMarshalCode(C, inParams, 0, StringList(), true);
 	if(p->sendsClasses())
 	{
 	    C << nl << "__os->writePendingObjects();";
@@ -4170,7 +4669,7 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 
 	C << sp << nl << "void" << nl << classScopedAMI.substr(2) << '_' << name << "::__response(bool __ok)";
 	C << sb;
-	writeAllocateCode(C, outParams, ret);
+	writeAllocateCode(C, outParams, ret, p->getMetaData(), _useWstring, true);
 	C << nl << "try";
 	C << sb;
 	C << nl << "if(!__ok)";
@@ -4206,7 +4705,11 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	C << eb;
 	C << eb;
 
-	writeUnmarshalCode(C, outParams, ret);
+	writeUnmarshalCode(C, outParams, 0, StringList(), true);
+	if(ret)
+	{
+	    writeMarshalUnmarshalCode(C, ret, "__ret", false, "", true, p->getMetaData(), true);
+	}
 	if(p->returnsClasses())
 	{
 	    C << nl << "__is->readPendingObjects();";
@@ -4230,7 +4733,7 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	H << nl << "public:";
 	H.inc();
 	H << sp;
-	H << nl << "virtual void ice_response" << spar << params << epar << " = 0;";
+	H << nl << "virtual void ice_response" << spar << paramsAMD << epar << " = 0;";
 	H << nl << "virtual void ice_exception(const ::Ice::Exception&) = 0;";
 	H << nl << "virtual void ice_exception(const ::std::exception&) = 0;";
 	H << nl << "virtual void ice_exception() = 0;";
@@ -4241,7 +4744,7 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 }
 
 Slice::Gen::AsyncImplVisitor::AsyncImplVisitor(Output& h, Output& c, const string& dllExport) :
-    H(h), C(c), _dllExport(dllExport)
+    H(h), C(c), _dllExport(dllExport), _useWstring(false)
 {
 }
 
@@ -4272,6 +4775,8 @@ Slice::Gen::AsyncImplVisitor::visitModuleStart(const ModulePtr& p)
 	return false;
     }
 
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
+
     string name = fixKwd(p->name());
     
     H << sp << nl << "namespace " << name << nl << '{';
@@ -4283,6 +4788,21 @@ void
 Slice::Gen::AsyncImplVisitor::visitModuleEnd(const ModulePtr& p)
 {
     H << sp << nl << '}';
+
+    _useWstring = resetUseWstring(_useWstringHist);
+}
+
+bool
+Slice::Gen::AsyncImplVisitor::visitClassDefStart(const ClassDefPtr& p)
+{
+    _useWstring = setUseWstring(p, _useWstringHist, _useWstring);
+    return true;
+}
+
+void
+Slice::Gen::AsyncImplVisitor::visitClassDefEnd(const ClassDefPtr&)
+{
+    _useWstring = resetUseWstring(_useWstringHist);
 }
 
 void
@@ -4323,7 +4843,7 @@ Slice::Gen::AsyncImplVisitor::visitOperation(const OperationPtr& p)
 #endif
 
     TypePtr ret = p->returnType();
-    string retS = inputTypeToString(ret);
+    string retS = inputTypeToString(ret, _useWstring, p->getMetaData());
     
     if(ret)
     {
@@ -4334,7 +4854,7 @@ Slice::Gen::AsyncImplVisitor::visitOperation(const OperationPtr& p)
 	args += "__ret";
     }
     
-    TypeStringList outParams;
+    ParamDeclList outParams;
     ParamDeclList paramList = p->parameters();
     for(ParamDeclList::const_iterator q = paramList.begin(); q != paramList.end(); ++q)
     {
@@ -4342,7 +4862,7 @@ Slice::Gen::AsyncImplVisitor::visitOperation(const OperationPtr& p)
 	{
 	    string paramName = fixKwd((*q)->name());
 	    TypePtr type = (*q)->type();
-	    string typeString = inputTypeToString(type);
+	    string typeString = inputTypeToString(type, _useWstring, (*q)->getMetaData());
 	    
 	    if(ret || !outParams.empty())
 	    {
@@ -4357,7 +4877,7 @@ Slice::Gen::AsyncImplVisitor::visitOperation(const OperationPtr& p)
 	    paramsDecl += paramName;
 	    args += paramName;
 	    
-	    outParams.push_back(make_pair(type, paramName));
+	    outParams.push_back(*q);
 	}
     }
 
@@ -4394,7 +4914,11 @@ Slice::Gen::AsyncImplVisitor::visitOperation(const OperationPtr& p)
 	C << nl << "try";
 	C << sb;
 	C << nl << "::IceInternal::BasicStream* __os = this->__os();";
-	writeMarshalCode(C, outParams, ret);
+	writeMarshalCode(C, outParams, 0, StringList(), true);
+	if(ret)
+	{
+	    writeMarshalUnmarshalCode(C, ret, "__ret", true, "", true, p->getMetaData(), true);
+	}
 	if(p->returnsClasses())
 	{
 	    C << nl << "__os->writePendingObjects();";
@@ -4465,7 +4989,33 @@ Slice::Gen::validateMetaData(const UnitPtr& u)
 bool
 Slice::Gen::MetaDataVisitor::visitModuleStart(const ModulePtr& p)
 {
-    validate(p);
+    //
+    // Validate global metadata.
+    //
+    DefinitionContextPtr dc = p->definitionContext();
+    assert(dc);
+    StringList globalMetaData = dc->getMetaData();
+    string file = dc->filename();
+    static const string prefix = "cpp:";
+    for(StringList::const_iterator q = globalMetaData.begin(); q != globalMetaData.end(); ++q)
+    {
+        string s = *q;
+        if(_history.count(s) == 0)
+        {
+            if(s.find(prefix) == 0)
+            {
+                string ss = s.substr(prefix.size());
+		if(ss.find("include:") == 0)
+		{
+		    continue;
+		}
+                cout << file << ": warning: ignoring invalid global metadata `" << s << "'" << endl;
+            }
+            _history.insert(s);
+        }
+    }
+
+    validate(p, p->getMetaData(), p->definitionContext()->filename(), p->line());
     return true;
 }
 
@@ -4477,13 +5027,13 @@ Slice::Gen::MetaDataVisitor::visitModuleEnd(const ModulePtr&)
 void
 Slice::Gen::MetaDataVisitor::visitClassDecl(const ClassDeclPtr& p)
 {
-    validate(p);
+    validate(p, p->getMetaData(), p->definitionContext()->filename(), p->line());
 }
 
 bool
 Slice::Gen::MetaDataVisitor::visitClassDefStart(const ClassDefPtr& p)
 {
-    validate(p);
+    validate(p, p->getMetaData(), p->definitionContext()->filename(), p->line());
     return true;
 }
 
@@ -4495,7 +5045,7 @@ Slice::Gen::MetaDataVisitor::visitClassDefEnd(const ClassDefPtr&)
 bool
 Slice::Gen::MetaDataVisitor::visitExceptionStart(const ExceptionPtr& p)
 {
-    validate(p);
+    validate(p, p->getMetaData(), p->definitionContext()->filename(), p->line());
     return true;
 }
 
@@ -4507,7 +5057,7 @@ Slice::Gen::MetaDataVisitor::visitExceptionEnd(const ExceptionPtr&)
 bool
 Slice::Gen::MetaDataVisitor::visitStructStart(const StructPtr& p)
 {
-    validate(p);
+    validate(p, p->getMetaData(), p->definitionContext()->filename(), p->line());
     return true;
 }
 
@@ -4519,95 +5069,137 @@ Slice::Gen::MetaDataVisitor::visitStructEnd(const StructPtr&)
 void
 Slice::Gen::MetaDataVisitor::visitOperation(const OperationPtr& p)
 {
-    validate(p);
+    bool ami = false;
+    ClassDefPtr cl = ClassDefPtr::dynamicCast(p->container());
+    if(cl->hasMetaData("ami") || p->hasMetaData("ami") || cl->hasMetaData("amd") || p->hasMetaData("amd"))
+    {
+        ami = true;
+    }
+    StringList metaData = p->getMetaData();
+    TypePtr returnType = p->returnType();
+    if(!metaData.empty())
+    {
+        if(!returnType)
+        {
+            for(StringList::const_iterator q = metaData.begin(); q != metaData.end(); ++q)
+            {
+                if(q->find("cpp:type:", 0) == 0 || q->find("cpp:array", 0) == 0 || q->find("cpp:range", 0) == 0)
+                {
+                    cout << p->definitionContext()->filename() << ":" << p->line()
+                         << ": warning: invalid metadata for operation" << endl;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            validate(returnType, metaData, p->definitionContext()->filename(), p->line(), ami);
+        }
+    }
+
+    ParamDeclList params = p->parameters();
+    for(ParamDeclList::iterator q = params.begin(); q != params.end(); ++q)
+    {
+        validate((*q)->type(), (*q)->getMetaData(), p->definitionContext()->filename(), (*q)->line(),
+                 ami || !(*q)->isOutParam());
+    }
 }
 
 void
 Slice::Gen::MetaDataVisitor::visitParamDecl(const ParamDeclPtr& p)
 {
-    validate(p);
+    validate(p, p->getMetaData(), p->definitionContext()->filename(), p->line());
 }
 
 void
 Slice::Gen::MetaDataVisitor::visitDataMember(const DataMemberPtr& p)
 {
-    validate(p);
+    validate(p->type(), p->getMetaData(), p->definitionContext()->filename(), p->line());
 }
 
 void
 Slice::Gen::MetaDataVisitor::visitSequence(const SequencePtr& p)
 {
-    validate(p);
+    validate(p, p->getMetaData(), p->definitionContext()->filename(), p->line());
 }
 
 void
 Slice::Gen::MetaDataVisitor::visitDictionary(const DictionaryPtr& p)
 {
-    validate(p);
+    validate(p, p->getMetaData(), p->definitionContext()->filename(), p->line());
 }
 
 void
 Slice::Gen::MetaDataVisitor::visitEnum(const EnumPtr& p)
 {
-    validate(p);
+    validate(p, p->getMetaData(), p->definitionContext()->filename(), p->line());
 }
 
 void
 Slice::Gen::MetaDataVisitor::visitConst(const ConstPtr& p)
 {
-    validate(p);
+    validate(p, p->getMetaData(), p->definitionContext()->filename(), p->line());
 }
 
 void
-Slice::Gen::MetaDataVisitor::validate(const ContainedPtr& cont)
+Slice::Gen::MetaDataVisitor::validate(const SyntaxTreeBasePtr& cont, const StringList& metaData,
+				      const string& file, const string& line, bool inParam)
 {
-    DefinitionContextPtr dc = cont->definitionContext();
-    assert(dc);
-    StringList globalMetaData = dc->getMetaData();
-    string file = dc->filename();
-
-    StringList localMetaData = cont->getMetaData();
-
-    StringList::const_iterator p;
     static const string prefix = "cpp:";
-
-    for(p = globalMetaData.begin(); p != globalMetaData.end(); ++p)
+    for(StringList::const_iterator p = metaData.begin(); p != metaData.end(); ++p)
     {
         string s = *p;
         if(_history.count(s) == 0)
         {
             if(s.find(prefix) == 0)
             {
-		cout << file << ": warning: ignoring invalid global metadata `" << s << "'" << endl;
-            }
-            _history.insert(s);
-        }
-    }
-
-    for(p = localMetaData.begin(); p != localMetaData.end(); ++p)
-    {
-	string s = *p;
-        if(_history.count(s) == 0)
-        {
-            if(s.find(prefix) == 0)
-            {
-	    	if(SequencePtr::dynamicCast(cont))
+		string ss = s.substr(prefix.size());
+		if(ss.find("type:wstring") == 0 || ss.find("type:string") == 0)
 		{
-		    if(s.substr(prefix.size()) == "collection")
-		    {
-			continue;
-		    }
-		}
-		if(StructPtr::dynamicCast(cont))
-		{
-		    if(s.substr(prefix.size()) == "class")
+	    	    BuiltinPtr builtin = BuiltinPtr::dynamicCast(cont);
+		    ModulePtr module = ModulePtr::dynamicCast(cont);
+		    ClassDefPtr clss = ClassDefPtr::dynamicCast(cont);
+		    StructPtr strct = StructPtr::dynamicCast(cont);
+		    ExceptionPtr exception = ExceptionPtr::dynamicCast(cont);
+	            if((builtin && builtin->kind() == Builtin::KindString) || module || clss || strct || exception)
 		    {
 		        continue;
 		    }
 		}
-		cout << file << ": warning: ignoring invalid metadata `" << s << "'" << endl;
+                if(SequencePtr::dynamicCast(cont))
+                {
+                    if(ss.find("type:") == 0 || (inParam && (ss == "array" || ss.find("range") == 0)))
+                    {
+                        continue;
+                    }
+                }
+                cout << file << ":" << line << ": warning: ignoring invalid metadata `" << s << "'" << endl;
             }
             _history.insert(s);
         }
     }
+}
+
+bool
+Slice::Gen::setUseWstring(ContainedPtr p, list<bool>& hist, bool use)
+{
+    hist.push_back(use);
+    StringList metaData = p->getMetaData();
+    if(find(metaData.begin(), metaData.end(), "cpp:type:wstring") != metaData.end())
+    {
+        use = true;
+    }
+    else if(find(metaData.begin(), metaData.end(), "cpp:type:string") != metaData.end())
+    {
+        use = false;
+    }
+    return use;
+}
+
+bool
+Slice::Gen::resetUseWstring(list<bool>& hist)
+{
+    bool use = hist.back();
+    hist.pop_back();
+    return use;
 }

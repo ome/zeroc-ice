@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,6 +20,9 @@ namespace IceGrid
 
 class NodeCache;
 
+class SessionI;
+typedef IceUtil::Handle<SessionI> SessionIPtr;
+
 class NodeSessionI;
 typedef IceUtil::Handle<NodeSessionI> NodeSessionIPtr;
 
@@ -30,7 +33,7 @@ class NodeEntry : public IceUtil::Shared, public IceUtil::Mutex
 {
 public:
     
-    NodeEntry(Cache<std::string, NodeEntry>&, const std::string&);
+    NodeEntry(NodeCache&, const std::string&);
 
     void addDescriptor(const std::string&, const NodeDescriptor&);
     void removeDescriptor(const std::string&);
@@ -46,15 +49,15 @@ public:
 
     bool canRemove();
     
-    void loadServer(const ServerEntryPtr&, const ServerInfo&);
+    void loadServer(const ServerEntryPtr&, const ServerInfo&, const SessionIPtr&);
     void destroyServer(const ServerEntryPtr&, const std::string&);
-    ServerInfo getServerInfo(const ServerInfo&);
+    ServerInfo getServerInfo(const ServerInfo&, const SessionIPtr&);
 
 private:
     
-    ServerDescriptorPtr getServerDescriptor(const ServerInfo&);
+    ServerDescriptorPtr getServerDescriptor(const ServerInfo&, const SessionIPtr&);
 
-    Cache<std::string, NodeEntry>& _cache;
+    NodeCache& _cache;
     const std::string _name;
     NodeSessionIPtr _session;
     std::map<std::string, ServerEntryPtr> _servers;
@@ -66,7 +69,7 @@ class NodeCache : public CacheByString<NodeEntry>
 {
 public:
 
-    NodeCache(int);
+    NodeCache(const Ice::CommunicatorPtr&, int);
 
     void destroy();
 
@@ -74,8 +77,11 @@ public:
 
     int getSessionTimeout() { return _sessionTimeout; }
 
+    const Ice::CommunicatorPtr& getCommunicator() const { return _communicator; }
+
 private:
     
+    Ice::CommunicatorPtr _communicator;
     const int _sessionTimeout;
 };
 

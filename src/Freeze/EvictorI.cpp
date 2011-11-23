@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -288,9 +288,11 @@ Freeze::EvictorI::EvictorI(const ObjectAdapterPtr& adapter,
     _filename(filename),
     _createDb(createDb),
     _trace(0),
+    _txTrace(0),
     _pingObject(new PingObject)
 {
     _trace = _communicator->getProperties()->getPropertyAsInt("Freeze.Trace.Evictor");
+    _txTrace = _communicator->getProperties()->getPropertyAsInt("Freeze.Trace.Transaction");
     _deadlockWarning = (_communicator->getProperties()->getPropertyAsInt("Freeze.Warn.Deadlocks") != 0);
    
     string propertyPrefix = string("Freeze.Evictor.") + envName + '.' + _filename; 
@@ -581,7 +583,7 @@ Freeze::EvictorI::addFacet(const ObjectPtr& servant, const Identity& ident, cons
     {
 	AlreadyRegisteredException ex(__FILE__, __LINE__);
 	ex.kindOfObject = "servant";
-	ex.id = identityToString(ident);
+	ex.id = _communicator->identityToString(ident);
 	if(!facet.empty())
 	{
 	    ex.id += " -f " + IceUtil::escapeString(facet, "");
@@ -592,7 +594,7 @@ Freeze::EvictorI::addFacet(const ObjectPtr& servant, const Identity& ident, cons
     if(_trace >= 1)
     {
 	Trace out(_communicator->getLogger(), "Freeze.Evictor");
-	out << "added object \"" << ident << "\"";
+	out << "added object \"" << _communicator->identityToString(ident) << "\"";
 	if(!facet.empty())
 	{
 	    out << " with facet \"" << facet << "\"";
@@ -602,7 +604,7 @@ Freeze::EvictorI::addFacet(const ObjectPtr& servant, const Identity& ident, cons
     ObjectPrx obj = _adapter->createProxy(ident);
     if(!facet.empty())
     {
-	obj = obj->ice_newFacet(facet);
+	obj = obj->ice_facet(facet);
     }
     return obj;
 }
@@ -701,7 +703,7 @@ Freeze::EvictorI::createObject(const Identity& ident, const ObjectPtr& servant)
     if(_trace >= 1)
     {
 	Trace out(_communicator->getLogger(), "Freeze.Evictor");
-	out << "added object \"" << ident << "\"";
+	out << "added or updated object \"" << _communicator->identityToString(ident) << "\"";
     }
 }
 
@@ -808,7 +810,7 @@ Freeze::EvictorI::removeFacet(const Identity& ident, const string& facet)
     {
 	NotRegisteredException ex(__FILE__, __LINE__);
 	ex.kindOfObject = "servant";
-	ex.id = identityToString(ident);
+	ex.id = _communicator->identityToString(ident);
 	if(!facet.empty())
 	{
 	    ex.id += " -f " + IceUtil::escapeString(facet, "");
@@ -819,7 +821,7 @@ Freeze::EvictorI::removeFacet(const Identity& ident, const string& facet)
     if(_trace >= 1)
     {
 	Trace out(_communicator->getLogger(), "Freeze.Evictor");
-	out << "removed object \"" << ident << "\"";
+	out << "removed object \"" << _communicator->identityToString(ident) << "\"";
 	if(!facet.empty())
 	{
 	    out << " with facet \"" << facet << "\"";
@@ -930,7 +932,7 @@ Freeze::EvictorI::keepFacet(const Identity& ident, const string& facet)
     {
 	NotRegisteredException ex(__FILE__, __LINE__);
 	ex.kindOfObject = "servant";
-	ex.id = identityToString(ident);
+	ex.id = _communicator->identityToString(ident);
 	if(!facet.empty())
 	{
 	    ex.id += " -f " + IceUtil::escapeString(facet, "");
@@ -988,7 +990,7 @@ Freeze::EvictorI::releaseFacet(const Identity& ident, const string& facet)
     
     NotRegisteredException ex(__FILE__, __LINE__);
     ex.kindOfObject = "servant";
-    ex.id = identityToString(ident);
+    ex.id = _communicator->identityToString(ident);
     if(!facet.empty())
     {
 	ex.id += " -f " + IceUtil::escapeString(facet, "");
@@ -1140,7 +1142,7 @@ Freeze::EvictorI::locate(const Current& current, LocalObjectPtr& cookie)
 	    if(_trace >= 3)
 	    {
 		Trace out(_communicator->getLogger(), "Freeze.Evictor");
-		out << "ice_ping found \"" << identityToString(current.id)  
+		out << "ice_ping found \"" << _communicator->identityToString(current.id)  
 		    << "\" with facet \"" << current.facet + "\"";
 	    }
 	    
@@ -1152,7 +1154,7 @@ Freeze::EvictorI::locate(const Current& current, LocalObjectPtr& cookie)
 	    if(_trace >= 3)
 	    {
 		Trace out(_communicator->getLogger(), "Freeze.Evictor");
-		out << "ice_ping raises FacetNotExistException for \"" << identityToString(current.id)  
+		out << "ice_ping raises FacetNotExistException for \"" << _communicator->identityToString(current.id)  
 		    << "\" with facet \"" << current.facet + "\"";
 	    }
 	    throw FacetNotExistException(__FILE__, __LINE__);
@@ -1162,8 +1164,8 @@ Freeze::EvictorI::locate(const Current& current, LocalObjectPtr& cookie)
 	    if(_trace >= 3)
 	    {
 		Trace out(_communicator->getLogger(), "Freeze.Evictor");
-		out << "ice_ping will raise ObjectNotExistException for \"" << identityToString(current.id)  
-		    << "\" with facet \"" << current.facet + "\"";
+		out << "ice_ping will raise ObjectNotExistException for \"" 
+		    << _communicator->identityToString(current.id)  << "\" with facet \"" << current.facet + "\"";
 	    }
 	    return 0;
 	}
@@ -1190,6 +1192,11 @@ Freeze::EvictorI::locateImpl(const Current& current, LocalObjectPtr& cookie)
     ObjectStore* store = findStore(current.facet);
     if(store == 0)
     {
+        if(_trace >= 2)
+	{
+	    Trace out(_communicator->getLogger(), "Freeze.Evictor");
+	    out << "locate could not find a database for facet \"" << current.facet << "\"";
+	}
 	return 0;
     }
     
@@ -1198,6 +1205,12 @@ Freeze::EvictorI::locateImpl(const Current& current, LocalObjectPtr& cookie)
 	EvictorElementPtr element = store->pin(current.id);
 	if(element == 0)
 	{
+            if(_trace >= 2)
+	    {
+	        Trace out(_communicator->getLogger(), "Freeze.Evictor");
+	        out << "locate could not find \"" << _communicator->identityToString(current.id) << "\" in database \""
+		    << current.facet << "\"";
+	    }
 	    return 0;
 	}
 	
@@ -1215,12 +1228,25 @@ Freeze::EvictorI::locateImpl(const Current& current, LocalObjectPtr& cookie)
 	IceUtil::Mutex::Lock lockElement(element->mutex);
 	if(element->status == EvictorElement::destroyed || element->status == EvictorElement::dead)
 	{
+            if(_trace >= 2)
+	    {
+	        Trace out(_communicator->getLogger(), "Freeze.Evictor");
+	        out << "locate found \"" << _communicator->identityToString(current.id) 
+		    << "\" in the cache for database \"" << current.facet << "\" but it was dead or destroyed";
+	    }
 	    return 0;
 	}
 
 	//
 	// It's a good one!
 	//
+        if(_trace >= 2)
+	{
+	    Trace out(_communicator->getLogger(), "Freeze.Evictor");
+	    out << "locate found \"" << _communicator->identityToString(current.id) << "\" in database \"" 
+	        << current.facet << "\"";
+	}
+
 	fixEvictPosition(element);
 	element->usageCount++;
 	cookie = element;
@@ -1593,6 +1619,15 @@ Freeze::EvictorI::run()
 		    {
 			DbTxn* tx = 0;
 			_dbEnv->getEnv()->txn_begin(0, &tx, 0);
+
+			long txnId = 0;
+			if(_txTrace >= 1)
+			{
+			    txnId = (tx->id() & 0x7FFFFFFF) + 0x80000000L;
+			    Trace out(_communicator->getLogger(), "Freeze.Evictor");
+			    out << "started transaction " << hex << txnId << dec << " in saving thread";
+			}
+
 			try
 			{	
 			    for(size_t i = 0; i < txSize; i++)
@@ -1604,9 +1639,21 @@ Freeze::EvictorI::run()
 			catch(...)
 			{
 			    tx->abort();
+			    if(_txTrace >= 1)
+			    {
+			        Trace out(_communicator->getLogger(), "Freeze.Evictor");
+			        out << "rolled back transaction " << hex << txnId << dec;
+			    }
 			    throw;
 			}
 			tx->commit(0);
+
+			if(_txTrace >= 1)
+			{
+			    Trace out(_communicator->getLogger(), "Freeze.Evictor");
+			    out << "committed transaction " << hex << txnId << dec;
+			}
+
 			streamedObjectQueue.erase
 			    (streamedObjectQueue.begin(), 
 			     streamedObjectQueue.begin() + txSize);
@@ -1782,7 +1829,7 @@ Freeze::EvictorI::evict()
 	    string facet = element->store.facet();
 
 	    Trace out(_communicator->getLogger(), "Freeze.Evictor");
-	    out << "evicting \"" << element->cachePosition->first << "\" ";
+	    out << "evicting \"" << _communicator->identityToString(element->cachePosition->first) << "\" ";
 	    if(facet != "")
 	    {
 		out << "-f \"" << facet << "\" ";

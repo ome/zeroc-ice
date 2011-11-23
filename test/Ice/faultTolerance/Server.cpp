@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -53,7 +53,7 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
     communicator->getProperties()->setProperty("TestAdapter.Endpoints", endpts.str());
     Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("TestAdapter");
     Ice::ObjectPtr object = new TestI(adapter);
-    adapter->add(object, Ice::stringToIdentity("test"));
+    adapter->add(object, communicator->stringToIdentity("test"));
     adapter->activate();
     communicator->waitForShutdown();
     return EXIT_SUCCESS;
@@ -72,10 +72,11 @@ main(int argc, char* argv[])
 	// our test servers may time out before they are used in the
 	// test.
 	//
-	Ice::PropertiesPtr properties = Ice::getDefaultProperties(argc, argv);
-	properties->setProperty("Ice.ServerIdleTime", "120"); // Two minutes.
+	Ice::InitializationData initData;
+	initData.properties = Ice::createProperties(argc, argv);
+	initData.properties->setProperty("Ice.ServerIdleTime", "120"); // Two minutes.
 
-	communicator = Ice::initialize(argc, argv);
+	communicator = Ice::initialize(argc, argv, initData);
 	status = run(argc, argv, communicator);
     }
     catch(const Ice::Exception& ex)

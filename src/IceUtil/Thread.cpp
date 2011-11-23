@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,117 +15,65 @@ using namespace std;
 
 #ifdef _WIN32
 
-IceUtil::ThreadControl::ThreadControl()
+IceUtil::ThreadControl::ThreadControl() :
+    _handle(0),
+    _id(GetCurrentThreadId())
 {
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    _handle = new HandleWrapper(GetCurrentThread(), false);
-    _id = GetCurrentThreadId();
 }
 
-IceUtil::ThreadControl::ThreadControl(const HandleWrapperPtr& handle, ThreadId id)
+IceUtil::ThreadControl::ThreadControl(HANDLE handle, IceUtil::ThreadControl::ID id) :
+    _handle(handle),
+    _id(id)
 {
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    _handle = handle;
-    _id = id;
-}
-
-IceUtil::ThreadControl::ThreadControl(const ThreadControl& tc)
-{
-    ThreadId id;
-    HandleWrapperPtr handle;
-    {
-	IceUtil::Mutex::Lock lock(tc._stateMutex);
-	id = tc._id;
-	handle = tc._handle;
-    }
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    _handle = handle;
-    _id = id;
-}
-
-IceUtil::ThreadControl&
-IceUtil::ThreadControl::operator=(const ThreadControl& rhs)
-{
-    if(&rhs != this)
-    {
-	ThreadId id;
-	HandleWrapperPtr handle;
-	{
-	    IceUtil::Mutex::Lock lock(rhs._stateMutex);
-	    handle = rhs._handle;
-	    id = rhs._id;
-	}
-	IceUtil::Mutex::Lock lock(_stateMutex);
-	_handle = handle;
-	_id = id;
-    }
-    return *this;
 }
 
 bool
 IceUtil::ThreadControl::operator==(const ThreadControl& rhs) const
 {
-    ThreadId id = rhs.id();
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    return _id == id;
+    return _id == rhs._id;
 }
 
 bool
 IceUtil::ThreadControl::operator!=(const ThreadControl& rhs) const
 {
-    return !operator==(rhs);
-}
-
-bool
-IceUtil::ThreadControl::operator<(const ThreadControl& rhs) const
-{
-    ThreadId id = rhs.id();
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    return _id < id;
-}
-
-IceUtil::ThreadId
-IceUtil::ThreadControl::id() const
-{
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    return _id;
+    return _id != rhs._id;
 }
 
 void
 IceUtil::ThreadControl::join()
 {
-    HandleWrapperPtr handle;
+    if(_handle == 0)
     {
-	IceUtil::Mutex::Lock lock(_stateMutex);
-	handle = _handle;
+	throw BadThreadControlException(__FILE__, __LINE__);
     }
-    int rc = WaitForSingleObject(handle->handle, INFINITE);
+
+    int rc = WaitForSingleObject(_handle, INFINITE);
     if(rc != WAIT_OBJECT_0)
     {
 	throw ThreadSyscallException(__FILE__, __LINE__, GetLastError());
     }
+    
+    detach();
 }
 
 void
 IceUtil::ThreadControl::detach()
 {
-    // No-op: Windows doesn't have the concept of detaching a thread.
+    if(_handle == 0)
+    {
+	throw BadThreadControlException(__FILE__, __LINE__);
+    }
+    
+    if(CloseHandle(_handle) == 0)
+    {
+	throw ThreadSyscallException(__FILE__, __LINE__, GetLastError());
+    }
 }
 
-bool
-IceUtil::ThreadControl::isAlive() const
+IceUtil::ThreadControl::ID
+IceUtil::ThreadControl::id() const
 {
-    HandleWrapperPtr handle;
-    {
-	IceUtil::Mutex::Lock lock(_stateMutex);
-	handle = _handle;
-    }
-    DWORD rc;
-    if(GetExitCodeThread(handle->handle, &rc) == 0)
-    {
-	return false;
-    }
-    return rc == STILL_ACTIVE;
+    return _id;
 }
 
 void
@@ -145,47 +93,44 @@ IceUtil::ThreadControl::yield()
     Sleep(0);
 }
 
-IceUtil::Thread::Thread()
+IceUtil::Thread::Thread() :
+    _started(false),
+    _running(false),
+    _handle(0),
+    _id(0)
 {
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    _started = false;
-    _id = 0;
-    _handle = new HandleWrapper(0);
 }
 
 IceUtil::Thread::~Thread()
 {
 }
 
-IceUtil::ThreadId
-IceUtil::Thread::id() const
-{
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    if(!_started)
-    {
-	throw ThreadNotStartedException(__FILE__, __LINE__);
-    }
-    return _id;
-}
-
 static unsigned int
 WINAPI startHook(void* arg)
 {
+    // Ensure that the thread doesn't go away until run() has
+    // completed.
+    //
+    IceUtil::ThreadPtr thread;
+
     try
     {
 	IceUtil::Thread* rawThread = static_cast<IceUtil::Thread*>(arg);
-
-        //
-        // Initialize the random number generator in each thread.
-        //
-        unsigned int seed = static_cast<unsigned int>(IceUtil::Time::now().toMicroSeconds());
-        srand(seed);            
 
 	//
 	// Ensure that the thread doesn't go away until run() has
 	// completed.
 	//
-	IceUtil::ThreadPtr thread = rawThread;
+	thread = rawThread;
+
+#ifdef _WIN32
+        //
+        // Initialize the random number generator in each thread on
+        // Windows (the rand() seed is thread specific).
+        //
+        unsigned int seed = static_cast<unsigned int>(IceUtil::Time::now().toMicroSeconds());
+        srand(seed ^ thread->getThreadControl().id());
+#endif
 
 	//
 	// See the comment in IceUtil::Thread::start() for details.
@@ -197,7 +142,13 @@ WINAPI startHook(void* arg)
     {
 	cerr << "IceUtil::Thread::run(): uncaught exception: ";
 	cerr << e << endl;
+    } 
+    catch(...)
+    {
+	cerr << "IceUtil::Thread::run(): uncaught exception" << endl;
     }
+    thread->_done();
+   
     return 0;
 }
 
@@ -229,19 +180,23 @@ IceUtil::Thread::start(size_t stackSize)
     //
     __incRef();
     
-    _handle->handle = 
+    unsigned int id;
+    
+    _handle = 
        reinterpret_cast<HANDLE>(
           _beginthreadex(0, 
 			 static_cast<unsigned int>(stackSize), 
-			 startHook, this, 0, &_id));
+			 startHook, this, 0, &id));
+    _id = id;
 
-    if(_handle->handle == 0)
+    if(_handle == 0)
     {
 	__decRef();
 	throw ThreadSyscallException(__FILE__, __LINE__, GetLastError());
     }
 
     _started = true;
+    _running = true;
 			
     return ThreadControl(_handle, _id);
 }
@@ -260,96 +215,53 @@ IceUtil::Thread::getThreadControl() const
 bool
 IceUtil::Thread::operator==(const Thread& rhs) const
 {
-    //
-    // Get rhs ID.
-    //
-    ThreadId id = rhs.id();
-
-    //
-    // Check that this thread was started.
-    //
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    if(!_started)
-    {
-	throw ThreadNotStartedException(__FILE__, __LINE__);
-    }
-
-    //
-    // We perform the comparison within the scope of the lock, otherwise the hardware has no
-    // way of knowing that it might have to flush a cache line.
-    //
-    return _id == id;
+    return this == &rhs;
 }
 
 bool
 IceUtil::Thread::operator!=(const Thread& rhs) const
 {
-    return !operator==(rhs);
+    return this != &rhs;
 }
 
 bool
 IceUtil::Thread::operator<(const Thread& rhs) const
 {
-    //
-    // Get rhs ID.
-    //
-    ThreadId id = rhs.id();
+    return this < &rhs;
+}
 
-    //
-    // Check that this thread was started.
-    //
+bool
+IceUtil::Thread::isAlive() const
+{
     IceUtil::Mutex::Lock lock(_stateMutex);
-    if(!_started)
-    {
-	throw ThreadNotStartedException(__FILE__, __LINE__);
-    }
+    return _running;
+}
 
-    //
-    // We perform the comparison within the scope of the lock, otherwise the hardware has no
-    // way of knowing that it might have to flush a cache line.
-    //
-    return _id < id;
+void
+IceUtil::Thread::_done()
+{
+    IceUtil::Mutex::Lock lock(_stateMutex);
+    _running = false;
 }
 
 #else
 
-IceUtil::ThreadControl::ThreadControl(ThreadId id)
+IceUtil::ThreadControl::ThreadControl(pthread_t thread) :
+    _thread(thread),
+    _detachable(true)
 {
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    _id = id;
 }
 
-IceUtil::ThreadControl::ThreadControl()
+IceUtil::ThreadControl::ThreadControl() :
+    _thread(pthread_self()),
+    _detachable(false)
 {
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    _id = pthread_self();
-}
-
-IceUtil::ThreadControl::ThreadControl(const ThreadControl& tc)
-{
-    ThreadId id = tc.id();
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    _id = id;
-}
-
-IceUtil::ThreadControl&
-IceUtil::ThreadControl::operator=(const ThreadControl& rhs)
-{
-    if(&rhs != this)
-    {
-	ThreadId id = rhs.id();
-	IceUtil::Mutex::Lock lock(_stateMutex);
-	_id = id;
-    }
-    return *this;
 }
 
 bool
 IceUtil::ThreadControl::operator==(const ThreadControl& rhs) const
 {
-    ThreadId id = rhs.id();
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    return pthread_equal(_id, id);
+    return pthread_equal(_thread, rhs._thread) != 0;
 }
 
 bool
@@ -358,32 +270,16 @@ IceUtil::ThreadControl::operator!=(const ThreadControl& rhs) const
     return !operator==(rhs);
 }
 
-bool
-IceUtil::ThreadControl::operator<(const ThreadControl& rhs) const
-{
-    ThreadId id = rhs.id();
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    // NOTE: Linux specific
-    return _id < id;
-}
-
-IceUtil::ThreadId
-IceUtil::ThreadControl::id() const
-{
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    return _id;
-}
-
 void
 IceUtil::ThreadControl::join()
 {
-    ThreadId id;
+    if(!_detachable)
     {
-	IceUtil::Mutex::Lock lock(_stateMutex);
-	id = _id;
+	throw BadThreadControlException(__FILE__, __LINE__);
     }
+
     void* ignore = 0;
-    int rc = pthread_join(id, &ignore);
+    int rc = pthread_join(_thread, &ignore);
     if(rc != 0)
     {
 	throw ThreadSyscallException(__FILE__, __LINE__, rc);
@@ -393,34 +289,22 @@ IceUtil::ThreadControl::join()
 void
 IceUtil::ThreadControl::detach()
 {
-    ThreadId id;
+    if(!_detachable)
     {
-	IceUtil::Mutex::Lock lock(_stateMutex);
-	id = _id;
+	throw BadThreadControlException(__FILE__, __LINE__);
     }
-    int rc = pthread_detach(id);
+
+    int rc = pthread_detach(_thread);
     if(rc != 0)
     {
 	throw ThreadSyscallException(__FILE__, __LINE__, rc);
     }
 }
 
-bool
-IceUtil::ThreadControl::isAlive() const
+IceUtil::ThreadControl::ID
+IceUtil::ThreadControl::id() const
 {
-    int policy;
-    int ret;
-    struct sched_param param;
-    IceUtil::Mutex::Lock lock(_stateMutex);
-
-    ret = pthread_getschedparam(_id, &policy, &param);
-#ifdef __APPLE__
-    if (ret == 0) 
-    {
-	ret = pthread_setschedparam(_id, policy, &param);
-    }
-#endif 
-    return (ret == 0);
+    return _thread;;
 }
 
 void
@@ -439,41 +323,32 @@ IceUtil::ThreadControl::yield()
     sched_yield();
 }
 
-IceUtil::Thread::Thread()
+IceUtil::Thread::Thread() :
+    _started(false),
+    _running(false)
 {
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    _started = false;
-    _id = 0;
 }
 
 IceUtil::Thread::~Thread()
 {
 }
 
-IceUtil::ThreadId
-IceUtil::Thread::id() const
+extern "C" 
 {
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    if(!_started)
-    {
-	throw ThreadNotStartedException(__FILE__, __LINE__);
-    }
-    return _id;
-}
-
-extern "C" {
 static void*
 startHook(void* arg)
 {
+    //
+    // Ensure that the thread doesn't go away until run() has
+    // completed.
+    //
+    IceUtil::ThreadPtr thread;
+
     try
     {
 	IceUtil::Thread* rawThread = static_cast<IceUtil::Thread*>(arg);
 
-	//
-	// Ensure that the thread doesn't go away until run() has
-	// completed.
-	//
-	IceUtil::ThreadPtr thread = rawThread;
+	thread = rawThread;
 
 	//
 	// See the comment in IceUtil::Thread::start() for details.
@@ -490,6 +365,8 @@ startHook(void* arg)
     {
 	cerr << "IceUtil::Thread::run(): uncaught exception" << endl;
     }
+    thread->_done();
+    
     return 0;
 }
 }
@@ -535,7 +412,7 @@ IceUtil::Thread::start(size_t stackSize)
 	    __decRef();
 	    throw ThreadSyscallException(__FILE__, __LINE__, rc);
 	}
-	rc = pthread_create(&_id, &attr, startHook, this);
+	rc = pthread_create(&_thread, &attr, startHook, this);
 	if(rc != 0)
 	{
 	    __decRef();
@@ -544,7 +421,7 @@ IceUtil::Thread::start(size_t stackSize)
     }
     else
     {
-	int rc = pthread_create(&_id, 0, startHook, this);
+	int rc = pthread_create(&_thread, 0, startHook, this);
 	if(rc != 0)
 	{
 	    __decRef();
@@ -553,8 +430,9 @@ IceUtil::Thread::start(size_t stackSize)
     }
 
     _started = true;
+    _running = true;
 
-    return ThreadControl(_id);
+    return ThreadControl(_thread);
 }
 
 IceUtil::ThreadControl
@@ -565,63 +443,39 @@ IceUtil::Thread::getThreadControl() const
     {
 	throw ThreadNotStartedException(__FILE__, __LINE__);
     }
-    return ThreadControl(_id);
+    return ThreadControl(_thread);
 }
 
 bool
 IceUtil::Thread::operator==(const Thread& rhs) const
 {
-    //
-    // Get rhs ID.
-    //
-    ThreadId id = rhs.id();
-
-    //
-    // Check that this thread was started.
-    //
-    IceUtil::Mutex::Lock lock(_stateMutex);
-    if(!_started)
-    {
-	throw ThreadNotStartedException(__FILE__, __LINE__);
-    }
-
-    //
-    // We perform the comparison within the scope of the lock, otherwise the hardware has no
-    // way of knowing that it might have to flush a cache line.
-    //
-    return pthread_equal(_id, id);
+    return this == &rhs;
 }
 
 bool
 IceUtil::Thread::operator!=(const Thread& rhs) const
 {
-    return !operator==(rhs);
+    return this != &rhs;
 }
 
 bool
 IceUtil::Thread::operator<(const Thread& rhs) const
 {
-    //
-    // Get rhs ID.
-    //
-    ThreadId id = rhs.id();
+    return this < &rhs;
+}
 
-    //
-    // Check that this thread was started.
-    //
+bool
+IceUtil::Thread::isAlive() const
+{
     IceUtil::Mutex::Lock lock(_stateMutex);
-    if(!_started)
-    {
-	throw ThreadNotStartedException(__FILE__, __LINE__);
-    }
+    return _running;
+}
 
-    //
-    // We perform the comparison within the scope of the lock, otherwise the hardware has no
-    // way of knowing that it might have to flush a cache line.
-    //
-    // NOTE: Linux specific
-    //
-    return _id < id;
+void
+IceUtil::Thread::_done()
+{
+    IceUtil::Mutex::Lock lock(_stateMutex);
+    _running = false;
 }
 
 #endif

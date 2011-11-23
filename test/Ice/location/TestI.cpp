@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,17 +13,24 @@
 
 using namespace Test;
 
-ServerManagerI::ServerManagerI(const Ice::ObjectAdapterPtr& adapter, const ServerLocatorRegistryPtr& registry) :
-    _adapter(adapter), _registry(registry)
+ServerManagerI::ServerManagerI(const Ice::ObjectAdapterPtr& adapter, 
+			       const ServerLocatorRegistryPtr& registry,
+			       const Ice::InitializationData& initData) :
+    _adapter(adapter), _registry(registry), _initData(initData)
 {
+    _initData.properties->setProperty("TestAdapter.Endpoints", "default");
+    _initData.properties->setProperty("TestAdapter.AdapterId", "TestAdapter");
+    _initData.properties->setProperty("TestAdapter.ReplicaGroupId", "ReplicatedAdapter");
+    
+    _initData.properties->setProperty("TestAdapter2.Endpoints", "default");
+    _initData.properties->setProperty("TestAdapter2.AdapterId", "TestAdapter2");
+
+    _initData.properties->setProperty("Ice.PrintAdapterReady", "0");
 }
 
 void
-ServerManagerI::startServer(const Ice::Current&)
+ServerManagerI::startServer(const Ice::Current& current)
 {
-    int argc = 0;
-    char** argv = 0;
-
     for(::std::vector<Ice::CommunicatorPtr>::const_iterator i = _communicators.begin(); i != _communicators.end(); ++i)
     {
 	(*i)->waitForShutdown();
@@ -39,24 +46,20 @@ ServerManagerI::startServer(const Ice::Current&)
     // its endpoints with the locator and create references containing
     // the adapter id instead of the endpoints.
     //
-    Ice::CommunicatorPtr serverCommunicator = Ice::initialize(argc, argv);
+    
+    Ice::CommunicatorPtr serverCommunicator = Ice::initialize(_initData);
     _communicators.push_back(serverCommunicator);
-    serverCommunicator->getProperties()->setProperty("TestAdapter.Endpoints", "default");
-    serverCommunicator->getProperties()->setProperty("TestAdapter.AdapterId", "TestAdapter");
-    serverCommunicator->getProperties()->setProperty("TestAdapter.ReplicaGroupId", "ReplicatedAdapter");
-    Ice::ObjectAdapterPtr adapter = serverCommunicator->createObjectAdapter("TestAdapter");
 
-    serverCommunicator->getProperties()->setProperty("TestAdapter2.Endpoints", "default");
-    serverCommunicator->getProperties()->setProperty("TestAdapter2.AdapterId", "TestAdapter2");
+    Ice::ObjectAdapterPtr adapter = serverCommunicator->createObjectAdapter("TestAdapter");
     Ice::ObjectAdapterPtr adapter2 = serverCommunicator->createObjectAdapter("TestAdapter2");
 
-    Ice::ObjectPrx locator = serverCommunicator->stringToProxy("locator:default -p 12345");
+    Ice::ObjectPrx locator = serverCommunicator->stringToProxy("locator:default -p 12010");
     adapter->setLocator(Ice::LocatorPrx::uncheckedCast(locator));
     adapter2->setLocator(Ice::LocatorPrx::uncheckedCast(locator));
 
     Ice::ObjectPtr object = new TestI(adapter, adapter2, _registry);
-    _registry->addObject(adapter->add(object, Ice::stringToIdentity("test")));
-    _registry->addObject(adapter->add(object, Ice::stringToIdentity("test2")));
+    _registry->addObject(adapter->add(object, serverCommunicator->stringToIdentity("test")));
+    _registry->addObject(adapter->add(object, serverCommunicator->stringToIdentity("test2")));
 
     adapter->activate();
     adapter2->activate();
@@ -78,7 +81,7 @@ TestI::TestI(const Ice::ObjectAdapterPtr& adapter,
 	     const ServerLocatorRegistryPtr& registry) :
     _adapter1(adapter), _adapter2(adapter2), _registry(registry)
 {
-    _registry->addObject(_adapter1->add(new HelloI(), Ice::stringToIdentity("hello")));
+    _registry->addObject(_adapter1->add(new HelloI(), _adapter1->getCommunicator()->stringToIdentity("hello")));
 }
 
 void
@@ -90,19 +93,20 @@ TestI::shutdown(const Ice::Current&)
 HelloPrx
 TestI::getHello(const Ice::Current&)
 {
-    return HelloPrx::uncheckedCast(_adapter1->createIndirectProxy(Ice::stringToIdentity("hello")));
+    return HelloPrx::uncheckedCast(_adapter1->createIndirectProxy(
+    					_adapter1->getCommunicator()->stringToIdentity("hello")));
 }
 
 HelloPrx
 TestI::getReplicatedHello(const Ice::Current&)
 {
-    return HelloPrx::uncheckedCast(_adapter1->createProxy(Ice::stringToIdentity("hello")));
+    return HelloPrx::uncheckedCast(_adapter1->createProxy(_adapter1->getCommunicator()->stringToIdentity("hello")));
 }
 
 void
 TestI::migrateHello(const Ice::Current&)
 {
-    const Ice::Identity id = Ice::stringToIdentity("hello");
+    const Ice::Identity id = _adapter1->getCommunicator()->stringToIdentity("hello");
     try
     {
 	_registry->addObject(_adapter2->add(_adapter1->remove(id), id));

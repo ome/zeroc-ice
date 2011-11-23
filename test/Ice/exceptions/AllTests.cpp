@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -109,6 +109,11 @@ class AMI_Thrower_throwAasAObjectNotExistI : public AMI_Thrower_throwAasA, publi
 {
 public:
 
+    AMI_Thrower_throwAasAObjectNotExistI(const Ice::CommunicatorPtr& communicator) :
+        _communicator(communicator)
+    {
+    }
+
     virtual void ice_response()
     {
 	test(false);
@@ -122,7 +127,7 @@ public:
 	}
 	catch(const Ice::ObjectNotExistException& ex)
 	{
-	    Ice::Identity id = Ice::stringToIdentity("does not exist");
+	    Ice::Identity id = _communicator->stringToIdentity("does not exist");
 	    test(ex.id == id);
 	}
 	catch(...)
@@ -131,6 +136,10 @@ public:
 	}
 	called();
     }
+
+private:
+
+    Ice::CommunicatorPtr _communicator;
 };
 
 typedef IceUtil::Handle<AMI_Thrower_throwAasAObjectNotExistI> AMI_Thrower_throwAasAObjectNotExistIPtr;
@@ -578,7 +587,7 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 	try
 	{
 	    Ice::ObjectAdapterPtr second = 
-		communicator->createObjectAdapterWithEndpoints("TestAdapter0", "ssl -h foo -p 12346 -t 10000");
+		communicator->createObjectAdapterWithEndpoints("TestAdapter0", "ssl -h foo -p 12011 -t 10000");
 	    test(false);
 	}
 	catch(const Ice::AlreadyRegisteredException&)
@@ -597,20 +606,20 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     {
 	Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("TestAdapter1");
 	Ice::ObjectPtr obj = new EmptyI;
-	adapter->add(obj, Ice::stringToIdentity("x"));
+	adapter->add(obj, communicator->stringToIdentity("x"));
 	try
 	{
-	    adapter->add(obj, Ice::stringToIdentity("x"));
+	    adapter->add(obj, communicator->stringToIdentity("x"));
 	    test(false);
 	}
 	catch(const Ice::AlreadyRegisteredException&)
 	{
 	}
 
-	adapter->remove(Ice::stringToIdentity("x"));
+	adapter->remove(communicator->stringToIdentity("x"));
 	try
 	{
-	    adapter->remove(Ice::stringToIdentity("x"));
+	    adapter->remove(communicator->stringToIdentity("x"));
 	    test(false);
 	}
 	catch(const Ice::NotRegisteredException&)
@@ -639,7 +648,7 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     }
     cout << "ok" << endl;
 
-    cout << "testing object factory registration exceptions... " << flush;
+    cout << "testing object factory registration exception... " << flush;
     {
 	Ice::ObjectFactoryPtr of = new ObjectFactoryI;
 	communicator->addObjectFactory(of, "x");
@@ -651,21 +660,11 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 	catch(const Ice::AlreadyRegisteredException&)
 	{
 	}
-
-	communicator->removeObjectFactory("x");
-	try
-	{
-	    communicator->removeObjectFactory("x");
-	    test(false);
-	}
-	catch(const Ice::NotRegisteredException&)
-	{
-	}
     }
     cout << "ok" << endl;
 
     cout << "testing stringToProxy... " << flush;
-    string ref = "thrower:default -p 12345 -t 10000";
+    string ref = "thrower:default -p 12010 -t 10000";
     Ice::ObjectPrx base = communicator->stringToProxy(ref);
     test(base);
     cout << "ok" << endl;
@@ -986,10 +985,10 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 
     cout << "catching object not exist exception... " << flush;
 
-    Ice::Identity id = Ice::stringToIdentity("does not exist");
+    Ice::Identity id = communicator->stringToIdentity("does not exist");
     try
     {
-	ThrowerPrx thrower2 = ThrowerPrx::uncheckedCast(thrower->ice_newIdentity(id));
+	ThrowerPrx thrower2 = ThrowerPrx::uncheckedCast(thrower->ice_identity(id));
 	thrower2->throwAasA(1);
 //	thrower2->ice_ping();
 	test(false);
@@ -1205,9 +1204,9 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 	cout << "catching object not exist exception with AMI... " << flush;
 
 	{
-	    id = Ice::stringToIdentity("does not exist");
-	    ThrowerPrx thrower2 = ThrowerPrx::uncheckedCast(thrower->ice_newIdentity(id));
-	    AMI_Thrower_throwAasAObjectNotExistIPtr cb = new AMI_Thrower_throwAasAObjectNotExistI;
+	    id = communicator->stringToIdentity("does not exist");
+	    ThrowerPrx thrower2 = ThrowerPrx::uncheckedCast(thrower->ice_identity(id));
+	    AMI_Thrower_throwAasAObjectNotExistIPtr cb = new AMI_Thrower_throwAasAObjectNotExistI(communicator);
 	    thrower2->throwAasA_async(cb, 1);
 	    test(cb->check());
 	}

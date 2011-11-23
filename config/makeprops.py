@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -64,7 +64,7 @@ def writePreamble(lang):
 	file = entry[1]
 	file.write("// **********************************************************************\n")
 	file.write("//\n")
-	file.write("// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.\n")
+	file.write("// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.\n")
 	file.write("//\n")
 	file.write("// This copy of Ice is licensed to you under the terms described in the\n")
 	file.write("// ICE_LICENSE file included in this distribution.\n")

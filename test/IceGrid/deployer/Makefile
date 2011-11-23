@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -38,7 +38,7 @@ SLICE_SRCS	= Test.ice
 include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I. -I../../include $(CPPFLAGS)
-LINKWITH	:= -lIceBox -lIce -lIceUtil
+LINKWITH	:= -lIceBox $(BZIP2_RPATH_LINK) -lIce -lIceUtil
 
 $(CLIENT): $(OBJS) $(COBJS)
 	rm -f $@
@@ -50,7 +50,7 @@ $(SERVER): $(OBJS) $(SOBJS)
 
 $(SVCFILENAME): $(OBJS) $(SERVICE_OBJS)
 	rm -f $@
-	$(call mkshlib,$@,$(SVCSONAME),$(OBJS) $(SERVICE_OBJS), -lFreeze $(LINKWITH))
+	$(call mkshlib,$@,$(SVCSONAME),$(OBJS) $(SERVICE_OBJS), $(DB_RPATH_LINK) -lFreeze $(LINKWITH))
 
 clean::
 	rm -rf db/node db/registry

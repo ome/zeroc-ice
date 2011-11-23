@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,6 +10,8 @@
 #include <Ice/Ice.h>
 #include <IceGrid/LocatorI.h>
 #include <IceGrid/Database.h>
+#include <IceGrid/SessionI.h>
+#include <IceGrid/Util.h>
 
 using namespace std;
 using namespace IceGrid;
@@ -98,7 +100,7 @@ public:
 	//
 	if(obj)
 	{
-	    _cb->ice_response(obj->ice_newIdentity(_obj->ice_getIdentity()));
+	    _cb->ice_response(obj->ice_identity(_obj->ice_getIdentity()));
 	}
 	else
 	{
@@ -154,12 +156,16 @@ private:
 LocatorI::Request::Request(const Ice::AMD_Locator_findAdapterByIdPtr& amdCB, 
 			   const LocatorIPtr& locator,
 			   const string& id,
+			   bool replicaGroup,
 			   const vector<pair<string, AdapterPrx> >& adapters,
-			   int count) : 
+			   int count,
+			   const TraceLevelsPtr& traceLevels) : 
     _amdCB(amdCB),
     _locator(locator),
     _id(id),
+    _replicaGroup(replicaGroup),
     _adapters(adapters),
+    _traceLevels(traceLevels),
     _count(count),
     _lastAdapter(_adapters.begin())
 {
@@ -194,11 +200,17 @@ LocatorI::Request::execute()
 }
 
 void
-LocatorI::Request::exception()
+LocatorI::Request::exception(const Ice::Exception& ex)
 {
     AdapterPrx adapter;
     {
 	Lock sync(*this);
+
+	if(!_exception.get())
+	{
+	    _exception.reset(ex.ice_clone());
+	}
+
 	if(_lastAdapter == _adapters.end())
 	{
 	    --_count; // Expect one less adapter proxy if there's no more adapters to query.
@@ -225,14 +237,10 @@ LocatorI::Request::exception()
 void
 LocatorI::Request::response(const Ice::ObjectPrx& proxy)
 {
-    if(!proxy)
-    {
-	exception();
-	return;
-    }
-
     Lock sync(*this);
-    _proxies.push_back(proxy->ice_newIdentity(Ice::stringToIdentity("dummy")));
+    assert(proxy);
+
+    _proxies.push_back(proxy->ice_identity(_locator->getCommunicator()->stringToIdentity("dummy")));
 
     //
     // If we received all the required proxies, it's time to send the
@@ -264,6 +272,18 @@ LocatorI::Request::sendResponse()
     }
     else if(_proxies.empty())
     {
+	if(_exception.get() && _traceLevels->locator > 0)
+	{
+	    Ice::Trace out(_traceLevels->logger, _traceLevels->locatorCat);
+	    if(_replicaGroup)
+	    {
+		out << "couldn't resolve replica group `" << _id << "' endpoints:\n" << toString(*_exception);
+	    }
+	    else
+	    {
+		out << "couldn't resolve adapter `" << _id << "' endpoints:\n" << toString(*_exception);
+	    }
+	}
 	_amdCB->ice_response(0);
     }
     else if(_proxies.size() > 1)
@@ -277,7 +297,7 @@ LocatorI::Request::sendResponse()
 	}
 
 	Ice::ObjectPrx proxy = _locator->getCommunicator()->stringToProxy("dummy:default");
-	_amdCB->ice_response(proxy->ice_newEndpoints(endpoints));
+	_amdCB->ice_response(proxy->ice_endpoints(endpoints));
     }
 }
 
@@ -286,7 +306,7 @@ LocatorI::LocatorI(const Ice::CommunicatorPtr& communicator,
 		   const Ice::LocatorRegistryPrx& locatorRegistry) :
     _communicator(communicator),
     _database(database),
-    _locatorRegistry(locatorRegistry)
+    _locatorRegistry(Ice::LocatorRegistryPrx::uncheckedCast(locatorRegistry->ice_collocationOptimized(false)))
 {
 }
 
@@ -308,6 +328,8 @@ LocatorI::findObjectById_async(const Ice::AMD_Locator_findObjectByIdPtr& cb,
     {
 	throw Ice::ObjectNotFoundException();
     }
+
+    assert(proxy);
 
     //
     // OPTIMIZATION: If the object is registered with an adapter id,
@@ -336,20 +358,52 @@ LocatorI::findAdapterById_async(const Ice::AMD_Locator_findAdapterByIdPtr& cb,
 				const string& id, 
 				const Ice::Current&) const
 {
+    bool replicaGroup = false;
     try
     {
 	int count;
-	vector<pair<string, AdapterPrx> > adapters = _database->getAdapters(id, false, count);
+	vector<pair<string, AdapterPrx> > adapters = _database->getAdapters(id, count, replicaGroup);
 	if(adapters.empty())
 	{
+	    //
+	    // If no adapters are returned, this means the id refers
+	    // to a replica group and the replica group has no
+	    // members.
+	    //
+	    assert(replicaGroup);
+	    const TraceLevelsPtr traceLevels = _database->getTraceLevels();
+	    if(traceLevels->locator > 0)
+	    {
+		Ice::Trace out(traceLevels->logger, traceLevels->locatorCat);
+		out << "couldn't resolve replica group `" << id << "' endpoints: replica group is empty";
+	    }
 	    cb->ice_response(0);
 	    return;
 	}
-	(new Request(cb, const_cast<LocatorI*>(this), id, adapters, count))->execute();
+	LocatorIPtr self = const_cast<LocatorI*>(this);
+	(new Request(cb, self, id, replicaGroup, adapters, count, _database->getTraceLevels()))->execute();
     }
     catch(const AdapterNotExistException&)
     {
 	cb->ice_exception(Ice::AdapterNotFoundException());
+	return;
+    }
+    catch(const Ice::Exception& ex)
+    {
+	const TraceLevelsPtr traceLevels = _database->getTraceLevels();
+	if(traceLevels->locator > 0)
+	{
+	    Ice::Trace out(traceLevels->logger, traceLevels->locatorCat);
+	    if(replicaGroup)
+	    {
+		out << "couldn't resolve replica group `" << id << "' endpoints:\n" << toString(ex);
+	    }
+	    else
+	    {
+		out << "couldn't resolve adapter `" << id << "' endpoints:\n" << toString(ex);
+	    }
+	}
+	cb->ice_response(0);
 	return;
     }
 }
@@ -411,7 +465,7 @@ LocatorI::getDirectProxyException(const AdapterPrx& adapter, const string& id, c
 
     for(PendingRequests::iterator q = requests.begin(); q != requests.end(); ++q)
     {
-	(*q)->exception();
+	(*q)->exception(ex);
     }
 }
 
@@ -427,9 +481,19 @@ LocatorI::getDirectProxyCallback(const Ice::Identity& adapterId, const Ice::Obje
 	_pendingRequests.erase(p);
     }
 
-    for(PendingRequests::const_iterator q = requests.begin(); q != requests.end(); ++q)
+    if(proxy)
     {
-	(*q)->response(proxy);
+	for(PendingRequests::const_iterator q = requests.begin(); q != requests.end(); ++q)
+	{
+	    (*q)->response(proxy);
+	}
+    }
+    else
+    {
+	for(PendingRequests::const_iterator q = requests.begin(); q != requests.end(); ++q)
+	{
+	    (*q)->exception(AdapterNotActiveException());
+	}
     }
 }
 

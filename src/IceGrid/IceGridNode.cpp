@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,22 +15,18 @@
 #include <IceGrid/Activator.h>
 #include <IceGrid/WaitQueue.h>
 #include <IceGrid/RegistryI.h>
+#include <IceGrid/FileUserAccountMapperI.h>
 #include <IceGrid/NodeI.h>
 #include <IceGrid/TraceLevels.h>
 #include <IceGrid/DescriptorParser.h>
 #include <IcePatch2/Util.h>
 
-#if defined(_WIN32)
+#ifdef _WIN32
 #   include <direct.h>
 #   include <sys/types.h>
 #   include <sys/stat.h>
 #   define S_ISDIR(mode) ((mode) & _S_IFDIR)
 #   define S_ISREG(mode) ((mode) & _S_IFREG)
-#elif defined(__linux)
-#   include <signal.h>
-#   include <sys/types.h>
-#   include <sys/wait.h>
-#   include <sys/stat.h>
 #else
 #   include <sys/stat.h>
 #endif
@@ -115,7 +111,7 @@ protected:
     virtual bool start(int, char*[]);
     virtual void waitForShutdown();
     virtual bool stop();
-    virtual CommunicatorPtr initializeCommunicator(int&, char*[]);
+    virtual CommunicatorPtr initializeCommunicator(int&, char*[], const InitializationData&);
 
 private:
 
@@ -126,6 +122,7 @@ private:
     RegistryIPtr _registry;
     NodeIPtr _node;
     KeepAliveThreadPtr _keepAliveThread;
+    Ice::ObjectAdapterPtr _adapter;
 };
 
 class CollocatedRegistry : public RegistryI
@@ -133,7 +130,7 @@ class CollocatedRegistry : public RegistryI
 public:
 
     CollocatedRegistry(const CommunicatorPtr&, const ActivatorPtr&);
-    virtual void shutdown(const Current&);
+    virtual void shutdown();
 
 private:
 
@@ -142,39 +139,6 @@ private:
 
 } // End of namespace IceGrid
 
-#ifdef __linux
-extern "C"
-{
-
-//
-// This signal handler is only used for LinuxThreads. It's a workaround
-// for a limitation in waitpid() that requires it to be called from
-// the thread that forked the child process.
-//
-static void
-childHandler(int)
-{
-    //
-    // Call waitpid to de-allocate any resources allocated for the child
-    // process and avoid zombie processes. See man waitpid for more information.
-    //
-    int olderrno = errno;
-
-    pid_t pid;
-    do
-    {
-	pid = waitpid(-1, 0, WNOHANG);
-    }
-    while(pid > 0);
-
-    assert(pid != -1 || errno == ECHILD);
-
-    errno = olderrno;
-}
-
-}
-#endif
-
 CollocatedRegistry::CollocatedRegistry(const CommunicatorPtr& communicator, const ActivatorPtr& activator) :
     RegistryI(communicator), 
     _activator(activator)
@@ -182,7 +146,7 @@ CollocatedRegistry::CollocatedRegistry(const CommunicatorPtr& communicator, cons
 }
 
 void
-CollocatedRegistry::shutdown(const Current&)
+CollocatedRegistry::shutdown()
 {
     _activator->shutdown();
 }
@@ -230,43 +194,7 @@ NodeService::shutdown()
 bool
 NodeService::start(int argc, char* argv[])
 {
-#ifdef __linux
-    //
-    // Determine if we are using NPTL. If not, we need to install
-    // a signal handler for ECHILD.
-    //
-    {
-	bool nptl = false;
-
-	size_t n = confstr(_CS_GNU_LIBPTHREAD_VERSION, NULL, 0);
-	if(n > 0)
-	{
-	    char* buf = reinterpret_cast<char*>(alloca(n));
-	    assert(buf != NULL);
-	    confstr(_CS_GNU_LIBPTHREAD_VERSION, buf, n);
-	    if(strstr(buf, "NPTL") != NULL)
-	    {
-		nptl = true;
-	    }
-	}
-
-	if(!nptl)
-	{
-	    //
-	    // This application forks, so we need a signal handler for child termination.
-	    //
-	    struct sigaction action;
-	    action.sa_handler = childHandler;
-	    sigemptyset(&action.sa_mask);
-	    sigaddset(&action.sa_mask, SIGCHLD);
-	    action.sa_flags = 0;
-	    sigaction(SIGCHLD, &action, 0);
-	}
-    }
-#endif
-
     bool nowarn = false;
-    bool checkdb = false;
     string desc;
     vector<string> targets;
     for(int i = 1; i < argc; ++i)
@@ -301,9 +229,11 @@ NodeService::start(int argc, char* argv[])
                 targets.push_back(argv[i]);
             }
         }
-        else if(strcmp(argv[i], "--checkdb") == 0)
-        {
-	    checkdb = true;
+	else
+	{
+	    error("invalid option: `" + string(argv[i]) + "'");
+	    usage(argv[0]);
+	    return false;
 	}
     }
 
@@ -319,19 +249,35 @@ NodeService::start(int argc, char* argv[])
     // termination listener instead?
     //
     properties->setProperty("Ice.ServerIdleTime", "0");
-    if(properties->getPropertyAsIntWithDefault("Ice.ThreadPool.Server.Size", 10) <= 10)
-    {
-	properties->setProperty("Ice.ThreadPool.Server.Size", "10");
-    }
-    if(properties->getPropertyAsIntWithDefault("Ice.ThreadPool.Server.SizeWarn", 80) <= 80)
-    {
-	properties->setProperty("Ice.ThreadPool.Server.SizeWarn", "80");
-    }
-    if(properties->getPropertyAsIntWithDefault("Ice.ThreadPool.Server.SizeMax", 100) <= 100)
-    {
-	properties->setProperty("Ice.ThreadPool.Server.SizeMax", "100");
-    }
 
+    //
+    // Warn the user that setting Ice.ThreadPool.Server isn't useful.
+    //
+    if(!nowarn && properties->getPropertyAsIntWithDefault("Ice.ThreadPool.Server.Size", 0) > 0)
+    {
+	Warning out(communicator()->getLogger());
+	out << "setting `Ice.ThreadPool.Server.Size' is not useful,\n";
+	out << "you should set individual adapter thread pools instead.";
+    }
+    
+    int size = properties->getPropertyAsIntWithDefault("IceGrid.Node.ThreadPool.Size", 0);
+    if(size <= 0)
+    {
+	properties->setProperty("IceGrid.Node.ThreadPool.Size", "1");
+	size = 1;
+    }
+    int sizeMax = properties->getPropertyAsIntWithDefault("IceGrid.Node.ThreadPool.SizeMax", 0);
+    if(sizeMax <= 0)
+    {
+	if(size >= sizeMax)
+	{
+	    sizeMax = size * 10;
+	}
+	
+	ostringstream os;
+	os << sizeMax;
+	properties->setProperty("IceGrid.Node.ThreadPool.SizeMax", os.str());
+    }
 
     //
     // Create the activator.
@@ -344,22 +290,6 @@ NodeService::start(int argc, char* argv[])
     //
     if(properties->getPropertyAsInt("IceGrid.Node.CollocateRegistry") > 0)
     {
-        //
-        // The node needs a different thread pool.
-        //
-        if(properties->getPropertyAsIntWithDefault("IceGrid.Node.ThreadPool.Size", 5) <= 0)
-        {
-            properties->setProperty("IceGrid.Node.ThreadPool.Size", "5");
-	}
-	if(properties->getPropertyAsIntWithDefault("IceGrid.Node.ThreadPool.SizeWarn", 80) <= 80)
-	{
-	    properties->setProperty("IceGrid.Node.ThreadPool.SizeWarn", "80");
-	}
-	if(properties->getPropertyAsIntWithDefault("IceGrid.Node.ThreadPool.SizeMax", 100) <= 100)
-	{
-	    properties->setProperty("IceGrid.Node.ThreadPool.SizeMax", "100");
-	}
-
         _registry = new CollocatedRegistry(communicator(), _activator);
         if(!_registry->start(nowarn))
         {
@@ -464,7 +394,45 @@ NodeService::start(int argc, char* argv[])
     //
     properties->setProperty("IceGrid.Node.RegisterProcess", "0");
     properties->setProperty("IceGrid.Node.AdapterId", "");
-    ObjectAdapterPtr adapter = communicator()->createObjectAdapter("IceGrid.Node");
+    _adapter = communicator()->createObjectAdapter("IceGrid.Node");
+
+    //
+    // Setup the user account mapper if configured.
+    //
+    string mapperProperty = properties->getProperty("IceGrid.Node.UserAccountMapper");
+    UserAccountMapperPrx mapper;
+    if(!mapperProperty.empty())
+    {
+	try
+	{
+	    mapper = UserAccountMapperPrx::uncheckedCast(communicator()->stringToProxy(mapperProperty));
+	}
+	catch(const Ice::LocalException& ex)
+	{
+	    ostringstream os;
+	    os << "user account mapper `" << mapperProperty << "' is invalid:\n" << ex;
+	    error(os.str());
+	    return false;
+	}
+    }
+    else
+    {
+	string userAccountFileProperty = properties->getProperty("IceGrid.Node.UserAccounts");
+	if(!userAccountFileProperty.empty())
+	{
+	    try
+	    {
+		Ice::ObjectPrx object = _adapter->addWithUUID(new FileUserAccountMapperI(userAccountFileProperty));
+		object = object->ice_collocationOptimized(true);
+		mapper = UserAccountMapperPrx::uncheckedCast(object);
+	    }
+	    catch(const std::string& msg)
+	    {
+		error(msg);
+		return false;
+	    }
+	}
+    }
 
     //
     // Create the wait queue.
@@ -477,10 +445,10 @@ NodeService::start(int argc, char* argv[])
     // for the server and server adapter. It also takes care of installing the
     // evictors and object factories necessary to store these objects.
     //
-    Identity id = stringToIdentity(IceUtil::generateUUID());
-    NodePrx nodeProxy = NodePrx::uncheckedCast(adapter->createProxy(id));
-    _node = new NodeI(adapter, _activator, _waitQueue, traceLevels, nodeProxy, name);
-    adapter->add(_node, nodeProxy->ice_getIdentity());
+    Identity id = communicator()->stringToIdentity(IceUtil::generateUUID());
+    NodePrx nodeProxy = NodePrx::uncheckedCast(_adapter->createProxy(id));
+    _node = new NodeI(_adapter, _activator, _waitQueue, traceLevels, nodeProxy, name, mapper);
+    _adapter->add(_node, nodeProxy->ice_getIdentity());
 
     //
     // Start the keep alive thread. By default we start the thread
@@ -498,7 +466,7 @@ NodeService::start(int argc, char* argv[])
     {
 	try
 	{
-	    ProcessPrx proxy = ProcessPrx::uncheckedCast(adapter->addWithUUID(new ProcessI(_activator)));
+	    ProcessPrx proxy = ProcessPrx::uncheckedCast(_adapter->addWithUUID(new ProcessI(_activator)));
 	    LocatorRegistryPrx locatorRegistry = communicator()->getDefaultLocator()->getRegistry();
 	    locatorRegistry->setServerProcessProxy(properties->getProperty("Ice.ServerId"), proxy);
 	}
@@ -518,7 +486,7 @@ NodeService::start(int argc, char* argv[])
     //
     // Activate the adapter.
     //
-    adapter->activate();
+    _adapter->activate();
 
     //
     // Deploy application if a descriptor is passed as a command-line option.
@@ -544,8 +512,17 @@ NodeService::start(int argc, char* argv[])
             try
             {
 		map<string, string> vars;
-		admin->addApplication(DescriptorParser::parseDescriptor(desc, targets, vars, communicator(), admin));
-            }
+		ApplicationDescriptor app;
+		app = DescriptorParser::parseDescriptor(desc, targets, vars, communicator(), admin);
+		try
+		{
+		    admin->syncApplication(app);
+		}
+		catch(const ApplicationNotExistException&)
+		{
+		    admin->addApplication(app);
+		}
+	    }
             catch(const DeploymentException& ex)
             {
                 ostringstream ostr;
@@ -564,6 +541,11 @@ NodeService::start(int argc, char* argv[])
     string bundleName = properties->getProperty("IceGrid.Node.PrintServersReady");
     if(!bundleName.empty())
     {
+	//
+	// We wait for the node to be registered with the registry
+	// before to claim it's ready.
+	//
+	_node->waitForSession();
 	print(bundleName + " ready");
     }
 
@@ -591,6 +573,7 @@ NodeService::stop()
     }
     catch(...)
     {
+	assert(false);
     }
 
     //
@@ -604,6 +587,7 @@ NodeService::stop()
     }
     catch(...)
     {
+	assert(false);
     }
 
     //
@@ -616,6 +600,30 @@ NodeService::stop()
 	_keepAliveThread = 0;
     }
 
+    _activator = 0;
+
+    //
+    // Deactivate the node object adapter.
+    //
+    try
+    {
+	_adapter->deactivate();
+	_adapter = 0;
+    }
+    catch(const Ice::LocalException& ex)
+    {
+	ostringstream ostr;
+	ostr << "unexpected exception while shutting down node:\n" << ex;
+	warning(ostr.str());
+    }
+
+    //
+    // Stop the node (this unregister the node session with the
+    // registry.)
+    //
+    _node->stop();
+    _node = 0;
+
     //
     // We can now safely shutdown the communicator.
     //
@@ -624,17 +632,15 @@ NodeService::stop()
         communicator()->shutdown();
         communicator()->waitForShutdown();
     }
-    catch(...)
+    catch(const Ice::LocalException& ex)
     {
+	ostringstream ostr;
+	ostr << "unexpected exception while shutting down node:\n" << ex;
+	warning(ostr.str());
     }
 
-    _activator = 0;
-
-    _node->stop();
-    _node = 0;
-
     //
-    // Shutdown the collocated registry.
+    // And shutdown the collocated registry.
     //
     if(_registry)
     {
@@ -646,16 +652,20 @@ NodeService::stop()
 }
 
 CommunicatorPtr
-NodeService::initializeCommunicator(int& argc, char* argv[])
+NodeService::initializeCommunicator(int& argc, char* argv[], 
+				    const InitializationData& initializationData)
 {
-    PropertiesPtr defaultProperties = getDefaultProperties(argc, argv);
-    
-    //
-    // Make sure that IceGridNode doesn't use thread-per-connection.
-    //
-    defaultProperties->setProperty("Ice.ThreadPerConnection", "");
+    InitializationData initData = initializationData;
+    initData.properties = createProperties(argc, argv, initData.properties);
 
-    return Service::initializeCommunicator(argc, argv);
+    //
+    // Make sure that IceGridNode doesn't use thread-per-connection or
+    // collocation optimization
+    //
+    initData.properties->setProperty("Ice.ThreadPerConnection", "");
+    initData.properties->setProperty("Ice.Default.CollocationOptimization", "0");
+
+    return Service::initializeCommunicator(argc, argv, initData);
 }
 
 void
@@ -668,9 +678,8 @@ NodeService::usage(const string& appName)
 	"--nowarn             Don't print any security warnings.\n"
 	"\n"
 	"--deploy DESCRIPTOR [TARGET1 [TARGET2 ...]]\n"
-	"                     Deploy descriptor in file DESCRIPTOR, with\n"
-	"                     optional targets.\n"
-        "--checkdb            Do a consistency check of the node database.";
+	"                     Add or update descriptor in file DESCRIPTOR, with\n"
+	"                     optional targets.\n";
 #ifdef _WIN32
     if(checkSystem())
     {

@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Ice::UnknownRequestIdException</TITLE
+>Ice::TwowayOnlyException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
@@ -13,11 +13,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Ice::UnknownReplyStatusException"
-HREF="x6190.html"><LINK
+TITLE="Ice::TimeoutException"
+HREF="x6181.html"><LINK
 REL="NEXT"
-TITLE="Ice::UnknownUserException"
-HREF="x6214.html"></HEAD
+TITLE="Ice::UnknownException"
+HREF="x6230.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -45,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x6190.html"
+HREF="x6181.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -59,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x6214.html"
+HREF="x6230.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -73,10 +73,10 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICE.UNKNOWNREQUESTIDEXCEPTION"
+NAME="ICE.TWOWAYONLYEXCEPTION"
 ><TT
 CLASS="LITERAL"
->Ice::UnknownRequestIdException</TT
+>Ice::TwowayOnlyException</TT
 ></A
 ></H1
 ><DIV
@@ -97,29 +97,88 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 >local exception <CODE
 CLASS="CLASSNAME"
->UnknownRequestIdException</CODE
->
-    extends 
-	<A
-HREF="x5495.html"
-><CODE
-CLASS="CLASSNAME"
->ProtocolException</CODE
-></A
+>TwowayOnlyException</CODE
 ></PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->This exception is a specialization of <A
-HREF="x5495.html"
-><CODE
-CLASS="CLASSNAME"
->ProtocolException</CODE
-></A
+>This exception is raised if an attempt is made to invoke an
+operation with <TT
+CLASS="LITERAL"
+>ice_oneway</TT
+>, <TT
+CLASS="LITERAL"
+>ice_batchOneway</TT
+>, <TT
+CLASS="LITERAL"
+>ice_datagram</TT
 >,
-indicating that a response for an unknown request id has been
-received.</P
+or <TT
+CLASS="LITERAL"
+>ice_batchDatagram</TT
+> and the operation has a return value,
+out parameters, or an exception specification.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN6214"
+>Data Member Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x6202.html#ICE.TWOWAYONLYEXCEPTION.OPERATION"
+><SPAN
+CLASS="TYPE"
+>operation</SPAN
+></A
+></DT
+><DD
+><P
+>The name of the operation that was invoked.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.TWOWAYONLYEXCEPTION.OPERATION"
+><TT
+CLASS="LITERAL"
+>operation</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <CODE
+CLASS="STRUCTFIELD"
+>operation</CODE
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>The name of the operation that was invoked.</P
 ></DIV
 ></DIV
 ><DIV
@@ -138,7 +197,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x6190.html"
+HREF="x6181.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -156,7 +215,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x6214.html"
+HREF="x6230.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -168,7 +227,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::UnknownReplyStatusException</TT
+>Ice::TimeoutException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -185,7 +244,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::UnknownUserException</TT
+>Ice::UnknownException</TT
 ></TD
 ></TR
 ></TABLE

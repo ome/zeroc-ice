@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,8 @@ class OnewaySubscriber : public Subscriber
 {
 public:
 
-    OnewaySubscriber(const SubscriberFactoryPtr&, const TraceLevelsPtr&, const QueuedProxyPtr&);
+    OnewaySubscriber(const SubscriberFactoryPtr&, const Ice::CommunicatorPtr&, const TraceLevelsPtr&, 
+    		     const QueuedProxyPtr&);
     ~OnewaySubscriber();
 
     virtual bool persistent() const;
@@ -35,6 +36,7 @@ public:
 protected:
 
     // Immutable
+    Ice::CommunicatorPtr _communicator;
     SubscriberFactoryPtr _factory;
     QueuedProxyPtr _obj;
 };

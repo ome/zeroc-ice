@@ -1,8 +1,18 @@
 <icegrid>
 
-  <application name="test" import-default-templates="true">
+  <application name="Test" import-default-templates="true">
 
     <description>APP ${AppVar}</description>
+
+    <properties id="AppProperties2">
+      <property name="AppProperty2" value="${AppVarOverrided}"/>
+      <property name="AppProperty21" value="${RecursiveAppVar}"/>
+    </properties>
+
+    <properties id="AppProperties">
+      <properties refid="AppProperties2"/>
+      <property name="AppProperty" value="${AppVar}"/>
+    </properties>
 
     <!-- Include server templates -->
     <include file="icebox.xml"/>
@@ -27,8 +37,21 @@
     <!-- Variables for parameter test -->
     <variable name="AppVarOverridedByParam" value="Test"/>
 
+    <!-- Variables for object identity test -->
+    <variable name="ObjectId" value="cat/name1"/>
+    <variable name="ObjectName1" value="name1"/>
+    <variable name="ObjectCategory1" value="cat1"/>
+    <variable name="ObjectIdSlash" value="/"/>
+    <variable name="ObjectName2" value="n2\/n2"/>
+    <variable name="ObjectCategory2" value="c2\/c2"/>
+
     <node name="localnode">
       <description>NODE ${NodeVar}</description>
+
+      <properties id="NodeProperties">
+        <property name="NodeProperty" value="${NodeVar}"/>
+        <property name="AppProperty21" value="Override"/>
+      </properties>
  
       <!-- Variables for variable test -->
       <variable name="NodeVar" value="NodeVar"/>
@@ -42,7 +65,11 @@
       <variable name="varpde" value="$$${escaped}"/>
 
       <server-instance template="IceBoxTemplate" name="IceBox1" AppVarOverridedByParam="Overrided"/>
-      <server-instance template="IceBoxTemplate" name="IceBox2" AppVarOverridedByParam="Overrided"/>
+      <server-instance template="IceBoxTemplate" name="IceBox2" AppVarOverridedByParam="Overrided">
+        <properties>
+          <property name="IceBoxInstanceProperty" value="${name}"/>
+        </properties>
+      </server-instance>
 
       <server-instance template="ServerTemplate" name="Server1"
         AppVarOverridedByParam="Overrided" Param1="Param1"
@@ -50,20 +77,34 @@
       <server-instance template="ServerTemplate" name="Server2"
         AppVarOverridedByParam="Overrided" Param1="Param12"
         Param2="${AppVarOverrided}" ParamEscaped="${varpe}"
-        ParamDoubleEscaped="${varpde}" DefaultParam="OTHERVALUE"/>
+        ParamDoubleEscaped="${varpde}" DefaultParam="OTHERVALUE">
+        <properties>
+          <property name="ServerInstanceProperty" value="${name}"/>
+        </properties>
+      </server-instance>
 
       <server id="SimpleServer" exe="${test.dir}/server" activation="on-demand" pwd=".">
         <description>SERVER ${NodeVar}</description>
         <adapter name="Server" endpoints="default">
           <description>ADAPTER ${NodeVar}</description>
   	  <object identity="${server}" type="::Test"/>
+          <object identity="cat\/cat/name\/name" type="::Test"/>
+          <object identity="${ObjectId}" type="::TestId1"/>
+          <object identity="${ObjectCategory1}/${ObjectName1}" type="::TestId2"/>
+          <object identity="${ObjectCategory1}${ObjectIdSlash}${ObjectName1}-bis" type="::TestId3"/>
+          <object identity="${ObjectCategory2}/${ObjectName2}" type="::TestId4"/>
+          <object identity="${ObjectIdSlash}${ObjectName2}" type="::TestId5"/>
         </adapter>
         <dbenv name="DbEnv">
           <description>DBENV ${NodeVar}</description>
         </dbenv>
         <option>--Test.Test=2</option>
-        <include file="varproperties.xml"/>
         <env>MY_ENV_VARIABLE=12</env>
+        <properties>
+          <properties refid="AppProperties"/>
+          <properties refid="NodeProperties"/>
+          <include file="varproperties.xml"/>
+        </properties>
       </server>
 
       <icebox id="SimpleIceBox" exe="${icebox.exe}" activation="on-demand" pwd=".">

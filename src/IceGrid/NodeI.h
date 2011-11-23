@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@
 #include <IceGrid/Internal.h>
 #include <IceGrid/WaitQueue.h>
 #include <IceGrid/PlatformInfo.h>
+#include <IceGrid/UserAccountMapper.h>
 
 #include <IcePatch2/FileServer.h>
 
@@ -33,11 +34,11 @@ class NodeI : public Node, public IceUtil::Monitor<IceUtil::Mutex>
 public:
 
     NodeI(const Ice::ObjectAdapterPtr&, const ActivatorPtr&, const WaitQueuePtr&, const TraceLevelsPtr&, 
-	  const NodePrx&, const std::string&);
+	  const NodePrx&, const std::string&, const UserAccountMapperPrx&);
     virtual ~NodeI();
 
     virtual void loadServer_async(const AMD_Node_loadServerPtr&, const std::string&, const ServerDescriptorPtr&, 
-				  const Ice::Current&);
+				  const std::string&, const Ice::Current&);
     virtual void destroyServer_async(const AMD_Node_destroyServerPtr&, const std::string&, const Ice::Current&);
     virtual void patch(const std::string&, const std::string&, const DistributionDescriptor&, bool,
 		       const Ice::Current&);
@@ -53,10 +54,12 @@ public:
     ActivatorPtr getActivator() const;
     TraceLevelsPtr getTraceLevels() const;
     NodeObserverPrx getObserver() const;
+    UserAccountMapperPrx getUserAccountMapper() const;
 
     NodeSessionPrx getSession() const;
     void setSession(const NodeSessionPrx&, const NodeObserverPrx&);
     int keepAlive();
+    void waitForSession();
     void stop();
 
 private:
@@ -79,13 +82,14 @@ private:
     const std::string _name;
     const NodePrx _proxy;
     const Ice::Int _waitTime;
-    const std::string _instName;
+    const std::string _instanceName;
+    const UserAccountMapperPrx _userAccountMapper;
     std::string _dataDir;
     std::string _serversDir;
     std::string _tmpDir;
     unsigned long _serial;
     NodeObserverPrx _observer;
-    IceUtil::Mutex _sessionMutex;
+    IceUtil::Monitor<IceUtil::Mutex> _sessionMonitor;
     NodeSessionPrx _session;
     mutable PlatformInfo _platform;
     std::map<std::string, std::set<ServerIPtr> > _serversByApplication;

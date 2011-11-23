@@ -1,7 +1,7 @@
-/* A Bison parser, made by GNU Bison 2.0.  */
+/* A Bison parser, made by GNU Bison 2.1.  */
 
 /* Skeleton parser for Yacc-like parsing with Bison,
-   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,8 +15,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330,
-   Boston, MA 02111-1307, USA.  */
+   Foundation, Inc., 51 Franklin Street, Fifth Floor,
+   Boston, MA 02110-1301, USA.  */
 
 /* As a special exception, when this file is copied by Bison into a
    Bison output file, you may use that output file without restriction.
@@ -68,9 +68,11 @@
      ICE_METADATA_OPEN = 294,
      ICE_METADATA_CLOSE = 295,
      ICE_GLOBAL_METADATA_OPEN = 296,
-     ICE_GLOBAL_METADATA_CLOSE = 297
+     ICE_GLOBAL_METADATA_CLOSE = 297,
+     BAD_CHAR = 298
    };
 #endif
+/* Tokens.  */
 #define ICE_MODULE 258
 #define ICE_CLASS 259
 #define ICE_INTERFACE 260
@@ -111,6 +113,7 @@
 #define ICE_METADATA_CLOSE 295
 #define ICE_GLOBAL_METADATA_OPEN 296
 #define ICE_GLOBAL_METADATA_CLOSE 297
+#define BAD_CHAR 298
 
 
 

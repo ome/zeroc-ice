@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -185,7 +185,7 @@ Ice::PropertiesI::parseCommandLineOptions(const string& prefix, const StringSeq&
                 opt += "=1";
             }
             
-            parseLine(opt.substr(2));
+            parseLine(opt.substr(2), 0);
         }
         else
         {
@@ -222,7 +222,7 @@ Ice::PropertiesI::load(const std::string& file)
     char line[1024];
     while(in.getline(line, 1024))
     {
-	parseLine(line);
+	parseLine(line, _converter);
     }
 }
 
@@ -234,17 +234,24 @@ Ice::PropertiesI::clone()
 }
 
 Ice::PropertiesI::PropertiesI(const PropertiesI* p) :
-    _properties(p->_properties)
+    _properties(p->_properties),
+    _converter(p->_converter)
 {
 }
 
-Ice::PropertiesI::PropertiesI()
+Ice::PropertiesI::PropertiesI(const StringConverterPtr& converter) :
+    _converter(converter)
 {
-    loadConfig();
 }
 
-Ice::PropertiesI::PropertiesI(StringSeq& args)
+Ice::PropertiesI::PropertiesI(StringSeq& args, const PropertiesPtr& defaults, const StringConverterPtr& converter) :
+    _converter(converter)
 {
+    if(defaults != 0)
+    {
+	_properties = defaults->getPropertiesForPrefix("");
+    }
+
     StringSeq::iterator q = args.begin();
     if(q != args.end())
     {
@@ -258,6 +265,8 @@ Ice::PropertiesI::PropertiesI(StringSeq& args)
 	setProperty("Ice.ProgramName", name);
     }
     StringSeq tmp;
+
+    bool loadConfigFiles = false;
     while(q != args.end())
     {
         string s = *q;
@@ -267,7 +276,8 @@ Ice::PropertiesI::PropertiesI(StringSeq& args)
             {
                 s += "=1";
             }
-            parseLine(s.substr(2));
+            parseLine(s.substr(2), 0);
+	    loadConfigFiles = true;
         }
         else
         {
@@ -277,13 +287,25 @@ Ice::PropertiesI::PropertiesI(StringSeq& args)
     }
     args = tmp;
 
-    loadConfig();
+    if(!loadConfigFiles)
+    {
+	//
+	// If Ice.Config is not set, load from ICE_CONFIG (if set)
+	//
+	loadConfigFiles = (_properties.find("Ice.Config") == _properties.end());
+    }
+
+    if(loadConfigFiles)
+    {
+	loadConfig();
+    }
 
     args = parseIceCommandLineOptions(args);
 }
 
+
 void
-Ice::PropertiesI::parseLine(const string& line)
+Ice::PropertiesI::parseLine(const string& line, const StringConverterPtr& converter)
 {
     const string delim = " \t\r\n";
     string s = line;
@@ -327,6 +349,18 @@ Ice::PropertiesI::parseLine(const string& line)
     {
 	end = s.length();
 	value = s.substr(beg, end - beg);
+    }
+
+    if(converter)
+    {
+        string tmp;
+	converter->fromUTF8(reinterpret_cast<const Byte*>(key.data()), 
+			    reinterpret_cast<const Byte*>(key.data() + key.size()), tmp);
+	key.swap(tmp);
+
+	converter->fromUTF8(reinterpret_cast<const Byte*>(value.data()), 
+			    reinterpret_cast<const Byte*>(value.data() + value.size()), tmp);
+	value.swap(tmp);
     }
     
     setProperty(key, value);

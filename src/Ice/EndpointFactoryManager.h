@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -28,7 +28,7 @@ public:
 
     void add(const EndpointFactoryPtr&);
     EndpointFactoryPtr get(::Ice::Short) const;
-    EndpointIPtr create(const std::string&, bool) const;
+    EndpointIPtr create(const std::string&) const;
     EndpointIPtr read(BasicStream*) const;
 
 private:

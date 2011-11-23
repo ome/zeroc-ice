@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -80,6 +80,7 @@ OBJS		= Acceptor.o \
 		  PropertiesI.o \
 		  Properties.o \
 		  PropertyNames.o \
+		  Protocol.o \
 		  ProtocolPluginFacade.o \
 		  ProxyFactory.o \
 		  Proxy.o \
@@ -88,7 +89,6 @@ OBJS		= Acceptor.o \
 		  RouterF.o \
 		  RouterInfo.o \
 		  Router.o \
-		  RoutingTable.o \
 		  ServantLocatorF.o \
 		  ServantLocator.o \
 		  ServantManager.o \
@@ -99,6 +99,7 @@ OBJS		= Acceptor.o \
 		  Stats.o \
 		  StreamI.o \
 		  Stream.o \
+                  StringConverter.o \
 		  SysLoggerI.o \
 		  TcpAcceptor.o \
 		  TcpConnector.o \

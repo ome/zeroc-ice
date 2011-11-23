@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,8 +38,8 @@ toLower(string& s)
 // DefinitionContext
 // ----------------------------------------------------------------------
 
-Slice::DefinitionContext::DefinitionContext(int includeLevel) :
-    _includeLevel(includeLevel), _seenDefinition(false)
+Slice::DefinitionContext::DefinitionContext(int includeLevel, const StringList& metaData) :
+    _includeLevel(includeLevel), _metaData(metaData), _seenDefinition(false)
 {
 }
 
@@ -82,7 +82,7 @@ Slice::DefinitionContext::hasMetaData() const
 void
 Slice::DefinitionContext::setMetaData(const StringList& metaData)
 {
-    _metaData= metaData;
+    _metaData = metaData;
 }
 
 string
@@ -372,6 +372,21 @@ bool
 Slice::Contained::hasMetaData(const string& meta) const
 {
     return find(_metaData.begin(), _metaData.end(), meta) != _metaData.end();
+}
+
+bool
+Slice::Contained::findMetaData(const string& prefix, string& meta) const
+{
+    for(list<string>::const_iterator p = _metaData.begin(); p != _metaData.end(); ++p)
+    {
+	if(p->find(prefix) == 0)
+	{
+	    meta = *p;
+	    return true;
+	}
+    }
+
+    return false;
 }
 
 list<string>
@@ -765,7 +780,7 @@ Slice::Container::createStruct(const string& name, bool local)
 }
 
 SequencePtr
-Slice::Container::createSequence(const string& name, const TypePtr& type, bool local)
+Slice::Container::createSequence(const string& name, const TypePtr& type, const StringList& metaData, bool local)
 {
     checkPrefix(name);
 
@@ -819,13 +834,14 @@ Slice::Container::createSequence(const string& name, const TypePtr& type, bool l
 	_unit->error(msg);
     }
     
-    SequencePtr p = new Sequence(this, name, type, local);
+    SequencePtr p = new Sequence(this, name, type, metaData, local);
     _contents.push_back(p);
     return p;
 }
 
 DictionaryPtr
-Slice::Container::createDictionary(const string& name, const TypePtr& keyType, const TypePtr& valueType, bool local)
+Slice::Container::createDictionary(const string& name, const TypePtr& keyType, const StringList& keyMetaData,
+				   const TypePtr& valueType, const StringList& valueMetaData, bool local)
 {
     checkPrefix(name);
 
@@ -890,7 +906,7 @@ Slice::Container::createDictionary(const string& name, const TypePtr& keyType, c
 	}
     }
 
-    DictionaryPtr p = new Dictionary(this, name, keyType, valueType, local);
+    DictionaryPtr p = new Dictionary(this, name, keyType, keyMetaData, valueType, valueMetaData, local);
     _contents.push_back(p);
     return p;
 }
@@ -974,7 +990,7 @@ Slice::Container::createEnumerator(const string& name)
 }
 
 ConstPtr
-Slice::Container::createConst(const string name, const TypePtr& constType,
+Slice::Container::createConst(const string name, const TypePtr& constType, const StringList& metaData,
 			      const SyntaxTreeBasePtr& literalType, const string& value)
 {
     checkPrefix(name);
@@ -1033,7 +1049,7 @@ Slice::Container::createConst(const string name, const TypePtr& constType,
 	return 0;
     }
 
-    ConstPtr p = new Const(this, name, constType, value);
+    ConstPtr p = new Const(this, name, constType, metaData, value);
     _contents.push_back(p);
     return p;
 }
@@ -1756,13 +1772,22 @@ Slice::Container::sort()
 }
 
 void
-Slice::Container::sortContents()
+Slice::Container::sortContents(bool sortFields)
 {
     for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
     {
 	ContainerPtr container = ContainerPtr::dynamicCast(*p);
 	if(container)
 	{
+	    if(!sortFields)
+	    {
+	        if(StructPtr::dynamicCast(container) ||
+		   ClassDefPtr::dynamicCast(container) ||
+		   ExceptionPtr::dynamicCast(container))
+		{
+		    continue;
+		}
+	    }
 	    //
 	    // Don't sort operation definitions, otherwise parameters are shown in the
 	    // wrong order in the synopsis.
@@ -1771,7 +1796,7 @@ Slice::Container::sortContents()
 	    {
 		container->sort();
 	    }
-	    container->sortContents();
+	    container->sortContents(sortFields);
 	}
     }
 }
@@ -3582,6 +3607,12 @@ Slice::Sequence::type() const
     return _type;
 }
 
+StringList
+Slice::Sequence::typeMetaData() const
+{
+    return _typeMetaData;
+}
+
 Contained::ContainedType
 Slice::Sequence::containedType() const
 {
@@ -3641,12 +3672,14 @@ Slice::Sequence::recDependencies(set<ConstructedPtr>& dependencies)
     }
 }
 
-Slice::Sequence::Sequence(const ContainerPtr& container, const string& name, const TypePtr& type, bool local) :
+Slice::Sequence::Sequence(const ContainerPtr& container, const string& name, const TypePtr& type,
+			  const StringList& typeMetaData, bool local) :
     SyntaxTreeBase(container->unit()),
     Type(container->unit()),
     Contained(container, name),
     Constructed(container, name, local),
-    _type(type)
+    _type(type),
+    _typeMetaData(typeMetaData)
 {
 }
 
@@ -3664,6 +3697,18 @@ TypePtr
 Slice::Dictionary::valueType() const
 {
     return _valueType;
+}
+
+StringList
+Slice::Dictionary::keyMetaData() const
+{
+    return _keyMetaData;
+}
+
+StringList
+Slice::Dictionary::valueMetaData() const
+{
+    return _valueMetaData;
 }
 
 Contained::ContainedType
@@ -3812,13 +3857,16 @@ Slice::Dictionary::legalKeyType(const TypePtr& type)
 }
 
 Slice::Dictionary::Dictionary(const ContainerPtr& container, const string& name, const TypePtr& keyType,
-			      const TypePtr& valueType, bool local) :
+			      const StringList& keyMetaData, const TypePtr& valueType, 
+			      const StringList& valueMetaData, bool local) :
     SyntaxTreeBase(container->unit()),
     Type(container->unit()),
     Contained(container, name),
     Constructed(container, name, local),
     _keyType(keyType),
-    _valueType(valueType)
+    _valueType(valueType),
+    _keyMetaData(keyMetaData),
+    _valueMetaData(valueMetaData)
 {
 }
 
@@ -3956,6 +4004,12 @@ TypePtr
 Slice::Const::type() const
 {
     return _type;
+}
+
+StringList
+Slice::Const::typeMetaData() const
+{
+    return _typeMetaData;
 }
 
 string
@@ -4186,11 +4240,12 @@ Slice::Const::isInRange(const string& name, const TypePtr& constType, const stri
     return true; // Everything else is either in range or doesn't need checking.
 }
 
-Slice::Const::Const(const ContainerPtr& container, const string& name,
-	                  const TypePtr& type, const string& value) :
+Slice::Const::Const(const ContainerPtr& container, const string& name, const TypePtr& type,
+		    const StringList& typeMetaData, const string& value) :
     SyntaxTreeBase(container->unit()), 
     Contained(container, name),
     _type(type), 
+    _typeMetaData(typeMetaData),
     _value(value)
 {
 }
@@ -4638,9 +4693,10 @@ Slice::DataMember::DataMember(const ContainerPtr& container, const string& name,
 // ----------------------------------------------------------------------
 
 UnitPtr
-Slice::Unit::createUnit(bool ignRedefs, bool all, bool allowIcePrefix, bool caseSensitive)
+Slice::Unit::createUnit(bool ignRedefs, bool all, bool allowIcePrefix, bool caseSensitive,
+			const StringList& defaultGlobalMetadata)
 {
-    return new Unit(ignRedefs, all, allowIcePrefix, caseSensitive);
+    return new Unit(ignRedefs, all, allowIcePrefix, caseSensitive, defaultGlobalMetadata);
 }
 
 bool
@@ -4847,21 +4903,19 @@ Slice::Unit::currentIncludeLevel() const
 }
 
 void
-Slice::Unit::setGlobalMetaData(const StringList& metaData)
+Slice::Unit::addGlobalMetaData(const StringList& metaData)
 {
     DefinitionContextPtr dc = currentDefinitionContext();
     assert(dc);
-    if(dc->hasMetaData())
-    {
-        error("global metadata can only be set once per file");
-    }
-    else if(dc->seenDefinition())
+    if(dc->seenDefinition())
     {
         error("global metadata must appear before any definitions");
     }
     else
     {
-        dc->setMetaData(metaData);
+	StringList l = dc->getMetaData();
+	copy(metaData.begin(), metaData.end(), back_inserter(l));
+        dc->setMetaData(l);
     }
 }
 
@@ -4942,7 +4996,7 @@ Slice::Unit::currentDefinitionContext() const
 void
 Slice::Unit::pushDefinitionContext()
 {
-    _definitionContextStack.push(new DefinitionContext(_currentIncludeLevel));
+    _definitionContextStack.push(new DefinitionContext(_currentIncludeLevel, _defaultGlobalMetadata));
 }
 
 void
@@ -5238,13 +5292,15 @@ Slice::Unit::builtin(Builtin::Kind kind)
     return builtin;
 }
 
-Slice::Unit::Unit(bool ignRedefs, bool all, bool allowIcePrefix, bool caseSensitive) :
+Slice::Unit::Unit(bool ignRedefs, bool all, bool allowIcePrefix, bool caseSensitive,
+		  const StringList& defaultGlobalMetadata) :
     SyntaxTreeBase(0),
     Container(0),
     _ignRedefs(ignRedefs),
     _all(all),
     _allowIcePrefix(allowIcePrefix),
     _caseSensitive(caseSensitive),
+    _defaultGlobalMetadata(defaultGlobalMetadata),
     _errors(0)
 {
     _unit = this;

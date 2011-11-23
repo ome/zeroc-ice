@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,55 +25,60 @@ QueryI::~QueryI()
 {
 }
 
-Ice::ObjectPrx
-QueryI::findObjectById(const Ice::Identity& id, const Ice::Current&) const
+void
+QueryI::findObjectById_async(const AMD_Query_findObjectByIdPtr& cb, const Ice::Identity& id, const Ice::Current&) const
 {
     try
     {
-	return _database->getObjectProxy(id);
+	cb->ice_response(_database->getObjectProxy(id));
     }
     catch(const ObjectNotRegisteredException&)
     {
-	return 0;
+	cb->ice_response(0);
     }
 }
 
-Ice::ObjectPrx 
-QueryI::findObjectByType(const string& type, const Ice::Current&) const
+void
+QueryI::findObjectByType_async(const AMD_Query_findObjectByTypePtr& cb, const string& type, const Ice::Current&) const
 {
     try
     {
-	return _database->getObjectByType(type);
+	cb->ice_response(_database->getObjectByType(type));
     }
     catch(const ObjectNotRegisteredException&)
     {
-	return 0;
+	cb->ice_response(0);
     }
 }
 
-Ice::ObjectPrx 
-QueryI::findObjectByTypeOnLeastLoadedNode(const string& type, LoadSample sample, const Ice::Current&) const
+void
+QueryI::findObjectByTypeOnLeastLoadedNode_async(const AMD_Query_findObjectByTypeOnLeastLoadedNodePtr& cb, 
+						const string& type,
+						LoadSample sample, 
+						const Ice::Current&) const
 {
     try
     {
-	return _database->getObjectByTypeOnLeastLoadedNode(type, sample);
+	cb->ice_response(_database->getObjectByTypeOnLeastLoadedNode(type, sample));
     }
     catch(const ObjectNotRegisteredException&)
     {
-	return 0;
+	cb->ice_response(0);
     }
 }
 
-Ice::ObjectProxySeq 
-QueryI::findAllObjectsByType(const string& type, const Ice::Current&) const
+void
+QueryI::findAllObjectsByType_async(const AMD_Query_findAllObjectsByTypePtr& cb,
+				   const string& type, 
+				   const Ice::Current&) const
 {
     try
     {
-	return _database->getObjectsByType(type);
+	cb->ice_response(_database->getObjectsByType(type));
     }
     catch(const ObjectNotRegisteredException&)
     {
-	return Ice::ObjectProxySeq();
+	cb->ice_response(Ice::ObjectProxySeq());
     }
 }
 

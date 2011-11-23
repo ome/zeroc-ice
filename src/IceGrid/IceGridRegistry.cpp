@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,7 @@ protected:
 
     virtual bool start(int, char*[]);
     virtual bool stop();
-    virtual CommunicatorPtr initializeCommunicator(int&, char*[]);
+    virtual CommunicatorPtr initializeCommunicator(int&, char*[], const InitializationData&);
 
 private:
 
@@ -84,12 +84,16 @@ RegistryService::start(int argc, char* argv[])
 	return false;
     }
 
-    PropertiesPtr properties = communicator()->getProperties();
-    if(properties->getPropertyAsIntWithDefault("Ice.ThreadPool.Server.Size", 5) <= 5)
+    //
+    // Warn the user that setting Ice.ThreadPool.Server isn't useful.
+    //
+    if(!nowarn && communicator()->getProperties()->getPropertyAsIntWithDefault("Ice.ThreadPool.Server.Size", 0) > 0)
     {
-	properties->setProperty("Ice.ThreadPool.Server.Size", "5");
+	Warning out(communicator()->getLogger());
+	out << "setting `Ice.ThreadPool.Server.Size' is not useful,\n";
+	out << "you should set individual adapter thread pools instead.";
     }
-
+    
     _registry = new RegistryI(communicator());
     if(!_registry->start(nowarn))
     {
@@ -107,16 +111,20 @@ RegistryService::stop()
 }
 
 CommunicatorPtr
-RegistryService::initializeCommunicator(int& argc, char* argv[])
+RegistryService::initializeCommunicator(int& argc, char* argv[], 
+					const InitializationData& initializationData)
 {
-    PropertiesPtr defaultProperties = getDefaultProperties(argc, argv);
+    InitializationData initData = initializationData;
+    initData.properties = createProperties(argc, argv, initData.properties);
     
     //
-    // Make sure that IceGridRegistry doesn't use thread-per-connection.
+    // Make sure that IceGridRegistry doesn't use
+    // thread-per-connection or collocation optimization.
     //
-    defaultProperties->setProperty("Ice.ThreadPerConnection", "");
+    initData.properties->setProperty("Ice.ThreadPerConnection", "");
+    initData.properties->setProperty("Ice.Default.CollocationOptimization", "0");
 
-    return Service::initializeCommunicator(argc, argv);
+    return Service::initializeCommunicator(argc, argv, initData);
 }
 
 void

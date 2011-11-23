@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,11 +18,11 @@
 namespace IceGrid
 {
 
-
 template<typename Key, typename Value>
 class Cache : public IceUtil::Mutex
 {
     typedef IceUtil::Handle<Value> ValuePtr;
+    typedef std::map<Key, ValuePtr> ValueMap;
 
 public:
 
@@ -36,7 +36,7 @@ public:
     }
 
     bool 
-    has(const Key& key)
+    has(const Key& key) const
     {
 	Lock sync(*this);
 	return getImpl(key);
@@ -60,10 +60,10 @@ public:
 protected:
 
     virtual ValuePtr 
-    getImpl(const Key& key, bool create = false)
+    getImpl(const Key& key) const
     {
-	typename std::map<Key, ValuePtr>::iterator p = _entries.end();
-	if(_entriesHint != _entries.end())
+	typename ValueMap::iterator p = const_cast<ValueMap&>(_entries).end();
+	if(_entriesHint != p)
 	{
 	    if(_entriesHint->first == key)
 	    {
@@ -71,39 +71,26 @@ protected:
 	    }
 	}
 	
-	if(p == _entries.end())
+	if(p == const_cast<ValueMap&>(_entries).end())
 	{
-	    p = _entries.find(key);
+	    p = const_cast<ValueMap&>(_entries).find(key);
 	}
 	
-	if(p != _entries.end())
+	if(p != const_cast<ValueMap&>(_entries).end())
 	{
-	    _entriesHint = p;
+	    const_cast<typename ValueMap::iterator&>(_entriesHint) = p;
 	    return p->second;
 	}
 	else
 	{
-	    if(create)
-	    {
-		return createAndAddImpl(key);
-	    }
-	    else
-	    {
-		return 0;
-	    }
+	    return 0;
 	}
-    }
-
-    virtual ValuePtr
-    createAndAddImpl(const Key& key)
-    {
-	return addImpl(key, createEntry(key));
     }
 
     virtual ValuePtr
     addImpl(const Key& key, const ValuePtr& entry)
     {
-	typename std::map<Key, ValuePtr>::value_type v(key, entry);
+	typename ValueMap::value_type v(key, entry);
 	_entriesHint = _entries.insert(_entriesHint, v);
 	return entry;
     }
@@ -111,7 +98,7 @@ protected:
     virtual ValuePtr
     removeImpl(const Key& key)
     {
-	typename std::map<Key, ValuePtr>::iterator p = _entries.end();
+	typename ValueMap::iterator p = _entries.end();
 	if(_entriesHint != _entries.end())
 	{
 	    if(_entriesHint->first == key)
@@ -140,15 +127,9 @@ protected:
 	}
     }
 
-    virtual ValuePtr
-    createEntry(const Key& key)
-    {
-	return new Value(*this, key);
-    }
-
     TraceLevelsPtr _traceLevels;
-    std::map<Key, ValuePtr> _entries;
-    typename std::map<Key, ValuePtr>::iterator _entriesHint;    
+    ValueMap _entries;
+    typename ValueMap::iterator _entriesHint;    
 };
 
 template<typename T>

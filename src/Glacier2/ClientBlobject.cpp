@@ -1,65 +1,76 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#include <Ice/RoutingTable.h>
-#include <Ice/IdentityUtil.h>
 #include <Glacier2/ClientBlobject.h>
+#include <Glacier2/FilterManager.h>
+#include <Glacier2/FilterI.h>
+#include <Glacier2/RoutingTable.h>
 
 using namespace std;
 using namespace Ice;
 using namespace Glacier2;
 
 Glacier2::ClientBlobject::ClientBlobject(const CommunicatorPtr& communicator,
-					 const IceInternal::RoutingTablePtr& routingTable,
-					 const StringSeq& allowCategories) :
+					 const FilterManagerPtr& filters):
+					 
     Glacier2::Blobject(communicator, false),
-    _routingTable(routingTable),
-    _allowCategories(allowCategories),
+    _routingTable(new RoutingTable(communicator)),
+    _filters(filters),
     _rejectTraceLevel(_properties->getPropertyAsInt("Glacier2.Client.Trace.Reject"))
 {
 }
 
 Glacier2::ClientBlobject::~ClientBlobject()
 {
-    assert(!_routingTable);
 }
 
 void
-Glacier2::ClientBlobject::destroy()
-{
-    assert(_routingTable); // Destroyed?
-    _routingTable = 0;
-    Blobject::destroy();
-}
-
-void
-Glacier2::ClientBlobject::ice_invoke_async(const Ice::AMD_Object_ice_invokePtr& amdCB, const ByteSeq& inParams,
+Glacier2::ClientBlobject::ice_invoke_async(const Ice::AMD_Array_Object_ice_invokePtr& amdCB, 
+					   const std::pair<const Byte*, const Byte*>& inParams,
 					   const Current& current)
 {
-    assert(_routingTable); // Destroyed?
-
-    //
-    // If there is an _allowCategories set then enforce it.
-    //
-    if(!_allowCategories.empty())
+    bool matched = false;
+    bool hasFilters = false;
+ 
+    if(!_filters->categories()->empty())
     {
-	if(!binary_search(_allowCategories.begin(), _allowCategories.end(), current.id.category))
+	hasFilters = true;
+	if(_filters->categories()->match(current.id.category))
+	{
+	    matched = true;
+	}
+	else
 	{
 	    if(_rejectTraceLevel >= 1)
 	    {
 		Trace out(_logger, "Glacier2");
-		out << "rejecting request\n";
-		out << "identity: " << identityToString(current.id);
+		out << "rejecting request: category filter\n";
+		out << "identity: " << _communicator->identityToString(current.id);
 	    }
-	    ObjectNotExistException ex(__FILE__, __LINE__);
-	    ex.id = current.id;
-	    throw ex;
+	}
+    }
+
+    if(!_filters->identities()->empty())
+    {
+	hasFilters = true;
+	if(_filters->identities()->match(current.id))
+	{
+	    matched = true;
+	}
+	else
+	{
+	    if(_rejectTraceLevel >= 1)
+	    {
+		Trace out(_logger, "Glacier2");
+		out << "rejecting request: identity filter\n";
+		out << "identity: " << _communicator->identityToString(current.id);
+	    }
 	}
     }
 
@@ -67,9 +78,68 @@ Glacier2::ClientBlobject::ice_invoke_async(const Ice::AMD_Object_ice_invokePtr& 
     if(!proxy)
     {
 	ObjectNotExistException ex(__FILE__, __LINE__);
+
+	//
+	// We use a special operation name indicate to the client that
+	// the proxy for the Ice object has not been found in our
+	// routing table. This can happen if the proxy was evicted
+	// from the routing table.
+	//
 	ex.id = current.id;
+	ex.facet = current.facet;
+	ex.operation = "ice_add_proxy";
 	throw ex;
     }
 
+    string adapterId = proxy->ice_getAdapterId();
+
+    if(!adapterId.empty() && !_filters->adapterIds()->empty())
+    {
+	hasFilters = true;
+	if(_filters->adapterIds()->match(adapterId))
+	{
+	    matched = true;
+	}
+	else
+	{
+	    if(_rejectTraceLevel >= 1)
+	    {
+		Trace out(_logger, "Glacier2");
+		out << "rejecting request: adapter id filter\n";
+		out << "identity: " << _communicator->identityToString(current.id);
+	    }
+	}
+    }
+
+    if(hasFilters && !matched)
+    {
+	ObjectNotExistException ex(__FILE__, __LINE__);
+	ex.id = current.id;
+	throw ex;
+    }
     invoke(proxy, amdCB, inParams, current);
+}
+
+ObjectProxySeq
+Glacier2::ClientBlobject::add(const ObjectProxySeq& proxies, const Current& current)
+{
+    return _routingTable->add(proxies, current);
+}
+
+StringSetPtr 
+ClientBlobject::categories()
+{
+    return _filters->categories();
+}
+
+StringSetPtr 
+ClientBlobject::adapterIds()
+{
+    return _filters->adapterIds();
+}
+
+IdentitySetPtr
+ClientBlobject::identities()
+{
+    return _filters->identities();
 }

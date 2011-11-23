@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -36,7 +36,7 @@ typedef int ssize_t;
 #   include <netdb.h>
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__osf__) 
 typedef int socklen_t;
 #endif
 
@@ -82,6 +82,7 @@ ICE_API bool recvTruncated();
 
 ICE_API SOCKET createSocket(bool);
 ICE_API void closeSocket(SOCKET);
+ICE_API void closeSocketNoThrow(SOCKET);
 ICE_API void shutdownSocketWrite(SOCKET);
 ICE_API void shutdownSocketReadWrite(SOCKET);
 
@@ -99,7 +100,6 @@ ICE_API void doConnect(SOCKET, struct sockaddr_in&, int);
 ICE_API SOCKET doAccept(SOCKET, int);
 
 ICE_API void getAddress(const std::string&, int, struct sockaddr_in&);
-ICE_API std::string getLocalHost(bool);
 ICE_API bool compareAddress(const struct sockaddr_in&, const struct sockaddr_in&);
 
 ICE_API void createPipe(SOCKET fds[2]);
@@ -109,6 +109,8 @@ ICE_API std::string errorToStringDNS(int);
 ICE_API std::string lastErrorToString();
 
 ICE_API std::string fdToString(SOCKET);
+ICE_API void fdToLocalAddress(SOCKET, struct sockaddr_in&);
+ICE_API bool fdToRemoteAddress(SOCKET, struct sockaddr_in&);
 ICE_API std::string addrToString(const struct sockaddr_in&);
 
 ICE_API std::vector<std::string> getLocalHosts();
@@ -119,6 +121,7 @@ ICE_API bool isPeerLocal(SOCKET);
 #endif
 
 ICE_API int getSocketErrno();
+ICE_API std::string inetAddrToString(const struct in_addr&);
 
 }
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,7 @@ class GCShared;
 typedef std::set<GCShared*> GCObjectSet;
 extern ICE_API GCObjectSet gcObjects; // Set of pointers to all existing classes with class data members.
 
-typedef std::multiset<GCShared*> GCObjectMultiSet;
+typedef std::map<GCShared*, int> GCCountMap;
 
 class ICE_API GCShared
 {
@@ -40,8 +40,14 @@ public:
 
     virtual void __incRef(); // First derived class with class data members overrides this.
     virtual void __decRef(); // Ditto.
+    virtual void __addObject(GCCountMap&) {} // Ditto.
+    virtual bool __usesClasses() { return false; } // Ditto.
+
     virtual int __getRef() const;
     virtual void __setNoDelete(bool);
+
+    virtual void __gcReachable(GCCountMap&) const = 0;
+    virtual void __gcClear() = 0;
 
     int __getRefUnsafe() const
     {
@@ -53,12 +59,7 @@ public:
 	--_ref;
     }
 
-    virtual void __gcReachable(GCObjectMultiSet&) const = 0;
-    virtual void __gcClear() = 0;
-
 protected:
-
-    static void __addObject(GCObjectMultiSet&, GCShared*);
 
     int _ref;
     bool _noDelete;

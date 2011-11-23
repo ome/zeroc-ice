@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,6 +25,7 @@ class PluginManagerI : public PluginManager, public IceUtil::Mutex
 {
 public:
 
+    virtual void initializePlugins();
     virtual PluginPtr getPlugin(const std::string&);
     virtual void addPlugin(const std::string&, const PluginPtr&);
     virtual void destroy();
@@ -35,12 +36,14 @@ private:
     friend class IceInternal::Instance;
 
     void loadPlugins(int&, char*[]);
-    void loadPlugin(const std::string&, const std::string&, const StringSeq&);
+    void loadPlugin(const std::string&, const std::string&, StringSeq&);
 
     CommunicatorPtr _communicator;
     IceInternal::DynamicLibraryListPtr _libraries;
 
     std::map<std::string, PluginPtr> _plugins;
+    std::vector<PluginPtr> _initOrder;
+    bool _initialized;
     static const char * const _kindOfObject;
 };
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@
 #include <Ice/Identity.ice>
 #include <Ice/BuiltinSequences.ice>
 #include <Ice/SliceChecksumDict.ice>
+#include <Glacier2/Session.ice>
 #include <IceGrid/Exception.ice>
 #include <IceGrid/Descriptor.ice>
 
@@ -113,6 +114,13 @@ sequence<ObjectInfo> ObjectInfoSeq;
  **/
 struct AdapterInfo
 {
+    /** 
+     *
+     * The id of the adapter.
+     *
+     **/
+    string id;
+
     /**
      *
      * A dummy direct proxy that contains the adapter endpoints. 
@@ -128,7 +136,13 @@ struct AdapterInfo
      **/
     string replicaGroupId;
 };
-dictionary<string, AdapterInfo> AdapterInfoDict;
+
+/**
+ *
+ * A sequence of adapter information structures.
+ *
+ **/
+sequence<AdapterInfo> AdapterInfoSeq;
 
 /**
  *
@@ -197,7 +211,7 @@ struct NodeInfo
 
     /**
      *
-     * The machine harware type (as defined in uname()).
+     * The machine hardware type (as defined in uname()).
      *
      **/
     string machine;    
@@ -217,6 +231,11 @@ struct NodeInfo
     string dataDir;
 };
 
+/**
+ *
+ * Information about the load of a node.
+ *
+ **/
 struct LoadInfo
 {
     /** The load average over the past minute. */
@@ -244,12 +263,16 @@ interface Admin
      *
      * @param descriptor The application descriptor.
      *
+     * @throws AccessDeniedException Raised if the session doesn't
+     * hold the exclusive lock or if another session is holding the
+     * lock.
+     *
      * @throws DeploymentException Raised if application deployment
      * failed.
      *
      **/
     void addApplication(ApplicationDescriptor descriptor)
-	throws DeploymentException;
+	throws AccessDeniedException, DeploymentException;
 
     /**
      *
@@ -259,6 +282,10 @@ interface Admin
      *
      * @param descriptor The application descriptor.
      *
+     * @throws AccessDeniedException Raised if the session doesn't
+     * hold the exclusive lock or if another session is holding the
+     * lock.
+     *
      * @throws DeploymentException Raised if application deployment
      * failed.
      *
@@ -267,7 +294,7 @@ interface Admin
      *
      **/
     void syncApplication(ApplicationDescriptor descriptor)
-	throws DeploymentException, ApplicationNotExistException;
+	throws AccessDeniedException, DeploymentException, ApplicationNotExistException;
 
     /**
      *
@@ -275,6 +302,10 @@ interface Admin
      * descriptor.
      *
      * @param descriptor The update descriptor.
+     *
+     * @throws AccessDeniedException Raised if the session doesn't
+     * hold the exclusive lock or if another session is holding the
+     * lock.
      *
      * @throws DeploymentException Raised if application deployment
      * failed.
@@ -284,7 +315,7 @@ interface Admin
      *
      **/
     void updateApplication(ApplicationUpdateDescriptor descriptor)
-	throws DeploymentException, ApplicationNotExistException;
+	throws AccessDeniedException, DeploymentException, ApplicationNotExistException;
 
     /**
      *
@@ -292,36 +323,56 @@ interface Admin
      *
      * @param name The application name.
      *
+     * @throws AccessDeniedException Raised if the session doesn't
+     * hold the exclusive lock or if another session is holding the
+     * lock.
+     *
      * @throws ApplicationNotExistException Raised if the application
      * doesn't exist.
      *
      **/
     void removeApplication(string name)
-	throws ApplicationNotExistException;
+	throws AccessDeniedException, ApplicationNotExistException;
 
     /**
      *
-     * Instantiate a server template from an application.
+     * Instantiate a server template from an application on the given
+     * node.
+     *
+     * @param application The application name.
+     * 
+     * @param node The name of the node where the server will be
+     * deployed.
+     *
+     * @param desc The descriptor of the server instance to deploy.
+     * 
+     * @throws AccessDeniedException Raised if the session doesn't
+     * hold the exclusive lock or if another session is holding the
+     * lock.
+     *
+     * @throws DeploymentException Raised if server instantiation
+     * failed.
+     *
+     * @throws ApplicationNotExistException Raised if the application
+     * doesn't exist.
      *
      **/
     void instantiateServer(string application, string node, ServerInstanceDescriptor desc)
-	throws ApplicationNotExistException, DeploymentException;
+	throws AccessDeniedException, ApplicationNotExistException, DeploymentException;
 
     /**
      *
-     * Patch the given application data. If the patch argument is an
-     * empty string, all of the application's servers that depend on patch
-     * data will be patched.
+     * Patch the given application data.
      *
      * @param name The application name.
      *
      * @param shutdown If true, the servers depending on the data to
      * patch will be shutdown if necessary.
      *
-     * @throws PatchException Raised if the patch failed.
-     *
      * @throws ApplicationNotExistException Raised if the application
      * doesn't exist.
+     *
+     * @throws PatchException Raised if the patch failed.
      *
      **/
     ["ami", "amd"] void patchApplication(string name, bool shutdown)
@@ -333,7 +384,7 @@ interface Admin
      *
      * @param name The application name.
      *
-     * @returns The application descriptor.
+     * @return The application descriptor.
      *
      * @throws ApplicationNotExistException Raised if the application
      * doesn't exist.
@@ -345,6 +396,9 @@ interface Admin
     /**
      *
      * Get the default application descriptor.
+     *
+     * @throws DeploymentException Raised if the default application
+     * descriptor can't be accessed or is invalid.
      *
      **/
     nonmutating ApplicationDescriptor getDefaultApplicationDescriptor()
@@ -367,7 +421,7 @@ interface Admin
      *
      * @throws ServerNotExistException Raised if the server doesn't exist.
      *
-     * @returns The server information.
+     * @return The server information.
      *
      **/
     nonmutating ServerInfo getServerInfo(string id)
@@ -386,9 +440,12 @@ interface Admin
      * @throws NodeUnreachableException Raised if the node could not be
      * reached.
      *
+     * @throws DeploymentException Raised if the server couldn't be
+     * deployed on the node.
+     *
      **/
     nonmutating ServerState getServerState(string id)
-	throws ServerNotExistException, NodeUnreachableException;
+	throws ServerNotExistException, NodeUnreachableException, DeploymentException;
     
     /**
      *
@@ -404,9 +461,12 @@ interface Admin
      * @throws NodeUnreachableException Raised if the node could not be
      * reached.
      *
+     * @throws DeploymentException Raised if the server couldn't be
+     * deployed on the node.
+     *
      **/
     nonmutating int getServerPid(string id)
-	throws ServerNotExistException, NodeUnreachableException;
+	throws ServerNotExistException, NodeUnreachableException, DeploymentException;
 
     /**
      *
@@ -424,9 +484,12 @@ interface Admin
      * @throws NodeUnreachableException Raised if the node could not
      * be reached.
      *
+     * @throws DeploymentException Raised if the server couldn't be
+     * deployed on the node.
+     *
      **/
     ["ami"] idempotent void enableServer(string id, bool enabled)
-	throws ServerNotExistException, NodeUnreachableException;
+	throws ServerNotExistException, NodeUnreachableException, DeploymentException;
 
     /**
      *
@@ -440,9 +503,12 @@ interface Admin
      * @throws NodeUnreachableException Raised if the node could not
      * be reached.
      * 
+     * @throws DeploymentException Raised if the server couldn't be
+     * deployed on the node.
+     *
      **/
     nonmutating bool isServerEnabled(string id)
-	throws ServerNotExistException, NodeUnreachableException;
+	throws ServerNotExistException, NodeUnreachableException, DeploymentException;
 
     /**
      *
@@ -456,12 +522,18 @@ interface Admin
      * @throws ServerNotExistException Raised if the server doesn't
      * exist.
      *
-     * @throws NodeUnreachableException Raised if the node could not be
-     * reached.
+     * @throws ServerStartException Raised if the server couldn't be
+     * started.
+     *
+     * @throws NodeUnreachableException Raised if the node could not
+     * be reached.
+     *
+     * @throws DeploymentException Raised if the server couldn't be
+     * deployed on the node.
      *
      **/
     ["ami"] void startServer(string id)
-	throws ServerNotExistException, ServerStartException, NodeUnreachableException;
+	throws ServerNotExistException, ServerStartException, NodeUnreachableException, DeploymentException;
 
     /**
      *
@@ -472,12 +544,18 @@ interface Admin
      * @throws ServerNotExistException Raised if the server doesn't
      * exist.
      *
+     * @throws ServerStopException Raised if the server couldn't be
+     * stopped.
+     *
      * @throws NodeUnreachableException Raised if the node could not be
      * reached.
      *
+     * @throws DeploymentException Raised if the server couldn't be
+     * deployed on the node.
+     *
      **/
     ["ami"] void stopServer(string id)
-	throws ServerNotExistException, NodeUnreachableException;
+	throws ServerNotExistException, ServerStopException, NodeUnreachableException, DeploymentException;
 
     /**
      *
@@ -494,11 +572,14 @@ interface Admin
      * @throws NodeUnreachableException Raised if the node could not be
      * reached.
      *
+     * @throws DeploymentException Raised if the server couldn't be
+     * deployed on the node.
+     *
      * @throws PatchException Raised if the patch failed.
      *
      **/
     ["ami", "amd"] void patchServer(string id, bool shutdown)
-	throws ServerNotExistException, NodeUnreachableException, PatchException;
+	throws ServerNotExistException, NodeUnreachableException, DeploymentException, PatchException;
 
     /**
      *
@@ -514,12 +595,15 @@ interface Admin
      * @throws NodeUnreachableException Raised if the node could not be
      * reached.
      *
+     * @throws DeploymentException Raised if the server couldn't be
+     * deployed on the node.
+     *
      * @throws BadSignalException Raised if the signal is not recognized 
      * by the target server.
      *
      **/
     void sendSignal(string id, string signal)
-	throws ServerNotExistException, NodeUnreachableException, BadSignalException;
+	throws ServerNotExistException, NodeUnreachableException, DeploymentException, BadSignalException;
 
     /**
      *
@@ -537,9 +621,12 @@ interface Admin
      * @throws NodeUnreachableException Raised if the node could not be
      * reached.
      *
+     * @throws DeploymentException Raised if the server couldn't be
+     * deployed on the node.
+     *
      **/
     void writeMessage(string id, string message, int fd)
-	throws ServerNotExistException, NodeUnreachableException;
+	throws ServerNotExistException, NodeUnreachableException, DeploymentException;
 
     /**
      *
@@ -552,22 +639,23 @@ interface Admin
 
     /**
      *
-     * Get the list of endpoints for an adapter.
+     * Get the adapter information for the replica group or adapter
+     * with the given id.
      *
      * @param adapterId The adapter id.
      *
-     * @return A dictionary of adapter direct proxy classified by
-     * server id.
+     * @return A sequence of adapter information structures. If the
+     * given id refers to an adapter, this sequence will contain only
+     * one element. If the given id refers to a replica group, the
+     * sequence will contain the adapter information of each member of
+     * the replica group.
      *
-     * @throws AdapterNotExistException Raised if the adapter doesn't
-     * exist.
-     *
-     * @throws NodeUnreachableException Raised if the node could not be
-     * reached.
+     * @throws AdapterNotExistException Raised if the adapter or
+     * replica group doesn't exist.
      *
      **/
-    nonmutating StringObjectProxyDict getAdapterEndpoints(string adapterId)
-	throws AdapterNotExistException, NodeUnreachableException;
+    nonmutating AdapterInfoSeq getAdapterInfo(string id)
+	throws AdapterNotExistException;
 
     /**
      *
@@ -577,7 +665,7 @@ interface Admin
      * exist.
      *
      **/
-    idempotent void removeAdapter(string adapterId)
+    ["ami"] void removeAdapter(string adapterId)
 	throws AdapterNotExistException, DeploymentException;
 
     /**
@@ -600,18 +688,29 @@ interface Admin
      * @throws ObjectExistsException Raised if the object is already
      * registered.
      *
+     * @throws DeploymentException Raised if the object can't be
+     * added. This might be raised if the invocation on the proxy to
+     * get the object type failed.
+     *
      **/
     void addObject(Object* obj)
 	throws ObjectExistsException, DeploymentException;
 
     /**
      *
-     * Update an object in the object registry.
+     * Update an object in the object registry. Only objects added
+     * with this interface can be updated with this operation. Objects
+     * added with deployment descriptors should be updated with the
+     * deployment mechanism.
      *
      * @param obj The object to be updated to the registry.
      *
-     * @throws ObjectNotRegisteredException Raised if the object doesn't
-     * exist.
+     * @throws ObjectNotRegisteredException Raised if the object isn't
+     * registered with the registry.
+     *
+     * @throws DeploymentException Raised if the object can't be
+     * updated. This might happen if the object was added with a
+     * deployment descriptor.
      *
      **/
     void updateObject(Object* obj)
@@ -631,20 +730,27 @@ interface Admin
      *
      **/
     void addObjectWithType(Object* obj, string type)
-	throws ObjectExistsException, DeploymentException;
+	throws ObjectExistsException;
 
     /**
      *
-     * Remove an object from the object registry.
+     * Remove an object from the object registry. Only objects added
+     * with this interface can be removed with this operation. Objects
+     * added with deployment descriptors should be removed with the
+     * deployment mechanism.
      *
      * @param id The identity of the object to be removed from the
      * registry.
      *
-     * @throws ObjectNotRegisteredException Raised if the object doesn't
-     * exist.
+     * @throws ObjectNotRegisteredException Raised if the object isn't
+     * registered with the registry.
+     *
+     * @throws DeploymentException Raised if the object can't be
+     * removed. This might happen if the object was added with a
+     * deployment descriptor.
      *
      **/
-    void removeObject(Ice::Identity id) 
+    ["ami"] void removeObject(Ice::Identity id) 
 	throws ObjectNotRegisteredException, DeploymentException;
 
     /**
@@ -655,12 +761,24 @@ interface Admin
      *
      * @return The object info.
      *
-     * @throws ObjectNotRegisteredException Raised if the object doesn't
-     * exist.
+     * @throws ObjectNotRegisteredException Raised if the object isn't
+     * registered with the registry.
      *
      **/
     nonmutating ObjectInfo getObjectInfo(Ice::Identity id)
 	throws ObjectNotRegisteredException;
+
+    /**
+     *
+     * Get the object info of all the registered objects with the
+     * given type.
+     *
+     * @param type The type of the object.
+     *
+     * @return The object infos.
+     *
+     **/
+    nonmutating ObjectInfoSeq getObjectInfosByType(string type);
 
     /**
      *
@@ -746,6 +864,8 @@ interface Admin
      *
      * @param name The node name.
      *
+     * @return The node hostname.
+     *
      * @throws NodeNotExistException Raised if the node doesn't exist.
      *
      * @throws NodeUnreachableException Raised if the node could not be
@@ -779,6 +899,96 @@ interface Admin
      *
      **/
     nonmutating Ice::SliceChecksumDict getSliceChecksums();
+};
+
+interface RegistryObserver;
+interface NodeObserver;
+
+/**
+ *
+ * An admin session object used by administrative clients to view,
+ * update and receive observer updates from the &IceGrid;
+ * registry. Admin sessions are created either with the [Registry]
+ * object or the registry admin [Glacier2::SessionManager] object.
+ * 
+ * @see Registry
+ * @see Glacier2::SessionManager
+ *
+ **/
+interface AdminSession extends Glacier2::Session
+{
+    /**
+     *
+     * Keep the session alive. Clients should call this operation
+     * regularly to prevent the server from reaping the session.
+     *
+     * @see Registry::getSessionTimeout
+     *
+     **/
+    idempotent void keepAlive();
+
+    /**
+     *
+     * Get the admin interface. The admin object returned by this
+     * operation can only be accessed by the session.
+     *
+     * @return The admin interface proxy.
+     *
+     **/
+    nonmutating Admin* getAdmin();
+
+    /**
+     *
+     * Set the proxies of the observer objects that will receive
+     * notifications from the servers when the state of the registry
+     * or nodes changes.
+     *
+     * @param registryObs The registry observer.
+     *
+     * @param nodeObs The node observer.
+     *
+     **/
+    idempotent void setObservers(RegistryObserver* registryObs, NodeObserver* nodeObs);
+
+    /**
+     *
+     * Set the identities of the observer objects that will receive
+     * notifications from the servers when the state of the registry
+     * or nodes changes. This operation should be used by clients that
+     * are using a bidirectional connection to communicate with the
+     * session.
+     *
+     * @param registryObs The registry observer identity.
+     *
+     * @param nodeObs The node observer identity.
+     *
+     **/
+    idempotent void setObserversByIdentity(Ice::Identity registryObs, Ice::Identity nodeObs);
+
+    /**
+     *
+     * Acquires an exclusive lock to start updating the registry applications.
+     *
+     * @return The current serial.
+     * 
+     * @throws AccessDeniedException Raised if the exclusive lock can't be
+     * acquired. This might happen if the lock is currently acquired by
+     * another session.
+     *
+     **/
+    int startUpdate()
+	throws AccessDeniedException;
+    
+    /**
+     *
+     * Finish updating the registry and release the exclusive lock.
+     *
+     * @throws AccessDeniedException Raised if the session doesn't hold the
+     * exclusive lock.
+     *
+     **/
+    void finishUpdate()
+	throws AccessDeniedException;
 };
 
 };

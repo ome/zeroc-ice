@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -63,18 +63,45 @@ IceInternal::UdpTransceiver::shutdownReadWrite()
     IceUtil::Mutex::Lock sync(_shutdownReadWriteMutex);
     _shutdownReadWrite = true;
 
+#if defined(_WIN32) || defined(__sun) || defined(__hppa) || defined(_AIX)
+    //
+    // On certain platforms, we have to explicitly wake up a thread blocked in
+    // select(). This is only relevant when using thread per connection.
+    //
+
+    //
+    // Save the local address before shutting down or disconnecting.
+    //
+    struct sockaddr_in localAddr;
+    fdToLocalAddress(_fd, localAddr);
+
     assert(_fd != INVALID_SOCKET);
     shutdownSocketReadWrite(_fd);
 
-#if defined(_WIN32) || defined(__sun) || defined(__hppa) || defined(_AIX)
     //
-    // This is required to unblock the select call when using thread per connection.
+    // A connected UDP socket can only receive packets from its associated
+    // peer, so we disconnect the socket.
+    //
+    if(!_connect)
+    {
+	struct sockaddr_in unspec;
+	memset(&unspec, 0, sizeof(unspec));
+	unspec.sin_family = AF_UNSPEC;
+	::connect(_fd, reinterpret_cast<struct sockaddr*>(&unspec), int(sizeof(unspec)));
+    }
+
+    //
+    // Send a dummy packet to the socket. This packet is ignored because we have
+    // already set _shutdownReadWrite.
     //
     SOCKET fd = createSocket(true);
     setBlock(fd, false);
-    doConnect(fd, _addr, -1);
+    doConnect(fd, localAddr, -1);
     ::send(fd, "", 1, 0);
     closeSocket(fd);
+#else
+    assert(_fd != INVALID_SOCKET);
+    shutdownSocketReadWrite(_fd);
 #endif
 }
 
@@ -313,11 +340,11 @@ IceInternal::UdpTransceiver::effectivePort() const
 
 IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const string& host, int port) :
     _traceLevels(instance->traceLevels()),
-    _logger(instance->logger()),
-    _stats(instance->stats()),
+    _logger(instance->initializationData().logger),
+    _stats(instance->initializationData().stats),
     _incoming(false),
     _connect(true),
-    _warn(instance->properties()->getPropertyAsInt("Ice.Warn.Datagrams") > 0),
+    _warn(instance->initializationData().properties->getPropertyAsInt("Ice.Warn.Datagrams") > 0),
     _shutdownReadWrite(false)
 {
     try
@@ -347,11 +374,11 @@ IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const s
 
 IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const string& host, int port, bool connect) :
     _traceLevels(instance->traceLevels()),
-    _logger(instance->logger()),
-    _stats(instance->stats()),
+    _logger(instance->initializationData().logger),
+    _stats(instance->initializationData().stats),
     _incoming(true),
     _connect(connect),
-    _warn(instance->properties()->getPropertyAsInt("Ice.Warn.Datagrams") > 0),
+    _warn(instance->initializationData().properties->getPropertyAsInt("Ice.Warn.Datagrams") > 0),
     _shutdownReadWrite(false)
 {
     try
@@ -423,7 +450,7 @@ IceInternal::UdpTransceiver::setBufSize(const InstancePtr& instance)
 	//
 	// Get property for buffer size and check for sanity.
 	//
-	Int sizeRequested = instance->properties()->getPropertyAsIntWithDefault(prop, dfltSize);
+	Int sizeRequested = instance->initializationData().properties->getPropertyAsIntWithDefault(prop, dfltSize);
 	if(sizeRequested < _udpOverhead)
 	{
 	    Warning out(_logger);

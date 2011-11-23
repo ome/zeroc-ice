@@ -10,7 +10,6 @@
 -->
 
 <icegrid>
-
   <application name="Simple">
 
     <server-template id="SimpleServer">

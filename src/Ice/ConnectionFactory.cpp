@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -90,7 +90,7 @@ IceInternal::OutgoingConnectionFactory::waitUntilFinished()
 }
 
 ConnectionIPtr
-IceInternal::OutgoingConnectionFactory::create(const vector<EndpointIPtr>& endpts, bool& compress)
+IceInternal::OutgoingConnectionFactory::create(const vector<EndpointIPtr>& endpts, bool moreEndpts, bool& compress)
 {
     assert(!endpts.empty());
     vector<EndpointIPtr> endpoints = endpts;
@@ -315,10 +315,10 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointIPtr>& endpt
 	TraceLevelsPtr traceLevels = _instance->traceLevels();
 	if(traceLevels->retry >= 2)
 	{
-	    Trace out(_instance->logger(), traceLevels->retryCat);
+	    Trace out(_instance->initializationData().logger, traceLevels->retryCat);
 
 	    out << "connection to endpoint failed";
-	    if(q + 1 != endpoints.end())
+	    if(moreEndpts || q + 1 != endpoints.end())
 	    {
 		out << ", trying next endpoint\n";
 	    }
@@ -441,7 +441,7 @@ IceInternal::OutgoingConnectionFactory::removeAdapter(const ObjectAdapterPtr& ad
     
     if(_destroyed)
     {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+	return;
     }
     
     for(multimap<EndpointIPtr, ConnectionIPtr>::const_iterator p = _connections.begin(); p != _connections.end(); ++p)
@@ -739,7 +739,7 @@ IceInternal::IncomingConnectionFactory::message(BasicStream&, const ThreadPoolPt
 	    // Warn about other Ice local exceptions.
 	    if(_warn)
 	    {
-		Warning out(_instance->logger());
+		Warning out(_instance->initializationData().logger);
 		out << "connection exception:\n" << ex << '\n' << _acceptor->toString();
 	    }
 	    return;
@@ -821,13 +821,14 @@ IceInternal::IncomingConnectionFactory::toString() const
 
 IceInternal::IncomingConnectionFactory::IncomingConnectionFactory(const InstancePtr& instance,
 								  const EndpointIPtr& endpoint,
-								  const ObjectAdapterPtr& adapter) :
+								  const ObjectAdapterPtr& adapter,
+								  const string& adapterName) :
     EventHandler(instance),
     _endpoint(endpoint),
     _adapter(adapter),
     _registeredWithPool(false),
     _finishedCount(0),
-    _warn(_instance->properties()->getPropertyAsInt("Ice.Warn.Connections") > 0),
+    _warn(_instance->initializationData().properties->getPropertyAsInt("Ice.Warn.Connections") > 0),
     _state(StateHolding)
 {
     if(_instance->defaultsAndOverrides()->overrideTimeout)
@@ -870,7 +871,7 @@ IceInternal::IncomingConnectionFactory::IncomingConnectionFactory(const Instance
     }
     else
     {
-	_acceptor = _endpoint->acceptor(const_cast<EndpointIPtr&>(_endpoint));
+	_acceptor = _endpoint->acceptor(const_cast<EndpointIPtr&>(_endpoint), adapterName);
 	assert(_acceptor);
 	_acceptor->listen();
 
@@ -890,7 +891,7 @@ IceInternal::IncomingConnectionFactory::IncomingConnectionFactory(const Instance
 	    catch(const IceUtil::Exception& ex)
 	    {
 		{
-		    Error out(_instance->logger());
+		    Error out(_instance->initializationData().logger);
 		    out << "cannot create thread for incoming connection factory:\n" << ex;
 		}
 		
@@ -1056,7 +1057,7 @@ IceInternal::IncomingConnectionFactory::run()
 	    // Warn about other Ice local exceptions.
 	    if(_warn)
 	    {
-		Warning out(_instance->logger());
+		Warning out(_instance->initializationData().logger);
 		out << "connection exception:\n" << ex << '\n' << _acceptor->toString();
 	    }
 	}
@@ -1156,17 +1157,17 @@ IceInternal::IncomingConnectionFactory::ThreadPerIncomingConnectionFactory::run(
     }
     catch(const Exception& ex)
     {	
-	Error out(_factory->_instance->logger());
+	Error out(_factory->_instance->initializationData().logger);
 	out << "exception in thread per incoming connection factory:\n" << _factory->toString() << ex; 
     }
     catch(const std::exception& ex)
     {
-	Error out(_factory->_instance->logger());
+	Error out(_factory->_instance->initializationData().logger);
 	out << "std::exception in thread per incoming connection factory:\n" << _factory->toString() << ex.what();
     }
     catch(...)
     {
-	Error out(_factory->_instance->logger());
+	Error out(_factory->_instance->initializationData().logger);
 	out << "unknown exception in thread per incoming connection factory:\n" << _factory->toString();
     }
 

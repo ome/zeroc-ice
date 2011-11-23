@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,7 +24,7 @@ int
 main(int argc, char* argv[])
 {
     NestedClient app;
-    return app.main(argc, argv, "config");
+    return app.main(argc, argv, "config.client");
 }
 
 int
@@ -47,8 +47,8 @@ NestedClient::run(int argc, char* argv[])
     }
 
     Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Nested.Client");
-    NestedPrx self = NestedPrx::uncheckedCast(adapter->createProxy(Ice::stringToIdentity("nestedClient")));
-    adapter->add(new NestedI(self), Ice::stringToIdentity("nestedClient"));
+    NestedPrx self = NestedPrx::uncheckedCast(adapter->createProxy(communicator()->stringToIdentity("nestedClient")));
+    adapter->add(new NestedI(self), communicator()->stringToIdentity("nestedClient"));
     adapter->activate();
 
     cout << "Note: The maximum nesting level is sz * 2, with sz being\n"

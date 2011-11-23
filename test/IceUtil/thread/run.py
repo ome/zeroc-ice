@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -24,15 +24,15 @@ name = os.path.join("IceUtil", "thread")
 testdir = os.path.join(toplevel, "test", name)
 
 client = os.path.join(testdir, "client")
-clientOptions = ' ' + testdir;
+clientOptions = ' ' + testdir
 
 print "starting client...",
 clientPipe = os.popen(client + clientOptions + " 2>&1")
 print "ok"
 
-TestUtil.printOutputFromPipe(clientPipe);
+TestUtil.printOutputFromPipe(clientPipe)
     
-clientStatus = clientPipe.close()
+clientStatus = TestUtil.closePipe(clientPipe)
 
 if clientStatus:
     sys.exit(1)

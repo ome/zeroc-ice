@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,6 +16,7 @@
 #include <Glacier2/PermissionsVerifierF.h>
 #include <Glacier2/Router.h>
 #include <set>
+#include <IceUtil/DisableWarnings.h>
 
 namespace Glacier2
 {
@@ -26,27 +27,53 @@ typedef IceUtil::Handle<RouterI> RouterIPtr;
 class SessionRouterI;
 typedef IceUtil::Handle<SessionRouterI> SessionRouterIPtr;
 
+class Authorizer : public IceUtil::Shared
+{
+public:
+
+    virtual bool authorize(std::string&, const Ice::Context&) = 0;
+};
+typedef IceUtil::Handle<Authorizer> AuthorizerPtr;
+
+class SessionFactory : public IceUtil::Shared
+{
+public:
+
+    virtual SessionPrx create(const SessionControlPrx&, const Ice::Context&) = 0;
+};
+typedef IceUtil::Handle<SessionFactory> SessionFactoryPtr;
+
 class SessionRouterI : public Router, public IceUtil::Monitor<IceUtil::Mutex>
 {
 public:
 
-    SessionRouterI(const Ice::ObjectAdapterPtr&, const Ice::ObjectAdapterPtr&,
-		   const PermissionsVerifierPrx&, const SessionManagerPrx&);
+    SessionRouterI(const Ice::ObjectAdapterPtr&, const Ice::ObjectAdapterPtr&, const Ice::ObjectAdapterPtr&,
+		   const PermissionsVerifierPrx&, const SessionManagerPrx&,
+		   const SSLPermissionsVerifierPrx&, const SSLSessionManagerPrx&);
     virtual ~SessionRouterI();
     void destroy();
 
     virtual Ice::ObjectPrx getClientProxy(const Ice::Current&) const;
     virtual Ice::ObjectPrx getServerProxy(const Ice::Current&) const;
     virtual void addProxy(const Ice::ObjectPrx&, const Ice::Current&);
+    virtual Ice::ObjectProxySeq addProxies(const Ice::ObjectProxySeq&, const Ice::Current&);
+    virtual std::string getCategoryForClient(const Ice::Current&) const;
     virtual SessionPrx createSession(const std::string&, const std::string&, const Ice::Current&);
-    virtual void destroySession_async(const AMD_Router_destroySessionPtr&, const ::Ice::Current&);
+    virtual SessionPrx createSessionFromSecureConnection(const Ice::Current&);
+    virtual void destroySession(const ::Ice::Current&);
+    virtual Ice::Long getSessionTimeout(const ::Ice::Current&) const;
 
     RouterIPtr getRouter(const Ice::ConnectionPtr&, const Ice::Identity&) const;    
     RouterIPtr getRouter(const std::string&) const;    
-
+    
     void expireSessions();
 
+    void destroySession(const ::Ice::ConnectionPtr&);
+
 private:
+
+    SessionPrx createSessionInternal(const std::string&, bool, const AuthorizerPtr&, const SessionFactoryPtr&,
+				     const Ice::Current&);
 
     const Ice::PropertiesPtr _properties;
     const Ice::LoggerPtr _logger;
@@ -54,10 +81,11 @@ private:
     const int _rejectTraceLevel;
     const Ice::ObjectAdapterPtr _clientAdapter;
     const Ice::ObjectAdapterPtr _serverAdapter;
+    const Ice::ObjectAdapterPtr _adminAdapter;
     const PermissionsVerifierPrx _verifier;
-    /*const*/ SessionManagerPrx _sessionManager;
-    const int _sessionCloseCountDefault;
-    int _sessionCloseCount;
+    const SessionManagerPrx _sessionManager;
+    const SSLPermissionsVerifierPrx _sslVerifier;
+    const SSLSessionManagerPrx _sslSessionManager;
     const IceUtil::Time _sessionTimeout;
 
     class SessionThread : public IceUtil::Thread, public IceUtil::Monitor<IceUtil::Mutex>

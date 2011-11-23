@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -71,16 +71,5 @@ IceInternal::GCShared::__setNoDelete(bool b)
 {
     gcRecMutex._m->lock();
     _noDelete = b;
-    gcRecMutex._m->unlock();
-}
-
-void
-IceInternal::GCShared::__addObject(GCObjectMultiSet& c, GCShared* p)
-{
-    gcRecMutex._m->lock();
-    if(p)
-    {
-	c.insert(p);
-    }
     gcRecMutex._m->unlock();
 }

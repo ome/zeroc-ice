@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -50,6 +50,8 @@ ICE_API void decRef(::IceProxy::Ice::Router*);
 ICE_API void incRef(::IceProxy::Ice::Locator*);
 ICE_API void decRef(::IceProxy::Ice::Locator*);
 
+class LocalExceptionWrapper;
+
 }
 
 namespace Ice
@@ -80,9 +82,12 @@ public:
     bool operator==(const Object&) const;
     bool operator!=(const Object&) const;
     bool operator<(const Object&) const;
-    ::Ice::Int ice_hash() const;
 
-    ::Ice::CommunicatorPtr ice_communicator() const;
+    ICE_DEPRECATED_API ::Ice::Int ice_hash() const;
+    ::Ice::Int ice_getHash() const;
+
+    ICE_DEPRECATED_API ::Ice::CommunicatorPtr ice_communicator() const;
+    ::Ice::CommunicatorPtr ice_getCommunicator() const;
 
     ::std::string ice_toString() const;
 
@@ -94,32 +99,68 @@ public:
     ::std::vector< ::std::string> ice_ids(const ::Ice::Context&);
     ::std::string ice_id();
     ::std::string ice_id(const ::Ice::Context&);
+
+    // Returns true if ok, false if user exception.
     bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
-	            ::std::vector< ::Ice::Byte>&); // Returns true if ok, false if user exception.
+	            ::std::vector< ::Ice::Byte>&);
     bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
-	            ::std::vector< ::Ice::Byte>&,
-		    const ::Ice::Context&); // Returns true if ok, false if user exception.
-    void ice_invoke_async(const ::Ice::AMI_Object_ice_invokePtr&,
-			  const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&);
-    void ice_invoke_async(const ::Ice::AMI_Object_ice_invokePtr&,
-			  const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
-			  const ::Ice::Context&);
+	            ::std::vector< ::Ice::Byte>&, const ::Ice::Context&);
+    bool ice_invoke(const ::std::string&, ::Ice::OperationMode, 
+    		    const ::std::pair<const ::Ice::Byte*, const ::Ice::Byte*>&, ::std::vector< ::Ice::Byte>&);
+    bool ice_invoke(const ::std::string&, ::Ice::OperationMode, 
+    		    const ::std::pair<const ::Ice::Byte*, const ::Ice::Byte*>&, ::std::vector< ::Ice::Byte>&,
+		    const ::Ice::Context&);
+    void ice_invoke_async(const ::Ice::AMI_Object_ice_invokePtr&, const ::std::string&, ::Ice::OperationMode,
+    			  const ::std::vector< ::Ice::Byte>&);
+    void ice_invoke_async(const ::Ice::AMI_Object_ice_invokePtr&, const ::std::string&, ::Ice::OperationMode,
+    			  const ::std::vector< ::Ice::Byte>&, const ::Ice::Context&);
+    void ice_invoke_async(const ::Ice::AMI_Array_Object_ice_invokePtr&, const ::std::string&, ::Ice::OperationMode,
+			  const ::std::pair<const ::Ice::Byte*, const ::Ice::Byte*>&);
+    void ice_invoke_async(const ::Ice::AMI_Array_Object_ice_invokePtr&, const ::std::string&, ::Ice::OperationMode, 
+			  const ::std::pair<const ::Ice::Byte*, const ::Ice::Byte*>&, const ::Ice::Context&);
 
     ::Ice::Identity ice_getIdentity() const;
-    ::Ice::ObjectPrx ice_newIdentity(const ::Ice::Identity&) const;
-
-    ::std::string ice_getAdapterId() const;
-    ::Ice::ObjectPrx ice_newAdapterId(const ::std::string&) const;
-
-    ::Ice::EndpointSeq ice_getEndpoints() const;
-    ::Ice::ObjectPrx ice_newEndpoints(const ::Ice::EndpointSeq&) const;
+    ICE_DEPRECATED_API ::Ice::ObjectPrx ice_newIdentity(const ::Ice::Identity&) const;
+    ::Ice::ObjectPrx ice_identity(const ::Ice::Identity&) const;
 
     ::Ice::Context ice_getContext() const;
-    ::Ice::ObjectPrx ice_newContext(const ::Ice::Context&) const;
+    ICE_DEPRECATED_API ::Ice::ObjectPrx ice_newContext(const ::Ice::Context&) const;
+    ::Ice::ObjectPrx ice_context(const ::Ice::Context&) const;
     ::Ice::ObjectPrx ice_defaultContext() const;
 
     const ::std::string& ice_getFacet() const;
-    ::Ice::ObjectPrx ice_newFacet(const ::std::string&) const;
+    ICE_DEPRECATED_API ::Ice::ObjectPrx ice_newFacet(const ::std::string&) const;
+    ::Ice::ObjectPrx ice_facet(const ::std::string&) const;
+
+    ::std::string ice_getAdapterId() const;
+    ICE_DEPRECATED_API ::Ice::ObjectPrx ice_newAdapterId(const ::std::string&) const;
+    ::Ice::ObjectPrx ice_adapterId(const ::std::string&) const;
+
+    ::Ice::EndpointSeq ice_getEndpoints() const;
+    ICE_DEPRECATED_API ::Ice::ObjectPrx ice_newEndpoints(const ::Ice::EndpointSeq&) const;
+    ::Ice::ObjectPrx ice_endpoints(const ::Ice::EndpointSeq&) const;
+
+    ::Ice::Int ice_getLocatorCacheTimeout() const;
+    ::Ice::ObjectPrx ice_locatorCacheTimeout(::Ice::Int) const;
+
+    bool ice_isConnectionCached() const;
+    ::Ice::ObjectPrx ice_connectionCached(bool) const;
+
+    ::Ice::EndpointSelectionType ice_getEndpointSelection() const;
+    ::Ice::ObjectPrx ice_endpointSelection(::Ice::EndpointSelectionType) const;
+
+    bool ice_isSecure() const;
+    ::Ice::ObjectPrx ice_secure(bool) const;
+
+    ::Ice::RouterPrx ice_getRouter() const;
+    ::Ice::ObjectPrx ice_router(const ::Ice::RouterPrx&) const;
+
+    ::Ice::LocatorPrx ice_getLocator() const;
+    ::Ice::ObjectPrx ice_locator(const ::Ice::LocatorPrx&) const;
+
+    bool ice_isCollocationOptimized() const;
+    ICE_DEPRECATED_API ::Ice::ObjectPrx ice_collocationOptimization(bool) const;
+    ::Ice::ObjectPrx ice_collocationOptimized(bool) const;
 
     ::Ice::ObjectPrx ice_twoway() const;
     bool ice_isTwoway() const;
@@ -132,21 +173,20 @@ public:
     ::Ice::ObjectPrx ice_batchDatagram() const;
     bool ice_isBatchDatagram() const;
 
-    ::Ice::ObjectPrx ice_secure(bool) const;
     ::Ice::ObjectPrx ice_compress(bool) const;
     ::Ice::ObjectPrx ice_timeout(int) const;
-    ::Ice::ObjectPrx ice_router(const ::Ice::RouterPrx&) const;
-    ::Ice::ObjectPrx ice_locator(const ::Ice::LocatorPrx&) const;
-    ::Ice::ObjectPrx ice_collocationOptimization(bool) const;
     ::Ice::ObjectPrx ice_connectionId(const ::std::string&) const;
 
-    ::Ice::ConnectionPtr ice_connection();
+    ICE_DEPRECATED_API ::Ice::ConnectionPtr ice_connection();
+    ::Ice::ConnectionPtr ice_getConnection();
 
     ::IceInternal::ReferencePtr __reference() const;
     void __copyFrom(const ::Ice::ObjectPrx&);
     void __handleException(const ::Ice::LocalException&, int&);
-    void __rethrowException(const ::Ice::LocalException&);
+    void __handleExceptionWrapper(const ::IceInternal::LocalExceptionWrapper&);
+    void __handleExceptionWrapperRelaxed(const ::IceInternal::LocalExceptionWrapper&, int&);
     void __checkTwowayOnly(const char*) const;
+    void __checkTwowayOnly(const ::std::string&) const;
 
     ::IceInternal::Handle< ::IceDelegate::Ice::Object> __getDelegate();
 
@@ -181,10 +221,11 @@ public:
     virtual void ice_ping(const ::Ice::Context&) = 0;
     virtual ::std::vector< ::std::string> ice_ids(const ::Ice::Context&) = 0;
     virtual ::std::string ice_id(const ::Ice::Context&) = 0;
-    virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
+    virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode,
+    			    const ::std::pair<const ::Ice::Byte*, const ::Ice::Byte*>&,
 			    ::std::vector< ::Ice::Byte>&, const ::Ice::Context&) = 0;
 
-    virtual ::Ice::ConnectionPtr ice_connection() = 0;
+    virtual ::Ice::ConnectionIPtr __getConnection(bool&) const = 0;
 };
 
 } }
@@ -202,10 +243,11 @@ public:
     virtual void ice_ping(const ::Ice::Context&);
     virtual ::std::vector< ::std::string> ice_ids(const ::Ice::Context&);
     virtual ::std::string ice_id(const ::Ice::Context&);
-    virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
+    virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode, 
+    			    const ::std::pair<const ::Ice::Byte*, const ::Ice::Byte*>&,
 			    ::std::vector< ::Ice::Byte>&, const ::Ice::Context&);
 
-    virtual ::Ice::ConnectionPtr ice_connection();
+    virtual ::Ice::ConnectionIPtr __getConnection(bool&) const;
 
     void __copyFrom(const ::IceInternal::Handle< ::IceDelegateM::Ice::Object>&);
 
@@ -234,10 +276,11 @@ public:
     virtual void ice_ping(const ::Ice::Context&);
     virtual ::std::vector< ::std::string> ice_ids(const ::Ice::Context&);
     virtual ::std::string ice_id(const ::Ice::Context&);
-    virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
+    virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode,
+    			    const ::std::pair<const ::Ice::Byte*, const ::Ice::Byte*>&,
 			    ::std::vector< ::Ice::Byte>&, const ::Ice::Context&);
 
-    virtual ::Ice::ConnectionPtr ice_connection();
+    virtual ::Ice::ConnectionIPtr __getConnection(bool&) const;
 
     void __copyFrom(const ::IceInternal::Handle< ::IceDelegateD::Ice::Object>&);
 
@@ -397,7 +440,7 @@ uncheckedCastImpl< ::Ice::ObjectPrx>(const ::Ice::ObjectPrx& b, const std::strin
     ::Ice::ObjectPrx d = 0;
     if(b)
     {
-	d = b->ice_newFacet(f);
+	d = b->ice_facet(f);
     }
     return d;
 }
@@ -442,7 +485,7 @@ uncheckedCastImpl(const ::Ice::ObjectPrx& b, const std::string& f)
     {
 	typedef typename P::element_type T;
 
-	::Ice::ObjectPrx bb = b->ice_newFacet(f);
+	::Ice::ObjectPrx bb = b->ice_facet(f);
 	d = new T;
 	d->__copyFrom(bb);
     }

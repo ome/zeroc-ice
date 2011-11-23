@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,7 +11,6 @@
 #define ICE_GRID_OBJECTCACHE_H
 
 #include <IceUtil/Mutex.h>
-#include <IceUtil/Shared.h>
 #include <Ice/CommunicatorF.h>
 #include <IceGrid/Cache.h>
 #include <IceGrid/Internal.h>
@@ -21,30 +20,23 @@ namespace IceGrid
 
 class ObjectCache;
 
-class ServerEntry;
-typedef IceUtil::Handle<ServerEntry> ServerEntryPtr;
-
-class ObjectEntry;
-typedef IceUtil::Handle<ObjectEntry> ObjectEntryPtr;
-
 class ObjectEntry : public IceUtil::Shared
 {
 public:
     
-    ObjectEntry(Cache<Ice::Identity, ObjectEntry>&, const Ice::Identity&);
-
-    void set(const std::string&, const ObjectInfo&);
+    ObjectEntry(ObjectCache&, const ObjectInfo&, const std::string&);
     Ice::ObjectPrx getProxy() const;
     std::string getType() const;
     std::string getApplication() const;
     const ObjectInfo& getObjectInfo() const;
 
     bool canRemove();
-    
+
 private:
 
-    std::string _application;
-    ObjectInfo _info;
+    ObjectCache& _cache;
+    const ObjectInfo _info;
+    const std::string _application;
 };
 typedef IceUtil::Handle<ObjectEntry> ObjectEntryPtr;
 
@@ -54,17 +46,38 @@ public:
 
     ObjectCache(const Ice::CommunicatorPtr&);
 
-    void add(const std::string&, const std::string&, const std::string&, const ObjectDescriptor&);
+    void add(const ObjectInfo&, const std::string&);
     ObjectEntryPtr get(const Ice::Identity&) const;
     ObjectEntryPtr remove(const Ice::Identity&);
 
-    Ice::ObjectProxySeq getObjectsByType(const std::string&);
+    Ice::ObjectProxySeq getObjectsByType(const std::string&); 
     ObjectInfoSeq getAll(const std::string&);
+    ObjectInfoSeq getAllByType(const std::string&);
+
+    const Ice::CommunicatorPtr& getCommunicator() const { return _communicator; }
 
 private:
     
+    class TypeEntry
+    {
+    public:
+
+	TypeEntry();
+
+	void add(const ObjectEntryPtr&);
+	bool remove(const ObjectEntryPtr&);
+	
+	const std::vector<ObjectEntryPtr>& getObjects() const { return _objects; }
+
+    private:
+	
+	std::vector<ObjectEntryPtr> _objects;
+    };
+
     const Ice::CommunicatorPtr _communicator;
-    std::map<std::string, std::set<Ice::Identity> > _types;
+    std::map<std::string, TypeEntry> _types;
+
+    static std::pointer_to_unary_function<int, int> _rand;
 };
 
 };

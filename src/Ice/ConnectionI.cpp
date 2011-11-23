@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,6 @@
 #include <Ice/OutgoingAsync.h>
 #include <Ice/Incoming.h>
 #include <Ice/LocalException.h>
-#include <Ice/Protocol.h>
 #include <Ice/ReferenceFactory.h> // For createProxy().
 #include <Ice/ProxyFactory.h> // For createProxy().
 #include <bzlib.h>
@@ -112,7 +111,10 @@ Ice::ConnectionI::validate()
 		}
 
 		BasicStream os(_instance.get());
-		os.writeBlob(magic, sizeof(magic));
+		os.write(magic[0]);
+		os.write(magic[1]);
+		os.write(magic[2]);
+		os.write(magic[3]);
 		os.write(protocolMajor);
 		os.write(protocolMinor);
 		os.write(encodingMajor);
@@ -148,12 +150,15 @@ Ice::ConnectionI::validate()
 		}
 		assert(is.i == is.b.end());
 		is.i = is.b.begin();
-		ByteSeq m(sizeof(magic), 0);
-		is.readBlob(m, static_cast<Int>(sizeof(magic)));
-		if(!equal(m.begin(), m.end(), magic))
+		Byte m[4];
+		is.read(m[0]);
+		is.read(m[1]);
+		is.read(m[2]);
+		is.read(m[3]);
+	        if(m[0] != magic[0] || m[1] != magic[1] || m[2] != magic[2] || m[3] != magic[3])
 		{
 		    BadMagicException ex(__FILE__, __LINE__);
-		    ex.badMagic = m;
+		    ex.badMagic = Ice::ByteSeq(&m[0], &m[0] + sizeof(magic));
 		    throw ex;
 		}
 		Byte pMajor;
@@ -227,6 +232,12 @@ void
 Ice::ConnectionI::activate()
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+
+    while(_state == StateNotValidated)
+    {
+	wait();
+    }
+
     setState(StateActive);
 }
 
@@ -234,6 +245,12 @@ void
 Ice::ConnectionI::hold()
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+
+    while(_state == StateNotValidated)
+    {
+	wait();
+    }
+
     setState(StateHolding);
 }
 
@@ -317,7 +334,7 @@ Ice::ConnectionI::isFinished() const
 	}
 
 	if(_transceiver || _dispatchCount != 0 ||
-	   (_threadPerConnection && _threadPerConnection->getThreadControl().isAlive()))
+	   (_threadPerConnection && _threadPerConnection->isAlive()))
 	{
 	    return false;
 	}
@@ -334,6 +351,18 @@ Ice::ConnectionI::isFinished() const
     }
 
     return true;
+}
+
+void
+Ice::ConnectionI::throwException() const
+{
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+
+    if(_exception.get())
+    {
+	assert(_state >= StateClosing);
+	_exception->ice_throw();
+    }
 }
 
 void
@@ -464,15 +493,6 @@ Ice::ConnectionI::monitor()
     }
 }
 
-//
-// TODO: Should not be a member function of Connection.
-//
-void
-Ice::ConnectionI::prepareRequest(BasicStream* os)
-{
-    os->writeBlob(_requestHdr);
-}
-
 void
 Ice::ConnectionI::sendRequest(BasicStream* os, Outgoing* out, bool compress)
 {
@@ -485,7 +505,12 @@ Ice::ConnectionI::sendRequest(BasicStream* os, Outgoing* out, bool compress)
 	
 	if(_exception.get())
 	{
-	    _exception->ice_throw();
+	    //
+	    // If the connection is closed before we even have a chance
+	    // to send our request, we always try to send the request
+	    // again.
+	    //
+	    throw LocalExceptionWrapper(*_exception.get(), true);
 	}
 
 	assert(_state > StateNotValidated);
@@ -645,7 +670,12 @@ Ice::ConnectionI::sendAsyncRequest(BasicStream* os, const OutgoingAsyncPtr& out,
 
 	if(_exception.get())
 	{
-	    _exception->ice_throw();
+	    //
+	    // If the exception is closed before we even have a chance
+	    // to send our request, we always try to send the request
+	    // again.
+	    //
+	    throw LocalExceptionWrapper(*_exception.get(), true);
 	}
 
 	assert(_state > StateNotValidated);
@@ -812,7 +842,7 @@ Ice::ConnectionI::prepareBatchRequest(BasicStream* os)
     {
 	try
 	{
-	    _batchStream.writeBlob(_requestBatchHdr);
+	    _batchStream.writeBlob(requestBatchHdr, sizeof(requestBatchHdr));
 	}
 	catch(const LocalException& ex)
 	{
@@ -1169,6 +1199,10 @@ Ice::ConnectionI::setAdapter(const ObjectAdapterPtr& adapter)
     if(_adapter)
     {
 	_servantManager = dynamic_cast<ObjectAdapterI*>(_adapter.get())->getServantManager();
+	if(!_servantManager)
+	{
+	    _adapter = 0;
+	}
     }
     else
     {
@@ -1197,8 +1231,8 @@ Ice::ConnectionI::createProxy(const Identity& ident) const
     //
     vector<ConnectionIPtr> connections;
     connections.push_back(const_cast<ConnectionI*>(this));
-    ReferencePtr ref = _instance->referenceFactory()->create(ident, _instance->getDefaultContext(), "",
-							     Reference::ModeTwoway, connections);
+    ReferencePtr ref = _instance->referenceFactory()->create(ident, _instance->initializationData().defaultContext,
+    							     "", Reference::ModeTwoway, connections);
     return _instance->proxyFactory()->referenceToProxy(ref);
 }
 
@@ -1373,6 +1407,18 @@ Ice::ConnectionI::toString() const
     return _desc; // No mutex lock, _desc is immutable.
 }
 
+//
+// Only used by the SSL plug-in.
+//
+// The external party has to synchronize the connection, since the
+// connection is the object that protects the transceiver.
+//
+IceInternal::TransceiverPtr
+Ice::ConnectionI::getTransceiver() const
+{
+    return _transceiver;
+}
+
 Ice::ConnectionI::ConnectionI(const InstancePtr& instance,
 			      const TransceiverPtr& transceiver,
 			      const EndpointIPtr& endpoint,
@@ -1383,15 +1429,12 @@ Ice::ConnectionI::ConnectionI(const InstancePtr& instance,
     _type(transceiver->type()),
     _endpoint(endpoint),
     _adapter(adapter),
-    _logger(_instance->logger()), // Cached for better performance.
+    _logger(_instance->initializationData().logger), // Cached for better performance.
     _traceLevels(_instance->traceLevels()), // Cached for better performance.
     _registeredWithPool(false),
     _finishedCount(0),
-    _warn(_instance->properties()->getPropertyAsInt("Ice.Warn.Connections") > 0),
+    _warn(_instance->initializationData().properties->getPropertyAsInt("Ice.Warn.Connections") > 0),
     _acmTimeout(0),
-    _requestHdr(headerSize + sizeof(Int), 0),
-    _requestBatchHdr(headerSize + sizeof(Int), 0),
-    _replyHdr(headerSize, 0),
     _compressionLevel(1),
     _nextRequestId(1),
     _requestsHint(_requests.end()),
@@ -1421,44 +1464,9 @@ Ice::ConnectionI::ConnectionI(const InstancePtr& instance,
 	}
     }
 
-    vector<Byte>& requestHdr = const_cast<vector<Byte>&>(_requestHdr);
-    requestHdr[0] = magic[0];
-    requestHdr[1] = magic[1];
-    requestHdr[2] = magic[2];
-    requestHdr[3] = magic[3];
-    requestHdr[4] = protocolMajor;
-    requestHdr[5] = protocolMinor;
-    requestHdr[6] = encodingMajor;
-    requestHdr[7] = encodingMinor;
-    requestHdr[8] = requestMsg;
-    requestHdr[9] = 0;
-
-    vector<Byte>& requestBatchHdr = const_cast<vector<Byte>&>(_requestBatchHdr);
-    requestBatchHdr[0] = magic[0];
-    requestBatchHdr[1] = magic[1];
-    requestBatchHdr[2] = magic[2];
-    requestBatchHdr[3] = magic[3];
-    requestBatchHdr[4] = protocolMajor;
-    requestBatchHdr[5] = protocolMinor;
-    requestBatchHdr[6] = encodingMajor;
-    requestBatchHdr[7] = encodingMinor;
-    requestBatchHdr[8] = requestBatchMsg;
-    requestBatchHdr[9] = 0;
-
-    vector<Byte>& replyHdr = const_cast<vector<Byte>&>(_replyHdr);
-    replyHdr[0] = magic[0];
-    replyHdr[1] = magic[1];
-    replyHdr[2] = magic[2];
-    replyHdr[3] = magic[3];
-    replyHdr[4] = protocolMajor;
-    replyHdr[5] = protocolMinor;
-    replyHdr[6] = encodingMajor;
-    replyHdr[7] = encodingMinor;
-    replyHdr[8] = replyMsg;
-    replyHdr[9] = 0;
-
     int& compressionLevel = const_cast<int&>(_compressionLevel);
-    compressionLevel = _instance->properties()->getPropertyAsIntWithDefault("Ice.Compression.Level", 1);
+    compressionLevel = 
+        _instance->initializationData().properties->getPropertyAsIntWithDefault("Ice.Compression.Level", 1);
     if(compressionLevel < 1)
     {
 	compressionLevel = 1;
@@ -1793,7 +1801,10 @@ Ice::ConnectionI::initiateShutdown() const
 	// Before we shut down, we send a close connection message.
 	//
 	BasicStream os(_instance.get());
-	os.writeBlob(magic, sizeof(magic));
+	os.write(magic[0]);
+	os.write(magic[1]);
+	os.write(magic[2]);
+	os.write(magic[3]);
 	os.write(protocolMajor);
 	os.write(protocolMinor);
 	os.write(encodingMajor);
@@ -2194,7 +2205,7 @@ Ice::ConnectionI::parseMessage(BasicStream& stream, Int& invokeNum, Int& request
 	{
 	    if(_warn)
 	    {
-	        Warning out(_instance->logger());
+	        Warning out(_logger);
 	        out << "datagram connection exception:\n" << ex << '\n' << _desc;
 	    }
 	}
@@ -2222,7 +2233,7 @@ Ice::ConnectionI::invokeAll(BasicStream& stream, Int invokeNum, Int requestId, B
 	    // Prepare the invocation.
 	    //
 	    bool response = !_endpoint->datagram() && requestId != 0;
-	    Incoming in(_instance.get(), this, adapter, response, compress);
+	    Incoming in(_instance.get(), this, adapter, response, compress, requestId);
 	    BasicStream* is = in.is();
 	    stream.swap(*is);
 	    BasicStream* os = in.os();
@@ -2233,7 +2244,7 @@ Ice::ConnectionI::invokeAll(BasicStream& stream, Int invokeNum, Int requestId, B
 	    if(response)
 	    {
 		assert(invokeNum == 1); // No further invocations if a response is expected.
-		os->writeBlob(_replyHdr);
+		os->writeBlob(replyHdr, sizeof(replyHdr));
 		
 		//
 		// Add the request ID.
@@ -2337,7 +2348,7 @@ Ice::ConnectionI::run()
 	activate();
     }
 
-    const bool warnUdp = _instance->properties()->getPropertyAsInt("Ice.Warn.Datagrams") > 0;
+    const bool warnUdp = _instance->initializationData().properties->getPropertyAsInt("Ice.Warn.Datagrams") > 0;
 
     bool closed = false;
 
@@ -2357,47 +2368,43 @@ Ice::ConnectionI::run()
 	    _transceiver->read(stream, -1);
 	
 	    ptrdiff_t pos = stream.i - stream.b.begin();
-	    assert(pos >= headerSize);
+	    if(pos < headerSize)
+	    {
+		//
+		// This situation is possible for small UDP packets.
+		//
+		throw IllegalMessageSizeException(__FILE__, __LINE__);
+	    }
 	    stream.i = stream.b.begin();
-	    ByteSeq m(sizeof(magic), 0);
-	    stream.readBlob(m, static_cast<Int>(sizeof(magic)));
-	    if(!equal(m.begin(), m.end(), magic))
+	    const Byte* header;
+	    stream.readBlob(header, headerSize);
+	    if(header[0] != magic[0] || header[1] != magic[1] || header[2] != magic[2] || header[3] != magic[3])
 	    {
 		BadMagicException ex(__FILE__, __LINE__);
-		ex.badMagic = m;
+		ex.badMagic = Ice::ByteSeq(&header[0], &header[0] + sizeof(magic));
 		throw ex;
 	    }
-	    Byte pMajor;
-	    Byte pMinor;
-	    stream.read(pMajor);
-	    stream.read(pMinor);
-	    if(pMajor != protocolMajor)
+	    if(header[4] != protocolMajor)
 	    {
 		UnsupportedProtocolException ex(__FILE__, __LINE__);
-		ex.badMajor = static_cast<unsigned char>(pMajor);
-		ex.badMinor = static_cast<unsigned char>(pMinor);
+		ex.badMajor = static_cast<unsigned char>(header[4]);
+		ex.badMinor = static_cast<unsigned char>(header[5]);
 		ex.major = static_cast<unsigned char>(protocolMajor);
 		ex.minor = static_cast<unsigned char>(protocolMinor);
 		throw ex;
 	    }
-	    Byte eMajor;
-	    Byte eMinor;
-	    stream.read(eMajor);
-	    stream.read(eMinor);
-	    if(eMajor != encodingMajor)
+	    if(header[6] != encodingMajor)
 	    {
 		UnsupportedEncodingException ex(__FILE__, __LINE__);
-		ex.badMajor = static_cast<unsigned char>(eMajor);
-		ex.badMinor = static_cast<unsigned char>(eMinor);
+		ex.badMajor = static_cast<unsigned char>(header[6]);
+		ex.badMinor = static_cast<unsigned char>(header[7]);
 		ex.major = static_cast<unsigned char>(encodingMajor);
 		ex.minor = static_cast<unsigned char>(encodingMinor);
 		throw ex;
 	    }
-	    Byte messageType;
-	    stream.read(messageType);
-	    Byte compress;
-	    stream.read(compress);
+
 	    Int size;
+	    stream.i -= sizeof(Int);
 	    stream.read(size);
 	    if(size < headerSize)
 	    {
@@ -2419,7 +2426,7 @@ Ice::ConnectionI::run()
 		{
 		    if(warnUdp)
 		    {
-			Warning out(_instance->logger());
+			Warning out(_logger);
 			out << "DatagramLimitException: maximum size of " << pos << " exceeded";
 		    }
 		    throw DatagramLimitException(__FILE__, __LINE__);
@@ -2445,7 +2452,7 @@ Ice::ConnectionI::run()
 	    {
 	        if(_warn)
 	        {
-	            Warning out(_instance->logger());
+	            Warning out(_logger);
 	            out << "datagram connection exception:\n" << ex << '\n' << _desc;
 	        }
 		continue;
@@ -2565,24 +2572,34 @@ Ice::ConnectionI::ThreadPerConnection::ThreadPerConnection(const ConnectionIPtr&
 void
 Ice::ConnectionI::ThreadPerConnection::run()
 {
+    if(_connection->_instance->initializationData().threadHook)
+    {
+        _connection->_instance->initializationData().threadHook->start();
+    }
+
     try
     {
 	_connection->run();
     }
     catch(const Exception& ex)
     {	
-	Error out(_connection->_instance->logger());
+	Error out(_connection->_logger);
 	out << "exception in thread per connection:\n" << _connection->toString() << ex; 
     }
     catch(const std::exception& ex)
     {
-	Error out(_connection->_instance->logger());
+	Error out(_connection->_logger);
 	out << "std::exception in thread per connection:\n" << _connection->toString() << ex.what();
     }
     catch(...)
     {
-	Error out(_connection->_instance->logger());
+	Error out(_connection->_logger);
 	out << "unknown exception in thread per connection:\n" << _connection->toString();
+    }
+
+    if(_connection->_instance->initializationData().threadHook)
+    {
+        _connection->_instance->initializationData().threadHook->stop();
     }
 
     _connection = 0; // Resolve cyclic dependency.

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -72,6 +72,9 @@ public:
     Ice::Int
     trace() const;
 
+    Ice::Int
+    txTrace() const;
+
     bool
     deadlockWarning() const;
 
@@ -83,6 +86,7 @@ private:
     TransactionIPtr _transaction;
     std::list<MapHelperI*> _mapList;
     Ice::Int _trace;
+    Ice::Int _txTrace;
     bool _deadlockWarning;
 };  
 
@@ -127,6 +131,12 @@ inline Ice::Int
 ConnectionI::trace() const
 {
     return _trace;
+}
+
+inline Ice::Int
+ConnectionI::txTrace() const
+{
+    return _txTrace;
 }
 
 inline bool

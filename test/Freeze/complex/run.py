@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -37,7 +37,7 @@ print "ok"
 
 TestUtil.printOutputFromPipe(populatePipe)
 
-populateStatus = populatePipe.close()
+populateStatus = TestUtil.closePipe(populatePipe)
 
 if populateStatus:
     sys.exit(1)
@@ -48,7 +48,7 @@ print "ok"
 
 TestUtil.printOutputFromPipe(clientPipe)
 
-clientStatus = clientPipe.close()
+clientStatus = TestUtil.closePipe(clientPipe)
 
 if clientStatus:
     sys.exit(1)

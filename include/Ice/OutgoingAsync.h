@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -56,11 +56,9 @@ private:
 
     void cleanup();
 
-    ReferencePtr _reference;
-    ::Ice::ConnectionIPtr _connection;
+    ::Ice::ObjectPrx _proxy;
     int _cnt;
     Ice::OperationMode _mode;
-    bool _compress;
 
     IceUtil::Monitor<IceUtil::RecMutex> _monitor;
 };
@@ -78,7 +76,22 @@ public:
     virtual void ice_exception(const Ice::Exception&) = 0;
 
     void __invoke(const Ice::ObjectPrx&, const std::string& operation, OperationMode,
-		  const std::vector<Byte>&, const Context&);
+		  const std::vector<Ice::Byte>&, const Context&);
+
+protected:
+
+    virtual void __response(bool);
+};
+
+class ICE_API AMI_Array_Object_ice_invoke : public IceInternal::OutgoingAsync
+{
+public:
+
+    virtual void ice_response(bool, const std::pair<const Byte*, const Byte*>&) = 0;
+    virtual void ice_exception(const Ice::Exception&) = 0;
+
+    void __invoke(const Ice::ObjectPrx&, const std::string& operation, OperationMode,
+		  const std::pair<const Byte*, const Byte*>&, const Context&);
 
 protected:
 

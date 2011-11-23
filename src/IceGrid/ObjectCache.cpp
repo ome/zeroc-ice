@@ -1,59 +1,100 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <IceUtil/Random.h>
 #include <Ice/Communicator.h>
-#include <Ice/IdentityUtil.h>
 #include <Ice/LoggerUtil.h>
-
+#include <Ice/LocalException.h>
 #include <IceGrid/ObjectCache.h>
 #include <IceGrid/NodeSessionI.h>
 #include <IceGrid/ServerCache.h>
+#include <IceGrid/SessionI.h>
 
 using namespace std;
 using namespace IceGrid;
 
-ObjectCache::ObjectCache(const Ice::CommunicatorPtr& communicator) : 
-    _communicator(communicator)
+pointer_to_unary_function<int, int> ObjectCache::_rand(IceUtil::random);
+
+namespace IceGrid
+{
+
+struct ObjectEntryCI : binary_function<ObjectEntryPtr&, ObjectEntryPtr&, bool>
+{
+
+    bool
+    operator()(const ObjectEntryPtr& lhs, const ObjectEntryPtr& rhs)
+    {
+	return ::Ice::proxyIdentityLess(lhs->getProxy(), rhs->getProxy());
+    }
+};
+
+struct ObjectLoadCI : binary_function<pair<Ice::ObjectPrx, float>&, pair<Ice::ObjectPrx, float>&, bool>
+{
+    bool operator()(const pair<Ice::ObjectPrx, float>& lhs, const pair<Ice::ObjectPrx, float>& rhs)
+    {
+	return lhs.second < rhs.second;
+    }
+};
+
+};
+
+ObjectCache::TypeEntry::TypeEntry()
 {
 }
 
 void
-ObjectCache::add(const string& app, const string& adapterId, const string& endpoints, const ObjectDescriptor& desc)
+ObjectCache::TypeEntry::add(const ObjectEntryPtr& obj)
 {
+    //
+    // No mutex protection here, this is called with the cache locked.
+    //
+    _objects.insert(lower_bound(_objects.begin(), _objects.end(), obj, ObjectEntryCI()), obj);
+}
+
+bool
+ObjectCache::TypeEntry::remove(const ObjectEntryPtr& obj)
+{
+    //
+    // No mutex protection here, this is called with the cache locked.
+    //
+    vector<ObjectEntryPtr>::iterator q = lower_bound(_objects.begin(), _objects.end(), obj, ObjectEntryCI());
+    assert(q->get() == obj.get());
+    _objects.erase(q);
+    return _objects.empty();
+}
+
+ObjectCache::ObjectCache(const Ice::CommunicatorPtr& communicator) : _communicator(communicator)
+{
+}
+
+void
+ObjectCache::add(const ObjectInfo& info, const string& application)
+{
+    const Ice::Identity& id = info.proxy->ice_getIdentity();
+
     Lock sync(*this);
-    assert(!getImpl(desc.id));
+    assert(!getImpl(id));
 
-    ObjectEntryPtr entry = getImpl(desc.id, true);
+    ObjectEntryPtr entry = new ObjectEntry(*this, info, application);
+    addImpl(id, entry);
 
-    ObjectInfo info;
-    info.type = desc.type;
-    if(adapterId.empty())
-    {
-	info.proxy = _communicator->stringToProxy(Ice::identityToString(desc.id) + ":" + endpoints);
-    }
-    else
-    {
-	info.proxy = _communicator->stringToProxy(Ice::identityToString(desc.id) + "@" + adapterId);
-    }
-    entry->set(app, info);
-
-    map<string, set<Ice::Identity> >::iterator p = _types.find(entry->getType());
+    map<string, TypeEntry>::iterator p = _types.find(entry->getType());
     if(p == _types.end())
     {
-	p = _types.insert(p, map<string, set<Ice::Identity> >::value_type(entry->getType(), set<Ice::Identity>()));
+	p = _types.insert(p, map<string, TypeEntry>::value_type(entry->getType(), TypeEntry()));
     }
-    p->second.insert(desc.id);
+    p->second.add(entry);
 
     if(_traceLevels && _traceLevels->object > 0)
     {
 	Ice::Trace out(_traceLevels->logger, _traceLevels->objectCat);
-	out << "added object `" << Ice::identityToString(desc.id) << "'";	
+	out << "added object `" << _communicator->identityToString(id) << "'";	
     }    
 }
 
@@ -61,8 +102,7 @@ ObjectEntryPtr
 ObjectCache::get(const Ice::Identity& id) const
 {
     Lock sync(*this);
-    ObjectCache& self = const_cast<ObjectCache&>(*this);
-    ObjectEntryPtr entry = self.getImpl(id);
+    ObjectEntryPtr entry = getImpl(id);
     if(!entry)
     {
 	throw ObjectNotRegisteredException(id);
@@ -77,18 +117,17 @@ ObjectCache::remove(const Ice::Identity& id)
     ObjectEntryPtr entry = removeImpl(id);
     assert(entry);
 
-    map<string, set<Ice::Identity> >::iterator p = _types.find(entry->getType());
+    map<string, TypeEntry>::iterator p = _types.find(entry->getType());
     assert(p != _types.end());
-    p->second.erase(id);
-    if(p->second.empty())
-    {
+    if(p->second.remove(entry))
+    {	
 	_types.erase(p);
     }
 
     if(_traceLevels && _traceLevels->object > 0)
     {
 	Ice::Trace out(_traceLevels->logger, _traceLevels->objectCat);
-	out << "removed object `" << Ice::identityToString(id) << "'";	
+	out << "removed object `" << _communicator->identityToString(id) << "'";	
     }    
 
     return entry;
@@ -99,14 +138,15 @@ ObjectCache::getObjectsByType(const string& type)
 {
     Lock sync(*this);
     Ice::ObjectProxySeq proxies;
-    map<string, set<Ice::Identity> >::const_iterator p = _types.find(type);
+    map<string, TypeEntry>::const_iterator p = _types.find(type);
     if(p == _types.end())
     {
 	return proxies;
     }
-    for(set<Ice::Identity>::const_iterator q = p->second.begin(); q != p->second.end(); ++q)
+    const vector<ObjectEntryPtr>& objects = p->second.getObjects();
+    for(vector<ObjectEntryPtr>::const_iterator q = objects.begin(); q != objects.end(); ++q)
     {
-	proxies.push_back(getImpl(*q)->getProxy());
+	proxies.push_back((*q)->getProxy());
     }
     return proxies;
 }
@@ -118,7 +158,7 @@ ObjectCache::getAll(const string& expression)
     ObjectInfoSeq infos;
     for(map<Ice::Identity, ObjectEntryPtr>::const_iterator p = _entries.begin(); p != _entries.end(); ++p)
     {
-	if(expression.empty() || IceUtil::match(Ice::identityToString(p->first), expression, true))
+	if(expression.empty() || IceUtil::match(_communicator->identityToString(p->first), expression, true))
 	{
 	    infos.push_back(p->second->getObjectInfo());
 	}
@@ -126,15 +166,30 @@ ObjectCache::getAll(const string& expression)
     return infos;
 }
 
-ObjectEntry::ObjectEntry(Cache<Ice::Identity, ObjectEntry>&, const Ice::Identity&)
+ObjectInfoSeq
+ObjectCache::getAllByType(const string& type)
 {
+    Lock sync(*this);
+    ObjectInfoSeq infos;
+    map<string, TypeEntry>::const_iterator p = _types.find(type);
+    if(p == _types.end())
+    {
+	return infos;
+    }
+
+    const vector<ObjectEntryPtr>& objects = p->second.getObjects();
+    for(vector<ObjectEntryPtr>::const_iterator q = objects.begin(); q != objects.end(); ++q)
+    {
+	infos.push_back((*q)->getObjectInfo());
+    }
+    return infos;
 }
 
-void
-ObjectEntry::set(const string& app, const ObjectInfo& info)
+ObjectEntry::ObjectEntry(ObjectCache& cache, const ObjectInfo& info, const string& application) :
+    _cache(cache),
+    _info(info),
+    _application(application)
 {
-    _application = app;
-    _info = info;
 }
 
 Ice::ObjectPrx
@@ -166,3 +221,4 @@ ObjectEntry::canRemove()
 {
     return true;
 }
+

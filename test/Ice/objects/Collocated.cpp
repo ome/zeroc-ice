@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,10 +16,10 @@ using namespace Test;
 int
 run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 {
-    communicator->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12345 -t 10000");
+    communicator->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000");
     Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("TestAdapter");
     InitialPtr initial = new InitialI(adapter);
-    adapter->add(initial, Ice::stringToIdentity("initial"));
+    adapter->add(initial, communicator->stringToIdentity("initial"));
     InitialPrx allTests(const Ice::CommunicatorPtr&, bool);
     allTests(communicator, true);
     // We must call shutdown even in the collocated case for cyclic dependency cleanup

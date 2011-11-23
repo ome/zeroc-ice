@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,6 +25,9 @@ void IceInternal::decRef(IncomingAsync* p) { p->__decRef(); }
 
 void IceInternal::incRef(AMD_Object_ice_invoke* p) { p->__incRef(); }
 void IceInternal::decRef(AMD_Object_ice_invoke* p) { p->__decRef(); }
+
+void IceInternal::incRef(AMD_Array_Object_ice_invoke* p) { p->__incRef(); }
+void IceInternal::decRef(AMD_Array_Object_ice_invoke* p) { p->__decRef(); }
 
 IceInternal::IncomingAsync::IncomingAsync(Incoming& in) :
     IncomingBase(in),
@@ -112,7 +115,8 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 		ex.operation = _current.operation;
 	    }
 	    
-	    if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 1)
+	    if(_os.instance()->initializationData().properties->
+	    		getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 1)
 	    {
 		__warning(ex);
 	    }
@@ -145,16 +149,14 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 		//
 		if(ex.facet.empty())
 		{
-		    _os.write(vector<string>());
+		    _os.write(static_cast<string*>(0), static_cast<string*>(0));
 		}
 		else
 		{
-		    vector<string> facetPath;
-		    facetPath.push_back(ex.facet);
-		    _os.write(facetPath);
+		    _os.write(&ex.facet, &ex.facet + 1);
 		}
 		
-		_os.write(ex.operation);
+		_os.write(ex.operation, false);
 
 		_connection->sendResponse(&_os, _compress);
 	    }
@@ -165,7 +167,8 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 	}
 	catch(const UnknownLocalException& ex)
 	{
-	    if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	    if(_os.instance()->initializationData().properties->
+	    		getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	    {
 		__warning(ex);
 	    }
@@ -175,7 +178,7 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 		_os.endWriteEncaps();
 		_os.b.resize(headerSize + 4); // Dispatch status position.
 		_os.write(static_cast<Byte>(DispatchUnknownLocalException));
-		_os.write(ex.unknown);
+		_os.write(ex.unknown, false);
 		_connection->sendResponse(&_os, _compress);
 	    }
 	    else
@@ -185,7 +188,8 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 	}
 	catch(const UnknownUserException& ex)
 	{
-	    if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	    if(_os.instance()->initializationData().properties->
+	    		getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	    {
 		__warning(ex);
 	    }
@@ -195,7 +199,7 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 		_os.endWriteEncaps();
 		_os.b.resize(headerSize + 4); // Dispatch status position.
 		_os.write(static_cast<Byte>(DispatchUnknownUserException));
-		_os.write(ex.unknown);
+		_os.write(ex.unknown, false);
 		_connection->sendResponse(&_os, _compress);
 	    }
 	    else
@@ -205,7 +209,8 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 	}
 	catch(const UnknownException& ex)
 	{
-	    if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	    if(_os.instance()->initializationData().properties->
+	    		getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	    {
 		__warning(ex);
 	    }
@@ -215,7 +220,7 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 		_os.endWriteEncaps();
 		_os.b.resize(headerSize + 4); // Dispatch status position.
 		_os.write(static_cast<Byte>(DispatchUnknownException));
-		_os.write(ex.unknown);
+		_os.write(ex.unknown, false);
 		_connection->sendResponse(&_os, _compress);
 	    }
 	    else
@@ -225,7 +230,8 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 	}
 	catch(const LocalException& ex)
 	{
-	    if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	    if(_os.instance()->initializationData().properties->
+	    		getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	    {
 		__warning(ex);
 	    }
@@ -237,7 +243,7 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 		_os.write(static_cast<Byte>(DispatchUnknownLocalException));
 		ostringstream str;
 		str << ex;
-		_os.write(str.str());
+		_os.write(str.str(), false);
 		_connection->sendResponse(&_os, _compress);
 	    }
 	    else
@@ -247,7 +253,8 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 	}
 	catch(const UserException& ex)
 	{
-	    if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	    if(_os.instance()->initializationData().properties->
+	    		getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	    {
 		__warning(ex);
 	    }
@@ -259,7 +266,7 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 		_os.write(static_cast<Byte>(DispatchUnknownUserException));
 		ostringstream str;
 		str << ex;
-		_os.write(str.str());
+		_os.write(str.str(), false);
 		_connection->sendResponse(&_os, _compress);
 	    }
 	    else
@@ -269,7 +276,8 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 	}
 	catch(const Exception& ex)
 	{
-	    if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	    if(_os.instance()->initializationData().properties->
+	    		getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	    {
 		__warning(ex);
 	    }
@@ -281,7 +289,7 @@ IceInternal::IncomingAsync::__exception(const Exception& exc)
 		_os.write(static_cast<Byte>(DispatchUnknownException));
 		ostringstream str;
 		str << ex;
-		_os.write(str.str());
+		_os.write(str.str(), false);
 		_connection->sendResponse(&_os, _compress);
 	    }
 	    else
@@ -313,7 +321,8 @@ IceInternal::IncomingAsync::__exception(const std::exception& ex)
 {
     try
     {
-	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	if(_os.instance()->initializationData().properties->
+		getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning(string("std::exception: ") + ex.what());
 	}
@@ -325,7 +334,7 @@ IceInternal::IncomingAsync::__exception(const std::exception& ex)
 	    _os.write(static_cast<Byte>(DispatchUnknownException));
 	    ostringstream str;
 	    str << "std::exception: " << ex.what();
-	    _os.write(str.str());
+	    _os.write(str.str(), false);
 	    _connection->sendResponse(&_os, _compress);
 	}
 	else
@@ -356,7 +365,8 @@ IceInternal::IncomingAsync::__exception()
 {
     try
     {
-	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	if(_os.instance()->initializationData().properties->
+		getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning("unknown c++ exception");
 	}
@@ -367,7 +377,7 @@ IceInternal::IncomingAsync::__exception()
 	    _os.b.resize(headerSize + 4); // Dispatch status position.
 	    _os.write(static_cast<Byte>(DispatchUnknownException));
 	    string reason = "unknown c++ exception";
-	    _os.write(reason);
+	    _os.write(reason, false);
 	    _connection->sendResponse(&_os, _compress);
 	}
 	else
@@ -427,6 +437,44 @@ IceAsync::Ice::AMD_Object_ice_invoke::ice_exception(const std::exception& ex)
 
 void
 IceAsync::Ice::AMD_Object_ice_invoke::ice_exception()
+{
+    __exception();
+}
+
+IceAsync::Ice::AMD_Array_Object_ice_invoke::AMD_Array_Object_ice_invoke(Incoming& in) :
+    IncomingAsync(in)
+{
+}
+
+void
+IceAsync::Ice::AMD_Array_Object_ice_invoke::ice_response(bool ok, const pair<const Byte*, const Byte*>& outParams)
+{
+    try
+    {
+	__os()->writeBlob(outParams.first, static_cast<Int>(outParams.second - outParams.first));
+    }
+    catch(const LocalException& ex)
+    {
+	__exception(ex);
+	return;
+    }
+    __response(ok);
+}
+
+void
+IceAsync::Ice::AMD_Array_Object_ice_invoke::ice_exception(const Exception& ex)
+{
+    __exception(ex);
+}
+
+void
+IceAsync::Ice::AMD_Array_Object_ice_invoke::ice_exception(const std::exception& ex)
+{
+    __exception(ex);
+}
+
+void
+IceAsync::Ice::AMD_Array_Object_ice_invoke::ice_exception()
 {
     __exception();
 }

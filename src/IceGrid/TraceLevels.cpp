@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -28,6 +28,8 @@ TraceLevels::TraceLevels(const Ice::PropertiesPtr& properties, const Ice::Logger
     activatorCat("Activator"),
     patch(0),
     patchCat("Patch"),
+    locator(0),
+    locatorCat("Locator"),
     session(0),
     sessionCat("Session"),
     logger(theLogger)
@@ -40,6 +42,7 @@ TraceLevels::TraceLevels(const Ice::PropertiesPtr& properties, const Ice::Logger
     const_cast<int&>(object) = properties->getPropertyAsInt(keyBase + objectCat);
     const_cast<int&>(activator) = properties->getPropertyAsInt(keyBase + activatorCat);
     const_cast<int&>(patch) = properties->getPropertyAsInt(keyBase + patchCat);
+    const_cast<int&>(locator) = properties->getPropertyAsInt(keyBase + locatorCat);
     const_cast<int&>(session) = properties->getPropertyAsInt(keyBase + sessionCat);
 }
 

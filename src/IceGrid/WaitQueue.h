@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,13 +11,14 @@
 #define ICE_GRID_WAIT_QUEUE_H
 
 #include <IceUtil/Thread.h>
+#include <IceUtil/Monitor.h>
 
 #include <list>
 
 namespace IceGrid
 {
 
-class WaitItem : public ::IceUtil::SimpleShared
+class WaitItem : virtual public IceUtil::Shared
 {
 public:
     

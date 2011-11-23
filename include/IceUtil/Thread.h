@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,60 +19,32 @@ namespace IceUtil
 
 class Time;
 
-#ifdef _WIN32
-struct HandleWrapper : public Shared
-{
-    // Inline for performance reasons.
-    HandleWrapper(HANDLE h, bool r = true) :
-	handle(h), release(r)
-    {
-    }
-
-    // Inline for performance reasons.
-    virtual ~HandleWrapper()
-    {
-	if(handle && release)
-	{
-	    CloseHandle(handle);
-	}
-    }
-
-    HANDLE handle;
-    bool release;
-};
-
-typedef Handle<HandleWrapper> HandleWrapperPtr;
-#endif
-
-#ifdef _WIN32
-    typedef unsigned int ThreadId;
-#else
-    typedef pthread_t ThreadId;
-#endif
-
 class ICE_UTIL_API ThreadControl
 {
 public:
 
+    //
+    // Constructs a ThreadControl representing the current thread.
+    // join and detach cannot be called on such ThreadControl object.
+    //
     ThreadControl();
 
 #ifdef _WIN32
-    ThreadControl(const HandleWrapperPtr&, ThreadId);
+    ThreadControl(HANDLE, DWORD);
 #else
-    ThreadControl(ThreadId);
+    explicit ThreadControl(pthread_t);
 #endif
 
-    ThreadControl(const ThreadControl&);
-    ThreadControl& operator=(const ThreadControl&);
+    //
+    // Default copy destructor, assignment operator and destructor OK
+    //
 
+    //
+    // == and != are meaningful only before the thread is joined/detached,
+    // or while the thread is still running.
+    //
     bool operator==(const ThreadControl&) const;
     bool operator!=(const ThreadControl&) const;
-    bool operator<(const ThreadControl&) const;
-
-    //
-    // Return the ID of the thread underlying this ThreadControl.
-    //
-    ThreadId id() const;
 
     //
     // Wait until the controlled thread terminates. The call has POSIX
@@ -97,21 +69,34 @@ public:
     void detach();
 
     //
-    // Check whether a thread is still alive. This is useful to implement
-    // a non-blocking join().
+    // id() returns the Thread ID on Windows and the underlying pthread_t
+    // on POSIX platforms.
     //
-    bool isAlive() const;
+#ifdef _WIN32
+    typedef DWORD ID;
+#else
+    typedef pthread_t ID;
+#endif 
+    ID id() const;
 
     static void sleep(const Time&);
     static void yield();
 
 private:
 
-    Mutex _stateMutex;
 #ifdef _WIN32
-    HandleWrapperPtr _handle;
+    HANDLE _handle;
+    DWORD  _id;
+#else
+    pthread_t _thread;
+
+    //
+    // Used to prevent joining/detaching a ThreadControl constructed
+    // with the default constructor. Only needed to enforce our
+    // portable join/detach behavior.
+    //
+    bool _detachable;
 #endif
-    ThreadId _id;
 };
 
 class ICE_UTIL_API Thread : virtual public IceUtil::Shared
@@ -120,8 +105,6 @@ public:
 
     Thread();
     virtual ~Thread();
-
-    ThreadId id() const;
 
     virtual void run() = 0;
 
@@ -133,17 +116,32 @@ public:
     bool operator!=(const Thread&) const;
     bool operator<(const Thread&) const;
 
-    Thread(const Thread&);		// Copying is forbidden
-    void operator=(const Thread&);	// Assignment is forbidden
+    //
+    // Check whether a thread is still alive.
+    //
+    bool isAlive() const;
 
-private:
+    //
+    // This function is an implementation detail;
+    // do not call it.
+    //
+    void _done();
 
+protected:
     Mutex _stateMutex;
     bool _started;
+    bool _running;
+
 #ifdef _WIN32
-    HandleWrapperPtr _handle;
+    HANDLE _handle;
+    DWORD  _id;
+#else
+    pthread_t _thread;
 #endif
-    ThreadId _id;
+
+private:
+    Thread(const Thread&);		// Copying is forbidden
+    void operator=(const Thread&);	// Assignment is forbidden
 };
 
 typedef Handle<Thread> ThreadPtr;

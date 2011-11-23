@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -145,7 +145,7 @@ Mutex::tryLock() const
     if(_mutex.RecursionCount > 1)
     {
 	LeaveCriticalSection(&_mutex);
-	return false;
+	throw ThreadLockedException(__FILE__, __LINE__);
     }
     return true;
 }
@@ -222,7 +222,7 @@ Mutex::tryLock() const
     {
 	_recursionCount++;
 	unlock();
-	return false;
+	throw ThreadLockedException(__FILE__, __LINE__);
     }
     else
     {
@@ -305,7 +305,14 @@ Mutex::lock() const
     int rc = pthread_mutex_lock(&_mutex);
     if(rc != 0)
     {
-	throw ThreadSyscallException(__FILE__, __LINE__, rc);
+        if(rc == EDEADLK)
+	{
+	    throw ThreadLockedException(__FILE__, __LINE__);
+	}
+	else
+	{
+	    throw ThreadSyscallException(__FILE__, __LINE__, rc);
+	}
     }
 }
 
@@ -315,7 +322,14 @@ Mutex::tryLock() const
     int rc = pthread_mutex_trylock(&_mutex);
     if(rc != 0 && rc != EBUSY)
     {
-	throw ThreadSyscallException(__FILE__, __LINE__, rc);
+        if(rc == EDEADLK)
+	{
+	    throw ThreadLockedException(__FILE__, __LINE__);
+	}
+	else
+	{
+	    throw ThreadSyscallException(__FILE__, __LINE__, rc);
+	}
     }
     return (rc == 0);
 }

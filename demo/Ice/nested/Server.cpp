@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,15 +24,15 @@ int
 main(int argc, char* argv[])
 {
     NestedServer app;
-    return app.main(argc, argv, "config");
+    return app.main(argc, argv, "config.server");
 }
 
 int
 NestedServer::run(int argc, char* argv[])
 {
     Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Nested.Server");
-    NestedPrx self = NestedPrx::uncheckedCast(adapter->createProxy(Ice::stringToIdentity("nestedServer")));
-    adapter->add(new NestedI(self), Ice::stringToIdentity("nestedServer"));
+    NestedPrx self = NestedPrx::uncheckedCast(adapter->createProxy(communicator()->stringToIdentity("nestedServer")));
+    adapter->add(new NestedI(self), communicator()->stringToIdentity("nestedServer"));
     adapter->activate();
     communicator()->waitForShutdown();
     return EXIT_SUCCESS;

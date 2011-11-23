@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -22,6 +22,7 @@ OBJS		= PermissionsVerifierF.o \
 		  PermissionsVerifier.o \
 		  RouterF.o \
 		  Router.o \
+		  SSLInfo.o \
 		  SessionF.o \
 		  Session.o
 
@@ -29,8 +30,12 @@ ROBJS		= Blobject.o \
 		  ClientBlobject.o \
 		  CryptPermissionsVerifierI.o \
 		  Glacier2Router.o \
+		  ProxyVerifier.o \
 		  RequestQueue.o \
 		  RouterI.o \
+		  RoutingTable.o \
+		  FilterI.o \
+		  FilterManager.o \
 		  ServerBlobject.o \
 		  SessionRouterI.o
 
@@ -43,7 +48,8 @@ SLICE_SRCS	= $(SDIR)/PermissionsVerifierF.ice \
 		  $(SDIR)/Router.ice \
 		  $(SDIR)/RouterF.ice \
 		  $(SDIR)/Session.ice \
-		  $(SDIR)/SessionF.ice
+		  $(SDIR)/SessionF.ice \
+		  $(SDIR)/SSLInfo.ice
 
 HDIR		= $(includedir)/Glacier2
 SDIR		= $(slicedir)/Glacier2
@@ -52,7 +58,7 @@ include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DGLACIER2_API_EXPORTS $(OPENSSL_FLAGS)
 SLICE2CPPFLAGS	:= --include-dir Glacier2 --dll-export GLACIER2_API $(SLICE2CPPFLAGS)
-LINKWITH	:= -lIce -lIceUtil
+LINKWITH	:= $(BZIP2_RPATH_LINK) -lIce -lIceUtil
 
 $(libdir)/$(LIBFILENAME): $(OBJS)
 	rm -f $@
@@ -68,7 +74,7 @@ $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 
 $(ROUTER): $(ROBJS) $(LIBTARGETS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(ROBJS) -lGlacier2 $(LIBS) $(OPENSSL_LIBS) $(EXPAT_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(ROBJS) -lGlacier2 $(LIBS) -lIceSSL $(OPENSSL_LIBS)
 
 install:: all
 	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))

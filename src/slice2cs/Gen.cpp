@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -842,60 +842,31 @@ Slice::CsVisitor::emitAttributes(const ContainedPtr& p)
 	static const string prefix = "cs:attribute:";
         if(i->find(prefix) == 0)
 	{
-	    _out << '[' << i->substr(prefix.size()) << ']' << nl;
+	    _out << nl << '[' << i->substr(prefix.size()) << ']';
 	}
     }
 }
 
 Slice::Gen::Gen(const string& name, const string& base, const vector<string>& includePaths, const string& dir,
                 bool impl, bool implTie, bool stream)
-    : _base(base),
-      _includePaths(includePaths),
+    : _includePaths(includePaths),
       _stream(stream)
 {
-    string file = base + ".cs";
-    string fileImpl = base + "I.cs";
+    string fileBase = base;
+    string::size_type pos = base.find_last_of("/\\");
+    if(pos != string::npos)
+    {
+	fileBase = base.substr(pos + 1);
+    }
+    string file = fileBase + ".cs";
+    string fileImpl = fileBase + "I.cs";
 
     if(!dir.empty())
     {
-	//
-	// Get the working directory and look at the returned path
-	// to find out whether we need to use a forward or backward slash
-	// as a path separator. (This seems to be one of the very few
-	// portable ways to get the correct separator.)
-	//
-	char* p;
-#if defined(_MSC_VER)
-	p = _getcwd(0, 0);
-#else
-	p = getcwd(0, 0);
-#endif
-	if(p == 0)
-	{
-	    cerr << name << ": cannot get working directory: " << strerror(errno) << endl;
-	    return;
-	}
-	string cwd(p);
-	string slash = cwd.find('/') == string::npos ? "\\" : "/";
-	free(p);
-
-	string::size_type pos = base.rfind('/');
-	if(pos == string::npos)
-	{
-	    pos = base.rfind('\\');
-	}
-	if(pos != string::npos)
-	{
-	    string fileBase(base, pos + 1);
-	    file = dir + slash + fileBase + ".cs";
-	    fileImpl = dir + slash + fileBase + "I.cs";
-	}
-	else
-	{
-	    file = dir + slash + file;
-	    fileImpl = dir + slash + fileImpl;
-	}
+	file = dir + '/' + file;
+	fileImpl = dir + '/' + fileImpl;
     }
+
     _out.open(file.c_str());
     if(!_out)
     {
@@ -904,7 +875,7 @@ Slice::Gen::Gen(const string& name, const string& base, const vector<string>& in
     }
     printHeader();
 
-    _out << nl << "// Generated from file `" << base << ".ice'";
+    _out << nl << "// Generated from file `" << fileBase << ".ice'";
 
     _out << sp << nl << "using _System = System;";
     _out << nl << "using _Microsoft = Microsoft;";
@@ -914,7 +885,7 @@ Slice::Gen::Gen(const string& name, const string& base, const vector<string>& in
         struct stat st;
 	if(stat(fileImpl.c_str(), &st) == 0)
 	{
-	    cerr << name << ": `" << fileImpl << "' already exists - will not overwrite" << endl;
+	    cerr << name << ": `" << fileImpl << "' already exists--will not overwrite" << endl;
 	    return;
 	}
 	_impl.open(fileImpl.c_str());
@@ -1106,9 +1077,9 @@ Slice::Gen::TypesVisitor::visitModuleStart(const ModulePtr& p)
 {
 
     string name = fixId(p->name());
-    _out << sp << nl;
+    _out << sp;
     emitAttributes(p);
-    _out << "namespace " << name;
+    _out << nl << "namespace " << name;
 
     _out << sb;
 
@@ -1164,11 +1135,11 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
 	_out << eb;
     }
 
-    _out << sp << nl;
+    _out << sp;
     emitAttributes(p);
     if(p->isInterface())
     {
-	_out << "public interface " << fixId(name) << " : ";
+	_out << nl << "public interface " << fixId(name) << " : ";
 	if(p->isLocal())
 	{
 	    _out << "Ice.LocalObject";
@@ -1195,7 +1166,7 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
     }
     else
     {
-	_out << "public ";
+	_out << nl << "public ";
 	if(p->isAbstract())
 	{
 	    _out << "abstract ";
@@ -1347,7 +1318,6 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	_out << nl << "os__.startWriteSlice();";
 	for(d = members.begin(); d != members.end(); ++d)
 	{
-	    StringList metaData = (*d)->getMetaData();
 	    writeMarshalUnmarshalCode(_out, (*d)->type(),
 	                              fixId((*d)->name(), DotNet::ICloneable, true),
 				      true, false, false);
@@ -1429,7 +1399,6 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	int classMemberCount = static_cast<int>(allClassMembers.size() - classMembers.size());
 	for(d = members.begin(); d != members.end(); ++d)
 	{
-	    StringList metaData = (*d)->getMetaData();
 	    ostringstream patchParams;
 	    patchParams << "this";
 	    BuiltinPtr builtin = BuiltinPtr::dynamicCast((*d)->type());
@@ -1459,7 +1428,6 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	    _out << nl << "outS__.startSlice();";
 	    for(d = members.begin(); d != members.end(); ++d)
 	    {
-		StringList metaData = (*d)->getMetaData();
 		writeMarshalUnmarshalCode(_out, (*d)->type(),
 					  fixId((*d)->name(), DotNet::ICloneable, true),
 					  true, true, false);
@@ -1477,7 +1445,6 @@ Slice::Gen::TypesVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	    _out << nl << "inS__.startSlice();";
 	    for(d = members.begin(); d != members.end(); ++d)
 	    {
-		StringList metaData = (*d)->getMetaData();
 		ostringstream patchParams;
 		patchParams << "this";
 		BuiltinPtr builtin = BuiltinPtr::dynamicCast((*d)->type());
@@ -1557,9 +1524,9 @@ Slice::Gen::TypesVisitor::visitOperation(const OperationPtr& p)
 	name = name + "_async";
     }
 
-    _out << sp << nl;
+    _out << sp;
     emitAttributes(p);
-    _out << "public ";
+    _out << nl << "public ";
     if(isLocal)
     {
         _out << "abstract ";
@@ -1603,9 +1570,21 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
     string s = typeToString(p->type());
     bool isValue = isValueType(p->type());
 
-    _out << sp << nl;
+    _out << sp;
+
+    string deprecateMetadata;
+    if(p->findMetaData("deprecate", deprecateMetadata))
+    {
+	string deprecateReason = "This type has been deprecated.";
+	if(deprecateMetadata.find("deprecate:") == 0 && deprecateMetadata.size() > 10)
+	{
+	    deprecateReason = deprecateMetadata.substr(10);
+	}
+	_out << nl << "[System.Obsolete(\"" << deprecateReason << "\")]";
+    }
+
     emitAttributes(p);
-    _out << "public class " << name
+    _out << nl << "public class " << name
          << " : _System.Collections.CollectionBase, _System.ICloneable";
     _out << sb;
 
@@ -1655,7 +1634,8 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
 
     _out << sp << nl << "#region ArrayList members";
 
-    _out << sp << nl << "public virtual int Capacity";
+    _out << sp << nl << "#if ICE_DOTNET_1X";
+    _out << nl << "public virtual int Capacity";
     _out << sb;
     _out << nl << "get";
     _out << sb;
@@ -1666,6 +1646,7 @@ Slice::Gen::TypesVisitor::visitSequence(const SequencePtr& p)
     _out << nl << "InnerList.Capacity = value;";
     _out << eb;
     _out << eb;
+    _out << nl << "#endif";
 
     _out << sp << nl << "public virtual void TrimToSize()";
     _out << sb;
@@ -1970,9 +1951,21 @@ Slice::Gen::TypesVisitor::visitExceptionStart(const ExceptionPtr& p)
     string name = fixId(p->name());
     ExceptionPtr base = p->base();
 
-    _out << sp << nl;
+    _out << sp;
+
+    string deprecateMetadata;
+    if(p->findMetaData("deprecate", deprecateMetadata))
+    {
+	string deprecateReason = "This type has been deprecated.";
+	if(deprecateMetadata.find("deprecate:") == 0 && deprecateMetadata.size() > 10)
+	{
+	    deprecateReason = deprecateMetadata.substr(10);
+	}
+	_out << nl << "[System.Obsolete(\"" << deprecateReason << "\")]";
+    }
+
     emitAttributes(p);
-    _out << "public class " << name << " : ";
+    _out << nl << "public class " << name << " : ";
     if(base)
     {
         _out << fixId(base->scoped());
@@ -2325,28 +2318,40 @@ Slice::Gen::TypesVisitor::visitStructStart(const StructPtr& p)
 
 	_out << sp << nl << "public static void write(Ice.OutputStream outS__, " << name << " v__)";
 	_out << sb;
-	_out << nl << "v__.write__(outS__);";
+	_out << nl << "v__.ice_write(outS__);";
 	_out << eb;
 
 	_out << sp << nl << "public static " << name << " read(Ice.InputStream inS__)";
 	_out << sb;
 	_out << nl << name << " v__ = new " << name << "();";
-	_out << nl << "v__.read__(inS__);";
+	_out << nl << "v__.ice_read(inS__);";
 	_out << nl << "return v__;";
 	_out << eb;
 
 	_out << eb;
     }
 
-    _out << sp << nl;
+    _out << sp;
+
+    string deprecateMetadata;
+    if(p->findMetaData("deprecate", deprecateMetadata))
+    {
+	string deprecateReason = "This type has been deprecated.";
+	if(deprecateMetadata.find("deprecate:") == 0 && deprecateMetadata.size() > 10)
+	{
+	    deprecateReason = deprecateMetadata.substr(10);
+	}
+	_out << nl << "[System.Obsolete(\"" << deprecateReason << "\")]";
+    }
+
     emitAttributes(p);
     if(isValueType(p))
     {
-	_out << "public struct " << name;
+	_out << nl << "public struct " << name;
     }
     else
     {
-	_out << "public class " << name << " : _System.ICloneable";
+	_out << nl << "public class " << name << " : _System.ICloneable";
     }
     _out << sb;
 
@@ -2604,7 +2609,7 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 
 	if(_stream)
 	{
-	    _out << sp << nl << "public void write__(Ice.OutputStream outS__)";
+	    _out << sp << nl << "public void ice_write(Ice.OutputStream outS__)";
 	    _out << sb;
 	    for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
 	    {
@@ -2614,7 +2619,7 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 	    }
 	    _out << eb;
 
-	    _out << sp << nl << "public void read__(Ice.InputStream inS__)";
+	    _out << sp << nl << "public void ice_read(Ice.InputStream inS__)";
 	    _out << sb;
 	    classMemberCount = 0;
 	    for(q = dataMembers.begin(); q != dataMembers.end(); ++q)
@@ -2650,9 +2655,21 @@ Slice::Gen::TypesVisitor::visitDictionary(const DictionaryPtr& p)
     string vs = typeToString(p->valueType());
     bool valueIsValue = isValueType(p->valueType());
 
-    _out << sp << nl;
+    _out << sp;
+
+    string deprecateMetadata;
+    if(p->findMetaData("deprecate", deprecateMetadata))
+    {
+	string deprecateReason = "This type has been deprecated.";
+	if(deprecateMetadata.find("deprecate:") == 0 && deprecateMetadata.size() > 10)
+	{
+	    deprecateReason = deprecateMetadata.substr(10);
+	}
+	_out << nl << "[System.Obsolete(\"" << deprecateReason << "\")]";
+    }
+
     emitAttributes(p);
-    _out << "public class " << name
+    _out << nl << "public class " << name
          << " : _System.Collections.DictionaryBase, _System.ICloneable";
     _out << sb;
 
@@ -2901,9 +2918,21 @@ Slice::Gen::TypesVisitor::visitEnum(const EnumPtr& p)
     string name = fixId(p->name());
     string scoped = fixId(p->scoped());
     EnumeratorList enumerators = p->getEnumerators();
-    _out << sp << nl;
+    _out << sp;
+
+    string deprecateMetadata;
+    if(p->findMetaData("deprecate", deprecateMetadata))
+    {
+	string deprecateReason = "This type has been deprecated.";
+	if(deprecateMetadata.find("deprecate:") == 0 && deprecateMetadata.size() > 10)
+	{
+	    deprecateReason = deprecateMetadata.substr(10);
+	}
+	_out << nl << "[System.Obsolete(\"" << deprecateReason << "\")]";
+    }
+
     emitAttributes(p);
-    _out << "public enum " << name;
+    _out << nl << "public enum " << name;
     _out << sb;
     EnumeratorList::const_iterator en = enumerators.begin();
     while(en != enumerators.end())
@@ -2941,9 +2970,9 @@ void
 Slice::Gen::TypesVisitor::visitConst(const ConstPtr& p)
 {
     string name = fixId(p->name());
-    _out << sp << nl;
+    _out << sp;
     emitAttributes(p);
-    _out << "public abstract class " << name;
+    _out << nl << "public abstract class " << name;
     _out << sb;
     _out << sp << nl << "public const " << typeToString(p->type()) << " value = ";
     BuiltinPtr bp = BuiltinPtr::dynamicCast(p->type());
@@ -3012,11 +3041,21 @@ Slice::Gen::TypesVisitor::visitDataMember(const DataMemberPtr& p)
 {
     int baseTypes = 0;
     bool isClass = false;
+    bool propertyMapping = false;
+    bool isValue = false;
     ContainedPtr cont = ContainedPtr::dynamicCast(p->container());
     assert(cont);
-    if(StructPtr::dynamicCast(cont) && cont->hasMetaData("clr:class"))
+    if(StructPtr::dynamicCast(cont))
     {
-        baseTypes = DotNet::ICloneable;
+        isValue = isValueType(StructPtr::dynamicCast(cont));
+	if(!isValue || cont->hasMetaData("clr:class"))
+	{
+	    baseTypes = DotNet::ICloneable;
+	}
+	if(cont->hasMetaData("clr:property"))
+	{
+	    propertyMapping = true;
+	}
     }
     else if(ExceptionPtr::dynamicCast(cont))
     {
@@ -3026,10 +3065,57 @@ Slice::Gen::TypesVisitor::visitDataMember(const DataMemberPtr& p)
     {
 	baseTypes = DotNet::ICloneable;
 	isClass = true;
+	if(cont->hasMetaData("clr:property"))
+	{
+	    propertyMapping = true;
+	}
     }
-    _out << sp << nl;
+
+    _out << sp;
+
+    string deprecateMetadata;
+    if(p->findMetaData("deprecate", deprecateMetadata) || cont->findMetaData("deprecate", deprecateMetadata))
+    {
+	string deprecateReason = "This member has been deprecated.";
+	if(deprecateMetadata.find("deprecate:") == 0 && deprecateMetadata.size() > 10)
+	{
+	    deprecateReason = deprecateMetadata.substr(10);
+	}
+	_out << nl << "[System.Obsolete(\"" << deprecateReason << "\")]";
+    }
+
     emitAttributes(p);
-    _out << "public " << typeToString(p->type()) << " " << fixId(p->name(), baseTypes, isClass) << ";";
+
+    string type = typeToString(p->type());
+    string propertyName = fixId(p->name(), baseTypes, isClass);
+    string dataMemberName = propertyName;
+    if(propertyMapping)
+    {
+	dataMemberName += "_prop";
+    }
+    _out << nl << (propertyMapping ? "private" : "public") << ' ' << type << ' ' << dataMemberName << ';';
+
+    if(!propertyMapping)
+    {
+        return;
+    }
+
+    _out << nl << "public";
+    if(!isValue)
+    {
+	_out << " virtual";
+    }
+    _out << ' ' << type << ' ' << propertyName;
+    _out << sb;
+    _out << nl << "get";
+    _out << sb;
+    _out << nl << "return " << dataMemberName << ';';
+    _out << eb;
+    _out << nl << "set";
+    _out << sb;
+    _out << nl << dataMemberName << " = value;";
+    _out << eb;
+    _out << eb;
 }
 
 Slice::Gen::ProxyVisitor::ProxyVisitor(IceUtil::Output& out)
@@ -3103,8 +3189,32 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
     string name = fixId(p->name(), DotNet::ICloneable, true);
     vector<string> params = getParams(p);
 
-    _out << sp << nl << typeToString(p->returnType()) << " " << name << spar << params << epar << ';';
+    _out << sp;
 
+    string deprecateMetadata, deprecateReason;
+    if(p->findMetaData("deprecate", deprecateMetadata) || cl->findMetaData("deprecate", deprecateMetadata))
+    {
+	deprecateReason = "This operation has been deprecated.";
+	if(deprecateMetadata.find("deprecate:") == 0 && deprecateMetadata.size() > 10)
+	{
+	    deprecateReason = deprecateMetadata.substr(10);
+	}
+    }
+
+    //
+    // Write two versions of the operation - with and without a
+    // context parameter.
+    //
+    if(!deprecateReason.empty())
+    {
+	_out << nl << "[System.Obsolete(\"" << deprecateReason << "\")]";
+    }
+    _out << nl << typeToString(p->returnType()) << " " << name << spar << params << epar << ';';
+
+    if(!deprecateReason.empty())
+    {
+	_out << nl << "[System.Obsolete(\"" << deprecateReason << "\")]";
+    }
     _out << nl << typeToString(p->returnType()) << " " << name
          << spar << params << "Ice.Context context__" << epar << ';'; 
 
@@ -3117,7 +3227,15 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
 	// context parameter.
 	//
 	_out << sp;
+	if(!deprecateReason.empty())
+	{
+	    _out << nl << "[System.Obsolete(\"" << deprecateReason << "\")]";
+	}
 	_out << nl << "void " << p->name() << "_async" << spar << paramsAMI << epar << ';';
+	if(!deprecateReason.empty())
+	{
+	    _out << nl << "[System.Obsolete(\"" << deprecateReason << "\")]";
+	}
 	_out << nl << "void " << p->name() << "_async" << spar << paramsAMI << "Ice.Context ctx__" << epar << ';';
     }
 }
@@ -3220,7 +3338,6 @@ Slice::Gen::OpsVisitor::writeOperations(const ClassDefPtr& p, bool noCurrent)
 	TypePtr ret;
 	vector<string> params;
 
-
 	if(amd)
 	{
 	    params = getParamsAsync(op, true);
@@ -3231,11 +3348,22 @@ Slice::Gen::OpsVisitor::writeOperations(const ClassDefPtr& p, bool noCurrent)
 	    ret = op->returnType();
 	}
 
-	string retS = typeToString(ret);
+	_out << sp;
 
-	_out << sp << nl;
+	string deprecateMetadata;
+	if(op->findMetaData("deprecate", deprecateMetadata) || p->findMetaData("deprecate", deprecateMetadata))
+	{
+	    string deprecateReason = "This operation has been deprecated.";
+	    if(deprecateMetadata.find("deprecate:") == 0 && deprecateMetadata.size() > 10)
+	    {
+		deprecateReason = deprecateMetadata.substr(10);
+	    }
+	    _out << nl << "[System.Obsolete(\"" << deprecateReason << "\")]";
+	}
+
 	emitAttributes(op);
-	_out << retS << ' ' << opname << spar << params;
+	string retS = typeToString(ret);
+	_out << nl << retS << ' ' << opname << spar << params;
 	if(!noCurrent && !p->isLocal())
 	{ 
 	    _out << "Ice.Current current__";
@@ -3335,15 +3463,15 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
 	    _out << nl << "return;";
 	}
 	_out << eb;
-	_out << nl << "catch(IceInternal.NonRepeatable ex__)";
+	_out << nl << "catch(IceInternal.LocalExceptionWrapper ex__)";
 	_out << sb;
 	if(op->mode() == Operation::Idempotent || op->mode() == Operation::Nonmutating)
 	{
-	    _out << nl << "cnt__ = handleException__(ex__.get(), cnt__);";
+	    _out << nl << "cnt__ = handleExceptionWrapperRelaxed__(ex__, cnt__);";
 	}
 	else
 	{
-	    _out << nl << "rethrowException__(ex__.get());";
+	    _out << nl << "handleExceptionWrapper__(ex__);";
 	}
 	_out << eb;
 	_out << nl << "catch(Ice.LocalException ex__)";
@@ -3447,7 +3575,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << sb;
     _out << nl << "return null;";
     _out << eb;
-    _out << nl << "Ice.ObjectPrx bb = b.ice_newFacet(f);";
+    _out << nl << "Ice.ObjectPrx bb = b.ice_facet(f);";
     _out << nl << "try";
     _out << sb;
     _out << nl << "if(bb.ice_isA(\"" << p->scoped() << "\"))";
@@ -3469,7 +3597,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << sb;
     _out << nl << "return null;";
     _out << eb;
-    _out << nl << "Ice.ObjectPrx bb = b.ice_newFacet(f);";
+    _out << nl << "Ice.ObjectPrx bb = b.ice_facet(f);";
     _out << nl << "try";
     _out << sb;
     _out << nl << "if(bb.ice_isA(\"" << p->scoped() << "\", ctx))";
@@ -3502,7 +3630,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << sb;
     _out << nl << "return null;";
     _out << eb;
-    _out << nl << "Ice.ObjectPrx bb = b.ice_newFacet(f);";
+    _out << nl << "Ice.ObjectPrx bb = b.ice_facet(f);";
     _out << nl << name << "PrxHelper h = new " << name << "PrxHelper();";
     _out << nl << "h.copyFrom__(bb);";
     _out << nl << "return h;";
@@ -4006,7 +4134,7 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
 	_out << eb;
 	_out << nl << "catch(Ice.LocalException ex__)";
 	_out << sb;
-	_out << nl << "throw new IceInternal.NonRepeatable(ex__);";
+	_out << nl << "throw new IceInternal.LocalExceptionWrapper(ex__, false);";
 	_out << eb;
         _out << eb;
         _out << nl << "finally";
@@ -4111,7 +4239,7 @@ Slice::Gen::DelegateDVisitor::visitClassDefStart(const ClassDefPtr& p)
 	    _out << eb;
 	    _out << nl << "catch(Ice.LocalException ex__)";
 	    _out << sb;
-	    _out << nl << "throw new IceInternal.NonRepeatable(ex__);";
+	    _out << nl << "throw new IceInternal.LocalExceptionWrapper(ex__, false);";
 	    _out << eb;
 	    _out << nl << "finally";
 	    _out << sb;
@@ -4818,6 +4946,7 @@ Slice::Gen::BaseImplVisitor::writeOperation(const OperationPtr& op, bool comment
 	_out << sp << nl;
     }
 
+	ParamDeclList::const_iterator i;
     if(!cl->isLocal() && (cl->hasMetaData("amd") || op->hasMetaData("amd")))
     {
 	ParamDeclList::const_iterator i;

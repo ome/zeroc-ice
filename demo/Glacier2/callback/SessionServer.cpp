@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -30,8 +30,8 @@ int
 SessionServer::run(int argc, char* argv[])
 {
     Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("SessionServer");
-    adapter->add(new DummyPermissionsVerifierI, Ice::stringToIdentity("verifier"));
-    adapter->add(new SessionManagerI, Ice::stringToIdentity("sessionmanager"));
+    adapter->add(new DummyPermissionsVerifierI, communicator()->stringToIdentity("verifier"));
+    adapter->add(new SessionManagerI, communicator()->stringToIdentity("sessionmanager"));
     adapter->activate();
     communicator()->waitForShutdown();
     return EXIT_SUCCESS;

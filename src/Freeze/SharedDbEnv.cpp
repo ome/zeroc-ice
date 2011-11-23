@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -256,7 +256,7 @@ Freeze::SharedDbEnv::SharedDbEnv(const std::string& envName,
 	    //
 	    // Deadlock detection
 	    //
-	    _env->set_lk_detect(DB_LOCK_MINLOCKS);
+	    _env->set_lk_detect(DB_LOCK_YOUNGEST);
 	    
 	    u_int32_t flags = DB_INIT_LOCK | DB_INIT_LOG | DB_INIT_MPOOL | DB_INIT_TXN;
 	    

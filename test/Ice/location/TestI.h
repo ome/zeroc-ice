@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,7 +18,8 @@ class ServerManagerI : public Test::ServerManager
 {
 public:
 
-    ServerManagerI(const Ice::ObjectAdapterPtr&, const ServerLocatorRegistryPtr&);
+    ServerManagerI(const Ice::ObjectAdapterPtr&, const ServerLocatorRegistryPtr&,
+		   const Ice::InitializationData&);
     
     virtual void startServer(const Ice::Current&);
     virtual void shutdown(const Ice::Current&);
@@ -28,6 +29,7 @@ private:
     Ice::ObjectAdapterPtr _adapter;
     std::vector<Ice::CommunicatorPtr> _communicators;
     ServerLocatorRegistryPtr _registry;
+    Ice::InitializationData _initData;
 };
 
 class HelloI : public Test::Hello

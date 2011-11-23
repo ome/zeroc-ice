@@ -1,0 +1,352 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>IceGrid::UserAccountMapper</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="IceGrid::TemplateDescriptor"
+HREF="x15992.html"><LINK
+REL="NEXT"
+TITLE="IceGrid::UserAccountNotFoundException"
+HREF="x16106.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x15992.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x16106.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICEGRID.USERACCOUNTMAPPER"
+><TT
+CLASS="LITERAL"
+>IceGrid::UserAccountMapper</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN16055"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>interface <CODE
+CLASS="CLASSNAME"
+>UserAccountMapper</CODE
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>A user account mapper object is used by <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceGrid</SPAN
+></SPAN
+> nodes to map
+session identifiers to user accounts.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16061"
+>Operation Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x16052.html#ICEGRID.USERACCOUNTMAPPER.GETUSERACCOUNT"
+><TT
+CLASS="FUNCTION"
+>getUserAccount</TT
+></A
+></DT
+><DD
+><P
+>Get the name of the user account for the given user.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICEGRID.USERACCOUNTMAPPER.GETUSERACCOUNT"
+><TT
+CLASS="LITERAL"
+>getUserAccount</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="FUNCTION"
+>getUserAccount</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>user</I
+></TT
+>)
+    throws
+	<A
+HREF="x16106.html"
+><CODE
+CLASS="CLASSNAME"
+>UserAccountNotFoundException</CODE
+></A
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the name of the user account for the given user. This is
+used by <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceGrid</SPAN
+></SPAN
+> nodes to figure out the user account to use
+to run servers.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16082"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>user</I
+></TT
+></DT
+><DD
+><P
+>			    The value of the server descriptor's <TT
+CLASS="LITERAL"
+>user</TT
+>
+attribute. If this attribute is not defined, and the server's
+activation mode is <TT
+CLASS="LITERAL"
+>session</TT
+>, the default value of
+<A
+HREF="x16052.html#ICEGRID.USERACCOUNTMAPPER.GETUSERACCOUNT"
+><TT
+CLASS="FUNCTION"
+>getUserAccount</TT
+></A
+> is the session identifier.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16094"
+>Return Value</A
+></H3
+><P
+>		The user account name.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN16097"
+>Exceptions</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x16106.html"
+><CODE
+CLASS="CLASSNAME"
+>UserAccountNotFoundException</CODE
+></A
+></DT
+><DD
+><P
+>			    Raised if no user account
+is found for the given user.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x15992.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x16106.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceGrid::TemplateDescriptor</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceGrid::UserAccountNotFoundException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -241,13 +241,18 @@ class AMI_MyClass_opMyClassI : public Test::AMI_MyClass_opMyClass, public Callba
 {
 public:
 
+    AMI_MyClass_opMyClassI(const Ice::CommunicatorPtr& communicator) :
+        _communicator(communicator)
+    {
+    }
+
     virtual void ice_response(const ::Test::MyClassPrx& r, const ::Test::MyClassPrx& c1, const ::Test::MyClassPrx& c2)
     {
-	test(c1->ice_getIdentity() == Ice::stringToIdentity("test"));
-	test(c2->ice_getIdentity() == Ice::stringToIdentity("noSuchIdentity"));
-	test(r->ice_getIdentity() == Ice::stringToIdentity("test"));
+	test(c1->ice_getIdentity() == _communicator->stringToIdentity("test"));
+	test(c2->ice_getIdentity() == _communicator->stringToIdentity("noSuchIdentity"));
+	test(r->ice_getIdentity() == _communicator->stringToIdentity("test"));
 	// We can't do the callbacks below in thread per connection mode.
-	if(!Ice::getDefaultProperties()->getPropertyAsInt("Ice.ThreadPerConnection"))
+	if(!_communicator->getProperties()->getPropertyAsInt("Ice.ThreadPerConnection"))
 	{
 	    r->opVoid();
 	    c1->opVoid();
@@ -267,6 +272,10 @@ public:
     {
 	test(false);
     }
+
+private:
+
+    Ice::CommunicatorPtr _communicator;
 };
 
 typedef IceUtil::Handle<AMI_MyClass_opMyClassI> AMI_MyClass_opMyClassIPtr;
@@ -274,6 +283,11 @@ typedef IceUtil::Handle<AMI_MyClass_opMyClassI> AMI_MyClass_opMyClassIPtr;
 class AMI_MyClass_opStructI : public Test::AMI_MyClass_opStruct, public CallbackBase
 {
 public:
+
+    AMI_MyClass_opStructI(const Ice::CommunicatorPtr& communicator) :
+        _communicator(communicator)
+    {
+    }
 
     virtual void ice_response(const ::Test::Structure& rso, const ::Test::Structure& so)
     {
@@ -283,7 +297,7 @@ public:
 	test(so.e == Test::enum3);
 	test(so.s.s == "a new string");
 	// We can't do the callbacks below in thread per connection mode.
-	if(!Ice::getDefaultProperties()->getPropertyAsInt("Ice.ThreadPerConnection"))
+	if(!_communicator->getProperties()->getPropertyAsInt("Ice.ThreadPerConnection"))
 	{
 	    so.p->opVoid();
 	}
@@ -294,6 +308,10 @@ public:
     {
 	test(false);
     }
+
+private:
+
+    Ice::CommunicatorPtr _communicator;
 };
 
 typedef IceUtil::Handle<AMI_MyClass_opStructI> AMI_MyClass_opStructIPtr;
@@ -836,8 +854,26 @@ public:
 
 typedef IceUtil::Handle<AMI_MyDerivedClass_opDerivedI> AMI_MyDerivedClass_opDerivedIPtr;
 
+class AMI_MyClass_opDoubleMarshalingI : public Test::AMI_MyClass_opDoubleMarshaling, public CallbackBase
+{
+public:
+
+    virtual void ice_response()
+    {
+	called();
+    }
+
+    virtual void ice_exception(const ::Ice::Exception& ex)
+    {
+	test(false);
+    }
+};
+
+typedef IceUtil::Handle<AMI_MyClass_opDoubleMarshalingI> AMI_MyClass_opDoubleMarshalingIPtr;
+
 void
-twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
+twowaysAMI(const Ice::CommunicatorPtr& communicator, 
+	   const Ice::InitializationData& initializationData, const Test::MyClassPrx& p)
 {
     {
         // Check that a call to a void operation raises TwowayOnlyException
@@ -919,7 +955,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
     }
 
     {
-	AMI_MyClass_opMyClassIPtr cb = new AMI_MyClass_opMyClassI;
+	AMI_MyClass_opMyClassIPtr cb = new AMI_MyClass_opMyClassI(communicator);
 	p->opMyClass_async(cb, p);
 	test(cb->check());
     }
@@ -934,7 +970,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 	si2.e = Test::enum2;
 	si2.s.s = "def";
 	
-	AMI_MyClass_opStructIPtr cb = new AMI_MyClass_opStructI;
+	AMI_MyClass_opStructIPtr cb = new AMI_MyClass_opStructI(communicator);
 	p->opStruct_async(cb, si1, si2);
 	test(cb->check());
     }
@@ -1185,7 +1221,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 	    p->opContext_async(cb, ctx);
 	    test(cb->check());
 	}
-	Test::MyClassPrx p2 = Test::MyClassPrx::checkedCast(p->ice_newContext(ctx));
+	Test::MyClassPrx p2 = Test::MyClassPrx::checkedCast(p->ice_context(ctx));
 	test(p2->ice_getContext() == ctx);
 	{
 	    AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(ctx);
@@ -1193,48 +1229,22 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 	    test(cb->check());
 	}
 	{
-	    Test::MyClassPrx p2 = Test::MyClassPrx::checkedCast(p->ice_newContext(ctx));
+	    Test::MyClassPrx p2 = Test::MyClassPrx::checkedCast(p->ice_context(ctx));
 	    AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(ctx);
 	    p2->opContext_async(cb, ctx);
 	    test(cb->check());
 	}
+
 	{
 	    //
 	    // Test that default context is obtained correctly from communicator.
 	    //
-	    Ice::Context dflt;
-	    dflt["a"] = "b";
-	    communicator->setDefaultContext(dflt);
-	    {
-		AMI_MyClass_opContextNotEqualIPtr cb = new AMI_MyClass_opContextNotEqualI(dflt);
-		p->opContext_async(cb);
-		test(cb->check());
-	    }
+            Ice::InitializationData initData = initializationData;
+            initData.defaultContext["a"] = "b";
+            Ice::CommunicatorPtr communicator2 = Ice::initialize(initData);
 
-	    Test::MyClassPrx p2 = Test::MyClassPrx::uncheckedCast(p->ice_newContext(Ice::Context()));
-	    {
-		AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(Ice::Context());
-		p2->opContext_async(cb);
-		test(cb->check());
-	    }
-
-	    p2 = Test::MyClassPrx::uncheckedCast(p->ice_defaultContext());
-	    {
-		AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(dflt);
-		p2->opContext_async(cb);
-		test(cb->check());
-	    }
-
-	    communicator->setDefaultContext(Ice::Context());
-	    {
-		AMI_MyClass_opContextNotEqualIPtr cb = new AMI_MyClass_opContextNotEqualI(Ice::Context());
-		p2->opContext_async(cb);
-		test(cb->check());
-	    }
-
-	    communicator->setDefaultContext(dflt);
 	    Test::MyClassPrx c = Test::MyClassPrx::checkedCast(
-				    communicator->stringToProxy("test:default -p 12345 -t 10000"));
+				    communicator2->stringToProxy("test:default -p 12010 -t 10000"));
 	    {
 		Ice::Context tmp;
 		tmp["a"] = "b";
@@ -1243,8 +1253,9 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 		test(cb->check());
 	    }
 
-	    dflt["a"] = "c";
-	    Test::MyClassPrx c2 = Test::MyClassPrx::uncheckedCast(c->ice_newContext(dflt));
+	    Ice::Context ctx;
+	    ctx["a"] = "c";
+	    Test::MyClassPrx c2 = Test::MyClassPrx::uncheckedCast(c->ice_context(ctx));
 	    {
 		Ice::Context tmp;
 		tmp["a"] = "c";
@@ -1253,8 +1264,8 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 		test(cb->check());
 	    }
 
-	    dflt.clear();
-	    Test::MyClassPrx c3 = Test::MyClassPrx::uncheckedCast(c2->ice_newContext(dflt));
+	    ctx.clear();
+	    Test::MyClassPrx c3 = Test::MyClassPrx::uncheckedCast(c2->ice_context(ctx));
 	    {
 	        Ice::Context tmp;
 		AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(tmp);
@@ -1271,20 +1282,16 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 		test(cb->check());
 	    }
 
-	    dflt["a"] = "d";
-	    communicator->setDefaultContext(dflt);
-
-	    Test::MyClassPrx c5 = Test::MyClassPrx::uncheckedCast(c->ice_defaultContext());
-	    {
-	        Ice::Context tmp;
-		tmp["a"] = "d";
-		AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(tmp);
-		c5->opContext_async(cb);
-		test(cb->check());
-	    }
-
-	    communicator->setDefaultContext(Ice::Context());
+	    communicator2->destroy();
 	}
+    }
+
+    {
+        Ice::Double d = 1278312346.0 / 13.0;
+	Test::DoubleS ds(5, d);
+	AMI_MyClass_opDoubleMarshalingIPtr cb = new AMI_MyClass_opDoubleMarshalingI;
+	p->opDoubleMarshaling_async(cb, d, ds);
+	test(cb->check());
     }
 
     {

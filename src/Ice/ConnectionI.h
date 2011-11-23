@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -39,7 +39,8 @@ namespace Ice
 
 class LocalException;
 
-class ConnectionI : public Connection, public IceInternal::EventHandler, public IceUtil::Monitor<IceUtil::Mutex>
+class ICE_API ConnectionI : public Connection, public IceInternal::EventHandler,
+			    public IceUtil::Monitor<IceUtil::Mutex>
 {
 public:
 
@@ -57,12 +58,13 @@ public:
     bool isDestroyed() const;
     bool isFinished() const;
 
+    void throwException() const; // Throws the connection exception if destroyed.
+
     void waitUntilHolding() const;
     void waitUntilFinished(); // Not const, as this might close the connection upon timeout.
 
     void monitor();
 
-    void prepareRequest(IceInternal::BasicStream*);
     void sendRequest(IceInternal::BasicStream*, IceInternal::Outgoing*, bool);
     void sendAsyncRequest(IceInternal::BasicStream*, const IceInternal::OutgoingAsyncPtr&, bool);
 
@@ -92,6 +94,9 @@ public:
     virtual std::string type() const; // From Connection.
     virtual Ice::Int timeout() const; // From Connection.
     virtual std::string toString() const;  // From Connection and EvantHandler.
+
+    // SSL plug-in needs to be able to get the transceiver.
+    IceInternal::TransceiverPtr getTransceiver() const;
 
 private:
 
@@ -162,10 +167,6 @@ private:
 
     const int _acmTimeout;
     IceUtil::Time _acmAbsoluteTimeout;
-
-    const std::vector<Byte> _requestHdr;
-    const std::vector<Byte> _requestBatchHdr;
-    const std::vector<Byte> _replyHdr;
 
     const int _compressionLevel;
 

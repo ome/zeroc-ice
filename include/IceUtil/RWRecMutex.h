@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -368,7 +368,7 @@ private:
     //
     // If there is an active writer this is the ID of the writer thread.
     //
-    mutable ThreadId _writerId;
+    mutable ThreadControl _writerId;
 
     //
     // Number of waiting writers (including any upgrader).

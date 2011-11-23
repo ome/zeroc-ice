@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -93,7 +93,7 @@ private:
 
     const size_t _stackSize;
 
-    std::vector<IceUtil::ThreadControl> _threads; // Control for all threads, running or not.
+    std::vector<IceUtil::ThreadPtr> _threads; // All threads, running or not.
     int _running; // Number of running threads.
     int _inUse; // Number of threads that are currently in use.
     double _load; // Current load in number of threads.

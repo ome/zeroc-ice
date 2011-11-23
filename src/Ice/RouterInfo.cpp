@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,7 +9,6 @@
 
 #include <Ice/RouterInfo.h>
 #include <Ice/Router.h>
-#include <Ice/RoutingTable.h>
 #include <Ice/LocalException.h>
 #include <Ice/Connection.h> // For ice_connection()->timeout().
 #include <Ice/Functional.h>
@@ -111,8 +110,7 @@ IceInternal::RouterManager::erase(const RouterPrx& rtr)
 }
 
 IceInternal::RouterInfo::RouterInfo(const RouterPrx& router) :
-    _router(router),
-    _routingTable(new RoutingTable)
+    _router(router)
 {
     assert(_router);
 }
@@ -125,7 +123,7 @@ IceInternal::RouterInfo::destroy()
     _clientProxy = 0;
     _serverProxy = 0;
     _adapter = 0;
-    _routingTable->clear();
+    _identities.clear();
 }
 
 bool
@@ -175,7 +173,14 @@ IceInternal::RouterInfo::getClientProxy()
 	// we must use the same timeout as the already existing
 	// connection.
 	//
-	_clientProxy = _clientProxy->ice_timeout(_router->ice_connection()->timeout());
+	try
+	{
+	    _clientProxy = _clientProxy->ice_timeout(_router->ice_getConnection()->timeout());
+	}
+	catch(const Ice::CollocationOptimizationException&)
+	{
+	    // Ignore - collocated router
+	}
     }
 
     return _clientProxy;
@@ -192,7 +197,14 @@ IceInternal::RouterInfo::setClientProxy(const ObjectPrx& clientProxy)
     // In order to avoid creating a new connection to the router, we
     // must use the same timeout as the already existing connection.
     //
-    _clientProxy = _clientProxy->ice_timeout(_router->ice_connection()->timeout());
+    try
+    {
+        _clientProxy = _clientProxy->ice_timeout(_router->ice_getConnection()->timeout());
+    }
+    catch(const Ice::CollocationOptimizationException&)
+    {
+        // Ignore - collocated router
+    }
 }
 
 ObjectPrx
@@ -225,13 +237,33 @@ IceInternal::RouterInfo::setServerProxy(const ObjectPrx& serverProxy)
 void
 IceInternal::RouterInfo::addProxy(const ObjectPrx& proxy)
 {
-    //
-    // No mutex lock necessary, _routingTable is immutable, and
-    // RoutingTable is mutex protected.
-    //
-    if(_routingTable->add(proxy)) // Only add the proxy to the router if it's not already in the routing table.
+    assert(proxy); // Must not be called for null proxies.
+
+    IceUtil::Mutex::Lock sync(*this);
+
+    set<Identity>::iterator p = _identities.find(proxy->ice_getIdentity());
+
+    if(p == _identities.end())
     {
-	_router->addProxy(proxy);
+	//
+	// Only add the proxy to the router if it's not already in our local map.
+	//
+	ObjectProxySeq proxies;
+	proxies.push_back(proxy);
+	ObjectProxySeq evictedProxies = _router->addProxies(proxies);
+
+	//
+	// If we successfully added the proxy to the router, we add it to our local map.
+	//
+	_identities.insert(_identities.begin(), proxy->ice_getIdentity());
+
+	//
+	// We also must remove whatever proxies the router evicted.
+	//
+	for(ObjectProxySeq::iterator q = evictedProxies.begin(); q != evictedProxies.end(); ++q)
+	{
+	    _identities.erase((*q)->ice_getIdentity());
+	}
     }
 }
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -104,6 +104,50 @@ class CTest
     CSeqDict theCSeqDict;
     SDict theSDict;
     CDictDict theCDictDict;
+};
+
+module AAA
+{
+    class B;
+
+    sequence<B> BSeq;
+    dictionary<int, B> BDict;
+    struct BStruct
+    {
+	B bMem;
+    };
+
+    class C
+    {
+	Object obj1;
+	Object obj2;
+        B b1;
+        B b2;
+        BSeq x;
+	BDict y;
+	BStruct z;
+    };
+};
+
+module AAA
+{
+    sequence<C> CSeq;
+    dictionary<int, C> CDict;
+    struct CStruct
+    {
+	C cMem;
+    };
+
+    class B
+    {
+	Object obj1;
+	Object obj2;
+    	C c1;
+	C c2;
+        CSeq x;
+	CDict y;
+	CStruct z;
+    };
 };
 
 };

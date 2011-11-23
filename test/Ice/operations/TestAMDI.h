@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,6 +24,10 @@ public:
 
     virtual void opVoid_async(const Test::AMD_MyClass_opVoidPtr&,
 			      const Ice::Current&);
+
+    virtual void opSleep_async(const Test::AMD_MyClass_opSleepPtr&,
+			       int,
+			       const Ice::Current&);
 
     virtual void opByte_async(const Test::AMD_MyClass_opBytePtr&,
 			      Ice::Byte, Ice::Byte,
@@ -127,6 +131,9 @@ public:
 				     const Ice::Current&);
 
     virtual void opContext_async(const Test::AMD_MyClass_opContextPtr&, const Ice::Current&);
+
+    virtual void opDoubleMarshaling_async(const Test::AMD_MyClass_opDoubleMarshalingPtr&,
+					  Ice::Double, const Test::DoubleS&, const Ice::Current&);
 
     virtual void opDerived_async(const Test::AMD_MyDerivedClass_opDerivedPtr&,
 				 const Ice::Current&);

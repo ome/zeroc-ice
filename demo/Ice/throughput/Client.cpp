@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,8 @@
 
 #include <Ice/Ice.h>
 #include <Throughput.h>
+
+#include <iomanip>
 
 using namespace std;
 using namespace Demo;
@@ -28,7 +30,7 @@ int
 main(int argc, char* argv[])
 {
     ThroughputClient app;
-    return app.main(argc, argv, "config");
+    return app.main(argc, argv, "config.client");
 }
 
 int
@@ -52,7 +54,10 @@ ThroughputClient::run(int argc, char* argv[])
     }
     ThroughputPrx throughputOneway = ThroughputPrx::uncheckedCast(throughput->ice_oneway());
 
-    ByteSeq byteSeq(ByteSeqSize, 0);
+    ByteSeq byteSeq(ByteSeqSize);
+    pair<const Ice::Byte*, const Ice::Byte*> byteArr;
+    byteArr.first = &byteSeq[0];
+    byteArr.second = byteArr.first + byteSeq.size();
 
     StringSeq stringSeq(StringSeqSize, "hello");
 
@@ -198,13 +203,13 @@ ThroughputClient::run(int argc, char* argv[])
 		            {
 			        case 't':
 			        {
-			            throughput->sendByteSeq(byteSeq);
+			            throughput->sendByteSeq(byteArr);
 			            break;
 			        }
 			
 			        case 'o':
 			        {
-			            throughputOneway->sendByteSeq(byteSeq);
+			            throughputOneway->sendByteSeq(byteArr);
 			            break;
 			        }
 			
@@ -351,7 +356,7 @@ ThroughputClient::run(int argc, char* argv[])
 		{
 		    mbit *= 2;
 		}
-		cout << "throughput: " << mbit << " Mbps" << endl;
+		cout << "throughput: " << setprecision(5) << mbit << "Mbps" << endl;
 	    }
 	    else if(c == 's')
 	    {

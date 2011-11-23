@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,16 +26,23 @@ public:
     QueryI(const Ice::CommunicatorPtr&, const DatabasePtr&);
     virtual ~QueryI();
 
-    virtual ::Ice::ObjectPrx findObjectById(const ::Ice::Identity&, const ::Ice::Current&) const;
-    virtual ::Ice::ObjectPrx findObjectByType(const ::std::string&, const ::Ice::Current&) const;
-    virtual ::Ice::ObjectPrx findObjectByTypeOnLeastLoadedNode(const ::std::string&, LoadSample, 
-							       const ::Ice::Current&) const;
-    virtual ::Ice::ObjectProxySeq findAllObjectsByType(const ::std::string&, const ::Ice::Current&) const;
+    virtual void findObjectById_async(const AMD_Query_findObjectByIdPtr&, const ::Ice::Identity&, 
+				      const ::Ice::Current&) const;
+
+    virtual void findObjectByType_async(const AMD_Query_findObjectByTypePtr&, const ::std::string&, 
+					const ::Ice::Current&) const;
+
+    virtual void findObjectByTypeOnLeastLoadedNode_async(const AMD_Query_findObjectByTypeOnLeastLoadedNodePtr&, 
+							 const ::std::string&, LoadSample, 
+							 const ::Ice::Current&) const;
+
+    virtual void findAllObjectsByType_async(const AMD_Query_findAllObjectsByTypePtr&, const ::std::string&, 
+					    const ::Ice::Current&) const;
 
 private:
 
-    Ice::CommunicatorPtr _communicator;
-    DatabasePtr _database;
+    const Ice::CommunicatorPtr _communicator;
+    const DatabasePtr _database;
 };
 
 }

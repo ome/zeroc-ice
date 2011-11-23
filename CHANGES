@@ -1,3 +1,307 @@
+Changes since version 3.0.1
+---------------------------
+
+- Fixed a bug in slice2cpp that could cause incorrect code to
+  be generated if a class contained a member to another class,
+  but that class was only forward declared.
+
+- Unsupported port to Solaris 10 on Intel/AMD contributed by
+  Markus Bernhardt.
+
+- Removed removeObjectFactory() from the communicator interface.
+
+- Added a new object and server allocation mechanism to IceGrid. See
+  the Ice manual for more information.
+
+- The IceGrid XML descriptor <adapter> can only be used to specify
+  indirect adapters. It's no longer possible to specify an adapter
+  with an empty id. You can use properties to configure direct
+  adapters.
+
+- Fixed a bug where IceGrid would fail to register well-known objects
+  with an identity containing reserved characters for proxies.
+
+- Added "always" and "session" activation modes to IceGrid. See the
+  Ice manual for more information.
+
+- Changed the entry point of the IceSSL plugin to be 
+  IceSSL:createIceSSL.
+
+- Changed the entry point of the IceStorm service to be 
+  IceStormService,31:createIceStorm.
+
+- ObjectAdapter::deactivate() now notifies the locator registry when
+  the adapter is deactivated.
+
+- Fixed ObjectAdapter::activate() to activate the object adapter
+  only if it is able to register its endpoints and process proxy with
+  the locator. Calling activate() again retries a failed registration.
+
+- Glacier2.AllowCategories is now deprecated and superseded by
+  Glacier2.Filter.Category.Accept.
+
+- A new address filtering mechanism has been added to the Glacier2
+  router. See the description of the Glacier2.Filter.Address.Accept
+  and Glacier2.Filter.Address.Reject properties in the Ice manual
+  for details.
+
+- The Glacier2 router's identity-based filtering is now modifiable at
+  runtime through the Glacier2::SessionControl interface.
+
+- Generating new streaming functions for a Slice structure. The
+  ice_write and ice_read member functions replace their internal
+  equivalents (__write and __read).
+
+- Removed getDefaultProperties() functions, and the global default
+  properties. If you need global properties, you can easily create
+  your own global variable.
+
+- In Ice::Service, main(), run() and initializeCommunicator() now take
+  a third parameter, const InitializationData&. It's defaulted for
+  main() and run().
+
+- The signature of createProperties(argc, argv) is now:
+
+  PropertiesPtr createProperties(int* argc, char* argv[],
+                                 const PropertiesPtr& defaults = 0,
+				 const StringConverterPtr& conv = 0);
+
+  where "defaults" represents an optional set of default properties
+  used to initialize the new Properties object. Ice properties 
+  defined on the command line and properties defined in a
+  configuration file override these default properties.
+
+- Fixed a bug in dumpdb so that it handles object graphs correctly.
+
+- Fixed a bug where the proxy timeout, compress flag and connection
+  id attributes would be ignored for direct proxies using a router.
+
+- Added ability to configure Ice thread start/stop hooks through
+  InitializationData.
+
+- Added SSL authorization as an alternative to username/password
+  for Glacier2. To authorize with SSL, use the new operation
+  Glacier2::Router::createSessionFromSecureConnection(). On the
+  server side, the new interfaces Glacier2::SSLPermissionsVerifier and
+  Glacier2::SSLSessionManager must be implemented.
+
+- The Glacier2.CryptPasswords property no longer has a default value.
+  To reproduce the router's behavior from previous releases, define
+
+  Glacier2.CryptPasswords=passwords
+
+- Added identityToString and stringToIdentity to the Communicator
+  interface. If a string converter is configured, these functions
+  must be used instead of the current static functions.
+
+- Added ability to configure user-defined string and wstring 
+  converters that are used during marshalling/unmarshalling to
+  convert between UTF8 (as required by the Ice protocol) and the
+  user's character set.
+
+- Added operators <=, > and >= for Slice classes, proxies and
+  structures.
+
+- Added operation that allows a Glacier2 session to be destroyed from
+  a backend server.
+
+- It is now possible to recreate a new object adapter with the same 
+  name as an old adapter once waitForDeactivate() has completed on the
+  old adapter.
+
+- Added new operation Communicator::createObjectAdapterWithRouter(),
+  which creates a routed object adapter. An object adapter may now
+  be associated with at most one router, which is defined using this
+  operation or by setting the <AdapterName>.Router property. Also
+  as a result of this change, the ObjectAdapter::addRouter() and
+  ObjectAdapter::removeRouter() operations have been removed.
+
+- Added property sets to IceGrid descriptors. Property sets allow you
+  to define a set of properties in application, node and template
+  descriptors. These property sets can then be referenced from the
+  server, service and instance descriptors. See the IceGrid chapter in
+  the Ice manual for more information.
+
+- Changed the IceGrid::Admin::getApplicationDescriptor operation to
+  return the application descriptor without performing any variable
+  substitutions.
+
+- Fixed a bug in the adaptive load policy implementation that could
+  cause the IceGrid registry to crash.
+ 
+- Fixed a deadlock in the IceGrid registry that could occur when
+  using the adaptive load balancing policy or the IceGrid::Query
+  findObjectByTypeOnLeastLoadedNode operation.
+
+- Added communicator initialize functions that takes an argument of
+  type Ice::InitializationData. This structure contains communicator
+  members that may only be set during communicator initialization.
+  Currently included are Properties, Logger, Stats, default context,
+  string converters and the thread hooks. The initializeWithXXX
+  functions have been deprecated and the setLogger(), setStats() and
+  setDefaultContext() operations have been removed.
+
+- Added the new Slice metadata "deprecate" that can be used to
+  qualify operations. On most platforms this will cause a compiler
+  warning to be issued if user code uses the deprecated operation.
+
+- Integrated contributed updates for Tru64.
+
+- Added a new operation addProxies() to Ice::Router, which can return
+  evicted proxies. The old operation addProxy() is now deprecated.
+  Note that this is an internal interface for communications between
+  clients and routers (such as Glacier2).
+
+- Added a new property Glacier2.RoutingTable.MaxSize. If more proxies
+  are added than permitted by this property, proxies are evicted from
+  Glacier2's internal routing table on a least recently used basis.
+  Ice clients from version 3.1 on will automatically retry operation
+  calls on such evicted proxies, thereby re-adding them to Glacier2's
+  routing table. Ice clients older than version 3.0 will receive an
+  ObjectNotExistException. To continue to support such old clients,
+  you must set the maximum high enough so that Glacier2 will not evict
+  proxies. Upgrading your clients to 3.1 is highly recommended to avoid
+  large routing table sizes in Glacier2.
+
+- Replaced the IceSSL plugin. The new plugin no longer uses an XML
+  configuration file but rather relies solely on properties. A Python
+  script is provided in config/convertssl.py to convert old XML files
+  to the new properties. See the Ice manual for more information on
+  the plugin.
+
+- Added support for new Slice metadata ("cpp:type:wstring") that
+  generates code to use std::wstring instead of std::string. See the
+  Ice manual for more details.
+
+- The ice_timeout and ice_compress proxy methods now correctly
+  override the timeout and compress flag of indirect proxy endpoints.
+
+- Added proxy methods ice_isSecure, ice_getLocator, ice_getRouter,
+  ice_isCollocationOptimized.
+
+- Deprecated the following proxy methods:
+
+  ice_hash
+  ice_communicator
+  ice_collocationOptimization
+  ice_connection
+  ice_newIdentity
+  ice_newFacet
+  ice_newContext
+  ice_newAdapterId
+  ice_newEndpoints
+
+  These methods will be removed in the next major release. You should
+  use the new methods shown below:
+
+  ice_getHash
+  ice_getCommunicator
+  ice_collocationOptimized
+  ice_getConnection
+  ice_identity
+  ice_facet
+  ice_context
+  ice_adapterId
+  ice_endpoints
+
+- Changed the Ice core and services to use the random generator from
+  IceUtil. The initialization of the communicator doesn't call srand
+  or srand48 anymore. Your application should call it if necessary.
+
+- Added random generator to IceUtil (in include/IceUtil/Random.h). The
+  random generator is using /dev/urandom on Unix platforms and the
+  cryptography API on Windows (CryptGenRandom).
+
+- Added requestId to Current, which allows a servant to determine
+  whether an operation was invoked with collocated, oneway or twoway
+  semantics. The requestId member is 0 for oneway invocations and
+  -1 for collocated invocations.
+
+- Added typedefs for ProxyType and PointerType to the generated class 
+  for Slice classes and interfaces to allow for easier templating.
+
+- Fixed a bug in the Glacier2 router that could cause the router 
+  to leak resources when a session is destroyed and hang on shutdown.
+
+- Fixed a buffered mode bug in the Glacier2 router that could cause
+  hangs in the router if a client misbehaved.
+
+- AMI invocations will now reuse the connection cached with the
+  proxy instead of always looking up an existing connection for
+  each invocation. As a side effect of this change, AMI invocations 
+  on a proxy with collocation optimization enabled will now raise
+  Ice::CollocationOptimizationException.
+
+- Added the property Ice.Default.LocatorCacheTimeout and the proxy
+  method ice_locatorCacheTimeout(). If a cached endpoint is older
+  than the configured cache timeout, the Ice runtime won't use
+  the cached endpoint. Instead, the Ice runtime will query the
+  Ice locator service to retrieve up-to-date endpoints and then update
+  the locator cache. Please see the Ice manual for more information.
+
+- Added the proxy method ice_endpointSelection, which allows an
+  application to control how endpoints are selected at connection
+  establishment. Two endpoint selection types are currently supported:
+  Random and Ordered.
+
+- Added the proxy method ice_connectionCached. This method allows you
+  to enable or disable the caching of the connection by the proxy. By
+  default, the proxy will cache the connection to avoid looking it up
+  for each request. Disabling the connection caching is useful to do
+  per-request load balancing: the proxy will select a connection for
+  each request and the request will eventually be sent to different 
+  servers.
+
+- Removed the Ice.Warn.Leaks property.
+
+- Performance improvements if an AMI callback object is reused with
+  the same proxy.
+
+- If several proxies share the same connection, and an operation call
+  on one of the proxies causes a failure and the shared connection to
+  be closed, then subsequent calls on the other proxies will try to
+  establish a new connection instead of throwing an exception, even if
+  retries are disabled.
+
+- IcePatch2 now performs incremental reads of files during compression
+  and checksum calculation. Previously the entire file being processed
+  was read into memory.
+
+- If a proxy is not configured with the -h parameter, Ice will now
+  attempt to connect using all local interfaces. The loopback
+  interface (127.0.0.1) will only be tried if it is the only local
+  interface present.
+
+- Added the ability to specify alternate mappings for Slice sequences
+  other than std::vector. Please see the Ice manual for more details.
+
+- Fixed a bug in slice2cpp that caused one-shot constructors for
+  classes to incorrectly initialize base classes for class hierarchies
+  three or more levels deep.
+
+- Fixed a bug in slice2cpp that caused a compiler warning about an
+  unused parameter in the generated code for operations on classes
+  with void return type, no parameters, and no exception
+  specification.
+
+- Fixed a bug in the IceGrid deployment mechanism that would prevent
+  the use of a variable in an object identity's category.
+
+- Added Glacier2::Router::getCategoryForClient that should be used to
+  get the category for Glacier2 client callback objects. This
+  operation is a convenience that replaces the equivalent code
+  getServerProxy()->ice_getIdentity().category.
+
+- The Glacier2 router now forwards the context set by the client when
+  calling PermissionsVerifier::checkPermissions and
+  SessionManager::create.
+
+- Fixed a bug in IceBox and IceGrid that would prevent running IceBox
+  servers from a directory containing spaces.
+
+- Fixed a bug in the class garbage collector that could result in
+  double deallocation of class instances.
+
 Changes since version 3.0.0
 ---------------------------
 

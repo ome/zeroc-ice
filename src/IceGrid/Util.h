@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,9 +12,22 @@
 
 #include <IceGrid/Descriptor.h>
 #include <IceUtil/StringUtil.h>
+#include <IceGrid/Exception.h>
+#include <IceUtil/Random.h>
+
+#include <functional>
 
 namespace IceGrid
 {
+
+struct RandomNumberGenerator : public std::unary_function<ptrdiff_t, ptrdiff_t>
+{
+    ptrdiff_t operator()(ptrdiff_t d)
+    {
+        return IceUtil::random(static_cast<int>(d));
+    }
+};
+
 
 template<typename T> std::insert_iterator<T>
 inline set_inserter(T& container) 
@@ -23,6 +36,7 @@ inline set_inserter(T& container)
 }
 
 std::string toString(const std::vector<std::string>&, const std::string& = std::string(" "));
+std::string toString(const Ice::Exception&);
 
 std::string getProperty(const PropertyDescriptorSeq&, const std::string&, const std::string& = std::string());
 

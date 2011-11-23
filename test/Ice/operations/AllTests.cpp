@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,16 +15,33 @@
 using namespace std;
 
 Test::MyClassPrx
-allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
+allTests(const Ice::CommunicatorPtr& communicator, 
+	 const Ice::InitializationData& initData, bool collocated)
 {
     cout << "testing stringToProxy... " << flush;
-    string ref = "test:default -p 12345 -t 10000";
+    string ref = "test:default -p 12010 -t 10000";
     Ice::ObjectPrx base = communicator->stringToProxy(ref);
     test(base);
     cout << "ok" << endl;
 
-    cout << "testing ice_communicator... " << flush;
-    test(base->ice_communicator() == communicator);
+    cout << "testing ice_getCommunicator... " << flush;
+    test(base->ice_getCommunicator() == communicator);
+    cout << "ok" << endl;
+
+    cout << "testing proxy methods... " << flush;
+    test(communicator->identityToString(base->ice_identity(communicator->stringToIdentity("other"))->ice_getIdentity())
+         == "other");
+    test(base->ice_facet("facet")->ice_getFacet() == "facet");
+    test(base->ice_adapterId("id")->ice_getAdapterId() == "id");
+    test(base->ice_twoway()->ice_isTwoway());
+    test(base->ice_oneway()->ice_isOneway());
+    test(base->ice_batchOneway()->ice_isBatchOneway());
+    test(base->ice_datagram()->ice_isDatagram());
+    test(base->ice_batchDatagram()->ice_isBatchDatagram());
+    test(base->ice_secure(true)->ice_isSecure());
+    test(!base->ice_secure(false)->ice_isSecure());
+    test(base->ice_collocationOptimized(true)->ice_isCollocationOptimized());
+    test(!base->ice_collocationOptimized(false)->ice_isCollocationOptimized());
     cout << "ok" << endl;
 
     cout << "testing checked cast... " << flush;
@@ -74,7 +91,7 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     cout << "ok" << endl;
 
     cout << "testing checked cast with context... " << flush;
-    string cref = "context:default -p 12345 -t 10000";
+    string cref = "context:default -p 12010 -t 10000";
     Ice::ObjectPrx cbase = communicator->stringToProxy(cref);
     test(cbase);
 
@@ -101,19 +118,34 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 
     cout << "ok" << endl;
 
+    if(!collocated)
+    {
+	cout << "testing timeout... " << flush;
+	Test::MyClassPrx clTimeout = Test::MyClassPrx::uncheckedCast(cl->ice_timeout(500));
+	try
+	{
+	    clTimeout->opSleep(2000);
+	    test(false);
+	}
+	catch(const Ice::TimeoutException&)
+	{
+	}
+	cout << "ok" << endl;
+    }
+
     cout << "testing twoway operations... " << flush;
-    void twoways(const Ice::CommunicatorPtr&, const Test::MyClassPrx&);
-    twoways(communicator, cl);
-    twoways(communicator, derived);
+    void twoways(const Ice::CommunicatorPtr&, const Ice::InitializationData&, const Test::MyClassPrx&);
+    twoways(communicator, initData, cl);
+    twoways(communicator, initData, derived);
     derived->opDerived();
     cout << "ok" << endl;
 
     if(!collocated)
     {
 	cout << "testing twoway operations with AMI... " << flush;
-	void twowaysAMI(const Ice::CommunicatorPtr&, const Test::MyClassPrx&);
-	twowaysAMI(communicator, cl);
-	twowaysAMI(communicator, derived);
+	void twowaysAMI(const Ice::CommunicatorPtr&, const Ice::InitializationData&, const Test::MyClassPrx&);
+	twowaysAMI(communicator, initData, cl);
+	twowaysAMI(communicator, initData, derived);
 	cout << "ok" << endl;
 
 	cout << "testing batch oneway operations... " << flush;

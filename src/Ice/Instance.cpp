@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,6 +33,7 @@
 #include <Ice/DynamicLibrary.h>
 #include <Ice/PluginManagerI.h>
 #include <Ice/Initialize.h>
+#include <IceUtil/StringUtil.h>
 
 #include <stdio.h>
 
@@ -74,67 +75,6 @@ IceInternal::Instance::destroyed() const
 {
     IceUtil::RecMutex::Lock sync(*this);
     return _state == StateDestroyed;
-}
-
-PropertiesPtr
-IceInternal::Instance::properties() const
-{
-    //
-    // No check for destruction. It must be possible to access the
-    // properties after destruction.
-    //
-    // No mutex lock, immutable.
-    //
-    return _properties;
-}
-
-LoggerPtr
-IceInternal::Instance::logger() const
-{
-    //
-    // No check for destruction. It must be possible to access the
-    // logger after destruction.
-    //
-    IceUtil::RecMutex::Lock sync(*this);
-    return _logger;
-}
-
-void
-IceInternal::Instance::logger(const LoggerPtr& logger)
-{
-    //
-    // No check for destruction. It must be possible to set the logger
-    // after destruction (needed by logger plugins for example to
-    // unset the logger).
-    //
-    IceUtil::RecMutex::Lock sync(*this);
-    _logger = logger;
-}
-
-StatsPtr
-IceInternal::Instance::stats() const
-{
-    IceUtil::RecMutex::Lock sync(*this);
-
-    if(_state == StateDestroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
-
-    return _stats;
-}
-
-void
-IceInternal::Instance::stats(const StatsPtr& stats)
-{
-    IceUtil::RecMutex::Lock sync(*this);
-
-    if(_state == StateDestroyed)
-    {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
-    }
-
-    _stats = stats;
 }
 
 TraceLevelsPtr
@@ -285,7 +225,7 @@ IceInternal::Instance::serverThreadPool()
     
     if(!_serverThreadPool) // Lazy initialization.
     {
-	int timeout = _properties->getPropertyAsInt("Ice.ServerIdleTime");
+	int timeout = _initData.properties->getPropertyAsInt("Ice.ServerIdleTime");
 	_serverThreadPool = new ThreadPool(this, "Ice.ThreadPool.Server", timeout);
     }
 
@@ -345,13 +285,6 @@ IceInternal::Instance::pluginManager() const
     return _pluginManager;
 }
 
-size_t
-IceInternal::Instance::messageSizeMax() const
-{
-    // No mutex lock, immutable.
-    return _messageSizeMax;
-}
-
 int
 IceInternal::Instance::clientACM() const
 {
@@ -388,38 +321,112 @@ IceInternal::Instance::flushBatchRequests()
     adapterFactory->flushBatchRequests();
 }
 
-void
-IceInternal::Instance::setDefaultContext(const Context& ctx)
+Identity
+IceInternal::Instance::stringToIdentity(const string& s) const
 {
-    IceUtil::RecMutex::Lock sync(*this);
-    
-    if(_state == StateDestroyed)
+    Identity ident;
+
+    //
+    // Find unescaped separator.
+    //
+    string::size_type slash = string::npos, pos = 0;
+    while((pos = s.find('/', pos)) != string::npos)
     {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+        if(pos == 0 || s[pos - 1] != '\\')
+        {
+            if(slash == string::npos)
+            {
+                slash = pos;
+            }
+            else
+            {
+                //
+                // Extra unescaped slash found.
+                //
+                IdentityParseException ex(__FILE__, __LINE__);
+                ex.str = s;
+                throw ex;
+            }
+        }
+        pos++;
     }
 
-    _defaultContext = ctx;
-}
-
-Context
-IceInternal::Instance::getDefaultContext() const
-{
-    IceUtil::RecMutex::Lock sync(*this);
-    
-    if(_state == StateDestroyed)
+    if(slash == string::npos)
     {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+        if(!IceUtil::unescapeString(s, 0, s.size(), ident.name))
+        {
+            IdentityParseException ex(__FILE__, __LINE__);
+            ex.str = s;
+            throw ex;
+        }
+    }
+    else
+    {
+        if(!IceUtil::unescapeString(s, 0, slash, ident.category))
+        {
+            IdentityParseException ex(__FILE__, __LINE__);
+            ex.str = s;
+            throw ex;
+        }
+        if(slash + 1 < s.size())
+        {
+            if(!IceUtil::unescapeString(s, slash + 1, s.size(), ident.name))
+            {
+                IdentityParseException ex(__FILE__, __LINE__);
+                ex.str = s;
+                throw ex;
+            }
+        }
     }
 
-    return _defaultContext;
+    if(_initData.stringConverter)
+    {
+        string tmpString;
+	_initData.stringConverter->fromUTF8(reinterpret_cast<const Byte*>(ident.name.data()),
+					    reinterpret_cast<const Byte*>(ident.name.data() + ident.name.size()),
+					    tmpString);
+	ident.name = tmpString;
+
+	_initData.stringConverter->fromUTF8(reinterpret_cast<const Byte*>(ident.category.data()),
+					   reinterpret_cast<const Byte*>(ident.category.data() + ident.category.size()),
+					   tmpString);
+	ident.category = tmpString;
+    }
+
+    return ident;
 }
 
+string
+IceInternal::Instance::identityToString(const Identity& ident) const
+{
+    string name = ident.name;
+    string category = ident.category;
+    if(_initData.stringConverter)
+    {
+        UTF8BufferI buffer;
+        Byte* last = _initData.stringConverter->toUTF8(ident.name.data(), ident.name.data() + ident.name.size(),
+						       buffer);
+        name = string(reinterpret_cast<const char*>(buffer.getBuffer()), last - buffer.getBuffer());
 
-IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const PropertiesPtr& properties,
-				const LoggerPtr& logger) :
+	buffer.reset();
+        last = _initData.stringConverter->toUTF8(ident.category.data(), ident.category.data() + ident.category.size(),
+						 buffer);
+        category = string(reinterpret_cast<const char*>(buffer.getBuffer()), last - buffer.getBuffer());
+    }
+
+    if(category.empty())
+    {
+        return IceUtil::escapeString(name, "/");
+    }
+    else
+    {
+        return IceUtil::escapeString(category, "/") + '/' + IceUtil::escapeString(name, "/");
+    }
+}
+
+IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const InitializationData& initData) :
     _state(StateActive),
-    _properties(properties),
-    _logger(logger),
+    _initData(initData),
     _messageSizeMax(0),
     _clientACM(0),
     _serverACM(0),
@@ -433,13 +440,18 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Prope
 	IceUtil::StaticMutex::Lock sync(staticMutex);
 	instanceCount++;
 
+	if(!_initData.properties)
+	{
+	    _initData.properties = createProperties();
+	}
+
 	if(!oneOffDone)
 	{
 	    //
 	    // StdOut and StdErr redirection
 	    //
-	    string stdOutFilename = _properties->getProperty("Ice.StdOut");
-	    string stdErrFilename = _properties->getProperty("Ice.StdErr");
+	    string stdOutFilename = _initData.properties->getProperty("Ice.StdOut");
+	    string stdErrFilename = _initData.properties->getProperty("Ice.StdErr");
 	    
 	    if(stdOutFilename != "")
 	    {
@@ -464,20 +476,14 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Prope
 		    throw ex;
 		}
 	    }
-	    
-	    unsigned int seed = static_cast<unsigned int>(IceUtil::Time::now().toMicroSeconds());
-	    srand(seed);
-#ifndef _WIN32
-	    srand48(seed);
-#endif
-	    
-	    if(_properties->getPropertyAsInt("Ice.NullHandleAbort") > 0)
+
+	    if(_initData.properties->getPropertyAsInt("Ice.NullHandleAbort") > 0)
 	    {
 		IceUtil::nullHandleAbort = true;
 	    }
 	    
 #ifndef _WIN32
-	    string newUser = _properties->getProperty("Ice.ChangeUser");
+	    string newUser = _initData.properties->getProperty("Ice.ChangeUser");
 	    if(!newUser.empty())
 	    {
 		struct passwd* pw = getpwnam(newUser.c_str());
@@ -527,9 +533,9 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Prope
 	    action.sa_flags = 0;
 	    sigaction(SIGPIPE, &action, 0);
 	    
-	    if(_properties->getPropertyAsInt("Ice.UseSyslog") > 0)
+	    if(_initData.properties->getPropertyAsInt("Ice.UseSyslog") > 0)
 	    {
-		identForOpenlog = _properties->getProperty("Ice.ProgramName");
+		identForOpenlog = _initData.properties->getProperty("Ice.ProgramName");
 		if(identForOpenlog.empty())
 		{
 		    identForOpenlog = "<Unknown Ice Program>";
@@ -542,40 +548,38 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Prope
 	sync.release();
 	
 
-	if(!_logger)
+	if(!_initData.logger)
 	{
 #ifdef _WIN32
-	    if(_properties->getPropertyAsInt("Ice.UseEventLog") > 0)
+	    if(_initData.properties->getPropertyAsInt("Ice.UseEventLog") > 0)
 	    {
-		_logger = new EventLoggerI(_properties->getProperty("Ice.ProgramName"));
+		_initData.logger = new EventLoggerI(_initData.properties->getProperty("Ice.ProgramName"));
 	    }
 	    else
 	    {
-		_logger = new LoggerI(_properties->getProperty("Ice.ProgramName"), 
-				      _properties->getPropertyAsInt("Ice.Logger.Timestamp") > 0);
+		_initData.logger = new LoggerI(_initData.properties->getProperty("Ice.ProgramName"), 
+				      _initData.properties->getPropertyAsInt("Ice.Logger.Timestamp") > 0);
 	    }
 #else
-	    if(_properties->getPropertyAsInt("Ice.UseSyslog") > 0)
+	    if(_initData.properties->getPropertyAsInt("Ice.UseSyslog") > 0)
 	    {
-		_logger = new SysLoggerI;
+		_initData.logger = new SysLoggerI;
 	    }
 	    else
 	    {
-		_logger = new LoggerI(_properties->getProperty("Ice.ProgramName"), 
-				      _properties->getPropertyAsInt("Ice.Logger.Timestamp") > 0);
+		_initData.logger = new LoggerI(_initData.properties->getProperty("Ice.ProgramName"), 
+				      _initData.properties->getPropertyAsInt("Ice.Logger.Timestamp") > 0);
 	    }
 #endif
 	}
 
-	_stats = 0; // There is no default statistics callback object.
+	const_cast<TraceLevelsPtr&>(_traceLevels) = new TraceLevels(_initData.properties);
 
-	const_cast<TraceLevelsPtr&>(_traceLevels) = new TraceLevels(_properties);
-
-	const_cast<DefaultsAndOverridesPtr&>(_defaultsAndOverrides) = new DefaultsAndOverrides(_properties);
+	const_cast<DefaultsAndOverridesPtr&>(_defaultsAndOverrides) = new DefaultsAndOverrides(_initData.properties);
 
 	{
 	    static const int defaultMessageSizeMax = 1024;
-	    Int num = _properties->getPropertyAsIntWithDefault("Ice.MessageSizeMax", defaultMessageSizeMax);
+	    Int num = _initData.properties->getPropertyAsIntWithDefault("Ice.MessageSizeMax", defaultMessageSizeMax);
 	    if(num < 1)
 	    {
 		const_cast<size_t&>(_messageSizeMax) = defaultMessageSizeMax * 1024; // Ignore stupid values.
@@ -594,13 +598,13 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Prope
 	//
 	// Client ACM enabled by default. Server ACM disabled by default.
 	//
-	const_cast<Int&>(_clientACM) = _properties->getPropertyAsIntWithDefault("Ice.ACM.Client", 60);
-	const_cast<Int&>(_serverACM) = _properties->getPropertyAsInt("Ice.ACM.Server");
+	const_cast<Int&>(_clientACM) = _initData.properties->getPropertyAsIntWithDefault("Ice.ACM.Client", 60);
+	const_cast<Int&>(_serverACM) = _initData.properties->getPropertyAsInt("Ice.ACM.Server");
 
-	const_cast<bool&>(_threadPerConnection) = _properties->getPropertyAsInt("Ice.ThreadPerConnection") > 0;
+	const_cast<bool&>(_threadPerConnection) = _initData.properties->getPropertyAsInt("Ice.ThreadPerConnection") > 0;
 
 	{
-	    Int stackSize = _properties->getPropertyAsInt("Ice.ThreadPerConnection.StackSize");
+	    Int stackSize = _initData.properties->getPropertyAsInt("Ice.ThreadPerConnection.StackSize");
 	    if(stackSize < 0)
 	    {
 		stackSize = 0;
@@ -631,6 +635,11 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Prope
 	_servantFactoryManager = new ObjectFactoryManager();
 
 	_objectAdapterFactory = new ObjectAdapterFactory(this, communicator);
+
+	if(_initData.wstringConverter == 0)
+	{
+	    _initData.wstringConverter = new UnicodeWstringConverter();
+	}
 
 	__setNoDelete(false);
     }
@@ -717,7 +726,7 @@ IceInternal::Instance::finishSetup(int& argc, char* argv[])
     // Show process id if requested (but only once).
     //
     bool printProcessId = false;
-    if(!printProcessIdDone && _properties->getPropertyAsInt("Ice.PrintProcessId") > 0)
+    if(!printProcessIdDone && _initData.properties->getPropertyAsInt("Ice.PrintProcessId") > 0)
     {
 	//
 	// Safe double-check locking (no dependent variable!)
@@ -756,7 +765,7 @@ IceInternal::Instance::finishSetup(int& argc, char* argv[])
     {
 	interval = _serverACM;
     }
-    interval = _properties->getPropertyAsIntWithDefault("Ice.MonitorConnections", interval);
+    interval = _initData.properties->getPropertyAsIntWithDefault("Ice.MonitorConnections", interval);
     if(interval > 0)
     {
 	_connectionMonitor = new ConnectionMonitor(this, interval);
@@ -898,4 +907,46 @@ IceInternal::Instance::destroy()
 	serverThreadPool->joinWithAllThreads();
     }
     return true;
+}
+
+IceInternal::UTF8BufferI::UTF8BufferI() :
+    _buffer(0),
+    _offset(0)
+{
+}
+
+IceInternal::UTF8BufferI::~UTF8BufferI()
+{
+    free(_buffer);
+}
+
+Byte* 
+IceInternal::UTF8BufferI::getMoreBytes(size_t howMany, Byte* firstUnused)
+{
+    if(_buffer == 0)
+    {
+        _buffer = (Byte*)malloc(howMany);
+    }
+    else
+    {
+    	assert(firstUnused != 0);
+        _offset = firstUnused - _buffer;
+        _buffer = (Byte*)realloc(_buffer, _offset + howMany);
+    }
+
+    return _buffer + _offset;
+}
+
+Byte* 
+IceInternal::UTF8BufferI::getBuffer()
+{
+    return _buffer;
+}
+
+void
+IceInternal::UTF8BufferI::reset()
+{
+    free(_buffer);
+    _buffer = 0;
+    _offset = 0;
 }

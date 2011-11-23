@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -208,7 +208,8 @@ TopicManagerI::installTopic(const string& name, const LinkRecordDict& links, boo
     //
     // Create topic implementation
     //
-    TopicIPtr topicI = new TopicI(_publishAdapter, _traceLevels, name, links, _factory, _envName, _dbName);
+    TopicIPtr topicI =
+        new TopicI(_communicator, _publishAdapter, _traceLevels, name, links, _factory, _envName, _dbName);
     
     //
     // The identity is the name of the Topic.

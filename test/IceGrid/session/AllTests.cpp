@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,13 +9,25 @@
 
 #include <IceUtil/Thread.h>
 #include <Ice/Ice.h>
-#include <IceGrid/Observer.h>
+#include <IceGrid/Registry.h>
 #include <IceGrid/Query.h>
+#include <IceGrid/Session.h>
 #include <IceGrid/Admin.h>
+#include <IceGrid/Observer.h>
+#include <Glacier2/Router.h>
 #include <TestCommon.h>
 
 using namespace std;
 using namespace IceGrid;
+
+void 
+addProperty(const CommunicatorDescriptorPtr& communicator, const string& name, const string& value)
+{
+    PropertyDescriptor prop;
+    prop.name = name;
+    prop.value = value;
+    communicator->propertySet.properties.push_back(prop);
+}
 
 class SessionKeepAliveThread : public IceUtil::Thread, public IceUtil::Monitor<IceUtil::Mutex>
 {
@@ -37,7 +49,7 @@ public:
 	    timedWait(_timeout);
 	    if(!_terminated)
 	    {
-		vector<SessionPrx>::iterator p = _sessions.begin();
+		vector<AdminSessionPrx>::iterator p = _sessions.begin();
 		while(p != _sessions.end())
 		{
 		    try
@@ -55,7 +67,7 @@ public:
     }
 
     void 
-    add(const SessionPrx& session)
+    add(const AdminSessionPrx& session)
     {
 	Lock sync(*this);
 	_sessions.push_back(session);
@@ -72,29 +84,90 @@ public:
 private:
 
     const Ice::LoggerPtr _logger;
-    vector<SessionPrx> _sessions;
+    vector<AdminSessionPrx> _sessions;
     const IceUtil::Time _timeout;
     bool _terminated;
 };
 typedef IceUtil::Handle<SessionKeepAliveThread> SessionKeepAliveThreadPtr;
 
-class RegistryObserverI : public RegistryObserver, public IceUtil::Monitor<IceUtil::Mutex>
+class ObserverStackTracer
 {
 public:
 
-    RegistryObserverI() : _updated(false)
+    ObserverStackTracer(const string& name) : _name(name)
     {
+	_observers.insert(make_pair(name, this));
     }
 
+    virtual ~ObserverStackTracer()
+    {
+	_observers.erase(_name);
+    }
+
+    static void
+    printStack()
+    {
+	map<string, ObserverStackTracer*>::const_iterator p;
+	for(p = _observers.begin(); p != _observers.end(); ++p)
+	{
+	    vector<string>::const_iterator q = p->second->_stack.begin();
+	    if(p->second->_stack.size() > 10)
+	    {
+		q = p->second->_stack.begin() + p->second->_stack.size() - 10;
+	    }
+	    cerr << "Last 10 updates of observer `" << p->second->_name << "':" << endl;
+	    for(; q != p->second->_stack.end(); ++q)
+	    {
+		cerr << "  " << *q << endl;
+	    }
+	    p->second->_stack.clear();
+	}
+    }
+
+    void
+    trace(const string& msg)
+    {
+	_stack.push_back(msg);
+    }
+
+private:
+
+    string _name;
+    vector<string> _stack;
+    
+    static map<string, ObserverStackTracer*> _observers;
+};
+map<string, ObserverStackTracer*> ObserverStackTracer::_observers;
+
+class RegistryObserverI : public RegistryObserver, public ObserverStackTracer, public IceUtil::Monitor<IceUtil::Mutex>
+{
+public:
+
+    RegistryObserverI(const string& name) : ObserverStackTracer(name), _updated(0)
+    {
+    }
+    
     virtual void 
-    init(int serial, const ApplicationDescriptorSeq& apps, const Ice::Current&)
+    init(int serial, const ApplicationDescriptorSeq& apps, const AdapterInfoSeq& adapters, 
+	 const ObjectInfoSeq& objects, const Ice::Current&)
     {
 	Lock sync(*this);
 	for(ApplicationDescriptorSeq::const_iterator p = apps.begin(); p != apps.end(); ++p)
 	{
-	    this->applications.insert(make_pair((*p).name, *p));
+	    if(p->name != "Test") // Ignore the test application from application.xml!
+	    {
+		this->applications.insert(make_pair(p->name, *p));
+	    }
 	}
-	updated(serial);
+	for(AdapterInfoSeq::const_iterator q = adapters.begin(); q != adapters.end(); ++q)
+	{
+	    this->adapters.insert(make_pair(q->id, *q));
+	}
+	for(ObjectInfoSeq::const_iterator r = objects.begin(); r != objects.end(); ++r)
+	{
+	    this->objects.insert(make_pair(r->proxy->ice_getIdentity(), *r));
+	}
+	updated(serial, "init update");
     }
 
     virtual void
@@ -102,7 +175,7 @@ public:
     {
 	Lock sync(*this);
 	this->applications.insert(make_pair(app.name, app));
-	updated(serial);
+	updated(serial, "application added `" + app.name + "'");
     }
 
     virtual void 
@@ -110,7 +183,7 @@ public:
     {
 	Lock sync(*this);
 	this->applications.erase(name);
-	updated(serial);
+	updated(serial, "application removed `" + name + "'");
     }
 
     virtual void 
@@ -125,48 +198,109 @@ public:
 	{
 	    this->applications[desc.name].variables[p->first] = p->second;
 	}
-	updated(serial);
+	updated(serial, "application updated `" + desc.name + "'");
+    }
+
+    void
+    adapterAdded(int serial, const AdapterInfo& info, const Ice::Current&)
+    {
+	Lock sync(*this);
+	this->adapters.insert(make_pair(info.id, info));
+	updated(serial, "adapter added `" + info.id + "'");
+    }
+
+    void
+    adapterUpdated(int serial, const AdapterInfo& info, const Ice::Current&)
+    {
+	Lock sync(*this);
+	this->adapters[info.id] = info;
+	updated(serial, "adapter updated `" + info.id + "'");
+    }
+
+    void
+    adapterRemoved(int serial, const string& id, const Ice::Current&)
+    {
+	Lock sync(*this);
+	this->adapters.erase(id);
+	updated(serial, "adapter removed `" + id + "'");
+    }
+
+    void
+    objectAdded(int serial, const ObjectInfo& info, const Ice::Current&)
+    {
+	Lock sync(*this);
+	this->objects.insert(make_pair(info.proxy->ice_getIdentity(), info));
+	updated(serial, "object added `" + info.proxy->ice_toString() + "'");
+    }
+
+    void
+    objectUpdated(int serial, const ObjectInfo& info, const Ice::Current&)
+    {
+	Lock sync(*this);
+	this->objects[info.proxy->ice_getIdentity()] = info;
+	updated(serial, "object updated `" + info.proxy->ice_toString() + "'");
+    }
+
+    void
+    objectRemoved(int serial, const Ice::Identity& id, const Ice::Current& current)
+    {
+	Lock sync(*this);
+	this->objects.erase(id);
+	updated(serial, "object removed `" + current.adapter->getCommunicator()->identityToString(id) + "'");
     }
 
     void
     waitForUpdate(const char* file, int line)
     {
 	Lock sync(*this);
+
+	ostringstream os;
+	os << "wait for update from line " << line << " (serial = " << serial << ")";
+	trace(os.str());
+
 	while(!_updated)
 	{
 	    if(!timedWait(IceUtil::Time::seconds(10)))
 	    {
 		cerr << "timeout: " << file << ":" << line << endl;
+		ObserverStackTracer::printStack();
 		test(false); // Timeout
 	    }
 	}
-	_updated = false;
+	--_updated;
     }
 
     int serial;
     map<string, ApplicationDescriptor> applications;
+    map<string, AdapterInfo> adapters;
+    map<Ice::Identity, ObjectInfo> objects;
 
 private:
 
     void
-    updated(int serial = -1)
+    updated(int serial, const string& update)
     {
+	ostringstream os;
+	os  << update << " (serial = " << serial << ")";
+	trace(os.str());
+
 	if(serial != -1)
 	{
 	    this->serial = serial;
 	}
-	_updated = true;
+	++_updated;
 	notifyAll();
     }
 
-    bool _updated;
+    int _updated;
 };
+typedef IceUtil::Handle<RegistryObserverI> RegistryObserverIPtr;
 
-class NodeObserverI : public NodeObserver, public IceUtil::Monitor<IceUtil::Mutex>
+class NodeObserverI : public NodeObserver, public ObserverStackTracer, public IceUtil::Monitor<IceUtil::Mutex>
 {
 public:
 
-    NodeObserverI() : _updated(0)
+    NodeObserverI(const string& name) : ObserverStackTracer(name), _updated(0)
     {
     }
 
@@ -176,17 +310,17 @@ public:
 	Lock sync(*this);
 	for(NodeDynamicInfoSeq::const_iterator p = info.begin(); p != info.end(); ++p)
 	{
-	    this->nodes[p->name] = *p;
+	    this->nodes[p->name] = filter(*p);
 	}
-	updated(current);
+	updated(current, "init");
     }
 
     virtual void
     nodeUp(const NodeDynamicInfo& info, const Ice::Current& current)
     {
 	Lock sync(*this);
-	this->nodes[info.name] = info;
-	updated(current);
+	this->nodes[info.name] = filter(info);
+	updated(current, "node `" + info.name + "' up");
     }
 
     virtual void
@@ -194,12 +328,17 @@ public:
     {
 	Lock sync(*this);
 	this->nodes.erase(name);
-	updated(current);
+	updated(current, "node `" + name + "' down");
     }
 
     virtual void
     updateServer(const string& node, const ServerDynamicInfo& info, const Ice::Current& current)
     {
+	if(info.id == "Glacier2" || info.id == "Glacier2Admin" || info.id == "PermissionsVerifierServer")
+	{
+	    return;
+	}
+
 	Lock sync(*this);
 	//cerr << node << " " << info.id << " " << info.state << " " << info.pid << endl;
 	ServerDynamicInfoSeq& servers = this->nodes[node].servers;
@@ -223,12 +362,21 @@ public:
 	{
 	    servers.push_back(info);
 	}
-	updated(current);
+
+	ostringstream os;
+	os << "server `" << info.id << "' on node `" << node << "' state updated: " << info.state
+	   << " (pid = " << info.pid << ")";
+	updated(current, os.str());
     }
 
     virtual void
     updateAdapter(const string& node, const AdapterDynamicInfo& info, const Ice::Current& current)
     {
+	if(info.id == "PermissionsVerifierServer.Server")
+	{
+	    return;
+	}
+
 	Lock sync(*this);
   	//cerr << "update adapter: " << info.id << " " << (info.proxy ? "active" : "inactive") << endl;
 	AdapterDynamicInfoSeq& adapters = this->nodes[node].adapters;
@@ -253,18 +401,60 @@ public:
 	    adapters.push_back(info);
 	}
 
-	updated(current);
+	ostringstream os;
+	os << "adapter `" << info.id << " on node `" << node << "' state updated: " 
+	   << (info.proxy ? "active" : "inactive");
+	updated(current, os.str());
+    }
+
+    NodeDynamicInfo
+    filter(const NodeDynamicInfo& info)
+    {
+	if(info.name != "localnode")
+	{
+	    return info;
+	}
+
+	NodeDynamicInfo filtered;
+	filtered.name = info.name;
+	filtered.info = info.info;
+
+	for(ServerDynamicInfoSeq::const_iterator p = info.servers.begin(); p != info.servers.end(); ++p)
+	{
+	    if(p->id == "Glacier2" || p->id == "Glacier2Admin" || p->id == "PermissionsVerifierServer")
+	    {
+		continue;
+	    }
+	    filtered.servers.push_back(*p);
+	}
+
+	for(AdapterDynamicInfoSeq::const_iterator a = info.adapters.begin(); a != info.adapters.end(); ++a)
+	{
+	    if(a->id == "PermissionsVerifierServer.Server")
+	    {
+		continue;
+	    }
+	    filtered.adapters.push_back(*a);
+	}
+
+	return filtered;
     }
 
     void
     waitForUpdate(const char* file, int line)
     {
 	Lock sync(*this);
+
+	ostringstream os;
+	os << "wait for update from line " << line;
+	trace(os.str());
+
 	while(!_updated)
 	{
 	    if(!timedWait(IceUtil::Time::seconds(10)))
 	    {
 		cerr << "timeout: " << file << ":" << line << endl;
+		ObserverStackTracer::printStack();
 		test(false); // Timeout
 	    }
 	}
@@ -276,8 +466,9 @@ public:
 private:
 
     void
-    updated(const Ice::Current& current)
+    updated(const Ice::Current& current, const string& update)
     {
+	trace(update);
 	++_updated;
 	//cerr << "updated: " << current.operation << " " << _updated << endl;
 	notifyAll();
@@ -285,15 +476,50 @@ private:
 
     int _updated;
 };
+typedef IceUtil::Handle<NodeObserverI> NodeObserverIPtr;
+
+void
+testFailedAndPrintObservers(const char* expr, const char* file, unsigned int line)
+{
+    ObserverStackTracer::printStack();
+    testFailed(expr, file, line);
+}
+
+#undef test
+#define test(ex) ((ex) ? ((void)0) : testFailedAndPrintObservers(#ex, __FILE__, __LINE__))
 
 void 
 allTests(const Ice::CommunicatorPtr& communicator)
 {
-    SessionManagerPrx manager = SessionManagerPrx::checkedCast(communicator->stringToProxy("IceGrid/SessionManager"));
-    test(manager);
+    RegistryPrx registry = RegistryPrx::checkedCast(communicator->stringToProxy("IceGrid/Registry"));
+    test(registry);
 
     AdminPrx admin = AdminPrx::checkedCast(communicator->stringToProxy("IceGrid/Admin"));
     test(admin);
+
+    cout << "starting router... " << flush;
+    try
+    {
+	admin->startServer("Glacier2");
+    }
+    catch(const ServerStartException& ex)
+    {
+	cerr << ex.reason << endl;
+	test(false);
+    }
+    cout << "ok" << endl;
+
+    cout << "starting admin router... " << flush;
+    try
+    {
+	admin->startServer("Glacier2Admin");
+    }
+    catch(const ServerStartException& ex)
+    {
+	cerr << ex.reason << endl;
+	test(false);
+    }
+    cout << "ok" << endl;
 
     Ice::PropertiesPtr properties = communicator->getProperties();
 
@@ -301,27 +527,620 @@ allTests(const Ice::CommunicatorPtr& communicator)
     keepAlive = new SessionKeepAliveThread(communicator->getLogger(), IceUtil::Time::seconds(5));
     keepAlive->start();
 
+    IceGrid::RegistryPrx registry1 = IceGrid::RegistryPrx::uncheckedCast(registry->ice_connectionId("reg1"));
+    IceGrid::RegistryPrx registry2 = IceGrid::RegistryPrx::uncheckedCast(registry->ice_connectionId("reg2"));
+
+    Ice::ObjectPrx router = communicator->stringToProxy("Glacier2/router:default -p 12347 -h 127.0.0.1");
+    Ice::ObjectPrx adminRouter = communicator->stringToProxy("Glacier2/router:default -p 12348 -h 127.0.0.1");
+
+    Glacier2::RouterPrx router1 = Glacier2::RouterPrx::uncheckedCast(router->ice_connectionId("router1"));
+    Glacier2::RouterPrx router2 = Glacier2::RouterPrx::uncheckedCast(router->ice_connectionId("router2"));
+
+    Glacier2::RouterPrx adminRouter1 = Glacier2::RouterPrx::uncheckedCast(adminRouter->ice_connectionId("admRouter1"));
+    Glacier2::RouterPrx adminRouter2 = Glacier2::RouterPrx::uncheckedCast(adminRouter->ice_connectionId("admRouter2"));
+
+    //
+    // TODO: Find a better way to wait for the Glacier2 router to be
+    // fully started...
+    //
+    while(true)
     {
-	cout << "testing sessions... " << flush;
-	SessionPrx session1 = manager->createLocalSession("Observer1");
-	SessionPrx session2 = manager->createLocalSession("Observer2");
+	try
+	{
+	    router1->ice_ping();
+	    adminRouter1->ice_ping();
+	    break;
+	}
+	catch(const Ice::LocalException&)
+	{
+	    IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(100));
+	}
+    }
+
+    { 
+	cout << "testing username/password sessions... " << flush;
+
+	SessionPrx session1, session2;
+
+	session1 = SessionPrx::uncheckedCast(registry1->createSession("client1", "test1")->ice_connectionId("reg1"));
+	session2 = SessionPrx::uncheckedCast(registry2->createSession("client2", "test2")->ice_connectionId("reg2"));
+	try
+	{
+	    registry1->createSession("client3", "test1");
+	}
+	catch(const IceGrid::PermissionDeniedException&)
+	{
+	}
+
+	session1->ice_ping();
+	session2->ice_ping();
+
+	try
+	{
+	    session1->ice_connectionId("")->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    session2->ice_connectionId("")->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	try
+	{
+	    session1->ice_connectionId("reg2")->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    session2->ice_connectionId("reg1")->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+
+	session1->destroy();
+	session2->destroy();
+
+	AdminSessionPrx adminSession1, adminSession2;
+
+	adminSession1 = AdminSessionPrx::uncheckedCast(
+	    registry1->createAdminSession("admin1", "test1")->ice_connectionId("reg1"));
+	adminSession2 = AdminSessionPrx::uncheckedCast(
+	    registry2->createAdminSession("admin2", "test2")->ice_connectionId("reg2"));
+	try
+	{
+	    registry1->createAdminSession("admin3", "test1");
+	}
+	catch(const IceGrid::PermissionDeniedException&)
+	{
+	}
+
+	adminSession1->ice_ping();
+	adminSession2->ice_ping();
+
+	try
+	{
+	    adminSession1->ice_connectionId("")->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    adminSession2->ice_connectionId("")->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	adminSession1->getAdmin()->ice_connectionId("reg1")->ice_ping();
+	adminSession2->getAdmin()->ice_connectionId("reg2")->ice_ping();
+
+	try
+	{
+	    adminSession1->getAdmin()->ice_connectionId("reg2")->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    adminSession2->getAdmin()->ice_connectionId("reg1")->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	adminSession1->destroy();
+	adminSession2->destroy();
+	
+	cout << "ok" << endl;
+    }
+
+    if(properties->getProperty("Ice.Default.Protocol") == "ssl")
+    { 
+	cout << "testing sessions from secure connection... " << flush;
+
+	SessionPrx session1, session2;
+
+	session1 = SessionPrx::uncheckedCast(registry1->createSessionFromSecureConnection()->ice_connectionId("reg1"));
+	session2 = SessionPrx::uncheckedCast(registry2->createSessionFromSecureConnection()->ice_connectionId("reg2"));
+
+	session1->ice_ping();
+	session2->ice_ping();
+
+	try
+	{
+	    session1->ice_connectionId("")->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    session2->ice_connectionId("")->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	session1->destroy();
+	session2->destroy();
+	
+	AdminSessionPrx adminSession1, adminSession2;
+
+	adminSession1 = AdminSessionPrx::uncheckedCast(
+	    registry1->createAdminSessionFromSecureConnection()->ice_connectionId("reg1"));
+	adminSession2 = AdminSessionPrx::uncheckedCast(
+	    registry2->createAdminSessionFromSecureConnection()->ice_connectionId("reg2"));
+
+	adminSession1->ice_ping();
+	adminSession2->ice_ping();
+
+	try
+	{
+	    adminSession1->ice_connectionId("")->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    adminSession2->ice_connectionId("")->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	adminSession1->destroy();
+	adminSession2->destroy();
+
+	cout << "ok" << endl;
+    }
+    else
+    {
+	cout << "testing sessions from secure connection... " << flush;
+	try
+	{
+	    registry1->createSessionFromSecureConnection();
+	    test(false);
+	}
+	catch(const IceGrid::PermissionDeniedException&)
+	{
+	}
+	try
+	{
+	    registry1->createAdminSessionFromSecureConnection();
+	    test(false);
+	}
+	catch(const IceGrid::PermissionDeniedException&)
+	{
+	}
+	cout << "ok" << endl;
+    }
+
+    {
+	cout << "testing Glacier2 username/password sessions... " << flush;
+
+	SessionPrx session1, session2;
+
+	Glacier2::SessionPrx base;
+
+	base = router1->createSession("client1", "test1");
+	session1 = SessionPrx::uncheckedCast(base->ice_connectionId("router1")->ice_router(router1));
+
+	base = router2->createSession("client2", "test2");
+	session2 = SessionPrx::uncheckedCast(base->ice_connectionId("router2")->ice_router(router2));
+
+	try
+	{
+	    router1->createSession("client3", "test1");
+	}
+	catch(const Glacier2::CannotCreateSessionException&)
+	{
+	}
+
+	session1->ice_ping();
+	session2->ice_ping();
+
+	try
+	{
+	    session1->ice_connectionId("router2")->ice_router(router2)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    session2->ice_connectionId("router1")->ice_router(router1)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	Ice::ObjectPrx obj = communicator->stringToProxy("IceGrid/Query");
+	obj->ice_connectionId("router1")->ice_router(router1)->ice_ping();
+	obj->ice_connectionId("router2")->ice_router(router2)->ice_ping();
+
+	obj = communicator->stringToProxy("IceGrid/Registry");
+	try
+	{
+	    obj->ice_connectionId("router1")->ice_router(router1)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    obj->ice_connectionId("router2")->ice_router(router2)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	try
+	{
+	    router1->destroySession();
+	}
+	catch(const Ice::ConnectionLostException&)
+	{
+	}
+	try
+	{
+	    router2->destroySession();
+	}
+	catch(const Ice::ConnectionLostException&)
+	{
+	}
+
+	AdminSessionPrx admSession1, admSession2;
+
+	base = adminRouter1->createSession("admin1", "test1");
+	admSession1 = AdminSessionPrx::uncheckedCast(base->ice_connectionId("admRouter1")->ice_router(adminRouter1));
+
+	base = adminRouter2->createSession("admin2", "test2");
+	admSession2 = AdminSessionPrx::uncheckedCast(base->ice_connectionId("admRouter2")->ice_router(adminRouter2));
+
+	try
+	{
+	    adminRouter1->createSession("client3", "test1");
+	}
+	catch(const Glacier2::CannotCreateSessionException&)
+	{
+	}
+
+	admSession1->ice_ping();
+	admSession2->ice_ping();
+
+	Ice::ObjectPrx admin1 = admSession1->getAdmin()->ice_router(adminRouter1)->ice_connectionId("admRouter1");
+	Ice::ObjectPrx admin2 = admSession2->getAdmin()->ice_router(adminRouter2)->ice_connectionId("admRouter2");
+
+	admin1->ice_ping();
+	admin2->ice_ping();
+
+	try
+	{
+	    admSession1->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    admSession2->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	try
+	{
+	    admin1->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    admin2->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	obj = communicator->stringToProxy("IceGrid/Query");
+	try
+	{
+	    obj->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    obj->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	obj = communicator->stringToProxy("IceGrid/Admin");
+	try
+	{
+	    obj->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    obj->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	try
+	{
+	    adminRouter1->destroySession();
+	}
+	catch(const Ice::ConnectionLostException&)
+	{
+	}
+	try
+	{
+	    adminRouter2->destroySession();
+	}
+	catch(const Ice::ConnectionLostException&)
+	{
+	}
+
+	cout << "ok" << endl;
+    }
+
+    if(properties->getProperty("Ice.Default.Protocol") == "ssl")
+    { 
+	cout << "testing Glacier2 sessions from secure connection... " << flush;
+
+	SessionPrx session1, session2;
+
+	Glacier2::SessionPrx base;
+
+	//
+	// BUGFIX: We can't re-use the same router proxies because of bug 1034.
+	//
+	router1 = Glacier2::RouterPrx::uncheckedCast(router1->ice_connectionId("router11"));
+	router2 = Glacier2::RouterPrx::uncheckedCast(router2->ice_connectionId("router21"));
+
+	base = router1->createSessionFromSecureConnection();
+	session1 = SessionPrx::uncheckedCast(base->ice_connectionId("router11")->ice_router(router1));
+
+	base = router2->createSessionFromSecureConnection();
+	session2 = SessionPrx::uncheckedCast(base->ice_connectionId("router21")->ice_router(router2));
+
+	session1->ice_ping();
+	session2->ice_ping();
+
+	try
+	{
+	    session1->ice_connectionId("router21")->ice_router(router2)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    session2->ice_connectionId("router11")->ice_router(router1)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	Ice::ObjectPrx obj = communicator->stringToProxy("IceGrid/Query");
+	obj->ice_connectionId("router11")->ice_router(router1)->ice_ping();
+	obj->ice_connectionId("router21")->ice_router(router2)->ice_ping();
+
+	obj = communicator->stringToProxy("IceGrid/Registry");
+	try
+	{
+	    obj->ice_connectionId("router11")->ice_router(router1)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    obj->ice_connectionId("router21")->ice_router(router2)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	try
+	{
+	    router1->destroySession();
+	}
+	catch(const Ice::ConnectionLostException&)
+	{
+	}
+	try
+	{
+	    router2->destroySession();
+	}
+	catch(const Ice::ConnectionLostException&)
+	{
+	}
+
+	AdminSessionPrx admSession1, admSession2;
+
+	base = adminRouter1->createSessionFromSecureConnection();
+	admSession1 = AdminSessionPrx::uncheckedCast(base->ice_connectionId("admRouter1")->ice_router(adminRouter1));
+
+	base = adminRouter2->createSessionFromSecureConnection();
+	admSession2 = AdminSessionPrx::uncheckedCast(base->ice_connectionId("admRouter2")->ice_router(adminRouter2));
+
+	admSession1->ice_ping();
+	admSession2->ice_ping();
+
+	Ice::ObjectPrx admin1 = admSession1->getAdmin()->ice_router(adminRouter1)->ice_connectionId("admRouter1");
+	Ice::ObjectPrx admin2 = admSession2->getAdmin()->ice_router(adminRouter2)->ice_connectionId("admRouter2");
+
+	admin1->ice_ping();
+	admin2->ice_ping();
+
+	try
+	{
+	    admSession1->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    admSession2->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	try
+	{
+	    admin1->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    admin2->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	obj = communicator->stringToProxy("IceGrid/Query");
+	try
+	{
+	    obj->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+	try
+	{
+	    obj->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}	    
+
+	obj = communicator->stringToProxy("IceGrid/Admin");
+	try
+	{
+	    obj->ice_connectionId("admRouter1")->ice_router(adminRouter1)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{ 
+	}
+	try
+	{
+	    obj->ice_connectionId("admRouter2")->ice_router(adminRouter2)->ice_ping();
+	}
+	catch(const Ice::ObjectNotExistException&)
+	{
+	}
+
+	try
+	{
+	    adminRouter1->destroySession();
+	}
+	catch(const Ice::ConnectionLostException&)
+	{
+	}
+	try
+	{
+	    adminRouter2->destroySession();
+	}
+	catch(const Ice::ConnectionLostException&)
+	{
+	}
+
+	cout << "ok" << endl;
+    }
+    else
+    {
+	cout << "testing Glacier2 sessions from secure connection... " << flush;
+	try
+	{
+	    router1->createSessionFromSecureConnection();
+	    test(false);
+	}
+	catch(const Glacier2::PermissionDeniedException&)
+	{
+	}
+	try
+	{
+	    adminRouter1->createSessionFromSecureConnection();
+	    test(false);
+	}
+	catch(const Glacier2::PermissionDeniedException&)
+	{
+	}
+	cout << "ok" << endl;
+    }
+
+    {
+	cout << "testing updates with admin sessions... " << flush;
+	AdminSessionPrx session1 = AdminSessionPrx::uncheckedCast(registry->createAdminSession("admin1", "test1"));
+	AdminSessionPrx session2 = AdminSessionPrx::uncheckedCast(registry->createAdminSession("admin2", "test2"));
 	
 	keepAlive->add(session1);
 	keepAlive->add(session2);	
+
+	AdminPrx admin1 = session1->getAdmin();
+	AdminPrx admin2 = session2->getAdmin();
 	
 	Ice::ObjectAdapterPtr adpt1 = communicator->createObjectAdapter("Observer1");
-	RegistryObserverI* regObs1 = new RegistryObserverI();
+	RegistryObserverIPtr regObs1 = new RegistryObserverI("regObs1");
 	Ice::ObjectPrx ro1 = adpt1->addWithUUID(regObs1);
-	NodeObserverI* nodeObs1 = new NodeObserverI();
+	NodeObserverIPtr nodeObs1 = new NodeObserverI("nodeObs1");
 	Ice::ObjectPrx no1 = adpt1->addWithUUID(nodeObs1);
 	adpt1->activate();
-	manager->ice_connection()->setAdapter(adpt1);	
+	registry->ice_getConnection()->setAdapter(adpt1);	
 	session1->setObserversByIdentity(ro1->ice_getIdentity(), no1->ice_getIdentity());
 	
 	Ice::ObjectAdapterPtr adpt2 = communicator->createObjectAdapterWithEndpoints("Observer2", "default");
-	RegistryObserverI* regObs2 = new RegistryObserverI();
+	RegistryObserverIPtr regObs2 = new RegistryObserverI("regObs2");
  	Ice::ObjectPrx ro2 = adpt2->addWithUUID(regObs2);
- 	NodeObserverI* nodeObs2 = new NodeObserverI();
+ 	NodeObserverIPtr nodeObs2 = new NodeObserverI("nodeObs1");
  	Ice::ObjectPrx no2 = adpt2->addWithUUID(nodeObs2);
  	adpt2->activate();
  	session2->setObservers(RegistryObserverPrx::uncheckedCast(ro2), NodeObserverPrx::uncheckedCast(no2));
@@ -334,7 +1153,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
 	try
 	{
-	    session1->getQuery()->ice_ping();
 	    session1->getAdmin()->ice_ping();
 	}
 	catch(const Ice::LocalException&)
@@ -369,7 +1187,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	}
 	catch(const AccessDeniedException& ex)
 	{
-	    test(ex.lockUserId == "Observer1");
+	    test(ex.lockUserId == "admin1");
 	}
 
 	try
@@ -395,7 +1213,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	{
 	    ApplicationDescriptor app;
 	    app.name = "Application";
-	    session2->addApplication(app);
+	    admin2->addApplication(app);
 	}
 	catch(const Ice::UserException&)
 	{
@@ -404,7 +1222,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
 	try
 	{
-	    session1->addApplication(ApplicationDescriptor());
+	    admin1->addApplication(ApplicationDescriptor());
 	    test(false);
 	}
 	catch(const AccessDeniedException&)
@@ -434,7 +1252,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	    ApplicationUpdateDescriptor update;
 	    update.name = "Application";
 	    update.variables.insert(make_pair(string("test"), string("test")));
-	    session1->updateApplication(update);
+	    admin1->updateApplication(update);
 	    session1->finishUpdate();
 	}
 	catch(const Ice::UserException& ex)
@@ -454,7 +1272,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	{
 	    ApplicationUpdateDescriptor update;
 	    update.name = "Application";
-	    session1->updateApplication(update);
+	    admin1->updateApplication(update);
 	    test(false);
 	}
 	catch(const AccessDeniedException&)
@@ -465,7 +1283,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	{
 	    int s = session2->startUpdate();
 	    test(s == serial);
-	    session2->removeApplication("Application");
+	    admin2->removeApplication("Application");
 	    session2->finishUpdate();
 	}
 	catch(const Ice::UserException&)
@@ -518,17 +1336,18 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     {
 	cout << "testing registry observer... " << flush;
-	SessionPrx session1 = manager->createLocalSession("Observer1");
-	
+	AdminSessionPrx session1 = AdminSessionPrx::uncheckedCast(registry->createAdminSession("admin1", "test1"));
+	AdminPrx admin1 = session1->getAdmin();
+
 	keepAlive->add(session1);
 	
 	Ice::ObjectAdapterPtr adpt1 = communicator->createObjectAdapter("Observer1.1");
-	RegistryObserverI* regObs1 = new RegistryObserverI();
+	RegistryObserverIPtr regObs1 = new RegistryObserverI("regObs1");
 	Ice::ObjectPrx ro1 = adpt1->addWithUUID(regObs1);
-	NodeObserverI* nodeObs1 = new NodeObserverI();
+	NodeObserverIPtr nodeObs1 = new NodeObserverI("nodeObs1");
 	Ice::ObjectPrx no1 = adpt1->addWithUUID(nodeObs1);
 	adpt1->activate();
-	manager->ice_connection()->setAdapter(adpt1);	
+	registry->ice_getConnection()->setAdapter(adpt1);	
 	session1->setObserversByIdentity(ro1->ice_getIdentity(), no1->ice_getIdentity());
 	
 	regObs1->waitForUpdate(__FILE__, __LINE__);
@@ -548,7 +1367,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	    app.name = "Application";
 	    int s = session1->startUpdate();
 	    test(s == serial);
-	    session1->addApplication(app);
+	    admin1->addApplication(app);
 	    regObs1->waitForUpdate(__FILE__, __LINE__);
 	    test(regObs1->applications.find("Application") != regObs1->applications.end());
 	    test(++serial == regObs1->serial);
@@ -564,7 +1383,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	    ApplicationUpdateDescriptor update;
 	    update.name = "Application";
 	    update.variables.insert(make_pair(string("test"), string("test")));
-	    session1->updateApplication(update);
+	    admin1->updateApplication(update);
 	    regObs1->waitForUpdate(__FILE__, __LINE__);
 	    test(regObs1->applications.find("Application") != regObs1->applications.end());
 	    test(regObs1->applications["Application"].variables["test"] == "test");
@@ -582,7 +1401,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	    app = regObs1->applications["Application"];
 	    app.variables.clear();
 	    app.variables["test1"] = "test";
-	    session1->syncApplication(app);
+	    admin1->syncApplication(app);
 	    regObs1->waitForUpdate(__FILE__, __LINE__);
 	    test(regObs1->applications.find("Application") != regObs1->applications.end());
 	    test(regObs1->applications["Application"].variables.size() == 1);
@@ -597,10 +1416,112 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
 	try
 	{
-	    session1->removeApplication("Application");
+	    admin1->removeApplication("Application");
 	    regObs1->waitForUpdate(__FILE__, __LINE__);
 	    test(regObs1->applications.empty());
 	    test(++serial == regObs1->serial);
+	}
+	catch(const Ice::UserException& ex)
+	{
+	    cerr << ex << endl;
+	    test(false);
+	}
+
+	//
+	// Test adapterAdded/adapterUpdated/adapterRemoved.
+	//
+	try
+	{
+	    Ice::ObjectPrx obj = communicator->stringToProxy("dummy:tcp -p 10000");
+
+	    Ice::LocatorRegistryPrx locatorRegistry = communicator->getDefaultLocator()->getRegistry();
+	    locatorRegistry->setAdapterDirectProxy("DummyAdapter", obj);
+	    regObs1->waitForUpdate(__FILE__, __LINE__);
+	    test(regObs1->adapters.find("DummyAdapter") != regObs1->adapters.end());
+	    test(regObs1->adapters["DummyAdapter"].proxy == obj);
+	    test(++serial == regObs1->serial);
+	    
+	    obj = communicator->stringToProxy("dummy:tcp -p 10000 -h host");
+	    locatorRegistry->setAdapterDirectProxy("DummyAdapter", obj);
+	    regObs1->waitForUpdate(__FILE__, __LINE__);
+	    test(regObs1->adapters.find("DummyAdapter") != regObs1->adapters.end());
+	    test(regObs1->adapters["DummyAdapter"].proxy == obj);
+	    test(++serial == regObs1->serial);
+
+	    obj = communicator->stringToProxy("dummy:tcp -p 10000 -h host");
+	    locatorRegistry->setReplicatedAdapterDirectProxy("DummyAdapter", "DummyReplicaGroup", obj);
+	    regObs1->waitForUpdate(__FILE__, __LINE__);
+	    test(regObs1->adapters.find("DummyAdapter") != regObs1->adapters.end());
+	    test(regObs1->adapters["DummyAdapter"].proxy == obj);
+	    test(regObs1->adapters["DummyAdapter"].replicaGroupId == "DummyReplicaGroup");
+	    test(++serial == regObs1->serial);
+
+	    obj = communicator->stringToProxy("dummy:tcp -p 10000 -h host");
+	    locatorRegistry->setReplicatedAdapterDirectProxy("DummyAdapter1", "DummyReplicaGroup", obj);
+	    regObs1->waitForUpdate(__FILE__, __LINE__);
+	    test(regObs1->adapters.find("DummyAdapter1") != regObs1->adapters.end());
+	    test(regObs1->adapters["DummyAdapter1"].proxy == obj);
+	    test(regObs1->adapters["DummyAdapter1"].replicaGroupId == "DummyReplicaGroup");
+	    test(++serial == regObs1->serial);
+
+	    obj = communicator->stringToProxy("dummy:tcp -p 10000 -h host");
+	    locatorRegistry->setReplicatedAdapterDirectProxy("DummyAdapter2", "DummyReplicaGroup", obj);
+	    regObs1->waitForUpdate(__FILE__, __LINE__);
+	    test(regObs1->adapters.find("DummyAdapter2") != regObs1->adapters.end());
+	    test(regObs1->adapters["DummyAdapter2"].proxy == obj);
+	    test(regObs1->adapters["DummyAdapter2"].replicaGroupId == "DummyReplicaGroup");
+	    test(++serial == regObs1->serial);
+
+	    admin->removeAdapter("DummyAdapter2");
+	    regObs1->waitForUpdate(__FILE__, __LINE__);
+	    test(regObs1->adapters.find("DummyAdapter2") == regObs1->adapters.end());
+	    test(++serial == regObs1->serial);
+
+	    admin->removeAdapter("DummyReplicaGroup");
+	    regObs1->waitForUpdate(__FILE__, __LINE__);
+	    regObs1->waitForUpdate(__FILE__, __LINE__);
+	    test(regObs1->adapters["DummyAdapter"].replicaGroupId == "");
+	    test(regObs1->adapters["DummyAdapter1"].replicaGroupId == "");
+	    serial += 2;
+	    test(serial == regObs1->serial);
+
+	    locatorRegistry->setAdapterDirectProxy("DummyAdapter", 0);
+	    regObs1->waitForUpdate(__FILE__, __LINE__);
+	    test(regObs1->adapters.find("DummyAdapter") == regObs1->adapters.end());
+	    test(++serial == regObs1->serial);
+	}
+	catch(const Ice::UserException& ex)
+	{
+	    cerr << ex << endl;
+	    test(false);
+	}
+
+	//
+	// Test objectAdded/objectUpdated/objectRemoved.
+	//
+	try
+	{
+	    Ice::ObjectPrx obj = communicator->stringToProxy("dummy:tcp -p 10000");
+
+	    admin->addObjectWithType(obj, "::Dummy");
+	    regObs1->waitForUpdate(__FILE__, __LINE__);
+	    test(regObs1->objects.find(communicator->stringToIdentity("dummy")) != regObs1->objects.end());
+	    test(regObs1->objects[communicator->stringToIdentity("dummy")].type == "::Dummy");
+	    test(regObs1->objects[communicator->stringToIdentity("dummy")].proxy == obj);
+	    test(++serial == regObs1->serial);
+	    
+	    obj = communicator->stringToProxy("dummy:tcp -p 10000 -h host");
+	    admin->updateObject(obj);
+	    regObs1->waitForUpdate(__FILE__, __LINE__);
+	    test(regObs1->objects.find(communicator->stringToIdentity("dummy")) != regObs1->objects.end());
+	    test(regObs1->objects[communicator->stringToIdentity("dummy")].type == "::Dummy");
+	    test(regObs1->objects[communicator->stringToIdentity("dummy")].proxy == obj);
+	    test(++serial == regObs1->serial);
+
+	    admin->removeObject(obj->ice_getIdentity());
+	    regObs1->waitForUpdate(__FILE__, __LINE__);
+	    test(regObs1->objects.find(communicator->stringToIdentity("dummy")) == regObs1->objects.end());
+	    test(++serial == regObs1->serial);	    
 	}
 	catch(const Ice::UserException& ex)
 	{
@@ -616,6 +1537,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	ServerDescriptorPtr server = new ServerDescriptor();
 	server->id = "node-1";
 	server->exe = properties->getProperty("IceDir") + "/bin/icegridnode";
+	server->options.push_back("--nowarn");
 	server->pwd = ".";
 	AdapterDescriptor adapter;
 	adapter.name = "IceGrid.Node";
@@ -623,16 +1545,9 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	adapter.registerProcess = true;
 	adapter.waitForActivation = false;
 	server->adapters.push_back(adapter);
-	PropertyDescriptor prop;
-	prop.name = "IceGrid.Node.Name";
-	prop.value = "node-1";
-	server->properties.push_back(prop);
-	prop.name = "IceGrid.Node.Data";
-	prop.value = properties->getProperty("TestDir") + "/db/node-1";
-	server->properties.push_back(prop);
-	prop.name = "IceGrid.Node.Endpoints";
-	prop.value = "default";
-	server->properties.push_back(prop);
+	addProperty(server, "IceGrid.Node.Name", "node-1");
+	addProperty(server, "IceGrid.Node.Data", properties->getProperty("TestDir") + "/db/node-1");
+	addProperty(server, "IceGrid.Node.Endpoints", "default");
 	NodeDescriptor node;
 	node.servers.push_back(server);
 	nodeApp.nodes["localnode"] = node;
@@ -641,7 +1556,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	{
 	    int s = session1->startUpdate();
 	    test(s == serial);
-	    session1->addApplication(nodeApp);
+	    admin1->addApplication(nodeApp);
 	    regObs1->waitForUpdate(__FILE__, __LINE__);
 	    test(regObs1->applications.find("NodeApp") != regObs1->applications.end());
 	    test(++serial == regObs1->serial);
@@ -693,7 +1608,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
 	try
 	{
-	    session1->removeApplication("NodeApp");
+	    admin1->removeApplication("NodeApp");
 	    regObs1->waitForUpdate(__FILE__, __LINE__);
 	    test(regObs1->applications.empty());
 	    test(++serial == regObs1->serial);
@@ -709,6 +1624,9 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	    test(false);
 	}
 
+	nodeObs1->waitForUpdate(__FILE__, __LINE__); // serverUpdate(Destroying)
+	nodeObs1->waitForUpdate(__FILE__, __LINE__); // serverUpdate(Destroyed)
+
 	session1->destroy();
 	adpt1->deactivate();
 	adpt1->waitForDeactivate();
@@ -718,17 +1636,17 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     {
 	cout << "testing node observer... " << flush;
-	SessionPrx session1 = manager->createLocalSession("Observer1");
+	AdminSessionPrx session1 = AdminSessionPrx::uncheckedCast(registry->createAdminSession("admin1", "test1"));
 	
 	keepAlive->add(session1);
 	
 	Ice::ObjectAdapterPtr adpt1 = communicator->createObjectAdapter("Observer1.2");
-	RegistryObserverI* regObs1 = new RegistryObserverI();
+	RegistryObserverIPtr regObs1 = new RegistryObserverI("regObs1");
 	Ice::ObjectPrx ro1 = adpt1->addWithUUID(regObs1);
-	NodeObserverI* nodeObs1 = new NodeObserverI();
+	NodeObserverIPtr nodeObs1 = new NodeObserverI("nodeObs1");
 	Ice::ObjectPrx no1 = adpt1->addWithUUID(nodeObs1);
 	adpt1->activate();
-	manager->ice_connection()->setAdapter(adpt1);	
+	registry->ice_getConnection()->setAdapter(adpt1);	
 	session1->setObserversByIdentity(ro1->ice_getIdentity(), no1->ice_getIdentity());
 	
 	regObs1->waitForUpdate(__FILE__, __LINE__);
@@ -742,6 +1660,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	ServerDescriptorPtr server = new ServerDescriptor();
 	server->id = "node-1";
 	server->exe = properties->getProperty("IceDir") + "/bin/icegridnode";
+	server->options.push_back("--nowarn");
 	server->pwd = ".";
 	AdapterDescriptor adapter;
 	adapter.name = "IceGrid.Node";
@@ -749,16 +1668,9 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	adapter.registerProcess = true;
 	adapter.waitForActivation = false;
 	server->adapters.push_back(adapter);
-	PropertyDescriptor prop;
-	prop.name = "IceGrid.Node.Name";
-	prop.value = "node-1";
-	server->properties.push_back(prop);
-	prop.name = "IceGrid.Node.Data";
-	prop.value = properties->getProperty("TestDir") + "/db/node-1";
-	server->properties.push_back(prop);	
-	prop.name = "IceGrid.Node.Endpoints";
-	prop.value = "default";
-	server->properties.push_back(prop);	
+	addProperty(server, "IceGrid.Node.Name", "node-1");
+	addProperty(server, "IceGrid.Node.Data", properties->getProperty("TestDir") + "/db/node-1");
+	addProperty(server, "IceGrid.Node.Endpoints", "default");
 	NodeDescriptor node;
 	node.servers.push_back(server);
 	nodeApp.nodes["localnode"] = node;
@@ -804,9 +1716,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
 	adapter.registerProcess = true;
 	adapter.waitForActivation = true;
 	server->adapters.push_back(adapter);
-	prop.name = "Server.Endpoints";
-	prop.value = "default";
-	server->properties.push_back(prop);
+	addProperty(server, "Server.Endpoints", "default");
 	node = NodeDescriptor();
 	node.servers.push_back(server);
 	testApp.nodes["localnode"] = node;
@@ -859,4 +1769,14 @@ allTests(const Ice::CommunicatorPtr& communicator)
     keepAlive->terminate();
     keepAlive->getThreadControl().join();
     keepAlive = 0;
+
+    admin->stopServer("PermissionsVerifierServer");
+
+    cout << "shutting down admin router... " << flush;
+    admin->stopServer("Glacier2Admin");
+    cout << "ok" << endl;
+
+    cout << "shutting down router... " << flush;
+    admin->stopServer("Glacier2");
+    cout << "ok" << endl;
 }

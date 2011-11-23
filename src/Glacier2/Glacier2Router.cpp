@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -53,7 +53,7 @@ protected:
 
     virtual bool start(int, char*[]);
     virtual bool stop();
-    virtual CommunicatorPtr initializeCommunicator(int&, char*[]);
+    virtual CommunicatorPtr initializeCommunicator(int&, char*[], const InitializationData&);
 
 private:
 
@@ -140,11 +140,11 @@ Glacier2::RouterService::start(int argc, char* argv[])
     }
 
     //
-    // Get the permissions verifier, or create a default one if no
-    // verifier is specified.
+    // Check for a permissions verifier or a password file.
     //
     string verifierProperty = properties->getProperty("Glacier2.PermissionsVerifier");
     PermissionsVerifierPrx verifier;
+    string passwordsProperty = properties->getProperty("Glacier2.CryptPasswords");
     if(!verifierProperty.empty())
     {
 	verifier = PermissionsVerifierPrx::checkedCast(communicator()->stringToProxy(verifierProperty));
@@ -154,10 +154,8 @@ Glacier2::RouterService::start(int argc, char* argv[])
 	    return false;
 	}
     }
-    else
+    else if(!passwordsProperty.empty())
     {
-	string passwordsProperty = properties->getPropertyWithDefault("Glacier2.CryptPasswords", "passwords");
-
 	ifstream passwordFile(passwordsProperty.c_str());
 	if(!passwordFile)
 	{
@@ -213,6 +211,48 @@ Glacier2::RouterService::start(int argc, char* argv[])
 	    error("session manager `" + sessionManagerProperty + "' is invalid");
 	    return false;
 	}
+	sessionManager = 
+	    SessionManagerPrx::uncheckedCast(sessionManager->ice_connectionCached(false)->ice_locatorCacheTimeout(
+	        properties->getPropertyAsIntWithDefault("Glacier2.SessionManager.LocatorCacheTimeout", 600)));
+    }
+
+    //
+    // Check for an SSL permissions verifier.
+    //
+    string sslVerifierProperty = properties->getProperty("Glacier2.SSLPermissionsVerifier");
+    SSLPermissionsVerifierPrx sslVerifier;
+    if(!sslVerifierProperty.empty())
+    {
+	sslVerifier = SSLPermissionsVerifierPrx::checkedCast(communicator()->stringToProxy(sslVerifierProperty));
+	if(!sslVerifier)
+	{
+	    error("ssl permissions verifier `" + sslVerifierProperty + "' is invalid");
+	    return false;
+	}
+    }
+
+    //
+    // Get the SSL session manager if specified.
+    //
+    string sslSessionManagerProperty = properties->getProperty("Glacier2.SSLSessionManager");
+    SSLSessionManagerPrx sslSessionManager;
+    if(!sslSessionManagerProperty.empty())
+    {
+	sslSessionManager = SSLSessionManagerPrx::checkedCast(communicator()->stringToProxy(sslSessionManagerProperty));
+	if(!sslSessionManager)
+	{
+	    error("ssl session manager `" + sslSessionManagerProperty + "' is invalid");
+	    return false;
+	}
+	sslSessionManager = 
+	    SSLSessionManagerPrx::uncheckedCast(sslSessionManager->ice_connectionCached(false)->ice_locatorCacheTimeout(
+	        properties->getPropertyAsIntWithDefault("Glacier2.SSLSessionManager.LocatorCacheTimeout", 600)));
+    }
+
+    if(!verifier && !sslVerifier)
+    {
+	error("Glacier2 requires a permissions verifier or password file");
+	return false;
     }
 
     //
@@ -220,7 +260,8 @@ Glacier2::RouterService::start(int argc, char* argv[])
     // and all required servant locators, so no registration has to be
     // done here.
     //
-    _sessionRouter = new SessionRouterI(clientAdapter, serverAdapter, verifier, sessionManager);
+    _sessionRouter = new SessionRouterI(clientAdapter, serverAdapter, adminAdapter, verifier, sessionManager,
+					sslVerifier, sslSessionManager);
 
     //
     // If we have an admin adapter, we add an admin object.
@@ -234,7 +275,7 @@ Glacier2::RouterService::start(int argc, char* argv[])
 	    const string instanceNameProperty = "Glacier2.InstanceName";
 	    adminId = properties->getPropertyWithDefault(instanceNameProperty, "Glacier2") + "/admin";
 	}
-	Identity id = stringToIdentity(adminId);
+	Identity id = communicator()->stringToIdentity(adminId);
 	adminAdapter->add(new AdminI(communicator()), id);
     }
 
@@ -266,26 +307,28 @@ Glacier2::RouterService::stop()
 }
 
 CommunicatorPtr
-Glacier2::RouterService::initializeCommunicator(int& argc, char* argv[])
+Glacier2::RouterService::initializeCommunicator(int& argc, char* argv[], 
+						const InitializationData& initializationData)
 {
-    PropertiesPtr defaultProperties = getDefaultProperties(argc, argv);
-    
+    InitializationData initData = initializationData;
+    initData.properties = createProperties(argc, argv, initializationData.properties);
+ 
     //
     // Glacier2 always runs in thread-per-connection mode.
     //
-    defaultProperties->setProperty("Ice.ThreadPerConnection", "1");
+    initData.properties->setProperty("Ice.ThreadPerConnection", "1");
     
     //
     // Make sure that Glacier2 doesn't use a router.
     //
-    defaultProperties->setProperty("Ice.Default.Router", "");
+    initData.properties->setProperty("Ice.Default.Router", "");
     
     //
     // No active connection management is permitted with
     // Glacier2. Connections must remain established.
     //
-    defaultProperties->setProperty("Ice.ACM.Client", "0");
-    defaultProperties->setProperty("Ice.ACM.Server", "0");
+    initData.properties->setProperty("Ice.ACM.Client", "0");
+    initData.properties->setProperty("Ice.ACM.Server", "0");
     
     //
     // Ice.MonitorConnections defaults to the smaller of Ice.ACM.Client
@@ -293,9 +336,9 @@ Glacier2::RouterService::initializeCommunicator(int& argc, char* argv[])
     // the connection monitor thread for AMI timeouts. We only set
     // this value if it hasn't been set explicitly already.
     //
-    if(defaultProperties->getProperty("Ice.MonitorConnections").empty())
+    if(initData.properties->getProperty("Ice.MonitorConnections").empty())
     {
-	defaultProperties->setProperty("Ice.MonitorConnections", "60");
+	initData.properties->setProperty("Ice.MonitorConnections", "60");
     }
 
     //
@@ -306,7 +349,7 @@ Glacier2::RouterService::initializeCommunicator(int& argc, char* argv[])
     // the clients.
     //
 
-    return Service::initializeCommunicator(argc, argv);
+    return Service::initializeCommunicator(argc, argv, initData);
 }
 
 void

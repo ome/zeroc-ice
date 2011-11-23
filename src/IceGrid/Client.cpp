@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,7 @@
 #include <Ice/Application.h>
 #include <Ice/SliceChecksums.h>
 #include <IceGrid/Parser.h>
+#include <IceGrid/FileParserI.h>
 #include <fstream>
 
 using namespace std;
@@ -47,6 +48,7 @@ Client::usage()
 	"-IDIR                Put DIR in the include file search path.\n"
 	"-e COMMANDS          Execute COMMANDS.\n"
 	"-d, --debug          Print debug messages.\n"
+        "-s, --server         Start icegridadmin as a server (to parse XML files).\n"
 	;
 }
 
@@ -65,6 +67,7 @@ Client::run(int argc, char* argv[])
     opts.addOpt("I", "", IceUtil::Options::NeedArg, "", IceUtil::Options::Repeat);
     opts.addOpt("e", "", IceUtil::Options::NeedArg, "", IceUtil::Options::Repeat);
     opts.addOpt("d", "debug");
+    opts.addOpt("s", "server");
 
     vector<string> args;
     try
@@ -88,6 +91,19 @@ Client::run(int argc, char* argv[])
 	cout << ICE_STRING_VERSION << endl;
 	return EXIT_SUCCESS;
     }
+
+    if(opts.isSet("s") || opts.isSet("server"))
+    {
+	ObjectAdapterPtr adapter = communicator()->createObjectAdapterWithEndpoints("FileParser", "tcp -h localhost");
+	adapter->activate();
+	ObjectPrx proxy = adapter->add(new FileParserI, communicator()->stringToIdentity("FileParser"));
+	cout << proxy << endl;
+
+	communicator()->waitForShutdown();
+	return EXIT_SUCCESS;
+    }
+
+
     if(opts.isSet("D"))
     {
 	vector<string> optargs = opts.argVec("D");
@@ -150,6 +166,13 @@ Client::run(int argc, char* argv[])
 
     Ice::SliceChecksumDict serverChecksums = admin->getSliceChecksums();
     Ice::SliceChecksumDict localChecksums = Ice::sliceChecksums();
+
+    //
+    // The following slice types are only used by the admin CLI.
+    //
+    localChecksums.erase("::IceGrid::FileParser");
+    localChecksums.erase("::IceGrid::ParseException");
+			 
     for(Ice::SliceChecksumDict::const_iterator q = localChecksums.begin(); q != localChecksums.end(); ++q)
     {
         Ice::SliceChecksumDict::const_iterator r = serverChecksums.find(q->first);

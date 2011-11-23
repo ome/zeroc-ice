@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,7 +25,7 @@ int
 main(int argc, char* argv[])
 {
     ValueClient app;
-    return app.main(argc, argv, "config");
+    return app.main(argc, argv, "config.client");
 }
 
 int
@@ -178,6 +178,8 @@ ValueClient::run(int argc, char* argv[])
 
     cout << '\n'
 	 << "That's it for this demo. Have fun with Ice!\n";
+
+    initial->shutdown();
 
     return EXIT_SUCCESS;
 }

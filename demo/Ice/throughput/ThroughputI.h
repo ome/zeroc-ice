@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,7 +18,7 @@ public:
 
     ThroughputI();
 
-    virtual void sendByteSeq(const Demo::ByteSeq&, const Ice::Current&);
+    virtual void sendByteSeq(const std::pair<const Ice::Byte*, const Ice::Byte*>&, const Ice::Current&);
     virtual Demo::ByteSeq recvByteSeq(const Ice::Current&);
     virtual Demo::ByteSeq echoByteSeq(const Demo::ByteSeq& seq, const Ice::Current&);
     virtual void sendStringSeq(const Demo::StringSeq&, const Ice::Current&);

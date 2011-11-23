@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,49 +21,48 @@ ContactI::ContactI(const ContactFactoryPtr& contactFactory) :
 string
 ContactI::getName(const Ice::Current&) const
 {
-    RLock sync(*this);
-    return name;
+   Lock lock(*this);
+   return name;
 }
 
 void
 ContactI::setName(const string& newName, const Ice::Current&)
 {
-    WLock sync(*this);
+    Lock lock(*this);
     name = newName;
 }
 
 string
 ContactI::getAddress(const Ice::Current&) const
 {
-    RLock sync(*this);
+    Lock lock(*this);
     return address;
 }
 
 void
 ContactI::setAddress(const string& newAddress, const Ice::Current&)
 {
-    WLock sync(*this);
+    Lock lock(*this);
     address = newAddress;
 }
 
 string
 ContactI::getPhone(const Ice::Current&) const
 {
-    RLock sync(*this);
+    Lock lock(*this);
     return phone;
 }
 
 void
 ContactI::setPhone(const string& newPhone, const Ice::Current&)
 {
-    WLock sync(*this);
+    Lock lock(*this);
     phone = newPhone;
 }
 
 void
 ContactI::destroy(const Ice::Current& c)
 {
-    RLock sync(*this);
     try
     {
 	_factory->getEvictor()->remove(c.id);

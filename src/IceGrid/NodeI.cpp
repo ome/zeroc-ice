@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -177,7 +177,8 @@ NodeI::NodeI(const Ice::ObjectAdapterPtr& adapter,
 	     const WaitQueuePtr& waitQueue,
 	     const TraceLevelsPtr& traceLevels,
 	     const NodePrx& proxy,
-	     const string& name) :
+	     const string& name,
+	     const UserAccountMapperPrx& mapper) :
     _adapter(adapter),
     _activator(activator),
     _waitQueue(waitQueue),
@@ -185,6 +186,7 @@ NodeI::NodeI(const Ice::ObjectAdapterPtr& adapter,
     _name(name),
     _proxy(proxy),
     _waitTime(0),
+    _userAccountMapper(mapper),
     _serial(1),
     _platform(adapter->getCommunicator(), _traceLevels)
 {
@@ -194,7 +196,7 @@ NodeI::NodeI(const Ice::ObjectAdapterPtr& adapter,
 
     Ice::PropertiesPtr properties = getCommunicator()->getProperties();
     const string instanceNameProperty = "IceGrid.InstanceName";
-    const_cast<string&>(_instName) = properties->getPropertyWithDefault(instanceNameProperty, "IceGrid");
+    const_cast<string&>(_instanceName) = properties->getPropertyWithDefault(instanceNameProperty, "IceGrid");
     const_cast<Ice::Int&>(_waitTime) = properties->getPropertyAsIntWithDefault("IceGrid.Node.WaitTime", 60);
 }
 
@@ -206,6 +208,7 @@ void
 NodeI::loadServer_async(const AMD_Node_loadServerPtr& amdCB,
 			const string& application,
 			const ServerDescriptorPtr& desc,
+			const string& sessionId,
 			const Ice::Current& current)
 {
     Lock sync(*this);
@@ -227,7 +230,7 @@ NodeI::loadServer_async(const AMD_Node_loadServerPtr& amdCB,
     }
     else
     {
-	if(server->getDescriptor()->applicationDistrib)
+	if(server->hasApplicationDistribution())
 	{
 	    removeServer(server);
 	}
@@ -241,16 +244,16 @@ NodeI::loadServer_async(const AMD_Node_loadServerPtr& amdCB,
     //
     // Update the server with the new descriptor information.
     //
-    server->load(amdCB, application, desc);
+    server->load(amdCB, application, desc, sessionId);
 }
 
 void
-NodeI::destroyServer_async(const AMD_Node_destroyServerPtr& amdCB, const string& name, const Ice::Current& current)
+NodeI::destroyServer_async(const AMD_Node_destroyServerPtr& amdCB, const string& serverId, const Ice::Current& current)
 {
     Lock sync(*this);
     ++_serial;
 
-    Ice::Identity id = createServerIdentity(name);
+    Ice::Identity id = createServerIdentity(serverId);
     ServerIPtr server = ServerIPtr::dynamicCast(_adapter->find(id));
     if(server)
     {
@@ -267,7 +270,7 @@ NodeI::destroyServer_async(const AMD_Node_destroyServerPtr& amdCB, const string&
 	//
 	try
 	{
-	    removeRecursive(_serversDir + "/" + name);
+	    removeRecursive(_serversDir + "/" + serverId);
 	}
 	catch(const string&)
 	{
@@ -355,15 +358,16 @@ NodeI::patch(const string& application,
 	if((servers.empty() || !appDistrib.icepatch.empty()) && !running.empty())
 	{
 	    PatchException ex;
-	    ex.reason = "patch on node `" + _name + "' failed:\n";
+	    string reason = "patch on node `" + _name + "' failed:\n";
 	    if(running.size() == 1)
 	    {
-		ex.reason += "server `" + toString(running) + "' is active";
+		reason += "server `" + toString(running) + "' is active";
 	    }
 	    else
 	    {
-		ex.reason += "servers `" + toString(running, ", ") + "' are active";
+		reason += "servers `" + toString(running, ", ") + "' are active";
 	    }
+	    ex.reasons.push_back(reason);
 	    throw ex;
 	}
 
@@ -412,17 +416,19 @@ NodeI::patch(const string& application,
 		}
 	    }
 	}
-	catch(const Ice::LocalException& ex)
+	catch(const Ice::LocalException& e)
 	{
 	    ostringstream os;
-	    os << "patch on node `" + _name + "' failed:\n";
-	    os << ex;
-	    throw PatchException(os.str());
+	    os << "patch on node `" + _name + "' failed:\n" << e;
+	    PatchException ex;
+	    ex.reasons.push_back(os.str());
+	    throw ex;
 	}
-	catch(const string& ex)
+	catch(const string& e)
 	{
-	    string msg = "patch on node `" + _name + "' failed:\n" + ex;
-	    throw PatchException(msg);
+	    PatchException ex;
+	    ex.reasons.push_back("patch on node `" + _name + "' failed:\n" + e);
+	    throw ex;
 	}
 
 	for(s = servers.begin(); s != servers.end(); ++s)
@@ -472,6 +478,12 @@ void
 NodeI::shutdown(const Ice::Current&) const
 {
     _activator->shutdown();
+
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_sessionMonitor);
+    while(_session)
+    {
+	_sessionMonitor.wait();
+    }
 }
 
 Ice::CommunicatorPtr
@@ -507,23 +519,30 @@ NodeI::getTraceLevels() const
 NodeObserverPrx
 NodeI::getObserver() const
 {
-    IceUtil::Mutex::Lock sync(_sessionMutex);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_sessionMonitor);
     return _observer;
+}
+
+UserAccountMapperPrx
+NodeI::getUserAccountMapper() const
+{
+    return _userAccountMapper;
 }
 
 NodeSessionPrx
 NodeI::getSession() const
 {
-    IceUtil::Mutex::Lock sync(_sessionMutex);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_sessionMonitor);
     return _session;
 }
 
 void
 NodeI::setSession(const NodeSessionPrx& session, const NodeObserverPrx& observer)
 {
-    IceUtil::Mutex::Lock sync(_sessionMutex);
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_sessionMonitor);
     _session = session;
     _observer = observer;
+    _sessionMonitor.notifyAll();
 }
 
 int
@@ -545,12 +564,14 @@ NodeI::keepAlive()
     {
 	try
 	{
-	    Ice::ObjectPrx obj = getCommunicator()->stringToProxy(_instName + "/Registry@IceGrid.Registry.Internal");
-	    RegistryPrx registry = RegistryPrx::uncheckedCast(obj);
+	    Ice::ObjectPrx obj = getCommunicator()->stringToProxy(_instanceName + "/InternalRegistry");
+	    InternalRegistryPrx registry = InternalRegistryPrx::uncheckedCast(obj);
+	    NodeSessionPrx session = registry->registerNode(_name, _proxy, _platform.getNodeInfo());
 	    NodeObserverPrx observer;
-	    setSession(registry->registerNode(_name, _proxy, _platform.getNodeInfo(), observer), observer);
+	    int timeout = session->getTimeoutAndObserver(observer);
+	    setSession(session, observer);
 	    checkConsistency();
-	    return registry->getTimeout() / 2;
+	    return timeout / 2;
 	}
 	catch(const NodeActiveException&)
 	{
@@ -567,19 +588,35 @@ NodeI::keepAlive()
 }
 
 void
+NodeI::waitForSession()
+{
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_sessionMonitor);
+    while(!_session)
+    {
+	_sessionMonitor.timedWait(IceUtil::Time::seconds(_waitTime));
+    }
+}
+
+void
 NodeI::stop()
 {
-    Lock sync(*this);
+    Lock sync(_sessionMonitor);
     if(_session)
     {
 	try
 	{
 	    _session->destroy();
-	    _session = 0;
 	}
-	catch(const Ice::LocalException&)
+	catch(const Ice::LocalException& ex)
 	{
+	    ostringstream os;
+	    os << "couldn't contact the IceGrid registry to destroy the node session:\n" << ex;
+	    _traceLevels->logger->warning(os.str());
 	}
+
+	_session = 0;
+	_observer = 0;
+	_sessionMonitor.notifyAll();
     }
 }
 
@@ -797,7 +834,7 @@ NodeI::initObserver(const Ice::StringSeq& servers)
 	{
 	    try
 	    {
-		server->addDynamicInfo(serverInfos, adapterInfos);
+		server->getDynamicInfo(serverInfos, adapterInfos);
 	    }
 	    catch(const Ice::ObjectNotExistException&)
 	    {
@@ -822,11 +859,11 @@ NodeI::initObserver(const Ice::StringSeq& servers)
 }
 
 void
-NodeI::patch(const FileServerPrx& icepatch, const string& destination, const vector<string>& directories)
+NodeI::patch(const FileServerPrx& icepatch, const string& dest, const vector<string>& directories)
 {
-    PatcherFeedbackPtr feedback = new LogPatcherFeedback(_traceLevels, destination);
-    IcePatch2::createDirectory(_dataDir + "/" + destination);
-    PatcherPtr patcher = new Patcher(icepatch, feedback, _dataDir + "/" + destination, false, 100, 1);
+    PatcherFeedbackPtr feedback = new LogPatcherFeedback(_traceLevels, dest);
+    IcePatch2::createDirectory(_dataDir + "/" + dest);
+    PatcherPtr patcher = new Patcher(icepatch, feedback, _dataDir + "/" + dest, false, 100, 1);
     bool aborted = !patcher->prepare();
     if(!aborted)
     {
@@ -851,6 +888,11 @@ NodeI::patch(const FileServerPrx& icepatch, const string& destination, const vec
     {
 	patcher->finish();
     }
+
+    //
+    // Update the files owner/group
+    //    
+    
 }
 
 void
@@ -895,7 +937,7 @@ Ice::Identity
 NodeI::createServerIdentity(const string& name)
 {
     Ice::Identity id;
-    id.category = _instName + "-Server";
+    id.category = _instanceName + "-Server";
     id.name = name;
     return id;
 }

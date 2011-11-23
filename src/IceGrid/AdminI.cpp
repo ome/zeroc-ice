@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,15 +8,17 @@
 // **********************************************************************
 
 #include <Ice/Ice.h>
+#include <Ice/LoggerUtil.h>
+#include <Ice/TraceUtil.h>
+#include <Ice/SliceChecksums.h>
+
 #include <IceGrid/AdminI.h>
 #include <IceGrid/RegistryI.h>
 #include <IceGrid/Database.h>
 #include <IceGrid/Util.h>
 #include <IceGrid/DescriptorParser.h>
 #include <IceGrid/DescriptorHelper.h>
-#include <Ice/LoggerUtil.h>
-#include <Ice/TraceUtil.h>
-#include <Ice/SliceChecksums.h>
+#include <IceGrid/AdminSessionI.h>
 
 using namespace std;
 using namespace Ice;
@@ -58,6 +60,10 @@ public:
 	try
 	{
 	    ex.ice_throw();
+	}
+	catch(const Ice::UserException&)
+	{
+	    throw;
 	}
 	catch(const Ice::ObjectNotExistException&)
 	{
@@ -115,18 +121,21 @@ public:
 	    }
 
 	    ++_nFailure;
-	    _lastFailure = failure;
+	    _reasons.push_back(failure);
 	}
 
 	if((_nSuccess + _nFailure) == _count)
 	{
-	    if(_nSuccess > 0)
+	    if(_nFailure)
 	    {
-		_cb->ice_response();
+		sort(_reasons.begin(), _reasons.end());
+		PatchException ex;
+		ex.reasons = _reasons;
+		_cb->ice_exception(ex);
 	    }
 	    else
 	    {
-		_cb->ice_exception(PatchException(_lastFailure));
+		_cb->ice_response();
 	    }
 	}
     }
@@ -139,7 +148,7 @@ private:
     const int _count;
     int _nSuccess;
     int _nFailure;
-    string _lastFailure;
+    Ice::StringSeq _reasons;    
 };
 typedef IceUtil::Handle<PatchAggregator> PatchAggregatorPtr;
 
@@ -168,21 +177,24 @@ public:
 	}
 	catch(const PatchException& ex)
 	{
-	    reason = ex.reason;
+	    if(!ex.reasons.empty())
+	    {
+		reason = ex.reasons[0];
+	    }
 	}
 	catch(const NodeNotExistException&)
 	{
-	    reason = "node doesn't exist";
+	    reason = "patch on node `" + _node + "' failed: node doesn't exist";
 	}
-	catch(const NodeUnreachableException&)
+	catch(const NodeUnreachableException& e)
 	{
-	    reason = "node is not active";
+	    reason = "patch on node `" + _node + "' failed: node is unreachable:\n" + e.reason;
 	}
-	catch(const Ice::Exception& ex)
+	catch(const Ice::Exception& e)
 	{
 	    ostringstream os;
-	    os << ex;
-	    reason = os.str();
+	    os << e;
+	    reason = "patch on node `" + _node + "' failed: node is unreachable:\n" + os.str();
 	}	
 	_cb->finished(_node, reason);
     }
@@ -227,21 +239,24 @@ public:
 	}
 	catch(const PatchException& ex)
 	{
-	    reason = ex.reason;
+	    if(!ex.reasons.empty())
+	    {
+		reason = ex.reasons[0];
+	    }
 	}
 	catch(const NodeNotExistException&)
 	{
-	    reason = "node `" + _node + "' doesn't exist";
+	    reason = "patch on node `" + _node + "' failed: node doesn't exist";
 	}
-	catch(const NodeUnreachableException&)
+	catch(const NodeUnreachableException& e)
 	{
-	    reason = "node `" + _node + "' is not active";
+	    reason = "patch on node `" + _node + "' failed: node is unreachable:\n" + e.reason;
 	}
 	catch(const Ice::Exception& ex)
 	{
 	    ostringstream os;
 	    os << ex;
-	    reason = os.str();
+	    reason = "patch on node `" + _node + "' failed: node is unreachable:\n" + os.str();
 	}
 
 	if(_traceLevels->patch > 0)
@@ -250,7 +265,9 @@ public:
 	    out << "patching of server `" << _server << "' on node `" << _node << "' failed:\n" << reason;
 	}
 
-	_cb->ice_exception(PatchException(reason));
+	PatchException e;
+	e.reasons.push_back(reason);
+	_cb->ice_exception(e);
     }
 
 private:
@@ -263,10 +280,11 @@ private:
 
 }
 
-AdminI::AdminI(const DatabasePtr& database, const RegistryPtr& registry, const TraceLevelsPtr& traceLevels) :
+AdminI::AdminI(const DatabasePtr& database, const RegistryIPtr& registry, const AdminSessionIPtr& session) :
     _database(database),
     _registry(registry),
-    _traceLevels(traceLevels)
+    _traceLevels(_database->getTraceLevels()),
+    _session(session)
 {
 }
 
@@ -277,40 +295,40 @@ AdminI::~AdminI()
 void
 AdminI::addApplication(const ApplicationDescriptor& descriptor, const Current&)
 {
-    _database->addApplicationDescriptor(0, descriptor);
+    _database->addApplicationDescriptor(_session.get(), descriptor);
 }
 
 void
 AdminI::syncApplication(const ApplicationDescriptor& descriptor, const Current&)
 {
-    _database->syncApplicationDescriptor(0, descriptor);
+    _database->syncApplicationDescriptor(_session.get(), descriptor);
 }
 
 void
 AdminI::updateApplication(const ApplicationUpdateDescriptor& descriptor, const Current&)
 {
-    _database->updateApplicationDescriptor(0, descriptor);
+    _database->updateApplicationDescriptor(_session.get(), descriptor);
 }
 
 void
 AdminI::removeApplication(const string& name, const Current&)
 {
-    _database->removeApplicationDescriptor(0, name);
+    _database->removeApplicationDescriptor(_session.get(), name);
 }
 
 void
 AdminI::instantiateServer(const string& app, const string& node, const ServerInstanceDescriptor& desc, const Current&)
 {
-    _database->instantiateServer(app, node, desc);
+    _database->instantiateServer(_session.get(), app, node, desc);
 }
 
 void
 AdminI::patchApplication_async(const AMD_Admin_patchApplicationPtr& amdCB, 
 			       const string& name, 
 			       bool shutdown, 
-			       const Current&)
+			       const Current& current)
 {
-    ApplicationHelper helper(_database->getApplicationDescriptor(name));    
+    ApplicationHelper helper(current.adapter->getCommunicator(), _database->getApplicationDescriptor(name));    
     DistributionDescriptor appDistrib;
     vector<string> nodes;
     helper.getDistributions(appDistrib, nodes);
@@ -345,7 +363,7 @@ AdminI::patchApplication_async(const AMD_Admin_patchApplicationPtr& amdCB,
 ApplicationDescriptor
 AdminI::getApplicationDescriptor(const string& name, const Current&) const
 {
-    return ApplicationHelper(_database->getApplicationDescriptor(name)).getInstance();
+    return _database->getApplicationDescriptor(name);
 }
 
 ApplicationDescriptor
@@ -453,10 +471,6 @@ AdminI::startServer(const string& id, const Current&)
     {
 	proxy->start();
     }
-    catch(const ServerStartException&)
-    {
-	throw;
-    }
     catch(const Ice::Exception& ex)
     {
 	proxy.handleException(ex);
@@ -482,10 +496,11 @@ AdminI::stopServer(const string& id, const Current&)
 }
 
 void
-AdminI::patchServer_async(const AMD_Admin_patchServerPtr& amdCB, const string& id, bool shutdown, const Current&)
+AdminI::patchServer_async(const AMD_Admin_patchServerPtr& amdCB, const string& id, bool shutdown,
+			  const Current& current)
 {
     ServerInfo info = _database->getServerInfo(id);
-    ApplicationHelper helper(_database->getApplicationDescriptor(info.application));
+    ApplicationHelper helper(current.adapter->getCommunicator(), _database->getApplicationDescriptor(info.application));
     DistributionDescriptor appDistrib;
     vector<string> nodes;
     helper.getDistributions(appDistrib, nodes, id);
@@ -574,34 +589,10 @@ AdminI::isServerEnabled(const ::std::string& id, const Ice::Current&) const
     }
 }
 
-StringObjectProxyDict
-AdminI::getAdapterEndpoints(const string& adapterId, const Current&) const
+AdapterInfoSeq
+AdminI::getAdapterInfo(const string& id, const Current&) const
 {
-    int count;
-    vector<pair<string, AdapterPrx> > adapters = _database->getAdapters(adapterId, true, count);
-    StringObjectProxyDict adpts;
-    for(vector<pair<string, AdapterPrx> >::const_iterator p = adapters.begin(); p != adapters.end(); ++p)
-    {
-	if(p->second)
-	{
-	    try
-	    {
-		adpts[p->first] = p->second->getDirectProxy();
-	    }
-	    catch(const Ice::ObjectNotExistException&)
-	    {
-	    }
-	    catch(const Ice::Exception&)
-	    {
-		adpts[p->first] = 0;
-	    }
-	}
-	else
-	{
-	    adpts[p->first] = 0;
-	}
-    }
-    return adpts;
+    return _database->getAdapterInfo(id);
 }
 
 void
@@ -636,6 +627,12 @@ AdminI::addObject(const Ice::ObjectPrx& proxy, const ::Ice::Current& current)
 void 
 AdminI::updateObject(const Ice::ObjectPrx& proxy, const ::Ice::Current& current)
 {
+    const Ice::Identity id = proxy->ice_getIdentity();
+    if(id.category == _database->getInstanceName())
+    {
+	throw DeploymentException("updating object `" + current.adapter->getCommunicator()->identityToString(id) + 
+				  "' is not allowed");
+    }
     _database->updateObject(proxy);
 }
 
@@ -649,8 +646,13 @@ AdminI::addObjectWithType(const Ice::ObjectPrx& proxy, const string& type, const
 }
 
 void 
-AdminI::removeObject(const Ice::Identity& id, const Ice::Current&)
+AdminI::removeObject(const Ice::Identity& id, const Ice::Current& current)
 {
+    if(id.category == _database->getInstanceName())
+    {
+	throw DeploymentException("removing object `" + current.adapter->getCommunicator()->identityToString(id) +
+				  "' is not allowed");
+    }
     _database->removeObject(id);
 }
 
@@ -658,6 +660,12 @@ ObjectInfo
 AdminI::getObjectInfo(const Ice::Identity& id, const Ice::Current&) const
 {
     return _database->getObjectInfo(id);
+}
+
+ObjectInfoSeq
+AdminI::getObjectInfosByType(const string& type, const Ice::Current&) const
+{
+    return _database->getObjectInfosByType(type);
 }
 
 ObjectInfoSeq
@@ -753,6 +761,7 @@ AdminI::getNodeHostname(const string& name, const Current&) const
 	throw NodeUnreachableException(name, os.str());
 	return ""; // Keep the compiler happy.
     }
+	return ""; // Keep the compiler happy.
 }
 
 

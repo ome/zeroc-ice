@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,10 +26,11 @@ testFailed(const char* expr, const char* file, unsigned int line)
 int
 main(int argc, char* argv[])
 {
-    Ice::PropertiesPtr properties = Ice::createProperties();
-    properties->load("config");
+    Ice::InitializationData initData;
+    initData.properties = Ice::createProperties();
+    initData.properties->load("config");
 
-    Ice::CommunicatorPtr communicator = Ice::initializeWithProperties(argc, argv, properties);
+    Ice::CommunicatorPtr communicator = Ice::initialize(argc, argv, initData);
 
     Freeze::ConnectionPtr connection = Freeze::createConnection(communicator, "backup");
     IntLongMap m(connection, "IntLongMap", true);

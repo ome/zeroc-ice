@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,7 +9,6 @@
 
 #include <Ice/Ice.h>
 #include <Ice/BuiltinSequences.h>
-#include <Ice/IdentityUtil.h>
 #include <IceGrid/Query.h>
 #include <IceGrid/Admin.h>
 #include <TestCommon.h>
@@ -24,11 +23,20 @@ struct ProxyIdentityEqual : public std::binary_function<Ice::ObjectPrx,string,bo
 
 public:
 
+    ProxyIdentityEqual(const Ice::CommunicatorPtr& communicator) :
+        _communicator(communicator)
+    {
+    }
+
     bool 
     operator()(const Ice::ObjectPrx& p1, const string& id) const
     {
-	return p1->ice_getIdentity() == Ice::stringToIdentity(id);
+	return p1->ice_getIdentity() == _communicator->stringToIdentity(id);
     }
+
+private:
+
+    Ice::CommunicatorPtr _communicator;
 };
 
 void
@@ -65,19 +73,27 @@ allTests(const Ice::CommunicatorPtr& comm)
 
     cout << "testing object registration... " << flush;
     Ice::ObjectProxySeq objs = query->findAllObjectsByType("::Test");
-    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(),"Server1")) != objs.end());
-    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(),"Server2")) != objs.end());
-    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(),"SimpleServer")) != objs.end());
-    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(),"IceBox1-Service1")) != objs.end());
-    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(),"IceBox1-Service2")) != objs.end());
-    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(),"IceBox2-Service1")) != objs.end());
-    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(),"IceBox2-Service2")) != objs.end());
-    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(),"SimpleIceBox-SimpleService")) != objs.end());
-    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(),"ReplicatedObject")) != objs.end());
+    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(comm),"Server1")) != objs.end());
+    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(comm),"Server2")) != objs.end());
+    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(comm),"SimpleServer")) != objs.end());
+    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(comm),"IceBox1-Service1")) != objs.end());
+    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(comm),"IceBox1-Service2")) != objs.end());
+    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(comm),"IceBox2-Service1")) != objs.end());
+    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(comm),"IceBox2-Service2")) != objs.end());
+    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(comm),"SimpleIceBox-SimpleService")) != objs.end());
+    test(find_if(objs.begin(), objs.end(), bind2nd(ProxyIdentityEqual(comm),"ReplicatedObject")) != objs.end());
+
+    {
+	test(comm->identityToString(query->findObjectByType("::TestId1")->ice_getIdentity()) == "cat/name1");
+	test(comm->identityToString(query->findObjectByType("::TestId2")->ice_getIdentity()) == "cat1/name1");
+	test(comm->identityToString(query->findObjectByType("::TestId3")->ice_getIdentity()) == "cat1/name1-bis");
+	test(comm->identityToString(query->findObjectByType("::TestId4")->ice_getIdentity()) == "c2\\/c2/n2\\/n2");
+	test(comm->identityToString(query->findObjectByType("::TestId5")->ice_getIdentity()) == "n2\\/n2");
+    }
 
     {
 	Ice::ObjectPrx obj = query->findObjectByType("::Test");
-	string id = Ice::identityToString(obj->ice_getIdentity());
+	string id = comm->identityToString(obj->ice_getIdentity());
 	test(id == "Server1" || id == "Server2" || id == "SimpleServer" ||
 	     id == "IceBox1-Service1" || id == "IceBox1-Service2" ||
 	     id == "IceBox2-Service1" || id == "IceBox2-Service2" ||
@@ -86,7 +102,7 @@ allTests(const Ice::CommunicatorPtr& comm)
 
     {
 	Ice::ObjectPrx obj = query->findObjectByTypeOnLeastLoadedNode("::Test", LoadSample5);
-	string id = Ice::identityToString(obj->ice_getIdentity());
+	string id = comm->identityToString(obj->ice_getIdentity());
 	test(id == "Server1" || id == "Server2" || id == "SimpleServer" ||
 	     id == "IceBox1-Service1" || id == "IceBox1-Service2" ||
 	     id == "IceBox2-Service1" || id == "IceBox2-Service2" ||
@@ -168,7 +184,7 @@ allTests(const Ice::CommunicatorPtr& comm)
     {
 	test((*p)->getProperty("AppVarProp") == "AppVar");
 	test((*p)->getProperty("NodeVarProp") == "NodeVar");
-	test((*p)->getProperty("RecursiveAppVarProp") == "test");
+	test((*p)->getProperty("RecursiveAppVarProp") == "Test");
 	test((*p)->getProperty("AppVarOverridedProp") == "OverridedInNode");
 	test((*p)->getProperty("AppVarDefinedInNodeProp") == "localnode");
 	test((*p)->getProperty("EscapedAppVarProp") == "${escaped}");
@@ -214,17 +230,65 @@ allTests(const Ice::CommunicatorPtr& comm)
     cout << "ok" << endl;
 
     cout << "testing descriptions... " << flush;
-    ApplicationDescriptor desc = admin->getApplicationDescriptor("test");
-    test(desc.description == "APP AppVar");
-    test(desc.nodes["localnode"].description == "NODE NodeVar");
-    test(desc.replicaGroups[0].description == "REPLICA GROUP AppVar");
-    test(desc.nodes["localnode"].servers.size() == 2);
-    const int idx = desc.nodes["localnode"].servers[0]->id == "SimpleServer" ? 0 : 1;
-    test(desc.nodes["localnode"].servers[idx]);
-    test(desc.nodes["localnode"].servers[idx]->id == "SimpleServer");
-    test(desc.nodes["localnode"].servers[idx]->description == "SERVER NodeVar");
-    test(desc.nodes["localnode"].servers[idx]->adapters[0].description == "ADAPTER NodeVar");
-    test(desc.nodes["localnode"].servers[idx]->dbEnvs[0].description == "DBENV NodeVar");
+    //
+    // NOTE: We can't test the following since
+    // getApplicationDescriptor doesn't return the instantiated
+    // application descriptor...
+    //
+//     ApplicationDescriptor desc = admin->getApplicationDescriptor("test");
+//     test(desc.description == "APP AppVar");
+//     test(desc.nodes["localnode"].description == "NODE NodeVar");
+//     test(desc.replicaGroups[0].description == "REPLICA GROUP AppVar");
+//     test(desc.nodes["localnode"].servers.size() == 2);
+//    const int idx = desc.nodes["localnode"].servers[0]->id == "SimpleServer" ? 0 : 1;
+    ServerInfo info = admin->getServerInfo("SimpleServer");
+    test(info.descriptor->id == "SimpleServer");
+    test(info.descriptor->description == "SERVER NodeVar");
+    test(info.descriptor->adapters[0].description == "ADAPTER NodeVar");
+    test(info.descriptor->dbEnvs[0].description == "DBENV NodeVar");
+    cout << "ok" << endl;
+    
+    cout << "testing property sets..." << flush;
+    obj = TestIntfPrx::checkedCast(comm->stringToProxy("Server1@Server1.Server"));
+    test(obj->getProperty("AppProperty") == "AppVar");
+    test(obj->getProperty("AppProperty2") == "OverrideMe");
+    test(obj->getProperty("AppProperty21") == "Override");
+    test(obj->getProperty("NodeProperty") == "NodeVar");
+
+    obj = TestIntfPrx::checkedCast(comm->stringToProxy("Server2@Server2.Server"));
+    test(obj->getProperty("AppProperty") == "AppVar");
+    test(obj->getProperty("AppProperty2") == "OverrideMe");
+    test(obj->getProperty("AppProperty21") == "Override");
+    test(obj->getProperty("NodeProperty") == "NodeVar");
+    test(obj->getProperty("ServerInstanceProperty") == "Server2");
+
+    obj = TestIntfPrx::checkedCast(comm->stringToProxy("IceBox1-Service1@IceBox1.Service1.Service1"));
+    test(obj->getProperty("AppProperty") == "AppVar");
+    test(obj->getProperty("AppProperty2") == "OverrideMe");
+    test(obj->getProperty("AppProperty21") == "Override");
+    test(obj->getProperty("NodeProperty") == "NodeVar");
+
+    obj = TestIntfPrx::checkedCast(comm->stringToProxy("IceBox2-Service1@IceBox2.Service1.Service1"));
+    test(obj->getProperty("AppProperty") == "AppVar");
+    test(obj->getProperty("AppProperty2") == "OverrideMe");
+    test(obj->getProperty("AppProperty21") == "Override");
+    test(obj->getProperty("NodeProperty") == "NodeVar");
+    test(obj->getProperty("IceBoxInstanceProperty") == "IceBox2");
+
+    obj = TestIntfPrx::checkedCast(comm->stringToProxy("IceBox2-Service2@IceBox2Service2Adapter"));    
+    test(obj->getProperty("AppProperty") == "AppVar");
+    test(obj->getProperty("AppProperty2") == "OverrideMe");
+    test(obj->getProperty("AppProperty21") == "Override");
+    test(obj->getProperty("NodeProperty") == "NodeVar");
+    test(obj->getProperty("IceBoxInstanceProperty") == "IceBox2");
+    test(obj->getProperty("ServiceInstanceProperty") == "Service2");
+
+    obj = TestIntfPrx::checkedCast(comm->stringToProxy("SimpleServer@SimpleServer.Server"));
+    test(obj->getProperty("AppProperty") == "AppVar");
+    test(obj->getProperty("AppProperty2") == "OverrideMe");
+    test(obj->getProperty("AppProperty21") == "Override");
+    test(obj->getProperty("NodeProperty") == "NodeVar");
+
     cout << "ok" << endl;
 }
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 #include <Ice/Ice.h>
 #include <IceXML/Parser.h>
+#include <IcePatch2/Util.h>
 #include <IceGrid/Admin.h>
 #include <IceGrid/DescriptorParser.h>
 #include <IceGrid/DescriptorBuilder.h>
@@ -43,7 +44,7 @@ public:
 private:
     
     bool isCurrentTargetDeployable() const;
-    string elementValue() const;
+    string elementValue();
     vector<string> getTargets(const string&) const;
     void error(const string&) const;
     bool isTargetDeployable(const string&) const;
@@ -54,6 +55,7 @@ private:
     map<string, string> _overrides; 
     vector<string> _targets;
     string _data;
+    string _previousElementName;
     int _targetCounter;
     bool _isCurrentTargetDeployable;
     int _line;
@@ -62,12 +64,16 @@ private:
     auto_ptr<ApplicationDescriptorBuilder> _currentApplication;
     auto_ptr<NodeDescriptorBuilder> _currentNode;
     auto_ptr<TemplateDescriptorBuilder> _currentTemplate;
+    auto_ptr<ServerInstanceDescriptorBuilder> _currentServerInstance;
+    auto_ptr<ServiceInstanceDescriptorBuilder> _currentServiceInstance;
     auto_ptr<ServerDescriptorBuilder> _currentServer;
     auto_ptr<ServiceDescriptorBuilder> _currentService;
     CommunicatorDescriptorBuilder* _currentCommunicator;
+    auto_ptr<PropertySetDescriptorBuilder> _currentPropertySet;
 
     bool _isTopLevel;
     bool _inAdapter;
+    bool _inReplicaGroup;
     bool _inDbEnv;
     bool _inDistrib;
 };
@@ -81,6 +87,7 @@ DescriptorHandler::DescriptorHandler(const string& filename, const Ice::Communic
     _currentCommunicator(0),
     _isTopLevel(true),
     _inAdapter(false),
+    _inReplicaGroup(false),
     _inDbEnv(false)
 {
 }
@@ -171,13 +178,19 @@ DescriptorHandler::startElement(const string& name, const IceXML::Attributes& at
 	    {
 		error("only one <application> element is allowed");
 	    }
+	    
+	    bool importTemplates = attributes.asBool("import-default-templates", false);
 
-	    if(_admin && attributes.asBool("import-default-templates", false))
+	    //
+	    // TODO: is ignoring importTemplates the desired behavior when _admin == 0? 
+	    //
+	    if(importTemplates && _admin != 0)
 	    {
 		try
 		{
 		    ApplicationDescriptor application = _admin->getDefaultApplicationDescriptor();
-		    _currentApplication.reset(new ApplicationDescriptorBuilder(application, attributes, _overrides));
+		    _currentApplication.reset(new ApplicationDescriptorBuilder(_communicator, application, 
+		    							       attributes, _overrides));
 		}
 		catch(const DeploymentException& ex)
 		{
@@ -186,7 +199,7 @@ DescriptorHandler::startElement(const string& name, const IceXML::Attributes& at
 	    }
 	    else
 	    {
-		_currentApplication.reset(new ApplicationDescriptorBuilder(attributes, _overrides));
+		_currentApplication.reset(new ApplicationDescriptorBuilder(_communicator, attributes, _overrides));
 	    }
 	}
 	else if(name == "node")
@@ -203,7 +216,7 @@ DescriptorHandler::startElement(const string& name, const IceXML::Attributes& at
 	    {
 		error("the <server-instance> element can only be a child of a <node> element");
 	    }
-	    _currentNode->addServerInstance(attributes);
+	    _currentServerInstance.reset(_currentNode->createServerInstance(attributes));
 	}
 	else if(name == "server")
 	{
@@ -251,7 +264,7 @@ DescriptorHandler::startElement(const string& name, const IceXML::Attributes& at
 	    {
 		error("the <service-instance> element can only be a child of an <icebox> element");
 	    }
-	    _currentServer->addServiceInstance(attributes);
+	    _currentServiceInstance.reset(_currentServer->createServiceInstance(attributes));
 	}
 	else if(name == "service")
 	{
@@ -286,11 +299,11 @@ DescriptorHandler::startElement(const string& name, const IceXML::Attributes& at
 		error("the <replica-group> element can only be a child of a <application> element");
 	    }
 	    _currentApplication->addReplicaGroup(attributes);
-	    _inAdapter = true;
+	    _inReplicaGroup = true;
 	}
 	else if(name == "load-balancing")
 	{
-	    if(!_inAdapter || _currentServer.get())
+	    if(!_inReplicaGroup)
 	    {
 		error("the <load-balancing> element can only be a child of a <replica-group> element");
 	    }
@@ -319,13 +332,52 @@ DescriptorHandler::startElement(const string& name, const IceXML::Attributes& at
 	    }
 	    _currentTemplate->addParameter(attributes);
 	}
+	else if(name == "properties")
+	{
+	    if(_currentPropertySet.get())
+	    {
+		_currentPropertySet->addPropertySet(attributes);
+	    }
+	    else if(_currentServiceInstance.get())
+	    {
+		_currentPropertySet.reset(_currentServiceInstance->createPropertySet());
+	    }
+	    else if(_currentServerInstance.get())
+	    {
+		_currentPropertySet.reset(_currentServerInstance->createPropertySet());
+	    }
+	    else if(_currentCommunicator)
+	    {
+		_currentPropertySet.reset(_currentCommunicator->createPropertySet());
+	    }
+	    else if(_currentNode.get())
+	    {
+		_currentPropertySet.reset(_currentNode->createPropertySet(attributes));
+	    }
+	    else if(_currentApplication.get() && !_currentTemplate.get())
+	    {
+		_currentPropertySet.reset(_currentApplication->createPropertySet(attributes));
+	    }
+	    else
+	    {
+		error("the <properties> element is not allowed here");
+	    }
+	}
 	else if(name == "property")
 	{
-	    if(!_currentCommunicator)
+	    if(_currentPropertySet.get())
 	    {
-		error("the <properties> element can only be a child of an <icebox>, <server> or <service> element");
+		_currentPropertySet->addProperty(attributes);
 	    }
-	    _currentCommunicator->addProperty(attributes);
+	    else if(_currentCommunicator)
+	    {
+		_currentCommunicator->addProperty(attributes);
+	    }
+	    else
+	    {
+		error("the <property> element can only be a child of a <properties>, <icebox>, <server> or <service>"
+		      "element");
+	    }
 	}
 	else if(name == "adapter")
 	{
@@ -338,11 +390,11 @@ DescriptorHandler::startElement(const string& name, const IceXML::Attributes& at
 	}
 	else if(name == "object")
 	{
-	    if(!_inAdapter)
+	    if(!_inAdapter && !_inReplicaGroup)
 	    {
 		error("the <object> element can only be a child of an <adapter> or <replica-group> element");
 	    }
-	    if(!_currentCommunicator)
+	    if(_inReplicaGroup)
 	    {
 		_currentApplication->addObject(attributes);
 	    }
@@ -350,6 +402,14 @@ DescriptorHandler::startElement(const string& name, const IceXML::Attributes& at
 	    {
 		_currentCommunicator->addObject(attributes);
 	    }
+	}
+	else if(name == "allocatable")
+	{
+	    if(!_inAdapter)
+	    {
+		error("the <allocatable> element can only be a child of an <adapter>");
+	    }
+	    _currentCommunicator->addAllocatable(attributes);
 	}
 	else if(name == "distrib")
 	{
@@ -405,8 +465,17 @@ DescriptorHandler::startElement(const string& name, const IceXML::Attributes& at
     {
 	error(reason);
     }
-    
-    _data = "";
+
+    //
+    // Check if the previous element value has been consumed and if not make
+    // sure it's "empty".
+    //
+    string value = elementValue();
+    if(!value.empty() && value.find_first_not_of(" \t\r\n") != string::npos)
+    {
+	error("invalid element value for element `" + _previousElementName + "'");
+    }
+    _previousElementName = name;
 }
 
 void 
@@ -415,149 +484,216 @@ DescriptorHandler::endElement(const string& name, int line, int column)
     _line = line;
     _column = column;
     
-    if(name == "target")
+    try
     {
-	if(!_isCurrentTargetDeployable && --_targetCounter == 0)
+	if(name == "target")
 	{
-	    _isCurrentTargetDeployable = true;
-	    _targetCounter = 0;
-	}
-	return;
-    }
-    else if(!isCurrentTargetDeployable())
-    {
-	//
-	// We don't bother to parse the elements if the elements are enclosed in a target element 
-	// which won't be deployed.
-	//
-	return;
-    }
-    else if(name == "node")
-    {
-	_currentApplication->addNode(_currentNode->getName(), _currentNode->getDescriptor());
-	_currentNode.reset(0);
-    }
-    else if(name == "server" || name == "icebox")
-    {
-	assert(_currentServer.get());
-	if(_currentTemplate.get())
-	{
-	    _currentTemplate->setDescriptor(_currentServer->getDescriptor());
-	}
-	else
-	{
-	    assert(_currentNode.get());
-	    _currentNode->addServer(_currentServer->getDescriptor());
-	}
-	_currentServer.reset(0);
-	_currentCommunicator = 0;
-    }
-    else if(name == "server-template")
-    {
-	assert(_currentApplication.get());
-	_currentApplication->addServerTemplate(_currentTemplate->getId(), _currentTemplate->getDescriptor());
-	_currentTemplate.reset(0);
-    }
-    else if(name == "service")
-    {
-	assert(_currentService.get());
-	if(_currentServer.get())
-	{
-	    _currentServer->addService(_currentService->getDescriptor());
-	}
-	else
-	{
-	    _currentTemplate->setDescriptor(_currentService->getDescriptor());
-	}
-	_currentService.reset(0);
-	_currentCommunicator = _currentServer.get();
-    }
-    else if(name == "service-template")
-    {
-	_currentApplication->addServiceTemplate(_currentTemplate->getId(), _currentTemplate->getDescriptor());
-	_currentTemplate.reset(0);
-    }
-    else if(name == "description")
-    {
-	if(_inAdapter)
-	{
-	    if(_currentCommunicator)
+	    if(!_isCurrentTargetDeployable && --_targetCounter == 0)
 	    {
-		_currentCommunicator->setAdapterDescription(elementValue());
+		_isCurrentTargetDeployable = true;
+		_targetCounter = 0;
+	    }
+	    return;
+	}
+	else if(!isCurrentTargetDeployable())
+	{
+	    //
+	    // We don't bother to parse the elements if the elements are enclosed in a target element 
+	    // which won't be deployed.
+	    //
+	    return;
+	}
+	else if(name == "node")
+	{
+	    _currentApplication->addNode(_currentNode->getName(), _currentNode->getDescriptor());
+	    _currentNode.reset(0);
+	}
+	else if(name == "server" || name == "icebox")
+	{
+	    assert(_currentServer.get());
+	    if(_currentTemplate.get())
+	    {
+		_currentTemplate->setDescriptor(_currentServer->getDescriptor());
 	    }
 	    else
 	    {
-		_currentApplication->setReplicaGroupDescription(elementValue());
+		assert(_currentNode.get());
+		_currentNode->addServer(_currentServer->getDescriptor());
+	    }
+	    _currentServer->finish();
+	    _currentServer.reset(0);
+	    _currentCommunicator = 0;
+	}
+	else if(name == "server-template")
+	{
+	    assert(_currentApplication.get());
+	    _currentApplication->addServerTemplate(_currentTemplate->getId(), _currentTemplate->getDescriptor());
+	    _currentTemplate.reset(0);
+	}
+	else if(name == "service")
+	{
+	    assert(_currentService.get());
+	    if(_currentServer.get())
+	    {
+		_currentServer->addService(_currentService->getDescriptor());
+	    }
+	    else
+	    {
+		_currentTemplate->setDescriptor(_currentService->getDescriptor());
+	    }
+	    _currentService->finish();
+	    _currentService.reset(0);
+	    _currentCommunicator = _currentServer.get();
+	}
+	else if(name == "service-template")
+	{
+	    assert(_currentTemplate.get());
+	    _currentApplication->addServiceTemplate(_currentTemplate->getId(), _currentTemplate->getDescriptor());
+	    _currentTemplate.reset(0);
+	}
+	else if(name == "server-instance")
+	{
+	    assert(_currentNode.get() && _currentServerInstance.get());
+	    _currentNode->addServerInstance(_currentServerInstance->getDescriptor());
+	    _currentServerInstance.reset(0);
+	}
+	else if(name == "service-instance")
+	{
+	    assert(_currentServer.get() && _currentServiceInstance.get());
+	    _currentServer->addServiceInstance(_currentServiceInstance->getDescriptor());
+	    _currentServiceInstance.reset(0);
+	}
+	else if(name == "properties")
+	{
+	    assert(_currentPropertySet.get());
+	    if(_currentPropertySet->finish())
+	    {
+		if(_currentServiceInstance.get())
+		{
+		    _currentServiceInstance->addPropertySet(_currentPropertySet->getDescriptor());
+		}
+		else if(_currentServerInstance.get())
+		{
+		    _currentServerInstance->addPropertySet(_currentPropertySet->getDescriptor());
+		}
+		else if(_currentCommunicator)
+		{
+		    _currentCommunicator->addPropertySet(_currentPropertySet->getDescriptor());
+		}
+		else if(_currentNode.get())
+		{
+		    _currentNode->addPropertySet(_currentPropertySet->getId(), 
+						 _currentPropertySet->getDescriptor());
+		}
+		else if(_currentApplication.get())
+		{
+		    _currentApplication->addPropertySet(_currentPropertySet->getId(),
+							_currentPropertySet->getDescriptor());
+		}
+		else
+		{
+		    assert(false);
+		}
+		_currentPropertySet.reset(0);
 	    }
 	}
-	else if(_inDbEnv)
+	else if(name == "description")
 	{
-	    assert(_currentCommunicator);
-	    _currentCommunicator->setDbEnvDescription(elementValue());
+	    if(_inAdapter)
+	    {
+		_currentCommunicator->setAdapterDescription(elementValue());
+	    }
+	    else if(_inReplicaGroup)
+	    {
+		_currentApplication->setReplicaGroupDescription(elementValue());
+	    }
+	    else if(_inDbEnv)
+	    {
+		assert(_currentCommunicator);
+		_currentCommunicator->setDbEnvDescription(elementValue());
+	    }
+	    else if(_currentCommunicator)
+	    {
+		_currentCommunicator->setDescription(elementValue());
+	    }
+	    else if(_currentNode.get())
+	    {
+		_currentNode->setDescription(elementValue());
+	    }
+	    else if(_currentApplication.get())
+	    {
+		_currentApplication->setDescription(elementValue());
+	    }
+	    else
+	    {
+		error("element <description> is not allowed here");
+	    }
 	}
-	else if(_currentCommunicator)
+	else if(name == "option")
 	{
-	    _currentCommunicator->setDescription(elementValue());
+	    if(!_currentServer.get())
+	    {
+		error("element <option> can only be the child of a <server> element");
+	    }
+	    _currentServer->addOption(elementValue());
 	}
-	else if(_currentNode.get())
+	else if(name == "env")
 	{
-	    _currentNode->setDescription(elementValue());
+	    if(!_currentServer.get())
+	    {
+		error("element <env> can only be the child of a <server> element");
+	    }
+	    _currentServer->addEnv(elementValue());
 	}
-	else if(_currentApplication.get())
+	else if(name == "directory")
 	{
-	    _currentApplication->setDescription(elementValue());
-	}
-	else
-	{
-	    error("element <description> is not allowed here");
-	}
-    }
-    else if(name == "option")
-    {
-	if(!_currentServer.get())
-	{
-	    error("element <option> can only be the child of a <server> element");
-	}
-	_currentServer->addOption(elementValue());
-    }
-    else if(name == "env")
-    {
-	if(!_currentServer.get())
-	{
-	    error("element <env> can only be the child of a <server> element");
-	}
-	_currentServer->addEnv(elementValue());
-    }
-    else if(name == "directory")
-    {
-	if(!_inDistrib)
-	{
+	    if(!_inDistrib)
+	    {
 		error("the <directory> element can only be a child of a <distrib> element");
+	    }
+	    if(!_currentServer.get())
+	    {
+		_currentApplication->addDistributionDirectory(elementValue());
+	    }
+	    else
+	    {
+		_currentServer->addDistributionDirectory(elementValue());
+	    }
 	}
-	if(!_currentServer.get())
+	else if(name == "adapter")
 	{
-	    _currentApplication->addDistributionDirectory(elementValue());
+	    _inAdapter = false;
+	} 
+	else if(name == "replica-group")
+	{
+	    _inReplicaGroup = false;
+	} 
+	else if(name == "dbenv")
+	{
+	    _inDbEnv = false;
 	}
-	else
+	else if(name == "distrib")
 	{
-	    _currentServer->addDistributionDirectory(elementValue());
+	    _inDistrib = false;
 	}
     }
-    else if(name == "adapter")
+    catch(const string& reason)
     {
-	_inAdapter = false;
-    } 
-    else if(name == "replica-group")
-    {
-	_inAdapter = false;
-    } 
-    else if(name == "dbenv")
-    {
-	_inDbEnv = false;
+	error(reason);
     }
-    else if(name == "distrib")
+    catch(const char* reason)
     {
-	_inDistrib = false;
+	error(reason);
+    }
+
+    //
+    // Check if the element value has been consumed and if not make
+    // sure it's "empty".
+    //
+    string value = elementValue();
+    if(!value.empty() && value.find_first_not_of(" \t\r\n") != string::npos)
+    {
+	error("invalid element value for element `" + name + "'");
     }
 }
 
@@ -633,9 +769,12 @@ DescriptorHandler::error(const string& msg) const
 }
 
 string
-DescriptorHandler::elementValue() const
+DescriptorHandler::elementValue()
 {
-    return _data;
+    string tmp;
+    tmp = _data;
+    _data = "";
+    return tmp;
 }
 
 bool
@@ -718,17 +857,19 @@ DescriptorParser::parseDescriptor(const string& descriptor,
 				  const Ice::CommunicatorPtr& communicator,
 				  const IceGrid::AdminPrx& admin)
 {
-    DescriptorHandler handler(descriptor, communicator);
+    string filename = IcePatch2::simplify(descriptor);
+    DescriptorHandler handler(filename, communicator);
     handler.setAdmin(admin);
     handler.setVariables(variables, targets);
-    IceXML::Parser::parse(descriptor, handler);
+    IceXML::Parser::parse(filename, handler);
     return handler.getApplicationDescriptor();
 }
 
 ApplicationDescriptor
 DescriptorParser::parseDescriptor(const string& descriptor, const Ice::CommunicatorPtr& communicator)
 {
-    DescriptorHandler handler(descriptor, communicator);
-    IceXML::Parser::parse(descriptor, handler);
+    string filename = IcePatch2::simplify(descriptor);
+    DescriptorHandler handler(filename, communicator);
+    IceXML::Parser::parse(filename, handler);
     return handler.getApplicationDescriptor();
 }

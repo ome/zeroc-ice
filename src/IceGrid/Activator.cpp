@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,6 +25,8 @@
 #ifndef _WIN32
 #   include <sys/wait.h>
 #   include <signal.h>
+#else
+#   include <direct.h> // For _getcwd
 #endif
 
 using namespace std;
@@ -76,8 +78,12 @@ reportChildError(int err, int fd, const char* cannot, const char* name)
     strcpy(msg, cannot);
     strcat(msg, " `");
     strcat(msg, name);
-    strcat(msg, "':  ");
-    strcat(msg, strerror(err));
+    strcat(msg, "'");
+    if(err)
+    {
+	strcat(msg, ": ");
+	strcat(msg, strerror(err));
+    }
     write(fd, msg, strlen(msg));
     close(fd);
 
@@ -166,7 +172,7 @@ int
 stringToSignal(const string& str)
 {
 #ifdef _WIN32
-    throw BadSignalException();
+    throw BadSignalException("signals are not supported on Windows");
 #else
 
     if(str == ICE_STRING(SIGHUP))
@@ -240,7 +246,7 @@ stringToSignal(const string& str)
 		return static_cast<int>(signal);
 	    }
 	}
-	throw BadSignalException();
+	throw BadSignalException("unknown signal `" + str + "'");
     }
 }
 #endif
@@ -339,6 +345,10 @@ int
 Activator::activate(const string& name,
 		    const string& exePath,
 		    const string& pwdPath,
+#ifndef _WIN32      
+		    uid_t uid,
+		    gid_t gid,
+#endif
 		    const Ice::StringSeq& options,
 		    const Ice::StringSeq& envs,
 		    const ServerIPtr& server)
@@ -370,8 +380,11 @@ Activator::activate(const string& name,
 	    string ext = path.size() <= 4 || path[path.size() - 4] != '.' ? ".exe" : "";
 	    if(SearchPath(NULL, path.c_str(), ext.c_str(), _MAX_PATH, absbuf, &filePart) == 0)
 	    {
-		Error out(_traceLevels->logger);
-		out << "cannot convert `" << path << "' into an absolute path";
+		if(_traceLevels->activator > 0)
+		{
+		    Trace out(_traceLevels->logger, _traceLevels->activatorCat);
+		    out << "cannot convert `" << path << "' into an absolute path";
+		}
 		throw string("The server executable path `" + path + "' can't be converted into an absolute path.");
 	    }
 	    path = absbuf;
@@ -390,8 +403,11 @@ Activator::activate(const string& name,
 	char absbuf[_MAX_PATH];
 	if(_fullpath(absbuf, pwd.c_str(), _MAX_PATH) == NULL)
 	{
-	    Error out(_traceLevels->logger);
-	    out << "cannot convert `" << pwd << "' into an absolute path";
+	    if(_traceLevels->activator > 0)
+	    {
+		Trace out(_traceLevels->logger, _traceLevels->activatorCat);
+		out << "cannot convert `" << pwd << "' into an absolute path";
+	    }
 	    throw string("The server working directory path `" + pwd + "' can't be converted into an absolute path.");
 	}
 	pwd = absbuf;
@@ -405,8 +421,6 @@ Activator::activate(const string& name,
     args.push_back(path);
     args.insert(args.end(), options.begin(), options.end());
     args.insert(args.end(), _propertiesOverride.begin(), _propertiesOverride.end());
-    args.push_back("--Ice.Default.Locator=" + _properties->getProperty("Ice.Default.Locator"));
-    args.push_back("--Ice.ServerId=" + name);
     
     if(_outputDir.size() > 0)
     {
@@ -416,16 +430,34 @@ Activator::activate(const string& name,
 	args.push_back("--Ice.StdErr=" + errFile);
     }
 
-
-    if(_traceLevels->activator > 1)
+    if(_traceLevels->activator > 0)
     {
 	Ice::Trace out(_traceLevels->logger, _traceLevels->activatorCat);
 	out << "activating server `" << name << "'";
-	if(_traceLevels->activator > 2)
+	if(_traceLevels->activator > 1)
 	{
 	    out << "\n";
 	    out << "path = " << path << "\n";
-	    out << "pwd = " << pwd << "\n";
+	    if(pwd.empty())
+	    {
+#ifdef _WIN32
+		char cwd[_MAX_PATH];
+		if(_getcwd(cwd, _MAX_PATH) != NULL)
+#else
+		char cwd[PATH_MAX];
+		if(getcwd(cwd, PATH_MAX) != NULL)
+#endif
+		{
+		    out << "pwd = " << string(cwd) << "\n";
+		}
+	    }
+	    else
+	    {
+		out << "pwd = " << pwd << "\n";
+	    }
+#ifndef _WIN32
+	    out << "uid/gid = " << uid << "/" << gid << "\n";
+#endif
 	    if(!envs.empty())
 	    {
 		out << "envs = " << toString(envs, ", ") << "\n";
@@ -441,6 +473,7 @@ Activator::activate(const string& name,
     // Activate and create.
     //
 #ifdef _WIN32
+
     //
     // Compose command line.
     //
@@ -588,11 +621,15 @@ Activator::activate(const string& name,
     
     setInterrupt();
 
-    if(_traceLevels->activator > 0)
-    {
-        Ice::Trace out(_traceLevels->logger, _traceLevels->activatorCat);
-        out << "activated server `" << name << "' (pid = " << pi.dwProcessId << ")";
-    }
+    //  
+    // Don't print the following trace, this might interfere with the
+    // output of the started process if it fails with an error message.
+    //
+//     if(_traceLevels->activator > 0)
+//     {
+//         Ice::Trace out(_traceLevels->logger, _traceLevels->activatorCat);
+//         out << "activated server `" << name << "' (pid = " << pi.dwProcessId << ")";
+//     }
 
     return static_cast<Ice::Int>(process.pid);
 #else
@@ -645,13 +682,27 @@ Activator::activate(const string& name,
 	// Until exec, we can only use async-signal safe functions
 	//
 
-#ifdef __linux
 	//
-	// Create a process group for this child, to be able to send 
-	// a signal to all the thread-processes with killpg
+	// Change the uid/gid under which the process will run.
 	//
-	setpgrp();
-#endif
+	if(setgid(gid) == -1)
+	{
+	    ostringstream os;
+	    os << gid;
+	    reportChildError(getSystemErrno(), fds[1], "cannot set process group id", os.str().c_str());
+	}	    
+	
+	if(setuid(uid) == -1)
+	{
+	    ostringstream os;
+	    os << uid;
+	    reportChildError(getSystemErrno(), fds[1], "cannot set process user id", os.str().c_str());
+	}
+
+	//
+	// Assign a new process group for this process. 
+	//
+	setpgid(0, 0);
 
 	//
 	// Close all file descriptors, except for standard input,
@@ -723,11 +774,15 @@ Activator::activate(const string& name,
 
 	setInterrupt();
 
-	if(_traceLevels->activator > 0)
-	{
-	    Ice::Trace out(_traceLevels->logger, _traceLevels->activatorCat);
-	    out << "activated server `" << name << "' (pid = " << pid << ")";
-	}
+    //  
+    // Don't print the following trace, this might interfere with the
+    // output of the started process if it fails with an error message.
+    //
+// 	if(_traceLevels->activator > 0)
+// 	{
+// 	    Ice::Trace out(_traceLevels->logger, _traceLevels->activatorCat);
+// 	    out << "activated server `" << name << "' (pid = " << pid << ")";
+// 	}
     }
 
     return pid;
@@ -788,7 +843,7 @@ Activator::deactivate(const string& name, const Ice::ProcessPrx& process)
             out << "sent Ctrl+Break to server `" << name << "' (pid = " << pid << ")";
         }
     }
-    else
+    else if(GetLastError() != ERROR_INVALID_PARAMETER) // Process with pid doesn't exist anymore.
     {
         SyscallException ex(__FILE__, __LINE__);
         ex.error = getSystemErrno();
@@ -845,6 +900,7 @@ Activator::sendSignal(const string& name, const string& signal)
 {
     sendSignal(name, stringToSignal(signal));
 }
+
 void
 Activator::sendSignal(const string& name, int signal)
 {
@@ -852,7 +908,7 @@ Activator::sendSignal(const string& name, int signal)
     //
     // TODO: Win32 implementation?
     //
-    throw BadSignalException();
+    throw BadSignalException("signals are not supported on Windows");
 
 #else
     Ice::Int pid = getServerPid(name);
@@ -864,12 +920,7 @@ Activator::sendSignal(const string& name, int signal)
 	return;
     }
 
-#ifdef __linux
-    // Use process groups on Linux instead of processes
-    int ret = ::killpg(static_cast<pid_t>(pid), signal);
-#else
     int ret = ::kill(static_cast<pid_t>(pid), signal);
-#endif
     if(ret != 0 && getSystemErrno() != ESRCH)
     {
 	SyscallException ex(__FILE__, __LINE__);
@@ -1001,6 +1052,10 @@ Activator::deactivateAll()
 	try
 	{
 	    p->second.server->stop_async(0);
+	}
+	catch(const ServerStopException&)
+	{
+	    // Server already stopped or destroyed.
 	}
 	catch(const ObjectNotExistException&)
 	{
@@ -1233,23 +1288,36 @@ Activator::terminationListener()
 	
 	for(vector<Process>::const_iterator p = terminated.begin(); p != terminated.end(); ++p)
 	{
-	    int status = 0;
-	    pid_t pid = waitpid(p->pid, &status, 0);
-#ifdef __linux
-	    //
-	    // Calling waitpid() in a LinuxThreads environment fails with ECHILD
-	    // if the calling thread is not the one that forked the child. We
-	    // ignore this error; a signal handler installed by the main
-	    // program ensures we don't create zombies. This limitation means
-	    // that DisableOnFailure does not work under LinuxThreads.
-	    //
-	    if(pid < 0 && getSystemErrno() != ECHILD)
+	    int status;
+#if defined(__linux)
+	    int nRetry = 0;
+	    while(true) // The while loop is necessary for the linux workaround.
 	    {
-		SyscallException ex(__FILE__, __LINE__);
-		ex.error = getSystemErrno();
-		throw ex;
+		pid_t pid = waitpid(p->pid, &status, 0);
+		if(pid < 0)
+		{
+		    //
+		    // Some Linux distribution have a bogus waitpid() (e.g.: CentOS 4.x). It doesn't 
+		    // block and reports an incorrect ECHILD error on the first call. We sleep a 
+		    // little and retry to work around this issue (it appears from testing that a
+		    // single retry is enough but to make sure we retry up to 10 times before to throw.)
+		    //
+		    if(errno == ECHILD && nRetry < 10)
+		    {
+			// Wait 1ms, 11ms, 21ms, etc.
+			IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(nRetry * 10 + 1)); 
+			++nRetry;
+			continue;
+		    }
+		    SyscallException ex(__FILE__, __LINE__);
+		    ex.error = getSystemErrno();
+		    throw ex;
+		}
+		assert(pid == p->pid);
+		break;
 	    }
 #else
+	    pid_t pid = waitpid(p->pid, &status, 0);
 	    if(pid < 0)
 	    {
 		SyscallException ex(__FILE__, __LINE__);

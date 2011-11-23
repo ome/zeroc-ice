@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,6 +15,10 @@
 #include <IceGrid/Activator.h>
 #include <IceGrid/WaitQueue.h>
 #include <IceGrid/Internal.h>
+
+#ifndef _WIN32
+#   include <sys/types.h> // for uid_t, gid_t
+#endif
 
 namespace IceGrid
 {
@@ -57,6 +61,8 @@ public:
 
     enum ServerActivation
     {
+	Always,
+	Session,
 	OnDemand,
 	Manual,
 	Disabled
@@ -77,23 +83,24 @@ public:
     virtual bool isEnabled(const ::Ice::Current& = Ice::Current()) const;
     virtual void setProcess_async(const AMD_Server_setProcessPtr&, const ::Ice::ProcessPrx&, const ::Ice::Current&);
 
-    ServerDescriptorPtr getDescriptor() const;
     std::string getApplication() const;
-    ServerActivation getActivationMode() const;
+    bool canActivateOnDemand() const;
     const std::string& getId() const;
     DistributionDescriptor getDistribution() const;
+    bool hasApplicationDistribution() const;
+    void getDynamicInfo(ServerDynamicInfoSeq&, AdapterDynamicInfoSeq&) const;
 
-    void load(const AMD_Node_loadServerPtr&, const std::string&, const ServerDescriptorPtr&);
+    void start(ServerActivation, const AMD_Server_startPtr& = AMD_Server_startPtr());
+    void load(const AMD_Node_loadServerPtr&, const std::string&, const ServerDescriptorPtr&, const std::string&);
+    void destroy(const AMD_Node_destroyServerPtr&);
     bool startPatch(bool);
     bool waitForPatch();
     void finishPatch();
-    void destroy(const AMD_Node_destroyServerPtr&);
 
     void adapterActivated(const std::string&);
     void adapterDeactivated(const std::string&);
     void activationFailed(bool);
     void deactivationFailed();
-    void addDynamicInfo(ServerDynamicInfoSeq&, AdapterDynamicInfoSeq&) const;
 
     void activate();
     void kill();
@@ -104,7 +111,7 @@ public:
 
 private:
     
-    void updateImpl();
+    void updateImpl(const std::string&, const ServerDescriptorPtr&, const std::string&);
     void checkActivation();
     void checkDestroyed();
     void disableOnFailure();
@@ -118,19 +125,25 @@ private:
     void updateConfigFile(const std::string&, const CommunicatorDescriptorPtr&);
     void updateDbEnv(const std::string&, const DbEnvDescriptor&);
     PropertyDescriptor createProperty(const std::string&, const std::string& = std::string());
+    void createOrUpdateDirectory(const std::string&);
     ServerState toServerState(InternalServerState) const;
+    ServerActivation toServerActivation(const std::string&) const;
     ServerDynamicInfo getDynamicInfo() const;
 
     const NodeIPtr _node;
     const ServerPrx _this;
     const std::string _id;
     const Ice::Int _waitTime;
-    const std::string _serversDir;
+    const std::string _serverDir;
     const int _disableOnFailure;
 
-    std::string _serverDir;
     std::string _application;
     ServerDescriptorPtr _desc;
+    std::string _sessionId;
+#ifndef _WIN32
+    uid_t _uid;
+    gid_t _gid;
+#endif
     InternalServerState _state;
     ServerActivation _activation;
     int _activationTimeout;
@@ -142,6 +155,7 @@ private:
     std::set<std::string> _activeAdapters;
     IceUtil::Time _failureTime;
     ServerActivation _previousActivation;
+    WaitItemPtr _timer;
 
     DestroyCommandPtr _destroy;
     StopCommandPtr _stop;

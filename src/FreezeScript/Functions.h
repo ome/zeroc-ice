@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,8 +15,8 @@
 namespace FreezeScript
 {
 
-bool invokeGlobalFunction(const std::string&, const DataList&, DataPtr&, const DataFactoryPtr&,
-                          const ErrorReporterPtr&);
+bool invokeGlobalFunction(const Ice::CommunicatorPtr&, const std::string&, const DataList&, DataPtr&,
+			  const DataFactoryPtr&, const ErrorReporterPtr&);
 
 bool invokeMemberFunction(const std::string&, const DataPtr&, const DataList&, DataPtr&, const DataFactoryPtr&,
                           const ErrorReporterPtr&);

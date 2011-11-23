@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -83,6 +83,7 @@ ObjectPtr
 Ice::Object::ice_clone() const
 {
     throw CloneNotImplementedException(__FILE__, __LINE__);
+    return 0; // avoid warning with some compilers
 }
 
 void
@@ -101,7 +102,7 @@ Ice::Object::___ice_isA(Incoming& __inS, const Current& __current)
     BasicStream* __is = __inS.is();
     BasicStream* __os = __inS.os();
     string __id;
-    __is->read(__id);
+    __is->read(__id, false);
     bool __ret = ice_isA(__id, __current);
     __os->write(__ret);
     return DispatchOK;
@@ -119,7 +120,7 @@ Ice::Object::___ice_ids(Incoming& __inS, const Current& __current)
 {
     BasicStream* __os = __inS.os();
     vector<string> __ret = ice_ids(__current);
-    __os->write(__ret);
+    __os->write(&__ret[0], &__ret[0] + __ret.size(), false);
     return DispatchOK;
 }
 
@@ -128,7 +129,7 @@ Ice::Object::___ice_id(Incoming& __inS, const Current& __current)
 {
     BasicStream* __os = __inS.os();
     string __ret = ice_id(__current);
-    __os->write(__ret);
+    __os->write(__ret, false);
     return DispatchOK;
 }
 
@@ -298,6 +299,26 @@ Ice::Blobject::__dispatch(Incoming& in, const Current& current)
 }
 
 DispatchStatus
+Ice::BlobjectArray::__dispatch(Incoming& in, const Current& current)
+{
+    pair<const Byte*, const Byte*> inParams;
+    vector<Byte> outParams;
+    Int sz = in.is()->getReadEncapsSize();
+    in.is()->readBlob(inParams.first, sz);
+    inParams.second = inParams.first + sz;
+    bool ok = ice_invoke(inParams, outParams, current);
+    in.os()->writeBlob(outParams);
+    if(ok)
+    {
+	return DispatchOK;
+    }
+    else
+    {
+	return DispatchUserException;
+    }
+}
+
+DispatchStatus
 Ice::BlobjectAsync::__dispatch(Incoming& in, const Current& current)
 {
     vector<Byte> inParams;
@@ -323,6 +344,32 @@ Ice::BlobjectAsync::__dispatch(Incoming& in, const Current& current)
     return DispatchAsync;
 }
 
+DispatchStatus
+Ice::BlobjectArrayAsync::__dispatch(Incoming& in, const Current& current)
+{
+    pair<const Byte*, const Byte*> inParams;
+    Int sz = in.is()->getReadEncapsSize();
+    in.is()->readBlob(inParams.first, sz);
+    inParams.second = inParams.first + sz;
+    AMD_Array_Object_ice_invokePtr cb = new ::IceAsync::Ice::AMD_Array_Object_ice_invoke(in);
+    try
+    {
+	ice_invoke_async(cb, inParams, current);
+    }
+    catch(const Exception& ex)
+    {
+	cb->ice_exception(ex);
+    }
+    catch(const ::std::exception& ex)
+    {
+	cb->ice_exception(ex);
+    }
+    catch(...)
+    {
+	cb->ice_exception();
+    }
+    return DispatchAsync;
+}
 void
 Ice::ice_writeObject(const OutputStreamPtr& out, const ObjectPtr& p)
 {

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -463,13 +463,27 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
     {
         if(marshal)
         {
-            out << nl << param << ".write__(" << stream << ");";
+	    if(streamingAPI)
+	    {
+		out << nl << param << ".ice_write(" << stream << ");";
+	    }
+	    else
+	    {
+		out << nl << param << ".write__(" << stream << ");";
+	    }
         }
         else
         {
             string typeS = typeToString(type);
             out << nl << param << " = new " << typeS << "();";
-            out << nl << param << ".read__(" << stream << ");";
+	    if(streamingAPI)
+	    {
+		out << nl << param << ".ice_read(" << stream << ");";
+	    }
+	    else
+	    {
+		out << nl << param << ".read__(" << stream << ");";
+	    }
         }
         return;
     }
@@ -756,7 +770,14 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	    out << nl << stream << ".writeSize(" << param << '.' << limitID << ");";
 	    out << nl << "for(int ix__ = 0; ix__ < " << param << '.' << limitID << "; ++ix__)";
 	    out << sb;
-	    out << nl << param << "[ix__].write__(" << stream << ");";
+	    if(streamingAPI)
+	    {
+		out << nl << param << "[ix__].ice_write(" << stream << ");";
+	    }
+	    else
+	    {
+		out << nl << param << "[ix__].write__(" << stream << ");";
+	    }
 	    out << eb;
 	    out << eb;
 	}
@@ -793,12 +814,26 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 		{
 		    out << nl << param << "[ix__] = new " << typeS << "();";
 		}
-		out << nl << param << "[ix__].read__(" << stream << ");";
+		if(streamingAPI)
+		{
+		    out << nl << param << "[ix__].ice_read(" << stream << ");";
+		}
+		else
+		{
+		    out << nl << param << "[ix__].read__(" << stream << ");";
+		}
 	    }
 	    else
 	    {
 		out << nl << typeS << " val__ = new " << typeS << "();";
-		out << nl << "val__.read__(" << stream << ");";
+		if(streamingAPI)
+		{
+		    out << nl << "val__.ice_read(" << stream << ");";
+		}
+		else
+		{
+		    out << nl << "val__.read__(" << stream << ");";
+		}
 	        out << nl << param << ".Add(val__);";
 	    }
 	    if(!streamingAPI && type->isVariableLength())
@@ -1017,8 +1052,8 @@ Slice::CsGenerator::MetaDataVisitor::visitModuleStart(const ModulePtr& p)
 	    }
 	}
 	_globalMetaDataDone = true;
-	validate(p);
     }
+    validate(p);
     return true;
 }
 
@@ -1171,6 +1206,17 @@ Slice::CsGenerator::MetaDataVisitor::validate(const ContainedPtr& cont)
 		if(StructPtr::dynamicCast(cont))
 		{
 		    if(s.substr(prefix.size()) == "class")
+		    {
+		        continue;
+		    }
+		    if(s.substr(prefix.size()) == "property")
+		    {
+		        continue;
+		    }
+		}
+		if(ClassDefPtr::dynamicCast(cont))
+		{
+		    if(s.substr(prefix.size()) == "property")
 		    {
 		        continue;
 		    }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,7 +33,7 @@ int
 main(int argc, char* argv[])
 {
     LibraryServer app("db");
-    return app.main(argc, argv, "config");
+    return app.main(argc, argv, "config.server");
 }
 
 int
@@ -66,7 +66,7 @@ LibraryServer::run(int argc, char* argv[])
     // Create the library, and add it to the object adapter.
     //
     LibraryIPtr library = new LibraryI(communicator(), _envName, "authors", evictor);
-    adapter->add(library, Ice::stringToIdentity("library"));
+    adapter->add(library, communicator()->stringToIdentity("library"));
     
     //
     // Create and install a factory for books.

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -11,77 +11,60 @@
 # Select an installation base directory. The directory will be created
 # if it does not exist.
 #
-
 prefix			?= /opt/Ice-$(VERSION)
+
+#
+# When creating an executable, shall we add install_libdir to the
+# runpath embedded in this executable?
+#
+ADD_LIBDIR_TO_RPATH     ?= yes
 
 #
 # Define OPTIMIZE as yes if you want to build with
 # optimization. Otherwise Ice is build with debug information.
 #
-
 #OPTIMIZE		= yes
 
 #
-# Define LP64 as yes if you want to build in 64 bit mode on a platform
-# that supports both 32 and 64 bit.
+# Define LP64 as yes or no if you want force a 32 or 64 bit. The
+# default is platform-dependent
 #
-#LP64			:= yes
+#LP64			?= yes
 
 
 #
-# Define GPL_BUILD as yes if you want to build a copy of Ice licensed
-# to you under the GNU Public License v2.
-# This adds a "no-warranty" notice and accompanying show commands
-# to interactive programs.
-#
-GPL_BUILD		:= yes
-
-#
-# Define USE_READLINE as yes if you want to build parts of Ice using 
-# readline on platforms where readline is available 
-# (see PLATFORM_HAS_READLINE in Make.rules.$(UNAME))
+# Define USE_READLINE as yes if you want to build parts of Ice using
+# readline on platforms where readline is available (see
+# PLATFORM_HAS_READLINE in Make.rules.$(UNAME))
 #
 # readline is used by a number of Ice admin programs to provide
 # command history, an optional feature.
 #
-# readline is licensed by the Free Software Foundation under the
-# GNU Public License v2, and cannot be combined with GPL-incompatible
-# software in any program. In particular the OpenSSL license
-# is GPL-incompatible.
-# On Linux and other free operating systems, readline and OpenSSL
-# are usually distributed with the operating system, which may be
-# a solution to this incompatibility. 
+# readline is licensed by the Free Software Foundation under the GNU
+# Public License v2, and cannot be combined with GPL-incompatible
+# software in any program. In particular the OpenSSL license is
+# GPL-incompatible.
 #
-# If you combine Ice with more GPL-incompatible software, or have 
-# licensed Ice under a commercial (non-GPL) license, you should
-# ponder the licensing implications of using readline. 
+# If you combine Ice with more GPL-incompatible software, or have
+# licensed Ice under a commercial (non-GPL) license, you should ponder
+# the licensing implications of using readline.
 # 
-ifeq ($(GPL_BUILD),yes)
-   USE_READLINE		   := yes
-endif
 
-#
-# The values below can be overridden by defining them as environment
-# variables. For example, if you are using a bourne shell or
-# compatible, you can override the location of STLport like this:
-#
-# export STLPORT_HOME=/usr/local/STLport-4.5
-#
+USE_READLINE		?= no
 
 #
 # If you want to use STLport, set STLPORT_HOME to the STLport
 # installation directory. If STLPORT_HOME is undefined or empty,
 # STLport is not used.
 #
-
 #STLPORT_HOME		?= /opt/STLport
 
 
 #
-# If libbzip2 is not installed in a standard location where the compiler 
-# can find it, set BZIP2_HOME to the bzip2 installation directory.
+# If libbzip2 is not installed in a standard location where the
+# compiler can find it, set BZIP2_HOME to the bzip2 installation
+# directory.
 #
-
 #BZIP2_HOME		?= /opt/bzip2
 
 
@@ -90,47 +73,38 @@ endif
 # compiler can find it, set DB_HOME to the Berkeley DB installation
 # directory.
 #
-
 #DB_HOME		?= /opt/db
+
+#
+# If expat is not installed in a standard location where the compiler
+# can find it, set EXPAT_HOME to the expat installation directory.
+#
+#EXPAT_HOME		?= /opt/expat
 
 #
 # If OpenSSL is not installed in a standard location where the
 # compiler can find it, set OPENSSL_HOME to the OpenSSL installation
 # directory.
 #
-
 #OPENSSL_HOME		?= /opt/openssl
 
 #
 # Define if your OpenSSL requires Kerberos, and if Kerberos is not
-# installed in a standard location.
+# installed in a standard location
 #
-
-KERBEROS_HOME		?= /usr/kerberos
-
-#
-# If expat is not installed in a standard location where the
-# compiler can find it, set EXPAT_HOME to the expat
-# installation directory.
-#
-
-#EXPAT_HOME		?= /opt/expat
-
+KERBEROS_HOME           ?= /usr/kerberos
 
 #
 # If readline is not installed in a standard location where the
-# compiler can find it, AND you want to use readline,
-# set READLINE_HOME to the readline installation directory.
+# compiler can find it, AND you want to use readline, set
+# READLINE_HOME to the readline installation directory.
 #
-#
-
 #READLINE_HOME		?= /opt/readline
 
 #
-# Support for creating static libraries is currently provided
-# only for building the Ice-E translators.
+# Support for creating static libraries is currently provided only for
+# building the Ice-E translators.
 #
-
 #STATICLIBS		= yes
 
 # ----------------------------------------------------------------------
@@ -138,20 +112,14 @@ KERBEROS_HOME		?= /usr/kerberos
 # ----------------------------------------------------------------------
 
 SHELL			= /bin/sh
-VERSION			= 3.0.1
-SOVERSION		= 30
+VERSION			= 3.1.0
+SOVERSION		= 31
 bindir			= $(top_srcdir)/bin
 libdir			= $(top_srcdir)/lib
 includedir		= $(top_srcdir)/include
 slicedir		= $(top_srcdir)/slice
 
 install_bindir		= $(prefix)/bin
-
-ifeq ($(LP64),yes)
-    install_libdir	= $(prefix)/lib$(lp64suffix)
-else
-    install_libdir	= $(prefix)/lib
-endif
 
 install_includedir	= $(prefix)/include
 install_slicedir	= $(prefix)/slice
@@ -171,8 +139,10 @@ UNAME			:= $(shell uname)
 include	 $(top_srcdir)/config/Make.rules.$(UNAME)
 
 ifeq ($(LP64),yes)
+    install_libdir	  := $(prefix)/lib$(lp64suffix)
     libsubdir		  := lib$(lp64suffix)
 else
+    install_libdir	  := $(prefix)/lib
     libsubdir		  := lib
 endif
 
@@ -188,61 +158,27 @@ else
     STLPORT_LIBS	=
 endif
 
-ifneq ($(OPENSSL_HOME),)
-    OPENSSL_FLAGS	= -I$(OPENSSL_HOME)/include
-    OPENSSL_LIBS	= -L$(OPENSSL_HOME)/$(libsubdir) -lssl -lcrypto
-else
-    OPENSSL_FLAGS	=
-    OPENSSL_LIBS	= -lssl -lcrypto
-endif
+OPENSSL_FLAGS           = $(if $(OPENSSL_HOME),-I$(OPENSSL_HOME)/include) -I$(KERBEROS_HOME)/include
+OPENSSL_LIBS            = $(if $(OPENSSL_HOME),-L$(OPENSSL_HOME)/$(libsubdir)) -lssl -lcrypto
+OPENSSL_RPATH_LINK      = $(if $(OPENSSL_HOME),$(call rpathlink,$(OPENSSL_HOME)/$(libsubdir)))
 
-ifneq ($(KERBEROS_HOME),)
-    OPENSSL_FLAGS	+= -I$(KERBEROS_HOME)/include
-endif
+BZIP2_FLAGS             = $(if $(BZIP2_HOME),-I$(BZIP2_HOME)/include)
+BZIP2_LIBS              = $(if $(BZIP2_HOME),-L$(BZIP2_HOME)/$(libsubdir)) -lbz2
+BZIP2_RPATH_LINK        = $(if $(BZIP2_HOME),$(call rpathlink,$(BZIP2_HOME)/$(libsubdir)))
 
-ifneq ($(BZIP2_HOME),)
-    BZIP2_FLAGS		= -I$(BZIP2_HOME)/include
-    BZIP2_LIBS		= -L$(BZIP2_HOME)/$(libsubdir) -lbz2
-else
-    BZIP2_FLAGS		=
-    BZIP2_LIBS		= -lbz2
-endif
+DB_FLAGS                = $(if $(DB_HOME),-I$(DB_HOME)/include)
+DB_LIBS                 = $(if $(DB_HOME),-L$(DB_HOME)/$(libsubdir)) -ldb_cxx
+DB_RPATH_LINK           = $(if $(DB_HOME),$(call rpathlink,$(DB_HOME)/$(libsubdir)))
 
-ifneq ($(DB_HOME),)
-    DB_FLAGS		= -I$(DB_HOME)/include
-    DB_LIBS		= -L$(DB_HOME)/$(libsubdir) -ldb_cxx
-else
-    DB_FLAGS		=
-    DB_LIBS		= -ldb_cxx
-endif
+EXPAT_FLAGS             = $(if $(EXPAT_HOME),-I$(EXPAT_HOME)/include)
+EXPAT_LIBS              = $(if $(EXPAT_HOME),-L$(EXPAT_HOME)/$(libsubdir)) -lexpat
+EXPAT_RPATH_LINK        = $(if $(EXPAT_HOME),$(call rpathlink,$(EXPAT_HOME)/$(libsubdir)))
 
-ifneq ($(EXPAT_HOME),)
-    EXPAT_FLAGS		= -I$(EXPAT_HOME)/include
-    EXPAT_LIBS		= -L$(EXPAT_HOME)/$(libsubdir) -lexpat
-else
-    EXPAT_FLAGS		=
-    EXPAT_LIBS		= -lexpat
-endif
-
-
-#
-# The GPL_BUILD flag is used only where readline may be
-# used.
-#
-
-ifeq ($(GPL_BUILD),yes)
-    READLINE_FLAGS	= -DGPL_BUILD
-endif
 
 ifeq ($(PLATFORM_HAS_READLINE),yes)
     ifeq ($(USE_READLINE),yes)
-	ifneq ($(READLINE_HOME),)
-	    READLINE_FLAGS	+=  -DHAVE_READLINE -I$(READLINE_HOME)/include
-	    READLINE_LIBS	= -L$(READLINE_HOME)/$(libsubdir) -lreadline -lncurses
-	else
-	    READLINE_FLAGS	+= -DHAVE_READLINE
-	    READLINE_LIBS	= -lreadline -lncurses
-	endif
+        READLINE_FLAGS  = -DHAVE_READLINE $(if $(READLINE_HOME),-I$(READLINE_HOME)/include)
+        READLINE_LIBS   = $(if $(READLINE_HOME),-L$(READLINE_HOME)/$(libsubdir)) -lreadline -lncurses        
     endif
 endif
 

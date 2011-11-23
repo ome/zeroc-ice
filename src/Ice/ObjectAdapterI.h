@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -69,11 +69,7 @@ public:
     virtual ObjectPrx createIndirectProxy(const Identity&) const;
     virtual ObjectPrx createReverseProxy(const Identity&) const;
 
-    virtual void addRouter(const RouterPrx&);
-    virtual void removeRouter(const RouterPrx&);
-
     virtual void setLocator(const LocatorPrx&);
-//    virtual LocatorPrx getLocator() const;
     
     bool isLocal(const ObjectPrx&) const;
 
@@ -87,7 +83,9 @@ public:
 
 private:
 
-    ObjectAdapterI(const IceInternal::InstancePtr&, const CommunicatorPtr&, const std::string&, const std::string&);
+    ObjectAdapterI(const IceInternal::InstancePtr&, const CommunicatorPtr&, 
+		   const IceInternal::ObjectAdapterFactoryPtr&, const std::string&, const std::string&,
+		   const RouterPrx&);
     virtual ~ObjectAdapterI();
     friend class IceInternal::ObjectAdapterFactory;
     
@@ -97,22 +95,25 @@ private:
     void checkForDeactivation() const;
     static void checkIdentity(const Identity&);
     std::vector<IceInternal::EndpointIPtr> parseEndpoints(const std::string&) const;
+    void updateLocatorRegistry(const IceInternal::LocatorInfoPtr&, const Ice::ObjectPrx&, bool);
 
     bool _deactivated;
     IceInternal::InstancePtr _instance;
     CommunicatorPtr _communicator;
+    IceInternal::ObjectAdapterFactoryPtr _objectAdapterFactory;
     IceInternal::ThreadPoolPtr _threadPool;
     IceInternal::ServantManagerPtr _servantManager;
-    bool _printAdapterReadyDone;
+    bool _activateOneOffDone;
     const std::string _name;
     const std::string _id;
     const std::string _replicaGroupId;
     std::vector<IceInternal::IncomingConnectionFactoryPtr> _incomingConnectionFactories;
     std::vector<IceInternal::EndpointIPtr> _routerEndpoints;
-    std::vector<IceInternal::RouterInfoPtr> _routerInfos;
+    IceInternal::RouterInfoPtr _routerInfo;
     std::vector<IceInternal::EndpointIPtr> _publishedEndpoints;
     IceInternal::LocatorInfoPtr _locatorInfo;
     int _directCount; // The number of direct proxies dispatching on this object adapter.
+    bool _waitForActivate;
     bool _waitForDeactivate;
 
     class ProcessI : public Process

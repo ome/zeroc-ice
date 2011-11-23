@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,6 +15,8 @@
 #include <Ice/InstanceF.h>
 #include <Ice/LoggerF.h>
 #include <Ice/StreamF.h>
+#include <Ice/StatsF.h>
+#include <Ice/StringConverter.h>
 #include <Ice/BuiltinSequences.h>
 
 namespace Ice
@@ -31,19 +33,52 @@ ICE_API StringSeq argsToStringSeq(int, char*[]);
 //
 ICE_API void stringSeqToArgs(const StringSeq&, int&, char*[]);
 
-ICE_API PropertiesPtr createProperties();
-ICE_API PropertiesPtr createProperties(StringSeq&);
-ICE_API PropertiesPtr createProperties(int&, char*[]);
+ICE_API PropertiesPtr createProperties(const StringConverterPtr& = 0);
+ICE_API PropertiesPtr createProperties(StringSeq&, const PropertiesPtr& = 0, const StringConverterPtr& = 0);
+ICE_API PropertiesPtr createProperties(int&, char*[], const PropertiesPtr& = 0, const StringConverterPtr& = 0);
 
-ICE_API CommunicatorPtr initialize(int&, char*[], Int = ICE_INT_VERSION);
-ICE_API CommunicatorPtr initializeWithProperties(int&, char*[], const PropertiesPtr&, Int = ICE_INT_VERSION);
-ICE_API CommunicatorPtr initializeWithLogger(int&, char*[], const Ice::LoggerPtr&, Int = ICE_INT_VERSION);
-ICE_API CommunicatorPtr initializeWithPropertiesAndLogger(int&, char*[], const PropertiesPtr&,
-							  const Ice::LoggerPtr&, Int = ICE_INT_VERSION);
+//
+// This class is used to notify user of when Ice threads
+// are started and stopped.
+//
+class ICE_API ThreadNotification : public IceUtil::Shared
+{
+public:
 
-ICE_API PropertiesPtr getDefaultProperties();
-ICE_API PropertiesPtr getDefaultProperties(StringSeq&);
-ICE_API PropertiesPtr getDefaultProperties(int&, char*[]);
+    virtual void start() = 0;
+    virtual void stop() = 0;
+};
+
+typedef IceUtil::Handle<ThreadNotification> ThreadNotificationPtr;
+
+//
+// Communicator initialization info
+//
+struct InitializationData
+{
+    PropertiesPtr properties;
+    LoggerPtr logger;
+    StatsPtr stats;
+    Context defaultContext;
+    StringConverterPtr stringConverter;
+    WstringConverterPtr wstringConverter;
+    ThreadNotificationPtr threadHook;
+};
+
+ICE_API CommunicatorPtr initialize(int&, char*[], const InitializationData& = InitializationData(),
+				   Int = ICE_INT_VERSION);
+
+ICE_API CommunicatorPtr initialize(const InitializationData& = InitializationData(), 
+				   Int = ICE_INT_VERSION);
+
+
+ICE_API ICE_DEPRECATED_API CommunicatorPtr initializeWithProperties(int&, char*[], const PropertiesPtr&,
+								    Int = ICE_INT_VERSION);
+ICE_API ICE_DEPRECATED_API CommunicatorPtr initializeWithLogger(int&, char*[], const Ice::LoggerPtr&,
+								Int = ICE_INT_VERSION);
+ICE_API ICE_DEPRECATED_API CommunicatorPtr initializeWithPropertiesAndLogger(int&, char*[], const PropertiesPtr&,
+							                     const Ice::LoggerPtr&, 
+									     Int = ICE_INT_VERSION);
 
 ICE_API InputStreamPtr createInputStream(const CommunicatorPtr&, const ::std::vector< Byte >&);
 ICE_API OutputStreamPtr createOutputStream(const CommunicatorPtr&);

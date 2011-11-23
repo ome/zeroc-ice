@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,10 +16,6 @@
 #include <IceGrid/Util.h>
 #include <IceGrid/DescriptorParser.h>
 #include <IceGrid/DescriptorHelper.h>
-
-#ifdef GPL_BUILD
-#   include <IceGrid/GPL.h>
-#endif
 
 #ifdef HAVE_READLINE
 #   include <readline/readline.h>
@@ -120,11 +116,6 @@ Parser::usage()
 	"                            \"object list Ice*\".\n"
 	"\n"
         "shutdown                    Shut the IceGrid registry down.\n"
-#ifdef GPL_BUILD
-	"show copying                Show conditions for redistributing copies of this\n"
-	"                            program.\n"
-	"show warranty               Show the warranty for this program.\n"
-#endif
 	;
 }
 
@@ -195,9 +186,7 @@ Parser::addApplication(const list<string>& origArgs)
 	    }
 	    catch(const PatchException& ex)
 	    {
-		ostringstream s;
-		s << ex << ":\n" << ex.reason;
-		warning("the application was successfully added but the patch failed:\n" + s.str());
+		patchFailed(ex.reasons);
 	    }
 	}
     }
@@ -246,7 +235,7 @@ Parser::describeApplication(const list<string>& args)
 	string name = *p++;
 
 	Output out(cout);
-	ApplicationHelper helper(_admin->getApplicationDescriptor(name));
+	ApplicationHelper helper(_communicator, _admin->getApplicationDescriptor(name));
 	helper.print(out);
 	out << nl;
     }
@@ -289,8 +278,8 @@ Parser::diffApplication(const list<string>& args)
 	ApplicationDescriptor newApp = DescriptorParser::parseDescriptor(desc, targets, vars, _communicator, _admin);
 	ApplicationDescriptor origApp = _admin->getApplicationDescriptor(newApp.name);
 
-	ApplicationHelper newAppHelper(newApp);
-	ApplicationHelper oldAppHelper(origApp);
+	ApplicationHelper newAppHelper(_communicator, newApp);
+	ApplicationHelper oldAppHelper(_communicator, origApp);
 	
 	Output out(cout);
 	newAppHelper.printDiff(out, oldAppHelper);
@@ -422,15 +411,16 @@ Parser::describeServerTemplate(const list<string>& args)
 
 	    out << nl << "parameters = `" << toString(q->second.parameters) << "'";
 	    out << nl;
+
 	    ServerDescriptorPtr server = ServerDescriptorPtr::dynamicCast(q->second.descriptor);
 	    IceBoxDescriptorPtr iceBox = IceBoxDescriptorPtr::dynamicCast(server);
 	    if(iceBox)
 	    {
-		IceBoxHelper(iceBox).print(out);
+		IceBoxHelper(_communicator, iceBox).print(out);
 	    }
 	    else
 	    {
-		ServerHelper(server).print(out);
+		ServerHelper(_communicator, server).print(out);
 	    }
 	    out << eb;
 	    out << nl;
@@ -507,13 +497,12 @@ Parser::describeServiceTemplate(const list<string>& args)
 	{
 	    out << "service template `" << templ << "'";
 	    out << sb;
-	    if(!q->second.parameters.empty())
-	    {
-		out << nl << "parameters = `" << toString(q->second.parameters) << "'";
-	    }
+
+	    out << nl << "parameters = `" << toString(q->second.parameters) << "'";
 	    out << nl;
+
 	    ServiceDescriptorPtr desc = ServiceDescriptorPtr::dynamicCast(q->second.descriptor);
-	    ServiceHelper(desc).print(out);
+	    ServiceHelper(_communicator, desc).print(out);
 	    out << eb;
 	    out << nl;
 	}
@@ -699,6 +688,10 @@ Parser::stopServer(const list<string>& args)
     {
 	_admin->stopServer(args.front());
     }
+    catch(const ServerStopException& ex)
+    {
+	error("the server didn't stop successfully:\n" + ex.reason);
+    }
     catch(const Ice::Exception& ex)
     {
 	exception(ex);
@@ -803,11 +796,11 @@ Parser::describeServer(const list<string>& args)
 	IceBoxDescriptorPtr iceBox = IceBoxDescriptorPtr::dynamicCast(info.descriptor);
 	if(iceBox)
 	{
-	    IceBoxHelper(iceBox).print(out, info.application, info.node);
+	    IceBoxHelper(_communicator, iceBox).print(out, info.application, info.node);
 	}
 	else
 	{
-	    ServerHelper(info.descriptor).print(out, info.application, info.node);
+	    ServerHelper(_communicator, info.descriptor).print(out, info.application, info.node);
 	}
 	out << nl;
     }
@@ -853,6 +846,11 @@ Parser::stateServer(const list<string>& args)
 	    cout << "deactivating (" << enabled << ")" << endl;
 	    break;
 	}
+	case Destroying:
+	{
+ 	    cout << "destroying (" << enabled << ")" << endl;
+	    break;
+	}
 	case Destroyed:
 	{
 	    cout << "destroyed (" << enabled << ")" << endl;
@@ -879,7 +877,15 @@ Parser::pidServer(const list<string>& args)
 
     try
     {
-	cout << _admin->getServerPid(args.front()) << endl;
+	int pid = _admin->getServerPid(args.front());
+	if(pid > 0)
+	{
+	    cout << pid << endl;
+	}
+	else
+	{
+	    error("server is not running"); 
+	}
     }
     catch(const Ice::Exception& ex)
     {
@@ -939,18 +945,18 @@ Parser::endpointsAdapter(const list<string>& args)
     try
     {
 	string adapterId = args.front();
-	StringObjectProxyDict proxies = _admin->getAdapterEndpoints(adapterId);
-	if(proxies.size() == 1 && proxies.begin()->first == adapterId)
+	AdapterInfoSeq adpts = _admin->getAdapterInfo(adapterId);
+	if(adpts.size() == 1 && adpts.begin()->id == adapterId)
 	{
-	    string endpoints = _communicator->proxyToString(proxies.begin()->second);
+	    string endpoints = _communicator->proxyToString(adpts.begin()->proxy);
 	    cout << (endpoints.empty() ? "<inactive>" : endpoints) << endl;
 	}
 	else
 	{
-	    for(StringObjectProxyDict::const_iterator p = proxies.begin(); p != proxies.end(); ++p)
+	    for(AdapterInfoSeq::const_iterator p = adpts.begin(); p != adpts.end(); ++p)
 	    {
-		cout << (p->first.empty() ? "<empty>" : p->first) << ": ";
-		string endpoints = _communicator->proxyToString(p->second);
+		cout << (p->id.empty() ? "<empty>" : p->id) << ": ";
+		string endpoints = _communicator->proxyToString(p->proxy);
 		cout << (endpoints.empty() ? "<inactive>" : endpoints) << endl;
 	    }
 	}
@@ -1036,7 +1042,7 @@ Parser::removeObject(const list<string>& args)
 
     try
     {
-	_admin->removeObject(Ice::stringToIdentity((*(args.begin()))));
+	_admin->removeObject(_communicator->stringToIdentity((*(args.begin()))));
     }
     catch(const Ice::Exception& ex)
     {
@@ -1055,10 +1061,10 @@ Parser::findObject(const list<string>& args)
 
     try
     {
-	Ice::ObjectProxySeq objects = _query->findAllObjectsByType(*(args.begin()));
-	for (Ice::ObjectProxySeq::const_iterator p = objects.begin(); p != objects.end(); ++p)
+	ObjectInfoSeq objects = _admin->getObjectInfosByType(*(args.begin()));
+	for(ObjectInfoSeq::const_iterator p = objects.begin(); p != objects.end(); ++p)
 	{
-	    cout << _communicator->proxyToString(*p) << endl;
+	    cout << _communicator->proxyToString(p->proxy) << endl;
 	}	
     }
     catch(const Ice::Exception& ex)
@@ -1078,7 +1084,7 @@ Parser::describeObject(const list<string>& args)
 	    string arg = *(args.begin());
 	    if(arg.find('*') == string::npos)
 	    {
-		ObjectInfo info = _admin->getObjectInfo(Ice::stringToIdentity(arg));
+		ObjectInfo info = _admin->getObjectInfo(_communicator->stringToIdentity(arg));
 		cout << "proxy = `" << _communicator->proxyToString(info.proxy) << "'" << endl;
 		cout << "type = `" << info.type << "'" << endl;
 		return;
@@ -1122,7 +1128,7 @@ Parser::listObject(const list<string>& args)
 	
 	for(ObjectInfoSeq::const_iterator p = objects.begin(); p != objects.end(); ++p)
 	{
-	    cout << Ice::identityToString(p->proxy->ice_getIdentity()) << endl;
+	    cout << _communicator->identityToString(p->proxy->ice_getIdentity()) << endl;
 	}	
     }
     catch(const Ice::Exception& ex)
@@ -1147,30 +1153,19 @@ Parser::shutdown()
 void
 Parser::showBanner()
 {
-    cout << "Ice " << ICE_STRING_VERSION << "  Copyright 2003-2005 ZeroC, Inc." << endl;
-#ifdef GPL_BUILD
-    cout << gplBanner << endl;
-#endif
+    cout << "Ice " << ICE_STRING_VERSION << "  Copyright 2003-2006 ZeroC, Inc." << endl;
 }
 
 void
 Parser::showCopying()
 {
-#if defined(GPL_BUILD)
-    cout << gplCopying << endl;
-#else
-    cout << "This command is not implemented yet." << endl;
-#endif
+    cout << "This command is not implemented." << endl;
 }
 
 void
 Parser::showWarranty()
 {
-#if defined(GPL_BUILD)
-    cout << gplWarranty << endl;
-#else
-    cout << "This command is not implemented yet." << endl;
-#endif
+    cout << "This command is not implemented." << endl;
 }
 
 
@@ -1366,6 +1361,44 @@ Parser::invalidCommand(const string& s)
 }
 
 void
+Parser::patchFailed(const Ice::StringSeq& reasons)
+{
+    ostringstream os;
+    IceUtil::Output out(os);
+    out.setIndent(2);
+    out << "the patch failed on some nodes:\n";
+    for(Ice::StringSeq::const_iterator p = reasons.begin(); p != reasons.end(); ++p)
+    {
+	string reason = *p;
+	string::size_type beg = 0;
+	string::size_type end = reason.find_first_of("\n");
+	if(end == string::npos)
+	{
+	    end = reason.size();
+	}
+	out << "- " << reason.substr(beg, end - beg);
+	out.inc();
+	while(end < reason.size())
+	{
+	    beg = end + 1;
+	    end = reason.find_first_of("\n", beg);
+	    if(end == string::npos)
+	    {
+		end = reason.size();
+	    }
+	    out.nl();
+	    out << reason.substr(beg, end - beg);
+	}
+	out.dec();
+	if(p + 1 != reasons.end())
+	{
+	    out.nl();
+	}
+    }
+    warning(os.str());
+}
+
+void
 Parser::error(const char* s)
 {
     if(_commands.empty() && !isatty(fileno(yyin)))
@@ -1492,11 +1525,11 @@ Parser::exception(const Ice::Exception& ex)
     }
     catch(const ObjectExistsException& ex)
     {
-	error("object `" + Ice::identityToString(ex.id) + "' already exists");
+	error("object `" + _communicator->identityToString(ex.id) + "' already exists");
     }
     catch(const ObjectNotExistException& ex)
     {
-	error("couldn't find object `" + Ice::identityToString(ex.id) + "'");
+	error("couldn't find object `" + _communicator->identityToString(ex.id) + "'");
     }
     catch(const DeploymentException& ex)
     {
@@ -1506,19 +1539,30 @@ Parser::exception(const Ice::Exception& ex)
     }
     catch(const PatchException& ex)
     {
-	ostringstream s;
-	s << ex << ":\n" << ex.reason;
-	error(s.str());
+	if(ex.reasons.size() == 1)
+	{
+	    ostringstream s;
+	    s << ex << ":\n" << ex.reasons[0];
+	    error(s.str());
+	}
+	else
+	{
+	    patchFailed(ex.reasons);
+	}
     }
     catch(const BadSignalException& ex)
     {
 	ostringstream s;
-	s << ex;
+	s << ex.reason;
 	error(s.str());
     }
     catch(const NodeUnreachableException& ex)
     {
 	error("node `" + ex.name + "' couldn't be reached:\n" + ex.reason);
+    }
+    catch(const AccessDeniedException& ex)
+    {
+	error("couldn't update the registry, the session from + `" + ex.lockUserId + "' is updating the registry");
     }
     catch(const IceXML::ParserException& ex)
     {

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,23 +31,20 @@ public:
     virtual ObjectPrx stringToProxy(const std::string&) const;
     virtual std::string proxyToString(const ObjectPrx&) const;
 
+    virtual Identity stringToIdentity(const std::string&) const;
+    virtual std::string identityToString(const Identity&) const;
+
     virtual ObjectAdapterPtr createObjectAdapter(const std::string&);
     virtual ObjectAdapterPtr createObjectAdapterWithEndpoints(const std::string&, const std::string&);
+    virtual ObjectAdapterPtr createObjectAdapterWithRouter(const std::string&, const RouterPrx&);
 
     virtual void addObjectFactory(const ObjectFactoryPtr&, const std::string&);
-    virtual void removeObjectFactory(const std::string&);
     virtual ObjectFactoryPtr findObjectFactory(const std::string&) const;
 
-    virtual void setDefaultContext(const Context&);
     virtual Context getDefaultContext() const;
-
     virtual PropertiesPtr getProperties() const;
-
     virtual LoggerPtr getLogger() const;
-    virtual void setLogger(const LoggerPtr&);
-
     virtual StatsPtr getStats() const;
-    virtual void setStats(const StatsPtr&);
 
     virtual RouterPrx getDefaultRouter() const;
     virtual void setDefaultRouter(const RouterPrx&);
@@ -61,7 +58,7 @@ public:
 
 private:
 
-    CommunicatorI(const PropertiesPtr&, const LoggerPtr&);
+    CommunicatorI(const InitializationData&);
     virtual ~CommunicatorI();
 
     //
@@ -70,8 +67,8 @@ private:
     //
     void finishSetup(int&, char*[]);
 
-    friend ICE_API CommunicatorPtr initializeWithPropertiesAndLogger(int&, char*[], const PropertiesPtr&,
-								     const LoggerPtr&, Int);
+    friend ICE_API CommunicatorPtr initialize(int&, char*[], const InitializationData&, Int);
+    friend ICE_API CommunicatorPtr initialize(const InitializationData&, Int);
     friend ICE_API ::IceInternal::InstancePtr IceInternal::getInstance(const ::Ice::CommunicatorPtr&);
 
     const ::IceInternal::InstancePtr _instance;

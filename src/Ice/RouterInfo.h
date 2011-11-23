@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,8 @@
 #include <Ice/RouterInfoF.h>
 #include <Ice/RouterF.h>
 #include <Ice/ProxyF.h>
-#include <Ice/RoutingTableF.h>
+
+#include <set>
 
 namespace IceInternal
 {
@@ -67,8 +68,8 @@ private:
     const Ice::RouterPrx _router;
     Ice::ObjectPrx _clientProxy;
     Ice::ObjectPrx _serverProxy;
-    const RoutingTablePtr _routingTable;
     Ice::ObjectAdapterPtr _adapter;
+    std::set<Ice::Identity> _identities;
 };
 
 }

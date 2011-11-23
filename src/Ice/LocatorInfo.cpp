@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,7 +16,6 @@
 #include <Ice/EndpointI.h>
 #include <Ice/Reference.h>
 #include <Ice/Functional.h>
-#include <Ice/IdentityUtil.h>
 #include <iterator>
 
 using namespace std;
@@ -92,10 +91,13 @@ IceInternal::LocatorManager::get(const LocatorPrx& loc)
 	if(t == _locatorTables.end())
 	{
 	    t = _locatorTables.insert(_locatorTables.begin(),
-				      pair<const Identity, LocatorTablePtr>(locator->ice_getIdentity(), new LocatorTable()));
+				      pair<const Identity, LocatorTablePtr>(locator->ice_getIdentity(), 
+									    new LocatorTable()));
 	}
 
-	_tableHint = _table.insert(_tableHint, pair<const LocatorPrx, LocatorInfoPtr>(locator, new LocatorInfo(locator, t->second)));
+	_tableHint = _table.insert(_tableHint, 
+				   pair<const LocatorPrx, LocatorInfoPtr>(locator, 
+									  new LocatorInfo(locator, t->second)));
     }
     else
     {
@@ -119,21 +121,23 @@ IceInternal::LocatorTable::clear()
 }
 
 bool
-IceInternal::LocatorTable::getAdapterEndpoints(const string& adapter, vector<EndpointIPtr>& endpoints) const
+IceInternal::LocatorTable::getAdapterEndpoints(const string& adapter, int ttl, vector<EndpointIPtr>& endpoints)
 {
-    IceUtil::Mutex::Lock sync(*this);
-    
-    map<string, vector<EndpointIPtr> >::const_iterator p = _adapterEndpointsMap.find(adapter);
-    
-    if(p != _adapterEndpointsMap.end())
-    {
-	endpoints = p->second;
-	return true;
-    }
-    else
+    if(ttl == 0) // No locator cache.
     {
 	return false;
     }
+
+    IceUtil::Mutex::Lock sync(*this);
+    
+    map<string, pair<IceUtil::Time, vector<EndpointIPtr> > >::iterator p = _adapterEndpointsMap.find(adapter);
+    
+    if(p != _adapterEndpointsMap.end() && checkTTL(p->second.first, ttl))
+    {
+	endpoints = p->second.second;
+	return true;
+    }
+    return false;
 }
 
 void
@@ -141,7 +145,16 @@ IceInternal::LocatorTable::addAdapterEndpoints(const string& adapter, const vect
 {
     IceUtil::Mutex::Lock sync(*this);
     
-    _adapterEndpointsMap.insert(make_pair(adapter, endpoints));
+    map<string, pair<IceUtil::Time, vector<EndpointIPtr> > >::iterator p = _adapterEndpointsMap.find(adapter);
+    
+    if(p != _adapterEndpointsMap.end())
+    {
+	p->second = make_pair(IceUtil::Time::now(), endpoints);
+    }
+    else
+    {
+	_adapterEndpointsMap.insert(make_pair(adapter, make_pair(IceUtil::Time::now(), endpoints)));
+    }
 }
 
 vector<EndpointIPtr>
@@ -149,13 +162,13 @@ IceInternal::LocatorTable::removeAdapterEndpoints(const string& adapter)
 {
     IceUtil::Mutex::Lock sync(*this);
     
-    map<string, vector<EndpointIPtr> >::iterator p = _adapterEndpointsMap.find(adapter);
+    map<string, pair<IceUtil::Time, vector<EndpointIPtr> > >::iterator p = _adapterEndpointsMap.find(adapter);
     if(p == _adapterEndpointsMap.end())
     {
 	return vector<EndpointIPtr>();
     }
 
-    vector<EndpointIPtr> endpoints = p->second;
+    vector<EndpointIPtr> endpoints = p->second.second;
 
     _adapterEndpointsMap.erase(p);
     
@@ -163,28 +176,40 @@ IceInternal::LocatorTable::removeAdapterEndpoints(const string& adapter)
 }
 
 bool 
-IceInternal::LocatorTable::getProxy(const Identity& id, ObjectPrx& proxy) const
+IceInternal::LocatorTable::getProxy(const Identity& id, int ttl, ObjectPrx& proxy)
 {
-    IceUtil::Mutex::Lock sync(*this);
-    
-    map<Identity, ObjectPrx>::const_iterator p = _objectMap.find(id);
-    
-    if(p != _objectMap.end())
-    {
-	proxy = p->second;
-	return true;
-    }
-    else
+    if(ttl == 0) // No locator cache
     {
 	return false;
     }
+
+    IceUtil::Mutex::Lock sync(*this);
+    
+    map<Identity, pair<IceUtil::Time, ObjectPrx> >::iterator p = _objectMap.find(id);
+    
+    if(p != _objectMap.end() && checkTTL(p->second.first, ttl))
+    {
+	proxy = p->second.second;
+	return true;
+    }
+    return false;
 }
 
 void 
 IceInternal::LocatorTable::addProxy(const Identity& id, const ObjectPrx& proxy)
 {
     IceUtil::Mutex::Lock sync(*this);
-    _objectMap.insert(make_pair(id, proxy));
+
+    map<Identity, pair<IceUtil::Time, ObjectPrx> >::iterator p = _objectMap.find(id);
+    
+    if(p != _objectMap.end())
+    {
+	p->second = make_pair(IceUtil::Time::now(), proxy);
+    }
+    else
+    {
+	_objectMap.insert(make_pair(id, make_pair(IceUtil::Time::now(), proxy)));
+    }
 }
 
 ObjectPrx 
@@ -192,15 +217,29 @@ IceInternal::LocatorTable::removeProxy(const Identity& id)
 {
     IceUtil::Mutex::Lock sync(*this);
     
-    map<Identity, ObjectPrx>::iterator p = _objectMap.find(id);
+    map<Identity, pair<IceUtil::Time, ObjectPrx> >::iterator p = _objectMap.find(id);
     if(p == _objectMap.end())
     {
 	return 0;
     }
 
-    ObjectPrx proxy = p->second;
+    ObjectPrx proxy = p->second.second;
     _objectMap.erase(p);
     return proxy;
+}
+
+bool
+IceInternal::LocatorTable::checkTTL(const IceUtil::Time& time, int ttl) const
+{
+    assert(ttl != 0);
+    if (ttl < 0) // TTL = infinite
+    {
+	return true;
+    }
+    else
+    {
+	return IceUtil::Time::now() - time <= IceUtil::Time::seconds(ttl);
+    }
 }
 
 IceInternal::LocatorInfo::LocatorInfo(const LocatorPrx& locator, const LocatorTablePtr& table) :
@@ -266,17 +305,16 @@ IceInternal::LocatorInfo::getLocatorRegistry()
 }
 
 vector<EndpointIPtr>
-IceInternal::LocatorInfo::getEndpoints(const IndirectReferencePtr& ref, bool& cached)
+IceInternal::LocatorInfo::getEndpoints(const IndirectReferencePtr& ref, int ttl, bool& cached)
 {
     vector<EndpointIPtr> endpoints;
     ObjectPrx object;
     cached = true;    
-
     try
     {
 	if(!ref->getAdapterId().empty())
 	{
-	    if(!_table->getAdapterEndpoints(ref->getAdapterId(), endpoints))
+	    if(!_table->getAdapterEndpoints(ref->getAdapterId(), ttl, endpoints))
 	    {
 		cached = false;
 	    
@@ -291,7 +329,7 @@ IceInternal::LocatorInfo::getEndpoints(const IndirectReferencePtr& ref, bool& ca
 	else
 	{
 	    bool objectCached = true;
-	    if(!_table->getProxy(ref->getIdentity(), object))
+	    if(!_table->getProxy(ref->getIdentity(), ttl, object))
 	    {
 		objectCached = false;
 		object = _locator->findObjectById(ref->getIdentity());
@@ -312,7 +350,7 @@ IceInternal::LocatorInfo::getEndpoints(const IndirectReferencePtr& ref, bool& ca
 		    assert(oir);
 		    if(!oir->getAdapterId().empty())
 		    {
-			endpoints = getEndpoints(oir, endpointsCached);
+			endpoints = getEndpoints(oir, ttl, endpointsCached);
 		    }
 		}
 	    }
@@ -336,7 +374,7 @@ IceInternal::LocatorInfo::getEndpoints(const IndirectReferencePtr& ref, bool& ca
     {
 	NotRegisteredException ex(__FILE__, __LINE__);
 	ex.kindOfObject = "object";
-	ex.id = identityToString(ref->getIdentity());
+	ex.id = ref->getInstance()->identityToString(ref->getIdentity());
 	throw ex;
     }
     catch(const NotRegisteredException&)
@@ -347,11 +385,12 @@ IceInternal::LocatorInfo::getEndpoints(const IndirectReferencePtr& ref, bool& ca
     {
 	if(ref->getInstance()->traceLevels()->location >= 1)
 	{
-	    Trace out(ref->getInstance()->logger(), ref->getInstance()->traceLevels()->locationCat);
+	    Trace out(ref->getInstance()->initializationData().logger,
+	    	      ref->getInstance()->traceLevels()->locationCat);
 	    out << "couldn't contact the locator to retrieve adapter endpoints\n";
 	    if(!ref)
 	    {
-		out << "object = " << identityToString(ref->getIdentity()) << "\n";
+		out << "object = " << ref->getInstance()->identityToString(ref->getIdentity()) << "\n";
 	    }
 	    else
 	    {
@@ -445,7 +484,7 @@ IceInternal::LocatorInfo::trace(const string& msg,
 	                        const IndirectReferencePtr& ref,
 				const vector<EndpointIPtr>& endpoints)
 {
-    Trace out(ref->getInstance()->logger(), ref->getInstance()->traceLevels()->locationCat);
+    Trace out(ref->getInstance()->initializationData().logger, ref->getInstance()->traceLevels()->locationCat);
     out << msg << '\n';
     if(!ref->getAdapterId().empty())
     {
@@ -453,7 +492,7 @@ IceInternal::LocatorInfo::trace(const string& msg,
     }
     else
     {
-	out << "object = "  << identityToString(ref->getIdentity()) << '\n';
+	out << "object = "  << ref->getInstance()->identityToString(ref->getIdentity()) << '\n';
     }
 
     const char* sep = endpoints.size() > 1 ? ":" : "";

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -69,7 +69,7 @@ ServerAdapterI::activate_async(const AMD_Adapter_activatePtr& cb, const Ice::Cur
     //
     try
     {
-	_server->start_async(0);
+	_server->start(ServerI::OnDemand);
 	return;
     }
     catch(const ServerStartException&)
@@ -105,7 +105,7 @@ ServerAdapterI::getDirectProxy(const Ice::Current& current) const
     {
 	AdapterNotActiveException ex;
 	ServerState state = _server->getState();
-	ex.activatable = _server->getActivationMode() == ServerI::OnDemand || state == Activating || state == Active;
+	ex.activatable = _server->canActivateOnDemand() || state == Activating || state == Active;
 	ex.timeout = static_cast<int>(_waitTime.toMilliSeconds());
 	throw ex;
     }
@@ -189,7 +189,7 @@ ServerAdapterI::clear()
 }
 
 void 
-ServerAdapterI::activationFailed(bool destroyed)
+ServerAdapterI::activationFailed(bool timeout)
 {
 
     //
@@ -198,7 +198,7 @@ ServerAdapterI::activationFailed(bool destroyed)
     if(_node->getTraceLevels()->adapter > 1)
     {
 	Ice::Trace out(_node->getTraceLevels()->logger, _node->getTraceLevels()->adapterCat);
-	if(!destroyed)
+	if(timeout)
 	{
 	    out << "server `" + _serverId + "' adapter `" << _id << "' activation timed out";
 	}

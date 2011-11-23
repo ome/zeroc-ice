@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,7 +11,7 @@
 #define ICE_REFERENCE_H
 
 #include <IceUtil/Shared.h>
-#include <IceUtil/Mutex.h>
+#include <IceUtil/RecMutex.h>
 #include <Ice/ReferenceF.h>
 #include <Ice/ReferenceFactoryF.h>
 #include <Ice/EndpointIF.h>
@@ -46,16 +46,22 @@ public:
     const Ice::Identity& getIdentity() const { return _identity; }
     const std::string& getFacet() const { return _facet; }
     const InstancePtr& getInstance() const { return _instance; }
-    const Ice::Context& getContext() const;
+    const Ice::Context& getContext() const { return _context; }
 
     ReferencePtr defaultContext() const;
 
     Ice::CommunicatorPtr getCommunicator() const;
 
+    virtual RouterInfoPtr getRouterInfo() const { return 0; }
+    virtual LocatorInfoPtr getLocatorInfo() const { return 0; }
+
     virtual bool getSecure() const = 0;
     virtual std::string getAdapterId() const = 0;
     virtual std::vector<EndpointIPtr> getEndpoints() const = 0;
     virtual bool getCollocationOptimization() const = 0;
+    virtual int getLocatorCacheTimeout() const = 0;
+    virtual bool getCacheConnection() const = 0;
+    virtual Ice::EndpointSelectionType getEndpointSelection() const = 0;
 
     //
     // The change* methods (here and in derived classes) create
@@ -76,8 +82,11 @@ public:
     virtual ReferencePtr changeCollocationOptimization(bool) const = 0;
     virtual ReferencePtr changeAdapterId(const std::string&) const = 0;
     virtual ReferencePtr changeEndpoints(const std::vector<EndpointIPtr>&) const = 0;
+    virtual ReferencePtr changeLocatorCacheTimeout(int) const = 0;
+    virtual ReferencePtr changeCacheConnection(bool) const = 0;
+    virtual ReferencePtr changeEndpointSelection(Ice::EndpointSelectionType) const = 0;
     
-    int hash() const; // Conceptually const.
+    virtual int hash() const; // Conceptually const.
 
     //
     // Marshal the reference.
@@ -106,6 +115,10 @@ protected:
 	      const std::string&, Mode);
     Reference(const Reference&);
 
+    IceUtil::RecMutex _hashMutex; // For lazy initialization of hash value.
+    mutable Ice::Int _hashValue;
+    mutable bool _hashInitialized;
+
 private:
 
     const InstancePtr _instance;
@@ -115,11 +128,6 @@ private:
     Ice::Identity _identity;
     Ice::Context _context;
     std::string _facet;
-    static std::string _emptyAdapterId;
-
-    IceUtil::Mutex _hashMutex; // For lazy initialization of hash value.
-    mutable Ice::Int _hashValue;
-    mutable bool _hashInitialized;
 };
 
 class FixedReference : public Reference
@@ -135,6 +143,9 @@ public:
     virtual std::string getAdapterId() const;
     virtual std::vector<EndpointIPtr> getEndpoints() const;
     virtual bool getCollocationOptimization() const;
+    virtual int getLocatorCacheTimeout() const;
+    virtual bool getCacheConnection() const;
+    virtual Ice::EndpointSelectionType getEndpointSelection() const;
 
     virtual ReferencePtr changeSecure(bool) const;
     virtual ReferencePtr changeRouter(const Ice::RouterPrx&) const;
@@ -143,8 +154,11 @@ public:
     virtual ReferencePtr changeCompress(bool) const;
     virtual ReferencePtr changeTimeout(int) const;
     virtual ReferencePtr changeConnectionId(const std::string&) const;
+    virtual ReferencePtr changeLocatorCacheTimeout(int) const;
     virtual ReferencePtr changeAdapterId(const std::string&) const;
     virtual ReferencePtr changeEndpoints(const std::vector<EndpointIPtr>&) const;
+    virtual ReferencePtr changeCacheConnection(bool) const;
+    virtual ReferencePtr changeEndpointSelection(Ice::EndpointSelectionType) const;
 
     virtual void streamWrite(BasicStream*) const;
     virtual std::string toString() const;
@@ -161,6 +175,8 @@ protected:
 
     FixedReference(const FixedReference&);
 
+    std::vector<Ice::ConnectionIPtr> filterConnections(const std::vector<Ice::ConnectionIPtr>&) const;
+
 private:
 
     std::vector<Ice::ConnectionIPtr> _fixedConnections;
@@ -170,17 +186,26 @@ class RoutableReference : public Reference
 {
 public:
 
-    const RouterInfoPtr& getRouterInfo() const { return _routerInfo; }
+    virtual RouterInfoPtr getRouterInfo() const { return _routerInfo; }
     std::vector<EndpointIPtr> getRoutedEndpoints() const;
 
     virtual bool getSecure() const;
     virtual bool getCollocationOptimization() const;
+    virtual bool getCacheConnection() const;
+    virtual Ice::EndpointSelectionType getEndpointSelection() const;
 
     virtual ReferencePtr changeSecure(bool) const;
     virtual ReferencePtr changeRouter(const Ice::RouterPrx&) const;
     virtual ReferencePtr changeCollocationOptimization(bool) const;
+    virtual ReferencePtr changeCompress(bool) const;
+    virtual ReferencePtr changeTimeout(int) const;
+    virtual ReferencePtr changeConnectionId(const std::string&) const;
+    virtual ReferencePtr changeCacheConnection(bool) const;
+    virtual ReferencePtr changeEndpointSelection(Ice::EndpointSelectionType) const;
 
     virtual Ice::ConnectionIPtr getConnection(bool&) const = 0;
+
+    virtual int hash() const;
 
     virtual bool operator==(const Reference&) const = 0;
     virtual bool operator!=(const Reference&) const = 0;
@@ -194,12 +219,22 @@ protected:
 		      const std::string&, Mode, bool, const RouterInfoPtr&, bool);
     RoutableReference(const RoutableReference&);
 
+    Ice::ConnectionIPtr createConnection(const std::vector<EndpointIPtr>&, bool&) const;
+    void applyOverrides(std::vector<EndpointIPtr>&) const;
 
 private:
 
     bool _secure;
     RouterInfoPtr _routerInfo; // Null if no router is used.
     bool _collocationOptimization;
+    bool _cacheConnection;
+    Ice::EndpointSelectionType _endpointSelection;
+
+    std::string _connectionId;
+    bool _overrideCompress;
+    bool _compress; // Only used if _overrideCompress == true
+    bool _overrideTimeout;
+    int _timeout; // Only used if _overrideTimeout == true
 };
 
 class DirectReference : public RoutableReference
@@ -209,6 +244,7 @@ public:
     DirectReference(const InstancePtr&, const Ice::CommunicatorPtr&, const Ice::Identity&, const Ice::Context&,
 		    const std::string&, Mode, bool, const std::vector<EndpointIPtr>&, const RouterInfoPtr&, bool);
 
+    virtual int getLocatorCacheTimeout() const;
     virtual std::string getAdapterId() const;
     virtual std::vector<EndpointIPtr> getEndpoints() const;
 
@@ -216,6 +252,7 @@ public:
     virtual ReferencePtr changeCompress(bool) const;
     virtual ReferencePtr changeTimeout(int) const;
     virtual ReferencePtr changeConnectionId(const std::string&) const;
+    virtual ReferencePtr changeLocatorCacheTimeout(int) const;
     virtual ReferencePtr changeAdapterId(const std::string&) const;
     virtual ReferencePtr changeEndpoints(const std::vector<EndpointIPtr>&) const;
 
@@ -244,23 +281,24 @@ public:
 
     IndirectReference(const InstancePtr&, const Ice::CommunicatorPtr&, const Ice::Identity&, const Ice::Context&, 
 		      const std::string&, Mode, bool, const std::string&, const RouterInfoPtr&, const LocatorInfoPtr&,
-		      bool);
+		      bool, int);
 
-    const LocatorInfoPtr& getLocatorInfo() const { return _locatorInfo; }
+    virtual LocatorInfoPtr getLocatorInfo() const { return _locatorInfo; }
 
+    virtual int getLocatorCacheTimeout() const;
     virtual std::string getAdapterId() const;
     virtual std::vector<EndpointIPtr> getEndpoints() const;
 
     virtual ReferencePtr changeLocator(const Ice::LocatorPrx&) const;
-    virtual ReferencePtr changeCompress(bool) const;
-    virtual ReferencePtr changeTimeout(int) const;
-    virtual ReferencePtr changeConnectionId(const std::string&) const;
+    virtual ReferencePtr changeLocatorCacheTimeout(int) const;
     virtual ReferencePtr changeAdapterId(const std::string&) const;
     virtual ReferencePtr changeEndpoints(const std::vector<EndpointIPtr>&) const;
 
     virtual void streamWrite(BasicStream*) const;
     virtual std::string toString() const;
     virtual Ice::ConnectionIPtr getConnection(bool&) const;
+
+    virtual int hash() const; // Conceptually const.
 
     virtual bool operator==(const Reference&) const;
     virtual bool operator!=(const Reference&) const;
@@ -275,12 +313,9 @@ protected:
 private:
 
     std::string _adapterId;
-    std::string _connectionId;
     LocatorInfoPtr _locatorInfo;
+    int _locatorCacheTimeout;
 };
-
-std::vector<EndpointIPtr> filterEndpoints(const std::vector<EndpointIPtr>&, Reference::Mode, bool);
-std::vector<Ice::ConnectionIPtr> filterConnections(const std::vector<Ice::ConnectionIPtr>&, Reference::Mode, bool);
 
 }
 

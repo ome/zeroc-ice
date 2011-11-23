@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -114,7 +114,8 @@ interface Server
      * amount of time, it will be killed.
      *
      **/
-    ["amd"] void stop();
+    ["amd"] void stop()
+	throws ServerStopException;
     
     /**
      *
@@ -183,8 +184,12 @@ interface Node
      * they will be created.
      *
      **/
-    ["amd", "ami"] idempotent Server* loadServer(string application, ServerDescriptor desc, 
-						 out AdapterPrxDict adapters, out int actTimeout, out int deactTimeout)
+    ["amd", "ami"] idempotent Server* loadServer(string application, 
+						 ServerDescriptor desc,
+						 string sessionId,
+						 out AdapterPrxDict adapters, 
+						 out int actTimeout, 
+						 out int deactTimeout)
 	throws DeploymentException;
 
     /**
@@ -244,7 +249,7 @@ exception NodeActiveException
 {
 };
 
-interface NodeSession extends Glacier2::Session
+interface NodeSession
 {
     /**
      *
@@ -255,13 +260,27 @@ interface NodeSession extends Glacier2::Session
 
     /**
      *
+     * Return the node session timeout.
+     *
+     **/ 
+    nonmutating int getTimeoutAndObserver(out NodeObserver* observer);
+
+    /**
+     *
      * Get the name of the servers deployed on the node.
      *
      **/
     Ice::StringSeq getServers();
+
+    /**
+     *
+     * Destroy the session.
+     *
+     **/
+    void destroy();
 };
 
-interface Registry
+interface InternalRegistry
 {
     /**
      *
@@ -281,22 +300,8 @@ interface Registry
      * registered and currently active.
      *
      **/
-    NodeSession* registerNode(string name, Node* nd, NodeInfo info, out NodeObserver* observer)
+    NodeSession* registerNode(string name, Node* nd, NodeInfo info)
 	throws NodeActiveException;
-
-    /**
-     *
-     * Return the node session timeout.
-     *
-     **/ 
-    nonmutating int getTimeout();
-
-    /**
-     *
-     * Shutdown the registry.
-     *
-     **/
-    void shutdown();
 };
 
 };

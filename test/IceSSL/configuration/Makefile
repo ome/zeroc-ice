@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -9,20 +9,34 @@
 
 top_srcdir	= ../../..
 
-CLIENT		= configuration
+CLIENT		= client
+SERVER		= server
 
-TARGETS		= $(CLIENT)
+TARGETS		= $(CLIENT) $(SERVER)
 
-OBJS		= Configuration.o
+COBJS		= Test.o \
+		  Client.o \
+		  AllTests.o
 
-SRCS		= $(OBJS:.o=.cpp)
+SOBJS		= Test.o \
+		  TestI.o \
+		  Server.o
+
+SRCS		= $(COBJS:.o=.cpp) \
+		  $(SOBJS:.o=.cpp)
+
+SLICE_SRCS	= Test.ice
 
 include $(top_srcdir)/config/Make.rules
 
-CPPFLAGS	:= -I. -I../../include $(CPPFLAGS)
+CPPFLAGS	:= -I. -I../../include $(CPPFLAGS) 
 
-$(CLIENT): $(OBJS)
+$(CLIENT): $(COBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) -lIceSSL -lIceXML $(LIBS) $(OPENSSL_LIBS) $(EXPAT_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(COBJS) $(LIBS) $(OPENSSL_RPATH_LINK) -lIceSSL
+
+$(SERVER): $(SOBJS)
+	rm -f $@
+	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) $(LIBS) $(OPENSSL_RPATH_LINK) -lIceSSL
 
 include .depend

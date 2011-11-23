@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -531,6 +531,12 @@ local exception ConnectionTimeoutException extends TimeoutException
  **/
 local exception ProtocolException
 {
+    /**
+     *
+     * The reason for the failure.
+     *
+     **/
+    string reason;
 };
 
 /**
@@ -718,12 +724,6 @@ local exception IllegalMessageSizeException extends ProtocolException
  **/
 local exception CompressionException extends ProtocolException
 {
-    /**
-     *
-     * The reason for the failure.
-     *
-     **/
-    string reason;
 };
 
 /**
@@ -745,12 +745,6 @@ local exception DatagramLimitException extends ProtocolException
  **/
 local exception MarshalException extends ProtocolException
 {
-    /**
-     *
-     * The reason for the failure.
-     *
-     **/
-    string reason;
 };
 
 /**
@@ -791,7 +785,6 @@ local exception IllegalIndirectionException extends MarshalException
  *
  * @see ObjectFactory
  * @see Communicator::addObjectFactory
- * @see Communicator::removeObjectFactory
  * @see Communicator::findObjectFactory
  *
  **/
@@ -816,6 +809,18 @@ local exception NoObjectFactoryException extends MarshalException
 local exception MemoryLimitException extends MarshalException
 {
 };
+
+/**
+ *
+ * This exception is a specialization of [MarshalException] that is
+ * raised when a string conversion to or from UTF-8 fails during 
+ * marshaling or unmarshaling.
+ *
+ **/
+local exception StringConversionException extends MarshalException
+{
+};
+
 
 /**
  *
@@ -853,6 +858,22 @@ local exception FeatureNotSupportedException
      *
      **/
     string unsupportedFeature;
+};
+
+/**
+ *
+ * This exception indicates a failure in a security subsystem,
+ * such as the IceSSL plugin.
+ *
+ **/
+local exception SecurityException
+{
+    /**
+     *
+     * The reason for the failure.
+     *
+     **/
+    string reason;
 };
 
 };

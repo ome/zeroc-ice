@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -35,17 +35,17 @@ lookupKwd(const string& name, int baseTypes, bool mangleCasts = false)
     static const string keywordList[] = 
     {       
 	"AddHandler", "AddressOf", "Alias", "And", "AndAlso", "Ansi", "As", "Assembly", "Auto",
-	"Boolean", "ByRef", "ByVal", "Byte", "CBool", "CByte", "CChar", "CDate", "CDbl", "CDec",
-	"CInt", "CLng", "CObj", "CShort", "CSng", "CStr", "CType", "Call", "Case", "Catch", "Char",
-	"Class", "Const", "Date", "Decimal", "Declare", "Default", "Delegate", "Dim", "DirectCast",
+	"Boolean", "ByRef", "Byte", "ByVal", "Call", "Case", "Catch", "CBool", "CByte", "CChar",
+	"CDate", "CDbl", "CDec", "Char", "CInt", "Class", "CLng", "CObj", "Const", "CShort", "CSng",
+	"CStr", "CType", "Date", "Decimal", "Declare", "Default", "Delegate", "Dim", "DirectCast",
 	"Do", "Double", "Each", "Else", "ElseIf", "End", "EndIf", "Enum", "Erase", "Error", "Event",
 	"Exit", "False", "Finally", "For", "Friend", "Function", "Get", "GetType", "GoSub", "GoTo",
 	"Handles", "If", "Implements", "Imports", "In", "Inherits", "Integer", "Interface", "Is",
 	"Let", "Lib", "Like", "Long", "Loop", "Me", "Mod", "Module", "MustInherit", "MustOverride",
-	"MyBase", "MyClass", "Namespace", "New", "Next", "Not", "NotInheritable", "NotOverridable",
-	"Nothing", "Object", "On", "Option", "Optional", "Or", "OrElse", "Overloads", "Overridable",
-	"Overrides", "ParamArray", "Preserve", "Private", "Property", "Protected", "Public", "REM",
-	"RaiseEvent", "ReDim", "ReadOnly", "RemoveHandler", "Resume", "Return", "Select", "Set",
+	"MyBase", "MyClass", "Namespace", "New", "Next", "Not", "Nothing", "NotInheritable", 
+	"NotOverridable", "Object", "On", "Option", "Optional", "Or", "OrElse", "Overloads", "Overridable",
+	"Overrides", "ParamArray", "Preserve", "Private", "Property", "Protected", "Public", "RaiseEvent",
+	"ReadOnly", "ReDim", "REM", "RemoveHandler", "Resume", "Return", "Select", "Set",
 	"Shadows", "Shared", "Short", "Single", "Static", "Step", "Stop", "String", "Structure",
 	"Sub", "SyncLock", "Then", "Throw", "To", "True", "Try", "TypeOf", "Unicode", "Until",
 	"Variant", "Wend", "When", "While", "With", "WithEvents", "WriteOnly", "Xor"
@@ -482,13 +482,27 @@ Slice::VbGenerator::writeMarshalUnmarshalCode(Output &out,
     {
         if(marshal)
         {
-            out << nl << param << ".write__(" << stream << ')';
+	    if(streamingAPI)
+	    {
+		out << nl << param << ".ice_write(" << stream << ')';
+	    }
+	    else
+	    {
+		out << nl << param << ".write__(" << stream << ')';
+	    }
         }
         else
         {
             string typeS = typeToString(type);
             out << nl << param << " = New " << typeS;
-            out << nl << param << ".read__(" << stream << ")";
+	    if(streamingAPI)
+	    {
+		out << nl << param << ".ice_read(" << stream << ")";
+	    }
+	    else
+	    {
+		out << nl << param << ".read__(" << stream << ")";
+	    }
         }
         return;
     }
@@ -794,7 +808,14 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	    out << nl << stream << ".writeSize(" << param << '.' << limitID << ")";
 	    out << nl << "For ix__ As Integer = 0 To " << param << '.' << limitID << " - 1";
 	    out.inc();
-	    out << nl << param << "(ix__).write__(" << stream << ")";
+	    if(streamingAPI)
+	    {
+		out << nl << param << "(ix__).ice_write(" << stream << ")";
+	    }
+	    else
+	    {
+		out << nl << param << "(ix__).write__(" << stream << ")";
+	    }
 	    out.dec();
 	    out << nl << "Next";
 	    out.dec();
@@ -831,12 +852,26 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 		{
 		    out << nl << param << "(ix__) = New " << typeS;
 		}
-  		out << nl << param << "(ix__).read__(" << stream << ")";
+		if(streamingAPI)
+		{
+		    out << nl << param << "(ix__).ice_read(" << stream << ")";
+		}
+		else
+		{
+		    out << nl << param << "(ix__).read__(" << stream << ")";
+		}
 	    }
 	    else
 	    {
 	        out << nl << "Dim val__ As " << typeS << " = New " << typeS;
-		out << nl << "val__.read__(" << stream << ')';
+		if(streamingAPI)
+		{
+		    out << nl << "val__.ice_read(" << stream << ')';
+		}
+		else
+		{
+		    out << nl << "val__.read__(" << stream << ')';
+		}
 		out << nl << param << ".Add(val__)";
 	    }
 	    if(!streamingAPI && type->isVariableLength())
@@ -1065,8 +1100,8 @@ Slice::VbGenerator::MetaDataVisitor::visitModuleStart(const ModulePtr& p)
 	    }
 	}
 	_globalMetaDataDone = true;
-	validate(p);
     }
+    validate(p);
     return true;
 }
 
@@ -1219,6 +1254,17 @@ Slice::VbGenerator::MetaDataVisitor::validate(const ContainedPtr& cont)
 		if(StructPtr::dynamicCast(cont))
 		{
 		    if(s.substr(prefix.size()) == "class")
+		    {
+		        continue;
+		    }
+		    if(s.substr(prefix.size()) == "property")
+		    {
+		        continue;
+		    }
+		}
+		if(ClassDefPtr::dynamicCast(cont))
+		{
+		    if(s.substr(prefix.size()) == "property")
 		    {
 		        continue;
 		    }

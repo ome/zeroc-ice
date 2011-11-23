@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -64,6 +64,17 @@ interface Router extends Ice::Router
 {
     /**
      *
+     * This category must be used in the identities of all of the client's
+     * callback objects. This is necessary in order for the router to
+     * forward callback requests to the intended client.
+     *
+     * @return The category.
+     *
+     **/
+    nonmutating string getCategoryForClient();
+
+    /**
+     *
      * Create a per-client session with the router. If a
      * [SessionManager] has been installed, a proxy to a [Session]
      * object is returned to the client. Otherwise, null is returned
@@ -100,14 +111,56 @@ interface Router extends Ice::Router
 
     /**
      *
+     * Create a per-client session with the router. The user is
+     * authenticated through the SSL certificates that have been
+     * associated with the connection. If a [SessionManager] has been
+     * installed, a proxy to a [Session] object is returned to the
+     * client. Otherwise, null is returned and only an internal
+     * session (i.e., not visible to the client) is created.
+     *
+     * If a session proxy is returned, it must be configured to route
+     * through the router that created it. This will happen automatically
+     * if the router is configured as the client's default router at the
+     * time the session proxy is created in the client process, otherwise
+     * the client must configure the session proxy explicitly.
+     *
+     * @see Session
+     * @see SessionManager
+     * @see PermissionsVerifier
+     *
+     * @return A proxy for the newly created session, or null if no
+     * [SessionManager] has been installed.
+     *
+     * @throws PermissionDeniedException Raised if the user cannot be
+     * authenticated or if the user is not allowed access.
+     *
+     * @throws CannotCreateSessionException Raised if the session
+     * cannot be created.
+     *
+     **/
+    Session* createSessionFromSecureConnection()
+	throws PermissionDeniedException, CannotCreateSessionException;
+
+    /**
+     *
      * Destroy the calling client's session with this router.
      *
      * @throws SessionNotExistException Raised if no session exists
      * for the calling client.
      *
      **/
-    ["amd"] void destroySession()
+    void destroySession()
 	throws SessionNotExistException;
+
+    /**
+     *
+     * Get the value of the session timeout. Sessions are destroyed
+     * if they see no activity for this period of time.
+     *
+     * @return The timeout (in seconds).
+     *
+     **/
+    nonmutating long getSessionTimeout();
 };
 
 /**

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,7 @@
 #define ICE_UTIL_UNICODE_H
 
 #include <IceUtil/Config.h>
+#include <IceUtil/Exception.h>
 
 namespace IceUtil
 {
@@ -81,6 +82,74 @@ ICE_UTIL_API std::string wstringToString(const std::wstring&);
 ICE_UTIL_API std::wstring stringToWstring(const std::string&);
 
 #endif
+
+
+//
+// Converts UTF-8 byte-sequences to and from UTF-16 or UTF-32 (with native
+// endianness) depending on sizeof(wchar_t).
+//
+// These are thin wrappers over the UTF8/16/32 converters provided by 
+// unicode.org
+//
+//
+// TODO: provide the same support for /Zc:wchar_t as the functions above
+//
+
+enum ConversionResult
+{
+	conversionOK, 		/* conversion successful */
+	sourceExhausted,	/* partial character in source, but hit end */
+	targetExhausted,	/* insuff. room in target for conversion */
+	sourceIllegal		/* source sequence is illegal/malformed */
+};
+
+
+enum ConversionFlags 
+{
+    strictConversion = 0,
+    lenientConversion
+};
+
+typedef unsigned char Byte;
+
+ICE_UTIL_API bool
+isLegalUTF8Sequence(const Byte* source, const Byte* end);
+
+ICE_UTIL_API ConversionResult 
+convertUTFWstringToUTF8(const wchar_t*& sourceStart, const wchar_t* sourceEnd, 
+			Byte*& targetStart, Byte* targetEnd, ConversionFlags flags);
+
+ICE_UTIL_API ConversionResult
+convertUTF8ToUTFWstring(const Byte*& sourceStart, const Byte* sourceEnd, 
+			wchar_t*& targetStart, wchar_t* targetEnd, ConversionFlags flags);
+
+ICE_UTIL_API ConversionResult 
+convertUTF8ToUTFWstring(const Byte*& sourceStart, const Byte* sourceEnd, 
+			std::wstring& target, ConversionFlags flags);
+
+
+
+
+//
+// UTFConversionException is raised by wstringToString() or stringToWstring()
+// to report a conversion error 
+//
+class ICE_UTIL_API UTFConversionException : public Exception
+{
+public:
+    
+    UTFConversionException(const char*, int, ConversionResult);
+    virtual const std::string ice_name() const;
+    virtual void ice_print(std::ostream&) const;
+    virtual Exception* ice_clone() const;
+    virtual void ice_throw() const;
+
+    ConversionResult conversionResult() const;
+private:
+
+    const ConversionResult _conversionResult;
+    static const char* _name;    
+};
 
 }
 

@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->IceGrid::ServiceInstanceDescriptor</TITLE
+>IceGrid::LoadBalancingPolicy</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
@@ -13,11 +13,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="IceGrid::ServiceDescriptor"
-HREF="x13140.html"><LINK
+TITLE="IceGrid::IceBoxDescriptor"
+HREF="x13164.html"><LINK
 REL="NEXT"
-TITLE="IceGrid::Session"
-HREF="x13251.html"></HEAD
+TITLE="IceGrid::LoadInfo"
+HREF="x13236.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -45,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x13140.html"
+HREF="x13164.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -59,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x13251.html"
+HREF="x13236.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -73,10 +73,10 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICEGRID.SERVICEINSTANCEDESCRIPTOR"
+NAME="ICEGRID.LOADBALANCINGPOLICY"
 ><TT
 CLASS="LITERAL"
->IceGrid::ServiceInstanceDescriptor</TT
+>IceGrid::LoadBalancingPolicy</TT
 ></A
 ></H1
 ><DIV
@@ -95,29 +95,41 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->struct <CODE
-CLASS="STRUCTNAME"
->ServiceInstanceDescriptor</CODE
+>class <CODE
+CLASS="CLASSNAME"
+>LoadBalancingPolicy</CODE
 ></PRE
 ></TD
 ></TR
 ></TABLE
 ><P
-></P
+>A base class for load balancing policies.</P
 ><DIV
 CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
 NAME="AEN13200"
->Used By</A
+>Derived Classes and Interfaces</A
 ></H3
 ><P
 >	    <A
-HREF="x8111.html#ICEGRID.SERVICEINSTANCEDESCRIPTORSEQ"
+HREF="x10512.html"
 ><SPAN
 CLASS="TYPE"
->ServiceInstanceDescriptorSeq</SPAN
+>AdaptiveLoadBalancingPolicy</SPAN
+></A
+>, <A
+HREF="x14447.html"
+><SPAN
+CLASS="TYPE"
+>RandomLoadBalancingPolicy</SPAN
+></A
+>, <A
+HREF="x15045.html"
+><SPAN
+CLASS="TYPE"
+>RoundRobinLoadBalancingPolicy</SPAN
 ></A
 ></P
 ></DIV
@@ -126,7 +138,24 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN13207"
+NAME="AEN13213"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="x14973.html#ICEGRID.REPLICAGROUPDESCRIPTOR.LOADBALANCING"
+><SPAN
+CLASS="TYPE"
+>ReplicaGroupDescriptor::loadBalancing</SPAN
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13220"
 >Data Member Index</A
 ></H3
 ><P
@@ -136,40 +165,16 @@ CLASS="VARIABLELIST"
 ><DL
 ><DT
 ><A
-HREF="x13192.html#ICEGRID.SERVICEINSTANCEDESCRIPTOR.DESCRIPTOR"
+HREF="x13192.html#ICEGRID.LOADBALANCINGPOLICY.NREPLICAS"
 ><SPAN
 CLASS="TYPE"
->descriptor</SPAN
+>nReplicas</SPAN
 ></A
 ></DT
 ><DD
 ><P
->The service definition if the instance isn't a template
-instance (i.e.: if the template attribute is empty).</P
-></DD
-><DT
-><A
-HREF="x13192.html#ID.SERVICEINSTANCEDESCRIPTOR.PARAMETERVALUES"
-><SPAN
-CLASS="TYPE"
->parameterValues</SPAN
-></A
-></DT
-><DD
-><P
->The template parameter values.</P
-></DD
-><DT
-><A
-HREF="x13192.html#ICEGRID.SERVICEINSTANCEDESCRIPTOR.TEMPLATE"
-><SPAN
-CLASS="TYPE"
->template</SPAN
-></A
-></DT
-><DD
-><P
->The template used by this instance.</P
+>The number of replicas that will be used to gather the
+endpoints of a replica group.</P
 ></DD
 ></DL
 ></DIV
@@ -180,81 +185,10 @@ CLASS="SECTION"
 ><H2
 CLASS="SECTION"
 ><A
-NAME="ICEGRID.SERVICEINSTANCEDESCRIPTOR.DESCRIPTOR"
+NAME="ICEGRID.LOADBALANCINGPOLICY.NREPLICAS"
 ><TT
 CLASS="LITERAL"
->descriptor</TT
-></A
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><A
-HREF="x13140.html"
-><CODE
-CLASS="CLASSNAME"
->ServiceDescriptor</CODE
-></A
-> <CODE
-CLASS="STRUCTFIELD"
->descriptor</CODE
->;</PRE
-></TD
-></TR
-></TABLE
-><P
->The service definition if the instance isn't a template
-instance (i.e.: if the template attribute is empty).</P
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ID.SERVICEINSTANCEDESCRIPTOR.PARAMETERVALUES"
-><TT
-CLASS="LITERAL"
->parameterValues</TT
-></A
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><A
-HREF="x8111.html#ICEGRID.STRINGSTRINGDICT"
-><SPAN
-CLASS="TYPE"
->StringStringDict</SPAN
-></A
-> <CODE
-CLASS="STRUCTFIELD"
->parameterValues</CODE
->;</PRE
-></TD
-></TR
-></TABLE
-><P
->The template parameter values.</P
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="ICEGRID.SERVICEINSTANCEDESCRIPTOR.TEMPLATE"
-><TT
-CLASS="LITERAL"
->template</TT
+>nReplicas</TT
 ></A
 ></H2
 ><TABLE
@@ -270,13 +204,14 @@ CLASS="TYPE"
 >string</SPAN
 > <CODE
 CLASS="STRUCTFIELD"
->template</CODE
+>nReplicas</CODE
 >;</PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->The template used by this instance.</P
+>The number of replicas that will be used to gather the
+endpoints of a replica group.</P
 ></DIV
 ></DIV
 ><DIV
@@ -295,7 +230,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x13140.html"
+HREF="x13164.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -313,7 +248,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x13251.html"
+HREF="x13236.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -325,7 +260,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->IceGrid::ServiceDescriptor</TT
+>IceGrid::IceBoxDescriptor</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -342,7 +277,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->IceGrid::Session</TT
+>IceGrid::LoadInfo</TT
 ></TD
 ></TR
 ></TABLE

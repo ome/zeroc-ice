@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,7 @@ int
 main(int argc, char* argv[])
 {
     SessionServer app;
-    return app.main(argc, argv, "config");
+    return app.main(argc, argv, "config.server");
 }
 
 int
@@ -34,7 +34,7 @@ SessionServer::run(int argc, char* argv[])
     ReapThreadPtr reaper = new ReapThread();
     reaper->start();
 
-    adapter->add(new SessionFactoryI(reaper), Ice::stringToIdentity("SessionFactory"));
+    adapter->add(new SessionFactoryI(reaper), communicator()->stringToIdentity("SessionFactory"));
     adapter->activate();
     communicator()->waitForShutdown();
 

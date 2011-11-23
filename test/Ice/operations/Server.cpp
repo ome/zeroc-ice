@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,11 +15,11 @@ using namespace std;
 int
 run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 {
-    communicator->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12345 -t 10000:udp");
+    communicator->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000:udp");
     Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("TestAdapter");
-    Ice::Identity id = Ice::stringToIdentity("test");
+    Ice::Identity id = communicator->stringToIdentity("test");
     adapter->add(new MyDerivedClassI(adapter, id), id);
-    adapter->add(new TestCheckedCastI, Ice::stringToIdentity("context"));
+    adapter->add(new TestCheckedCastI, communicator->stringToIdentity("context"));
     adapter->activate();
 
     communicator->waitForShutdown();
@@ -34,7 +34,11 @@ main(int argc, char* argv[])
 
     try
     {
-	communicator = Ice::initialize(argc, argv);
+	Ice::InitializationData initData;
+	initData.properties = Ice::createProperties(argc, argv);
+	initData.properties->setProperty("Ice.Warn.Connections", "0");
+
+	communicator = Ice::initialize(argc, argv, initData);
 	status = run(argc, argv, communicator);
     }
     catch(const Ice::Exception& ex)

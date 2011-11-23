@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,7 +25,8 @@
 using namespace std;
 
 void
-twoways(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
+twoways(const Ice::CommunicatorPtr& communicator, const Ice::InitializationData& initializationData,
+	const Test::MyClassPrx& p)
 {
     {
 	p->opVoid();
@@ -124,9 +125,9 @@ twoways(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 	test(Ice::proxyIdentityAndFacetEqual(c1, p));
 	test(!Ice::proxyIdentityAndFacetEqual(c2, p));
 	test(Ice::proxyIdentityAndFacetEqual(r, p));
-	test(c1->ice_getIdentity() == Ice::stringToIdentity("test"));
-	test(c2->ice_getIdentity() == Ice::stringToIdentity("noSuchIdentity"));
-	test(r->ice_getIdentity() == Ice::stringToIdentity("test"));
+	test(c1->ice_getIdentity() == communicator->stringToIdentity("test"));
+	test(c2->ice_getIdentity() == communicator->stringToIdentity("noSuchIdentity"));
+	test(r->ice_getIdentity() == communicator->stringToIdentity("test"));
 	r->opVoid();
 	c1->opVoid();
 	try
@@ -633,7 +634,7 @@ twoways(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 	    test(r == ctx);
 	}
 	{
-	    Test::MyClassPrx p2 = Test::MyClassPrx::checkedCast(p->ice_newContext(ctx));
+	    Test::MyClassPrx p2 = Test::MyClassPrx::checkedCast(p->ice_context(ctx));
 	    test(p2->ice_getContext() == ctx);
 	    Test::StringStringD r = p2->opContext();
 	    test(r == ctx);
@@ -645,44 +646,34 @@ twoways(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 	    //
 	    // Test that default context is obtained correctly from communicator.
 	    //
-	    Ice::Context dflt;
-	    dflt["a"] = "b";
-	    communicator->setDefaultContext(dflt);
-	    test(p->opContext() != dflt);
+	    Ice::InitializationData initData = initializationData;
+	    initData.defaultContext["a"] = "b";
+	    Ice::CommunicatorPtr communicator2 = Ice::initialize(initData);
 
-	    Test::MyClassPrx p2 = Test::MyClassPrx::uncheckedCast(p->ice_newContext(Ice::Context()));
-	    test(p2->opContext().empty());
-
-	    p2 = Test::MyClassPrx::uncheckedCast(p->ice_defaultContext());
-	    test(p2->opContext() == dflt);
-
-	    communicator->setDefaultContext(Ice::Context());
-	    test(!p2->opContext().empty());
-
-	    communicator->setDefaultContext(dflt);
 	    Test::MyClassPrx c = Test::MyClassPrx::checkedCast(
-	    				communicator->stringToProxy("test:default -p 12345 -t 10000"));
-	    test(c->opContext() == dflt);
+	    				communicator2->stringToProxy("test:default -p 12010 -t 10000"));
+	    test(c->opContext() == initData.defaultContext);
 
-	    dflt["a"] = "c";
-	    Test::MyClassPrx c2 = Test::MyClassPrx::uncheckedCast(c->ice_newContext(dflt));
+	    Ice::Context ctx;
+	    ctx["a"] = "c";
+	    Test::MyClassPrx c2 = Test::MyClassPrx::uncheckedCast(c->ice_context(ctx));
 	    test(c2->opContext()["a"] == "c");
 
-	    dflt.clear();
-	    Test::MyClassPrx c3 = Test::MyClassPrx::uncheckedCast(c2->ice_newContext(dflt));
+	    ctx.clear();
+	    Test::MyClassPrx c3 = Test::MyClassPrx::uncheckedCast(c2->ice_context(ctx));
 	    Ice::Context tmp = c3->opContext();
 	    test(tmp.find("a") == tmp.end());
 
 	    Test::MyClassPrx c4 = Test::MyClassPrx::uncheckedCast(c2->ice_defaultContext());
 	    test(c4->opContext()["a"] == "b");
 
-	    dflt["a"] = "d";
-	    communicator->setDefaultContext(dflt);
-
-	    Test::MyClassPrx c5 = Test::MyClassPrx::uncheckedCast(c->ice_defaultContext());
-	    test(c5->opContext()["a"] == "d");
-
-	    communicator->setDefaultContext(Ice::Context());
+	    communicator2->destroy();
 	}
+    }
+
+    {
+        Ice::Double d = 1278312346.0 / 13.0;
+	Test::DoubleS ds(5, d);
+	p->opDoubleMarshaling(d, ds);
     }
 }

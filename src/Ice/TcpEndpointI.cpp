@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,7 +33,7 @@ IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const strin
 {
 }
 
-IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const string& str, bool adapterEndp) :
+IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const string& str) :
     _instance(instance),
     _port(0),
     _timeout(-1),
@@ -144,17 +144,10 @@ IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const strin
 	const_cast<string&>(_host) = _instance->defaultsAndOverrides()->defaultHost;
 	if(_host.empty())
 	{
-	    if(adapterEndp)
-	    {
-	        const_cast<string&>(_host) = "0.0.0.0";
-	    }
-	    else
-	    {
-	        const_cast<string&>(_host) = getLocalHost(true);
-	    }
+	    const_cast<string&>(_host) = "0.0.0.0";
 	}
     }
-    else if(_host == "*" && adapterEndp)
+    else if(_host == "*")
     {
         const_cast<string&>(_host) = "0.0.0.0";
     }
@@ -168,7 +161,7 @@ IceInternal::TcpEndpointI::TcpEndpointI(BasicStream* s) :
     _publish(true)
 {
     s->startReadEncaps();
-    s->read(const_cast<string&>(_host));
+    s->read(const_cast<string&>(_host), false);
     s->read(const_cast<Int&>(_port));
     s->read(const_cast<Int&>(_timeout));
     s->read(const_cast<bool&>(_compress));
@@ -180,7 +173,7 @@ IceInternal::TcpEndpointI::streamWrite(BasicStream* s) const
 {
     s->write(TcpEndpointType);
     s->startWriteEncaps();
-    s->write(_host);
+    s->write(_host, false);
     s->write(_port);
     s->write(_timeout);
     s->write(_compress);
@@ -190,6 +183,13 @@ IceInternal::TcpEndpointI::streamWrite(BasicStream* s) const
 string
 IceInternal::TcpEndpointI::toString() const
 {
+    //
+    // WARNING: Certain features, such as proxy validation in Glacier2,
+    // depend on the format of proxy strings. Changes to toString() and
+    // methods called to generate parts of the reference string could break
+    // these features. Please review for all features that depend on the
+    // format of proxyToString() before changing this and related code.
+    //
     ostringstream s;
     s << "tcp -h " << _host << " -p " << _port;
     if(_timeout != -1)
@@ -298,7 +298,7 @@ IceInternal::TcpEndpointI::connector() const
 }
 
 AcceptorPtr
-IceInternal::TcpEndpointI::acceptor(EndpointIPtr& endp) const
+IceInternal::TcpEndpointI::acceptor(EndpointIPtr& endp, const string&) const
 {
     TcpAcceptor* p = new TcpAcceptor(_instance, _host, _port);
     endp = new TcpEndpointI(_instance, _host, p->effectivePort(), _timeout, _connectionId, _compress, _publish);
@@ -306,7 +306,7 @@ IceInternal::TcpEndpointI::acceptor(EndpointIPtr& endp) const
 }
 
 vector<EndpointIPtr>
-IceInternal::TcpEndpointI::expand() const
+IceInternal::TcpEndpointI::expand(bool includeLoopback) const
 {
     vector<EndpointIPtr> endps;
     if(_host == "0.0.0.0")
@@ -314,8 +314,11 @@ IceInternal::TcpEndpointI::expand() const
         vector<string> hosts = getLocalHosts();
 	for(unsigned int i = 0; i < hosts.size(); ++i)
 	{
-	    endps.push_back(new TcpEndpointI(_instance, hosts[i], _port, _timeout, _connectionId, _compress,
-	    				     hosts.size() == 1 || hosts[i] != "127.0.0.1"));
+	    if(includeLoopback || hosts.size() == 1 || hosts[i] != "127.0.0.1")
+	    {
+	        endps.push_back(new TcpEndpointI(_instance, hosts[i], _port, _timeout, _connectionId, _compress,
+	    				         hosts.size() == 1 || hosts[i] != "127.0.0.1"));
+	    }
 	}
     }
     else
@@ -519,9 +522,9 @@ IceInternal::TcpEndpointFactory::protocol() const
 }
 
 EndpointIPtr
-IceInternal::TcpEndpointFactory::create(const std::string& str, bool adapterEndp) const
+IceInternal::TcpEndpointFactory::create(const std::string& str) const
 {
-    return new TcpEndpointI(_instance, str, adapterEndp);
+    return new TcpEndpointI(_instance, str);
 }
 
 EndpointIPtr

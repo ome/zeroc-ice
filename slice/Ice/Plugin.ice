@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,12 +15,23 @@ module Ice
 
 /**
  *
- * A communicator plug-in. A plug-in generally adds a feature to a
+ * A communicator plugin. A plugin generally adds a feature to a
  * communicator, such as support for a protocol.
+ *
+ * The communicator loads its plugins in two stages: the first stage
+ * creates the plugins, and the second stage invokes [initialize] on
+ * each one.
  *
  **/
 local interface Plugin
 {
+    /**
+     *
+     * Perform any necessary initialization steps.
+     *
+     **/
+    void initialize();
+
     /**
      *
      * Called when the communicator is being destroyed.
@@ -32,29 +43,48 @@ local interface Plugin
 /**
  *
  * Each communicator has a plugin manager to administer the set of
- * plug-ins.
+ * plugins.
  *
  **/
 local interface PluginManager
 {
     /**
      *
-     * Obtain a plug-in by name.
+     * Initialize the configured plugins. The communicator automatically initializes
+     * the plugins by default, but an application may need to interact directly with
+     * a plugin prior to initialization. In this case, the application must set
+     * <literal>Ice.InitPlugins=0</literal> and then invoke [initializePlugins]
+     * manually. The plugins are initialized in the order in which they are loaded.
+     * If a plugin raises an exception during initialization, the communicator
+     * invokes destroy on the plugins that have already been initialized.
      *
-     * @param name The plug-in's name.
+     * @throws InitializationException Raised if the plugins have already been initialized.
      *
-     * @return The plug-in.
+     **/
+    void initializePlugins();
+
+    /**
+     *
+     * Obtain a plugin by name.
+     *
+     * @param name The plugin's name.
+     *
+     * @return The plugin.
+     *
+     * @throws NotRegisteredException Raised if no plugin is found with the given name.
      *
      **/
     Plugin getPlugin(string name);
 
     /**
      *
-     * Install a new plug-in.
+     * Install a new plugin.
      *
-     * @param name The plug-in's name.
+     * @param name The plugin's name.
      *
-     * @param pi The plug-in.
+     * @param pi The plugin.
+     *
+     * @throws AlreadyRegisteredException Raised if a plugin already exists with the given name.
      *
      **/
     void addPlugin(string name, Plugin pi);

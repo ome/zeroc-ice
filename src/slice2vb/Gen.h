@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -65,7 +65,6 @@ private:
     IceUtil::Output _out;
     IceUtil::Output _impl;
 
-    std::string _base;
     std::vector<std::string> _includePaths;
 
     bool _stream;
@@ -108,6 +107,8 @@ private:
 	virtual void visitDataMember(const DataMemberPtr&);
 
     private:
+
+	void invokeObjectMethod(const TypePtr&, const std::string&, const std::string&, const std::string&);
 
         bool _stream;
     };

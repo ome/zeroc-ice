@@ -44,7 +44,7 @@ RSC=rc.exe
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBRARY_EXPORTS" /Yu"stdafx.h" /FD /c
 # ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I ".." /I "../../include" /D FD_SETSIZE=1024 /D "_USRDLL" /D "ICE_API_EXPORTS" /D "_CONSOLE" /D "NDEBUG" /D "WIN32_LEAN_AND_MEAN" /FD /c
-# SUBTRACT CPP /Z<none> /Fr /YX
+# SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -54,12 +54,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 ws2_32.lib libbz2.lib advapi32.lib /nologo /entry:"ice_DLL_Main" /dll /pdb:none /machine:I386 /out:"Release/ice30.dll" /implib:"Release/ice.lib" /FIXED:no
+# ADD LINK32 ws2_32.lib libbz2.lib advapi32.lib /nologo /entry:"ice_DLL_Main" /dll /pdb:none /machine:I386 /out:"Release/ice31.dll" /implib:"Release/ice.lib" /FIXED:no
 # SUBTRACT LINK32 /debug
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\ice.lib ..\..\lib	copy $(OutDir)\ice30.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\ice.lib ..\..\lib	copy $(OutDir)\ice31.dll ..\..\bin
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "ice - Win32 Debug"
@@ -87,12 +87,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386
-# ADD LINK32 ws2_32.lib libbz2d.lib advapi32.lib /nologo /entry:"ice_DLL_Main" /dll /debug /machine:I386 /out:"Debug/ice30d.dll" /implib:"Debug/iced.lib" /FIXED:no
+# ADD LINK32 ws2_32.lib libbz2d.lib advapi32.lib /nologo /entry:"ice_DLL_Main" /dll /debug /machine:I386 /out:"Debug/ice31d.dll" /implib:"Debug/iced.lib" /FIXED:no
 # SUBTRACT LINK32 /pdb:none
 # Begin Special Build Tool
 OutDir=.\Debug
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\iced.lib ..\..\lib	copy $(OutDir)\ice30d.pdb ..\..\bin	copy $(OutDir)\ice30d.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\iced.lib ..\..\lib	copy $(OutDir)\ice31d.pdb ..\..\bin	copy $(OutDir)\ice31d.dll ..\..\bin
 # End Special Build Tool
 
 !ENDIF 
@@ -342,6 +342,10 @@ SOURCE=.\PropertyNames.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\Protocol.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ProtocolPluginFacade.cpp
 # End Source File
 # Begin Source File
@@ -367,10 +371,6 @@ SOURCE=.\Router.cpp
 # Begin Source File
 
 SOURCE=.\RouterInfo.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\RoutingTable.cpp
 # End Source File
 # Begin Source File
 
@@ -403,6 +403,10 @@ SOURCE=.\Stream.cpp
 # Begin Source File
 
 SOURCE=.\StreamI.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\StringConverter.cpp
 # End Source File
 # Begin Source File
 
@@ -870,14 +874,6 @@ SOURCE=.\RouterInfoF.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\include\ice\RoutingTable.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\include\ice\RoutingTableF.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\include\ice\ServantLocator.h
 # End Source File
 # Begin Source File
@@ -923,6 +919,10 @@ SOURCE=..\..\include\ice\StreamF.h
 # Begin Source File
 
 SOURCE=.\StreamI.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\include\Ice\StringConverter.h
 # End Source File
 # Begin Source File
 
@@ -1284,7 +1284,7 @@ InputPath=.\EventLoggerMsg.mc
 InputName=EventLoggerMsg
 
 BuildCmds= \
-	mc $(InputPath) \
+	mc "$(InputPath)" \
 	rc -r -fo $(InputName).res $(InputName).rc \
 	
 
@@ -1302,7 +1302,7 @@ InputPath=.\EventLoggerMsg.mc
 InputName=EventLoggerMsg
 
 BuildCmds= \
-	mc $(InputPath) \
+	mc "$(InputPath)" \
 	rc -r -fo $(InputName).res $(InputName).rc \
 	
 

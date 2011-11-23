@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -31,6 +31,10 @@ endif
 CFLAGS = -O2
 
 ifeq ($(MACHINE),x86_64)
+   
+   ifeq ($(LP64),)
+      LP64      = yes
+   endif
    ifeq ($(LP64),yes)
       CFLAGS	+= -m64
    else
@@ -101,7 +105,13 @@ ifeq ($(CXX),c++)
 
    mklib		= ar cr $(1) $(2)
 
-   LDPLATFORMFLAGS 	= -Wl,--enable-new-dtags -Wl,-rpath,$(install_libdir)
+   rpathlink            = -Wl,-rpath-link,$(1) 
+
+   ifeq ($(ADD_LIBDIR_TO_RPATH),yes)
+      LDPLATFORMFLAGS      = -Wl,--enable-new-dtags -Wl,-rpath,$(install_libdir)
+   else
+      LDPLATFORMFLAGS      = -Wl,--enable-new-dtags
+   endif
 
 endif
 
@@ -128,10 +138,12 @@ ifeq ($(CXX),icpc)
 
    mklib		= ar cr $(1) $(2)
 
+   rpathlink            = -Wl,-rpath-link,$(1) 
+
 endif
 
 BASELIBS		= -lIceUtil $(STLPORT_LIBS) -lpthread 
-LIBS			= -lIce $(BASELIBS)
+LIBS			= $(BZIP2_RPATH_LINK) -lIce $(BASELIBS)
 
 ICEUTIL_OS_LIBS         = 
 ICE_OS_LIBS             = -ldl

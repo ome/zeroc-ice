@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -189,7 +189,7 @@ Ice::Service::interrupt()
 }
 
 int
-Ice::Service::main(int& argc, char* argv[])
+Ice::Service::main(int& argc, char* argv[], const InitializationData& initData)
 {
     _name = argv[0];
 
@@ -204,40 +204,46 @@ Ice::Service::main(int& argc, char* argv[])
         if(strcmp(argv[idx], "--service") == 0)
         {
 	    //
-	    // When running as a service, we need an event logger in order to report
+	    // When running as a service, we need a logger to use for reporting any
 	    // failures that occur prior to initializing a communicator. After we have
-	    // a communicator, we can use the configured logger instead.
+	    // a communicator, we can use the configured logger instead. If a logger
+	    // is defined in InitializationData, we'll use that. Otherwise, we create
+	    // a temporary event logger.
 	    //
 	    // We postpone the initialization of the communicator until serviceMain so
 	    // that we can incorporate the executable's arguments and the service's
 	    // arguments into one vector.
 	    //
-	    try
+	    _logger = initData.logger;
+	    if(!_logger)
 	    {
-		//
-		// Use the executable name as the source for the temporary logger.
-		//
-		string loggerName = _name;
-		transform(loggerName.begin(), loggerName.end(), loggerName.begin(), ::tolower);
-		string::size_type pos = loggerName.find_last_of("\\/");
-		if(pos != string::npos)
+		try
 		{
-		    loggerName.erase(0, pos + 1); // Remove leading path.
-		}
-		pos = loggerName.rfind(".exe");
-		if(pos != string::npos)
-		{
-		    loggerName.erase(pos, loggerName.size() - pos); // Remove .exe extension.
-		}
+		    //
+		    // Use the executable name as the source for the temporary logger.
+		    //
+		    string loggerName = _name;
+		    transform(loggerName.begin(), loggerName.end(), loggerName.begin(), ::tolower);
+		    string::size_type pos = loggerName.find_last_of("\\/");
+		    if(pos != string::npos)
+		    {
+			loggerName.erase(0, pos + 1); // Remove leading path.
+		    }
+		    pos = loggerName.rfind(".exe");
+		    if(pos != string::npos)
+		    {
+			loggerName.erase(pos, loggerName.size() - pos); // Remove .exe extension.
+		    }
 
-		_logger = new EventLoggerI(loggerName);
-	    }
-	    catch(const IceUtil::Exception& ex)
-	    {
-		ostringstream ostr;
-		ostr << ex;
-		error("unable to create EventLogger:\n" + ostr.str());
-		return EXIT_FAILURE;
+		    _logger = new EventLoggerI(loggerName);
+		}
+		catch(const IceUtil::Exception& ex)
+		{
+		    ostringstream ostr;
+		    ostr << ex;
+		    error("unable to create EventLogger:\n" + ostr.str());
+		    return EXIT_FAILURE;
+		}
 	    }
 
             if(idx + 1 >= argc)
@@ -449,7 +455,7 @@ Ice::Service::main(int& argc, char* argv[])
     }
 #endif
 
-    return run(argc, argv);
+    return run(argc, argv, initData);
 }
 
 Ice::CommunicatorPtr
@@ -493,14 +499,14 @@ Ice::Service::checkSystem() const
 }
 
 int
-Ice::Service::run(int& argc, char* argv[])
+Ice::Service::run(int& argc, char* argv[], const InitializationData& initData)
 {
     if(_service)
     {
 #ifdef _WIN32
-        return runService(argc, argv);
+        return runService(argc, argv, initData);
 #else
-        return runDaemon(argc, argv);
+        return runDaemon(argc, argv, initData);
 #endif
     }
 
@@ -521,7 +527,7 @@ Ice::Service::run(int& argc, char* argv[])
         //
         // Initialize the communicator.
         //
-        _communicator = initializeCommunicator(argc, argv);
+        _communicator = initializeCommunicator(argc, argv, initData);
 
         //
         // Use the configured logger.
@@ -916,9 +922,9 @@ Ice::Service::stop()
 }
 
 Ice::CommunicatorPtr
-Ice::Service::initializeCommunicator(int& argc, char* argv[])
+Ice::Service::initializeCommunicator(int& argc, char* argv[], const InitializationData& initData)
 {
-    return Ice::initialize(argc, argv);
+    return Ice::initialize(argc, argv, initData);
 }
 
 void
@@ -1045,7 +1051,7 @@ Ice::Service::disableInterrupt()
 #ifdef _WIN32
 
 int
-Ice::Service::runService(int argc, char* argv[])
+Ice::Service::runService(int argc, char* argv[], const InitializationData& initData)
 {
     assert(_service);
 
@@ -1069,6 +1075,8 @@ Ice::Service::runService(int argc, char* argv[])
     {
         _serviceArgs.push_back(argv[idx]);
     }
+
+    _initData = initData;
 
     SERVICE_TABLE_ENTRY ste[] =
     {
@@ -1271,7 +1279,7 @@ Ice::Service::serviceMain(int argc, char* argv[])
     //
     try
     {
-        _communicator = initializeCommunicator(argc, args);
+        _communicator = initializeCommunicator(argc, args, _initData);
     }
     catch(const Ice::Exception& ex)
     {
@@ -1470,7 +1478,7 @@ Ice::ServiceStatusManager::run()
 #else
 
 int
-Ice::Service::runDaemon(int argc, char* argv[])
+Ice::Service::runDaemon(int argc, char* argv[], const InitializationData& initData)
 {
     assert(_service);
 
@@ -1576,13 +1584,6 @@ Ice::Service::runDaemon(int argc, char* argv[])
         }
 
         //
-        // Conventional wisdom recommends ignoring SIGHUP and forking again in order
-        // to avoid the possibility of acquiring a controlling terminal. However,
-        // doing this means the grandchild is no longer a process group leader, and
-        // that would interfere with signal delivery on non-NPTL Linux systems.
-        //
-/*
-        //
         // Ignore SIGHUP so that the grandchild process is not sent SIGHUP when this
         // process exits.
         //
@@ -1602,7 +1603,6 @@ Ice::Service::runDaemon(int argc, char* argv[])
         {
             exit(0);
         }
-*/
 
         if(_changeDirectory)
         {
@@ -1658,7 +1658,7 @@ Ice::Service::runDaemon(int argc, char* argv[])
         //
         // Initialize the communicator.
         //
-        _communicator = initializeCommunicator(argc, argv);
+        _communicator = initializeCommunicator(argc, argv, initData);
 
         if(_closeFiles)
         {

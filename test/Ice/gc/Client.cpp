@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -528,6 +528,31 @@ MyApplication::run(int argc, char* argv[])
     cout << "testing leaf nodes... " << flush;
 
     {
+        NNPtr nn = new NN;
+	nn->l = new NL;
+	test(getNum() == 2);
+	Ice::collectGarbage();
+	test(getNum() == 2);
+    }
+    Ice::collectGarbage();
+    test(getNum() == 0);
+
+    {
+        NLPtr p;
+	{
+	    NNPtr nn = new NN;
+	    p = new NL;
+	    nn->l = p;
+	    test(getNum() == 2);
+	    Ice::collectGarbage();
+	    test(getNum() == 2);
+	}
+	Ice::collectGarbage();
+	test(getNum() == 1);
+    }
+    test(getNum() == 0);
+
+    {
 	NNPtr nn = new NN;
 	NLPtr nl = new NL;
 	nn->l = nl;
@@ -559,6 +584,17 @@ MyApplication::run(int argc, char* argv[])
     {
 	NLPtr nl = new NL;
 	test(getNum() == 1);
+    }
+    test(getNum() == 0);
+    Ice::collectGarbage();
+    test(getNum() == 0);
+
+    {
+        NNPtr nn1 = new NN;
+	nn1->n = new NN;
+	test(getNum() == 2);
+	Ice::collectGarbage();
+	test(getNum() == 2);
     }
     test(getNum() == 0);
     Ice::collectGarbage();

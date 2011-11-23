@@ -38,6 +38,9 @@ Ice has dependencies on a number of third-party libraries:
   (plus --prefix=<dir> and/or --enable-java if you like)
   $ gmake
 
+  If you intend to use Ice for Java with Berkeley DB, you must also
+  include the option --enable-java.
+
   For 64 bit builds, use this configuration:
 
   $ export OBJECT_MODE=64
@@ -47,12 +50,11 @@ Ice has dependencies on a number of third-party libraries:
 
 - OpenSSL
 
-  For 32 bit builds, we recommend openssl-0.9.6m-2 from the "AIX
+  For 32 bit builds, we recommend openssl-0.9.7g-1 from the "AIX
   Toolbox for Linux Applications" (cryptographic section):
   http://www.ibm.com/servers/aix/products/aixos/linux/ezinstall.html
-  Do not use openssl-0.9.6m-1, as it was not built properly.
 
-  For 64 bit builds, we recommend using OpenSSL 0.9.7d (or later).
+  For 64 bit builds, we recommend using OpenSSL 0.9.8b (or later).
   You can download the source distribution from
   http://www.openssl.org.
 
@@ -83,9 +85,8 @@ Make from the "AIX Toolbox for Linux Applications".
 Python
 ------
 
-To run the automated test suite, you will need Python 2.2 or a newer
-version. If you have no interest in running the test scripts, Python
-is not required.
+You will need Python to run the automated test suite. If you have no
+interest in running the test scripts, Python is not required.
 
 You can download Python from the "AIX Toolbox for Linux Applications".
 
@@ -97,11 +98,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ gunzip -c Ice-3.0.1.tar.gz | tar xvf -
+$ gunzip -c Ice-3.1.0.tar.gz | tar xvf -
 
-Change the working directory to Ice-3.0.1:
+Change the working directory to Ice-3.1.0:
 
-$ cd Ice-3.0.1
+$ cd Ice-3.1.0
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -36,8 +36,8 @@ public:
     virtual TransceiverPtr clientTransceiver() const;
     virtual TransceiverPtr serverTransceiver(EndpointIPtr&) const;
     virtual ConnectorPtr connector() const;
-    virtual AcceptorPtr acceptor(EndpointIPtr&) const;
-    virtual std::vector<EndpointIPtr> expand() const;
+    virtual AcceptorPtr acceptor(EndpointIPtr&, const std::string&) const;
+    virtual std::vector<EndpointIPtr> expand(bool) const;
     virtual bool publish() const;
     virtual bool equivalent(const TransceiverPtr&) const;
     virtual bool equivalent(const AcceptorPtr&) const;

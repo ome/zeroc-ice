@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,7 +25,7 @@ int
 main(int argc, char* argv[])
 {
     CallbackClient app;
-    return app.main(argc, argv, "config");
+    return app.main(argc, argv, "config.client");
 }
 
 void
@@ -84,10 +84,9 @@ CallbackClient::run(int argc, char* argv[])
 	}
     }
 
-    string category = router->getServerProxy()->ice_getIdentity().category;
     Ice::Identity callbackReceiverIdent;
     callbackReceiverIdent.name = "callbackReceiver";
-    callbackReceiverIdent.category = category;
+    callbackReceiverIdent.category = router->getCategoryForClient();
     Ice::Identity callbackReceiverFakeIdent;
     callbackReceiverFakeIdent.name = "callbackReceiver";
     callbackReceiverFakeIdent.category = "fake";
@@ -179,16 +178,17 @@ CallbackClient::run(int argc, char* argv[])
 
 		if(fake)
 		{
-		    twowayR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_newIdentity(callbackReceiverFakeIdent));
-		    onewayR = CallbackReceiverPrx::uncheckedCast(onewayR->ice_newIdentity(callbackReceiverFakeIdent));
+		    twowayR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_identity(callbackReceiverFakeIdent));
+		    onewayR = CallbackReceiverPrx::uncheckedCast(onewayR->ice_identity(callbackReceiverFakeIdent));
 		}
 		else
 		{
-		    twowayR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_newIdentity(callbackReceiverIdent));
-		    onewayR = CallbackReceiverPrx::uncheckedCast(onewayR->ice_newIdentity(callbackReceiverIdent));
+		    twowayR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_identity(callbackReceiverIdent));
+		    onewayR = CallbackReceiverPrx::uncheckedCast(onewayR->ice_identity(callbackReceiverIdent));
 		}
 		
-		cout << "callback receiver identity: " << Ice::identityToString(twowayR->ice_getIdentity()) << endl;
+		cout << "callback receiver identity: " << communicator()->identityToString(twowayR->ice_getIdentity())
+		     << endl;
 	    }
 	    else if(c == 's')
 	    {

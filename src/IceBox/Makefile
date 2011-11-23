@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -23,7 +23,7 @@ OBJS		= IceBox.o \
 		  Exception.o
 
 SOBJS		= ServiceManagerI.o \
-		  Server.o
+		  Service.o
 
 AOBJS		= Admin.o
 
@@ -39,9 +39,9 @@ SDIR		= $(slicedir)/IceBox
 
 include $(top_srcdir)/config/Make.rules
 
-CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_BOX_API_EXPORTS $(DB_FLAGS) 
+CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_BOX_API_EXPORTS 
 SLICE2CPPFLAGS	:= --checksum --ice --dll-export ICE_BOX_API --include-dir IceBox $(SLICE2CPPFLAGS)
-LINKWITH	:= -lIce -lIceUtil
+LINKWITH	:= $(BZIP2_RPATH_LINK) -lIce -lIceUtil
 
 $(libdir)/$(LIBFILENAME): $(OBJS)
 	rm -f $@

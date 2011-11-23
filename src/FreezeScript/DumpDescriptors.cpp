@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,6 +14,7 @@
 #include <FreezeScript/Exception.h>
 #include <FreezeScript/Util.h>
 #include <db_cxx.h>
+#include <set>
 
 using namespace std;
 
@@ -118,6 +119,7 @@ private:
     Slice::UnitPtr _unit;
     ErrorReporterPtr _errorReporter;
     ExecuteInfo* _info;
+    set<const ObjectData*> _objectHistory;
 };
 
 } // End of namespace FreezeScript
@@ -1236,10 +1238,12 @@ FreezeScript::RecordDescriptor::RecordDescriptor(const DescriptorPtr& parent, in
                                                  const DataFactoryPtr& factory,
                                                  const ErrorReporterPtr& errorReporter,
                                                  const IceXML::Attributes& attributes,
-                                                 const Slice::UnitPtr& unit) :
+                                                 const Slice::UnitPtr& unit,
+						 const FreezeScript::ObjectFactoryPtr& objectFactory) :
     Descriptor(parent, line, factory, errorReporter), 
     ExecutableContainerDescriptor(parent, line, factory, errorReporter, attributes, "record"),
-    _unit(unit)
+    _unit(unit),
+    _objectFactory(objectFactory)
 {
 }
 
@@ -1249,7 +1253,7 @@ FreezeScript::RecordDescriptor::execute(const SymbolTablePtr& sym, ExecuteInfo* 
     //
     // Temporarily add an object factory.
     //
-    info->communicator->addObjectFactory(new FreezeScript::ObjectFactory(_factory, _unit), "");
+    _objectFactory->activate(_factory, _unit);
 
     //
     // Iterate over the database.
@@ -1318,16 +1322,15 @@ FreezeScript::RecordDescriptor::execute(const SymbolTablePtr& sym, ExecuteInfo* 
         {
             dbc->close();
         }
-        info->communicator->removeObjectFactory("");
+	_objectFactory->deactivate();
         throw;
     }
-
-    info->communicator->removeObjectFactory("");
 
     if(dbc)
     {
         dbc->close();
     }
+    _objectFactory->deactivate();
 }
 
 //
@@ -1693,7 +1696,7 @@ FreezeScript::SymbolTableI::invokeFunction(const string& name, const DataPtr& ta
         // Global function.
         //
         DataPtr result;
-        if(invokeGlobalFunction(name, args, result, _factory, _errorReporter))
+        if(invokeGlobalFunction(_info->communicator, name, args, result, _factory, _errorReporter))
         {
             return result;
         }
@@ -1867,11 +1870,16 @@ FreezeScript::DumpVisitor::visitObject(const ObjectRefPtr& data)
         ObjectDataPtr value = data->getValue();
         if(value)
         {
-            DataMemberMap& members = value->getMembers();
-            for(DataMemberMap::iterator p = members.begin(); p != members.end(); ++p)
-            {
-                p->second->visit(*this);
-            }
+	    set<const ObjectData*>::iterator p = _objectHistory.find(value.get());
+	    if(p == _objectHistory.end())
+	    {
+		_objectHistory.insert(value.get());
+		DataMemberMap& members = value->getMembers();
+		for(DataMemberMap::iterator q = members.begin(); q != members.end(); ++q)
+		{
+		    q->second->visit(*this);
+		}
+	    }
         }
     }
 }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,15 +15,15 @@ using namespace std;
 int
 run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 {
-    communicator->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12345 -t 10000");
+    communicator->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000");
     Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("TestAdapter");
     Ice::ObjectPtr d = new DI;
-    adapter->add(d, Ice::stringToIdentity("d"));
-    adapter->addFacet(d, Ice::stringToIdentity("d"), "facetABCD");
+    adapter->add(d, communicator->stringToIdentity("d"));
+    adapter->addFacet(d, communicator->stringToIdentity("d"), "facetABCD");
     Ice::ObjectPtr f = new FI;
-    adapter->addFacet(f, Ice::stringToIdentity("d"), "facetEF");
+    adapter->addFacet(f, communicator->stringToIdentity("d"), "facetEF");
     Ice::ObjectPtr h = new HI(communicator);
-    adapter->addFacet(h, Ice::stringToIdentity("d"), "facetGH");
+    adapter->addFacet(h, communicator->stringToIdentity("d"), "facetGH");
 
     adapter->activate();
     communicator->waitForShutdown();

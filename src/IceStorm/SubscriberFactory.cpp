@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -152,7 +152,7 @@ SubscriberFactory::createSubscriber(const QoS& qos, const Ice::ObjectPrx& obj)
 	// TODO: rename OnewaySubscriber into something more approriate, ObjectPrxSubscriber
 	// for example (there's also LinkSubscriber).
 	//
-        return new OnewaySubscriber(this, _traceLevels, proxy);
+        return new OnewaySubscriber(this, _communicator, _traceLevels, proxy);
     }
 }
 

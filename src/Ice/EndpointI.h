@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -111,14 +111,13 @@ public:
     // from this endpoint, for example, if a dynamic port number is
     // assigned.
     //
-    virtual AcceptorPtr acceptor(EndpointIPtr&) const = 0;
+    virtual AcceptorPtr acceptor(EndpointIPtr&, const std::string&) const = 0;
 
     //
     // Expand endpoint out in to separate endpoints for each local
-    // host if endpoint was configured with no host set. This
-    // only applies for ObjectAdapter endpoints.
+    // host if endpoint was configured with no host set.
     //
-    virtual std::vector<EndpointIPtr> expand() const = 0;
+    virtual std::vector<EndpointIPtr> expand(bool) const = 0;
 
     //
     // Return whether the endpoint should be published in proxies

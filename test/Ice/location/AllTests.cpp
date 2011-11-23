@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <Ice/Ice.h>
+#include <Ice/Router.h>
 #include <IceUtil/UUID.h>
 #include <TestCommon.h>
 #include <Test.h>
@@ -30,6 +31,7 @@ void
 allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
 {
     ServerManagerPrx manager = ServerManagerPrx::checkedCast(communicator->stringToProxy(ref));
+    TestLocatorPrx locator = TestLocatorPrx::uncheckedCast(communicator->getDefaultLocator());
     test(manager);
 
     cout << "testing stringToProxy... " << flush;
@@ -39,6 +41,37 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
     Ice::ObjectPrx base4 = communicator->stringToProxy("ServerManager"); 
     Ice::ObjectPrx base5 = communicator->stringToProxy("test2");
     Ice::ObjectPrx base6 = communicator->stringToProxy("test @ ReplicatedAdapter");
+    cout << "ok" << endl;
+
+    cout << "testing ice_locator and ice_getLocator... " << flush;
+    test(Ice::proxyIdentityEqual(base->ice_getLocator(), communicator->getDefaultLocator()));
+    Ice::LocatorPrx anotherLocator = Ice::LocatorPrx::uncheckedCast(communicator->stringToProxy("anotherLocator"));
+    base = base->ice_locator(anotherLocator);
+    test(Ice::proxyIdentityEqual(base->ice_getLocator(), anotherLocator));
+    communicator->setDefaultLocator(0);
+    base = communicator->stringToProxy("test @ TestAdapter");
+    test(!base->ice_getLocator());
+    base = base->ice_locator(anotherLocator);
+    test(Ice::proxyIdentityEqual(base->ice_getLocator(), anotherLocator));
+    communicator->setDefaultLocator(locator);
+    base = communicator->stringToProxy("test @ TestAdapter");
+    test(Ice::proxyIdentityEqual(base->ice_getLocator(), communicator->getDefaultLocator())); 
+    
+    //
+    // We also test ice_router/ice_getRouter (perhaps we should add a
+    // test/Ice/router test?)
+    //
+    test(!base->ice_getRouter());
+    Ice::RouterPrx anotherRouter = Ice::RouterPrx::uncheckedCast(communicator->stringToProxy("anotherRouter"));
+    base = base->ice_router(anotherRouter);
+    test(Ice::proxyIdentityEqual(base->ice_getRouter(), anotherRouter));
+    Ice::RouterPrx router = Ice::RouterPrx::uncheckedCast(communicator->stringToProxy("dummyrouter"));
+    communicator->setDefaultRouter(router);
+    base = communicator->stringToProxy("test @ TestAdapter");
+    test(Ice::proxyIdentityEqual(base->ice_getRouter(), communicator->getDefaultRouter()));
+    communicator->setDefaultRouter(0);
+    base = communicator->stringToProxy("test @ TestAdapter");
+    test(!base->ice_getRouter());
     cout << "ok" << endl;
 
     cout << "starting server... " << flush;
@@ -190,7 +223,7 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
     }
     cout << "ok" << endl;
 
-    cout << "testing reference with unknown identity... " << flush;
+    cout << "testing proxy with unknown identity... " << flush;
     try
     {
 	base = communicator->stringToProxy("unknown/unknown");
@@ -204,7 +237,7 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
     }
     cout << "ok" << endl;
 
-    cout << "testing reference with unknown adapter... " << flush;
+    cout << "testing proxy with unknown adapter... " << flush;
     try
     {
 	base = communicator->stringToProxy("test @ TestAdapterUnknown");
@@ -218,7 +251,43 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
     }
     cout << "ok" << endl;
 
-    cout << "testing object reference from server... " << flush;
+    cout << "testing locator cache timeout... " << flush;
+
+    int count = locator->getRequestCount();
+    communicator->stringToProxy("test@TestAdapter")->ice_locatorCacheTimeout(0)->ice_ping(); // No locator cache.
+    test(++count == locator->getRequestCount());
+    communicator->stringToProxy("test@TestAdapter")->ice_locatorCacheTimeout(0)->ice_ping(); // No locator cache.
+    test(++count == locator->getRequestCount());
+    communicator->stringToProxy("test@TestAdapter")->ice_locatorCacheTimeout(1)->ice_ping(); // 1s timeout.
+    test(count == locator->getRequestCount());
+    IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(1200));
+    communicator->stringToProxy("test@TestAdapter")->ice_locatorCacheTimeout(1)->ice_ping(); // 1s timeout.
+    test(++count == locator->getRequestCount());
+
+    communicator->stringToProxy("test")->ice_locatorCacheTimeout(0)->ice_ping(); // No locator cache.
+    count += 2;
+    test(count == locator->getRequestCount());
+    communicator->stringToProxy("test")->ice_locatorCacheTimeout(1)->ice_ping(); // 1s timeout
+    test(count == locator->getRequestCount());
+    IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(1200));
+    communicator->stringToProxy("test")->ice_locatorCacheTimeout(1)->ice_ping(); // 1s timeout
+    count += 2;
+    test(count == locator->getRequestCount());
+
+    communicator->stringToProxy("test@TestAdapter")->ice_locatorCacheTimeout(-1)->ice_ping(); 
+    test(count == locator->getRequestCount());
+    communicator->stringToProxy("test")->ice_locatorCacheTimeout(-1)->ice_ping();
+    test(count == locator->getRequestCount());
+    communicator->stringToProxy("test@TestAdapter")->ice_ping(); 
+    test(count == locator->getRequestCount());
+    communicator->stringToProxy("test")->ice_ping();
+    test(count == locator->getRequestCount());
+
+    test(communicator->stringToProxy("test")->ice_locatorCacheTimeout(99)->ice_getLocatorCacheTimeout() == 99);
+
+    cout << "ok" << endl;
+
+    cout << "testing proxy from server... " << flush;
     HelloPrx hello = obj->getHello();
     test(hello->ice_getAdapterId() == "TestAdapter");
     hello->sayHello();
@@ -227,7 +296,7 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
     hello->sayHello();
     cout << "ok" << endl;
 
-    cout << "testing object reference from server after shutdown... " << flush;
+    cout << "testing proxy from server after shutdown... " << flush;
     obj->shutdown();
     manager->startServer();
     hello->sayHello();
@@ -274,18 +343,13 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
     }
     cout << "ok" << endl;
 
-    cout << "testing indirect references to collocated objects... " << flush;
+    cout << "testing indirect proxies to collocated objects... " << flush;
     //
     // Set up test for calling a collocated object through an indirect, adapterless reference.
     //
     Ice::PropertiesPtr properties = communicator->getProperties();
     properties->setProperty("Ice.PrintAdapterReady", "0");
-    properties->setProperty("Hello.Endpoints",
-			    properties->getPropertyWithDefault("Hello.Endpoints",
-							       "default -p 10001"));
-    Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("Hello");
-    Ice::LocatorPrx locator =
-	Ice::LocatorPrx::uncheckedCast(communicator->stringToProxy(properties->getProperty("Ice.Default.Locator")));
+    Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapterWithEndpoints("Hello", "default");
     adapter->setLocator(locator);
 
     TestLocatorRegistryPrx registry = TestLocatorRegistryPrx::checkedCast(locator->getRegistry());
@@ -298,8 +362,8 @@ allTests(const Ice::CommunicatorPtr& communicator, const string& ref)
     
     try
     {
-	HelloPrx helloPrx = HelloPrx::checkedCast(communicator->stringToProxy(id.name));
-	Ice::ConnectionPtr connection = helloPrx->ice_connection();
+	HelloPrx helloPrx = HelloPrx::checkedCast(communicator->stringToProxy(communicator->identityToString(id)));
+	Ice::ConnectionPtr connection = helloPrx->ice_getConnection();
 	test(false);
     }
     catch(const Ice::CollocationOptimizationException&)

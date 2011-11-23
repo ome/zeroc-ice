@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,7 +38,7 @@ int
 main(int argc, char* argv[])
 {
     CallbackClient app;
-    return app.main(argc, argv, "config");
+    return app.main(argc, argv, "config.client");
 }
 
 int
@@ -66,11 +66,11 @@ CallbackClient::run(int argc, char* argv[])
     CallbackSenderPrx batchDatagram = CallbackSenderPrx::uncheckedCast(twoway->ice_batchDatagram());
     
     Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Callback.Client");
-    adapter->add(new CallbackReceiverI, Ice::stringToIdentity("callbackReceiver"));
+    adapter->add(new CallbackReceiverI, communicator()->stringToIdentity("callbackReceiver"));
     adapter->activate();
 
     CallbackReceiverPrx twowayR = CallbackReceiverPrx::uncheckedCast(
-	adapter->createProxy(Ice::stringToIdentity("callbackReceiver")));
+	adapter->createProxy(communicator()->stringToIdentity("callbackReceiver")));
     CallbackReceiverPrx onewayR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_oneway());
     CallbackReceiverPrx datagramR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_datagram());
 

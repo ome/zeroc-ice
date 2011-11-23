@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -131,6 +131,18 @@ Ice::CommunicatorI::proxyToString(const ObjectPrx& proxy) const
     return _instance->proxyFactory()->proxyToString(proxy);
 }
 
+Identity
+Ice::CommunicatorI::stringToIdentity(const string& s) const
+{
+    return _instance->stringToIdentity(s);
+}
+
+string
+Ice::CommunicatorI::identityToString(const Identity& ident) const
+{
+    return _instance->identityToString(ident);
+}
+
 ObjectAdapterPtr
 Ice::CommunicatorI::createObjectAdapter(const string& name)
 {
@@ -140,19 +152,19 @@ Ice::CommunicatorI::createObjectAdapter(const string& name)
 ObjectAdapterPtr
 Ice::CommunicatorI::createObjectAdapterWithEndpoints(const string& name, const string& endpoints)
 {
-    return _instance->objectAdapterFactory()->createObjectAdapter(name, endpoints);
+    return _instance->objectAdapterFactory()->createObjectAdapter(name, endpoints, 0);
+}
+
+ObjectAdapterPtr
+Ice::CommunicatorI::createObjectAdapterWithRouter(const string& name, const RouterPrx& router)
+{
+    return _instance->objectAdapterFactory()->createObjectAdapter(name, "", router);
 }
 
 void
 Ice::CommunicatorI::addObjectFactory(const ObjectFactoryPtr& factory, const string& id)
 {
     _instance->servantFactoryManager()->add(factory, id);
-}
-
-void
-Ice::CommunicatorI::removeObjectFactory(const string& id)
-{
-    _instance->servantFactoryManager()->remove(id);
 }
 
 ObjectFactoryPtr
@@ -164,31 +176,19 @@ Ice::CommunicatorI::findObjectFactory(const string& id) const
 PropertiesPtr
 Ice::CommunicatorI::getProperties() const
 {
-    return _instance->properties();
+    return _instance->initializationData().properties;
 }
 
 LoggerPtr
 Ice::CommunicatorI::getLogger() const
 {
-    return _instance->logger();
-}
-
-void
-Ice::CommunicatorI::setLogger(const LoggerPtr& logger)
-{
-    _instance->logger(logger);
+    return _instance->initializationData().logger;
 }
 
 StatsPtr
 Ice::CommunicatorI::getStats() const
 {
-    return _instance->stats();
-}
-
-void
-Ice::CommunicatorI::setStats(const StatsPtr& stats)
-{
-    _instance->stats(stats);
+    return _instance->initializationData().stats;
 }
 
 RouterPrx
@@ -215,16 +215,10 @@ Ice::CommunicatorI::setDefaultLocator(const LocatorPrx& locator)
     _instance->referenceFactory()->setDefaultLocator(locator);
 }
 
-void
-Ice::CommunicatorI::setDefaultContext(const Context& ctx)
-{
-    _instance->setDefaultContext(ctx);
-}
-
 Ice::Context
 Ice::CommunicatorI::getDefaultContext() const
 {
-    return _instance->getDefaultContext();
+    return _instance->initializationData().defaultContext;
 }
 
 PluginManagerPtr
@@ -239,12 +233,12 @@ Ice::CommunicatorI::flushBatchRequests()
     _instance->flushBatchRequests();
 }
 
-Ice::CommunicatorI::CommunicatorI(const PropertiesPtr& properties, const LoggerPtr& logger)
+Ice::CommunicatorI::CommunicatorI(const InitializationData& initData)
 {
     __setNoDelete(true);
     try
     {
-	const_cast<InstancePtr&>(_instance) = new Instance(this, properties, logger);
+	const_cast<InstancePtr&>(_instance) = new Instance(this, initData);
 
         //
         // Keep a reference to the dynamic library list to ensure
@@ -274,8 +268,8 @@ Ice::CommunicatorI::CommunicatorI(const PropertiesPtr& properties, const LoggerP
 	{
 	    gcTraceLevel = _instance->traceLevels()->gc;
 	    gcTraceCat = _instance->traceLevels()->gcCat;
-	    gcLogger = _instance->logger();
-	    gcInterval = properties->getPropertyAsInt("Ice.GC.Interval");
+	    gcLogger = _instance->initializationData().logger;
+	    gcInterval = initData.properties->getPropertyAsInt("Ice.GC.Interval");
 	    gcOnce = false;
 	}
 	if(++communicatorCount == 1)
@@ -293,21 +287,8 @@ Ice::CommunicatorI::~CommunicatorI()
 {
     if(!_instance->destroyed())
     {
-	Warning out(_instance->logger());
+	Warning out(_instance->initializationData().logger);
 	out << "Ice::Communicator::destroy() has not been called";
-    }
-
-    if(_instance->__getRef() > 1)
-    {
-	PropertiesPtr properties = _instance->properties();
-	if(properties->getPropertyAsIntWithDefault("Ice.Warn.Leaks", 1) > 0)
-	{
-	    Warning warn(_instance->logger());
-	    warn <<
-		"The communicator is not the last Ice object that is\n"
-		"deleted. (You can disable this warning by setting the\n"
-		"property `Ice.Warn.Leaks' to 0.)";
-	}
     }
 }
 

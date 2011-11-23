@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
 # ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I "." /I ".." /I "../../include" /I "dummyinclude" /D "_CONSOLE" /D "NDEBUG" /D "WIN32_LEAN_AND_MEAN" /FD /Zm200 /c
-# SUBTRACT CPP /Z<none> /Fr /YX
+# SUBTRACT CPP /Fr /YX
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -51,7 +51,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 setargv.obj /nologo /subsystem:console /pdb:none /machine:I386 /libpath:"../../../lib" /FIXED:no
+# ADD LINK32 setargv.obj libeay32.lib ws2_32.lib /nologo /subsystem:console /pdb:none /machine:I386 /libpath:"../../../lib" /FIXED:no
 # SUBTRACT LINK32 /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
@@ -83,7 +83,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 setargv.obj /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept /libpath:"../../../lib" /FIXED:no
+# ADD LINK32 setargv.obj libeay32.lib ws2_32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept /libpath:"../../../lib" /FIXED:no
 # SUBTRACT LINK32 /pdb:none
 # Begin Special Build Tool
 OutDir=.\Debug
@@ -111,6 +111,18 @@ SOURCE=.\AdminI.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\AdminSessionI.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Allocatable.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\AllocatableObjectCache.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Database.cpp
 # End Source File
 # Begin Source File
@@ -127,6 +139,10 @@ SOURCE=.\DescriptorParser.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\FileUserAccountMapperI.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\icegridregistry.cpp
 # End Source File
 # Begin Source File
@@ -136,6 +152,10 @@ SOURCE=.\IdentityObjectInfoDict.cpp
 # Begin Source File
 
 SOURCE=.\Internal.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\InternalRegistryI.cpp
 # End Source File
 # Begin Source File
 
@@ -159,10 +179,6 @@ SOURCE=.\ObjectCache.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ObserverSessionI.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\QueryI.cpp
 # End Source File
 # Begin Source File
@@ -179,7 +195,11 @@ SOURCE=.\ServerCache.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\SessionManagerI.cpp
+SOURCE=.\SessionI.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\SessionServantLocatorI.cpp
 # End Source File
 # Begin Source File
 
@@ -200,6 +220,10 @@ SOURCE=.\TraceLevels.cpp
 # Begin Source File
 
 SOURCE=.\Util.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\WaitQueue.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"

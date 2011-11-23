@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -201,7 +201,7 @@ class SLICE_API DefinitionContext : public ::IceUtil::SimpleShared
 {
 public:
 
-    DefinitionContext(int);
+    DefinitionContext(int, const StringList&);
 
     std::string filename() const;
     int includeLevel() const;
@@ -218,9 +218,9 @@ public:
 private:
 
     int _includeLevel;
+    StringList _metaData;
     std::string _filename;
     bool _seenDefinition;
-    StringList _metaData;
 };
 typedef ::IceUtil::Handle<DefinitionContext> DefinitionContextPtr;
 
@@ -335,6 +335,7 @@ public:
     void updateIncludeLevel();
 
     bool hasMetaData(const std::string&) const;
+    bool findMetaData(const std::string&, std::string&) const;
     std::list<std::string> getMetaData() const;
     void setMetaData(const std::list<std::string>&);
     void addMetaData(const std::string&); // TODO: remove this method once "cs:" and "vb:" are hard errors.
@@ -392,11 +393,13 @@ public:
     ClassDeclPtr createClassDecl(const std::string&, bool, bool);
     ExceptionPtr createException(const std::string&, const ExceptionPtr&, bool);
     StructPtr createStruct(const std::string&, bool);
-    SequencePtr createSequence(const std::string&, const TypePtr&, bool);
-    DictionaryPtr createDictionary(const std::string&, const TypePtr&, const TypePtr&, bool);
+    SequencePtr createSequence(const std::string&, const TypePtr&, const StringList&, bool);
+    DictionaryPtr createDictionary(const std::string&, const TypePtr&, const StringList&, const TypePtr&,
+    				   const StringList&, bool);
     EnumPtr createEnum(const std::string&, bool);
     EnumeratorPtr createEnumerator(const std::string&);
-    ConstPtr createConst(const std::string, const TypePtr&, const SyntaxTreeBasePtr&, const std::string&);
+    ConstPtr createConst(const std::string, const TypePtr&, const StringList&, const SyntaxTreeBasePtr&,
+    			 const std::string&);
     TypeList lookupType(const std::string&, bool = true);
     TypeList lookupTypeNoBuiltin(const std::string&, bool = true);
     ContainedList lookupContained(const std::string&, bool = true);
@@ -423,7 +426,7 @@ public:
     std::string thisScope() const;
     void mergeModules();
     void sort();
-    void sortContents();
+    void sortContents(bool);
     virtual void visit(ParserVisitor*, bool);
     void containerRecDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.
 
@@ -711,6 +714,7 @@ class SLICE_API Sequence : virtual public Constructed
 public:
 
     TypePtr type() const;
+    StringList typeMetaData() const;
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual bool usesClasses() const;
@@ -722,10 +726,11 @@ public:
 
 protected:
 
-    Sequence(const ContainerPtr&, const std::string&, const TypePtr&, bool);
+    Sequence(const ContainerPtr&, const std::string&, const TypePtr&, const StringList&, bool);
     friend class Container;
 
     TypePtr _type;
+    StringList _typeMetaData;
 };
 
 // ----------------------------------------------------------------------
@@ -738,6 +743,8 @@ public:
 
     TypePtr keyType() const;
     TypePtr valueType() const;
+    StringList keyMetaData() const;
+    StringList valueMetaData() const;
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual bool usesClasses() const;
@@ -751,11 +758,14 @@ public:
 
 protected:
 
-    Dictionary(const ContainerPtr&, const std::string&, const TypePtr&, const TypePtr&, bool);
+    Dictionary(const ContainerPtr&, const std::string&, const TypePtr&, const StringList&, const TypePtr&, 
+    	       const StringList&, bool);
     friend class Container;
 
     TypePtr _keyType;
     TypePtr _valueType;
+    StringList _keyMetaData;
+    StringList _valueMetaData;
 };
 
 // ----------------------------------------------------------------------
@@ -817,6 +827,7 @@ class SLICE_API Const : virtual public Contained
 public:
 
     TypePtr type() const;
+    StringList typeMetaData() const;
     std::string value() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual ContainedType containedType() const;
@@ -830,10 +841,11 @@ public:
 
 protected:
 
-    Const(const ContainerPtr&, const std::string&, const TypePtr&, const std::string&);
+    Const(const ContainerPtr&, const std::string&, const TypePtr&, const StringList&, const std::string&);
     friend class Container;
 
     TypePtr _type;
+    StringList _typeMetaData;
     std::string _value;
 };
 
@@ -893,7 +905,7 @@ class SLICE_API Unit : virtual public Container
 {
 public:
 
-    static UnitPtr createUnit(bool, bool, bool, bool);
+    static UnitPtr createUnit(bool, bool, bool, bool, const StringList& = StringList());
 
     bool ignRedefs() const;
 
@@ -909,7 +921,7 @@ public:
     void scanPosition(const char*);
     int currentIncludeLevel() const;
 
-    void setGlobalMetaData(const StringList&);
+    void addGlobalMetaData(const StringList&);
     void setSeenDefinition();
 
     void error(const char*); // Not const, because error count is increased.
@@ -950,13 +962,14 @@ public:
 
 private:
 
-    Unit(bool, bool, bool, bool);
+    Unit(bool, bool, bool, bool, const StringList&);
     static void eraseWhiteSpace(::std::string&);
 
     bool _ignRedefs;
     bool _all;
     bool _allowIcePrefix;
     bool _caseSensitive;
+    StringList _defaultGlobalMetadata;
     int _errors;
     std::string _currentComment;
     int _currentLine;

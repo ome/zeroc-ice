@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,6 +21,8 @@ public:
     virtual void shutdown(const Ice::Current&);
 
     virtual void opVoid(const Ice::Current&);
+
+    virtual void opSleep(int, const Ice::Current&);
 
     virtual Ice::Byte opByte(Ice::Byte,
 			     Ice::Byte,
@@ -151,6 +153,8 @@ public:
     virtual void opByteSOneway(const Test::ByteS&, const Ice::Current&);
 
     virtual Ice::Context opContext(const Ice::Current&);
+
+    virtual void opDoubleMarshaling(Ice::Double, const Test::DoubleS&, const Ice::Current&);
 
     virtual void opDerived(const Ice::Current&);
 

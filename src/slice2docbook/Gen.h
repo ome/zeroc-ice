@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,7 +21,7 @@ class Gen : private ::IceUtil::noncopyable, public ParserVisitor
 {
 public:
 
-    Gen(const std::string&, const std::string&, bool, bool, bool, bool);
+    Gen(const std::string&, const std::string&, bool, bool, bool, bool, bool);
     virtual ~Gen();
 
     bool operator!() const; // Returns true if there was a constructor error
@@ -44,8 +44,8 @@ private:
     std::string getComment(const ContainedPtr&, const ContainerPtr&, bool);
     StringList getTagged(const std::string&, std::string&);
     void printMetaData(const ContainedPtr&);
-    void printComment(const ContainedPtr&);
-    void printSummary(const ContainedPtr&);
+    void printComment(const ContainedPtr&, const std::string&);
+    void printSummary(const ContainedPtr&, bool);
     void start(const std::string&);
     void start(const std::string&, const std::string&, bool = true);
     void end();
@@ -61,6 +61,7 @@ private:
     bool _noGlobals;
     std::string _chapter;
     bool _noIndex;
+    bool _sortFields;
 };
 
 }

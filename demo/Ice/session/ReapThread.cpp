@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -67,18 +67,6 @@ ReapThread::terminate()
 
     _terminated = true;
     notify();
-
-    for(list<SessionProxyPair>::const_iterator p = _sessions.begin(); p != _sessions.end(); ++p)
-    {
-	try
-	{
-	    p->proxy->destroy();
-	}
-	catch(const Ice::Exception&)
-	{
-	    // Ignore.
-	}
-    }
 
     _sessions.clear();
 }

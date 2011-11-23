@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -438,6 +438,7 @@ local interface Evictor extends Ice::ServantLocator
      * @see destroyObject
      *
      **/
+    ["deprecate:createObject() has been deprecated, use add() instead."]
     void createObject(Ice::Identity id, Object servant);
 
 
@@ -461,6 +462,7 @@ local interface Evictor extends Ice::ServantLocator
      * @see createObject
      *
      **/
+    ["deprecate:destroyObject() has been deprecated, use remove() instead."]
     void destroyObject(Ice::Identity id);
 
 };

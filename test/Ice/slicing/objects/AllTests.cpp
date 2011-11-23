@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -628,7 +628,7 @@ typedef IceUtil::Handle<AMI_Test_useForwardI> AMI_Test_useForwardIPtr;
 TestIntfPrx
 allTests(const Ice::CommunicatorPtr& communicator)
 {
-    Ice::ObjectPrx obj = communicator->stringToProxy("Test:default -p 12345");
+    Ice::ObjectPrx obj = communicator->stringToProxy("Test:default -p 12010");
     TestIntfPrx test = TestIntfPrx::checkedCast(obj);
 
     cout << "base as Object... " << flush;

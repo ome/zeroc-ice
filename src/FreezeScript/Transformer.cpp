@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -58,6 +58,7 @@ struct TransformInfoI : public TransformInfo
     virtual ObjectDataMap& getObjectDataMap();
 
     Ice::CommunicatorPtr communicator;
+    FreezeScript::ObjectFactoryPtr objectFactory;
     Slice::UnitPtr oldUnit;
     Slice::UnitPtr newUnit;
     Db* oldDb;
@@ -1877,7 +1878,7 @@ FreezeScript::RecordDescriptor::execute(const SymbolTablePtr& sym)
     //
     // Temporarily add an object factory.
     //
-    _info->communicator->addObjectFactory(new FreezeScript::ObjectFactory(_info->factory, _info->oldUnit), "");
+    _info->objectFactory->activate(_info->factory, _info->oldUnit);
 
     //
     // Iterate over the database.
@@ -1932,16 +1933,15 @@ FreezeScript::RecordDescriptor::execute(const SymbolTablePtr& sym)
         {
             dbc->close();
         }
-        _info->communicator->removeObjectFactory("");
+	_info->objectFactory->deactivate();
         throw;
     }
-
-    _info->communicator->removeObjectFactory("");
 
     if(dbc)
     {
         dbc->close();
     }
+    _info->objectFactory->deactivate();
 }
 
 void
@@ -2456,7 +2456,7 @@ FreezeScript::SymbolTableI::invokeFunction(const string& name, const DataPtr& ta
         // Global function.
         //
         DataPtr result;
-        if(invokeGlobalFunction(name, args, result, _info->factory, _info->errorReporter))
+        if(invokeGlobalFunction(_info->communicator, name, args, result, _info->factory, _info->errorReporter))
         {
             return result;
         }
@@ -2952,12 +2952,16 @@ FreezeScript::assignOrTransform(const DataPtr& dest, const DataPtr& src, bool co
 
 void
 FreezeScript::transformDatabase(const Ice::CommunicatorPtr& communicator,
+				const FreezeScript::ObjectFactoryPtr& objectFactory,
                                 const Slice::UnitPtr& oldUnit, const Slice::UnitPtr& newUnit,
-                                Db* oldDb, Db* newDb, DbTxn* newDbTxn, Freeze::ConnectionPtr connection, const string& newDbName, 
-				const string& facetName, bool purgeObjects, ostream& errors, bool suppress, istream& is)
+                                Db* oldDb, Db* newDb, DbTxn* newDbTxn, const Freeze::ConnectionPtr& connection,
+				const string& newDbName, const string& facetName, bool purgeObjects, ostream& errors,
+				bool suppress, istream& is)
 {
+
     TransformInfoIPtr info = new TransformInfoI;
     info->communicator = communicator;
+    info->objectFactory = objectFactory;
     info->oldUnit = oldUnit;
     info->newUnit = newUnit;
     info->oldDb = oldDb;

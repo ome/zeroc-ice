@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,6 +19,9 @@
 //
 // Here, we undefine symbols that cause such problems.
 //
+// The #ifdef ... #endif protection is necessary to prevent
+// warnings on some platforms.
+//
 
 #ifdef major
 #undef major
@@ -26,6 +29,14 @@
 
 #ifdef minor
 #undef minor
+#endif
+
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
 #endif
 
 #endif

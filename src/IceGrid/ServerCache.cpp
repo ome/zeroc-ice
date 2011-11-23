@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,11 +8,15 @@
 // **********************************************************************
 
 #include <Ice/LoggerUtil.h>
-
+#include <Ice/Communicator.h>
+#include <Ice/LocalException.h>
 #include <IceGrid/ServerCache.h>
 #include <IceGrid/NodeCache.h>
 #include <IceGrid/AdapterCache.h>
 #include <IceGrid/ObjectCache.h>
+#include <IceGrid/AllocatableObjectCache.h>
+#include <IceGrid/SessionI.h>
+#include <IceGrid/DescriptorHelper.h>
 
 using namespace std;
 using namespace IceGrid;
@@ -55,12 +59,16 @@ namespace IceGrid
     };
 }
 
-ServerCache::ServerCache(NodeCache& nodeCache, 
+ServerCache::ServerCache(const Ice::CommunicatorPtr& communicator,
+			 NodeCache& nodeCache, 
 			 AdapterCache& adapterCache, 
-			 ObjectCache& objectCache) :
+			 ObjectCache& objectCache,
+			 AllocatableObjectCache& allocatableObjectCache) :
+    _communicator(communicator),
     _nodeCache(nodeCache), 
     _adapterCache(adapterCache), 
-    _objectCache(objectCache)
+    _objectCache(objectCache),
+    _allocatableObjectCache(allocatableObjectCache)
 {
 }
 
@@ -69,7 +77,12 @@ ServerCache::add(const ServerInfo& info)
 {
     Lock sync(*this);
 
-    ServerEntryPtr entry = getImpl(info.descriptor->id, true);
+    ServerEntryPtr entry = getImpl(info.descriptor->id);
+    if(!entry)
+    {
+	entry = new ServerEntry(*this, info.descriptor->id);
+	addImpl(info.descriptor->id, entry);
+    }
     entry->update(info);
     _nodeCache.get(info.node, true)->addServer(entry);
 
@@ -85,7 +98,7 @@ ServerCache::add(const ServerInfo& info)
 }
 
 ServerEntryPtr
-ServerCache::get(const string& id)
+ServerCache::get(const string& id) const
 {
     Lock sync(*this);
     ServerEntryPtr entry = getImpl(id);
@@ -99,7 +112,7 @@ ServerCache::get(const string& id)
 }
 
 bool
-ServerCache::has(const string& id)
+ServerCache::has(const string& id) const
 {
     Lock sync(*this);
     ServerEntryPtr entry = getImpl(id);
@@ -138,27 +151,30 @@ ServerCache::clear(const string& id)
     CacheByString<ServerEntry>::removeImpl(id);
 }
 
-NodeCache&
-ServerCache::getNodeCache() const
-{
-    return _nodeCache;
-}
-
 void
-ServerCache::addCommunicator(const CommunicatorDescriptorPtr& comm, const ServerEntryPtr& entry)
+ServerCache::addCommunicator(const CommunicatorDescriptorPtr& comm, const ServerEntryPtr& server)
 {
-    const string application = entry->getApplication();
+    const string application = server->getApplication();
     for(AdapterDescriptorSeq::const_iterator q = comm->adapters.begin() ; q != comm->adapters.end(); ++q)
     {
-	if(!q->id.empty())
+	assert(!q->id.empty());
+	_adapterCache.addServerAdapter(q->id, q->replicaGroupId, server);
+
+	ObjectDescriptorSeq::const_iterator r;
+	for(r = q->objects.begin(); r != q->objects.end(); ++r)
 	{
-	    _adapterCache.getServerAdapter(q->id, true)->set(entry, q->replicaGroupId);
+	    ObjectInfo info;
+	    info.type = r->type;
+	    info.proxy = _communicator->stringToProxy("\"" + _communicator->identityToString(r->id) + "\" @ " + q->id);
+	    _objectCache.add(info, application);
 	}
 
-	for(ObjectDescriptorSeq::const_iterator r = q->objects.begin(); r != q->objects.end(); ++r)
+	for(r = q->allocatables.begin(); r != q->allocatables.end(); ++r)
 	{
-	    const string edpts = IceGrid::getProperty(comm->properties, q->name + ".Endpoints");
-	    _objectCache.add(application, q->id, edpts, *r);
+	    ObjectInfo info;
+	    info.type = r->type;
+	    info.proxy = _communicator->stringToProxy("\"" + _communicator->identityToString(r->id) + "\" @ " + q->id);
+	    _allocatableObjectCache.add(info, server);
 	}
     }
 }
@@ -168,19 +184,22 @@ ServerCache::removeCommunicator(const CommunicatorDescriptorPtr& comm, const Ser
 {
     for(AdapterDescriptorSeq::const_iterator q = comm->adapters.begin() ; q != comm->adapters.end(); ++q)
     {
-	if(!q->id.empty())
-	{
-	    _adapterCache.getServerAdapter(q->id)->destroy();
-	}
-	for(ObjectDescriptorSeq::const_iterator r = q->objects.begin(); r != q->objects.end(); ++r)
+	ObjectDescriptorSeq::const_iterator r;
+	for(r = q->objects.begin(); r != q->objects.end(); ++r)
 	{
 	    _objectCache.remove(r->id);
 	}
+	for(r = q->allocatables.begin(); r != q->allocatables.end(); ++r)
+	{
+	    _allocatableObjectCache.remove(r->id);
+	}
+	_adapterCache.removeServerAdapter(q->id);
     }
 }
 
-ServerEntry::ServerEntry(Cache<string, ServerEntry>& cache, const string& id) :
-    _cache(*dynamic_cast<ServerCache*>(&cache)), 
+ServerEntry::ServerEntry(ServerCache& cache, const string& id) :
+    Allocatable(false, 0),
+    _cache(cache),
     _id(id),
     _synchronizing(false),
     _updated(false)
@@ -194,8 +213,9 @@ ServerEntry::sync()
     {
 	syncImpl(true);
     }
-    catch(const Ice::Exception&)
+    catch(const NodeUnreachableException&)
     {
+	// Ignore
     }
 }
 
@@ -223,8 +243,13 @@ ServerEntry::update(const ServerInfo& info)
 
     _load = descriptor;
     _loaded.reset(0);
-    _proxy = 0;
-    _adapters.clear();
+//    _proxy = 0;
+//    _adapters.clear();
+
+    //
+    // Update the allocatable flag.
+    //
+    const_cast<bool&>(_allocatable) = info.descriptor->allocatable || info.descriptor->activation == "session";
 }
 
 void
@@ -259,20 +284,25 @@ ServerInfo
 ServerEntry::getServerInfo(bool resolve) const
 {
     ServerInfo info;
+    SessionIPtr session;
     {
 	Lock sync(*this);
 	if(!_loaded.get() && !_load.get())
 	{
 	    throw ServerNotExistException();
 	}
-	info = _proxy ? *_loaded : *_load;
+	info = _loaded.get() ? *_loaded : *_load;
+	session = _session;
     }
     assert(info.descriptor);
     if(resolve)
     {
 	try
 	{
-	    return _cache.getNodeCache().get(info.node)->getServerInfo(info);
+	    return _cache.getNodeCache().get(info.node)->getServerInfo(info, session);
+	}
+	catch(const DeploymentException&)
+	{
 	}
 	catch(const NodeNotExistException&)
 	{
@@ -291,17 +321,18 @@ ServerEntry::getId() const
 }
 
 ServerPrx
-ServerEntry::getProxy(int& activationTimeout, int& deactivationTimeout, string& node)
+ServerEntry::getProxy(int& activationTimeout, int& deactivationTimeout, string& node, bool upToDate)
 {
     ServerPrx proxy;
     {
 	Lock sync(*this);
-	if(_proxy) // Synced
+	if(_loaded.get() || _proxy && !upToDate) // Synced or if not up to date is fine
 	{
+	    assert(_loaded.get() || _load.get());
 	    proxy = _proxy;
 	    activationTimeout = _activationTimeout;
 	    deactivationTimeout = _deactivationTimeout;
-	    node = _loaded->node;
+	    node = _loaded.get() ? _loaded->node : _load->node;
 	}
     }
 
@@ -323,11 +354,12 @@ ServerEntry::getProxy(int& activationTimeout, int& deactivationTimeout, string& 
 
 	{
 	    Lock sync(*this);
-	    if(_proxy)
+	    if(_loaded.get() || _proxy && !upToDate) // Synced or if not up to date is fine
 	    {
+	        assert(_loaded.get() || _load.get());
 		activationTimeout = _activationTimeout;
 		deactivationTimeout = _deactivationTimeout;
-		node = _loaded->node;
+		node = _loaded.get() ? _loaded->node : _load->node;
 		return _proxy;
 	    }
 	    else if(_load.get())
@@ -343,13 +375,13 @@ ServerEntry::getProxy(int& activationTimeout, int& deactivationTimeout, string& 
 }
 
 AdapterPrx
-ServerEntry::getAdapter(const string& id)
+ServerEntry::getAdapter(const string& id, bool upToDate)
 {
     AdapterPrx proxy;
 
     {
 	Lock sync(*this);
-	if(_proxy) // Synced
+	if(_loaded.get() || _proxy && !upToDate) // Synced or if not up to date is fine
 	{
 	    AdapterPrxDict::const_iterator p = _adapters.find(id);
 	    if(p != _adapters.end())
@@ -382,7 +414,7 @@ ServerEntry::getAdapter(const string& id)
 
 	{
 	    Lock sync(*this);
-	    if(_proxy) // Synced
+	    if(_loaded.get() || _proxy && !upToDate) // Synced or if not up to date is fine
 	    {
 		AdapterPrxDict::const_iterator p = _adapters.find(id);
 		if(p != _adapters.end())
@@ -414,7 +446,7 @@ ServerEntry::getNode() const
     {
 	throw ServerNotExistException();
     }
-    return _proxy ? _cache.getNodeCache().get(_loaded->node) : _cache.getNodeCache().get(_load->node);
+    return _loaded.get() ? _cache.getNodeCache().get(_loaded->node) : _cache.getNodeCache().get(_load->node);
 }
 
 string
@@ -425,21 +457,34 @@ ServerEntry::getApplication() const
     {
 	throw ServerNotExistException();
     }
-    return _proxy ? _loaded->application : _load->application;
+    return _loaded.get() ? _loaded->application : _load->application;
 }
 
 float
 ServerEntry::getLoad(LoadSample sample) const
 {
-    Lock sync(*this);
-    if(!_loaded.get() && !_load.get())
+    string application;
+    string node;
     {
-	throw ServerNotExistException();
+	Lock sync(*this);
+	if(_loaded.get())
+	{
+	    application = _loaded->application;
+	    node = _loaded->node;
+	}
+	else if(_load.get())
+	{
+	    application = _load->application;
+	    node = _load->node;
+	}
+	else
+	{
+	    throw ServerNotExistException();
+	}
     }
 
-    ServerInfo& info = _proxy ? *_loaded.get() : *_load.get();
     float factor;
-    LoadInfo load = _cache.getNodeCache().get(info.node)->getLoadInfoAndLoadFactor(info.application, factor);
+    LoadInfo load = _cache.getNodeCache().get(node)->getLoadInfoAndLoadFactor(application, factor);
     switch(sample)
     {
     case LoadSample1:
@@ -458,6 +503,7 @@ void
 ServerEntry::syncImpl(bool waitForUpdate)
 {
     ServerInfo load;
+    SessionIPtr session;
     ServerInfo destroy;
 
     {
@@ -480,8 +526,8 @@ ServerEntry::syncImpl(bool waitForUpdate)
 	if(!_load.get() && !_destroy.get())
 	{
 	    _load = _loaded; // Re-load the current server.
-	    _proxy = 0;
-	    _adapters.clear();
+//	    _proxy = 0;
+//	    _adapters.clear();
 	}
 
 	_updated = false;
@@ -494,6 +540,7 @@ ServerEntry::syncImpl(bool waitForUpdate)
 	else if(_load.get())
 	{
 	    load = *_load;
+	    session = _session;
 	}
 	else
 	{
@@ -518,7 +565,7 @@ ServerEntry::syncImpl(bool waitForUpdate)
     {
 	try
 	{
-	    _cache.getNodeCache().get(load.node)->loadServer(this, load);
+	    _cache.getNodeCache().get(load.node)->loadServer(this, load, session);
 	}
 	catch(NodeNotExistException&)
 	{
@@ -535,7 +582,24 @@ ServerEntry::syncImpl(bool waitForUpdate)
 	}
 	if(_exception.get())
 	{
-	    _exception->ice_throw();
+	    try
+	    {
+		_exception->ice_throw();
+	    }
+	    catch(const DeploymentException&)
+	    {
+		throw;
+	    }
+	    catch(const NodeUnreachableException&)
+	    {
+		throw;
+	    }
+	    catch(const Ice::Exception& ex)
+	    {
+		ostringstream os;
+		os << "unexpected exception while synchronizing server `" + _id + "':\n" << ex;
+		throw DeploymentException(os.str());
+	    }
 	}
     }
 }
@@ -544,6 +608,7 @@ void
 ServerEntry::loadCallback(const ServerPrx& proxy, const AdapterPrxDict& adpts, int at, int dt)
 {
     ServerInfo load;
+    SessionIPtr session;
     ServerInfo destroy;
     {
 	Lock sync(*this);
@@ -559,11 +624,11 @@ ServerEntry::loadCallback(const ServerPrx& proxy, const AdapterPrxDict& adpts, i
 	    _loaded = _load;
 	    assert(_loaded.get());
 	    int timeout = _cache.getNodeCache().getSessionTimeout() * 1000; // sec to ms
-	    _proxy = ServerPrx::uncheckedCast(proxy->ice_timeout(timeout)->ice_collocationOptimization(false));
+	    _proxy = ServerPrx::uncheckedCast(proxy->ice_timeout(timeout)->ice_collocationOptimized(false));
 	    _adapters.clear();
 	    for(AdapterPrxDict::const_iterator p = adpts.begin(); p != adpts.end(); ++p)
 	    {
-		Ice::ObjectPrx adapter = p->second->ice_timeout(timeout)->ice_collocationOptimization(false);
+		Ice::ObjectPrx adapter = p->second->ice_timeout(timeout)->ice_collocationOptimized(false);
 		_adapters.insert(make_pair(p->first, AdapterPrx::uncheckedCast(adapter)));
 	    }
 	    _activationTimeout = at + timeout;
@@ -584,6 +649,7 @@ ServerEntry::loadCallback(const ServerPrx& proxy, const AdapterPrxDict& adpts, i
 	    else if(_load.get())
 	    {
 		load = *_load;
+		session = _session;
 	    }
 	}
     }
@@ -604,7 +670,7 @@ ServerEntry::loadCallback(const ServerPrx& proxy, const AdapterPrxDict& adpts, i
     {
 	try
 	{
-	    _cache.getNodeCache().get(load.node)->loadServer(this, load);
+	    _cache.getNodeCache().get(load.node)->loadServer(this, load, session);
 	}
 	catch(NodeNotExistException&)
 	{
@@ -617,6 +683,7 @@ void
 ServerEntry::destroyCallback()
 {
     ServerInfo load;
+    SessionIPtr session;
     {
 	Lock sync(*this);
 	_destroy.reset(0);
@@ -631,6 +698,7 @@ ServerEntry::destroyCallback()
 	{
 	    _updated = false;
 	    load = *_load;
+	    session = _session;
 	}
     }
 
@@ -638,7 +706,7 @@ ServerEntry::destroyCallback()
     {
 	try
 	{
-	    _cache.getNodeCache().get(load.node)->loadServer(this, load);
+	    _cache.getNodeCache().get(load.node)->loadServer(this, load, session);
 	}
 	catch(NodeNotExistException&)
 	{
@@ -655,6 +723,7 @@ void
 ServerEntry::exception(const Ice::Exception& ex)
 {
     ServerInfo load;
+    SessionIPtr session;
     bool remove = false;
     {
 	Lock sync(*this);
@@ -671,6 +740,7 @@ ServerEntry::exception(const Ice::Exception& ex)
 	    _destroy.reset(0);
 	    _updated = false;
 	    load = *_load.get();
+	    session = _session;
 	}
     }
 
@@ -678,7 +748,7 @@ ServerEntry::exception(const Ice::Exception& ex)
     {
 	try
 	{
-	    _cache.getNodeCache().get(load.node)->loadServer(this, load);
+	    _cache.getNodeCache().get(load.node)->loadServer(this, load, session);
 	}
 	catch(NodeNotExistException&)
 	{
@@ -703,4 +773,176 @@ ServerEntry::canRemove()
 {
      Lock sync(*this);
      return !_loaded.get() && !_load.get() && !_destroy.get();
+}
+
+
+void
+ServerEntry::allocated(const SessionIPtr& session)
+{
+    TraceLevelsPtr traceLevels = _cache.getTraceLevels();
+    if(traceLevels && traceLevels->server > 1)
+    {
+	Ice::Trace out(traceLevels->logger, traceLevels->serverCat);
+	out << "server `" << _id << "' allocated by `" << session->getId() << "' (" << _count << ")";
+    }
+
+    assert(_loaded.get() || _load.get());
+    ServerDescriptorPtr desc = _loaded.get() ? _loaded->descriptor : _load->descriptor;
+
+    //
+    // If the server has the session activation mode, we re-load the
+    // server on the node as its deployment might have changed (it's
+    // possible to use ${session.*} variable with server with the
+    // session activation mode.
+    //
+    if(desc->activation == "session")
+    {
+	_updated = true;
+	if(!_load.get())
+	{
+	    _load = _loaded;
+	}
+//	_proxy = 0;
+//	_adapters.clear();
+	_session = session;
+    }
+
+    Glacier2::SessionControlPrx ctl = session->getSessionControl();
+    if(ctl)
+    {
+	ServerHelperPtr helper = createHelper(_cache.getCommunicator(), desc);
+	multiset<string> adapterIds;
+	multiset<Ice::Identity> identities;
+	helper->getIds(adapterIds, identities);
+	try
+	{
+	    //
+	    // SunCC won't accept the following:
+	    //
+	    // ctl->adapterIds()->add(Ice::StringSeq(adapterIds.begin(), adapterIds.end()));
+	    // ctl->identities()->add(Ice::IdentitySeq(identities.begin(), identities.end()));
+	    //
+	    Ice::StringSeq adapterIdSeq;
+	    for(multiset<string>::iterator p = adapterIds.begin(); p != adapterIds.end(); ++p)
+	    {
+		adapterIdSeq.push_back(*p);
+	    }
+	    Ice::IdentitySeq identitySeq;
+	    for(multiset<Ice::Identity>::iterator q = identities.begin(); q != identities.end(); ++q)
+	    {
+		identitySeq.push_back(*q);
+	    }
+	    ctl->adapterIds()->add(adapterIdSeq);
+	    ctl->identities()->add(identitySeq);
+	}
+	catch(const Ice::LocalException& ex)
+	{
+	    if(traceLevels && traceLevels->server > 0)
+	    {
+		Ice::Trace out(traceLevels->logger, traceLevels->serverCat);
+		out << "couldn't add Glacier2 filters for server `" << _id << "' allocated by `" << session->getId();
+		out << ":\n" << ex;
+	    }
+	}
+    }
+}
+
+void
+ServerEntry::released(const SessionIPtr& session)
+{
+    assert(_loaded.get() || _load.get());
+    ServerDescriptorPtr desc = _loaded.get() ? _loaded->descriptor : _load->descriptor;
+    
+    //
+    // If the server has the session activation mode, we re-load the
+    // server on the node as its deployment might have changed (it's
+    // possible to use ${session.*} variable with server with the
+    // session activation mode. Synchronizing the server will also 
+    // shutdown the server on the node.
+    //
+    if(desc->activation == "session")
+    {
+	_updated = true;
+	if(!_load.get())
+	{
+	    _load = _loaded;
+	}
+//	_proxy = 0;
+//	_adapters.clear();
+	_session = 0;
+    }
+
+    TraceLevelsPtr traceLevels = _cache.getTraceLevels();
+
+    Glacier2::SessionControlPrx ctl = session->getSessionControl();
+    if(ctl)
+    {
+	ServerHelperPtr helper = createHelper(_cache.getCommunicator(), desc);
+	multiset<string> adapterIds;
+	multiset<Ice::Identity> identities;
+	helper->getIds(adapterIds, identities);
+	try
+	{
+	    //
+	    // SunCC won't accept the following:
+	    //
+	    // ctl->adapterIds()->remove(Ice::StringSeq(adapterIds.begin(), adapterIds.end()));
+	    // ctl->identities()->remove(Ice::IdentitySeq(identities.begin(), identities.end()));
+	    //
+	    Ice::StringSeq adapterIdSeq;
+	    for(multiset<string>::iterator p = adapterIds.begin(); p != adapterIds.end(); ++p)
+	    {
+		adapterIdSeq.push_back(*p);
+	    }
+	    Ice::IdentitySeq identitySeq;
+	    for(multiset<Ice::Identity>::iterator q = identities.begin(); q != identities.end(); ++q)
+	    {
+		identitySeq.push_back(*q);
+	    }
+	    ctl->adapterIds()->remove(adapterIdSeq);
+	    ctl->identities()->remove(identitySeq);
+	}
+	catch(const Ice::LocalException& ex)
+	{
+	    if(traceLevels && traceLevels->server > 0)
+	    {
+		Ice::Trace out(traceLevels->logger, traceLevels->serverCat);
+		out << "couldn't remove Glacier2 filters for server `" << _id << "' allocated by `";
+		out << session->getId() << ":\n" << ex;
+	    }
+	}
+    }
+
+    if(traceLevels && traceLevels->server > 1)
+    {
+	Ice::Trace out(traceLevels->logger, traceLevels->serverCat);
+	out << "server `" << _id << "' released by `" << session->getId() << "' (" << _count << ")";
+    }
+}
+
+bool
+ServerEntry::release(const SessionIPtr& session, bool fromRelease)
+{
+    bool released = Allocatable::release(session, fromRelease);
+    
+    //
+    // If this server was released (and not from another release
+    // call), we check if it needs to be synced.
+    //
+    if(released && !fromRelease)
+    {
+	{
+	    Lock sync(*this);
+	    if(!_updated || 
+	       _loaded.get() && _loaded->descriptor->activation != "session" || 
+	       _load.get() && _load->descriptor->activation != "session")
+	    {
+		return true;
+	    }
+	}
+
+	syncImpl(false); // We sync here to ensure the "session" server will be shutdown.
+    }
+
+    return released;
 }

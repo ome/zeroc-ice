@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,7 +16,6 @@
 #include <Ice/LocalException.h>
 #include <Ice/Instance.h>
 #include <Ice/Properties.h>
-#include <Ice/IdentityUtil.h>
 #include <Ice/LoggerUtil.h>
 #include <Ice/Protocol.h>
 #include <IceUtil/StringUtil.h>
@@ -27,7 +26,7 @@ using namespace IceInternal;
 
 IceInternal::IncomingBase::IncomingBase(Instance* instance, ConnectionI* connection, 
 					const ObjectAdapterPtr& adapter,
-					bool response, Byte compress) :
+					bool response, Byte compress, Int requestId) :
     _response(response),
     _compress(compress),
     _os(instance),
@@ -35,6 +34,7 @@ IceInternal::IncomingBase::IncomingBase(Instance* instance, ConnectionI* connect
 {
     _current.adapter = adapter;
     _current.con = _connection;
+    _current.requestId = requestId;
 }
 
 IceInternal::IncomingBase::IncomingBase(IncomingBase& in) :
@@ -61,18 +61,18 @@ IceInternal::IncomingBase::__warning(const Exception& ex) const
 void
 IceInternal::IncomingBase::__warning(const string& msg) const
 {
-    Warning out(_os.instance()->logger());
+    Warning out(_os.instance()->initializationData().logger);
     
     out << "dispatch exception: " << msg;
-    out << "\nidentity: " << _current.id;
+    out << "\nidentity: " << _os.instance()->identityToString(_current.id);
     out << "\nfacet: " << IceUtil::escapeString(_current.facet, "");
     out << "\noperation: " << _current.operation;
 }
 
 IceInternal::Incoming::Incoming(Instance* instance, ConnectionI* connection, 
 				const ObjectAdapterPtr& adapter,
-				bool response, Byte compress) :
-    IncomingBase(instance, connection, adapter, response, compress),
+				bool response, Byte compress, Int requestId) :
+    IncomingBase(instance, connection, adapter, response, compress, requestId),
     _is(instance)
 {
 }
@@ -103,7 +103,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     }
     _current.facet.swap(facet);
 
-    _is.read(_current.operation);
+    _is.read(_current.operation, false);
 
     Byte b;
     _is.read(b);
@@ -207,7 +207,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    ex.operation = _current.operation;
 	}
 
-	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 1)
+	if(_os.instance()->initializationData().properties->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 1)
 	{
 	    __warning(ex);
 	}
@@ -240,16 +240,14 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    //
 	    if(ex.facet.empty())
 	    {
-		_os.write(vector<string>());
+		_os.write(static_cast<string*>(0), static_cast<string*>(0));
 	    }
 	    else
 	    {
-		vector<string> facetPath;
-		facetPath.push_back(ex.facet);
-		_os.write(facetPath);
+		_os.write(&ex.facet, &ex.facet + 1);
 	    }
 
-	    _os.write(ex.operation);
+	    _os.write(ex.operation, false);
 	    
 	    _connection->sendResponse(&_os, _compress);
 	}
@@ -264,7 +262,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     {
 	_is.endReadEncaps();
 
-	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	if(_os.instance()->initializationData().properties->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning(ex);
 	}
@@ -274,7 +272,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.endWriteEncaps();
 	    _os.b.resize(headerSize + 4); // Dispatch status position.
 	    _os.write(static_cast<Byte>(DispatchUnknownLocalException));
-	    _os.write(ex.unknown);
+	    _os.write(ex.unknown, false);
 	    _connection->sendResponse(&_os, _compress);
 	}
 	else
@@ -288,7 +286,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     {
 	_is.endReadEncaps();
 
-	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	if(_os.instance()->initializationData().properties->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning(ex);
 	}
@@ -298,7 +296,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.endWriteEncaps();
 	    _os.b.resize(headerSize + 4); // Dispatch status position.
 	    _os.write(static_cast<Byte>(DispatchUnknownUserException));
-	    _os.write(ex.unknown);
+	    _os.write(ex.unknown, false);
 	    _connection->sendResponse(&_os, _compress);
 	}
 	else
@@ -312,7 +310,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     {
 	_is.endReadEncaps();
 
-	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	if(_os.instance()->initializationData().properties->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning(ex);
 	}
@@ -322,7 +320,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.endWriteEncaps();
 	    _os.b.resize(headerSize + 4); // Dispatch status position.
 	    _os.write(static_cast<Byte>(DispatchUnknownException));
-	    _os.write(ex.unknown);
+	    _os.write(ex.unknown, false);
 	    _connection->sendResponse(&_os, _compress);
 	}
 	else
@@ -336,7 +334,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     {
 	_is.endReadEncaps();
 
-	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	if(_os.instance()->initializationData().properties->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning(ex);
 	}
@@ -348,7 +346,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(static_cast<Byte>(DispatchUnknownLocalException));
 	    ostringstream str;
 	    str << ex;
-	    _os.write(str.str());
+	    _os.write(str.str(), false);
 	    _connection->sendResponse(&_os, _compress);
 	}
 	else
@@ -362,7 +360,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     {
 	_is.endReadEncaps();
 
-	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	if(_os.instance()->initializationData().properties->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning(ex);
 	}
@@ -374,7 +372,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(static_cast<Byte>(DispatchUnknownUserException));
 	    ostringstream str;
 	    str << ex;
-	    _os.write(str.str());
+	    _os.write(str.str(), false);
 	    _connection->sendResponse(&_os, _compress);
 	}
 	else
@@ -388,7 +386,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     {
 	_is.endReadEncaps();
 
-	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	if(_os.instance()->initializationData().properties->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning(ex);
 	}
@@ -400,7 +398,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(static_cast<Byte>(DispatchUnknownException));
 	    ostringstream str;
 	    str << ex;
-	    _os.write(str.str());
+	    _os.write(str.str(), false);
 	    _connection->sendResponse(&_os, _compress);
 	}
 	else
@@ -414,7 +412,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     {
 	_is.endReadEncaps();
 
-	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	if(_os.instance()->initializationData().properties->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning(string("std::exception: ") + ex.what());
 	}
@@ -426,7 +424,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.write(static_cast<Byte>(DispatchUnknownException));
 	    ostringstream str;
 	    str << "std::exception: " << ex.what();
-	    _os.write(str.str());
+	    _os.write(str.str(), false);
 	    _connection->sendResponse(&_os, _compress);
 	}
 	else
@@ -440,7 +438,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
     {
 	_is.endReadEncaps();
 
-	if(_os.instance()->properties()->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
+	if(_os.instance()->initializationData().properties->getPropertyAsIntWithDefault("Ice.Warn.Dispatch", 1) > 0)
 	{
 	    __warning("unknown c++ exception");
 	}
@@ -451,7 +449,7 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    _os.b.resize(headerSize + 4); // Dispatch status position.
 	    _os.write(static_cast<Byte>(DispatchUnknownException));
 	    string reason = "unknown c++ exception";
-	    _os.write(reason);
+	    _os.write(reason, false);
 	    _connection->sendResponse(&_os, _compress);
 	}
 	else
@@ -502,16 +500,14 @@ IceInternal::Incoming::invoke(const ServantManagerPtr& servantManager)
 	    //
 	    if(_current.facet.empty())
 	    {
-		_os.write(vector<string>());
+		_os.write(static_cast<string*>(0), static_cast<string*>(0));
 	    }
 	    else
 	    {
-		vector<string> facetPath;
-		facetPath.push_back(_current.facet);
-		_os.write(facetPath);
+		_os.write(&_current.facet, &_current.facet + 1);
 	    }
 
-	    _os.write(_current.operation);
+	    _os.write(_current.operation, false);
 	}
 	else
 	{

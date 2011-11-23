@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,12 +31,16 @@ public:
 	const std::string&,
         bool,
         bool,
-        bool);
+        bool,
+	bool);
     ~Gen();
 
     bool operator!() const; // Returns true if there was a constructor error
 
     void generate(const UnitPtr&);
+    
+    static bool setUseWstring(ContainedPtr, std::list<bool>&, bool);
+    static bool resetUseWstring(std::list<bool>&);
 
 private:
 
@@ -58,6 +62,22 @@ private:
     bool _impl;
     bool _checksum;
     bool _stream;
+    bool _ice;
+
+    class GlobalIncludeVisitor : private ::IceUtil::noncopyable, public ParserVisitor
+    {
+    public:
+
+	GlobalIncludeVisitor(::IceUtil::Output&);
+
+	virtual bool visitModuleStart(const ModulePtr&);
+
+    private:
+
+	::IceUtil::Output& H;
+
+	bool _finished;
+    };
 
     class TypesVisitor : private ::IceUtil::noncopyable, public ParserVisitor
     {
@@ -88,6 +108,8 @@ private:
 	std::string _dllExport;
         bool _stream;
 	bool _doneStaticSymbol;
+	bool _useWstring;
+	std::list<bool> _useWstringHist;
     };
 
     class ProxyDeclVisitor : private ::IceUtil::noncopyable, public ParserVisitor
@@ -130,6 +152,8 @@ private:
 	::IceUtil::Output& C;
 
 	std::string _dllExport;
+	bool _useWstring;
+	std::list<bool> _useWstringHist;
     };
 
     class DelegateVisitor : private ::IceUtil::noncopyable, public ParserVisitor
@@ -152,6 +176,8 @@ private:
 	::IceUtil::Output& C;
 
 	std::string _dllExport;
+	bool _useWstring;
+	std::list<bool> _useWstringHist;
     };
 
     class DelegateMVisitor : private ::IceUtil::noncopyable, public ParserVisitor
@@ -174,6 +200,8 @@ private:
 	::IceUtil::Output& C;
 
 	std::string _dllExport;
+	bool _useWstring;
+	std::list<bool> _useWstringHist;
     };
 
     class DelegateDVisitor : private ::IceUtil::noncopyable, public ParserVisitor
@@ -196,6 +224,8 @@ private:
 	::IceUtil::Output& C;
 
 	std::string _dllExport;
+	bool _useWstring;
+	std::list<bool> _useWstringHist;
     };
 
     class ObjectDeclVisitor : private ::IceUtil::noncopyable, public ParserVisitor
@@ -207,6 +237,7 @@ private:
 	virtual bool visitModuleStart(const ModulePtr&);
 	virtual void visitModuleEnd(const ModulePtr&);
 	virtual void visitClassDecl(const ClassDeclPtr&);
+	virtual void visitOperation(const OperationPtr&);
 
     private:
 
@@ -236,6 +267,8 @@ private:
 	void emitGCFunctions(const ClassDefPtr&);
 	void emitGCInsertCode(const TypePtr&, const std::string&, const std::string&, int);
 	void emitGCClearCode(const TypePtr&, const std::string&, const std::string&, int);
+	bool emitVirtualBaseInitializers(const ClassDefPtr&);
+	void emitOneShotConstructor(const ClassDefPtr&);
 	void emitUpcall(const ClassDefPtr&, const std::string&);
 
 	::IceUtil::Output& H;
@@ -244,6 +277,8 @@ private:
 	std::string _dllExport;
         bool _stream;
 	bool _doneStaticSymbol;
+	bool _useWstring;
+	std::list<bool> _useWstringHist;
     };
 
     class IceInternalVisitor : private ::IceUtil::noncopyable, public ParserVisitor
@@ -301,17 +336,19 @@ private:
 	::IceUtil::Output& C;
 
 	std::string _dllExport;
+	bool _useWstring;
+	std::list<bool> _useWstringHist;
 
         //
         // Generate code to emit a local variable declaration and initialize it
         // if necessary.
         //
-        void writeDecl(::IceUtil::Output&, const std::string&, const TypePtr&);
+        void writeDecl(::IceUtil::Output&, const std::string&, const TypePtr&, const StringList&);
 
         //
         // Generate code to return a dummy value
         //
-        void writeReturn(::IceUtil::Output&, const TypePtr&);
+        void writeReturn(::IceUtil::Output&, const TypePtr&, const StringList&);
     };
 
     class AsyncVisitor : private ::IceUtil::noncopyable, public ParserVisitor
@@ -322,6 +359,8 @@ private:
 
 	virtual bool visitModuleStart(const ModulePtr&);
 	virtual void visitModuleEnd(const ModulePtr&);
+	virtual bool visitClassDefStart(const ClassDefPtr&);
+	virtual void visitClassDefEnd(const ClassDefPtr&);
 	virtual void visitOperation(const OperationPtr&);
 
     private:
@@ -330,6 +369,8 @@ private:
 	::IceUtil::Output& C;
 
 	std::string _dllExport;
+	bool _useWstring;
+	std::list<bool> _useWstringHist;
     };
 
     class AsyncImplVisitor : private ::IceUtil::noncopyable, public ParserVisitor
@@ -342,6 +383,8 @@ private:
 	virtual void visitUnitEnd(const UnitPtr&);
 	virtual bool visitModuleStart(const ModulePtr&);
 	virtual void visitModuleEnd(const ModulePtr&);
+	virtual bool visitClassDefStart(const ClassDefPtr&);
+	virtual void visitClassDefEnd(const ClassDefPtr&);
 	virtual void visitOperation(const OperationPtr&);
 
     private:
@@ -350,6 +393,8 @@ private:
 	::IceUtil::Output& C;
 
 	std::string _dllExport;
+	bool _useWstring;
+	std::list<bool> _useWstringHist;
     };
 
 private:
@@ -377,7 +422,8 @@ private:
 
     private:
 
-        void validate(const ContainedPtr&);
+        void validate(const SyntaxTreeBasePtr&, const StringList&, const std::string&, const std::string&,
+		      bool = false);
 
         StringSet _history;
     };

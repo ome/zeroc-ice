@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 #include <Ice/Ice.h>
 #include <TestAMDI.h>
+#include <TestCommon.h>
 #include <functional>
 
 class Thread_opVoid : public IceUtil::Thread
@@ -60,6 +61,15 @@ MyDerivedClassI::opVoid_async(const Test::AMD_MyClass_opVoidPtr& cb, const Ice::
 
     _opVoidThread = new Thread_opVoid(cb);
     _opVoidThread->start();
+}
+
+void
+MyDerivedClassI::opSleep_async(const Test::AMD_MyClass_opSleepPtr& cb, 
+			       int duration, 
+			       const Ice::Current&)
+{
+    IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(duration));
+    cb->ice_response();
 }
 
 void
@@ -122,8 +132,8 @@ MyDerivedClassI::opMyClass_async(const Test::AMD_MyClass_opMyClassPtr& cb,
 				 const Ice::Current&)
 {
     Test::MyClassPrx p2 = p1;
-    Test::MyClassPrx p3 =
-	Test::MyClassPrx::uncheckedCast(_adapter->createProxy(Ice::stringToIdentity("noSuchIdentity")));
+    Test::MyClassPrx p3 = Test::MyClassPrx::uncheckedCast(_adapter->createProxy(
+    					_adapter->getCommunicator()->stringToIdentity("noSuchIdentity")));
     cb->ice_response(Test::MyClassPrx::uncheckedCast(_adapter->createProxy(_identity)), p2, p3);
 }
 
@@ -378,6 +388,19 @@ MyDerivedClassI::opContext_async(const Test::AMD_MyClass_opContextPtr& cb, const
 {
     Test::StringStringD r = c.ctx;
     cb->ice_response(r);
+}
+
+void 
+MyDerivedClassI::opDoubleMarshaling_async(const Test::AMD_MyClass_opDoubleMarshalingPtr& cb,
+					  Ice::Double p1, const Test::DoubleS& p2, const Ice::Current&)
+{
+    Ice::Double d = 1278312346.0 / 13.0;
+    test(p1 == d);
+    for(unsigned int i = 0; i < p2.size(); ++i)
+    {
+        test(p2[i] == d);
+    }
+    cb->ice_response();
 }
 
 void

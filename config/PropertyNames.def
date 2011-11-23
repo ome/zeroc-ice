@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -30,18 +30,18 @@
 # parsed by PropertiesI::parseIceCommandLineOptions(). If set to
 # false, command line options matching the section label won't be
 # parsed by PropertiesI::parseIceCommandLineOptions. This is useful
-# for plugin properties (e.g.: IceSSL) which are parsed when the
-# plugin is loaded (see PluginManagerI::loadPlugins()).
+# for plugin properties that are parsed when the plugin is loaded
+# (see PluginManagerI::loadPlugins()).
 #
 # Section labels must appear on a line by themselves (possibly
-# followed by a comment).  Leading and trailing whitespace is
+# followed by a comment). Leading and trailing whitespace is
 # ignored. Each section must occur only once in a file. "validProps"
 # is reserved and cannot be used as a section name.
 #
-# Each section contains a number of property names, one to a line.  A
+# Each section contains a number of property names, one to a line. A
 # property name cannot contain the # character. Otherwise, a property
 # name is taken to be any consecutive sequence of non-whitespace
-# characters.  Leading and trailing whitespace is ignored, as is a
+# characters. Leading and trailing whitespace is ignored, as is a
 # trailing comment.
 #
 
@@ -121,10 +121,12 @@ Ice:
     Default.CollocationOptimization
     Default.Host
     Default.Locator
+    Default.LocatorCacheTimeout
     Default.Package
     Default.Protocol
     Default.Router
     GC.Interval
+    InitPlugins
     Logger.Timestamp
     MessageSizeMax
     MonitorConnections
@@ -135,6 +137,7 @@ Ice:
     Override.Timeout
     Package.<any>
     Plugin.<any>
+    PluginLoadOrder
     PrintAdapterReady
     PrintProcessId
     ProgramName
@@ -168,7 +171,6 @@ Ice:
     Warn.Datagrams
     Warn.Dispatch
     Warn.Endpoints
-    Warn.Leaks
 
 IceBox:
     InstanceName
@@ -211,6 +213,8 @@ IceGrid:
     Node.Trace.Adapter
     Node.Trace.Server
     Node.Trace.Patch
+    Node.UserAccounts
+    Node.UserAccountMapper
     Node.WaitTime
     Registry.Admin.AdapterId
     Registry.Admin.ReplicaGroupId
@@ -221,6 +225,9 @@ IceGrid:
     Registry.Admin.ThreadPool.SizeMax
     Registry.Admin.ThreadPool.SizeWarn
     Registry.Admin.ThreadPool.StackSize
+    Registry.AdminCryptPasswords
+    Registry.AdminPermissionsVerifier
+    Registry.AdminSSLPermissionsVerifier
     Registry.AdminSessionTimeout
     Registry.Client.AdapterId
     Registry.Client.ReplicaGroupId
@@ -231,6 +238,7 @@ IceGrid:
     Registry.Client.ThreadPool.SizeMax
     Registry.Client.ThreadPool.SizeWarn
     Registry.Client.ThreadPool.StackSize
+    Registry.CryptPasswords
     Registry.Data
     Registry.DefaultTemplates
     Registry.DynamicRegistration
@@ -244,6 +252,7 @@ IceGrid:
     Registry.Internal.ThreadPool.SizeWarn
     Registry.Internal.ThreadPool.StackSize
     Registry.NodeSessionTimeout
+    Registry.PermissionsVerifier
     Registry.Server.AdapterId
     Registry.Server.ReplicaGroupId
     Registry.Server.Endpoints
@@ -253,25 +262,18 @@ IceGrid:
     Registry.Server.ThreadPool.SizeMax
     Registry.Server.ThreadPool.SizeWarn
     Registry.Server.ThreadPool.StackSize
+    Registry.SessionTimeout
+    Registry.SSLPermissionsVerifier
     Registry.Trace.Application
     Registry.Trace.Adapter
+    Registry.Trace.Locator
     Registry.Trace.Node
     Registry.Trace.Object
     Registry.Trace.Patch
     Registry.Trace.Server
     Registry.Trace.Session
+    Registry.UserAccounts
     
-IcePatch:
-    BusyTimeout
-    Directory
-    Dynamic
-    Endpoints
-    PublishedEndpoints
-    RemoveOrphaned
-    Thorough
-    Trace.Files
-    UpdatePeriod
-
 IcePatch2:
     AdapterId
     ReplicaGroupId
@@ -299,39 +301,37 @@ IcePatch2:
     ThreadPool.SizeWarn
     ThreadPool.StackSize
 
-IceSSL: false
-    Client.CertPath
-    Client.Config
-    Client.IgnoreValidPeriod
-    Client.Overrides.CACertificate
-    Client.Overrides.DSA.Certificate
-    Client.Overrides.DSA.PrivateKey
-    Client.Overrides.RSA.Certificate
-    Client.Overrides.RSA.PrivateKey
-    Client.Passphrase.Retries
-    Server.CertPath
-    Server.Config
-    Server.IgnoreValidPeriod
-    Server.Overrides.CACertificate
-    Server.Overrides.DSA.Certificate
-    Server.Overrides.DSA.PrivateKey
-    Server.Overrides.RSA.Certificate
-    Server.Overrides.RSA.PrivateKey
-    Server.Passphrase.Retries
+IceSSL:
+    Alias
+    CertAuthDir
+    CertAuthFile
+    CertFile
+    CheckCertName
+    CheckCRL
+    Ciphers
+    DefaultDir
+    DH.<any>
+    EntropyDaemon
+    FindCert.<any>.<any>
+    ImportCert.<any>.<any>
+    KeyFile
+    Keystore
+    KeystorePassword
+    KeystoreType
+    Password
+    PasswordRetryMax
+    Protocols
+    Random
     Trace.Security
-    Client.Certs
-    Client.CertsPassword
-    Client.Ciphers
-    Client.Keystore
-    Client.KeystorePassword
-    Client.Password
-    Server.Certs
-    Server.CertsPassword
-    Server.Ciphers
-    Server.ClientAuth
-    Server.Keystore
-    Server.KeystorePassword
-    Server.Password
+    Truststore
+    TruststorePassword
+    TruststoreType
+    VerifyDepthMax
+    VerifyPeer
+    TrustOnly
+    TrustOnly.Client
+    TrustOnly.Server
+    TrustOnly.Server.<any>
 
 IceStorm:
     Flush.Timeout
@@ -360,72 +360,6 @@ IceStorm:
     Trace.Topic
     Trace.TopicManager
 
-Glacier:
-    Router.AcceptCert
-    Router.AdapterId
-    Router.ReplicaGroupId
-    Router.AllowCategories
-    Router.Client.AdapterId
-    Router.Client.ReplicaGroupId
-    Router.Client.Endpoints
-    Router.Client.ForwardContext
-    Router.Client.PublishedEndpoints
-    Router.Client.SleepTime
-    Router.Client.ThreadPool.Size
-    Router.Client.ThreadPool.SizeMax
-    Router.Client.ThreadPool.SizeWarn
-    Router.Client.ThreadPool.StackSize
-    Router.Client.Throttle.Twoways
-    Router.Endpoints
-    Router.Identity
-    Router.PrintProxyOnFd
-    Router.PublishedEndpoints
-    Router.Server.AdapterId
-    Router.Server.ReplicaGroupId
-    Router.Server.Endpoints
-    Router.Server.ForwardContext
-    Router.Server.PublishedEndpoints
-    Router.Server.SleepTime
-    Router.Server.ThreadPool.Size
-    Router.Server.ThreadPool.SizeMax
-    Router.Server.ThreadPool.SizeWarn
-    Router.Server.ThreadPool.StackSize
-    Router.Server.Throttle.Twoways
-    Router.SessionManager
-    Router.ThreadPool.Size
-    Router.ThreadPool.SizeMax
-    Router.ThreadPool.SizeWarn
-    Router.ThreadPool.StackSize
-    Router.Trace.Client
-    Router.Trace.RoutingTable
-    Router.Trace.Server
-    Router.Trace.Throttle
-    Router.UserId
-    Starter.AdapterId
-    Starter.ReplicaGroupId
-    Starter.AddUserToAllowCategories
-    Starter.Certificate.BitStrength
-    Starter.Certificate.CommonName
-    Starter.Certificate.Country
-    Starter.Certificate.IssuedAdjust
-    Starter.Certificate.Locality
-    Starter.Certificate.Organization
-    Starter.Certificate.OrganizationalUnit
-    Starter.Certificate.SecondsValid
-    Starter.Certificate.StateProvince
-    Starter.CryptPasswords
-    Starter.Endpoints
-    Starter.PermissionsVerifier
-    Starter.PropertiesOverride
-    Starter.PublishedEndpoints
-    Starter.RouterPath
-    Starter.StartupTimeout
-    Starter.ThreadPool.Size
-    Starter.ThreadPool.SizeMax
-    Starter.ThreadPool.SizeWarn
-    Starter.ThreadPool.StackSize
-    Starter.Trace
-
 Glacier2:
     AddUserToAllowCategories
     Admin.Endpoints
@@ -443,10 +377,18 @@ Glacier2:
     Client.Trace.Override
     Client.Trace.Reject
     Client.Trace.Request
+    Filter.Address.Reject
+    Filter.Address.Accept
+    Filter.ProxySizeMax
+    Filter.Category.Accept
+    Filter.AdapterId.Accept
+    Filter.Identity.Accept
     CryptPasswords
     InstanceName
     PermissionsVerifier
+    SSLPermissionsVerifier
     RouterIdentity
+    RoutingTable.MaxSize
     Server.AlwaysBatch
     Server.Buffered
     Server.Endpoints
@@ -457,7 +399,9 @@ Glacier2:
     Server.Trace.Override
     Server.Trace.Request
     SessionManager
-    SessionManager.CloseCount
+    SessionManager.LocatorCacheTimeout
+    SSLSessionManager
+    SSLSessionManager.LocatorCacheTimeout
     SessionTimeout
     Trace.RoutingTable
     Trace.Session

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -44,7 +44,7 @@ public:
 
     void waitUntilFinished();
 
-    Ice::ConnectionIPtr create(const std::vector<EndpointIPtr>&, bool&);
+    Ice::ConnectionIPtr create(const std::vector<EndpointIPtr>&, bool, bool&);
     void setRouterInfo(const RouterInfoPtr&);
     void removeAdapter(const Ice::ObjectAdapterPtr&);
     void flushBatchRequests();
@@ -90,7 +90,8 @@ public:
     
 private:
 
-    IncomingConnectionFactory(const InstancePtr&, const EndpointIPtr&, const Ice::ObjectAdapterPtr&);
+    IncomingConnectionFactory(const InstancePtr&, const EndpointIPtr&, const Ice::ObjectAdapterPtr&,
+			      const std::string&);
     virtual ~IncomingConnectionFactory();
     friend class Ice::ObjectAdapterI;
 

@@ -6,14 +6,22 @@ Requirements
 Operating System
 ----------------
 
-A recent Linux distribution for x86 (i386) or x86_64.
+Ice is expected to build and run properly on any recent Linux
+distribution for x86 and x86_64. However, Ice is officially supported
+only on:
+
+ - Fedora Core 5 for x86 or x86_64
+ - RedHat Linux Enterprise 4.2 for x86 or x86_64
 
 
 C++ compiler
 ------------
 
-- GCC 3.2, 3.3, 3.4, or 4.0.1 or later
+Ice is expected to build properly with GCC 3.3 or later.  However,
+only the following compilers are officially supported:
 
+ - GCC 4.1.x on Fedora Core 5
+ - GCC 3.4.4 on RedHat Linux Enterprise 4.2
 
 Third-party libraries
 ---------------------
@@ -25,47 +33,26 @@ Ice has dependencies on a number of third-party libraries:
   If you intend to use Ice for Java with Berkeley DB, you must also
   include the option --enable-java.
 
-  You can download the Berkeley DB source distribution from
-  http://www.sleepycat.com/download
-
-  If you are using RedHat 9 and do not want to use NPTL (New Posix
-  Thread Library), set LD_ASSUME_KERNEL=2.4.1 before running
-  configure.
-
-  On Fedora Core 4, we recommend changing the default optimization
-  level when building Berkeley DB in order to avoid a compiler bug
-  in the FC4 version of GCC. If you are building with Java support
-  this is absolutely necessary. We recommend that you use the
-  following syntax when you run configure:
-
-  $ CFLAGS="-O1" ../dist/configure <your configure options>
-
 - expat 1.9x
 
-- OpenSSL 0.9.7 or later
+- OpenSSL 0.9.7 or later (OpenSSL 0.9.8 or later recommended)
 
 - bzip2 1.0
 
-- readline and ncurses (optional, but used unless you set USE_READLINE
-  to no in config/Make.rules)
-
-expat, OpenSSL, bzip2, readline and ncurses are usually included with
-your Linux distribution, or you can download them from the following
+Berkeley DB, expat, OpenSSL, and bzip2 are usually included with your 
+Linux distribution, or you can download them from the following 
 locations:
 
+Berkeley DB    http://www.sleepycat.com/download            
 expat          http://sourceforge.net/projects/expat/
 OpenSSL        http://www.openssl.org
 bzip2          http://sources.redhat.com/bzip2
-readline       http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html
-ncurses        http://www.gnu.org/software/ncurses/ncurses.html
-
 
 Python
 ------
 
-To run the automated test suite, you will need Python 2.2 or a newer
-version. If you have no interest in running the test scripts, Python
-is not required.
+You will need Python to run the automated test suite. If you have no
+interest in running the test scripts, Python is not required.
 
 
 ======================================================================
@@ -75,22 +62,16 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ tar xvfz Ice-3.0.1.tar.gz
+$ tar xvfz Ice-3.1.0.tar.gz
 
-Change the working directory to Ice-3.0.1:
+Change the working directory to Ice-3.1.0:
 
-$ cd Ice-3.0.1
+$ cd Ice-3.1.0
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular
 attention to the variables that define the locations of the third-
 party libraries.
-
-If you want to build Ice with the Intel C++ compiler, first set the
-following environment variables:
-
-$ export CC=icc
-$ export CXX=icpc
 
 Now you're ready to build Ice:
 
@@ -127,12 +108,16 @@ To build Ice in 64 bit mode, you need to do the following:
   libraries in the "lib64" directories. For example, put Berkeley DB
   64 bit libraries in $DB_HOME/lib64.
 
-- Set the environment variable LP64 to yes, as shown below:
-
-  $ export LP64=yes
-
 - Build and test as described above (with gcc).
 
+======================================================================
+32 bit builds on x86_64
+======================================================================
+
+By default, builds on x86_64 are 64-bit. To perform a 32-bit build
+on a x86_64 Linux system, set the environment variable LP64 to no,
+as shown below:
+  $ export LP64=no
 
 ======================================================================
 Installation
@@ -149,5 +134,5 @@ programs, you must pass the location of the <prefix>/include directory
 to the compiler with the -I option, and the location of the
 <prefix>/lib directory with the -L option.  
 
-If LP64 is set to yes, the libraries are installed in <prefix>/lib64.
-No other changes are necessary.
+On a x86_64 system, the libraries are installed in <prefix>/lib64
+unless LP64 is set to no. No other changes are necessary.

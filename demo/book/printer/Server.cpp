@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,7 +38,7 @@ main(int argc, char* argv[])
 		"SimplePrinterAdapter", "default -p 10000");
 	Ice::ObjectPtr object = new PrinterI;
 	adapter->add(object,
-		     Ice::stringToIdentity("SimplePrinter"));
+		     ic->stringToIdentity("SimplePrinter"));
 	adapter->activate();
 	ic->waitForShutdown();
     } catch (const Ice::Exception & e) {

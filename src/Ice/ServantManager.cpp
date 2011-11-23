@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,7 +10,6 @@
 #include <Ice/ServantManager.h>
 #include <Ice/ServantLocator.h>
 #include <Ice/LocalException.h>
-#include <Ice/IdentityUtil.h>
 #include <Ice/LoggerUtil.h>
 #include <Ice/Instance.h>
 #include <IceUtil/StringUtil.h>
@@ -46,7 +45,7 @@ IceInternal::ServantManager::addServant(const ObjectPtr& object, const Identity&
 	{
 	    AlreadyRegisteredException ex(__FILE__, __LINE__);
 	    ex.kindOfObject = "servant";
-	    ex.id = identityToString(ident);
+	    ex.id = _instance->identityToString(ident);
 	    if(!facet.empty())
 	    {
 		ex.id += " -f " + IceUtil::escapeString(facet, "");
@@ -86,7 +85,7 @@ IceInternal::ServantManager::removeServant(const Identity& ident, const string& 
     {
 	NotRegisteredException ex(__FILE__, __LINE__);
 	ex.kindOfObject = "servant";
-	ex.id = identityToString(ident);
+	ex.id = _instance->identityToString(ident);
 	if(!facet.empty())
 	{
 	    ex.id += " -f " + IceUtil::escapeString(facet, "");
@@ -130,7 +129,7 @@ IceInternal::ServantManager::removeAllFacets(const Identity& ident)
     {
 	NotRegisteredException ex(__FILE__, __LINE__);
 	ex.kindOfObject = "servant";
-	ex.id = identityToString(ident);
+	ex.id = _instance->identityToString(ident);
 	throw ex;
     }
 
@@ -154,7 +153,13 @@ IceInternal::ServantManager::findServant(const Identity& ident, const string& fa
 {
     IceUtil::Mutex::Lock sync(*this);
     
-    assert(_instance); // Must not be called after destruction.
+    //
+    // This assert is not valid if the adapter dispatch incoming
+    // requests from bidir connections. This method might be called if
+    // requests are received over the bidir connection after the
+    // adapter was deactivated.
+    //
+    //assert(_instance); // Must not be called after destruction.
 
     ServantMapMap::iterator p = _servantMapMapHint;
     FacetMap::iterator q;
@@ -209,7 +214,13 @@ IceInternal::ServantManager::hasServant(const Identity& ident) const
 {
     IceUtil::Mutex::Lock sync(*this);
     
-    assert(_instance); // Must not be called after destruction.
+    //
+    // This assert is not valid if the adapter dispatch incoming
+    // requests from bidir connections. This method might be called if
+    // requests are received over the bidir connection after the
+    // adapter was deactivated.
+    //
+    //assert(_instance); // Must not be called after destruction.
 
     ServantMapMap::iterator p = _servantMapMapHint;
     ServantMapMap& servantMapMap = const_cast<ServantMapMap&>(_servantMapMap);
@@ -255,7 +266,13 @@ IceInternal::ServantManager::findServantLocator(const string& category) const
 {
     IceUtil::Mutex::Lock sync(*this);
     
-    assert(_instance); // Must not be called after destruction.
+    //
+    // This assert is not valid if the adapter dispatch incoming
+    // requests from bidir connections. This method might be called if
+    // requests are received over the bidir connection after the
+    // adapter was deactivated.
+    //
+    //assert(_instance); // Must not be called after destruction.
 
     map<string, ServantLocatorPtr>& locatorMap =
 	const_cast<map<string, ServantLocatorPtr>&>(_locatorMap);
@@ -325,7 +342,7 @@ IceInternal::ServantManager::destroy()
 	    }
 	    catch(const Exception& ex)
 	    {
-		Error out(_instance->logger());
+		Error out(_instance->initializationData().logger);
 		out << "exception during locator deactivation:\n"
 		    << "object adapter: `" << _adapterName << "'\n"
 		    << "locator category: `" << p->first << "'\n"
@@ -333,7 +350,7 @@ IceInternal::ServantManager::destroy()
 	    }
 	    catch(...)
 	    {
-		Error out(_instance->logger());
+		Error out(_instance->initializationData().logger);
 		out << "unknown exception during locator deactivation:\n"
 		    << "object adapter: `" << _adapterName << "'\n"
 		    << "locator category: `" << p->first << "'";

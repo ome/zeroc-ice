@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,8 +10,8 @@
 #include <Ice/Exception.h>
 #include <Ice/LocalException.h>
 #include <Ice/Network.h>
-#include <Ice/IdentityUtil.h>
 #include <Ice/Plugin.h>
+#include <IceUtil/StringUtil.h>
 #include <iomanip>
 
 using namespace std;
@@ -149,13 +149,31 @@ void
 Ice::IllegalIdentityException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\nillegal identity: `" << id << "'";
+    out << ":\nillegal identity: `";
+    if(id.category.empty())
+    {
+        out << IceUtil::escapeString(id.name, "/");
+    }
+    else
+    {
+        out << IceUtil::escapeString(id.category, "/") << '/' << IceUtil::escapeString(id.name, "/");
+    }
+    out << "'";
 }
 
 static void
 printFailedRequestData(ostream& out, const RequestFailedException& ex)
 {
-    out << "\nidentity: " << ex.id;
+    out << ":\nidentity: `";
+    if(ex.id.category.empty())
+    {
+        out << IceUtil::escapeString(ex.id.name, "/");
+    }
+    else
+    {
+        out << IceUtil::escapeString(ex.id.category, "/") << '/' << IceUtil::escapeString(ex.id.name, "/");
+    }
+    out << "'";
     out << "\nfacet: " << ex.facet;
     out << "\noperation: " << ex.operation;
 }
@@ -206,7 +224,15 @@ void
 Ice::SocketException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\nsocket exception: " << errorToString(error);
+    out << ":\nsocket exception: ";
+    if(error == 0)
+    {
+	out << "unknown error";
+    }
+    else
+    {
+	out << errorToString(error);
+    }
 }
 
 void
@@ -288,7 +314,11 @@ void
 Ice::ProtocolException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\nunknown protocol exception";
+    out << ":\nprotocol exception";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -310,6 +340,11 @@ Ice::BadMagicException::ice_print(ostream& out) const
 
     out.fill(originalFill);				// Restore stream state
     out.flags(originalFlags);
+
+    if(!reason.empty())
+    {
+	out << "\n" << reason;
+    }
 }
 
 void
@@ -326,6 +361,10 @@ Ice::UnsupportedEncodingException::ice_print(ostream& out) const
     Exception::ice_print(out);
     out << ":\nprotocol error: unsupported encoding version: " << badMajor << "." << badMinor;
     out << "\n(can only support encodings compatible with version " << major << "." << major << ")";
+    if(!reason.empty())
+    {
+	out << "\n" << reason;
+    }
 }
 
 void
@@ -333,6 +372,10 @@ Ice::UnknownMessageException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: unknown message type";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -340,6 +383,10 @@ Ice::ConnectionNotValidatedException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: received message over unvalidated connection";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -347,6 +394,10 @@ Ice::UnknownRequestIdException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: unknown request id";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -354,6 +405,10 @@ Ice::UnknownReplyStatusException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: unknown reply status";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -361,6 +416,10 @@ Ice::CloseConnectionException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: connection closed";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -368,6 +427,10 @@ Ice::ForcedCloseConnectionException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: connection forcefully closed";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -375,6 +438,10 @@ Ice::IllegalMessageSizeException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: illegal message size";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -382,6 +449,17 @@ Ice::CompressionException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: failed to compress or uncompress data";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
+}
+
+void
+Ice::DatagramLimitException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\nprotocol error: maximum datagram payload size exceeded";
     if(!reason.empty())
     {
 	out << ":\n" << reason;
@@ -400,17 +478,14 @@ Ice::MarshalException::ice_print(ostream& out) const
 }
 
 void
-Ice::DatagramLimitException::ice_print(ostream& out) const
+Ice::ProxyUnmarshalException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\nprotocol error: maximum datagram payload size exceeded";
-}
-
-void
-Ice::NoObjectFactoryException::ice_print(ostream& out) const
-{
-    Exception::ice_print(out);
-    out << ":\nprotocol error: no suitable object factory found for `" << type << "'";
+    out << ":\nprotocol error: inconsistent proxy data during unmarshaling";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -418,13 +493,10 @@ Ice::UnmarshalOutOfBoundsException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: out of bounds during unmarshaling";
-}
-
-void
-Ice::ProxyUnmarshalException::ice_print(ostream& out) const
-{
-    Exception::ice_print(out);
-    out << ":\nprotocol error: inconsistent proxy data during unmarshaling";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -432,6 +504,21 @@ Ice::IllegalIndirectionException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: encountered illegal protocol indirection";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
+}
+
+void
+Ice::NoObjectFactoryException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\nprotocol error: no suitable object factory found for `" << type << "'";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -439,6 +526,21 @@ Ice::MemoryLimitException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: memory limit exceeded";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
+}
+
+void
+Ice::StringConversionException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\nprotocol error: string conversion failed";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -446,6 +548,10 @@ Ice::EncapsulationException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: illegal encapsulation";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -453,13 +559,17 @@ Ice::NegativeSizeException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: negative size for sequence, dictionary, etc.";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
 Ice::PluginInitializationException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\nplug-in initialization failed";
+    out << ":\nplugin initialization failed";
     if(!reason.empty())
     {
         out << ": " << reason;
@@ -506,4 +616,15 @@ Ice::FeatureNotSupportedException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nfeature `" << unsupportedFeature << "' is not supported.";
+}
+
+void
+Ice::SecurityException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\nsecurity exception";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }

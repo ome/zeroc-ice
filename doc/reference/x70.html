@@ -1,0 +1,2851 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Ice</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="NEXT"
+TITLE="Ice::AdapterAlreadyActiveException"
+HREF="x1097.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="c13.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x1097.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICE"
+><TT
+CLASS="LITERAL"
+>Ice</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN73"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>module <CODE
+CLASS="CLASSNAME"
+>Ice</CODE
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>The <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> core library. Among many other features, the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> core
+library manages all the communication tasks using an efficient
+protocol (including protocol compression and support for both TCP
+and UDP), provides a thread pool for multi-threaded servers, and
+additional functionality that supports high scalability.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN80"
+>Interface Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x1221.html"
+><SPAN
+CLASS="TYPE"
+>Communicator</SPAN
+></A
+></DT
+><DD
+><P
+>The central object in <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+>.</P
+></DD
+><DT
+><A
+HREF="x2054.html"
+><SPAN
+CLASS="TYPE"
+>Connection</SPAN
+></A
+></DT
+><DD
+><P
+>The user-level interface to a connection.</P
+></DD
+><DT
+><A
+HREF="x2498.html"
+><SPAN
+CLASS="TYPE"
+>Endpoint</SPAN
+></A
+></DT
+><DD
+><P
+>The user-level interface to an endpoint.</P
+></DD
+><DT
+><A
+HREF="x2981.html"
+><SPAN
+CLASS="TYPE"
+>Locator</SPAN
+></A
+></DT
+><DD
+><P
+>The <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> locator interface.</P
+></DD
+><DT
+><A
+HREF="x3089.html"
+><SPAN
+CLASS="TYPE"
+>LocatorRegistry</SPAN
+></A
+></DT
+><DD
+><P
+>The <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> locator registry interface.</P
+></DD
+><DT
+><A
+HREF="x3258.html"
+><SPAN
+CLASS="TYPE"
+>Logger</SPAN
+></A
+></DT
+><DD
+><P
+>The <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> message logger.</P
+></DD
+><DT
+><A
+HREF="x3548.html"
+><SPAN
+CLASS="TYPE"
+>ObjectAdapter</SPAN
+></A
+></DT
+><DD
+><P
+>The object adapter, which is responsible for receiving requests
+from endpoints, and for mapping between servants, identities, and
+proxies.</P
+></DD
+><DT
+><A
+HREF="x4697.html"
+><SPAN
+CLASS="TYPE"
+>ObjectFactory</SPAN
+></A
+></DT
+><DD
+><P
+>A factory for objects.</P
+></DD
+><DT
+><A
+HREF="x4882.html"
+><SPAN
+CLASS="TYPE"
+>Plugin</SPAN
+></A
+></DT
+><DD
+><P
+>A communicator plugin.</P
+></DD
+><DT
+><A
+HREF="x4955.html"
+><SPAN
+CLASS="TYPE"
+>PluginManager</SPAN
+></A
+></DT
+><DD
+><P
+>Each communicator has a plugin manager to administer the set of
+plugins.</P
+></DD
+><DT
+><A
+HREF="x5087.html"
+><SPAN
+CLASS="TYPE"
+>Process</SPAN
+></A
+></DT
+><DD
+><P
+>An administrative interface for process management.</P
+></DD
+><DT
+><A
+HREF="x5150.html"
+><SPAN
+CLASS="TYPE"
+>Properties</SPAN
+></A
+></DT
+><DD
+><P
+>A property set used to configure <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> and <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> applications.</P
+></DD
+><DT
+><A
+HREF="x5691.html"
+><SPAN
+CLASS="TYPE"
+>Router</SPAN
+></A
+></DT
+><DD
+><P
+>The <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> router interface.</P
+></DD
+><DT
+><A
+HREF="x5826.html"
+><SPAN
+CLASS="TYPE"
+>ServantLocator</SPAN
+></A
+></DT
+><DD
+><P
+>The servant locator, which is called by the object adapter to
+locate a servant that is not found in its active servant map.</P
+></DD
+><DT
+><A
+HREF="x6049.html"
+><SPAN
+CLASS="TYPE"
+>Stats</SPAN
+></A
+></DT
+><DD
+><P
+>An interface <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> uses to report statistics, such as how much data
+is sent or received.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN181"
+>Exception Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x1097.html"
+><CODE
+CLASS="CLASSNAME"
+>AdapterAlreadyActiveException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if a server tries to set endpoints for
+an adapter that is already active.</P
+></DD
+><DT
+><A
+HREF="x1105.html"
+><CODE
+CLASS="CLASSNAME"
+>AdapterNotFoundException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an adapter cannot be found.</P
+></DD
+><DT
+><A
+HREF="x1113.html"
+><CODE
+CLASS="CLASSNAME"
+>AlreadyRegisteredException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an attempt is made to register a
+servant, servant locator, facet, object factory, plug-in, object
+adapter, object, or user exception factory more than once for the
+same ID.</P
+></DD
+><DT
+><A
+HREF="x1150.html"
+><CODE
+CLASS="CLASSNAME"
+>BadMagicException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x5520.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+>,
+indicating that a message did not start with the expected
+magic number ('I', 'c', 'e', 'P').</P
+></DD
+><DT
+><A
+HREF="x1179.html"
+><CODE
+CLASS="CLASSNAME"
+>CloneNotImplementedException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if <TT
+CLASS="LITERAL"
+>ice_clone</TT
+> is called on
+a class that is derived from an abstract Slice class (that is,
+a class containing operations), and the derived class does not
+provide an implementation of the <TT
+CLASS="LITERAL"
+>ice_clone</TT
+> operation (C++ only).</P
+></DD
+><DT
+><A
+HREF="x1189.html"
+><CODE
+CLASS="CLASSNAME"
+>CloseConnectionException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x5520.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+>,
+indicating that the connection has been gracefully shut down by the
+server.</P
+></DD
+><DT
+><A
+HREF="x1201.html"
+><CODE
+CLASS="CLASSNAME"
+>CloseTimeoutException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x6181.html"
+><CODE
+CLASS="CLASSNAME"
+>TimeoutException</CODE
+></A
+> for
+connection closure timeout conditions.</P
+></DD
+><DT
+><A
+HREF="x1213.html"
+><CODE
+CLASS="CLASSNAME"
+>CollocationOptimizationException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if a feature is requested that is not
+supported with collocation optimization.</P
+></DD
+><DT
+><A
+HREF="x1994.html"
+><CODE
+CLASS="CLASSNAME"
+>CommunicatorDestroyedException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if the <A
+HREF="x1221.html"
+><CODE
+CLASS="CLASSNAME"
+>Communicator</CODE
+></A
+> has been destroyed.</P
+></DD
+><DT
+><A
+HREF="x2011.html"
+><CODE
+CLASS="CLASSNAME"
+>CompressionException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x5520.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+> that is
+raised if there is a problem with compressing or uncompressing
+data.</P
+></DD
+><DT
+><A
+HREF="x2023.html"
+><CODE
+CLASS="CLASSNAME"
+>ConnectFailedException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x6027.html"
+><CODE
+CLASS="CLASSNAME"
+>SocketException</CODE
+></A
+> for
+connection failures.</P
+></DD
+><DT
+><A
+HREF="x2042.html"
+><CODE
+CLASS="CLASSNAME"
+>ConnectTimeoutException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x6181.html"
+><CODE
+CLASS="CLASSNAME"
+>TimeoutException</CODE
+></A
+> for
+connection establishment timeout conditions.</P
+></DD
+><DT
+><A
+HREF="x2248.html"
+><CODE
+CLASS="CLASSNAME"
+>ConnectionLostException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x6027.html"
+><CODE
+CLASS="CLASSNAME"
+>SocketException</CODE
+></A
+>, indicating
+a lost connection.</P
+></DD
+><DT
+><A
+HREF="x2260.html"
+><CODE
+CLASS="CLASSNAME"
+>ConnectionNotValidatedException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x5520.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+>, that is
+raised if a message is received over a connection that is not yet
+validated.</P
+></DD
+><DT
+><A
+HREF="x2272.html"
+><CODE
+CLASS="CLASSNAME"
+>ConnectionRefusedException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x2023.html"
+><CODE
+CLASS="CLASSNAME"
+>ConnectFailedException</CODE
+></A
+> for
+connection failures, where the server host actively refuses a
+connection.</P
+></DD
+><DT
+><A
+HREF="x2284.html"
+><CODE
+CLASS="CLASSNAME"
+>ConnectionTimeoutException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x6181.html"
+><CODE
+CLASS="CLASSNAME"
+>TimeoutException</CODE
+></A
+>, and
+indicates that a connection has been shut down because it has been
+idle for some time.</P
+></DD
+><DT
+><A
+HREF="x2433.html"
+><CODE
+CLASS="CLASSNAME"
+>DNSException</CODE
+></A
+></DT
+><DD
+><P
+>This exception indicates a DNS problem.</P
+></DD
+><DT
+><A
+HREF="x2474.html"
+><CODE
+CLASS="CLASSNAME"
+>DatagramLimitException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x5520.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+> that is
+raised if a datagram exceeds the configured send or receive buffer
+size, or exceeds the maximum payload size of a UDP packet (65507 bytes).</P
+></DD
+><DT
+><A
+HREF="x2486.html"
+><CODE
+CLASS="CLASSNAME"
+>EncapsulationException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x3382.html"
+><CODE
+CLASS="CLASSNAME"
+>MarshalException</CODE
+></A
+>,
+indicating a malformed data encapsulation.</P
+></DD
+><DT
+><A
+HREF="x2532.html"
+><CODE
+CLASS="CLASSNAME"
+>EndpointParseException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if there was an error while parsing an
+endpoint.</P
+></DD
+><DT
+><A
+HREF="x2599.html"
+><CODE
+CLASS="CLASSNAME"
+>FacetNotExistException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if no facet with the given name exists,
+but at least one facet with the given identity exists.</P
+></DD
+><DT
+><A
+HREF="x2609.html"
+><CODE
+CLASS="CLASSNAME"
+>FeatureNotSupportedException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an unsupported feature is used.</P
+></DD
+><DT
+><A
+HREF="x2633.html"
+><CODE
+CLASS="CLASSNAME"
+>FileException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x6142.html"
+><CODE
+CLASS="CLASSNAME"
+>SyscallException</CODE
+></A
+> for file
+errors.</P
+></DD
+><DT
+><A
+HREF="x2661.html"
+><CODE
+CLASS="CLASSNAME"
+>ForcedCloseConnectionException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised by an operation call if the application
+forcefully closes the connection used by this call with
+<A
+HREF="x2054.html#ICE.CONNECTION.CLOSE"
+><TT
+CLASS="FUNCTION"
+>Connection::close</TT
+></A
+>.</P
+></DD
+><DT
+><A
+HREF="x2876.html"
+><CODE
+CLASS="CLASSNAME"
+>IdentityParseException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if there was an error while parsing a
+stringified identity.</P
+></DD
+><DT
+><A
+HREF="x2900.html"
+><CODE
+CLASS="CLASSNAME"
+>IllegalIdentityException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an illegal identity is encountered.</P
+></DD
+><DT
+><A
+HREF="x2925.html"
+><CODE
+CLASS="CLASSNAME"
+>IllegalIndirectionException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x3382.html"
+><CODE
+CLASS="CLASSNAME"
+>MarshalException</CODE
+></A
+>,
+indicating an illegal indirection during unmarshaling.</P
+></DD
+><DT
+><A
+HREF="x2937.html"
+><CODE
+CLASS="CLASSNAME"
+>IllegalMessageSizeException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x5520.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+>,
+indicating that the message size is illegal, i.e., it is
+less than the minimum required size.</P
+></DD
+><DT
+><A
+HREF="x2949.html"
+><CODE
+CLASS="CLASSNAME"
+>InitializationException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised when a failure occurs during initialization.</P
+></DD
+><DT
+><A
+HREF="x2973.html"
+><CODE
+CLASS="CLASSNAME"
+>InvalidReplicaGroupIdException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if the replica group provided by the
+server is invalid.</P
+></DD
+><DT
+><A
+HREF="x3382.html"
+><CODE
+CLASS="CLASSNAME"
+>MarshalException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x5520.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+> that is
+raised upon an error during marshaling or unmarshaling data.</P
+></DD
+><DT
+><A
+HREF="x3422.html"
+><CODE
+CLASS="CLASSNAME"
+>MemoryLimitException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x3382.html"
+><CODE
+CLASS="CLASSNAME"
+>MarshalException</CODE
+></A
+> that is
+raised if the system-specific memory limit is exceeded during
+marshaling or unmarshaling.</P
+></DD
+><DT
+><A
+HREF="x3434.html"
+><CODE
+CLASS="CLASSNAME"
+>NegativeSizeException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x3382.html"
+><CODE
+CLASS="CLASSNAME"
+>MarshalException</CODE
+></A
+> that is
+raised if a negative size (e.g., a negative sequence size) is
+received.</P
+></DD
+><DT
+><A
+HREF="x3446.html"
+><CODE
+CLASS="CLASSNAME"
+>NoEndpointException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if no suitable endpoint is available.</P
+></DD
+><DT
+><A
+HREF="x3470.html"
+><CODE
+CLASS="CLASSNAME"
+>NoObjectFactoryException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x3382.html"
+><CODE
+CLASS="CLASSNAME"
+>MarshalException</CODE
+></A
+> that is
+raised if no suitable object factory was found during object
+unmarshaling.</P
+></DD
+><DT
+><A
+HREF="x3511.html"
+><CODE
+CLASS="CLASSNAME"
+>NotRegisteredException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an attempt is made to remove a servant,
+facet, object factory, plug-in, object adapter, object, or user
+exception factory that is not currently registered.</P
+></DD
+><DT
+><A
+HREF="x4631.html"
+><CODE
+CLASS="CLASSNAME"
+>ObjectAdapterDeactivatedException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an attempt is made to use a deactivated
+<A
+HREF="x3548.html"
+><CODE
+CLASS="CLASSNAME"
+>ObjectAdapter</CODE
+></A
+>.</P
+></DD
+><DT
+><A
+HREF="x4667.html"
+><CODE
+CLASS="CLASSNAME"
+>ObjectAdapterIdInUseException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an <A
+HREF="x3548.html"
+><CODE
+CLASS="CLASSNAME"
+>ObjectAdapter</CODE
+></A
+> cannot be activated
+because the <A
+HREF="x2981.html"
+><CODE
+CLASS="CLASSNAME"
+>Locator</CODE
+></A
+> detected another active <A
+HREF="x3548.html"
+><CODE
+CLASS="CLASSNAME"
+>ObjectAdapter</CODE
+></A
+> with
+the same adapter id.</P
+></DD
+><DT
+><A
+HREF="x4781.html"
+><CODE
+CLASS="CLASSNAME"
+>ObjectNotExistException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an object does not exist on the server,
+that is, if no facets with the given identity exist.</P
+></DD
+><DT
+><A
+HREF="x4791.html"
+><CODE
+CLASS="CLASSNAME"
+>ObjectNotFoundException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an object cannot be found.</P
+></DD
+><DT
+><A
+HREF="x4872.html"
+><CODE
+CLASS="CLASSNAME"
+>OperationNotExistException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an operation for a given object does
+not exist on the server.</P
+></DD
+><DT
+><A
+HREF="x4931.html"
+><CODE
+CLASS="CLASSNAME"
+>PluginInitializationException</CODE
+></A
+></DT
+><DD
+><P
+>This exception indicates that a failure occurred while initializing
+a plug-in.</P
+></DD
+><DT
+><A
+HREF="x5520.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+></DT
+><DD
+><P
+>A generic exception base for all kinds of protocol error
+conditions.</P
+></DD
+><DT
+><A
+HREF="x5587.html"
+><CODE
+CLASS="CLASSNAME"
+>ProxyParseException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if there was an error while parsing a
+stringified proxy.</P
+></DD
+><DT
+><A
+HREF="x5611.html"
+><CODE
+CLASS="CLASSNAME"
+>ProxyUnmarshalException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x3382.html"
+><CODE
+CLASS="CLASSNAME"
+>MarshalException</CODE
+></A
+> that is
+raised if inconsistent data is received while unmarshaling a proxy.</P
+></DD
+><DT
+><A
+HREF="x5623.html"
+><CODE
+CLASS="CLASSNAME"
+>RequestFailedException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if a request failed.</P
+></DD
+><DT
+><A
+HREF="x5802.html"
+><CODE
+CLASS="CLASSNAME"
+>SecurityException</CODE
+></A
+></DT
+><DD
+><P
+>This exception indicates a failure in a security subsystem,
+such as the IceSSL plugin.</P
+></DD
+><DT
+><A
+HREF="x6019.html"
+><CODE
+CLASS="CLASSNAME"
+>ServerNotFoundException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if a server cannot be found.</P
+></DD
+><DT
+><A
+HREF="x6027.html"
+><CODE
+CLASS="CLASSNAME"
+>SocketException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x6142.html"
+><CODE
+CLASS="CLASSNAME"
+>SyscallException</CODE
+></A
+> for socket
+errors.</P
+></DD
+><DT
+><A
+HREF="x6130.html"
+><CODE
+CLASS="CLASSNAME"
+>StringConversionException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x3382.html"
+><CODE
+CLASS="CLASSNAME"
+>MarshalException</CODE
+></A
+> that is
+raised when a string conversion to or from UTF-8 fails during 
+marshaling or unmarshaling.</P
+></DD
+><DT
+><A
+HREF="x6142.html"
+><CODE
+CLASS="CLASSNAME"
+>SyscallException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if a system error occurred in the server
+or client process.</P
+></DD
+><DT
+><A
+HREF="x6181.html"
+><CODE
+CLASS="CLASSNAME"
+>TimeoutException</CODE
+></A
+></DT
+><DD
+><P
+>This exception indicates a timeout condition.</P
+></DD
+><DT
+><A
+HREF="x6202.html"
+><CODE
+CLASS="CLASSNAME"
+>TwowayOnlyException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an attempt is made to invoke an
+operation with <TT
+CLASS="LITERAL"
+>ice_oneway</TT
+>, <TT
+CLASS="LITERAL"
+>ice_batchOneway</TT
+>, <TT
+CLASS="LITERAL"
+>ice_datagram</TT
+>,
+or <TT
+CLASS="LITERAL"
+>ice_batchDatagram</TT
+> and the operation has a return value,
+out parameters, or an exception specification.</P
+></DD
+><DT
+><A
+HREF="x6230.html"
+><CODE
+CLASS="CLASSNAME"
+>UnknownException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an operation call on a server raises an
+unknown exception.</P
+></DD
+><DT
+><A
+HREF="x6266.html"
+><CODE
+CLASS="CLASSNAME"
+>UnknownLocalException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an operation call on a server raises a
+local exception.</P
+></DD
+><DT
+><A
+HREF="x6283.html"
+><CODE
+CLASS="CLASSNAME"
+>UnknownMessageException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x5520.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+>,
+indicating that an unknown protocol message has been received.</P
+></DD
+><DT
+><A
+HREF="x6295.html"
+><CODE
+CLASS="CLASSNAME"
+>UnknownReplyStatusException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x5520.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+>,
+indicating that an unknown reply status has been received.</P
+></DD
+><DT
+><A
+HREF="x6307.html"
+><CODE
+CLASS="CLASSNAME"
+>UnknownRequestIdException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x5520.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+>,
+indicating that a response for an unknown request id has been
+received.</P
+></DD
+><DT
+><A
+HREF="x6319.html"
+><CODE
+CLASS="CLASSNAME"
+>UnknownUserException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if an operation call on a server raises a
+user exception that is not declared in the exception's
+<TT
+CLASS="LITERAL"
+>throws</TT
+> clause.</P
+></DD
+><DT
+><A
+HREF="x6334.html"
+><CODE
+CLASS="CLASSNAME"
+>UnmarshalOutOfBoundsException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x3382.html"
+><CODE
+CLASS="CLASSNAME"
+>MarshalException</CODE
+></A
+> that is
+raised if an out-of-bounds condition occurs during unmarshaling.</P
+></DD
+><DT
+><A
+HREF="x6346.html"
+><CODE
+CLASS="CLASSNAME"
+>UnsupportedEncodingException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x5520.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+>,
+indicating that an unsupported data encoding version has been
+encountered.</P
+></DD
+><DT
+><A
+HREF="x6413.html"
+><CODE
+CLASS="CLASSNAME"
+>UnsupportedProtocolException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is a specialization of <A
+HREF="x5520.html"
+><CODE
+CLASS="CLASSNAME"
+>ProtocolException</CODE
+></A
+>,
+indicating that an unsupported protocol version has been
+encountered.</P
+></DD
+><DT
+><A
+HREF="x6480.html"
+><CODE
+CLASS="CLASSNAME"
+>VersionMismatchException</CODE
+></A
+></DT
+><DD
+><P
+>This exception is raised if the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> library version does not match
+the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> header files version.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN639"
+>Struct Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x2296.html"
+><CODE
+CLASS="STRUCTNAME"
+>Current</CODE
+></A
+></DT
+><DD
+><P
+>Information about the current method invocation for servers.</P
+></DD
+><DT
+><A
+HREF="x2680.html"
+><CODE
+CLASS="STRUCTNAME"
+>Identity</CODE
+></A
+></DT
+><DD
+><P
+>The identity of an <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN655"
+>Sequence Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x70.html#ICE.BOOLSEQ"
+><SPAN
+CLASS="TYPE"
+>BoolSeq</SPAN
+></A
+></DT
+><DD
+><P
+>A sequence of bools.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.BYTESEQ"
+><SPAN
+CLASS="TYPE"
+>ByteSeq</SPAN
+></A
+></DT
+><DD
+><P
+>A sequence of bytes.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.DOUBLESEQ"
+><SPAN
+CLASS="TYPE"
+>DoubleSeq</SPAN
+></A
+></DT
+><DD
+><P
+>A sequence of doubles.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.ENDPOINTSEQ"
+><SPAN
+CLASS="TYPE"
+>EndpointSeq</SPAN
+></A
+></DT
+><DD
+><P
+></P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.FLOATSEQ"
+><SPAN
+CLASS="TYPE"
+>FloatSeq</SPAN
+></A
+></DT
+><DD
+><P
+>A sequence of floats.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.IDENTITYSEQ"
+><SPAN
+CLASS="TYPE"
+>IdentitySeq</SPAN
+></A
+></DT
+><DD
+><P
+>A sequence of identities.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.INTSEQ"
+><SPAN
+CLASS="TYPE"
+>IntSeq</SPAN
+></A
+></DT
+><DD
+><P
+>A sequence of ints.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.LONGSEQ"
+><SPAN
+CLASS="TYPE"
+>LongSeq</SPAN
+></A
+></DT
+><DD
+><P
+>A sequence of longs.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.OBJECTPROXYSEQ"
+><SPAN
+CLASS="TYPE"
+>ObjectProxySeq</SPAN
+></A
+></DT
+><DD
+><P
+>A sequence of object proxies.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.OBJECTSEQ"
+><SPAN
+CLASS="TYPE"
+>ObjectSeq</SPAN
+></A
+></DT
+><DD
+><P
+>A sequence of objects.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.SHORTSEQ"
+><SPAN
+CLASS="TYPE"
+>ShortSeq</SPAN
+></A
+></DT
+><DD
+><P
+>A sequence of shorts.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.STRINGSEQ"
+><SPAN
+CLASS="TYPE"
+>StringSeq</SPAN
+></A
+></DT
+><DD
+><P
+>A sequence of strings.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN730"
+>Dictionary Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x70.html#ICE.CONTEXT"
+><SPAN
+CLASS="TYPE"
+>Context</SPAN
+></A
+></DT
+><DD
+><P
+>A request context.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.FACETMAP"
+><SPAN
+CLASS="TYPE"
+>FacetMap</SPAN
+></A
+></DT
+><DD
+><P
+>A mapping from facet name to servant.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.OBJECTDICT"
+><SPAN
+CLASS="TYPE"
+>ObjectDict</SPAN
+></A
+></DT
+><DD
+><P
+>A mapping between identities and <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> objects.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.PROPERTYDICT"
+><SPAN
+CLASS="TYPE"
+>PropertyDict</SPAN
+></A
+></DT
+><DD
+><P
+>A simple collection of properties, represented as a dictionary of
+key/value pairs.</P
+></DD
+><DT
+><A
+HREF="x70.html#ICE.SLICECHECKSUMDICT"
+><SPAN
+CLASS="TYPE"
+>SliceChecksumDict</SPAN
+></A
+></DT
+><DD
+><P
+></P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN764"
+>Enum Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x2556.html"
+><SPAN
+CLASS="TYPE"
+>EndpointSelectionType</SPAN
+></A
+></DT
+><DD
+><P
+>Determines the order in which the Ice run time uses the endpoints
+in a proxy when establishing a connection.</P
+></DD
+><DT
+><A
+HREF="x4799.html"
+><SPAN
+CLASS="TYPE"
+>OperationMode</SPAN
+></A
+></DT
+><DD
+><P
+>The <A
+HREF="x4799.html"
+><SPAN
+CLASS="TYPE"
+>OperationMode</SPAN
+></A
+> determines the skeleton signature (for C++), as
+well as the retry behavior of the Ice run time for an operation
+invocation in case of a (potentially) recoverable error.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.BOOLSEQ"
+><TT
+CLASS="LITERAL"
+>BoolSeq</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>sequence&#60;<SPAN
+CLASS="TYPE"
+>bool</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>BoolSeq</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A sequence of bools.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.BYTESEQ"
+><TT
+CLASS="LITERAL"
+>ByteSeq</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>sequence&#60;<SPAN
+CLASS="TYPE"
+>byte</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>ByteSeq</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A sequence of bytes.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN795"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="x1150.html#ICE.BADMAGICEXCEPTION.BADMAGIC"
+><SPAN
+CLASS="TYPE"
+>BadMagicException::badMagic</SPAN
+></A
+>, <A
+HREF="x16789.html#ICEPATCH2.BYTESEQSEQ"
+><SPAN
+CLASS="TYPE"
+>::IcePatch2::ByteSeqSeq</SPAN
+></A
+>, <A
+HREF="x16938.html#ICEPATCH2.FILEINFO.CHECKSUM"
+><SPAN
+CLASS="TYPE"
+>::IcePatch2::FileInfo::checksum</SPAN
+></A
+>, <A
+HREF="x17009.html#ICEPATCH2.FILESERVER.GETCHECKSUM"
+><TT
+CLASS="FUNCTION"
+>::IcePatch2::FileServer::getChecksum</TT
+></A
+>, <A
+HREF="x17009.html#ICEPATCH2.FILESERVER.GETFILECOMPRESSED"
+><TT
+CLASS="FUNCTION"
+>::IcePatch2::FileServer::getFileCompressed</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.DOUBLESEQ"
+><TT
+CLASS="LITERAL"
+>DoubleSeq</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>sequence&#60;<SPAN
+CLASS="TYPE"
+>double</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>DoubleSeq</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A sequence of doubles.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.ENDPOINTSEQ"
+><TT
+CLASS="LITERAL"
+>EndpointSeq</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local sequence&#60;<A
+HREF="x2498.html"
+><CODE
+CLASS="CLASSNAME"
+>Endpoint</CODE
+></A
+>&#62; <SPAN
+CLASS="TYPE"
+>EndpointSeq</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.FLOATSEQ"
+><TT
+CLASS="LITERAL"
+>FloatSeq</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>sequence&#60;<SPAN
+CLASS="TYPE"
+>float</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>FloatSeq</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A sequence of floats.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.IDENTITYSEQ"
+><TT
+CLASS="LITERAL"
+>IdentitySeq</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>sequence&#60;<A
+HREF="x2680.html"
+><CODE
+CLASS="STRUCTNAME"
+>Identity</CODE
+></A
+>&#62; <SPAN
+CLASS="TYPE"
+>IdentitySeq</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A sequence of identities.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN844"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="x8406.html#GLACIER2.IDENTITYSET.ADD"
+><TT
+CLASS="FUNCTION"
+>::Glacier2::IdentitySet::add</TT
+></A
+>, <A
+HREF="x8406.html#GLACIER2.IDENTITYSET.GET"
+><TT
+CLASS="FUNCTION"
+>::Glacier2::IdentitySet::get</TT
+></A
+>, <A
+HREF="x8406.html#GLACIER2.IDENTITYSET.REMOVE"
+><TT
+CLASS="FUNCTION"
+>::Glacier2::IdentitySet::remove</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.INTSEQ"
+><TT
+CLASS="LITERAL"
+>IntSeq</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>sequence&#60;<SPAN
+CLASS="TYPE"
+>int</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>IntSeq</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A sequence of ints.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.LONGSEQ"
+><TT
+CLASS="LITERAL"
+>LongSeq</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>sequence&#60;<SPAN
+CLASS="TYPE"
+>long</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>LongSeq</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A sequence of longs.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTPROXYSEQ"
+><TT
+CLASS="LITERAL"
+>ObjectProxySeq</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>sequence&#60;<SPAN
+CLASS="TYPE"
+>Object*</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>ObjectProxySeq</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A sequence of object proxies.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN878"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="x5691.html#ICE.ROUTER.ADDPROXIES"
+><TT
+CLASS="FUNCTION"
+>Router::addProxies</TT
+></A
+>, <A
+HREF="x5691.html#ICE.ROUTER.ADDPROXIES"
+><TT
+CLASS="FUNCTION"
+>Router::addProxies</TT
+></A
+>, <A
+HREF="x14325.html#ICEGRID.QUERY.FINDALLOBJECTSBYTYPE"
+><TT
+CLASS="FUNCTION"
+>::IceGrid::Query::findAllObjectsByType</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTSEQ"
+><TT
+CLASS="LITERAL"
+>ObjectSeq</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>sequence&#60;<SPAN
+CLASS="TYPE"
+>Object</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>ObjectSeq</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A sequence of objects.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.SHORTSEQ"
+><TT
+CLASS="LITERAL"
+>ShortSeq</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>sequence&#60;<SPAN
+CLASS="TYPE"
+>short</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>ShortSeq</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A sequence of shorts.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.STRINGSEQ"
+><TT
+CLASS="LITERAL"
+>StringSeq</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>sequence&#60;<SPAN
+CLASS="TYPE"
+>string</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>StringSeq</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A sequence of strings.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN912"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="x8780.html#GLACIER2.SSLINFO.CERTS"
+><SPAN
+CLASS="TYPE"
+>::Glacier2::SSLInfo::certs</SPAN
+></A
+>, <A
+HREF="x9230.html#GLACIER2.STRINGSET.ADD"
+><TT
+CLASS="FUNCTION"
+>::Glacier2::StringSet::add</TT
+></A
+>, <A
+HREF="x9230.html#GLACIER2.STRINGSET.GET"
+><TT
+CLASS="FUNCTION"
+>::Glacier2::StringSet::get</TT
+></A
+>, <A
+HREF="x9230.html#GLACIER2.STRINGSET.REMOVE"
+><TT
+CLASS="FUNCTION"
+>::Glacier2::StringSet::remove</TT
+></A
+>, <A
+HREF="x5150.html#ICE.PROPERTIES.GETCOMMANDLINEOPTIONS"
+><TT
+CLASS="FUNCTION"
+>Properties::getCommandLineOptions</TT
+></A
+>, <A
+HREF="x5150.html#ICE.PROPERTIES.PARSECOMMANDLINEOPTIONS"
+><TT
+CLASS="FUNCTION"
+>Properties::parseCommandLineOptions</TT
+></A
+>, <A
+HREF="x5150.html#ICE.PROPERTIES.PARSECOMMANDLINEOPTIONS"
+><TT
+CLASS="FUNCTION"
+>Properties::parseCommandLineOptions</TT
+></A
+>, <A
+HREF="x5150.html#ICE.PROPERTIES.PARSEICECOMMANDLINEOPTIONS"
+><TT
+CLASS="FUNCTION"
+>Properties::parseIceCommandLineOptions</TT
+></A
+>, <A
+HREF="x5150.html#ICE.PROPERTIES.PARSEICECOMMANDLINEOPTIONS"
+><TT
+CLASS="FUNCTION"
+>Properties::parseIceCommandLineOptions</TT
+></A
+>, <A
+HREF="x8090.html#ICEBOX.SERVICE.START"
+><TT
+CLASS="FUNCTION"
+>::IceBox::Service::start</TT
+></A
+>, <A
+HREF="x10538.html#ICEGRID.ADMIN.GETALLADAPTERIDS"
+><TT
+CLASS="FUNCTION"
+>::IceGrid::Admin::getAllAdapterIds</TT
+></A
+>, <A
+HREF="x10538.html#ICEGRID.ADMIN.GETALLAPPLICATIONNAMES"
+><TT
+CLASS="FUNCTION"
+>::IceGrid::Admin::getAllApplicationNames</TT
+></A
+>, <A
+HREF="x10538.html#ICEGRID.ADMIN.GETALLNODENAMES"
+><TT
+CLASS="FUNCTION"
+>::IceGrid::Admin::getAllNodeNames</TT
+></A
+>, <A
+HREF="x10538.html#ICEGRID.ADMIN.GETALLSERVERIDS"
+><TT
+CLASS="FUNCTION"
+>::IceGrid::Admin::getAllServerIds</TT
+></A
+>, <A
+HREF="x12549.html#GRID.APPLICATIONUPDATEDESCRIPTOR.REMOVENODES"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::ApplicationUpdateDescriptor::removeNodes</SPAN
+></A
+>, <A
+HREF="x12549.html#PLICATIONUPDATEDESCRIPTOR.REMOVEPROPERTYSETS"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::ApplicationUpdateDescriptor::removePropertySets</SPAN
+></A
+>, <A
+HREF="x12549.html#LICATIONUPDATEDESCRIPTOR.REMOVEREPLICAGROUPS"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::ApplicationUpdateDescriptor::removeReplicaGroups</SPAN
+></A
+>, <A
+HREF="x12549.html#CATIONUPDATEDESCRIPTOR.REMOVESERVERTEMPLATES"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::ApplicationUpdateDescriptor::removeServerTemplates</SPAN
+></A
+>, <A
+HREF="x12549.html#ATIONUPDATEDESCRIPTOR.REMOVESERVICETEMPLATES"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::ApplicationUpdateDescriptor::removeServiceTemplates</SPAN
+></A
+>, <A
+HREF="x12549.html#APPLICATIONUPDATEDESCRIPTOR.REMOVEVARIABLES"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::ApplicationUpdateDescriptor::removeVariables</SPAN
+></A
+>, <A
+HREF="x13051.html#ICEGRID.DISTRIBUTIONDESCRIPTOR.DIRECTORIES"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::DistributionDescriptor::directories</SPAN
+></A
+>, <A
+HREF="x13841.html#GRID.NODEUPDATEDESCRIPTOR.REMOVEPROPERTYSETS"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::NodeUpdateDescriptor::removePropertySets</SPAN
+></A
+>, <A
+HREF="x13841.html#ICEGRID.NODEUPDATEDESCRIPTOR.REMOVESERVERS"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::NodeUpdateDescriptor::removeServers</SPAN
+></A
+>, <A
+HREF="x13841.html#ICEGRID.NODEUPDATEDESCRIPTOR.REMOVEVARIABLES"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::NodeUpdateDescriptor::removeVariables</SPAN
+></A
+>, <A
+HREF="x14171.html#ICEGRID.PATCHEXCEPTION.REASONS"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::PatchException::reasons</SPAN
+></A
+>, <A
+HREF="x14270.html#ICEGRID.PROPERTYSETDESCRIPTOR.REFERENCES"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::PropertySetDescriptor::references</SPAN
+></A
+>, <A
+HREF="x15055.html#ICEGRID.SERVERDESCRIPTOR.ENVS"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::ServerDescriptor::envs</SPAN
+></A
+>, <A
+HREF="x15055.html#ICEGRID.SERVERDESCRIPTOR.OPTIONS"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::ServerDescriptor::options</SPAN
+></A
+>, <A
+HREF="x15992.html#ICEGRID.TEMPLATEDESCRIPTOR.PARAMETERS"
+><SPAN
+CLASS="TYPE"
+>::IceGrid::TemplateDescriptor::parameters</SPAN
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.CONTEXT"
+><TT
+CLASS="LITERAL"
+>Context</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>dictionary&#60;<SPAN
+CLASS="TYPE"
+>string</SPAN
+>, <SPAN
+CLASS="TYPE"
+>string</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>Context</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A request context. <A
+HREF="x70.html#ICE.CONTEXT"
+><SPAN
+CLASS="TYPE"
+>Context</SPAN
+></A
+> is used to transmit metadata about a
+request from the server to the client, such as Quality-of-Service
+(QoS) parameters. Each operation on the client has a <A
+HREF="x70.html#ICE.CONTEXT"
+><SPAN
+CLASS="TYPE"
+>Context</SPAN
+></A
+> as
+its implicit final parameter.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1015"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="x1221.html#ICE.COMMUNICATOR.GETDEFAULTCONTEXT"
+><TT
+CLASS="FUNCTION"
+>Communicator::getDefaultContext</TT
+></A
+>, <A
+HREF="x2296.html#ICE.CURRENT.CTX"
+><SPAN
+CLASS="TYPE"
+>Current::ctx</SPAN
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.FACETMAP"
+><TT
+CLASS="LITERAL"
+>FacetMap</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local dictionary&#60;<SPAN
+CLASS="TYPE"
+>string</SPAN
+>, <SPAN
+CLASS="TYPE"
+>Object</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>FacetMap</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A mapping from facet name to servant.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1033"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="x3548.html#ICE.OBJECTADAPTER.FINDALLFACETS"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::findAllFacets</TT
+></A
+>, <A
+HREF="x3548.html#ICE.OBJECTADAPTER.REMOVEALLFACETS"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::removeAllFacets</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.OBJECTDICT"
+><TT
+CLASS="LITERAL"
+>ObjectDict</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local dictionary&#60;<A
+HREF="x2680.html"
+><CODE
+CLASS="STRUCTNAME"
+>Identity</CODE
+></A
+>, <SPAN
+CLASS="TYPE"
+>Object</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>ObjectDict</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A mapping between identities and <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> objects.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.PROPERTYDICT"
+><TT
+CLASS="LITERAL"
+>PropertyDict</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local dictionary&#60;<SPAN
+CLASS="TYPE"
+>string</SPAN
+>, <SPAN
+CLASS="TYPE"
+>string</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>PropertyDict</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>A simple collection of properties, represented as a dictionary of
+key/value pairs. Both key and value are <SPAN
+CLASS="TYPE"
+>string</SPAN
+>s.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1062"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="x5150.html#ICE.PROPERTIES.GETPROPERTIESFORPREFIX"
+><TT
+CLASS="FUNCTION"
+>Properties::getPropertiesForPrefix</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1069"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x5150.html#ICE.PROPERTIES.GETPROPERTIESFORPREFIX"
+><TT
+CLASS="FUNCTION"
+>Properties::getPropertiesForPrefix</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.SLICECHECKSUMDICT"
+><TT
+CLASS="LITERAL"
+>SliceChecksumDict</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>dictionary&#60;<SPAN
+CLASS="TYPE"
+>string</SPAN
+>, <SPAN
+CLASS="TYPE"
+>string</SPAN
+>&#62; <SPAN
+CLASS="TYPE"
+>SliceChecksumDict</SPAN
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1084"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="x8172.html#ICEBOX.SERVICEMANAGER.GETSLICECHECKSUMS"
+><TT
+CLASS="FUNCTION"
+>::IceBox::ServiceManager::getSliceChecksums</TT
+></A
+>, <A
+HREF="x10538.html#ICEGRID.ADMIN.GETSLICECHECKSUMS"
+><TT
+CLASS="FUNCTION"
+>::IceGrid::Admin::getSliceChecksums</TT
+></A
+>, <A
+HREF="x16659.html#ICESTORM.TOPICMANAGER.GETSLICECHECKSUMS"
+><TT
+CLASS="FUNCTION"
+>::IceStorm::TopicManager::getSliceChecksums</TT
+></A
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x1097.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Slice Documentation</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::AdapterAlreadyActiveException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

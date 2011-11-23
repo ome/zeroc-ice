@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -28,13 +28,13 @@ using namespace Ice;
 using namespace IceInternal;
 
 #ifdef __sun
-#    define INADDR_NONE (unsigned long)-1
+#    define INADDR_NONE (in_addr_t)0xffffffff
 #endif
 
 static IceUtil::StaticMutex inetMutex = ICE_STATIC_MUTEX_INITIALIZER;
 
 string
-inetAddrToString(const struct in_addr& in)
+IceInternal::inetAddrToString(const struct in_addr& in)
 {
     //
     // inet_ntoa uses static memory on some platforms so we protect
@@ -223,20 +223,6 @@ IceInternal::createSocket(bool udp)
     return fd;
 }
 
-static void
-closeSocketNoThrow(SOCKET fd)
-{
-#ifdef _WIN32
-    int error = WSAGetLastError();
-    closesocket(fd);
-    WSASetLastError(error);
-#else
-    int error = errno;
-    close(fd);
-    errno = error;
-#endif
-}
-
 void
 IceInternal::closeSocket(SOCKET fd)
 {
@@ -257,6 +243,20 @@ IceInternal::closeSocket(SOCKET fd)
 	ex.error = getSocketErrno();
 	throw ex;
     }
+    errno = error;
+#endif
+}
+
+void
+IceInternal::closeSocketNoThrow(SOCKET fd)
+{
+#ifdef _WIN32
+    int error = WSAGetLastError();
+    closesocket(fd);
+    WSASetLastError(error);
+#else
+    int error = errno;
+    close(fd);
     errno = error;
 #endif
 }
@@ -854,94 +854,6 @@ IceInternal::getAddress(const string& host, int port, struct sockaddr_in& addr)
     }
 }
 
-string
-IceInternal::getLocalHost(bool numeric)
-{
-    char host[1024 + 1];
-    if(gethostname(host, 1024) == SOCKET_ERROR)
-    {
-	SyscallException ex(__FILE__, __LINE__);
-	ex.error = getSystemErrno();
-	throw ex;
-    }
-    
-#ifdef _WIN32
-
-    //
-    // Windows XP has getaddrinfo(), but we don't want to require XP to run Ice.
-    //
-	
-    //
-    // gethostbyname() is thread safe on Windows, with a separate hostent per thread
-    //
-    struct hostent* entry;
-    int retry = 5;
-    do
-    {
-	entry = gethostbyname(host);
-    }
-    while(entry == 0 && WSAGetLastError() == WSATRY_AGAIN && --retry >= 0);
-    
-    if(entry == 0)
-    {
-	DNSException ex(__FILE__, __LINE__);
-	ex.error = WSAGetLastError();
-	ex.host = host;
-	throw ex;
-    }
-
-    if(numeric)
-    {
-	struct sockaddr_in addr;
-	memset(&addr, 0, sizeof(struct sockaddr_in));
-	memcpy(&addr.sin_addr, entry->h_addr, entry->h_length);
-	return inetAddrToString(addr.sin_addr);
-    }
-    else
-    {
-	return string(entry->h_name);
-    }
-
-#else
-    
-    struct addrinfo* info = 0;
-    int retry = 5;
-    
-    struct addrinfo hints = { 0 };
-    hints.ai_family = PF_INET;
-    
-    int rs = 0;
-    do
-    {
-	rs = getaddrinfo(host, 0, &hints, &info);    
-    }
-    while(info == 0 && rs == EAI_AGAIN && --retry >= 0);
-    
-    if(rs != 0)
-    {
-	DNSException ex(__FILE__, __LINE__);
-	ex.error = rs;
-	ex.host = host;
-	throw ex;
-    }
-    
-    string result;
-    if(numeric)
-    {
-	assert(info->ai_family == PF_INET);
-	struct sockaddr_in* sin = reinterpret_cast<sockaddr_in*>(info->ai_addr);
-	result = inetAddrToString(sin->sin_addr);
-    }
-    else
-    {
-	result = info->ai_canonname;
-    }
-    freeaddrinfo(info);
-    return result;
-
-#endif
-}
-
 bool
 IceInternal::compareAddress(const struct sockaddr_in& addr1, const struct sockaddr_in& addr2)
 {
@@ -1285,24 +1197,47 @@ IceInternal::fdToString(SOCKET fd)
 	return "<closed>";
     }
 
-    socklen_t localLen = static_cast<socklen_t>(sizeof(struct sockaddr_in));
     struct sockaddr_in localAddr;
-    if(getsockname(fd, reinterpret_cast<struct sockaddr*>(&localAddr), &localLen) == SOCKET_ERROR)
+    fdToLocalAddress(fd, localAddr);
+
+    struct sockaddr_in remoteAddr;
+    bool peerConnected = fdToRemoteAddress(fd, remoteAddr);
+
+    ostringstream s;
+    s << "local address = " << addrToString(localAddr);
+    if(peerConnected)
+    {
+	s << "\nremote address = " << addrToString(remoteAddr);
+    }
+    else
+    {
+	s << "\nremote address = <not connected>";
+    }
+    return s.str();
+}
+
+void
+IceInternal::fdToLocalAddress(SOCKET fd, struct sockaddr_in& addr)
+{
+    socklen_t len = static_cast<socklen_t>(sizeof(struct sockaddr_in));
+    if(getsockname(fd, reinterpret_cast<struct sockaddr*>(&addr), &len) == SOCKET_ERROR)
     {
 	closeSocketNoThrow(fd);
 	SocketException ex(__FILE__, __LINE__);
 	ex.error = getSocketErrno();
 	throw ex;
     }
-    
-    bool peerNotConnected = false;
-    socklen_t remoteLen = static_cast<socklen_t>(sizeof(struct sockaddr_in));
-    struct sockaddr_in remoteAddr;
-    if(getpeername(fd, reinterpret_cast<struct sockaddr*>(&remoteAddr), &remoteLen) == SOCKET_ERROR)
+}
+
+bool
+IceInternal::fdToRemoteAddress(SOCKET fd, struct sockaddr_in& addr)
+{
+    socklen_t len = static_cast<socklen_t>(sizeof(struct sockaddr_in));
+    if(getpeername(fd, reinterpret_cast<struct sockaddr*>(&addr), &len) == SOCKET_ERROR)
     {
 	if(notConnected())
 	{
-	    peerNotConnected = true;
+	    return false;
 	}
 	else
 	{
@@ -1313,17 +1248,7 @@ IceInternal::fdToString(SOCKET fd)
 	}
     }
 
-    ostringstream s;
-    s << "local address = " << addrToString(localAddr);
-    if(peerNotConnected)
-    {
-	s << "\nremote address = <not connected>";
-    }
-    else
-    {
-	s << "\nremote address = " << addrToString(remoteAddr);
-    }
-    return s.str();
+    return true;
 }
 
 string
@@ -1390,7 +1315,7 @@ IceInternal::getLocalHosts()
     //
     while(true)
     {
-        int bufsize = numaddrs * sizeof(struct ifreq);
+        int bufsize = numaddrs * static_cast<int>(sizeof(struct ifreq));
         ifc.ifc_len = bufsize;
         ifc.ifc_buf = (char*)malloc(bufsize);
     
@@ -1419,7 +1344,7 @@ IceInternal::getLocalHosts()
         free(ifc.ifc_buf);
     }
 
-    numaddrs = ifc.ifc_len / sizeof(struct ifreq);
+    numaddrs = ifc.ifc_len / static_cast<int>(sizeof(struct ifreq));
     struct ifreq* ifr = ifc.ifc_req;
     for(int i = 0; i < numaddrs; ++i)
     {

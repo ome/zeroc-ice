@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -573,16 +573,18 @@ class ObjectFactory : public Ice::ObjectFactory
 {
 public:
 
-    ObjectFactory(const DataFactoryPtr&, const Slice::UnitPtr&);
-
     virtual Ice::ObjectPtr create(const std::string&);
     virtual void destroy();
+
+    void activate(const DataFactoryPtr&, const Slice::UnitPtr&);
+    void deactivate();
 
 private:
 
     DataFactoryPtr _factory;
     Slice::UnitPtr _unit;
 };
+typedef IceUtil::Handle<ObjectFactory> ObjectFactoryPtr;
 
 class ClassNotFoundException
 {

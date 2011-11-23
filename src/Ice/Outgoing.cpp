@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,26 +13,35 @@
 #include <Ice/Reference.h>
 #include <Ice/Endpoint.h>
 #include <Ice/LocalException.h>
+#include <Ice/Protocol.h>
 
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
 
-IceInternal::NonRepeatable::NonRepeatable(const NonRepeatable& ex)
-{
-    _ex.reset(dynamic_cast<LocalException*>(ex.get()->ice_clone()));
-}
-
-IceInternal::NonRepeatable::NonRepeatable(const ::Ice::LocalException& ex)
+IceInternal::LocalExceptionWrapper::LocalExceptionWrapper(const LocalException& ex, bool r) :
+    _retry(r)
 {
     _ex.reset(dynamic_cast<LocalException*>(ex.ice_clone()));
 }
 
-const ::Ice::LocalException*
-IceInternal::NonRepeatable::get() const
+IceInternal::LocalExceptionWrapper::LocalExceptionWrapper(const LocalExceptionWrapper& ex) :
+    _retry(ex._retry)
+{
+    _ex.reset(dynamic_cast<LocalException*>(ex.get()->ice_clone()));
+}
+
+const LocalException*
+IceInternal::LocalExceptionWrapper::get() const
 {
     assert(_ex.get());
     return _ex.get();
+}
+
+bool
+IceInternal::LocalExceptionWrapper::retry() const
+{
+    return _retry;
 }
 
 IceInternal::Outgoing::Outgoing(ConnectionI* connection, Reference* ref, const string& operation,
@@ -50,7 +59,7 @@ IceInternal::Outgoing::Outgoing(ConnectionI* connection, Reference* ref, const s
 	case Reference::ModeOneway:
 	case Reference::ModeDatagram:
 	{
-	    _connection->prepareRequest(&_os);
+	    _os.writeBlob(requestHdr, sizeof(requestHdr));
 	    break;
 	}
 
@@ -71,16 +80,15 @@ IceInternal::Outgoing::Outgoing(ConnectionI* connection, Reference* ref, const s
 	//
 	if(_reference->getFacet().empty())
 	{
-	    _os.write(vector<string>());
+	    _os.write(static_cast<string*>(0), static_cast<string*>(0));
 	}
 	else
 	{
-	    vector<string> facetPath;
-	    facetPath.push_back(_reference->getFacet());
-	    _os.write(facetPath);
+	    string facet = _reference->getFacet();
+	    _os.write(&facet, &facet + 1);
 	}
 
-	_os.write(operation);
+	_os.write(operation, false);
 
 	_os.write(static_cast<Byte>(mode));
 
@@ -208,11 +216,12 @@ IceInternal::Outgoing::invoke()
 		}
 		
 		//
-		// Throw the exception wrapped in a NonRepeatable, to
-		// indicate that the request cannot be resent without
-		// potentially violating the "at-most-once" principle.
+		// Throw the exception wrapped in a
+		// LocalExceptionWrapper, to indicate that the request
+		// cannot be resent without potentially violating the
+		// "at-most-once" principle.
 		//
-		throw NonRepeatable(*_exception.get());
+		throw LocalExceptionWrapper(*_exception.get(), false);
 	    }
 	    
 	    if(_state == StateUserException)
@@ -276,7 +285,7 @@ IceInternal::Outgoing::abort(const LocalException& ex)
 	// only the batch request that caused the problem will be
 	// aborted, but all other requests in the batch as well.
 	//
-	throw NonRepeatable(ex);
+	throw LocalExceptionWrapper(ex, false);
     }
     
     ex.ice_throw();
@@ -349,7 +358,7 @@ IceInternal::Outgoing::finished(BasicStream& is)
 	    }
 
 	    string operation;
-	    _is.read(operation);
+	    _is.read(operation, false);
 	    
 	    RequestFailedException* ex;
 	    switch(static_cast<DispatchStatus>(status))
@@ -399,7 +408,7 @@ IceInternal::Outgoing::finished(BasicStream& is)
 	    // exception, you will have a memory leak.
 	    //
 	    string unknown;
-	    _is.read(unknown);
+	    _is.read(unknown, false);
 	    
 	    UnknownException* ex;
 	    switch(static_cast<DispatchStatus>(status))
