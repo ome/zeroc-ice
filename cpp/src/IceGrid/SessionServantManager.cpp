@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,10 +11,6 @@
 #include <Ice/LocalException.h>
 #include <Ice/ObjectAdapter.h>
 #include <IceGrid/SessionServantManager.h>
-
-#if defined(__BCPLUSPLUS__)
-#  include <iterator>
-#endif
 
 using namespace std;
 using namespace IceGrid;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -48,17 +48,17 @@ public class AllTests
         private bool _value;
     };
 
-    private  class AMICheckSetValue : AMI_Hold_set, Ice.AMISentCallback
+    private  class SetCB
     {
         public
-        AMICheckSetValue(Condition condition, int expected)
+        SetCB(Condition condition, int expected)
         {
             _condition = condition;
             _expected = expected;
         }
 
-        public override void
-        ice_response(int value)
+        public void
+        response(int value)
         {
             if(value != _expected)
             {
@@ -66,13 +66,13 @@ public class AllTests
             }
         }
 
-        public override void
-        ice_exception(Ice.Exception ex)
+        public void
+        exception(Ice.Exception ex)
         {
         }
 
         public void
-        ice_sent()
+        sent(bool sync)
         {
             lock(this)
             {
@@ -102,10 +102,10 @@ public class AllTests
     {
         Console.Out.Write("testing stringToProxy... ");
         Console.Out.Flush();
-        String @ref = "hold:default -p 12010 -t 30000";
+        String @ref = "hold:default -p 12010";
         Ice.ObjectPrx @base = communicator.stringToProxy(@ref);
         test(@base != null);
-        String refSerialized = "hold:default -p 12011 -t 30000";
+        String refSerialized = "hold:default -p 12011";
         Ice.ObjectPrx baseSerialized = communicator.stringToProxy(refSerialized);
         test(baseSerialized != null);
         Console.Out.WriteLine("ok");
@@ -148,21 +148,24 @@ public class AllTests
         {
             Condition cond = new Condition(true);
             int value = 0;
-            AMICheckSetValue cb = null;
+            SetCB cb = null;
             while(cond.value())
             {
-                cb = new AMICheckSetValue(cond, value);
-                if(hold.set_async(cb, ++value, rand.Next(5)))
-                {
-                    cb = null;
-                }
+                cb = new SetCB(cond, value);
+                hold.begin_set(++value, value < 500 ? rand.Next(5) : 0).
+                        whenCompleted(cb.response, cb.exception).whenSent(cb.sent);
                 if(value % 100 == 0)
                 {
-                    if(cb != null)
-                    {
-                        cb.waitForSent();
-                        cb = null;
-                    }
+                    cb.waitForSent();
+                    cb = null;
+                }
+
+                if(value > 100000)
+                {
+                    // Don't continue, it's possible that out-of-order dispatch doesn't occur
+                    // after 100000 iterations and we don't want the test to last for too long
+                    // when this occurs.
+                    break;
                 }
             }
             if(cb != null)
@@ -178,21 +181,16 @@ public class AllTests
         {
             Condition cond = new Condition(true);
             int value = 0;
-            AMICheckSetValue cb = null;
+            SetCB cb = null;
             while(value < 3000 && cond.value())
             {
-                cb = new AMICheckSetValue(cond, value);
-                if(holdSerialized.set_async(cb, ++value, 0))
-                {
-                    cb = null;
-                }
+                cb = new SetCB(cond, value);
+                holdSerialized.begin_set(++value, value < 500 ? rand.Next(5) : 0).
+                        whenCompleted(cb.response, cb.exception).whenSent(cb.sent);
                 if(value % 100 == 0)
                 {
-                    if(cb != null)
-                    {
-                        cb.waitForSent();
-                        cb = null;
-                    }
+                    cb.waitForSent();
+                    cb = null;
                 }
             }
             if(cb != null)
@@ -211,6 +209,26 @@ public class AllTests
                     holdSerializedOneway.putOnHold(1);
                 }
             }
+        }
+        Console.Out.WriteLine("ok");
+
+        Console.Out.Write("testing waitForHold... ");
+        Console.Out.Flush();
+        {
+            hold.waitForHold();
+            hold.waitForHold();
+            for(int i = 0; i < 1000; ++i)
+            {
+                holdOneway.ice_ping();
+                if((i % 20) == 0)
+                {
+                    hold.putOnHold(0);
+                }
+            }
+            hold.putOnHold(-1);
+            hold.ice_ping();
+            hold.putOnHold(-1);
+            hold.ice_ping();            
         }
         Console.Out.WriteLine("ok");
 

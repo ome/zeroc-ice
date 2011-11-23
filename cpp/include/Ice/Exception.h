@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,6 +23,7 @@ namespace Ex
 {
 
 ICE_API void throwUOE(const ::std::string&, const ::std::string&);
+ICE_API void throwMemoryLimitException(const char*, int, size_t, size_t);
 
 }
 
@@ -60,7 +61,6 @@ public:
 };
 
 typedef ::IceInternal::Handle<UserException> UserExceptionPtr;
-
 
 class ICE_API SystemException : public IceUtil::Exception
 {

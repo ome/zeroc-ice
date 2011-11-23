@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -10,7 +10,7 @@
 top_srcdir	= ..\..
 
 LIBNAME		= $(top_srcdir)\lib\icebox$(LIBSUFFIX).lib
-DLLNAME		= $(top_srcdir)\bin\icebox$(SOVERSION)$(LIBSUFFIX).dll
+DLLNAME		= $(top_srcdir)\bin\icebox$(COMPSUFFIX)$(SOVERSION)$(LIBSUFFIX).dll
 
 SERVER_D	= $(top_srcdir)\bin\iceboxd.exe
 SERVER_R	= $(top_srcdir)\bin\icebox.exe
@@ -48,20 +48,14 @@ SPDBFLAGS       = /pdb:$(SERVER:.exe=.pdb)
 APDBFLAGS       = /pdb:$(ADMIN:.exe=.pdb)
 !endif
 
-!if "$(BCPLUSPLUS)" == "yes"
-RES_FILE        = ,, IceBox.res
-SRES_FILE       = ,, IceBoxExe.res
-ARES_FILE       = ,, IceBoxAdmin.res
-!else
 RES_FILE        = IceBox.res
 SRES_FILE       = IceBoxExe.res
 ARES_FILE       = IceBoxAdmin.res
-!endif
 
 $(LIBNAME): $(DLLNAME)
 
 $(DLLNAME): $(OBJS) IceBox.res
-	$(LINK) $(LD_DLLFLAGS) $(PDBFLAGS) $(OBJS) $(PREOUT)$@ $(PRELIBS)$(LIBS) $(RES_FILE)
+	$(LINK) $(BASE):0x26000000 $(LD_DLLFLAGS) $(PDBFLAGS) $(OBJS) $(PREOUT)$@ $(PRELIBS)$(LIBS) $(RES_FILE)
 	move $(DLLNAME:.dll=.lib) $(LIBNAME)
 	@if exist $@.manifest echo ^ ^ ^ Embedding manifest using $(MT) && \
 	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#2 && del /q $@.manifest
@@ -86,26 +80,19 @@ clean::
 	-del /q IceBox.res IceBoxAdmin.res IceBoxExe.res
 
 install:: all
-	copy $(LIBNAME) $(install_libdir)
-	copy $(DLLNAME) $(install_bindir)
-	copy $(SERVER) $(install_bindir)
-	copy $(ADMIN) $(install_bindir)
+	copy $(LIBNAME) "$(install_libdir)"
+	copy $(DLLNAME) "$(install_bindir)"
+	copy $(SERVER) "$(install_bindir)"
+	copy $(ADMIN) "$(install_bindir)"
 
 
-!if "$(BCPLUSPLUS)" == "yes" && "$(OPTIMIZE)" != "yes"
-
-install:: all
-	copy $(DLLNAME:.dll=.tds) $(install_bindir)
-	copy $(SERVER:.exe=.tds) $(install_bindir)
-	copy $(ADMIN:.exe=.tds) $(install_bindir)
-
-!elseif "$(GENERATE_PDB)" == "yes"
+!if "$(GENERATE_PDB)" == "yes"
 
 install:: all
-	copy $(DLLNAME:.dll=.pdb) $(install_bindir)
-	copy $(SERVER:.exe=.pdb) $(install_bindir)
-	copy $(ADMIN:.exe=.pdb) $(install_bindir)
+	copy $(DLLNAME:.dll=.pdb) "$(install_bindir)"
+	copy $(SERVER:.exe=.pdb) "$(install_bindir)"
+	copy $(ADMIN:.exe=.pdb) "$(install_bindir)"
 
 !endif
 
-!include .depend
+!include .depend.mak

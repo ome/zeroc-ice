@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -18,16 +18,23 @@ SUBDIRS		= minimal \
 		  value \
 		  callback \
 		  nested \
-		  invoke \
 		  bidir \
 		  session \
 		  converter \
 		  async \
 		  multicast \
-		  nrvo
+		  nrvo \
+		  plugin \
+		  interleaved
 
-!if "$(BCPLUSPLUS)" != "yes" && "$(CPP_COMPILER)" != "VC80_EXPRESS" &&  "$(CPP_COMPILER)" != "VC90_EXPRESS"
-SUBDIRS		= $(SUBDIRS) MFC
+!if "$(CPP_COMPILER)" != "VC60"
+SUBDIRS		= $(SUBDIRS) \
+		  invoke
+!endif
+
+!if "$(BCPLUSPLUS)" != "yes" && "$(CPP_COMPILER)" != "VC90_EXPRESS"
+SUBDIRS		= $(SUBDIRS) \
+		  MFC
 !endif
 
 $(EVERYTHING)::

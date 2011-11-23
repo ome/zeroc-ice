@@ -1,13 +1,14 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-import Test.*;
+package test.Ice.serialize;
+import test.Ice.serialize.Test.*;
 import java.io.*;
 
 public final class InitialI extends _InitialDisp
@@ -23,8 +24,8 @@ public final class InitialI extends _InitialDisp
         _s.f = (float)5.0;
         _s.d = 6.0;
         _s.str = "7";
-        _s.e = Test.MyEnum.enum2;
-        _s.p = Test.InitialPrxHelper.uncheckedCast(adapter.createProxy(ident));
+        _s.e = MyEnum.enum2;
+        _s.p = InitialPrxHelper.uncheckedCast(adapter.createProxy(ident));
 
         _d = new Derived();
         _d.b = _d;

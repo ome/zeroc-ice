@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,13 +18,13 @@ final class UdpTransceiver implements Transceiver
         return _fd;
     }
 
-    public SocketStatus
+    public int
     initialize()
     {
         //
         // Nothing to do.
         //
-        return SocketStatus.Finished;
+        return SocketOperation.None;
     }
 
     public void
@@ -32,7 +32,7 @@ final class UdpTransceiver implements Transceiver
     {
         assert(_fd != null);
         
-        if(_traceLevels.network >= 1)
+        if(_state >= StateConnected && _traceLevels.network >= 1)
         {
             String s = "closing udp connection\n" + toString();
             _logger.trace(_traceLevels.networkCat, s);
@@ -52,40 +52,28 @@ final class UdpTransceiver implements Transceiver
     write(Buffer buf)
     {
         assert(buf.b.position() == 0);
-        final int packetSize = java.lang.Math.min(_maxPacketSize, _sndSize - _udpOverhead);
-        if(packetSize < buf.size())
-        {
-            //
-            // We don't log a warning here because the client gets an exception anyway.
-            //
-            throw new Ice.DatagramLimitException();
-        }
+        assert(_fd != null && _state >= StateConnected);
+                
+        // The caller is supposed to check the send size before by calling checkSendSize
+        assert(java.lang.Math.min(_maxPacketSize, _sndSize - _udpOverhead) >= buf.size());
 
-        while(buf.b.hasRemaining())
+        int ret = 0;
+        while(true)
         {
             try
             {
-                assert(_fd != null);
-
-                int ret = _fd.write(buf.b);
-                
-                if(ret == 0)
+                if(_state == StateConnected)
                 {
-                    return false;
+                    ret = _fd.write(buf.b);
                 }
-
-                if(_traceLevels.network >= 3)
+                else
                 {
-                    String s = "sent " + ret + " bytes via udp\n" + toString();
-                    _logger.trace(_traceLevels.networkCat, s);
+                    if(_peerAddr == null)
+                    {
+                        throw new Ice.SocketException(); // No peer has sent a datagram yet.
+                    }
+                    ret = _fd.send(buf.b, _peerAddr);
                 }
-
-                if(_stats != null)
-                {
-                    _stats.bytesSent(type(), ret);
-                }
-
-                assert(ret == buf.b.limit());
                 break;
             }
             catch(java.nio.channels.AsynchronousCloseException ex)
@@ -112,6 +100,23 @@ final class UdpTransceiver implements Transceiver
             }
         }
 
+        if(ret == 0)
+        {
+            return false;
+        }
+
+        if(_traceLevels.network >= 3)
+        {
+            String s = "sent " + ret + " bytes via udp\n" + toString();
+            _logger.trace(_traceLevels.networkCat, s);
+        }
+
+        if(_stats != null)
+        {
+            _stats.bytesSent(type(), ret);
+        }
+
+        assert(ret == buf.b.limit());
         return true;
     }
 
@@ -122,18 +127,6 @@ final class UdpTransceiver implements Transceiver
         moreData.value = false;
 
         final int packetSize = java.lang.Math.min(_maxPacketSize, _rcvSize - _udpOverhead);
-        if(packetSize < buf.size())
-        {
-            //
-            // We log a warning here because this is the server side -- without the
-            // the warning, there would only be silence.
-            //
-            if(_warn)
-            {
-                _logger.warning("DatagramLimitException: maximum size of " + packetSize + " exceeded");
-            }
-            throw new Ice.DatagramLimitException();
-        }
         buf.resize(packetSize, true);
         buf.b.position(0);
 
@@ -142,31 +135,14 @@ final class UdpTransceiver implements Transceiver
         {
             try
             {
-                java.net.InetSocketAddress sender = (java.net.InetSocketAddress)_fd.receive(buf.b);
-
-                if(sender == null || buf.b.position() == 0)
+                java.net.SocketAddress peerAddr = _fd.receive(buf.b);
+                if(peerAddr == null || buf.b.position() == 0)
                 {
                     return false;
                 }
 
+                _peerAddr = (java.net.InetSocketAddress)peerAddr;
                 ret = buf.b.position();
-
-                if(_connect)
-                {
-                    //
-                    // If we must connect, then we connect to the first peer that
-                    // sends us a packet.
-                    //
-                    Network.doConnect(_fd, sender);
-                    _connect = false; // We're connected now
-
-                    if(_traceLevels.network >= 1)
-                    {
-                        String s = "connected udp socket\n" + toString();
-                        _logger.trace(_traceLevels.networkCat, s);
-                    }
-                }
-
                 break;
             }
             catch(java.nio.channels.AsynchronousCloseException ex)
@@ -187,16 +163,24 @@ final class UdpTransceiver implements Transceiver
             }
             catch(java.io.IOException ex)
             {
-                if(Network.connectionLost(ex))
-                {
-                    Ice.ConnectionLostException se = new Ice.ConnectionLostException();
-                    se.initCause(ex);
-                    throw se;
-                }
-
-                Ice.SocketException se = new Ice.SocketException();
+                Ice.ConnectionLostException se = new Ice.ConnectionLostException();
                 se.initCause(ex);
                 throw se;
+            }
+        }
+
+        if(_state == StateNeedConnect)
+        {
+            //
+            // If we must connect, we connect to the first peer that sends us a packet.
+            //
+            Network.doConnect(_fd, _peerAddr);
+            _state = StateConnected;
+
+            if(_traceLevels.network >= 1)
+            {
+                String s = "connected udp socket\n" + toString();
+                _logger.trace(_traceLevels.networkCat, s);
             }
         }
 
@@ -226,14 +210,79 @@ final class UdpTransceiver implements Transceiver
     public String
     toString()
     {
-        if(_mcastAddr != null && _fd != null)
+        if(_fd == null)
         {
-            return Network.fdToString(_fd) + "\nmulticast address = " + Network.addrToString(_mcastAddr);
+            return "<closed>";
+        }
+
+        String s;
+        if(_state == StateNotConnected)
+        {
+            java.net.DatagramSocket socket = ((java.nio.channels.DatagramChannel)_fd).socket();
+            s = "local address = " + Network.addrToString((java.net.InetSocketAddress)socket.getLocalSocketAddress());
+            if(_peerAddr != null)
+            {
+                s += "\nremote address = " + Network.addrToString(_peerAddr);
+            }
         }
         else
         {
-            return Network.fdToString(_fd);
+            s = Network.fdToString(_fd);
         }
+
+        if(_mcastAddr != null)
+        {
+            s += "\nmulticast address = " + Network.addrToString(_mcastAddr);
+        }
+        return s;
+    }
+
+    public Ice.ConnectionInfo
+    getInfo()
+    {
+        assert(_fd != null);
+
+        Ice.UDPConnectionInfo info = new Ice.UDPConnectionInfo();
+        java.net.DatagramSocket socket = _fd.socket();
+        info.localAddress = socket.getLocalAddress().getHostAddress();
+        info.localPort = socket.getLocalPort();
+        if(_state == StateNotConnected)
+        {
+            if(_peerAddr != null)
+            {
+                info.remoteAddress = _peerAddr.getAddress().getHostAddress();
+                info.remotePort = _peerAddr.getPort();
+            }
+            else
+            {
+                info.remoteAddress = "";
+                info.remotePort = -1;
+            }
+        }
+        else
+        {
+            if(socket.getInetAddress() != null)
+            {
+                info.remoteAddress = socket.getInetAddress().getHostAddress();
+                info.remotePort = socket.getPort();
+            }
+            else
+            {
+                info.remoteAddress = "";
+                info.remotePort = -1;
+            }
+        }
+        if(_mcastAddr != null)
+        {
+            info.mcastAddress = _mcastAddr.getAddress().getHostAddress();
+            info.mcastPort = _mcastAddr.getPort();
+        }
+        else
+        {
+            info.mcastAddress = "";
+            info.mcastPort = -1;
+        }
+        return info;
     }
 
     public void
@@ -241,8 +290,13 @@ final class UdpTransceiver implements Transceiver
     {
         if(buf.size() > messageSizeMax)
         {
-            throw new Ice.MemoryLimitException();
+            Ex.throwMemoryLimitException(buf.size(), messageSizeMax);
         }
+        
+        //
+        // The maximum packetSize is either the maximum allowable UDP packet size, or 
+        // the UDP send buffer size (which ever is smaller).
+        //
         final int packetSize = java.lang.Math.min(_maxPacketSize, _sndSize - _udpOverhead);
         if(packetSize < buf.size())
         {
@@ -264,8 +318,7 @@ final class UdpTransceiver implements Transceiver
         _traceLevels = instance.traceLevels();
         _logger = instance.initializationData().logger;
         _stats = instance.initializationData().stats;
-        _connect = true;
-        _warn = instance.initializationData().properties.getPropertyAsInt("Ice.Warn.Datagrams") > 0;
+        _state = StateNeedConnect;
         _addr = addr;
 
         try
@@ -274,7 +327,7 @@ final class UdpTransceiver implements Transceiver
             setBufSize(instance);
             Network.setBlock(_fd, false);
             Network.doConnect(_fd, _addr);
-            _connect = false; // We're connected now
+            _state = StateConnected; // We're connected now
             if(_addr.getAddress().isMulticastAddress())
             {
                 configureMulticast(null, mcastInterface, mcastTtl);
@@ -301,8 +354,7 @@ final class UdpTransceiver implements Transceiver
         _traceLevels = instance.traceLevels();
         _logger = instance.initializationData().logger;
         _stats = instance.initializationData().stats;
-        _connect = connect;
-        _warn = instance.initializationData().properties.getPropertyAsInt("Ice.Warn.Datagrams") > 0;
+        _state = connect ? StateNeedConnect : StateNotConnected;
 
         try
         {
@@ -319,7 +371,21 @@ final class UdpTransceiver implements Transceiver
             {
                 Network.setReuseAddress(_fd, true);
                 _mcastAddr = _addr;
-                _addr = Network.doBind(_fd, Network.getAddress("0.0.0.0", port, Network.EnableIPv4));
+                if(System.getProperty("os.name").startsWith("Windows") ||
+                   System.getProperty("java.vm.name").startsWith("OpenJDK"))
+                {
+                    //
+                    // Windows does not allow binding to the mcast address itself
+                    // so we bind to INADDR_ANY (0.0.0.0) instead. As a result,
+                    // bi-directional connection won't work because the source 
+                    // address won't be the multicast address and the client will
+                    // therefore reject the datagram.
+                    //
+                    int protocol = 
+                        _mcastAddr.getAddress().getAddress().length == 4 ? Network.EnableIPv4 : Network.EnableIPv6;
+                    _addr = Network.getAddressForServer("", port, protocol);
+                }
+                _addr = Network.doBind(_fd, _addr);
                 if(port == 0)
                 {
                     _mcastAddr = new java.net.InetSocketAddress(_mcastAddr.getAddress(), _addr.getPort());
@@ -350,8 +416,18 @@ final class UdpTransceiver implements Transceiver
 
             if(_traceLevels.network >= 1)
             {
-                String s = "starting to receive udp packets\n" + toString();
-                _logger.trace(_traceLevels.networkCat, s);
+                StringBuffer s = new StringBuffer("starting to receive udp packets\n");
+		s.append(toString());
+
+                java.util.List<String> interfaces = 
+                    Network.getHostsForEndpointExpand(_addr.getAddress().getHostAddress(), instance.protocolSupport(),
+                                                      true);
+                if(!interfaces.isEmpty())
+                {
+                    s.append("\nlocal interfaces: ");
+                    s.append(IceUtilInternal.StringUtil.joinString(interfaces, ", "));
+                }
+                _logger.trace(_traceLevels.networkCat, s.toString());
             }
         }
         catch(Ice.LocalException ex)
@@ -390,7 +466,7 @@ final class UdpTransceiver implements Transceiver
             // Get property for buffer size and check for sanity.
             //
             int sizeRequested = instance.initializationData().properties.getPropertyAsIntWithDefault(prop, dfltSize);
-            if(sizeRequested < _udpOverhead)
+            if(sizeRequested < (_udpOverhead + IceInternal.Protocol.headerSize))
             {
                 _logger.warning("Invalid " + prop + " value of " + sizeRequested + " adjusted to " + dfltSize);
                 sizeRequested = dfltSize;
@@ -436,12 +512,18 @@ final class UdpTransceiver implements Transceiver
     // to (temporarily) wrap the channel's file descriptor.
     //
     private void
-    configureMulticast(java.net.SocketAddress group, String interfaceAddr, int ttl)
+    configureMulticast(java.net.InetSocketAddress group, String interfaceAddr, int ttl)
     {
         try
         {
-            java.lang.reflect.Constructor<?> c =
-                Class.forName("java.net.PlainDatagramSocketImpl").getDeclaredConstructor((Class<?>[])null);
+            Class<?> cls;
+
+            cls = Util.findClass("java.net.PlainDatagramSocketImpl", null);
+            if(cls == null)
+            {
+                throw new Ice.SocketException();
+            }
+            java.lang.reflect.Constructor<?> c = cls.getDeclaredConstructor((Class<?>[])null);
             c.setAccessible(true);
             java.net.DatagramSocketImpl socketImpl = (java.net.DatagramSocketImpl)c.newInstance((Object[])null);
 
@@ -449,13 +531,23 @@ final class UdpTransceiver implements Transceiver
             // We have to invoke the protected create() method on the PlainDatagramSocketImpl object so
             // that this hack works properly when IPv6 is enabled on Windows.
             //
-            java.lang.reflect.Method m =
-                Class.forName("java.net.PlainDatagramSocketImpl").getDeclaredMethod("create", (Class<?>[])null);
-            m.setAccessible(true);
-            m.invoke(socketImpl);
+	    java.lang.reflect.Method m;
+	    try
+	    {
+		m = cls.getDeclaredMethod("create", (Class<?>[])null);
+		m.setAccessible(true);
+		m.invoke(socketImpl);
+	    }
+	    catch(java.lang.NoSuchMethodException ex) // OpenJDK
+	    {
+	    }
 
-            java.lang.reflect.Field channelFd = 
-                Class.forName("sun.nio.ch.DatagramChannelImpl").getDeclaredField("fd");
+            cls = Util.findClass("sun.nio.ch.DatagramChannelImpl", null);
+            if(cls == null)
+            {
+                throw new Ice.SocketException();
+            }
+            java.lang.reflect.Field channelFd = cls.getDeclaredField("fd");
             channelFd.setAccessible(true);
 
             java.lang.reflect.Field socketFd = java.net.DatagramSocketImpl.class.getDeclaredField("fd");
@@ -477,18 +569,37 @@ final class UdpTransceiver implements Transceiver
 
                 if(group != null)
                 {
-                    Class<?>[] types = new Class<?>[]{ java.net.SocketAddress.class, java.net.NetworkInterface.class };
-                    m = socketImpl.getClass().getDeclaredMethod("joinGroup", types);
+                    Class<?>[] types;
+                    Object[] args;
+		    try
+		    {
+                        types = new Class<?>[]{ java.net.SocketAddress.class, java.net.NetworkInterface.class };
+                        m = socketImpl.getClass().getDeclaredMethod("joinGroup", types);
+                        args = new Object[]{ group, intf };
+		    }
+		    catch(java.lang.NoSuchMethodException ex) // OpenJDK
+		    {                        
+                        types = new Class<?>[]{ java.net.InetAddress.class, java.net.NetworkInterface.class };
+			m = socketImpl.getClass().getDeclaredMethod("join", types);
+                        args = new Object[]{ group.getAddress(), intf };
+		    }
                     m.setAccessible(true);
-                    Object[] args = new Object[]{ group, intf };
                     m.invoke(socketImpl, args);
                 }
                 else if(intf != null)
                 {
                     Class<?>[] types = new Class<?>[]{ Integer.TYPE, Object.class };
-                    m = socketImpl.getClass().getDeclaredMethod("setOption", types);
+
+		    try
+		    {
+			m = socketImpl.getClass().getDeclaredMethod("setOption", types);
+		    }
+		    catch(java.lang.NoSuchMethodException ex) // OpenJDK
+		    {
+			m = socketImpl.getClass().getDeclaredMethod("socketSetOption", types);
+		    }
                     m.setAccessible(true);
-                    Object[] args = new Object[]{ new Integer(java.net.SocketOptions.IP_MULTICAST_IF2), intf };
+                    Object[] args = new Object[]{ Integer.valueOf(java.net.SocketOptions.IP_MULTICAST_IF2), intf };
                     m.invoke(socketImpl, args);
                 }
 
@@ -497,7 +608,7 @@ final class UdpTransceiver implements Transceiver
                     Class<?>[] types = new Class<?>[]{ Integer.TYPE };
                     m = java.net.DatagramSocketImpl.class.getDeclaredMethod("setTimeToLive", types);
                     m.setAccessible(true);
-                    Object[] args = new Object[]{ new Integer(ttl) };
+                    Object[] args = new Object[]{ Integer.valueOf(ttl) };
                     m.invoke(socketImpl, args);
                 }
             }
@@ -526,13 +637,13 @@ final class UdpTransceiver implements Transceiver
     private TraceLevels _traceLevels;
     private Ice.Logger _logger;
     private Ice.Stats _stats;
-    private boolean _connect;
-    private final boolean _warn;
+    private int _state;
     private int _rcvSize;
     private int _sndSize;
     private java.nio.channels.DatagramChannel _fd;
     private java.net.InetSocketAddress _addr;
     private java.net.InetSocketAddress _mcastAddr = null;
+    private java.net.InetSocketAddress _peerAddr = null;
 
     //
     // The maximum IP datagram size is 65535. Subtract 20 bytes for the IP header and 8 bytes for the UDP header
@@ -540,4 +651,8 @@ final class UdpTransceiver implements Transceiver
     //
     private final static int _udpOverhead = 20 + 8;
     private final static int _maxPacketSize = 65535 - _udpOverhead;
+
+    private static final int StateNeedConnect = 0;
+    private static final int StateConnected = 1;
+    private static final int StateNotConnected = 2;
 }

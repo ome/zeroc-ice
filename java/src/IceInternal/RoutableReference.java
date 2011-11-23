@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -63,6 +63,12 @@ public class RoutableReference extends Reference
     getLocatorCacheTimeout()
     {
         return _locatorCacheTimeout;
+    }
+
+    public final String
+    getConnectionId()
+    {
+        return _connectionId;
     }
 
     public Reference
@@ -259,9 +265,9 @@ public class RoutableReference extends Reference
         if(_endpoints.length > 0)
         {
             assert(_adapterId.length() == 0);
-            for(int i = 0; i < _endpoints.length; i++)
+            for(EndpointI endpoint : _endpoints)
             {
-                _endpoints[i].streamWrite(s);
+                endpoint.streamWrite(s);
             }
         }
         else
@@ -284,9 +290,9 @@ public class RoutableReference extends Reference
         s.append(super.toString());
         if(_endpoints.length > 0)
         {
-            for(int i = 0; i < _endpoints.length; i++)
+            for(EndpointI endpoint : _endpoints)
             {
-                String endp = _endpoints[i].toString();
+                String endp = endpoint.toString();
                 if(endp != null && endp.length() > 0)
                 {
                     s.append(':');
@@ -304,7 +310,7 @@ public class RoutableReference extends Reference
             // the adapter id string in quotes.
             //
             String a = IceUtilInternal.StringUtil.escapeString(_adapterId, null);
-            if(IceUtilInternal.StringUtil.findFirstOf(a, " \t\n\r") != -1)
+            if(IceUtilInternal.StringUtil.findFirstOf(a, " :@") != -1)
             {
                 s.append('"');
                 s.append(a);
@@ -316,6 +322,44 @@ public class RoutableReference extends Reference
             }
         }
         return s.toString();
+    }
+
+    public java.util.Map<String, String> toProperty(String prefix)
+    {
+        java.util.Map<String, String> properties = new java.util.HashMap<String, String>();
+
+        properties.put(prefix, toString());
+        properties.put(prefix + ".CollocationOptimized", _collocationOptimized ? "1" : "0");
+        properties.put(prefix + ".ConnectionCached", _cacheConnection ? "1" : "0");
+        properties.put(prefix + ".PreferSecure", _preferSecure ? "1" : "0");
+        properties.put(prefix + ".EndpointSelection", 
+                       _endpointSelection == Ice.EndpointSelectionType.Random ? "Random" : "Ordered");
+
+        StringBuffer s = new StringBuffer();
+        s.append(_locatorCacheTimeout);
+        properties.put(prefix + ".LocatorCacheTimeout", s.toString());
+
+        if(_routerInfo != null)
+        {
+            Ice.ObjectPrxHelperBase h = (Ice.ObjectPrxHelperBase)_routerInfo.getRouter();
+            java.util.Map<String, String> routerProperties = h.__reference().toProperty(prefix + ".Router");
+            for(java.util.Map.Entry<String, String> p : routerProperties.entrySet())
+            {
+                properties.put(p.getKey(), p.getValue());
+            }
+        }
+
+        if(_locatorInfo != null)
+        {
+            Ice.ObjectPrxHelperBase h = (Ice.ObjectPrxHelperBase)_locatorInfo.getLocator();
+            java.util.Map<String, String> locatorProperties = h.__reference().toProperty(prefix + ".Locator");
+            for(java.util.Map.Entry<String, String> p : locatorProperties.entrySet())
+            {
+                properties.put(p.getKey(), p.getValue());
+            }
+        }
+
+        return properties;
     }
 
     public synchronized int
@@ -584,7 +628,6 @@ public class RoutableReference extends Reference
     RoutableReference(Instance instance,
                       Ice.Communicator communicator,
                       Ice.Identity identity,
-                      java.util.Map<String, String> context,
                       String facet,
                       int mode,
                       boolean secure,
@@ -598,7 +641,7 @@ public class RoutableReference extends Reference
                       Ice.EndpointSelectionType endpointSelection,
                       int locatorCacheTimeout)
     {
-        super(instance, communicator, identity, context, facet, mode, secure);
+        super(instance, communicator, identity, facet, mode, secure);
         _endpoints = endpoints;
         _adapterId = adapterId;
         _locatorInfo = locatorInfo;
@@ -648,13 +691,13 @@ public class RoutableReference extends Reference
         java.util.List<EndpointI> endpoints = new java.util.ArrayList<EndpointI>();
 
         //
-        // Filter out unknown endpoints.
+        // Filter out opaque endpoints.
         //
-        for(int i = 0; i < allEndpoints.length; i++)
+        for(EndpointI endpoint : allEndpoints)
         {
-            if(!allEndpoints[i].unknown())
+            if(!(endpoint instanceof IceInternal.OpaqueEndpointI))
             {
-                endpoints.add(allEndpoints[i]);
+                endpoints.add(endpoint);
             }
         }
         
@@ -704,14 +747,14 @@ public class RoutableReference extends Reference
         //
         // Sort the endpoints according to the endpoint selection type.
         //
-        switch(getEndpointSelection().value())
+        switch(getEndpointSelection())
         {
-            case Ice.EndpointSelectionType._Random:
+            case Random:
             {
                 java.util.Collections.shuffle(endpoints);
                 break;
             }
-            case Ice.EndpointSelectionType._Ordered:
+            case Ordered:
             {
                 // Nothing to do.
                 break;

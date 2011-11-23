@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -20,7 +20,10 @@ if len(path) == 0:
 sys.path.append(os.path.join(path[0]))
 from scripts import *
 
-router = os.path.join(TestUtil.getCppBinDir(), "glacier2router")
+router = TestUtil.getGlacier2Router()
+
+if TestUtil.appverifier:
+    TestUtil.setAppVerifierSettings([router])
 
 def startRouter(buffered):
 
@@ -29,9 +32,9 @@ def startRouter(buffered):
            ' --Glacier2.Filter.Category.Accept="c1 c2"' + \
            ' --Glacier2.Filter.Category.AcceptUser="2"' + \
            ' --Glacier2.SessionTimeout="30"' + \
-           ' --Glacier2.Client.Endpoints="default -p 12347 -t 10000"' + \
-           ' --Glacier2.Server.Endpoints="tcp -h 127.0.0.1 -t 10000"' \
-           ' --Ice.Admin.Endpoints="tcp -h 127.0.0.1 -p 12348 -t 10000"' + \
+           ' --Glacier2.Client.Endpoints="default -p 12347"' + \
+           ' --Glacier2.Server.Endpoints="tcp -h 127.0.0.1"' \
+           ' --Ice.Admin.Endpoints="tcp -h 127.0.0.1 -p 12348"' + \
            ' --Ice.Admin.InstanceName="Glacier2"' + \
            ' --Glacier2.CryptPasswords="%s"' % os.path.join(os.getcwd(), "passwords")
 
@@ -70,3 +73,7 @@ TestUtil.clientServerTest()
 TestUtil.clientServerTest(name, additionalClientOptions = " --shutdown")
 
 starterProc.waitTestSuccess()
+
+if TestUtil.appverifier:
+    TestUtil.appVerifierAfterTestEnd([router])
+

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,9 @@
 #include <limits>
 
 using namespace std;
+
+namespace
+{
 
 class CallbackBase : public IceUtil::Monitor<IceUtil::Mutex>
 {
@@ -27,18 +30,14 @@ public:
     {
     }
 
-    bool check()
+    void check()
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
         while(!_called)
         {
-            if(!timedWait(IceUtil::Time::seconds(5)))
-            {
-                return false;
-            }
+            wait();
         }
         _called = false;
-        return true;
     }
 
 protected:
@@ -109,6 +108,8 @@ public:
 
 typedef IceUtil::Handle<AMI_MyClass_onewayOpByteExI> AMI_MyClass_onewayOpByteExIPtr;
 
+}
+
 void
 onewaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& proxy)
 {
@@ -134,12 +135,12 @@ onewaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& pro
         {
             test(false);
         }
-        test(cb->check());
+        cb->check();
     }
 
     {
         AMI_MyClass_onewayOpByteExIPtr cb = new AMI_MyClass_onewayOpByteExI();
         p->opByte_async(cb, 0, 0);
-        test(cb->check());
+        cb->check();
     }
 }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,8 +38,18 @@ final class AcceptorI implements IceInternal.Acceptor
 
         if(_instance.networkTraceLevel() >= 1)
         {
-            String s = "accepting ssl connections at " + toString();
-            _logger.trace(_instance.networkTraceCategory(), s);
+            StringBuffer s = new StringBuffer("accepting ssl connections at ");
+	    s.append(toString());
+
+            java.util.List<String> interfaces = 
+                IceInternal.Network.getHostsForEndpointExpand(_addr.getAddress().getHostAddress(), 
+                                                              _instance.protocolSupport(), true);
+            if(!interfaces.isEmpty())
+            {
+                s.append("\nlocal interfaces: ");
+                s.append(IceUtilInternal.StringUtil.joinString(interfaces, ", "));
+            }
+            _logger.trace(_instance.networkTraceCategory(), s.toString());
         }
     }
 

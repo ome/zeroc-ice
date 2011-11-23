@@ -1,35 +1,36 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-public final class RemoteEvictorFactoryI extends Test._RemoteEvictorFactoryDisp
+package test.Freeze.evictor;
+import test.Freeze.evictor.Test.*;
+
+public final class RemoteEvictorFactoryI extends _RemoteEvictorFactoryDisp
 {
-    RemoteEvictorFactoryI(Ice.ObjectAdapter adapter, String envName)
+    RemoteEvictorFactoryI(String envName)
     {
-        _adapter = adapter;
         _envName = envName;
     }
 
-    
-    public Test.RemoteEvictorPrx
+    public RemoteEvictorPrx
     createEvictor(String name, boolean transactional, Ice.Current current)
     {
-        RemoteEvictorI remoteEvictor = new RemoteEvictorI(_adapter, _envName, name, transactional);
-        return Test.RemoteEvictorPrxHelper.
-            uncheckedCast(_adapter.add(remoteEvictor, _adapter.getCommunicator().stringToIdentity(name)));
+        RemoteEvictorI remoteEvictor =
+            new RemoteEvictorI(current.adapter.getCommunicator(), _envName, name, transactional);
+        return RemoteEvictorPrxHelper.
+            uncheckedCast(current.adapter.add(remoteEvictor, current.adapter.getCommunicator().stringToIdentity(name)));
     }
 
     public void
     shutdown(Ice.Current current)
     {
-        _adapter.getCommunicator().shutdown();
+        current.adapter.getCommunicator().shutdown();
     }
 
-    private Ice.ObjectAdapter _adapter;
     private String _envName;
 }

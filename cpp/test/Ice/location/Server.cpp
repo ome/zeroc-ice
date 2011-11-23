@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -35,7 +35,7 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator,
     //
     ServerLocatorRegistryPtr registry = new ServerLocatorRegistry();
     registry->addObject(adapter->createProxy(communicator->stringToIdentity("ServerManager")));
-    Ice::ObjectPtr object = new ServerManagerI(adapter, registry, initData);
+    Ice::ObjectPtr object = new ServerManagerI(registry, initData);
     adapter->add(object, communicator->stringToIdentity("ServerManager"));
 
     Ice::LocatorRegistryPrx registryPrx = 

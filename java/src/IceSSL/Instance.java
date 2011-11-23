@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,7 +18,7 @@ class Instance
     Instance(Ice.Communicator communicator)
     {
         _logger = communicator.getLogger();
-        _facade = Ice.Util.getProtocolPluginFacade(communicator);
+        _facade = IceInternal.Util.getProtocolPluginFacade(communicator);
         _securityTraceLevel = communicator.getProperties().getPropertyAsIntWithDefault("IceSSL.Trace.Security", 0);
         _securityTraceCategory = "Security";
         _trustManager = new TrustManager(communicator);
@@ -58,9 +58,9 @@ class Instance
         if(protocols.length != 0)
         {
             java.util.ArrayList<String> l = new java.util.ArrayList<String>();
-            for(int i = 0; i < protocols.length; ++i)
+            for(String prot : protocols)
             {
-                String s = protocols[i].toLowerCase();
+                String s = prot.toLowerCase();
                 if(s.equals("ssl3") || s.equals("sslv3"))
                 {
                     l.add("SSLv3");
@@ -72,7 +72,7 @@ class Instance
                 else
                 {
                     Ice.PluginInitializationException e = new Ice.PluginInitializationException();
-                    e.reason = "IceSSL: unrecognized protocol `" + protocols[i] + "'";
+                    e.reason = "IceSSL: unrecognized protocol `" + prot + "'";
                     throw e;
                 }
             }
@@ -94,6 +94,11 @@ class Instance
         _verifyDepthMax = properties.getPropertyAsIntWithDefault(prefix + "VerifyDepthMax", 2);
 
         //
+        // VerifyPeer determines whether certificate validation failures abort a connection.
+        //
+        _verifyPeer = communicator().getProperties().getPropertyAsIntWithDefault("IceSSL.VerifyPeer", 2);
+
+        //
         // Check for a certificate verifier.
         //
         final String certVerifierClass = properties.getProperty(prefix + "CertVerifier");
@@ -109,7 +114,7 @@ class Instance
             Class<?> cls = null;
             try
             {
-                cls = Class.forName(certVerifierClass);
+                cls = _facade.findClass(certVerifierClass);
             }
             catch(Throwable ex)
             {
@@ -148,7 +153,7 @@ class Instance
             Class<?> cls = null;
             try
             {
-                cls = Class.forName(passwordCallbackClass);
+                cls = _facade.findClass(passwordCallbackClass);
             }
             catch(Throwable ex)
             {
@@ -205,15 +210,15 @@ class Instance
                 if(seedFiles.length() > 0)
                 {
                     final String[] arr = seedFiles.split(java.io.File.pathSeparator);
-                    for(int i = 0; i < arr.length; ++i)
+                    for(String file : arr)
                     {
                         try
                         {
-                            java.io.InputStream seedStream = openResource(arr[i]);
+                            java.io.InputStream seedStream = openResource(file);
                             if(seedStream == null)
                             {
                                 Ice.PluginInitializationException e = new Ice.PluginInitializationException();
-                                e.reason = "IceSSL: random seed file not found:\n" + arr[i];
+                                e.reason = "IceSSL: random seed file not found:\n" + file;
                                 throw e;
                             }
 
@@ -222,7 +227,7 @@ class Instance
                         catch(java.io.IOException ex)
                         {
                             Ice.PluginInitializationException e = new Ice.PluginInitializationException();
-                            e.reason = "IceSSL: unable to access random seed file:\n" + arr[i];
+                            e.reason = "IceSSL: unable to access random seed file:\n" + file;
                             e.initCause(ex);
                             throw e;
                         }
@@ -233,9 +238,8 @@ class Instance
                 {
                     byte[] seed = null;
                     int start = 0;
-                    for(java.util.Iterator<InputStream> p = _seeds.iterator(); p.hasNext();)
+                    for(InputStream in : _seeds)
                     {
-                        InputStream in = p.next();
                         try
                         {
                             int num = in.available();
@@ -258,6 +262,17 @@ class Instance
                             e.reason = "IceSSL: error while reading random seed";
                             e.initCause(ex);
                             throw e;
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                in.close();
+                            }
+                            catch(java.io.IOException e)
+                            {
+                                // Ignore.
+                            }
                         }
                     }
                     rand.setSeed(seed);
@@ -426,16 +441,15 @@ class Instance
                 }
 
                 //
-                // Collect the trust managers.
+                // Load the truststore.
                 //
-                javax.net.ssl.TrustManager[] trustManagers = null;
+                java.security.KeyStore ts = null;
                 if(_truststoreStream != null || truststorePath.length() > 0)
                 {
                     //
                     // If the trust store and the key store are the same input
                     // stream or file, don't create another key store.
                     //
-                    java.security.KeyStore ts;
                     if((_truststoreStream != null && _truststoreStream == _keystoreStream) ||
                        (truststorePath.length() > 0 && truststorePath.equals(keystorePath)))
                     {
@@ -509,28 +523,30 @@ class Instance
                             }
                         }
                     }
+                }
+                else
+                {
+                    ts = keys;
+                }
 
+                //
+                // Collect the trust managers.
+                //
+                javax.net.ssl.TrustManager[] trustManagers = null;
+                {
                     String algorithm = javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm();
                     javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance(algorithm);
                     tmf.init(ts);
                     trustManagers = tmf.getTrustManagers();
+                    assert(trustManagers != null);
                 }
 
                 //
-                // The default TrustManager implementation in IBM's JDK does not accept
-                // anonymous ciphers, so we have to install our own.
+                // Wrap each trust manager.
                 //
-                if(trustManagers == null)
+                for(int i = 0; i < trustManagers.length; ++i)
                 {
-                    trustManagers = new javax.net.ssl.TrustManager[1];
-                    trustManagers[0] = new X509TrustManagerI(null);
-                }
-                else
-                {
-                    for(int i = 0; i < trustManagers.length; ++i)
-                    {
-                        trustManagers[i] = new X509TrustManagerI((javax.net.ssl.X509TrustManager)trustManagers[i]);
-                    }
+                    trustManagers[i] = new X509TrustManagerI(this, (javax.net.ssl.X509TrustManager)trustManagers[i]);
                 }
 
                 //
@@ -710,10 +726,10 @@ class Instance
         {
             StringBuilder s = new StringBuilder(128);
             s.append("enabling SSL ciphersuites:");
-            for(int i = 0; i < cipherSuites.length; ++i)
+            for(String suite : cipherSuites)
             {
                 s.append("\n  ");
-                s.append(cipherSuites[i]);
+                s.append(suite);
             }
             _logger.trace(_securityTraceCategory, s.toString());
         }
@@ -735,13 +751,12 @@ class Instance
 
         if(incoming)
         {
-            int verifyPeer = communicator().getProperties().getPropertyAsIntWithDefault("IceSSL.VerifyPeer", 2);
-            if(verifyPeer == 0)
+            if(_verifyPeer == 0)
             {
                 engine.setWantClientAuth(false);
                 engine.setNeedClientAuth(false);
             }
-            else if(verifyPeer == 1)
+            else if(_verifyPeer == 1)
             {
                 engine.setWantClientAuth(true);
             }
@@ -772,24 +787,23 @@ class Instance
         java.util.LinkedList<String> result = new java.util.LinkedList<String>();
         if(_allCiphers)
         {
-            for(int i = 0; i < supportedCiphers.length; ++i)
+            for(String cipher : supportedCiphers)
             {
-                result.add(supportedCiphers[i]);
+                result.add(cipher);
             }
         }
         else if(!_noCiphers)
         {
-            for(int i = 0; i < defaultCiphers.length; ++i)
+            for(String cipher : defaultCiphers)
             {
-                result.add(defaultCiphers[i]);
+                result.add(cipher);
             }
         }
 
         if(_ciphers != null)
         {
-            for(int i = 0; i < _ciphers.length; ++i)
+            for(CipherExpression ce : _ciphers)
             {
-                CipherExpression ce = (CipherExpression)_ciphers[i];
                 if(ce.not)
                 {
                     java.util.Iterator<String> e = result.iterator();
@@ -823,12 +837,12 @@ class Instance
                     else
                     {
                         assert(ce.re != null);
-                        for(int j = 0; j < supportedCiphers.length; ++j)
+                        for(String cipher : supportedCiphers)
                         {
-                            java.util.regex.Matcher m = ce.re.matcher(supportedCiphers[j]);
+                            java.util.regex.Matcher m = ce.re.matcher(cipher);
                             if(m.find())
                             {
-                                result.add(0, supportedCiphers[j]);
+                                result.add(0, cipher);
                             }
                         }
                     }
@@ -859,41 +873,29 @@ class Instance
     }
 
     void
-    verifyPeer(ConnectionInfo info, java.nio.channels.SelectableChannel fd, String address, boolean incoming)
+    verifyPeer(NativeConnectionInfo info, java.nio.channels.SelectableChannel fd, String address)
     {
-        if(_verifyDepthMax > 0 && info.certs != null && info.certs.length > _verifyDepthMax)
+        //
+        // For an outgoing connection, we compare the proxy address (if any) against
+        // fields in the server's certificate (if any).
+        //
+        if(info.nativeCerts != null && info.nativeCerts.length > 0 && address.length() > 0)
         {
-            String msg = (incoming ? "incoming" : "outgoing") + " connection rejected:\n" +
-                "length of peer's certificate chain (" + info.certs.length + ") exceeds maximum of " +
-                _verifyDepthMax + "\n" +
-                IceInternal.Network.fdToString(fd);
-            if(_securityTraceLevel >= 1)
-            {
-                _logger.trace(_securityTraceCategory, msg);
-            }
-            Ice.SecurityException ex = new Ice.SecurityException();
-            ex.reason = msg;
-            throw ex;
-        }
+            java.security.cert.X509Certificate cert = (java.security.cert.X509Certificate)info.nativeCerts[0];
 
-        //
-        // Extract the IP addresses and the DNS names from the subject
-        // alternative names.
-        //
-        if(info.certs != null)
-        {
+            //
+            // Extract the IP addresses and the DNS names from the subject
+            // alternative names.
+            //
+            java.util.ArrayList<String> ipAddresses = new java.util.ArrayList<String>();
+            java.util.ArrayList<String> dnsNames = new java.util.ArrayList<String>();
             try
             {
-                java.util.Collection<java.util.List<?> > subjectAltNames =
-                    ((java.security.cert.X509Certificate)info.certs[0]).getSubjectAlternativeNames();
-                java.util.ArrayList<String> ipAddresses = new java.util.ArrayList<String>();
-                java.util.ArrayList<String> dnsNames = new java.util.ArrayList<String>();
+                java.util.Collection<java.util.List<?> > subjectAltNames = cert.getSubjectAlternativeNames();
                 if(subjectAltNames != null)
                 {
-                    java.util.Iterator<java.util.List<?> > i = subjectAltNames.iterator();
-                    while(i.hasNext())
+                    for(java.util.List<?> l : subjectAltNames)
                     {
-                        java.util.List<?> l = i.next();
                         assert(!l.isEmpty());
                         Integer n = (Integer)l.get(0);
                         if(n.intValue() == 7)
@@ -906,81 +908,125 @@ class Instance
                         }
                     }
                 }
-
-                //
-                // Compare the peer's address against the dnsName and ipAddress values.
-                // This is only relevant for an outgoing connection.
-                //
-                if(address.length() > 0)
-                {
-                    boolean certNameOK = ipAddresses.contains(address);
-                    if(!certNameOK)
-                    {
-                        certNameOK = dnsNames.contains(address.toLowerCase());
-                    }
-
-                    //
-                    // Log a message if the name comparison fails. If CheckCertName is defined,
-                    // we also raise an exception to abort the connection. Don't log a message if
-                    // CheckCertName is not defined and a verifier is present.
-                    //
-                    if(!certNameOK && (_checkCertName || (_securityTraceLevel >= 1 && _verifier == null)))
-                    {
-                        StringBuilder sb = new StringBuilder(128);
-                        sb.append("IceSSL: ");
-                        if(!_checkCertName)
-                        {
-                            sb.append("ignoring ");
-                        }
-                        sb.append("certificate validation failure:\npeer certificate does not contain `");
-                        sb.append(address);
-                        sb.append("' in its subjectAltName extension");
-                        if(!dnsNames.isEmpty())
-                        {
-                            sb.append("\nDNS names found in certificate: ");
-                            for(int j = 0; j < dnsNames.size(); ++j)
-                            {
-                                if(j > 0)
-                                {
-                                    sb.append(", ");
-                                }
-                                sb.append(dnsNames.get(j).toString());
-                            }
-                        }
-                        if(!ipAddresses.isEmpty())
-                        {
-                            sb.append("\nIP addresses found in certificate: ");
-                            for(int j = 0; j < ipAddresses.size(); ++j)
-                            {
-                                if(j > 0)
-                                {
-                                    sb.append(", ");
-                                }
-                                sb.append(ipAddresses.get(j).toString());
-                            }
-                        }
-                        if(_securityTraceLevel >= 1)
-                        {
-                            _logger.trace(_securityTraceCategory, sb.toString());
-                        }
-                        if(_checkCertName)
-                        {
-                            Ice.SecurityException ex = new Ice.SecurityException();
-                            ex.reason = sb.toString();
-                            throw ex;
-                        }
-                    }
-                }
             }
             catch(java.security.cert.CertificateParsingException ex)
             {
                 assert(false);
             }
+
+            //
+            // Compare the peer's address against the common name as well as
+            // the dnsName and ipAddress values in the subject alternative name.
+            //
+            boolean certNameOK = false;
+            String dn = "";
+            String addrLower = address.toLowerCase();
+            {
+                javax.security.auth.x500.X500Principal principal = cert.getSubjectX500Principal();
+                dn = principal.getName(javax.security.auth.x500.X500Principal.CANONICAL);
+                //
+                // Canonical format is already in lower case.
+                //
+                String cn = "cn=" + addrLower;
+                int pos = dn.indexOf(cn);
+                if(pos >= 0)
+                {
+                    //
+                    // Ensure we match the entire common name.
+                    //
+                    certNameOK = (pos + cn.length() == dn.length()) || (dn.charAt(pos + cn.length()) == ',');
+                }
+            }
+
+            //
+            // Compare the peer's address against the the dnsName and ipAddress
+            // values in the subject alternative name.
+            //
+            if(!certNameOK)
+            {
+                certNameOK = ipAddresses.contains(addrLower);
+            }
+            if(!certNameOK)
+            {
+                certNameOK = dnsNames.contains(addrLower);
+            }
+
+            //
+            // Log a message if the name comparison fails. If CheckCertName is defined,
+            // we also raise an exception to abort the connection. Don't log a message if
+            // CheckCertName is not defined and a verifier is present.
+            //
+            if(!certNameOK && (_checkCertName || (_securityTraceLevel >= 1 && _verifier == null)))
+            {
+                StringBuilder sb = new StringBuilder(128);
+                sb.append("IceSSL: ");
+                if(!_checkCertName)
+                {
+                    sb.append("ignoring ");
+                }
+                sb.append("certificate validation failure:\npeer certificate does not have `");
+                sb.append(address);
+                sb.append("' as its commonName or in its subjectAltName extension");
+                if(dn.length() > 0)
+                {
+                    sb.append("\nSubject DN: ");
+                    sb.append(dn);
+                }
+                if(!dnsNames.isEmpty())
+                {
+                    sb.append("\nDNS names found in certificate: ");
+                    for(int j = 0; j < dnsNames.size(); ++j)
+                    {
+                        if(j > 0)
+                        {
+                            sb.append(", ");
+                        }
+                        sb.append(dnsNames.get(j));
+                    }
+                }
+                if(!ipAddresses.isEmpty())
+                {
+                    sb.append("\nIP addresses found in certificate: ");
+                    for(int j = 0; j < ipAddresses.size(); ++j)
+                    {
+                        if(j > 0)
+                        {
+                            sb.append(", ");
+                        }
+                        sb.append(ipAddresses.get(j));
+                    }
+                }
+                if(_securityTraceLevel >= 1)
+                {
+                    _logger.trace(_securityTraceCategory, sb.toString());
+                }
+                if(_checkCertName)
+                {
+                    Ice.SecurityException ex = new Ice.SecurityException();
+                    ex.reason = sb.toString();
+                    throw ex;
+                }
+            }
+        }
+
+        if(_verifyDepthMax > 0 && info.nativeCerts != null && info.nativeCerts.length > _verifyDepthMax)
+        {
+            String msg = (info.incoming ? "incoming" : "outgoing") + " connection rejected:\n" +
+                "length of peer's certificate chain (" + info.nativeCerts.length + ") exceeds maximum of " +
+                _verifyDepthMax + "\n" +
+                IceInternal.Network.fdToString(fd);
+            if(_securityTraceLevel >= 1)
+            {
+                _logger.trace(_securityTraceCategory, msg);
+            }
+            Ice.SecurityException ex = new Ice.SecurityException();
+            ex.reason = msg;
+            throw ex;
         }
 
         if(!_trustManager.verify(info))
         {
-            String msg = (incoming ? "incoming" : "outgoing") + " connection rejected by trust manager\n" +
+            String msg = (info.incoming ? "incoming" : "outgoing") + " connection rejected by trust manager\n" +
                 IceInternal.Network.fdToString(fd);
             if(_securityTraceLevel >= 1)
             {
@@ -993,16 +1039,40 @@ class Instance
 
         if(_verifier != null && !_verifier.verify(info))
         {
-            String msg = (incoming ? "incoming" : "outgoing") + " connection rejected by certificate verifier\n" +
+            String msg = (info.incoming ? "incoming" : "outgoing") + " connection rejected by certificate verifier\n" +
                 IceInternal.Network.fdToString(fd);
-
-            if(_securityTraceLevel > 0)
+            if(_securityTraceLevel >= 1)
             {
                 _logger.trace(_securityTraceCategory, msg);
             }
-
             Ice.SecurityException ex = new Ice.SecurityException();
             ex.reason = msg;
+            throw ex;
+        }
+    }
+
+    void
+    trustManagerFailure(boolean incoming, java.security.cert.CertificateException ex)
+        throws java.security.cert.CertificateException
+    {
+        if(_verifyPeer == 0)
+        {
+            if(_securityTraceLevel >= 1)
+            {
+                String msg = "ignoring peer verification failure";
+                if(_securityTraceLevel > 1)
+                {
+                    java.io.StringWriter sw = new java.io.StringWriter();
+                    java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+                    ex.printStackTrace(pw);
+                    pw.flush();
+                    msg += ":\n" + sw.toString();
+                }
+                _logger.trace(_securityTraceCategory, msg);
+            }
+        }
+        else
+        {
             throw ex;
         }
     }
@@ -1091,52 +1161,19 @@ class Instance
         throws java.io.IOException
     {
         //
-        // We resolve the path as follows:
+        // This method wraps a call to IceInternal.Util.openResource. If the first call fails and
+        // IceSSL.DefaultDir is defined, prepend the default directory and try again.
         //
-        // 1. Try to open it as a class path resource
-        // 2. Try to open it in the file system
-        // 3. Prepend the value of IceSSL.DefaultDir (if defined) and try to open
-        //    it in the file system
-        //
+        java.io.InputStream stream = IceInternal.Util.openResource(getClass().getClassLoader(), path);
+        if(stream == null && _defaultDir.length() > 0)
+        {
+            stream = IceInternal.Util.openResource(getClass().getClassLoader(),
+                                                   _defaultDir + java.io.File.separator + path);
+        }
 
-        //
-        // Calling getResourceAsStream on the class loader means all paths are absolute,
-        // whereas calling it on the class requires you to prepend "/" to the path in
-        // order to make it absolute, otherwise the path is interpreted relative to the
-        // class.
-        //
-        // getResourceAsStream returns null if the resource can't be found.
-        //
-        java.io.InputStream stream = getClass().getClassLoader().getResourceAsStream(path);
         if(stream != null)
         {
             stream = new java.io.BufferedInputStream(stream);
-        }
-        else
-        {
-            try
-            {
-                java.io.File f = new java.io.File(path);
-                if(f.exists())
-                {
-                    stream = new java.io.BufferedInputStream(new java.io.FileInputStream(f));
-                }
-                else
-                {
-                    if(_defaultDir.length() > 0)
-                    {
-                        f = new java.io.File(_defaultDir + java.io.File.separator + path);
-                        if(f.exists())
-                        {
-                            stream = new java.io.BufferedInputStream(new java.io.FileInputStream(f));
-                        }
-                    }
-                }
-            }
-            catch(java.lang.SecurityException ex)
-            {
-                // Ignore - a security manager may forbid access to the local file system.
-            }
         }
 
         return stream;
@@ -1162,6 +1199,7 @@ class Instance
     private String[] _protocols;
     private boolean _checkCertName;
     private int _verifyDepthMax;
+    private int _verifyPeer;
     private CertificateVerifier _verifier;
     private PasswordCallback _passwordCallback;
     private TrustManager _trustManager;

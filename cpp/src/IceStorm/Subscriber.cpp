@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,10 +13,6 @@
 #include <IceStorm/NodeI.h>
 
 #include <Ice/LoggerUtil.h>
-
-#ifdef __BCPLUSPLUS__
-#include <iterator>
-#endif
 
 using namespace std;
 using namespace IceStorm;
@@ -581,9 +577,6 @@ Subscriber::create(
             Ice::ObjectPrx newObj;
             try
             {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-                IceUtil::DummyBCC dummy;
-#endif
                 newObj = rec.obj->ice_timeout(instance->sendTimeout());
             }
             catch(const Ice::FixedProxyException&)

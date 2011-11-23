@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -49,8 +49,8 @@ $(SUB): $(OBJS) $(SUB_OBJS)
 
 clean::
 	-rm -f build.txt
-	-rm -f 0.db/*
-	-rm -f 1.db/*
-	-rm -f 2.db/*
+	-rm -rf 0.db/*
+	-rm -rf 1.db/*
+	-rm -rf 2.db/*
 
 include .depend

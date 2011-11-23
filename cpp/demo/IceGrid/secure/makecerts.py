@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -10,30 +10,24 @@
 
 import os, sys, shutil, glob
 
-iceca = "iceca"
-
 def runIceca(args):
     os.environ['PYTHONUNBUFFERED'] = '1'
-    if os.system(iceca + " " + args):
+    command = 'iceca %s' % args
+    if os.system(command):
         sys.exit(1)
 
 def createCertificate(filename, cn):
 
     print "======= Creating " + filename + " certificate ======="
 
-    runIceca("request --no-password --overwrite %s \"%s\"" % (filename, cn))
+    runIceca('request --no-password --overwrite "%s" "%s"' % (filename, cn))
     runIceca("sign --in %s_req.pem --out %s_cert.pem" % (filename, filename))
     os.remove("%s_req.pem" % filename)
 
     print
     print
 
-for x in sys.argv[1:]:
-    if x[0:7] == "--iceca":
-        iceca = x[8:]
-
 cwd = os.getcwd()
-
 if not os.path.exists("certs") or os.path.basename(cwd) != "secure":
     print "You must run this script from the secure demo directory"
     sys.exit(1)

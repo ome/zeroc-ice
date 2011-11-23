@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,13 +18,13 @@ final class TcpTransceiver implements Transceiver
         return _fd;
     }
 
-    public SocketStatus
+    public int
     initialize()
     {
         if(_state == StateNeedConnect)
         {
             _state = StateConnectPending;
-            return SocketStatus.NeedConnect;
+            return SocketOperation.Connect;
         }
         else if(_state <= StateConnectPending)
         {
@@ -51,13 +51,13 @@ final class TcpTransceiver implements Transceiver
             }
         }
         assert(_state == StateConnected);
-        return SocketStatus.Finished;
+        return SocketOperation.None;
     }
 
     public void
     close()
     {
-        if(_traceLevels.network >= 1)
+        if(_state == StateConnected && _traceLevels.network >= 1)
         {
             String s = "closing tcp connection\n" + toString();
             _logger.trace(_traceLevels.networkCat, s);
@@ -85,9 +85,13 @@ final class TcpTransceiver implements Transceiver
     {
         final int size = buf.b.limit();
         int packetSize = size - buf.b.position();
-        if(_maxPacketSize > 0 && packetSize > _maxPacketSize)
+
+        //
+        // Limit packet size to avoid performance problems on WIN32
+        //
+        if(_maxSendPacketSize > 0 && packetSize > _maxSendPacketSize)
         {
-            packetSize = _maxPacketSize;
+            packetSize = _maxSendPacketSize;
             buf.b.limit(buf.b.position() + packetSize);
         }
 
@@ -108,7 +112,7 @@ final class TcpTransceiver implements Transceiver
                     // Writing would block, so we reset the limit (if necessary) and return true to indicate
                     // that more data must be sent.
                     //
-                    if(packetSize == _maxPacketSize)
+                    if(packetSize == _maxSendPacketSize)
                     {
                         buf.b.limit(size);
                     }
@@ -117,7 +121,7 @@ final class TcpTransceiver implements Transceiver
 
                 if(_traceLevels.network >= 3)
                 {
-                    String s = "sent " + ret + " of " + size + " bytes via tcp\n" + toString();
+                    String s = "sent " + ret + " of " + packetSize + " bytes via tcp\n" + toString();
                     _logger.trace(_traceLevels.networkCat, s);
                 }
 
@@ -126,13 +130,13 @@ final class TcpTransceiver implements Transceiver
                     _stats.bytesSent(type(), ret);
                 }
 
-                if(packetSize == _maxPacketSize)
+                if(packetSize == _maxSendPacketSize)
                 {
                     assert(buf.b.position() == buf.b.limit());
                     packetSize = size - buf.b.position();
-                    if(packetSize > _maxPacketSize)
+                    if(packetSize > _maxSendPacketSize)
                     {
-                        packetSize = _maxPacketSize;
+                        packetSize = _maxSendPacketSize;
                     }
                     buf.b.limit(buf.b.position() + packetSize);
                 }
@@ -154,11 +158,7 @@ final class TcpTransceiver implements Transceiver
     public boolean
     read(Buffer buf, Ice.BooleanHolder moreData)
     {
-        int remaining = 0;
-        if(_traceLevels.network >= 3)
-        {
-            remaining = buf.b.remaining();
-        }
+        int packetSize = buf.b.remaining();
         moreData.value = false;
 
         while(buf.b.hasRemaining())
@@ -182,7 +182,7 @@ final class TcpTransceiver implements Transceiver
                 {
                     if(_traceLevels.network >= 3)
                     {
-                        String s = "received " + ret + " of " + remaining + " bytes via tcp\n" + toString();
+                        String s = "received " + ret + " of " + packetSize + " bytes via tcp\n" + toString();
                         _logger.trace(_traceLevels.networkCat, s);
                     }
 
@@ -191,6 +191,8 @@ final class TcpTransceiver implements Transceiver
                         _stats.bytesReceived(type(), ret);
                     }
                 }
+
+                packetSize = buf.b.remaining();
             }
             catch(java.io.InterruptedIOException ex)
             {
@@ -198,14 +200,7 @@ final class TcpTransceiver implements Transceiver
             }
             catch(java.io.IOException ex)
             {
-                if(Network.connectionLost(ex))
-                {
-                    Ice.ConnectionLostException se = new Ice.ConnectionLostException();
-                    se.initCause(ex);
-                    throw se;
-                }
-                
-                Ice.SocketException se = new Ice.SocketException();
+                Ice.ConnectionLostException se = new Ice.ConnectionLostException();
                 se.initCause(ex);
                 throw se;
             }
@@ -226,12 +221,33 @@ final class TcpTransceiver implements Transceiver
         return _desc;
     }
 
+    public Ice.ConnectionInfo
+    getInfo()
+    {
+        assert(_fd != null);
+        Ice.TCPConnectionInfo info = new Ice.TCPConnectionInfo();
+        java.net.Socket socket = _fd.socket();
+        info.localAddress = socket.getLocalAddress().getHostAddress();
+        info.localPort = socket.getLocalPort();
+        if(socket.getInetAddress() != null)
+        {
+            info.remoteAddress = socket.getInetAddress().getHostAddress();
+            info.remotePort = socket.getPort();
+        }
+        else
+        {
+            info.remoteAddress = "";
+            info.remotePort = -1;
+        }
+        return info;
+    }
+
     public void
     checkSendSize(Buffer buf, int messageSizeMax)
     {
         if(buf.size() > messageSizeMax)
         {
-            throw new Ice.MemoryLimitException();
+            Ex.throwMemoryLimitException(buf.size(), messageSizeMax);
         }
     }
 
@@ -247,7 +263,7 @@ final class TcpTransceiver implements Transceiver
         _state = connected ? StateConnected : StateNeedConnect;
         _desc = Network.fdToString(_fd);
 
-        _maxPacketSize = 0;
+        _maxSendPacketSize = 0;
         if(System.getProperty("os.name").startsWith("Windows"))
         {
             //
@@ -255,10 +271,10 @@ final class TcpTransceiver implements Transceiver
             // poor throughput performances when transfering large amount of
             // data. See Microsoft KB article KB823764.
             //
-            _maxPacketSize = Network.getSendBufferSize(_fd) / 2;
-            if(_maxPacketSize < 512)
+            _maxSendPacketSize = Network.getSendBufferSize(_fd) / 2;
+            if(_maxSendPacketSize < 512)
             {
-                _maxPacketSize = 0;
+                _maxSendPacketSize = 0;
             }
         }
     }
@@ -278,7 +294,7 @@ final class TcpTransceiver implements Transceiver
     private Ice.Stats _stats;
     private String _desc;
     private int _state;
-    private int _maxPacketSize;
+    private int _maxSendPacketSize;
     
     private static final int StateNeedConnect = 0;
     private static final int StateConnectPending = 1;

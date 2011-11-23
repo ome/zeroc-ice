@@ -1,7 +1,7 @@
 <?
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,10 @@ if(!extension_loaded("ice"))
     echo "\nerror: Ice extension is not loaded.\n\n";
     exit(1);
 }
-Ice_loadProfileWithArgs($argv);
+
+$NS = function_exists("Ice\\initialize");
+require ($NS ? 'Ice_ns.php' : 'Ice.php');
+require 'Test.php';
 
 function test($b)
 {
@@ -26,14 +29,12 @@ function test($b)
     }
 }
 
-function allTests()
+function allTests($communicator)
 {
-    global $ICE;
-
     echo "testing stringToProxy... ";
     flush();
-    $ref = "initial:default -p 12010 -t 2000";
-    $base = $ICE->stringToProxy($ref);
+    $ref = "initial:default -p 12010";
+    $base = $communicator->stringToProxy($ref);
     test($base != null);
     echo "ok\n";
 
@@ -235,7 +236,9 @@ function allTests()
     return $initial;
 }
 
-$initial = allTests();
+$communicator = Ice_initialize(&$argv);
+$initial = allTests($communicator);
 $initial->shutdown();
+$communicator->destroy();
 exit();
 ?>

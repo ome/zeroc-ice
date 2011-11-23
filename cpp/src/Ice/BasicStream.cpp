@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,10 +18,12 @@
 #include <Ice/UserExceptionFactory.h>
 #include <Ice/LocalException.h>
 #include <Ice/Protocol.h>
-#include <Ice/FactoryTable.h>
+#include <Ice/FactoryTableInit.h>
 #include <Ice/TraceUtil.h>
 #include <Ice/TraceLevels.h>
 #include <Ice/LoggerUtil.h>
+#include <Ice/StringConverter.h>
+#include <IceUtil/Unicode.h>
 #ifdef __BCPLUSPLUS__
 #  include <iterator>
 #endif
@@ -29,6 +31,52 @@
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
+
+namespace
+{
+
+class StreamUTF8BufferI : public Ice::UTF8Buffer
+{
+public:
+    
+    StreamUTF8BufferI(BasicStream& stream) : 
+        _stream(stream)
+    {
+    }
+    
+    Ice::Byte*
+    getMoreBytes(size_t howMany, Ice::Byte* firstUnused)
+    {
+        assert(howMany > 0);
+
+        if(firstUnused != 0)
+        {
+            //
+            // Return unused bytes
+            //
+            _stream.b.resize(firstUnused - _stream.b.begin());
+        }
+
+        //
+        // Index of first unused byte
+        //
+        Buffer::Container::size_type pos = _stream.b.size();
+
+        //
+        // Since resize may reallocate the buffer, when firstUnused != 0, the
+        // return value can be != firstUnused
+        //
+        _stream.resize(pos + howMany);
+
+        return &_stream.b[pos];
+    }
+
+private:
+
+    BasicStream& _stream;
+};
+
+}
 
 IceInternal::BasicStream::BasicStream(Instance* instance, bool unlimited) :
     IceInternal::Buffer(instance->messageSizeMax()),
@@ -42,7 +90,7 @@ IceInternal::BasicStream::BasicStream(Instance* instance, bool unlimited) :
     _unlimited(unlimited),
     _stringConverter(instance->initializationData().stringConverter),
     _wstringConverter(instance->initializationData().wstringConverter),
-    _seqDataStack(0),
+    _startSeq(-1),
     _objectList(0)
 {
 }
@@ -64,14 +112,11 @@ IceInternal::BasicStream::clear()
         delete oldEncaps;
     }
 
-    while(_seqDataStack)
-    {
-        SeqData* oldSeqData = _seqDataStack;
-        _seqDataStack = _seqDataStack->previous;
-        delete oldSeqData;
-    }
+    _startSeq = -1;
 
     delete _objectList;
+    _objectList = 0;
+    _sliceObjects = true;
 }
 
 void*
@@ -138,126 +183,10 @@ IceInternal::BasicStream::swap(BasicStream& other)
         }
     }
 
-    std::swap(_seqDataStack, other._seqDataStack);
+    std::swap(_startSeq, other._startSeq);
+    std::swap(_minSeqSize, other._minSeqSize);
     std::swap(_objectList, other._objectList);
     std::swap(_unlimited, other._unlimited);
-}
-
-//
-// startSeq() and endSeq() sanity-check sequence sizes during
-// unmarshaling and prevent malicious messages with incorrect sequence
-// sizes from causing the receiver to use up all available memory by
-// allocating sequences with an impossibly large number of elements.
-//
-// The code generator inserts calls to startSeq() and endSeq() around
-// the code to unmarshal a sequence of a variable-length type. startSeq()
-// is called immediately after reading the sequence size, and endSeq() is
-// called after reading the final element of a sequence.
-//
-// For a sequence of a fixed-length type, the code generator inserts a
-// call to checkFixedSeq(), which does not cause any memory allocations.
-//
-// For sequences that contain constructed types that, in turn, contain
-// sequences, the code generator also inserts a call to endElement()
-// (inlined in BasicStream.h) after unmarshaling each element.
-//
-// startSeq() is passed the unmarshaled element count, plus the
-// minimum size (in bytes) occupied by the sequence's element
-// type. numElements * minSize is the smallest possible number of
-// bytes that the sequence will occupy on the wire.
-//
-// Every time startSeq() is called, it pushes the element count and
-// the minimum size on a stack. Every time endSeq() is called, it pops
-// the stack.
-//
-// For an ordinary sequence (one that does not (recursively) contain
-// nested sequences), numElements * minSize must be less than the
-// number of bytes remaining in the stream.
-//
-// For a sequence that is nested within some other sequence, there
-// must be enough bytes remaining in the stream for this sequence
-// (numElements + minSize), plus the sum of the bytes required by the
-// remaining elements of all the enclosing sequences.
-//
-// For the enclosing sequences, numElements - 1 is the number of
-// elements for which unmarshaling has not started yet. (The call to
-// endElement() in the generated code decrements that number whenever
-// a sequence element is unmarshaled.)
-//
-// For sequences that have variable-length elements, checkSeq() is called
-// whenever an element is unmarshaled. checkSeq() also checks whether
-// the stream has a sufficient number of bytes remaining.  This means
-// that, for messages with bogus sequence sizes, unmarshaling is
-// aborted at the earliest possible point.
-//
-
-void
-IceInternal::BasicStream::startSeq(int numElements, int minSize)
-{
-    if(numElements == 0) // Optimization to avoid pushing a useless stack frame.
-    {
-        return;
-    }
-
-    //
-    // Push the current sequence details on the stack.
-    //
-    SeqData* sd = new SeqData(numElements, minSize);
-    sd->previous = _seqDataStack;
-    _seqDataStack = sd;
-
-    int bytesLeft = static_cast<int>(b.end() - i);
-    if(_seqDataStack->previous == 0) // Outermost sequence
-    {
-        //
-        // The sequence must fit within the message.
-        //
-        if(numElements * minSize > bytesLeft) 
-        {
-            throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
-        }
-    }
-    else // Nested sequence
-    {
-        checkSeq(bytesLeft);
-    }
-}
-
-void
-IceInternal::BasicStream::checkFixedSeq(int numElements, int elemSize)
-{
-    int bytesLeft = static_cast<int>(b.end() - i);
-    if(_seqDataStack == 0) // Outermost sequence
-    {
-        //
-        // The sequence must fit within the message.
-        //
-        if(numElements * elemSize > bytesLeft) 
-        {
-            throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
-        }
-    }
-    else // Nested sequence
-    {
-        checkSeq(bytesLeft - numElements * elemSize);
-    }
-}
-
-void
-IceInternal::BasicStream::endSeq(int sz)
-{
-    if(sz == 0) // Pop only if something was pushed previously.
-    {
-        return;
-    }
-
-    //
-    // Pop the sequence stack.
-    //
-    SeqData* oldSeqData = _seqDataStack;
-    assert(oldSeqData);
-    _seqDataStack = oldSeqData->previous;
-    delete oldSeqData;
 }
 
 void
@@ -323,9 +252,9 @@ IceInternal::BasicStream::skipEncaps()
 {
     Int sz;
     read(sz);
-    if(sz < 0)
+    if(sz < 6)
     {
-        throw NegativeSizeException(__FILE__, __LINE__);
+        throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
     }
     if(i - sizeof(Int) + sz > b.end())
     {
@@ -366,9 +295,9 @@ IceInternal::BasicStream::startReadSlice()
 {
     Int sz;
     read(sz);
-    if(sz < 0)
+    if(sz < 4)
     {
-        throw NegativeSizeException(__FILE__, __LINE__);
+        throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
     }
     _readSlice = i - b.begin();
 }
@@ -383,12 +312,60 @@ IceInternal::BasicStream::skipSlice()
 {
     Int sz;
     read(sz);
-    if(sz < 0)
+    if(sz < 4)
     {
-        throw NegativeSizeException(__FILE__, __LINE__);
+        throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
     }
     i += sz - sizeof(Int);
     if(i > b.end())
+    {
+        throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
+    }
+}
+
+void
+IceInternal::BasicStream::readAndCheckSeqSize(int minSize, Ice::Int& sz)
+{
+    readSize(sz);
+
+    if(sz == 0)
+    {
+        return;
+    }
+
+    //
+    // The _startSeq variable points to the start of the sequence for which
+    // we expect to read at least _minSeqSize bytes from the stream.
+    //
+    // If not initialized or if we already read more data than _minSeqSize, 
+    // we reset _startSeq and _minSeqSize for this sequence (possibly a 
+    // top-level sequence or enclosed sequence it doesn't really matter).
+    //
+    // Otherwise, we are reading an enclosed sequence and we have to bump
+    // _minSeqSize by the minimum size that this sequence will  require on
+    // the stream.
+    //
+    // The goal of this check is to ensure that when we start un-marshalling
+    // a new sequence, we check the minimal size of this new sequence against
+    // the estimated remaining buffer size. This estimatation is based on 
+    // the minimum size of the enclosing sequences, it's _minSeqSize.
+    //
+    if(_startSeq == -1 || i > (b.begin() + _startSeq + _minSeqSize))
+    {
+        _startSeq = static_cast<int>(i - b.begin());
+        _minSeqSize = sz * minSize;
+    }
+    else
+    {
+        _minSeqSize += sz * minSize;
+    }
+
+    //
+    // If there isn't enough data to read on the stream for the sequence (and
+    // possibly enclosed sequences), something is wrong with the marshalled 
+    // data: it's claiming having more data that what is possible to read.
+    //
+    if(_startSeq + _minSeqSize > static_cast<int>(b.size()))
     {
         throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
     }
@@ -515,10 +492,9 @@ void
 IceInternal::BasicStream::read(pair<const Byte*, const Byte*>& v)
 {
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(1, sz);
     if(sz > 0)
     {
-        checkFixedSeq(sz, 1);
         v.first = i;
         v.second = i + sz;
         i += sz;
@@ -585,10 +561,9 @@ void
 IceInternal::BasicStream::read(vector<bool>& v)
 {
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(1, sz);
     if(sz > 0)
     {
-        checkFixedSeq(sz, 1);
         v.resize(sz);
         copy(i, i + sz, v.begin());
         i += sz;
@@ -636,10 +611,9 @@ IceInternal::BasicStream::read(pair<const bool*, const bool*>& v)
 {
     bool* result = 0;
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(1, sz);
     if(sz > 0)
     {
-        checkFixedSeq(sz, 1);
         result = BasicStreamReadBoolHelper<sizeof(bool)>::read(v, sz, i);
         i += sz;
     }
@@ -735,10 +709,9 @@ void
 IceInternal::BasicStream::read(vector<Short>& v)
 {
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(static_cast<int>(sizeof(Short)), sz);
     if(sz > 0)
     {
-        checkFixedSeq(sz, static_cast<int>(sizeof(Short)));
         Container::iterator begin = i;
         i += sz * static_cast<int>(sizeof(Short));
         v.resize(sz);
@@ -766,10 +739,9 @@ IceInternal::BasicStream::read(pair<const Short*, const Short*>& v)
 {
     Short* result = 0;
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(static_cast<int>(sizeof(Short)), sz);
     if(sz > 0)
     {
-        checkFixedSeq(sz, static_cast<int>(sizeof(Short)));
 #if defined(__i386) || defined(_M_IX86)
         v.first = reinterpret_cast<Short*>(i);
         i += sz * static_cast<int>(sizeof(Short));
@@ -852,10 +824,9 @@ void
 IceInternal::BasicStream::read(vector<Int>& v)
 {
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(static_cast<int>(sizeof(Int)), sz);
     if(sz > 0)
     {
-        checkFixedSeq(sz, static_cast<int>(sizeof(Int)));
         Container::iterator begin = i;
         i += sz * static_cast<int>(sizeof(Int));
         v.resize(sz);
@@ -885,10 +856,9 @@ IceInternal::BasicStream::read(pair<const Int*, const Int*>& v)
 {
     Int* result = 0;
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(static_cast<int>(sizeof(Int)), sz);
     if(sz > 0)
     {
-        checkFixedSeq(sz, static_cast<int>(sizeof(Int)));
 #if defined(__i386) || defined(_M_IX86)
         v.first = reinterpret_cast<Int*>(i);
         i += sz * static_cast<int>(sizeof(Int));
@@ -1018,10 +988,9 @@ void
 IceInternal::BasicStream::read(vector<Long>& v)
 {
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(static_cast<int>(sizeof(Long)), sz);
     if(sz > 0)
     {
-        checkFixedSeq(sz, static_cast<int>(sizeof(Long)));
         Container::iterator begin = i;
         i += sz * static_cast<int>(sizeof(Long));
         v.resize(sz);
@@ -1055,10 +1024,9 @@ IceInternal::BasicStream::read(pair<const Long*, const Long*>& v)
 {
     Long* result = 0;
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(static_cast<int>(sizeof(Long)), sz);
     if(sz > 0)
     {
-        checkFixedSeq(sz, static_cast<int>(sizeof(Long)));
 #if defined(__i386) || defined(_M_IX86)
         v.first = reinterpret_cast<Long*>(i);
         i += sz * static_cast<int>(sizeof(Long));
@@ -1172,10 +1140,9 @@ void
 IceInternal::BasicStream::read(vector<Float>& v)
 {
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(static_cast<int>(sizeof(Float)), sz);
     if(sz > 0)
     {
-        checkFixedSeq(sz, static_cast<int>(sizeof(Float)));
         Container::iterator begin = i;
         i += sz * static_cast<int>(sizeof(Float));
         v.resize(sz);
@@ -1205,10 +1172,9 @@ IceInternal::BasicStream::read(pair<const Float*, const Float*>& v)
 {
     Float* result = 0;
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(static_cast<int>(sizeof(Float)), sz);
     if(sz > 0)
     {
-        checkFixedSeq(sz, static_cast<int>(sizeof(Float)));
 #if defined(__i386) || defined(_M_IX86)
         v.first = reinterpret_cast<Float*>(i);
         i += sz * static_cast<int>(sizeof(Float));
@@ -1375,10 +1341,9 @@ void
 IceInternal::BasicStream::read(vector<Double>& v)
 {
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(static_cast<int>(sizeof(Double)), sz);
     if(sz > 0)
     {
-        checkFixedSeq(sz, static_cast<int>(sizeof(Double)));
         Container::iterator begin = i;
         i += sz * static_cast<int>(sizeof(Double));
         v.resize(sz);
@@ -1427,10 +1392,9 @@ IceInternal::BasicStream::read(pair<const Double*, const Double*>& v)
 {
     Double* result = 0;
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(static_cast<int>(sizeof(Double)), sz);
     if(sz > 0)
     {
-        checkFixedSeq(sz, static_cast<int>(sizeof(Double)));
 #if defined(__i386) || defined(_M_IX86)
         v.first = reinterpret_cast<Double*>(i);
         i += sz * static_cast<int>(sizeof(Double));
@@ -1572,21 +1536,23 @@ IceInternal::BasicStream::write(const string* begin, const string* end, bool con
 }
 
 void
+IceInternal::BasicStream::readConverted(string& v, int sz)
+{
+    _stringConverter->fromUTF8(i, i + sz, v);
+}
+
+void
 IceInternal::BasicStream::read(vector<string>& v, bool convert)
 {
     Int sz;
-    readSize(sz);
+    readAndCheckSeqSize(1, sz);
     if(sz > 0)
     {
-        startSeq(sz, 1);
         v.resize(sz);
         for(int j = 0; j < sz; ++j)
         {
             read(v[j], convert);
-            checkSeq();
-            endElement();
         }
-        endSeq(sz);
     }
     else
     {
@@ -1673,21 +1639,38 @@ IceInternal::BasicStream::write(const wstring* begin, const wstring* end)
 }
 
 void
-IceInternal::BasicStream::read(vector<wstring>& v)
+IceInternal::BasicStream::read(wstring& v)
 {
-    Int sz;
+    Ice::Int sz;
     readSize(sz);
     if(sz > 0)
     {
-        startSeq(sz, 1);
+        if(b.end() - i < sz)
+        {
+            throwUnmarshalOutOfBoundsException(__FILE__, __LINE__);
+        }
+
+        _wstringConverter->fromUTF8(i, i + sz, v);
+        i += sz;
+    }
+    else
+    {
+        v.clear();
+    }
+}
+
+void
+IceInternal::BasicStream::read(vector<wstring>& v)
+{
+    Int sz;
+    readAndCheckSeqSize(1, sz);
+    if(sz > 0)
+    {
         v.resize(sz);
         for(int j = 0; j < sz; ++j)
         {
             read(v[j]);
-            checkSeq();
-            endElement();
         }
-        endSeq(sz);
     }
     else
     {
@@ -2087,15 +2070,10 @@ IceInternal::BasicStream::readPendingObjects()
             {
                 (*p)->ice_postUnmarshal();
             }
-            catch(const Ice::Exception& ex)
-            {
-                Ice::Warning out(_instance->initializationData().logger);
-                out << "Ice::Exception raised by ice_postUnmarshal:\n" << ex;
-            }
             catch(const std::exception& ex)
             {
                 Ice::Warning out(_instance->initializationData().logger);
-                out << "std::exception raised by ice_postUnmarshal:\n" << ex.what();
+                out << "std::exception raised by ice_postUnmarshal:\n" << ex;
             }
             catch(...)
             {
@@ -2116,18 +2094,6 @@ void
 IceInternal::BasicStream::throwUnmarshalOutOfBoundsException(const char* file, int line)
 {
     throw UnmarshalOutOfBoundsException(file, line);
-}
-
-void
-IceInternal::BasicStream::throwMemoryLimitException(const char* file, int line)
-{
-    throw MemoryLimitException(file, line);
-}
-
-void
-IceInternal::BasicStream::throwNegativeSizeException(const char* file, int line)
-{
-    throw NegativeSizeException(file, line);
 }
 
 void
@@ -2155,15 +2121,10 @@ IceInternal::BasicStream::writeInstance(const ObjectPtr& v, Int index)
     {
         v->ice_preMarshal();
     }
-    catch(const Ice::Exception& ex)
-    {
-        Ice::Warning out(_instance->initializationData().logger);
-        out << "Ice::Exception raised by ice_preMarshal:\n" << ex;
-    }
     catch(const std::exception& ex)
     {
         Ice::Warning out(_instance->initializationData().logger);
-        out << "std::exception raised by ice_preMarshal:\n" << ex.what();
+        out << "std::exception raised by ice_preMarshal:\n" << ex;
     }
     catch(...)
     {
@@ -2235,6 +2196,3 @@ IceInternal::BasicStream::patchPointers(Int index, IndexToPtrMap::const_iterator
     _currentReadEncaps->patchMap->erase(patchPos);
 }
 
-IceInternal::BasicStream::SeqData::SeqData(int num, int sz) : numElements(num), minSize(sz)
-{
-}

@@ -1,13 +1,14 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#include <IceUtil/StaticMutex.h>
+#include <IceUtil/Mutex.h>
+#include <IceUtil/MutexPtrLock.h>
 #include <IceUtil/StringUtil.h>
 #include <Ice/TraceUtil.h>
 #include <Ice/Instance.h>
@@ -354,13 +355,36 @@ printMessage(ostream& s, BasicStream& stream)
     return type;
 }
 
-static IceUtil::StaticMutex slicingMutex = ICE_STATIC_MUTEX_INITIALIZER;
-static set<string> slicingIds;
+namespace
+{
+
+IceUtil::Mutex* slicingMutex = 0;
+
+class Init
+{
+public:
+
+    Init()
+    {
+        slicingMutex = new IceUtil::Mutex;
+    }
+
+    ~Init()
+    {
+        delete slicingMutex;
+        slicingMutex = 0;
+    }
+};
+
+Init init;
+
+}
 
 void
 IceInternal::traceSlicing(const char* kind, const string& typeId, const char* slicingCat, const LoggerPtr& logger)
 {
-    IceUtil::StaticMutex::Lock lock(slicingMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(slicingMutex);
+    static set<string> slicingIds;
     if(slicingIds.insert(typeId).second)
     {
         string s("unknown ");

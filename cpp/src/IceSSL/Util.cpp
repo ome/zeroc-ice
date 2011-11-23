@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,19 +8,13 @@
 // **********************************************************************
 
 #include <IceSSL/Util.h>
+#include <IceUtil/FileUtil.h>
 #include <Ice/LocalException.h>
 #include <Ice/Network.h>
 
 #ifdef _WIN32
 #   include <direct.h>
 #   include <sys/types.h>
-#   include <sys/stat.h>
-#   ifdef _MSC_VER
-#     define S_ISDIR(mode) ((mode) & _S_IFDIR)
-#     define S_ISREG(mode) ((mode) & _S_IFREG)
-#   endif
-#else
-#   include <sys/stat.h>
 #endif
 
 #include <openssl/err.h>
@@ -31,6 +25,9 @@ using namespace std;
 using namespace Ice;
 using namespace IceSSL;
 
+namespace
+{
+
 #ifndef OPENSSL_NO_DH
 
 // The following arrays are predefined Diffie Hellman group parameters.
@@ -39,7 +36,7 @@ using namespace IceSSL;
 // They are not keys themselves, but the basis for generating DH keys
 // on the fly.
 
-static unsigned char dh512_p[] =
+unsigned char dh512_p[] =
 {
     0xF5,0x2A,0xFF,0x3C,0xE1,0xB1,0x29,0x40,0x18,0x11,0x8D,0x7C,
     0x84,0xA7,0x0A,0x72,0xD6,0x86,0xC4,0x03,0x19,0xC8,0x07,0x29,
@@ -49,9 +46,9 @@ static unsigned char dh512_p[] =
     0xE9,0x2A,0x05,0x5F,
 };
 
-static unsigned char dh512_g[] = { 0x02 };
+unsigned char dh512_g[] = { 0x02 };
 
-static unsigned char dh1024_p[] =
+unsigned char dh1024_p[] =
 {
     0xF4,0x88,0xFD,0x58,0x4E,0x49,0xDB,0xCD,0x20,0xB4,0x9D,0xE4,
     0x91,0x07,0x36,0x6B,0x33,0x6C,0x38,0x0D,0x45,0x1D,0x0F,0x7C,
@@ -66,9 +63,9 @@ static unsigned char dh1024_p[] =
     0xA2,0x5E,0xC3,0x55,0xE9,0x2F,0x78,0xC7,
 };
 
-static unsigned char dh1024_g[] = { 0x02 };
+unsigned char dh1024_g[] = { 0x02 };
 
-static unsigned char dh2048_p[] =
+unsigned char dh2048_p[] =
 {
     0xF6,0x42,0x57,0xB7,0x08,0x7F,0x08,0x17,0x72,0xA2,0xBA,0xD6,
     0xA9,0x42,0xF3,0x05,0xE8,0xF9,0x53,0x11,0x39,0x4F,0xB6,0xF1,
@@ -94,9 +91,9 @@ static unsigned char dh2048_p[] =
     0xE9,0x32,0x0B,0x3B,
 };
 
-static unsigned char dh2048_g[] = { 0x02 };
+unsigned char dh2048_g[] = { 0x02 };
 
-static unsigned char dh4096_p[] =
+unsigned char dh4096_p[] =
 {
     0xFA,0x14,0x72,0x52,0xC1,0x4D,0xE1,0x5A,0x49,0xD4,0xEF,0x09,
     0x2D,0xC0,0xA8,0xFD,0x55,0xAB,0xD7,0xD9,0x37,0x04,0x28,0x09,
@@ -143,7 +140,9 @@ static unsigned char dh4096_p[] =
     0xB9,0xBD,0x78,0xE1,0x84,0x41,0xA0,0xDF,
 };
 
-static unsigned char dh4096_g[] = { 0x02 };
+unsigned char dh4096_g[] = { 0x02 };
+
+}
 
 //
 // Convert a predefined parameter set into a DH value.
@@ -281,13 +280,8 @@ IceSSL::checkPath(string& path, const string& defaultDir, bool dir)
     // argument is modified and true is returned. Otherwise
     // false is returned.
     //
-#ifdef _WIN32
-    struct _stat st;
-    int err = ::_stat(path.c_str(), &st);
-#else
-    struct stat st;
-    int err = ::stat(path.c_str(), &st);
-#endif
+    IceUtilInternal::structstat st;
+    int err = IceUtilInternal::stat(path, &st);
     if(err == 0)
     {
         return dir ? S_ISDIR(st.st_mode) != 0 : S_ISREG(st.st_mode) != 0;
@@ -297,11 +291,10 @@ IceSSL::checkPath(string& path, const string& defaultDir, bool dir)
     {
 #ifdef _WIN32
         string s = defaultDir + "\\" + path;
-        err = ::_stat(s.c_str(), &st);
 #else
         string s = defaultDir + "/" + path;
-        err = ::stat(s.c_str(), &st);
 #endif
+        err = ::IceUtilInternal::stat(s.c_str(), &st);
         if(err == 0 && ((!dir && S_ISREG(st.st_mode)) || (dir && S_ISDIR(st.st_mode))))
         {
             path = s;
@@ -310,74 +303,6 @@ IceSSL::checkPath(string& path, const string& defaultDir, bool dir)
     }
 
     return false;
-}
-
-ConnectionInfo
-IceSSL::populateConnectionInfo(SSL* ssl, SOCKET fd, const string& adapterName, bool incoming)
-{
-    ConnectionInfo info;
-    info.adapterName = adapterName;
-    info.incoming = incoming;
-
-    assert(ssl != 0);
-
-    //
-    // On the client side, SSL_get_peer_cert_chain returns the entire chain of certs.
-    // On the server side, the peer certificate must be obtained separately.
-    //
-    // Since we have no clear idea whether the connection is server or client side,
-    // the peer certificate is obtained separately and compared against the first
-    // certificate in the chain. If they are not the same, it is added to the chain.
-    //
-    X509* cert = SSL_get_peer_certificate(ssl);
-    STACK_OF(X509)* chain = SSL_get_peer_cert_chain(ssl);
-    if(cert != 0 && (chain == 0 || sk_X509_num(chain) == 0 || cert != sk_X509_value(chain, 0)))
-    {
-        info.certs.push_back(new Certificate(cert));
-    }
-    else
-    {
-        X509_free(cert);
-    }
-
-    if(chain != 0)
-    {
-        for(int i = 0; i < sk_X509_num(chain); ++i)
-        {
-            X509* cert = sk_X509_value(chain, i);
-            //
-            // Duplicate the certificate since the stack comes straight from the SSL connection.
-            //
-            info.certs.push_back(new Certificate(X509_dup(cert)));
-        }
-    }
-
-    info.cipher = SSL_get_cipher_name(ssl); // Nothing needs to be free'd.
-
-    IceInternal::fdToLocalAddress(fd, info.localAddr);
-
-    if(!IceInternal::fdToRemoteAddress(fd, info.remoteAddr))
-    {
-#ifdef _WIN32
-        //
-        // A bug exists in Windows XP Service Pack 2 that causes getpeername to return a
-        // "socket not connected" error when using IPv6. See the following bug report:
-        //
-        // https://connect.microsoft.com/WNDP/feedback/ViewFeedback.aspx?FeedbackID=338445
-        //
-        // As a workaround, we do not raise a socket exception, but instead return a
-        // "null" value for the remote address.
-        //
-        memset(&info.remoteAddr, 0, sizeof(info.remoteAddr));
-        info.remoteAddr.ss_family = AF_UNSPEC;
-#else
-        SocketException ex(__FILE__, __LINE__);
-        ex.error = IceInternal::getSocketErrno();
-        throw ex;       
-#endif
-    }
-
-    return info;
 }
 
 string

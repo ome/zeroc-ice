@@ -1,57 +1,41 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-public class Server
+package test.Ice.custom;
+
+public class Server extends test.Util.Application
 {
-    private static int
-    run(String[] args, Ice.Communicator communicator)
+    public int run(String[] args)
     {
-        communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000");
+        Ice.Communicator communicator = communicator();
         Ice.ObjectAdapter adapter = communicator.createObjectAdapter("TestAdapter");
         Ice.Object test = new TestI(communicator);
         adapter.add(test, communicator.stringToIdentity("test"));
 
         adapter.activate();
-        communicator.waitForShutdown();
 
-        return 0;
+        return WAIT;
     }
 
-    public static void
-    main(String[] args)
+    protected Ice.InitializationData getInitData(Ice.StringSeqHolder argsH)
     {
-        int status = 0;
-        Ice.Communicator communicator = null;
+        Ice.InitializationData initData = new Ice.InitializationData();
+        initData.properties = Ice.Util.createProperties(argsH);
+        initData.properties.setProperty("Ice.Package.Test", "test.Ice.custom");
+        initData.properties.setProperty("TestAdapter.Endpoints", "default -p 12010");
+        return initData;
+    }
 
-        try
-        {
-            communicator = Ice.Util.initialize(args);
-            status = run(args, communicator);
-        }
-        catch(Exception ex)
-        {
-            ex.printStackTrace();
-            status = 1;
-        }
-
-        if(communicator != null)
-        {
-            try
-            {
-                communicator.destroy();
-            }
-            catch(Ice.LocalException ex)
-            {
-                ex.printStackTrace();
-                status = 1;
-            }
-        }
+    public static void main(String[] args)
+    {
+        Server c = new Server();
+        int status = c.main("Server", args);
 
         System.gc();
         System.exit(status);

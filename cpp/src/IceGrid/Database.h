@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,13 +12,9 @@
 
 #include <IceUtil/Mutex.h>
 #include <IceUtil/Shared.h>
-#include <Freeze/ConnectionF.h>
 #include <Ice/CommunicatorF.h>
 #include <IceGrid/Admin.h>
 #include <IceGrid/Internal.h>
-#include <IceGrid/StringApplicationInfoDict.h>
-#include <IceGrid/IdentityObjectInfoDict.h>
-#include <IceGrid/StringAdapterInfoDict.h>
 #include <IceGrid/ServerCache.h>
 #include <IceGrid/NodeCache.h>
 #include <IceGrid/ReplicaCache.h>
@@ -26,6 +22,7 @@
 #include <IceGrid/AllocatableObjectCache.h>
 #include <IceGrid/AdapterCache.h>
 #include <IceGrid/Topics.h>
+#include <IceGrid/DB.h>
 
 namespace IceGrid
 {
@@ -57,7 +54,7 @@ public:
 
 
     Database(const Ice::ObjectAdapterPtr&, const IceStorm::TopicManagerPrx&, const std::string&, const TraceLevelsPtr&,
-             const RegistryInfo&, bool);
+             const RegistryInfo&, const DatabasePluginPtr&, bool);
     virtual ~Database();
     
     std::string getInstanceName() const;
@@ -104,6 +101,8 @@ public:
     AdapterPrx getAdapterProxy(const std::string&, const std::string&, bool);
     void getLocatorAdapterInfo(const std::string&, LocatorAdapterInfoSeq&, int&, bool&, bool&,
                                const std::set<std::string>& = std::set<std::string>());
+    bool addAdapterSyncCallback(const std::string&, const SynchronizationCallbackPtr&, 
+                                const std::set<std::string>& = std::set<std::string>());
 
     std::vector<std::pair<std::string, AdapterPrx> > getAdapters(const std::string&, int&, bool&);
     AdapterInfoSeq getAdapterInfo(const std::string&);
@@ -130,25 +129,30 @@ public:
 
 private:
 
-    void checkForAddition(const ApplicationHelper&);
-    void checkForUpdate(const ApplicationHelper&, const ApplicationHelper&);
+    void checkForAddition(const ApplicationHelper&, const IceDB::DatabaseConnectionPtr&);
+    void checkForUpdate(const ApplicationHelper&, const ApplicationHelper&, const IceDB::DatabaseConnectionPtr&);
     void checkForRemove(const ApplicationHelper&);
 
     void checkServerForAddition(const std::string&);
-    void checkAdapterForAddition(const std::string&);
-    void checkObjectForAddition(const Ice::Identity&);
+    void checkAdapterForAddition(const std::string&, const AdaptersWrapperPtr&);
+    void checkObjectForAddition(const Ice::Identity&, const ObjectsWrapperPtr&);
     void checkReplicaGroupExists(const std::string&);
     void checkReplicaGroupForRemove(const std::string&);
 
     void load(const ApplicationHelper&, ServerEntrySeq&, const std::string&, int);
     void unload(const ApplicationHelper&, ServerEntrySeq&);
     void reload(const ApplicationHelper&, const ApplicationHelper&, ServerEntrySeq&, const std::string&, int);
+
+    void saveApplication(const ApplicationInfo&, const IceDB::DatabaseConnectionPtr&);
+    void removeApplication(const std::string&, const IceDB::DatabaseConnectionPtr&);
+
     void finishApplicationUpdate(ServerEntrySeq&, const ApplicationUpdateInfo&, const ApplicationInfo&, 
                                  const ApplicationDescriptor&, AdminSessionI*);
 
     void checkSessionLock(AdminSessionI*);
 
-    void startUpdating(const std::string&);
+    void waitForUpdate(const std::string&);
+    void startUpdating(const std::string&, const std::string&, int);
     void finishUpdating(const std::string&);
     
     friend struct AddComponent;
@@ -162,7 +166,6 @@ private:
     const Ice::CommunicatorPtr _communicator;
     const Ice::ObjectAdapterPtr _internalAdapter;
     const IceStorm::TopicManagerPrx _topicManager;
-    const std::string _envName;
     const std::string _instanceName;
     const TraceLevelsPtr _traceLevels;
     const bool _master;
@@ -181,11 +184,8 @@ private:
     AdapterObserverTopicPtr _adapterObserverTopic;
     ObjectObserverTopicPtr _objectObserverTopic;
 
-    Freeze::ConnectionPtr _connection;
-    StringApplicationInfoDict _applications;
-    StringAdapterInfoDict _adapters;
-    IdentityObjectInfoDict _objects;
-    IdentityObjectInfoDict _internalObjects;
+    DatabaseCachePtr _databaseCache;
+    DatabasePluginPtr _databasePlugin;
     
     AdminSessionI* _lock;
     std::string _lockUserId;
@@ -193,7 +193,46 @@ private:
     int _replicaApplicationSerial;
     int _adapterSerial;
     int _objectSerial;
-    std::map<std::string, std::vector<AMD_NodeSession_waitForApplicationUpdatePtr> > _updating;
+
+    struct UpdateInfo
+    {
+        std::string name;
+        std::string uuid;
+        int revision;
+        std::vector<AMD_NodeSession_waitForApplicationUpdatePtr> cbs;
+        bool updated;
+
+        UpdateInfo(const std::string& n, const std::string& u, int r) :
+            name(n), uuid(u), revision(r), updated(false)
+        {
+        }
+
+        bool operator==(const std::string& n)
+        {
+            return name == n;
+        }
+        bool operator==(const std::pair<std::string, int>& p)
+        {
+            return uuid == p.first && revision == p.second;
+        }
+
+        void markUpdated()
+        {
+            updated = true;
+            std::vector<AMD_NodeSession_waitForApplicationUpdatePtr>::const_iterator q;
+            for(q = cbs.begin(); q != cbs.end(); ++q)
+            {
+                (*q)->ice_response();
+            }
+            cbs.clear();
+        }
+
+        void unmarkUpdated()
+        {
+            updated = false;
+        }
+    };
+    std::vector<UpdateInfo> _updating;
 };
 typedef IceUtil::Handle<Database> DatabasePtr;
 

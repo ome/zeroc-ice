@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,22 +14,21 @@
 #include <IceStorm/TraceLevels.h>
 #include <IceStorm/NodeI.h>
 #include <IceStorm/Observers.h>
-
+#include <IceStorm/DB.h>
 #include <Ice/LoggerUtil.h>
-
-#include <Freeze/Freeze.h>
-
 #include <algorithm>
 
 using namespace std;
 using namespace IceStorm;
 using namespace IceStormElection;
 
+using namespace IceDB;
+
 namespace
 {
 
 void
-halt(const Ice::CommunicatorPtr& com, const Freeze::DatabaseException& ex)
+halt(const Ice::CommunicatorPtr& com, const DatabaseException& ex)
 {
     {
         Ice::Error error(com->getLogger());
@@ -404,14 +403,13 @@ TopicImpl::TopicImpl(
     _instance(instance),
     _name(name),
     _id(id),
-    _connection(Freeze::createConnection(instance->communicator(), instance->serviceName())),
-    _subscriberMap(_connection, "subscribers"),
-    _llumap(_connection, "llu"),
+    _databaseCache(instance->databaseCache()),
     _destroyed(false)
 {
     try
     {
         __setNoDelete(true);
+        
         // TODO: If we want to improve the performance of the
         // non-replicated case we could allocate a null-topic impl here.
         _servant = new TopicI(this, instance);
@@ -529,7 +527,7 @@ TopicImpl::getNonReplicatedPublisher() const
 #if defined(_MSC_VER) && (_MSC_VER < 1300)
 namespace
 {
-static vector<SubscriberPtr>::iterator
+vector<SubscriberPtr>::iterator
 find(vector<SubscriberPtr>::iterator start, vector<SubscriberPtr>::iterator end, const Ice::Identity& ident)
 {
     while(start != end)
@@ -547,7 +545,7 @@ find(vector<SubscriberPtr>::iterator start, vector<SubscriberPtr>::iterator end,
 
 namespace
 {
-static void
+void
 trace(Ice::Trace& out, const InstancePtr& instance, const vector<SubscriberPtr>& s)
 {
     out << '[';
@@ -656,28 +654,29 @@ TopicImpl::subscribe(const QoS& origQoS, const Ice::ObjectPrx& obj)
         {
             try
             {
-                Freeze::TransactionHolder txn(_connection);
+                DatabaseConnectionPtr connection = _databaseCache->getConnection();
+                TransactionHolder txn(connection);
+
                 SubscriberRecordKey key;
                 key.topic = _id;
                 key.id =  record.id;
-                SubscriberMap::iterator e = _subscriberMap.find(key);
-                if(e != _subscriberMap.end())
-                {
-                    _subscriberMap.erase(e);
-                }
-                LLUMap::iterator ci = _llumap.find("_manager");
-                assert(ci != _llumap.end());
-                llu = ci->second;
+
+                SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+                subscribersWrapper->erase(key);
+
+                LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+                llu = lluWrapper->get();
                 llu.iteration++;
-                ci.set(llu);
+                lluWrapper->put(llu);
+
                 txn.commit();
                 break;
             }
-            catch(const Freeze::DeadlockException&)
+            catch(const DeadlockException&)
             {
                 continue;
             }
-            catch(const Freeze::DatabaseException& ex)
+            catch(const DatabaseException& ex)
             {
                 halt(_instance->communicator(), ex);
             }	
@@ -692,25 +691,30 @@ TopicImpl::subscribe(const QoS& origQoS, const Ice::ObjectPrx& obj)
     {
         try
         {
-            Freeze::TransactionHolder txn(_connection);
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            TransactionHolder txn(connection);
+
             SubscriberRecordKey key;
             key.topic = _id;
             key.id = subscriber->id();
-            _subscriberMap.put(SubscriberMap::value_type(key, record));
+
+            SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+            subscribersWrapper->put(key, record);
+
             // Update the LLU.
-            LLUMap::iterator ci = _llumap.find("_manager");
-            assert(ci != _llumap.end());
-            llu = ci->second;
+            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            llu = lluWrapper->get();
             llu.iteration++;
-            ci.set(llu);
+            lluWrapper->put(llu);
+
             txn.commit();
             break;
         }
-        catch(const Freeze::DeadlockException&)
+        catch(const DeadlockException&)
         {
             continue;
         }
-        catch(const Freeze::DatabaseException& ex)
+        catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
         }	
@@ -770,26 +774,29 @@ TopicImpl::subscribeAndGetPublisher(const QoS& qos, const Ice::ObjectPrx& obj)
     {
         try
         {
-            Freeze::TransactionHolder txn(_connection);
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            TransactionHolder txn(connection);
 
             SubscriberRecordKey key;
             key.topic = _id;
             key.id = subscriber->id();
-            _subscriberMap.put(SubscriberMap::value_type(key, record));
 
-            LLUMap::iterator ci = _llumap.find("_manager");
-            assert(ci != _llumap.end());
-            llu = ci->second;
+            SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+            subscribersWrapper->put(key, record);
+
+            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            llu = lluWrapper->get();
             llu.iteration++;
-            ci.set(llu);
+            lluWrapper->put(llu);
+
             txn.commit();
             break;
         }
-        catch(const Freeze::DeadlockException&)
+        catch(const DeadlockException&)
         {
             continue;
         }
-        catch(const Freeze::DatabaseException& ex)
+        catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
         }	
@@ -889,26 +896,29 @@ TopicImpl::link(const TopicPrx& topic, Ice::Int cost)
     {
         try
         {
-            Freeze::TransactionHolder txn(_connection);
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            TransactionHolder txn(connection);
 
             SubscriberRecordKey key;
             key.topic = _id;
             key.id = id;
-            _subscriberMap.put(SubscriberMap::value_type(key, record));
 
-            LLUMap::iterator ci = _llumap.find("_manager");
-            assert(ci != _llumap.end());
-            llu = ci->second;
+            SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+            subscribersWrapper->put(key, record);
+
+            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            llu = lluWrapper->get();
             llu.iteration++;
-            ci.set(llu);
+            lluWrapper->put(llu);
+
             txn.commit();
             break;
         }
-        catch(const Freeze::DeadlockException&)
+        catch(const DeadlockException&)
         {
             continue;
         }
-        catch(const Freeze::DatabaseException& ex)
+        catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
         }	
@@ -1283,25 +1293,28 @@ TopicImpl::observerAddSubscriber(const LogUpdate& llu, const SubscriberRecord& r
     {
         try
         {
-            Freeze::TransactionHolder txn(_connection);
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            TransactionHolder txn(connection);
 
             SubscriberRecordKey key;
             key.topic = _id;
             key.id = subscriber->id();
-            _subscriberMap.put(SubscriberMap::value_type(key, record));
+
+            SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+            subscribersWrapper->put(key, record);
 
             // Update the LLU.
-            LLUMap::iterator ci = _llumap.find("_manager");
-            assert(ci != _llumap.end());
-            ci.set(llu);
+            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            lluWrapper->put(llu);
+
             txn.commit();
             break;
         }
-        catch(const Freeze::DeadlockException&)
+        catch(const DeadlockException&)
         {
             continue;
         }
-        catch(const Freeze::DatabaseException& ex)
+        catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
         }	
@@ -1349,29 +1362,30 @@ TopicImpl::observerRemoveSubscriber(const LogUpdate& llu, const Ice::IdentitySeq
     {
         try
         {
-            Freeze::TransactionHolder txn(_connection);
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            TransactionHolder txn(connection);
+
             for(Ice::IdentitySeq::const_iterator id = ids.begin(); id != ids.end(); ++id)
             {
                 SubscriberRecordKey key;
                 key.topic = _id;
                 key.id = *id;
-                SubscriberMap::iterator e = _subscriberMap.find(key);
-                if(e != _subscriberMap.end())
-                {
-                    _subscriberMap.erase(e);
-                }
+
+                SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+                subscribersWrapper->erase(key);
             }
-            LLUMap::iterator ci = _llumap.find("_manager");
-            assert(ci != _llumap.end());
-            ci.set(llu);
+
+            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            lluWrapper->put(llu);
+
             txn.commit();
             break;
         }
-        catch(const Freeze::DeadlockException&)
+        catch(const DeadlockException&)
         {
             continue;
         }
-        catch(const Freeze::DatabaseException& ex)
+        catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
         }	
@@ -1424,38 +1438,34 @@ TopicImpl::destroyInternal(const LogUpdate& origLLU, bool master)
     {
         try
         {
-            SubscriberRecordKey key;
-            key.topic = _id;
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            TransactionHolder txn(connection);
 
-            Freeze::TransactionHolder txn(_connection);
             // Erase all subscriber records and the topic record.
-            SubscriberMap::iterator p = _subscriberMap.find(key);
-            while(p != _subscriberMap.end() && p->first.topic == key.topic)
-            {
-                _subscriberMap.erase(p++);
-            }
+            SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+            subscribersWrapper->eraseTopic(_id);
 
             // Update the LLU.
-            LLUMap::iterator ci = _llumap.find("_manager");
-            assert(ci != _llumap.end());
+            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
             if(master)
             {
-                llu = ci->second;
+                llu = lluWrapper->get();
                 llu.iteration++;
             }
             else
             {
                 llu = origLLU;
             }
-            ci.set(llu);
+            lluWrapper->put(llu);
+
             txn.commit();
             break;
         }
-        catch(const Freeze::DeadlockException&)
+        catch(const DeadlockException&)
         {
             continue;
         }
-        catch(const Freeze::DatabaseException& ex)
+        catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
         }	
@@ -1503,33 +1513,32 @@ TopicImpl::removeSubscribers(const Ice::IdentitySeq& ids)
     {
         try
         {
-            Freeze::TransactionHolder txn(_connection);
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            TransactionHolder txn(connection);
 
             for(Ice::IdentitySeq::const_iterator id = ids.begin(); id != ids.end(); ++id)
             {
                 SubscriberRecordKey key;
                 key.topic = _id;
                 key.id = *id;
-                SubscriberMap::iterator e = _subscriberMap.find(key);
-                if(e != _subscriberMap.end())
-                {
-                    _subscriberMap.erase(e);
-                }
+                
+                SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+                subscribersWrapper->erase(key);
             }
 
-            LLUMap::iterator ci = _llumap.find("_manager");
-            assert(ci != _llumap.end());
-            llu = ci->second;
+            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            llu = lluWrapper->get();
             llu.iteration++;
-            ci.set(llu);
+            lluWrapper->put(llu);
+
             txn.commit();
             break;
         }
-        catch(const Freeze::DeadlockException&)
+        catch(const DeadlockException&)
         {
             continue;
         }
-        catch(const Freeze::DatabaseException& ex)
+        catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
         }	

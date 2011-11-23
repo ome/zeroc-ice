@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,49 +11,51 @@
 
 using namespace std;
 
-SOCKET
-Transceiver::fd()
+IceInternal::NativeInfoPtr
+Transceiver::getNativeInfo()
 {
-    return _transceiver->fd();
+    return _transceiver->getNativeInfo();
 }
 
-IceInternal::SocketStatus
+IceInternal::SocketOperation
 Transceiver::initialize()
 {
-    IceInternal::SocketStatus status = _configuration->initializeSocketStatus();
-    if(status == IceInternal::NeedConnect)
+#ifndef ICE_USE_IOCP
+    IceInternal::SocketOperation status = _configuration->initializeSocketOperation();
+    if(status == IceInternal::SocketOperationConnect)
     {
         return status;
     }
-    else if(status == IceInternal::NeedWrite)
+    else if(status == IceInternal::SocketOperationWrite)
     {
         if(!_initialized)
         {
             status = _transceiver->initialize();
-            if(status != IceInternal::Finished)
+            if(status != IceInternal::SocketOperationNone)
             {
                 return status;
             }
             _initialized = true;
         }
-        return IceInternal::NeedWrite;
+        return IceInternal::SocketOperationWrite;
     }
-    else if(status == IceInternal::NeedRead)
+    else if(status == IceInternal::SocketOperationRead)
     {
         return status;
     }
+#endif
 
     _configuration->checkInitializeException();
     if(!_initialized)
     {
-        IceInternal::SocketStatus status = _transceiver->initialize();
-        if(status != IceInternal::Finished)
+        IceInternal::SocketOperation status = _transceiver->initialize();
+        if(status != IceInternal::SocketOperationNone)
         {
             return status;
         }
         _initialized = true;
     }
-    return IceInternal::Finished;
+    return IceInternal::SocketOperationNone;
 }
 
 void
@@ -72,7 +74,7 @@ Transceiver::write(IceInternal::Buffer& buf)
 
     if(!_configuration->writeReady())
     {
-            return false;
+        return false;
     }
 
     _configuration->checkWriteException();
@@ -96,6 +98,37 @@ Transceiver::read(IceInternal::Buffer& buf)
     return _transceiver->read(buf);
 }
 
+
+#ifdef ICE_USE_IOCP
+bool
+Transceiver::startWrite(IceInternal::Buffer& buf)
+{
+    _configuration->checkWriteException();
+    return _transceiver->startWrite(buf);
+}
+
+void 
+Transceiver::finishWrite(IceInternal::Buffer& buf)
+{
+    _configuration->checkWriteException();
+    _transceiver->finishWrite(buf);
+}
+
+void 
+Transceiver::startRead(IceInternal::Buffer& buf)
+{
+    _configuration->checkReadException();
+    _transceiver->startRead(buf);
+}
+
+void 
+Transceiver::finishRead(IceInternal::Buffer& buf)
+{
+    _configuration->checkReadException();
+    _transceiver->finishRead(buf);
+}
+#endif
+
 string
 Transceiver::type() const
 {
@@ -106,6 +139,12 @@ string
 Transceiver::toString() const
 {
     return _transceiver->toString();
+}
+
+Ice::ConnectionInfoPtr
+Transceiver::getInfo() const
+{
+    return _transceiver->getInfo();
 }
 
 void

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -18,13 +18,13 @@ class GetAdapterNameCB:
         self._name = ""
         self._cond = threading.Condition()
 
-    def ice_response(self, name):
+    def response(self, name):
         self._cond.acquire()
         self._name = name
         self._cond.notify()
         self._cond.release()
 
-    def ice_exception(self, ex):
+    def exception(self, ex):
         test(False)
 
     def getResult(self):
@@ -41,7 +41,7 @@ class GetAdapterNameCB:
 
 def getAdapterNameWithAMI(proxy):
     cb = GetAdapterNameCB()
-    proxy.getAdapterName_async(cb)
+    proxy.begin_getAdapterName(cb.response, cb.exception)
     return cb.getResult()
     
 def createTestIntfPrx(adapters):
@@ -58,7 +58,7 @@ def deactivate(com, adapters):
         com.deactivateObjectAdapter(p)
 
 def allTests(communicator):
-    ref = "communicator:default -p 12010 -t 10000"
+    ref = "communicator:default -p 12010"
     com = Test.RemoteCommunicatorPrx.uncheckedCast(communicator.stringToProxy(ref))
 
     print "testing binding with single endpoint...",

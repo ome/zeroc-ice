@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -20,13 +20,12 @@ if len(path) == 0:
 sys.path.append(os.path.join(path[0]))
 from scripts import *
 
-TestUtil.addClasspath(os.path.join(os.getcwd(), "classes"))
-
 dbdir = os.path.join(os.getcwd(), "db")
 TestUtil.cleanDbDir(dbdir)
 
 print "starting client...",
-clientProc = TestUtil.startClient("Client", os.getcwd(), startReader = False)
+clientProc = TestUtil.startClient("test.Freeze.dbmap.Client", '"' + os.getcwd() + '"', startReader=False)
 print "ok"
 clientProc.startReader()
 clientProc.waitTestSuccess()
+

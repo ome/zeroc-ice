@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -93,7 +93,8 @@ class Server(Ice.Application):
 
         # Create an object adapter
         #
-        adapter = self.communicator().createObjectAdapterWithEndpoints("SimpleFileSystem", "default -p 10000")
+        adapter = self.communicator().createObjectAdapterWithEndpoints(
+                                        "SimpleFileSystem", "default -h 127.0.0.1 -p 10000")
 
         # Create the root directory (with name "/" and no parent)
         #

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,6 +16,7 @@
 #include <Ice/LocalException.h>
 #include <Ice/Instance.h>
 #include <Ice/DefaultsAndOverrides.h>
+#include <Ice/HashUtil.h>
 
 using namespace std;
 using namespace Ice;
@@ -61,7 +62,7 @@ IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const strin
         if(option.length() != 2 || option[0] != '-')
         {
             EndpointParseException ex(__FILE__, __LINE__);
-            ex.str = "tcp " + str;
+            ex.str = "expected an endpoint option but found `" + option + "' in endpoint `tcp " + str + "'";
             throw ex;
         }
 
@@ -89,7 +90,7 @@ IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const strin
                 if(argument.empty())
                 {
                     EndpointParseException ex(__FILE__, __LINE__);
-                    ex.str = "tcp " + str;
+                    ex.str = "no argument provided for -h option in endpoint `tcp " + str + "'";
                     throw ex;
                 }
                 const_cast<string&>(_host) = argument;
@@ -98,11 +99,23 @@ IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const strin
 
             case 'p':
             {
-                istringstream p(argument);
-                if(!(p >> const_cast<Int&>(_port)) || !p.eof() || _port < 0 || _port > 65535)
+                if(argument.empty())
                 {
                     EndpointParseException ex(__FILE__, __LINE__);
-                    ex.str = "tcp " + str;
+                    ex.str = "no argument provided for -p option in endpoint `tcp " + str + "'";
+                    throw ex;
+                }
+                istringstream p(argument);
+                if(!(p >> const_cast<Int&>(_port)) || !p.eof())
+                {
+                    EndpointParseException ex(__FILE__, __LINE__);
+                    ex.str = "invalid port value `" + argument + "' in endpoint `tcp " + str + "'";
+                    throw ex;
+                }
+                else if(_port < 0 || _port > 65535)
+                {
+                    EndpointParseException ex(__FILE__, __LINE__);
+                    ex.str = "port value `" + argument + "' out of range in endpoint `tcp " + str + "'";
                     throw ex;
                 }
                 break;
@@ -110,11 +123,17 @@ IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const strin
 
             case 't':
             {
+                if(argument.empty())
+                {
+                    EndpointParseException ex(__FILE__, __LINE__);
+                    ex.str = "no argument provided for -t option in endpoint `tcp " + str + "'";
+                    throw ex;
+                }
                 istringstream t(argument);
                 if(!(t >> const_cast<Int&>(_timeout)) || !t.eof())
                 {
                     EndpointParseException ex(__FILE__, __LINE__);
-                    ex.str = "tcp " + str;
+                    ex.str = "invalid timeout value `" + argument + "' in endpoint `tcp " + str + "'";
                     throw ex;
                 }
                 break;
@@ -125,7 +144,7 @@ IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const strin
                 if(!argument.empty())
                 {
                     EndpointParseException ex(__FILE__, __LINE__);
-                    ex.str = "tcp " + str;
+                    ex.str = "unexpected argument `" + argument + "' provided for -z option in `tcp " + str + "'";
                     throw ex;
                 }
                 const_cast<bool&>(_compress) = true;
@@ -135,7 +154,7 @@ IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const strin
             default:
             {
                 EndpointParseException ex(__FILE__, __LINE__);
-                ex.str = "tcp " + str;
+                ex.str = "unknown option `" + option + "' in `tcp " + str + "'";
                 throw ex;
             }
         }
@@ -154,7 +173,7 @@ IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const strin
         else
         {
             EndpointParseException ex(__FILE__, __LINE__);
-            ex.str = "tcp " + str;
+            ex.str = "`-h *' not valid for proxy endpoint `tcp " + str + "'";
             throw ex;
         }
     }
@@ -177,7 +196,7 @@ IceInternal::TcpEndpointI::TcpEndpointI(BasicStream* s) :
 void
 IceInternal::TcpEndpointI::streamWrite(BasicStream* s) const
 {
-    s->write(TcpEndpointType);
+    s->write(TCPEndpointType);
     s->startWriteEncaps();
     s->write(_host, false);
     s->write(_port);
@@ -226,10 +245,44 @@ IceInternal::TcpEndpointI::toString() const
     return s.str();
 }
 
+EndpointInfoPtr
+IceInternal::TcpEndpointI::getInfo() const
+{
+    class InfoI : public Ice::TCPEndpointInfo
+    {
+    public:
+
+        InfoI(Ice::Int to, bool comp, const string& host, Ice::Int port) :
+            TCPEndpointInfo(to, comp, host, port)
+        {
+        }
+
+        virtual Ice::Short
+        type() const
+        {
+            return TCPEndpointType;
+        }
+        
+        virtual bool
+        datagram() const
+        {
+            return false;
+        }
+
+        virtual bool
+        secure() const
+        {
+            return false;
+        }
+    };
+
+    return new InfoI(_timeout, _compress, _host, _port);
+}
+
 Short
 IceInternal::TcpEndpointI::type() const
 {
-    return TcpEndpointType;
+    return TCPEndpointType;
 }
 
 Int
@@ -295,12 +348,6 @@ IceInternal::TcpEndpointI::secure() const
     return false;
 }
 
-bool
-IceInternal::TcpEndpointI::unknown() const
-{
-    return false;
-}
-
 TransceiverPtr
 IceInternal::TcpEndpointI::transceiver(EndpointIPtr& endp) const
 {
@@ -333,7 +380,7 @@ vector<EndpointIPtr>
 IceInternal::TcpEndpointI::expand() const
 {
     vector<EndpointIPtr> endps;
-    vector<string> hosts = getHostsForEndpointExpand(_host, _instance->protocolSupport());
+    vector<string> hosts = getHostsForEndpointExpand(_host, _instance->protocolSupport(), false);
     if(hosts.empty())
     {
         endps.push_back(const_cast<TcpEndpointI*>(this));
@@ -360,7 +407,7 @@ IceInternal::TcpEndpointI::equivalent(const EndpointIPtr& endpoint) const
 }
 
 bool
-IceInternal::TcpEndpointI::operator==(const EndpointI& r) const
+IceInternal::TcpEndpointI::operator==(const LocalObject& r) const
 {
     const TcpEndpointI* p = dynamic_cast<const TcpEndpointI*>(&r);
     if(!p)
@@ -402,18 +449,17 @@ IceInternal::TcpEndpointI::operator==(const EndpointI& r) const
 }
 
 bool
-IceInternal::TcpEndpointI::operator!=(const EndpointI& r) const
-{
-    return !operator==(r);
-}
-
-bool
-IceInternal::TcpEndpointI::operator<(const EndpointI& r) const
+IceInternal::TcpEndpointI::operator<(const LocalObject& r) const
 {
     const TcpEndpointI* p = dynamic_cast<const TcpEndpointI*>(&r);
     if(!p)
     {
-        return type() < r.type();
+        const EndpointI* e = dynamic_cast<const EndpointI*>(&r);
+        if(!e)
+        {
+            return false;
+        }
+        return type() < e->type();
     }
 
     if(this == p)
@@ -469,6 +515,18 @@ IceInternal::TcpEndpointI::operator<(const EndpointI& r) const
     return false;
 }
 
+Ice::Int
+IceInternal::TcpEndpointI::hashInit() const
+{
+    Ice::Int h = 0;
+    hashAdd(h, _host);
+    hashAdd(h, _port);
+    hashAdd(h, _timeout);
+    hashAdd(h, _connectionId);
+    hashAdd(h, _compress);
+    return h;
+}
+ 
 vector<ConnectorPtr>
 IceInternal::TcpEndpointI::connectors(const vector<struct sockaddr_storage>& addresses) const
 {
@@ -492,7 +550,7 @@ IceInternal::TcpEndpointFactory::~TcpEndpointFactory()
 Short
 IceInternal::TcpEndpointFactory::type() const
 {
-    return TcpEndpointType;
+    return TCPEndpointType;
 }
 
 string

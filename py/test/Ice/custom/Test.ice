@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,10 +12,10 @@
 
 module Test
 {
-    sequence<byte> ByteString; // By default, sequence<byte> is received as a string.
+    sequence<byte> ByteString; /* By default, sequence<byte> is received as a string. */
     ["python:seq:list"] sequence<byte> ByteList;
 
-    sequence<string> StringList; // By default, a sequence is received as a list.
+    sequence<string> StringList; /* By default, a sequence is received as a list. */
     ["python:seq:tuple"] sequence<string> StringTuple;
 
     struct S

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -100,7 +100,7 @@ IceRuby_initialize(int argc, VALUE* argv, VALUE self)
         //
         // Use the with-args or the without-args version of initialize()?
         //
-        bool hasArgs = !seq.empty();
+        bool hasArgs = !NIL_P(args);
 
         Ice::InitializationData data;
         if(!NIL_P(initData))
@@ -126,8 +126,14 @@ IceRuby_initialize(int argc, VALUE* argv, VALUE self)
         volatile VALUE progName = callRuby(rb_gv_get, "$0");
         seq.insert(seq.begin(), getString(progName));
 
-        data.properties = Ice::createProperties(seq, data.properties);
-
+        if(hasArgs)
+        {
+            data.properties = Ice::createProperties(seq, data.properties);
+        }
+        else if(!data.properties)
+        {
+            data.properties = Ice::createProperties();
+        }
         //
         // Disable collocation optimization, otherwise an invocation on a
         // collocated servant results in a CollocationOptimizationException
@@ -315,6 +321,33 @@ IceRuby_Communicator_propertyToProxy(VALUE self, VALUE str)
 
 extern "C"
 VALUE
+IceRuby_Communicator_proxyToProperty(VALUE self, VALUE obj, VALUE str)
+{
+    ICE_RUBY_TRY
+    {
+        if(!checkProxy(obj))
+        {
+            throw RubyException(rb_eTypeError, "argument must be a proxy");
+        }
+        Ice::CommunicatorPtr p = getCommunicator(self);
+        Ice::ObjectPrx o = getProxy(obj);
+        string s = getString(str);
+        Ice::PropertyDict dict = p->proxyToProperty(o, s);
+        volatile VALUE result = callRuby(rb_hash_new);
+        for(Ice::PropertyDict::const_iterator q = dict.begin(); q != dict.end(); ++q)
+        {
+            volatile VALUE key = createString(q->first);
+            volatile VALUE value = createString(q->second);
+            callRuby(rb_hash_aset, result, key, value);
+        }
+        return result; 
+    }
+    ICE_RUBY_CATCH
+    return Qnil;
+}
+
+extern "C"
+VALUE
 IceRuby_Communicator_stringToIdentity(VALUE self, VALUE str)
 {
     ICE_RUBY_TRY
@@ -370,43 +403,6 @@ IceRuby_Communicator_findObjectFactory(VALUE self, VALUE id)
         assert(pof);
         string idstr = getString(id);
         return pof->find(idstr);
-    }
-    ICE_RUBY_CATCH
-    return Qnil;
-}
-
-extern "C"
-VALUE
-IceRuby_Communicator_getDefaultContext(VALUE self)
-{
-    rb_warning("getDefaultContext is deprecated; use per-proxy contexts or implicit contexts (if applicable) instead.");
-
-    ICE_RUBY_TRY
-    {
-        Ice::CommunicatorPtr p = getCommunicator(self);
-        Ice::Context ctx = p->getDefaultContext();
-        return contextToHash(ctx);
-    }
-    ICE_RUBY_CATCH
-    return Qnil;
-}
-
-extern "C"
-VALUE
-IceRuby_Communicator_setDefaultContext(VALUE self, VALUE context)
-{
-    rb_warning("setDefaultContext is deprecated; use per-proxy contexts or implicit contexts (if applicable) instead.");
-
-    ICE_RUBY_TRY
-    {
-        Ice::Context ctx;
-        if(!hashToContext(context, ctx))
-        {
-            throw RubyException(rb_eTypeError, "argument must be a hash");
-        }
-
-        Ice::CommunicatorPtr p = getCommunicator(self);
-        p->setDefaultContext(ctx);
     }
     ICE_RUBY_CATCH
     return Qnil;
@@ -562,12 +558,11 @@ IceRuby::initCommunicator(VALUE iceModule)
     rb_define_method(_communicatorClass, "stringToProxy", CAST_METHOD(IceRuby_Communicator_stringToProxy), 1);
     rb_define_method(_communicatorClass, "proxyToString", CAST_METHOD(IceRuby_Communicator_proxyToString), 1);
     rb_define_method(_communicatorClass, "propertyToProxy", CAST_METHOD(IceRuby_Communicator_propertyToProxy), 1);
+    rb_define_method(_communicatorClass, "proxyToProperty", CAST_METHOD(IceRuby_Communicator_proxyToProperty), 2);
     rb_define_method(_communicatorClass, "stringToIdentity", CAST_METHOD(IceRuby_Communicator_stringToIdentity), 1);
     rb_define_method(_communicatorClass, "identityToString", CAST_METHOD(IceRuby_Communicator_identityToString), 1);
     rb_define_method(_communicatorClass, "addObjectFactory", CAST_METHOD(IceRuby_Communicator_addObjectFactory), 2);
     rb_define_method(_communicatorClass, "findObjectFactory", CAST_METHOD(IceRuby_Communicator_findObjectFactory), 1);
-    rb_define_method(_communicatorClass, "getDefaultContext", CAST_METHOD(IceRuby_Communicator_getDefaultContext), 0);
-    rb_define_method(_communicatorClass, "setDefaultContext", CAST_METHOD(IceRuby_Communicator_setDefaultContext), 1);
     rb_define_method(_communicatorClass, "getImplicitContext", CAST_METHOD(IceRuby_Communicator_getImplicitContext), 0);
     rb_define_method(_communicatorClass, "getProperties", CAST_METHOD(IceRuby_Communicator_getProperties), 0);
     rb_define_method(_communicatorClass, "getLogger", CAST_METHOD(IceRuby_Communicator_getLogger), 0);

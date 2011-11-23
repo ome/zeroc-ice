@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,13 +15,6 @@
 
 using namespace std;
 using namespace IceUtil;
-
-class AMI_Servant_setValueAsyncI : public Test::AMI_Servant_setValueAsync
-{
-public:
-    void ice_response() {}
-    void ice_exception(const Ice::Exception&) {}
-};
 
 class ReadThread : public Thread
 {
@@ -172,9 +165,6 @@ public:
             string id = ostr.str();
             try
             {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-                IceUtil::DummyBCC dummy;
-#endif
                 if(getState() == StateDeactivated)
                 {
                     _evictor->createServant(id, 0);
@@ -315,9 +305,6 @@ public:
                             //
                             try
                             {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-                                IceUtil::DummyBCC dummy;
-#endif
                                 servant = _evictor->createServant(id, 0);
                                 test(false);
                             }
@@ -464,7 +451,7 @@ private:
 int
 run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator, bool transactional, bool shutdown)
 {
-    string ref = "factory:default -p 12010 -t 30000";
+    string ref = "factory:default -p 12010";
     Ice::ObjectPrx base = communicator->stringToProxy(ref);
     test(base);
     Test::RemoteEvictorFactoryPrx factory = Test::RemoteEvictorFactoryPrx::checkedCast(base);
@@ -571,13 +558,12 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator, bool trans
         // 
         // Test saving while busy
         //
-        Test::AMI_Servant_setValueAsyncPtr setCB = new AMI_Servant_setValueAsyncI;
         for(i = 0; i < size; i++)
         {
             //
             // Start a mutating operation so that the object is not idle.
             //
-            servants[i]->setValueAsync_async(setCB, i + 300);
+            servants[i]->begin_setValueAsync(i + 300);
             
             test(servants[i]->getValue() == i + 100);
             //

@@ -1,13 +1,25 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-import Test.*;
+package test.Ice.objects;
+
+import test.Ice.objects.Test.B;
+import test.Ice.objects.Test.BHolder;
+import test.Ice.objects.Test.C;
+import test.Ice.objects.Test.CHolder;
+import test.Ice.objects.Test.D;
+import test.Ice.objects.Test.DHolder;
+import test.Ice.objects.Test.E;
+import test.Ice.objects.Test.F;
+import test.Ice.objects.Test.I;
+import test.Ice.objects.Test.Initial;
+
 
 public final class InitialI extends Initial
 {

@@ -1,13 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-package Serialize;
+package test.Ice.seqMapping.Serialize;
 
 public class Large implements java.io.Serializable // More than 254 bytes when serialized.
 {

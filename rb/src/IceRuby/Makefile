@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -15,7 +15,9 @@ LIBNAME		= $(call mkrblibname,IceRuby)
 
 TARGETS		=  $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
 
-OBJS		= Communicator.o \
+OBJS		= Connection.o \
+		  Communicator.o \
+		  Endpoint.o \
 		  Init.o \
 		  ImplicitContext.o \
 		  Logger.o \

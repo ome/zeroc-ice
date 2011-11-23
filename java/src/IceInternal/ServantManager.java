@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -45,6 +45,23 @@ public final class ServantManager
         m.put(facet, servant);
     }
 
+    public synchronized void
+    addDefaultServant(Ice.Object servant, String category)
+    {
+        assert(_instance != null); // Must not be called after destruction
+
+        Ice.Object obj = _defaultServantMap.get(category);
+        if(obj != null)
+        {
+            Ice.AlreadyRegisteredException ex = new Ice.AlreadyRegisteredException();
+            ex.kindOfObject = "default servant";
+            ex.id = category;
+            throw ex;
+        }
+
+        _defaultServantMap.put(category, servant);
+    }
+
     public synchronized Ice.Object
     removeServant(Ice.Identity ident, String facet)
     {
@@ -73,6 +90,24 @@ public final class ServantManager
         {
             _servantMapMap.remove(ident);
         }
+        return obj;
+    }
+
+    public synchronized Ice.Object
+    removeDefaultServant(String category)
+    {
+        assert(_instance != null); // Must not be called after destruction.
+
+        Ice.Object obj = _defaultServantMap.get(category);
+        if(obj == null)
+        {
+            Ice.NotRegisteredException ex = new Ice.NotRegisteredException();
+            ex.kindOfObject = "default servant";
+            ex.id = category;
+            throw ex;
+        }
+
+        _defaultServantMap.remove(category);
         return obj;
     }
 
@@ -113,12 +148,28 @@ public final class ServantManager
 
         java.util.Map<String, Ice.Object> m = _servantMapMap.get(ident);
         Ice.Object obj = null;
-        if(m != null)
+        if(m == null)
+        {
+            obj = _defaultServantMap.get(ident.category);
+            if(obj == null)
+            {
+                obj = _defaultServantMap.get("");
+            }
+        }
+        else
         {
             obj = m.get(facet);
         }
 
         return obj;
+    }
+
+    public synchronized Ice.Object
+    findDefaultServant(String category)
+    {
+        assert(_instance != null); // Must not be called after destruction.
+
+        return _defaultServantMap.get(category);
     }
 
     public synchronized java.util.Map<String, Ice.Object>
@@ -176,6 +227,23 @@ public final class ServantManager
     }
 
     public synchronized Ice.ServantLocator
+    removeServantLocator(String category)
+    {
+        Ice.ServantLocator l = null;
+        assert(_instance != null); // Must not be called after destruction.
+    
+        l = _locatorMap.remove(category);
+        if(l == null)
+        {
+            Ice.NotRegisteredException ex = new Ice.NotRegisteredException();
+            ex.id = IceUtilInternal.StringUtil.escapeString(category, "");
+            ex.kindOfObject = "servant locator";
+            throw ex;
+        }
+        return l;
+    }
+
+    public synchronized Ice.ServantLocator
     findServantLocator(String category)
     {
         //
@@ -199,59 +267,45 @@ public final class ServantManager
         _adapterName = adapterName;
     }
 
-    protected void
-    finalize()
-        throws Throwable
-    {
-        //
-        // Don't check whether destroy() has been called. It might have
-        // not been called if the associated object adapter was not
-        // properly deactivated.
-        //
-        //IceUtilInternal.Assert.FinalizerAssert(_instance == null);
-        
-        super.finalize();
-    }
-
     //
     // Only for use by Ice.ObjectAdapterI.
     //
-    public synchronized void
+    public void
     destroy()
     {
-        assert(_instance != null); // Must not be called after destruction.
-
-        _servantMapMap.clear();
-        
-        java.util.Iterator<java.util.Map.Entry<String, Ice.ServantLocator> > p = _locatorMap.entrySet().iterator();
-        while(p.hasNext())
+        java.util.Map<String, Ice.ServantLocator> locatorMap = new java.util.HashMap<String, Ice.ServantLocator>();
+        Ice.Logger logger = null;
+        synchronized(this)
         {
-            java.util.Map.Entry<String, Ice.ServantLocator> e = p.next();
-            Ice.ServantLocator locator = e.getValue();
+            assert(_instance != null); // Must not be called after destruction.
+            logger = _instance.initializationData().logger;
+            _servantMapMap.clear();
+           
+            locatorMap.putAll(_locatorMap);
+            _locatorMap.clear();
+            _instance = null;
+        }
+
+        for(java.util.Map.Entry<String, Ice.ServantLocator> p : locatorMap.entrySet())
+        {
+            Ice.ServantLocator locator = p.getValue();
             try
             {
-                locator.deactivate(e.getKey());
+                locator.deactivate(p.getKey());
             }
             catch(java.lang.Exception ex)
             {
-                java.io.StringWriter sw = new java.io.StringWriter();
-                java.io.PrintWriter pw = new java.io.PrintWriter(sw);
-                ex.printStackTrace(pw);
-                pw.flush();
                 String s = "exception during locator deactivation:\n" + "object adapter: `" + _adapterName + "'\n" +
-                    "locator category: `" + e.getKey() + "'\n" + sw.toString();
+                    "locator category: `" + p.getKey() + "'\n" + Ex.toString(ex);
                 _instance.initializationData().logger.error(s);
             }
         }
-
-        _locatorMap.clear();
-
-        _instance = null;
     }
 
     private Instance _instance;
     final private String _adapterName;
     private java.util.Map<Ice.Identity, java.util.Map<String, Ice.Object> > _servantMapMap =
         new java.util.HashMap<Ice.Identity, java.util.Map<String, Ice.Object> >();
+    private java.util.Map<String, Ice.Object> _defaultServantMap = new java.util.HashMap<String, Ice.Object>();
     private java.util.Map<String, Ice.ServantLocator> _locatorMap = new java.util.HashMap<String, Ice.ServantLocator>();
 }

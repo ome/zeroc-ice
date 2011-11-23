@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -125,19 +125,9 @@ def twoways(communicator, p)
 
     rso, bso = p.opByteS(bsi1, bsi2)
     test(bso.length == 4)
-    test(bso[0] == 0x22)
-    test(bso[1] == 0x12)
-    test(bso[2] == 0x11)
-    test(bso[3] == 0x01)
+    test(bso == "\x22\x12\x11\x01")
     test(rso.length == 8)
-    test(rso[0] == 0x01)
-    test(rso[1] == 0x11)
-    test(rso[2] == 0x12)
-    test(rso[3] == 0x22)
-    test(rso[4] == 0xf1)
-    test(rso[5] == 0xf2)
-    test(rso[6] == 0xf3)
-    test(rso[7] == 0xf4)
+    test(rso == "\x01\x11\x12\x22\xf1\xf2\xf3\xf4")
 
     #
     # opBoolS
@@ -232,23 +222,18 @@ def twoways(communicator, p)
     rso, bso = p.opByteSS(bsi1, bsi2)
     test(bso.length == 2)
     test(bso[0].length == 1)
-    test(bso[0][0] == 0xff)
+    test(bso[0] == "\xff")
     test(bso[1].length == 3)
-    test(bso[1][0] == 0x01)
-    test(bso[1][1] == 0x11)
-    test(bso[1][2] == 0x12)
+    test(bso[1] == "\x01\x11\x12")
     test(rso.length == 4)
     test(rso[0].length == 3)
-    test(rso[0][0] == 0x01)
-    test(rso[0][1] == 0x11)
-    test(rso[0][2] == 0x12)
+    test(rso[0] == "\x01\x11\x12")
     test(rso[1].length == 1)
-    test(rso[1][0] == 0xff)
+    test(rso[1] == "\xff")
     test(rso[2].length == 1)
-    test(rso[2][0] == 0x0e)
+    test(rso[2] == "\x0e")
     test(rso[3].length == 2)
-    test(rso[3][0] == 0xf2)
-    test(rso[3][1] == 0xf1)
+    test(rso[3] == "\xf2\xf1")
 
     #
     # opFloatDoubleSS
@@ -419,6 +404,20 @@ def twoways(communicator, p)
     test(ro["Hello!!"] == Test::MyEnum::Enum2)
 
     #
+    # opMyEnumStringD
+    #
+    di1 = {Test::MyEnum::Enum1=>'abc'}
+    di2 = {Test::MyEnum::Enum2=>'Hello!!', Test::MyEnum::Enum3=>'qwerty'}
+
+    ro, d = p.opMyEnumStringD(di1, di2)
+
+    test(d == di1)
+    test(ro.length == 3)
+    test(ro[Test::MyEnum::Enum1] == "abc")
+    test(ro[Test::MyEnum::Enum2] == "Hello!!")
+    test(ro[Test::MyEnum::Enum3] == "qwerty")
+
+    #
     # opMyStructMyEnumD
     #
     s11 = Test::MyStruct.new
@@ -482,47 +481,6 @@ def twoways(communicator, p)
     test(r == ctx)
 
     #
-    # Test that default context is obtained correctly from communicator.
-    #
-# DEPRECATED
-#    dflt = {'a'=>'b'}
-#    communicator.setDefaultContext(dflt)
-#    test(p.opContext() != dflt)
-#
-#    p2 = Test::MyClassPrx::uncheckedCast(p.ice_context({}))
-#    test(p2.opContext().length == 0)
-#
-#    p2 = Test::MyClassPrx::uncheckedCast(p.ice_defaultContext())
-#    test(p2.opContext() == dflt)
-#
-#    communicator.setDefaultContext({})
-#    test(p2.opContext().length > 0)
-#
-#    communicator.setDefaultContext(dflt)
-#    c = Test::MyClassPrx::checkedCast(communicator.stringToProxy("test:default -p 12010 -t 10000"))
-#    test(c.opContext() == dflt)
-#
-#    dflt['a'] = 'c'
-#    c2 = Test::MyClassPrx::uncheckedCast(c.ice_context(dflt))
-#    test(c2.opContext()['a'] == 'c')
-#
-#    dflt = {}
-#    c3 = Test::MyClassPrx::uncheckedCast(c2.ice_context(dflt))
-#    tmp = c3.opContext()
-#    test(!tmp.has_key?('a'))
-#
-#    c4 = Test::MyClassPrx::uncheckedCast(c2.ice_defaultContext())
-#    test(c4.opContext()['a'] == 'b')
-#
-#    dflt['a'] = 'd'
-#    communicator.setDefaultContext(dflt)
-#
-#    c5 = Test::MyClassPrx::uncheckedCast(c.ice_defaultContext())
-#    test(c5.opContext()['a'] == 'd')
-#
-#    communicator.setDefaultContext({})
-
-    #
     # Test implicit context propagation
     #
     impls = [ 'Shared', 'PerThread' ]
@@ -534,7 +492,7 @@ def twoways(communicator, p)
         
         ctx = {'one'=>'ONE', 'two'=>'TWO', 'three'=>'THREE'}
         
-        p = Test::MyClassPrx::uncheckedCast(ic.stringToProxy('test:default -p 12010 -t 10000'))
+        p = Test::MyClassPrx::uncheckedCast(ic.stringToProxy('test:default -p 12010'))
         
         ic.getImplicitContext().setContext(ctx)
         test(ic.getImplicitContext().getContext() == ctx)

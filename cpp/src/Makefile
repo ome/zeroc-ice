@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -17,8 +17,8 @@ SUBDIRS		= IceUtil \
 		  slice2cs \
 		  slice2freeze \
 		  slice2freezej \
-		  slice2docbook \
 		  slice2java \
+		  slice2php \
 		  slice2py \
 		  slice2rb \
 		  slice2html \
@@ -28,8 +28,12 @@ SUBDIRS		= IceUtil \
 		  Freeze \
 		  FreezeScript \
 		  IceBox \
+		  Glacier2Lib \
 		  Glacier2 \
+		  IceDB \
+		  IcePatch2Lib \
 		  IcePatch2 \
+		  IceStormLib \
 		  IceGridLib \
 		  IceStorm \
 		  IceGrid \

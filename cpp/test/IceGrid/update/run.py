@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -34,9 +34,9 @@ if not os.path.exists(node2Dir):
 else:
     IceGridAdmin.cleanDbDir(node2Dir)
 
-nodeOverrideOptions = '--IceBinDir="%s" --TestDir="%s" --NodePropertiesOverride="%s Ice.ServerIdleTime=0 Ice.PrintProcessId=0 Ice.PrintAdapterReady=0"' % (
-    TestUtil.getCppBinDir(),
-    os.getcwd(),
-    TestUtil.getCommandLine("", TestUtil.DriverConfig("server")).replace("--", ""))
+nodeOverrideOptions = '--IceBinDir="%s" --TestDir="%s" ' % (TestUtil.getCppBinDir(), os.getcwd()) + \
+    '--NodePropertiesOverride=\"%s Ice.ServerIdleTime=0 Ice.PrintProcessId=0 Ice.PrintAdapterReady=0\"' % \
+    IceGridAdmin.iceGridNodePropertiesOverride()
 
 IceGridAdmin.iceGridTest("", nodeOverrideOptions)
+

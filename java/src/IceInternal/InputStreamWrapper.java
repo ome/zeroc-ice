@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,8 +8,6 @@
 // **********************************************************************
 
 package IceInternal;
-
-import java.io.*;
 
 //
 // Class to provide a java.io.InputStream on top of a BasicStream.
@@ -28,7 +26,8 @@ public class InputStreamWrapper extends java.io.InputStream
     }
 
     public int
-    read() throws IOException
+    read()
+        throws java.io.IOException
     {
         try
         {
@@ -36,18 +35,20 @@ public class InputStreamWrapper extends java.io.InputStream
         }
         catch(java.lang.Exception ex)
         {
-            throw new IOException(ex.toString());
+            throw new java.io.IOException(ex.toString());
         }
     }
 
     public int
-    read(byte[] b) throws IOException
+    read(byte[] b)
+        throws java.io.IOException
     {
         return read(b, 0, b.length);
     }
 
     public int
-    read(byte[] b, int offset, int count) throws IOException
+    read(byte[] b, int offset, int count)
+        throws java.io.IOException
     {
         try
         {
@@ -55,7 +56,7 @@ public class InputStreamWrapper extends java.io.InputStream
         }
         catch(java.lang.Exception ex)
         {
-            throw new IOException(ex.toString());
+            throw new java.io.IOException(ex.toString());
         }
         return count;
     }
@@ -73,7 +74,8 @@ public class InputStreamWrapper extends java.io.InputStream
     }
 
     public void
-    reset() throws IOException
+    reset()
+        throws java.io.IOException
     {
         _s.pos(_markPos);
     }
@@ -85,7 +87,8 @@ public class InputStreamWrapper extends java.io.InputStream
     }
 
     public void
-    close() throws IOException
+    close()
+        throws java.io.IOException
     {
     }
 

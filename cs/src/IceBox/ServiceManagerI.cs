@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -301,7 +301,7 @@ class ServiceManagerI : ServiceManagerDisp_
             // will most likely need to be firewalled for security reasons.
             //
             Ice.ObjectAdapter adapter = null;
-            if(!properties.getProperty("IceBox.ServiceManager.Endpoints").Equals(""))
+            if(properties.getProperty("IceBox.ServiceManager.Endpoints").Length != 0)
             {
                 adapter = _communicator.createObjectAdapter("IceBox.ServiceManager");
 
@@ -524,6 +524,16 @@ class ServiceManagerI : ServiceManagerDisp_
             //
             string err = "ServiceManager: unable to load service '" + entryPoint + "': ";
             int sepPos = entryPoint.IndexOf(':');
+            if(sepPos != -1)
+            {
+                if(entryPoint.Length > 3 &&
+                   sepPos == 1 &&
+                   System.Char.IsLetter(entryPoint[0]) &&
+                   (entryPoint[2] == '\\' || entryPoint[2] == '/'))
+                {
+                    sepPos = entryPoint.IndexOf(':', 3);
+                }
+            }
             if(sepPos == -1)
             {
                 FailureException e = new FailureException();
@@ -535,13 +545,26 @@ class ServiceManagerI : ServiceManagerDisp_
             string assemblyName = entryPoint.Substring(0, sepPos);
             try
             {
-                if (System.IO.File.Exists(assemblyName))
-                {
-                    serviceAssembly = System.Reflection.Assembly.LoadFrom(assemblyName);
-                }
-                else
+                //
+                // First try to load the assemby using Assembly.Load which will succeed
+                // if full name is configured or partial name has been qualified in config.
+                // If that fails, try Assembly.LoadFrom() which will succeed if a file name
+                // is configured or partial name is configured and DEVPATH is used.
+                //
+                try
                 {
                     serviceAssembly = System.Reflection.Assembly.Load(assemblyName);
+                }
+                catch(System.Exception ex)
+                {
+                    try
+                    {
+                        serviceAssembly = System.Reflection.Assembly.LoadFrom(assemblyName);
+                    }
+                    catch(System.Exception)
+                    {
+                         throw ex;
+                    }
                 }
             }
             catch(System.Exception ex)
@@ -632,6 +655,11 @@ class ServiceManagerI : ServiceManagerDisp_
                         //
                         info.args = initData.properties.parseCommandLineOptions(service, info.args);
                     }
+
+                    //
+                    // Clone the logger to assign a new prefix.
+                    //
+                    initData.logger = _logger.cloneWithPrefix(initData.properties.getProperty("Ice.ProgramName"));
             
                     //
                     // Remaining command line options are passed to the communicator. This is 
@@ -927,7 +955,7 @@ class ServiceManagerI : ServiceManagerDisp_
                 }
                 for(int j = 0; j < serverArgs.Length; j++)
                 {
-                    if(serverArgs[j].StartsWith("--" + service + "."))
+                    if(serverArgs[j].StartsWith("--" + service + ".", StringComparison.Ordinal))
                     {
                         l.Add(serverArgs[j]);
                     }

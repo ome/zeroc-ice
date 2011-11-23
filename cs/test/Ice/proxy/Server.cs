@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,7 +26,7 @@ public class Server
         //
         communicator.getProperties().setProperty("Ice.Warn.Connections", "0");
         
-        communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010 -t 5000:udp");
+        communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010:udp");
         Ice.ObjectAdapter adapter = communicator.createObjectAdapter("TestAdapter");
         adapter.add(new MyDerivedClassI(), communicator.stringToIdentity("test"));
         adapter.activate();

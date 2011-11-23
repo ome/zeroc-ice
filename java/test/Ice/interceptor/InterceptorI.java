@@ -1,11 +1,15 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+package test.Ice.interceptor;
+
+import test.Ice.interceptor.Test.RetryException;
 
 class InterceptorI extends Ice.DispatchInterceptor
 {
@@ -36,10 +40,10 @@ class InterceptorI extends Ice.DispatchInterceptor
             {
                 try
                 {
-                    _servant.ice_dispatch(request, null);
+                    _servant.ice_dispatch(request);
                     test(false);
                 }
-                catch(Test.RetryException re)
+                catch(RetryException re)
                 {
                     //
                     // Expected, retry
@@ -50,7 +54,7 @@ class InterceptorI extends Ice.DispatchInterceptor
             current.ctx.put("retry", "no");
         }
       
-        _lastStatus = _servant.ice_dispatch(request, null);
+        _lastStatus = _servant.ice_dispatch(request);
         return _lastStatus;
     }
 

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -10,7 +10,6 @@
 top_srcdir	= ..\..\..
 
 TARGETS		= publisher.exe subscriber.exe
-TARGETS_CONFIG	= $(TARGETS:.exe=.exe.config)
 
 C_SRCS		= Publisher.vb
 S_SRCS		= Subscriber.vb
@@ -30,9 +29,9 @@ GDIR		= generated
 VBCFLAGS	= $(VBCFLAGS) -target:exe
 
 publisher.exe: $(C_SRCS) $(SLICE_ASSEMBLY)
-	$(VBC) $(VBCFLAGS) -out:$@ -r:$(csbindir)\Ice.dll -r:$(csbindir)\IceStorm.dll -r:$(SLICE_ASSEMBLY) $(C_SRCS)
+	$(VBC) $(VBCFLAGS) -out:$@ -r:"$(csbindir)\Ice.dll" -r:"$(csbindir)\IceStorm.dll" -r:$(SLICE_ASSEMBLY) $(C_SRCS)
 
 subscriber.exe: $(S_SRCS) $(SLICE_ASSEMBLY)
-	$(VBC) $(VBCFLAGS) -out:$@ -r:$(csbindir)\Ice.dll -r:$(csbindir)\IceStorm.dll -r:$(SLICE_ASSEMBLY) $(S_SRCS)
+	$(VBC) $(VBCFLAGS) -out:$@ -r:"$(csbindir)\Ice.dll" -r:"$(csbindir)\IceStorm.dll" -r:$(SLICE_ASSEMBLY) $(S_SRCS)
 
-!include .depend
+!include .depend.mak

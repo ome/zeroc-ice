@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,6 +16,7 @@
 #include <Ice/LoggerF.h>
 #include <Ice/StreamF.h>
 #include <Ice/StatsF.h>
+#include <Ice/Dispatcher.h>
 #include <Ice/StringConverter.h>
 #include <Ice/BuiltinSequences.h>
 
@@ -25,6 +26,15 @@ namespace Ice
 ICE_API void collectGarbage();
 
 ICE_API StringSeq argsToStringSeq(int, char*[]);
+
+#ifdef _WIN32
+
+ICE_API StringSeq argsToStringSeq(int, wchar_t*[]);
+
+ICE_API StringSeq argsToStringSeq(int, wchar_t*[], const StringConverterPtr&);
+
+#endif
+
 //
 // This function assumes that the string sequence only contains
 // elements of the argument vector. The function shifts the
@@ -38,8 +48,8 @@ ICE_API PropertiesPtr createProperties(StringSeq&, const PropertiesPtr& = 0, con
 ICE_API PropertiesPtr createProperties(int&, char*[], const PropertiesPtr& = 0, const StringConverterPtr& = 0);
 
 //
-// This class is used to notify user of when Ice threads
-// are started and stopped.
+// This class is used to notify user of when Ice threads are started
+// and stopped.
 //
 class ICE_API ThreadNotification : public IceUtil::Shared
 {
@@ -52,6 +62,21 @@ public:
 typedef IceUtil::Handle<ThreadNotification> ThreadNotificationPtr;
 
 //
+// A special plug-in that installs thread hook during a communicator's initialization.
+// Both initialize and destroy are no-op. See Ice::InitializationData.
+//
+class ICE_API ThreadHookPlugin : public Ice::Plugin
+{
+public:
+
+    ThreadHookPlugin(const CommunicatorPtr& communicator, const ThreadNotificationPtr&);
+
+    virtual void initialize();
+
+    virtual void destroy();
+};
+
+//
 // Communicator initialization info
 //
 struct InitializationData
@@ -62,6 +87,7 @@ struct InitializationData
     StringConverterPtr stringConverter;
     WstringConverterPtr wstringConverter;
     ThreadNotificationPtr threadHook;
+    DispatcherPtr dispatcher;
 };
 
 ICE_API CommunicatorPtr initialize(int&, char*[], const InitializationData& = InitializationData(),

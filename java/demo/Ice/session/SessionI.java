@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -64,10 +64,9 @@ class SessionI extends _SessionDisp
         try
         {
             c.adapter.remove(c.id);
-            java.util.Iterator<HelloPrx> p = _objs.iterator();
-            while(p.hasNext())
+            for(HelloPrx p : _objs)
             {
-                c.adapter.remove(p.next().ice_getIdentity());
+                c.adapter.remove(p.ice_getIdentity());
             }
         }
         catch(Ice.ObjectAdapterDeactivatedException e)

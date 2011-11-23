@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,9 +20,17 @@ namespace IceInternal
         internal EndpointHostResolver(Instance instance)
         {
             _instance = instance;
-
             _thread = new HelperThread(this);
-            _thread.Start();
+            if(instance.initializationData().properties.getProperty("Ice.ThreadPriority").Length > 0)
+            {
+                ThreadPriority priority = IceInternal.Util.stringToThreadPriority(
+                                           instance.initializationData().properties.getProperty("Ice.ThreadPriority"));
+                _thread.Start(priority);
+            }
+            else
+            {
+                _thread.Start(ThreadPriority.Normal);
+            }
         }
 
         public void resolve(string host, int port, EndpointI endpoint, EndpointI_connectors callback)
@@ -148,39 +156,25 @@ namespace IceInternal
                 _thread.Join();
             }
 
-            public void Start()
+            public void Start(ThreadPriority priority)
             {
                 _thread = new Thread(new ThreadStart(Run));
                 _thread.IsBackground = true;
                 _thread.Name = _name;
+                _thread.Priority = priority;
                 _thread.Start();
             }
 
             public void Run()
             {
-                if(_resolver._instance.initializationData().threadHook != null)
-                {
-                    _resolver._instance.initializationData().threadHook.start();
-                }
-
                 try
                 {
                     _resolver.run();
                 }
-                catch(Ice.LocalException ex)
+                catch(System.Exception ex)
                 {
                     string s = "exception in endpoint host resolver thread " + _name + ":\n" + ex;
                     _resolver._instance.initializationData().logger.error(s);
-                }
-                catch(System.Exception ex)
-                {
-                    string s = "unknown exception in endpoint host resolver thread " + _name + ":\n" + ex;
-                    _resolver._instance.initializationData().logger.error(s);
-                }
-
-                if(_resolver._instance.initializationData().threadHook != null)
-                {
-                    _resolver._instance.initializationData().threadHook.stop();
                 }
             }
 

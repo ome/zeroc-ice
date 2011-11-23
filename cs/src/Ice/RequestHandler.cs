@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,11 +18,10 @@ namespace IceInternal
         void abortBatchRequest();
 
         Ice.ConnectionI sendRequest(Outgoing @out);
-
-        bool sendAsyncRequest(OutgoingAsync @out);
+        bool sendAsyncRequest(OutgoingAsync @out, out Ice.AsyncCallback cb);
 
         bool flushBatchRequests(BatchOutgoing @out);
-        bool flushAsyncBatchRequests(BatchOutgoingAsync @out);
+        bool flushAsyncBatchRequests(BatchOutgoingAsync @out, out Ice.AsyncCallback cb);
 
         Reference getReference();
 

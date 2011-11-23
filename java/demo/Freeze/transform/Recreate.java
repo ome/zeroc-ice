@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,40 +23,37 @@ class Recreate extends Ice.Application
 
         Connection connection = Util.createConnection(communicator(), "dbnew");
 
-        final java.util.Comparator less =
-        new java.util.Comparator()
+        final java.util.Comparator<String> less = new java.util.Comparator<String>()
         {
-            public int compare(Object o1, Object o2)
+            public int compare(String s1, String s2)
             {
-                if(o1 == o2)
+                if(s1 == s2)
                 {
                     return 0;
                 }
-                else if(o1 == null)
+                else if(s1 == null)
                 {
-                    return -((Comparable)o2).compareTo(o1);
+                    return -s2.compareTo(s1);
                 }
                 else
                 {
-                    return ((Comparable)o1).compareTo(o2);
+                    return s1.compareTo(s2);
                 }
             }
         };
 
-        java.util.Map indexComparators = new java.util.HashMap();
-        indexComparators.put("phoneNumber", less);
-
         try
         {
+            NewContacts.IndexComparators indexComparators = new NewContacts.IndexComparators(less);
             NewContacts.recreate(connection, "contacts", less, indexComparators);
         }
         finally
         {
             connection.close();
         }
-        
+
         System.out.println("Recreated contacts database successfully!");
-    
+
         return 0;
     }
 
@@ -64,6 +61,7 @@ class Recreate extends Ice.Application
     main(String[] args)
     {
         Recreate app = new Recreate();
-        app.main("demo.Freeze.transform.Recreate", args);
+        int status = app.main("demo.Freeze.transform.Recreate", args);
+        System.exit(status);
     }
 }

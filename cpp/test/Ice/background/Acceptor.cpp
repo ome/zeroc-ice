@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,10 +12,10 @@
 
 using namespace std;
 
-SOCKET
-Acceptor::fd()
+IceInternal::NativeInfoPtr
+Acceptor::getNativeInfo()
 {
-    return _acceptor->fd();
+    return _acceptor->getNativeInfo();
 }
 
 void
@@ -29,6 +29,20 @@ Acceptor::listen()
 {
     _acceptor->listen();
 }
+
+#ifdef ICE_USE_IOCP
+void 
+Acceptor::startAccept()
+{
+    _acceptor->startAccept();
+}
+
+void
+Acceptor::finishAccept()
+{
+    _acceptor->finishAccept();
+}
+#endif
 
 IceInternal::TransceiverPtr
 Acceptor::accept()

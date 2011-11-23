@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,6 +14,8 @@
 #include <IceUtil/RecMutex.h>
 #include <IceUtil/Monitor.h>
 
+#include <set>
+
 namespace IceInternal
 {
 
@@ -26,10 +28,10 @@ public:
     bool isShutdown() const;
     void destroy();
 
-    ::Ice::ObjectAdapterPtr createObjectAdapter(const std::string&, const std::string&, const Ice::RouterPrx&);
+    ::Ice::ObjectAdapterPtr createObjectAdapter(const std::string&, const Ice::RouterPrx&);
     ::Ice::ObjectAdapterPtr findObjectAdapter(const ::Ice::ObjectPrx&);
-    void removeObjectAdapter(const ::std::string&);
-    void flushBatchRequests() const;
+    void removeObjectAdapter(const ::Ice::ObjectAdapterPtr&);
+    void flushAsyncBatchRequests(const CommunicatorBatchOutgoingAsyncPtr&) const;
 
 private:
 
@@ -39,8 +41,8 @@ private:
 
     InstancePtr _instance;
     ::Ice::CommunicatorPtr _communicator;
-    std::map<std::string, ::Ice::ObjectAdapterIPtr> _adapters;
-    bool _waitForShutdown;
+    std::set<std::string> _adapterNamesInUse;
+    std::list<Ice::ObjectAdapterIPtr> _adapters;
 };
 
 }

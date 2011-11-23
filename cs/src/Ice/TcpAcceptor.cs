@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,37 +11,26 @@ namespace IceInternal
 {
 
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
     using System.Net.Sockets;
+    using System.Text;
 
     class TcpAcceptor : Acceptor
     {
         public virtual void close()
         {
-            Socket fd;
-            lock(this)
+            if(_traceLevels.network >= 1)
             {
-                fd = _fd;
-                _fd = null;
+                string s = "stopping to accept tcp connections at " + ToString();
+                _logger.trace(_traceLevels.networkCat, s);
             }
-            if(fd != null)
-            {
-                if(_traceLevels.network >= 1)
-                {
-                    string s = "stopping to accept tcp connections at " + ToString();
-                    _logger.trace(_traceLevels.networkCat, s);
-                }
 
-                try
-                {
-                    fd.Close();
-                }
-                catch(System.Exception)
-                {
-                    // Ignore.
-                }
-            }
+            Debug.Assert(_acceptFd == null);
+
+            _fd.Close();
+            _fd = null;
         }
 
         public virtual void listen()
@@ -50,45 +39,69 @@ namespace IceInternal
 
             if(_traceLevels.network >= 1)
             {
-                string s = "accepting tcp connections at " + ToString();
-                _logger.trace(_traceLevels.networkCat, s);
+                StringBuilder s = new StringBuilder("accepting tcp connections at ");
+		s.Append(ToString());
+
+                List<string> interfaces =
+                    Network.getHostsForEndpointExpand(_addr.Address.ToString(), instance_.protocolSupport(), true);
+                if(interfaces.Count != 0)
+                {
+                    s.Append("\nlocal interfaces: ");
+                    s.Append(String.Join(", ", interfaces.ToArray()));
+                }
+                _logger.trace(_traceLevels.networkCat, s.ToString());
             }
         }
 
-        public virtual IAsyncResult beginAccept(AsyncCallback callback, object state)
+        public virtual bool startAccept(AsyncCallback callback, object state)
         {
             try
             {
-                return _fd.BeginAccept(callback, state);
+                _result = _fd.BeginAccept(callback, state);
             }
             catch(SocketException ex)
             {
                 throw new Ice.SocketException(ex);
             }
+            return _result.CompletedSynchronously;
         }
 
-        public virtual Transceiver endAccept(IAsyncResult result)
+        public virtual void finishAccept()
         {
-            Socket fd = null;
-            try
+            if(_fd != null)
             {
-                fd = _fd.EndAccept(result);
+                _acceptFd = null;
+                try
+                {
+                    _acceptFd = _fd.EndAccept(_result);
+                }
+                catch(SocketException ex)
+                {
+                    _acceptError = ex;
+                }
             }
-            catch(SocketException ex)
+        }
+
+        public virtual Transceiver accept()
+        {
+            if(_acceptFd == null)
             {
-                throw new Ice.SocketException(ex);
+                throw _acceptError;
             }
 
-            Network.setBlock(fd, false);
-            Network.setTcpBufSize(fd, instance_.initializationData().properties, _logger);
+            Network.setBlock(_acceptFd, false);
+            Network.setTcpBufSize(_acceptFd, instance_.initializationData().properties, _logger);
 
             if(_traceLevels.network >= 1)
             {
-                string s = "accepted tcp connection\n" + Network.fdToString(fd);
+                string s = "accepted tcp connection\n" + Network.fdToString(_acceptFd);
                 _logger.trace(_traceLevels.networkCat, s);
             }
 
-            return new TcpTransceiver(instance_, fd, null, true);
+            Socket acceptFd = _acceptFd;
+            _acceptFd = null;
+            _acceptError = null;
+            return new TcpTransceiver(instance_, acceptFd, null, true);
         }
 
         public override string ToString()
@@ -133,7 +146,7 @@ namespace IceInternal
                 }
                 if(_traceLevels.network >= 2)
                 {
-                    string s = "attempting to bind to tcp socket " + ToString();
+                    string s = "attempting to bind to tcp socket " + Network.addrToString(_addr);
                     _logger.trace(_traceLevels.networkCat, s);
                 }
                 _addr = Network.doBind(_fd, _addr);
@@ -149,8 +162,11 @@ namespace IceInternal
         private TraceLevels _traceLevels;
         private Ice.Logger _logger;
         private Socket _fd;
+        private Socket _acceptFd;
+        private System.Exception _acceptError;
         private int _backlog;
         private IPEndPoint _addr;
+        private IAsyncResult _result;
     }
 
 }

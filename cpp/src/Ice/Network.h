@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -32,6 +32,20 @@ typedef int ssize_t;
 #   include <netinet/tcp.h>
 #   include <arpa/inet.h>
 #   include <netdb.h>
+#endif
+
+#if defined(__linux) && !defined(ICE_NO_EPOLL)
+#   define ICE_USE_EPOLL 1
+#elif defined(__APPLE__) && !defined(ICE_NO_KQUEUE)
+#   define ICE_USE_KQUEUE 1
+#elif defined(_WIN32)
+#  if !defined(ICE_NO_IOCP)
+#     define ICE_USE_IOCP 1
+#  else
+#     define ICE_USE_SELECT 1
+#  endif
+#else
+#   define ICE_USE_POLL 1
 #endif
 
 #if defined(_WIN32) || defined(__osf__) 
@@ -67,6 +81,55 @@ typedef int socklen_t;
 namespace IceInternal
 {
 
+enum SocketOperation
+{
+    SocketOperationNone = 0,
+    SocketOperationRead = 1,
+    SocketOperationWrite = 2,
+    SocketOperationConnect = 2
+};
+
+#ifdef ICE_USE_IOCP
+
+struct ICE_API AsyncInfo : WSAOVERLAPPED
+{
+    AsyncInfo(SocketOperation);
+
+    SocketOperation status;
+    WSABUF buf;
+    DWORD flags;
+    DWORD count;
+    int error;
+};
+
+#endif 
+
+class ICE_API NativeInfo : virtual public IceUtil::Shared
+{
+public:
+    
+    NativeInfo(SOCKET fd = INVALID_SOCKET) : _fd(fd)
+    {
+    }
+
+    SOCKET fd()
+    {
+        return _fd;
+    }
+
+#ifdef ICE_USE_IOCP
+    //
+    // This is implemented by transceiver and acceptor implementations.
+    //
+    virtual AsyncInfo* getAsyncInfo(SocketOperation) = 0;
+#endif
+
+protected:
+
+    SOCKET _fd;
+};
+typedef IceUtil::Handle<NativeInfo> NativeInfoPtr;
+
 ICE_API bool interrupted();
 ICE_API bool acceptInterrupted();
 ICE_API bool noBuffers();
@@ -97,14 +160,18 @@ ICE_API void setMcastInterface(SOCKET, const std::string&, bool);
 ICE_API void setMcastTtl(SOCKET, int, bool);
 ICE_API void setReuseAddress(SOCKET, bool);
 
-ICE_API void doBind(SOCKET, struct sockaddr_storage&);
+ICE_API struct sockaddr_storage doBind(SOCKET, const struct sockaddr_storage&);
 ICE_API void doListen(SOCKET, int);
-ICE_API bool doConnect(SOCKET, struct sockaddr_storage&);
+ICE_API bool doConnect(SOCKET, const struct sockaddr_storage&);
 ICE_API void doFinishConnect(SOCKET);
+#ifdef ICE_USE_IOCP
+ICE_API void doConnectAsync(SOCKET, const struct sockaddr_storage&, AsyncInfo&);
+ICE_API void doFinishConnectAsync(SOCKET, AsyncInfo&);
+#endif
 ICE_API SOCKET doAccept(SOCKET);
 
-ICE_API void getAddressForServer(const std::string&, int, struct sockaddr_storage&, ProtocolSupport);
-ICE_API void getAddress(const std::string&, int, struct sockaddr_storage&, ProtocolSupport);
+ICE_API struct sockaddr_storage getAddressForServer(const std::string&, int, ProtocolSupport);
+ICE_API struct sockaddr_storage getAddress(const std::string&, int, ProtocolSupport);
 ICE_API std::vector<struct sockaddr_storage> getAddresses(const std::string&, int, ProtocolSupport, bool);
 
 ICE_API int compareAddress(const struct sockaddr_storage&, const struct sockaddr_storage&);
@@ -114,6 +181,8 @@ ICE_API void createPipe(SOCKET fds[2]);
 ICE_API std::string errorToStringDNS(int);
 
 ICE_API std::string fdToString(SOCKET);
+ICE_API void fdToAddressAndPort(SOCKET, std::string&, int&, std::string&, int&);
+ICE_API void addrToAddressAndPort(const struct sockaddr_storage&, std::string&, int&);
 ICE_API std::string addressesToString(const struct sockaddr_storage&, const struct sockaddr_storage&, bool);
 ICE_API void fdToLocalAddress(SOCKET, struct sockaddr_storage&);
 ICE_API bool fdToRemoteAddress(SOCKET, struct sockaddr_storage&);
@@ -121,8 +190,9 @@ ICE_API std::string inetAddrToString(const struct sockaddr_storage&);
 ICE_API std::string addrToString(const struct sockaddr_storage&);
 ICE_API bool isMulticast(const struct sockaddr_storage&);
 ICE_API int getPort(const struct sockaddr_storage&);
+ICE_API void setPort(struct sockaddr_storage&, int);
 
-ICE_API std::vector<std::string> getHostsForEndpointExpand(const std::string&, ProtocolSupport);
+ICE_API std::vector<std::string> getHostsForEndpointExpand(const std::string&, ProtocolSupport, bool);
 ICE_API void setTcpBufSize(SOCKET, const Ice::PropertiesPtr&, const Ice::LoggerPtr&);
 
 ICE_API int getSocketErrno();

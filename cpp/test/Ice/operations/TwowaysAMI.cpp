@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,17 +12,10 @@
 #include <Test.h>
 #include <limits>
 
-//
-// Visual C++ defines min and max as macros
-//
-#ifdef min
-#   undef min
-#endif
-#ifdef max
-#   undef max
-#endif
-
 using namespace std;
+
+namespace
+{
 
 class CallbackBase : public IceUtil::Monitor<IceUtil::Mutex>
 {
@@ -37,18 +30,14 @@ public:
     {
     }
 
-    bool check()
+    void check()
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
         while(!_called)
         {
-            if(!timedWait(IceUtil::Time::seconds(50000)))
-            {
-                return false;
-            }
+            wait();
         }
         _called = false;
-        return true;
     }
     
 protected:
@@ -757,6 +746,33 @@ public:
 
 typedef IceUtil::Handle<AMI_MyClass_opStringMyEnumDI> AMI_MyClass_opStringMyEnumDIPtr;
 
+class AMI_MyClass_opMyEnumStringDI : public Test::AMI_MyClass_opMyEnumStringD, public CallbackBase
+{
+public:
+
+    virtual void ice_response(const ::Test::MyEnumStringD& ro, const ::Test::MyEnumStringD& _do)
+    {
+        Test::MyEnumStringD di1;
+        di1[Test::enum1] = "abc";
+        test(_do == di1);
+        test(ro.size() == 3);
+        test(ro.find(Test::enum1) != ro.end());
+        test(ro.find(Test::enum1)->second == "abc");
+        test(ro.find(Test::enum2) != ro.end());
+        test(ro.find(Test::enum2)->second == "Hello!!");
+        test(ro.find(Test::enum3) != ro.end());
+        test(ro.find(Test::enum3)->second == "qwerty");
+        called();
+    }
+
+    virtual void ice_exception(const ::Ice::Exception&)
+    {
+        test(false);
+    }
+};
+
+typedef IceUtil::Handle<AMI_MyClass_opMyEnumStringDI> AMI_MyClass_opMyEnumStringDIPtr;
+
 class AMI_MyClass_opMyStructMyEnumDI : public Test::AMI_MyClass_opMyStructMyEnumD, public CallbackBase
 {
 public:
@@ -905,6 +921,8 @@ public:
 
 typedef IceUtil::Handle<AMI_MyClass_opDoubleMarshalingI> AMI_MyClass_opDoubleMarshalingIPtr;
 
+}
+
 void
 twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 {
@@ -921,12 +939,14 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
         {
             test(false);
         }
-        test(cb->check());
+        cb->check();
     }
 
     {
+	//
         // Check that a call to a twoway operation raises NoEndpointException
         // in the ice_exception() callback instead of at the point of call.
+	//
         Test::MyClassPrx indirect = Test::MyClassPrx::uncheckedCast(p->ice_adapterId("dummy"));
         AMI_MyClass_opByteExIPtr cb = new AMI_MyClass_opByteExI;
         try
@@ -937,20 +957,22 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
         {
             test(false);
         }
-        test(cb->check());
+        cb->check();
     }
 
     {
         AMI_MyClass_opVoidIPtr cb = new AMI_MyClass_opVoidI;
         p->opVoid_async(cb);
-        test(cb->check());
+        cb->check();
         // Let's check if we can reuse the same callback object for another call.
         p->opVoid_async(cb);
-        test(cb->check());
+        cb->check();
     }
 
     {
+	//
         // Check that CommunicatorDestroyedException is raised directly.
+	//
         Ice::InitializationData initData;
         initData.properties = communicator->getProperties()->clone();
         Ice::CommunicatorPtr ic = Ice::initialize(initData);
@@ -974,46 +996,46 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
     {
         AMI_MyClass_opByteIPtr cb = new AMI_MyClass_opByteI;
         p->opByte_async(cb, Ice::Byte(0xff), Ice::Byte(0x0f));
-        test(cb->check());
+        cb->check();
     }
 
     {
         AMI_MyClass_opBoolIPtr cb = new AMI_MyClass_opBoolI;
         p->opBool_async(cb, true, false);
-        test(cb->check());
+        cb->check();
     }
 
     {
         AMI_MyClass_opShortIntLongIPtr cb = new AMI_MyClass_opShortIntLongI;
         p->opShortIntLong_async(cb, 10, 11, 12);
-        test(cb->check());
+        cb->check();
     }
 
     {
         AMI_MyClass_opFloatDoubleIPtr cb = new AMI_MyClass_opFloatDoubleI;
         p->opFloatDouble_async(cb, Ice::Float(3.14), Ice::Double(1.1E10));
-        test(cb->check());
+        cb->check();
         // Let's check if we can reuse the same callback object for another call.
         p->opFloatDouble_async(cb, Ice::Float(3.14), Ice::Double(1.1E10));
-        test(cb->check());
+        cb->check();
     }
 
     {
         AMI_MyClass_opStringIPtr cb = new AMI_MyClass_opStringI;
         p->opString_async(cb, "hello", "world");
-        test(cb->check());
+        cb->check();
     }
 
     {
         AMI_MyClass_opMyEnumIPtr cb = new AMI_MyClass_opMyEnumI;
         p->opMyEnum_async(cb, Test::enum2);
-        test(cb->check());
+        cb->check();
     }
 
     {
         AMI_MyClass_opMyClassIPtr cb = new AMI_MyClass_opMyClassI(communicator);
         p->opMyClass_async(cb, p);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1028,7 +1050,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
         
         AMI_MyClass_opStructIPtr cb = new AMI_MyClass_opStructI(communicator);
         p->opStruct_async(cb, si1, si2);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1047,7 +1069,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opByteSIPtr cb = new AMI_MyClass_opByteSI;
         p->opByteS_async(cb, bsi1, bsi2);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1062,7 +1084,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opBoolSIPtr cb = new AMI_MyClass_opBoolSI;
         p->opBoolS_async(cb, bsi1, bsi2);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1085,7 +1107,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opShortIntLongSIPtr cb = new AMI_MyClass_opShortIntLongSI;
         p->opShortIntLongS_async(cb, ssi, isi, lsi);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1101,7 +1123,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opFloatDoubleSIPtr cb = new AMI_MyClass_opFloatDoubleSI;
         p->opFloatDoubleS_async(cb, fsi, dsi);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1116,7 +1138,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opStringSIPtr cb = new AMI_MyClass_opStringSI;
         p->opStringS_async(cb, ssi1, ssi2);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1136,7 +1158,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opByteSSIPtr cb = new AMI_MyClass_opByteSSI;
         p->opByteSS_async(cb, bsi1, bsi2);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1154,7 +1176,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opFloatDoubleSSIPtr cb = new AMI_MyClass_opFloatDoubleSSI;
         p->opFloatDoubleSS_async(cb, fsi, dsi);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1171,7 +1193,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opStringSSIPtr cb = new AMI_MyClass_opStringSSI;
         p->opStringSS_async(cb, ssi1, ssi2);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1185,7 +1207,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opByteBoolDIPtr cb = new AMI_MyClass_opByteBoolDI;
         p->opByteBoolD_async(cb, di1, di2);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1199,7 +1221,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opShortIntDIPtr cb = new AMI_MyClass_opShortIntDI;
         p->opShortIntD_async(cb, di1, di2);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1213,7 +1235,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opLongFloatDIPtr cb = new AMI_MyClass_opLongFloatDI;
         p->opLongFloatD_async(cb, di1, di2);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1227,7 +1249,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opStringStringDIPtr cb = new AMI_MyClass_opStringStringDI;
         p->opStringStringD_async(cb, di1, di2);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1241,7 +1263,19 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opStringMyEnumDIPtr cb = new AMI_MyClass_opStringMyEnumDI;
         p->opStringMyEnumD_async(cb, di1, di2);
-        test(cb->check());
+        cb->check();
+    }
+
+    {
+        Test::MyEnumStringD di1;
+        di1[Test::enum1] = "abc";
+        Test::MyEnumStringD di2;
+        di2[Test::enum2] = "Hello!!";
+        di2[Test::enum3] = "qwerty";
+
+        AMI_MyClass_opMyEnumStringDIPtr cb = new AMI_MyClass_opMyEnumStringDI;
+        p->opMyEnumStringD_async(cb, di1, di2);
+        cb->check();
     }
 
     {
@@ -1260,7 +1294,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
         AMI_MyClass_opMyStructMyEnumDIPtr cb = new AMI_MyClass_opMyStructMyEnumDI;
         p->opMyStructMyEnumD_async(cb, di1, di2);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1275,7 +1309,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
             }
             AMI_MyClass_opIntSIPtr cb = new AMI_MyClass_opIntSI(lengths[l]);
             p->opIntS_async(cb, s);
-            test(cb->check());
+            cb->check();
         }
     }
 
@@ -1288,116 +1322,26 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
             test(p->ice_getContext().empty());
             AMI_MyClass_opContextNotEqualIPtr cb = new AMI_MyClass_opContextNotEqualI(ctx);
             p->opContext_async(cb);
-            test(cb->check());
+            cb->check();
         }
         {
             test(p->ice_getContext().empty());
             AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(ctx);
             p->opContext_async(cb, ctx);
-            test(cb->check());
+            cb->check();
         }
         Test::MyClassPrx p2 = Test::MyClassPrx::checkedCast(p->ice_context(ctx));
         test(p2->ice_getContext() == ctx);
         {
             AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(ctx);
             p2->opContext_async(cb);
-            test(cb->check());
+            cb->check();
         }
         {
             Test::MyClassPrx p2 = Test::MyClassPrx::checkedCast(p->ice_context(ctx));
             AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(ctx);
             p2->opContext_async(cb, ctx);
-            test(cb->check());
-        }
-
-        {
-            //
-            // Test that default context is obtained correctly from communicator.
-            //
-/* DEPRECATED
-            Ice::Context dflt;
-            dflt["a"] = "b";
-            communicator->setDefaultContext(dflt);
-            {
-                AMI_MyClass_opContextNotEqualIPtr cb = new AMI_MyClass_opContextNotEqualI(dflt);
-                p->opContext_async(cb);
-                test(cb->check());
-            }
-
-            Test::MyClassPrx p2 = Test::MyClassPrx::uncheckedCast(p->ice_context(Ice::Context()));
-            {
-                AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(Ice::Context());
-                p2->opContext_async(cb);
-                test(cb->check());
-            }
-
-            p2 = Test::MyClassPrx::uncheckedCast(p->ice_defaultContext());
-            {
-                AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(dflt);
-                p2->opContext_async(cb);
-                test(cb->check());
-            }
-
-            communicator->setDefaultContext(Ice::Context());
-            {
-                AMI_MyClass_opContextNotEqualIPtr cb = new AMI_MyClass_opContextNotEqualI(Ice::Context());
-                p2->opContext_async(cb);
-                test(cb->check());
-            }
-
-            communicator->setDefaultContext(dflt);
-            Test::MyClassPrx c = Test::MyClassPrx::checkedCast(
-                                    communicator->stringToProxy("test:default -p 12010 -t 10000"));
-            {
-                Ice::Context tmp;
-                tmp["a"] = "b";
-                AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(tmp);
-                c->opContext_async(cb);
-                test(cb->check());
-            }
-
-            dflt["a"] = "c";
-            Test::MyClassPrx c2 = Test::MyClassPrx::uncheckedCast(c->ice_context(dflt));
-            {
-                Ice::Context tmp;
-                tmp["a"] = "c";
-                AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(tmp);
-                c2->opContext_async(cb);
-                test(cb->check());
-            }
-
-            dflt.clear();
-            Test::MyClassPrx c3 = Test::MyClassPrx::uncheckedCast(c2->ice_context(dflt));
-            {
-                Ice::Context tmp;
-                AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(tmp);
-                c3->opContext_async(cb);
-                test(cb->check());
-            }
-
-            Test::MyClassPrx c4 = Test::MyClassPrx::uncheckedCast(c2->ice_defaultContext());
-            {
-                Ice::Context tmp;
-                tmp["a"] = "b";
-                AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(tmp);
-                c4->opContext_async(cb);
-                test(cb->check());
-            }
-
-            dflt["a"] = "d";
-            communicator->setDefaultContext(dflt);
-
-            Test::MyClassPrx c5 = Test::MyClassPrx::uncheckedCast(c->ice_defaultContext());
-            {
-                Ice::Context tmp;
-                tmp["a"] = "d";
-                AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(tmp);
-                c5->opContext_async(cb);
-                test(cb->check());
-            }
-
-            communicator->setDefaultContext(Ice::Context());
-*/
+            cb->check();
         }
 
         {
@@ -1429,7 +1373,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
                 {
                     AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(ctx);
                     p->opContext_async(cb);
-                    test(cb->check());
+                    cb->check();
                 }
 
                 ic->getImplicitContext()->put("zero", "ZERO");
@@ -1438,7 +1382,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
                 {
                     AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(ctx);
                     p->opContext_async(cb);
-                    test(cb->check());
+                    cb->check();
                 }
                 
                 Ice::Context prxContext;
@@ -1455,22 +1399,20 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
                 {
                     AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(prxContext);
                     p->opContext_async(cb);
-                    test(cb->check());
+                    cb->check();
                 }
 
                 ic->getImplicitContext()->setContext(ctx);
                 {
                     AMI_MyClass_opContextEqualIPtr cb = new AMI_MyClass_opContextEqualI(combined);
                     p->opContext_async(cb);
-                    test(cb->check());
+                    cb->check();
                 }
 
                 ic->getImplicitContext()->setContext(Ice::Context());
                 ic->destroy();
             }
         }
-
-
     }
 
     {
@@ -1478,7 +1420,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
         Test::DoubleS ds(5, d);
         AMI_MyClass_opDoubleMarshalingIPtr cb = new AMI_MyClass_opDoubleMarshalingI;
         p->opDoubleMarshaling_async(cb, d, ds);
-        test(cb->check());
+        cb->check();
     }
 
     {
@@ -1486,6 +1428,6 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
         test(derived);
         AMI_MyDerivedClass_opDerivedIPtr cb = new AMI_MyDerivedClass_opDerivedI;
         derived->opDerived_async(cb);
-        test(cb->check());
+        cb->check();
     }
 }

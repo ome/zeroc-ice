@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -150,6 +150,24 @@ Time
 IceUtil::Time::microSeconds(Int64 t)
 {
     return Time(t);
+}
+
+Time
+IceUtil::Time::secondsDouble(double t)
+{
+    return Time(Int64(t * 1000000));
+}
+
+Time
+IceUtil::Time::milliSecondsDouble(double t)
+{
+    return Time(Int64(t * 1000));
+}
+
+Time
+IceUtil::Time::microSecondsDouble(double t)
+{
+    return Time(Int64(t));
 }
 
 #ifndef _WIN32

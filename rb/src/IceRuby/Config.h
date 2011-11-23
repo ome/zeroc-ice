@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -46,5 +46,50 @@ typedef VALUE(*ICE_RUBY_ENTRY_POINT)(...);
 }
 
 #define CAST_METHOD(X) reinterpret_cast<ICE_RUBY_ENTRY_POINT>(X)
+
+//
+// These macros are defined in Ruby 1.9 but not in 1.8. We define them here
+// to maintain compatibility with 1.8.
+//
+#ifndef RARRAY_PTR
+#   define RARRAY_PTR(v) RARRAY(v)->ptr
+#endif
+
+#ifndef RARRAY_LEN
+#   define RARRAY_LEN(v) RARRAY(v)->len
+#endif
+
+#ifndef RSTRING_PTR
+#   define RSTRING_PTR(v) RSTRING(v)->ptr
+#endif
+
+#ifndef RSTRING_LEN
+#   define RSTRING_LEN(v) RSTRING(v)->len
+#endif
+
+#ifndef RFLOAT_VALUE
+#   define RFLOAT_VALUE(v) RFLOAT(v)->value
+#endif
+
+#ifndef RBIGNUM_LEN
+#   define RBIGNUM_LEN(v) RBIGNUM(v)->len
+#endif
+
+//
+// The definition of RBIGNUM_DIGITS in 1.8.7p248+ causes a compilation error (see bug 4653),
+// so we undefine it and use our own definition below. Note that the macro HAVE_RUBY_RUBY_H
+// is only defined in Ruby 1.9.
+//
+#ifndef HAVE_RUBY_RUBY_H
+#   undef RBIGNUM_DIGITS
+#endif
+
+#ifndef RBIGNUM_DIGITS
+#   define RBIGNUM_DIGITS(v) ((BDIGIT*)RBIGNUM(v)->digits)
+#endif
+
+#ifndef RBIGNUM_SIGN
+#   define RBIGNUM_SIGN(v) RBIGNUM(v)->sign
+#endif
 
 #endif

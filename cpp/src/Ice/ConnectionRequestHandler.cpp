@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -81,7 +81,7 @@ ConnectionRequestHandler::sendRequest(Outgoing* out)
     }
 }
 
-bool
+AsyncStatus
 ConnectionRequestHandler::sendAsyncRequest(const OutgoingAsyncPtr& out)
 {
     return _connection->sendAsyncRequest(out, _compress, _response);
@@ -93,7 +93,7 @@ ConnectionRequestHandler::flushBatchRequests(BatchOutgoing* out)
     return _connection->flushBatchRequests(out);
 }
 
-bool
+AsyncStatus
 ConnectionRequestHandler::flushAsyncBatchRequests(const BatchOutgoingAsyncPtr& out)
 {
     return _connection->flushAsyncBatchRequests(out);

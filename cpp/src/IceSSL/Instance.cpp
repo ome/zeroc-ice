@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,8 +18,10 @@
 #include <Ice/LoggerUtil.h>
 #include <Ice/Properties.h>
 #include <Ice/ProtocolPluginFacade.h>
+#include <Ice/StringConverter.h>
 
-#include <IceUtil/StaticMutex.h>
+#include <IceUtil/Mutex.h>
+#include <IceUtil/MutexPtrLock.h>
 #include <IceUtil/StringUtil.h>
 
 #include <openssl/rand.h>
@@ -33,9 +35,38 @@ using namespace IceSSL;
 
 IceUtil::Shared* IceInternal::upCast(IceSSL::Instance* p) { return p; }
 
-static IceUtil::StaticMutex staticMutex = ICE_STATIC_MUTEX_INITIALIZER;
-static int instanceCount = 0;
-static IceUtil::Mutex* locks = 0;
+namespace
+{
+
+IceUtil::Mutex* staticMutex = 0;
+int instanceCount = 0;
+IceUtil::Mutex* locks = 0;
+
+class Init
+{
+public:
+
+    Init()
+    {
+        staticMutex = new IceUtil::Mutex;
+    }
+
+    ~Init()
+    {
+        delete staticMutex;
+        staticMutex = 0;
+
+        if(locks)
+        {
+            delete[] locks;
+            locks = 0;
+        }
+    }
+};
+
+Init init;
+
+}
 
 extern "C"
 {
@@ -46,6 +77,7 @@ extern "C"
 void
 IceSSL_opensslLockCallback(int mode, int n, const char* file, int line)
 {
+    assert(locks);
     if(mode & CRYPTO_LOCK)
     {
         locks[n].lock();
@@ -92,7 +124,10 @@ IceSSL_opensslPasswordCallback(char* buf, int size, int flag, void* userData)
     strncpy(buf, passwd.c_str(), sz);
     buf[sz] = '\0';
 
-    memset(&passwd[0], 0, static_cast<size_t>(passwd.size()));
+    for(string::iterator i = passwd.begin(); i != passwd.end(); ++i)
+    {
+        *i = '\0';
+    } 
 
     return sz;
 }
@@ -136,7 +171,7 @@ IceSSL::Instance::Instance(const CommunicatorPtr& communicator) :
     //
     // Initialize OpenSSL if necessary.
     //
-    IceUtil::StaticMutex::Lock sync(staticMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(staticMutex);
     instanceCount++;
 
     if(instanceCount == 1)
@@ -146,9 +181,12 @@ IceSSL::Instance::Instance(const CommunicatorPtr& communicator) :
         //
         // Create the mutexes and set the callbacks.
         //
-        locks = new IceUtil::Mutex[CRYPTO_num_locks()];
-        CRYPTO_set_locking_callback(IceSSL_opensslLockCallback);
-        CRYPTO_set_id_callback(IceSSL_opensslThreadIdCallback);
+        if(!locks)
+        {
+            locks = new IceUtil::Mutex[CRYPTO_num_locks()];
+            CRYPTO_set_locking_callback(IceSSL_opensslLockCallback);
+            CRYPTO_set_id_callback(IceSSL_opensslThreadIdCallback);
+        }
 
         //
         // Load human-readable error messages.
@@ -171,7 +209,8 @@ IceSSL::Instance::Instance(const CommunicatorPtr& communicator) :
         {
             RAND_load_file(randFile, 1024);
         }
-        string randFiles = properties->getProperty("IceSSL.Random");
+        string randFiles = Ice::nativeToUTF8(communicator, properties->getProperty("IceSSL.Random"));
+
         if(!randFiles.empty())
         {
             vector<string> files;
@@ -180,7 +219,8 @@ IceSSL::Instance::Instance(const CommunicatorPtr& communicator) :
 #else
             const string sep = ":";
 #endif
-            string defaultDir = properties->getProperty("IceSSL.DefaultDir");
+            string defaultDir = Ice::nativeToUTF8(communicator, properties->getProperty("IceSSL.DefaultDir"));
+
             if(!IceUtilInternal::splitString(randFiles, sep, files))
             {
                 PluginInitializationException ex(__FILE__, __LINE__);
@@ -246,14 +286,19 @@ IceSSL::Instance::~Instance()
     //
     // Clean up OpenSSL resources.
     //
-    IceUtil::StaticMutex::Lock sync(staticMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(staticMutex);
 
     if(--instanceCount == 0)
     {
-        CRYPTO_set_locking_callback(0);
-        CRYPTO_set_id_callback(0);
-        delete[] locks;
-        locks = 0;
+        //
+        // NOTE: We can't destroy the locks here: threads wich might have called openssl methods
+        // might access openssl locks upon termination (from DllMain/THREAD_DETACHED). Instead, 
+        // we release the locks in the ~Init() static destructor. See bug #4156.
+        //
+        //CRYPTO_set_locking_callback(0);
+        //CRYPTO_set_id_callback(0);
+        //delete[] locks;
+        //locks = 0;
 
         CRYPTO_cleanup_all_ex_data();
         RAND_cleanup();
@@ -287,6 +332,11 @@ IceSSL::Instance::initialize()
         // no maximum.
         //
         _verifyDepthMax = properties->getPropertyAsIntWithDefault(propPrefix + "VerifyDepthMax", 2);
+
+        //
+        // VerifyPeer determines whether certificate validation failures abort a connection.
+        //
+        _verifyPeer = properties->getPropertyAsIntWithDefault(propPrefix + "VerifyPeer", 2);
 
         //
         // Create an SSL context if the application hasn't supplied one.
@@ -365,7 +415,7 @@ IceSSL::Instance::initialize()
                     {
                         ERR_clear_error();
                         err = SSL_CTX_load_verify_locations(_ctx, file, dir);
-                        if(err || !passwordError())
+                        if(err)
                         {
                             break;
                         }
@@ -435,7 +485,7 @@ IceSSL::Instance::initialize()
                         {
                             ERR_clear_error();
                             err = SSL_CTX_use_certificate_chain_file(_ctx, file.c_str());
-                            if(err || !passwordError())
+                            if(err)
                             {
                                 break;
                             }
@@ -500,7 +550,7 @@ IceSSL::Instance::initialize()
                         {
                             ERR_clear_error();
                             err = SSL_CTX_use_PrivateKey_file(_ctx, file.c_str(), SSL_FILETYPE_PEM);
-                            if(err || !passwordError())
+                            if(err)
                             {
                                 break;
                             }
@@ -622,9 +672,8 @@ IceSSL::Instance::initialize()
         // Determine whether a certificate is required from the peer.
         //
         {
-            int verifyPeer = properties->getPropertyAsIntWithDefault(propPrefix + "VerifyPeer", 2);
             int sslVerifyMode;
-            switch(verifyPeer)
+            switch(_verifyPeer)
             {
             case 0:
                 sslVerifyMode = SSL_VERIFY_NONE;
@@ -740,21 +789,33 @@ IceSSL::Instance::securityTraceCategory() const
 }
 
 void
-IceSSL::Instance::verifyPeer(SSL* ssl, SOCKET fd, const string& address, const string& adapterName, bool incoming)
+IceSSL::Instance::verifyPeer(SSL* ssl, SOCKET fd, const string& address, const NativeConnectionInfoPtr& info)
 {
     long result = SSL_get_verify_result(ssl);
     if(result != X509_V_OK)
     {
-        ostringstream ostr;
-        ostr << "IceSSL: certificate verification failed:\n" << X509_verify_cert_error_string(result);
-        string msg = ostr.str();
-        if(_securityTraceLevel >= 1)
+        if(_verifyPeer == 0)
         {
-            _logger->trace(_securityTraceCategory, msg);
+            if(_securityTraceLevel >= 1)
+            {
+                ostringstream ostr;
+                ostr << "IceSSL: ignoring certificate verification failure:\n" << X509_verify_cert_error_string(result);
+                _logger->trace(_securityTraceCategory, ostr.str());
+            }
         }
-        SecurityException ex(__FILE__, __LINE__);
-        ex.reason = msg;
-        throw ex;
+        else
+        {
+            ostringstream ostr;
+            ostr << "IceSSL: certificate verification failed:\n" << X509_verify_cert_error_string(result);
+            string msg = ostr.str();
+            if(_securityTraceLevel >= 1)
+            {
+                _logger->trace(_securityTraceCategory, msg);
+            }
+            SecurityException ex(__FILE__, __LINE__);
+            ex.reason = msg;
+            throw ex;
+        }
     }
 
     X509* rawCert = SSL_get_peer_certificate(ssl);
@@ -765,11 +826,15 @@ IceSSL::Instance::verifyPeer(SSL* ssl, SOCKET fd, const string& address, const s
     }
 
     //
-    // Extract the IP addresses and the DNS names from the subject
-    // alternative names.
+    // For an outgoing connection, we compare the proxy address (if any) against
+    // fields in the server's certificate (if any).
     //
-    if(cert)
+    if(cert && !address.empty())
     {
+        //
+        // Extract the IP addresses and the DNS names from the subject
+        // alternative names.
+        //
         vector<pair<int, string> > subjectAltNames = cert->getSubjectAlternativeNames();
         vector<string> ipAddresses;
         vector<string> dnsNames;
@@ -777,106 +842,110 @@ IceSSL::Instance::verifyPeer(SSL* ssl, SOCKET fd, const string& address, const s
         {
             if(p->first == 7)
             {
-                ipAddresses.push_back(p->second);
+                ipAddresses.push_back(IceUtilInternal::toLower(p->second));
             }
             else if(p->first == 2)
             {
-                dnsNames.push_back(p->second);
+                dnsNames.push_back(IceUtilInternal::toLower(p->second));
             }
         }
 
         //
-        // Compare the peer's address against the dnsName and ipAddress values.
-        // This is only relevant for an outgoing connection.
+        // Compare the peer's address against the common name.
         //
-        if(!address.empty())
+        bool certNameOK = false;
+        string dn;
+        string addrLower = IceUtilInternal::toLower(address);
         {
-            bool certNameOK = false;
-
-            for(vector<string>::const_iterator p = ipAddresses.begin(); p != ipAddresses.end() && !certNameOK; ++p)
+            DistinguishedName d = cert->getSubjectDN();
+            dn = IceUtilInternal::toLower(string(d));
+            string cn = "cn=" + addrLower;
+            string::size_type pos = dn.find(cn);
+            if(pos != string::npos)
             {
-                if(address == *p)
+                //
+                // Ensure we match the entire common name.
+                //
+                certNameOK = (pos + cn.size() == dn.size()) || (dn[pos + cn.size()] == ',');
+            }
+        }
+
+        //
+        // Compare the peer's address against the the dnsName and ipAddress
+        // values in the subject alternative name.
+        //
+        if(!certNameOK)
+        {
+            certNameOK = find(ipAddresses.begin(), ipAddresses.end(), addrLower) != ipAddresses.end();
+        }
+        if(!certNameOK)
+        {
+            certNameOK = find(dnsNames.begin(), dnsNames.end(), addrLower) != dnsNames.end();
+        }
+
+        //
+        // Log a message if the name comparison fails. If CheckCertName is defined,
+        // we also raise an exception to abort the connection. Don't log a message if
+        // CheckCertName is not defined and a verifier is present.
+        //
+        if(!certNameOK && (_checkCertName || (_securityTraceLevel >= 1 && !_verifier)))
+        {
+            ostringstream ostr;
+            ostr << "IceSSL: ";
+            if(!_checkCertName)
+            {
+                ostr << "ignoring ";
+            }
+            ostr << "certificate validation failure:\npeer certificate does not have `" << address
+                 << "' as its commonName or in its subjectAltName extension";
+            if(!dn.empty())
+            {
+                ostr << "\nSubject DN: " << dn;
+            }
+            if(!dnsNames.empty())
+            {
+                ostr << "\nDNS names found in certificate: ";
+                for(vector<string>::const_iterator p = dnsNames.begin(); p != dnsNames.end(); ++p)
                 {
-                    certNameOK = true;
-                    break;
+                    if(p != dnsNames.begin())
+                    {
+                        ostr << ", ";
+                    }
+                    ostr << *p;
                 }
             }
-
-            if(!certNameOK && !dnsNames.empty())
+            if(!ipAddresses.empty())
             {
-                string host = IceUtilInternal::toLower(address);
-                for(vector<string>::const_iterator p = dnsNames.begin(); p != dnsNames.end() && !certNameOK; ++p)
+                ostr << "\nIP addresses found in certificate: ";
+                for(vector<string>::const_iterator p = ipAddresses.begin(); p != ipAddresses.end(); ++p)
                 {
-                    string s = IceUtilInternal::toLower(*p);
-                    if(host == s)
+                    if(p != ipAddresses.begin())
                     {
-                        certNameOK = true;
+                        ostr << ", ";
                     }
+                    ostr << *p;
                 }
             }
-
-            //
-            // Log a message if the name comparison fails. If CheckCertName is defined,
-            // we also raise an exception to abort the connection. Don't log a message if
-            // CheckCertName is not defined and a verifier is present.
-            //
-            if(!certNameOK && (_checkCertName || (_securityTraceLevel >= 1 && !_verifier)))
+            string msg = ostr.str();
+            if(_securityTraceLevel >= 1)
             {
-                ostringstream ostr;
-                ostr << "IceSSL: ";
-                if(!_checkCertName)
-                {
-                    ostr << "ignoring ";
-                }
-                ostr << "certificate validation failure:\npeer certificate does not contain `"
-                     << address << "' in its subjectAltName extension";
-                if(!dnsNames.empty())
-                {
-                    ostr << "\nDNS names found in certificate: ";
-                    for(vector<string>::const_iterator p = dnsNames.begin(); p != dnsNames.end(); ++p)
-                    {
-                        if(p != dnsNames.begin())
-                        {
-                            ostr << ", ";
-                        }
-                        ostr << *p;
-                    }
-                }
-                if(!ipAddresses.empty())
-                {
-                    ostr << "\nIP addresses found in certificate: ";
-                    for(vector<string>::const_iterator p = ipAddresses.begin(); p != ipAddresses.end(); ++p)
-                    {
-                        if(p != ipAddresses.begin())
-                        {
-                            ostr << ", ";
-                        }
-                        ostr << *p;
-                    }
-                }
-                string msg = ostr.str();
-                if(_securityTraceLevel >= 1)
-                {
-                    Trace out(_logger, _securityTraceCategory);
-                    out << msg;
-                }
-                if(_checkCertName)
-                {
-                    SecurityException ex(__FILE__, __LINE__);
-                    ex.reason = msg;
-                    throw ex;
-                }
+                Trace out(_logger, _securityTraceCategory);
+                out << msg;
+            }
+            if(_checkCertName)
+            {
+                SecurityException ex(__FILE__, __LINE__);
+                ex.reason = msg;
+                throw ex;
             }
         }
     }
 
-    ConnectionInfo info = populateConnectionInfo(ssl, fd, adapterName, incoming);
-
-    if(_verifyDepthMax > 0 && static_cast<int>(info.certs.size()) > _verifyDepthMax)
+    if(_verifyDepthMax > 0 && static_cast<int>(info->certs.size()) > _verifyDepthMax)
     {
         ostringstream ostr;
-        ostr << (incoming ? "incoming" : "outgoing") << " connection rejected:\n"
-             << "length of peer's certificate chain (" << info.certs.size() << ") exceeds maximum of "
+        ostr << (info->incoming ? "incoming" : "outgoing") << " connection rejected:\n"
+             << "length of peer's certificate chain (" << info->certs.size() << ") exceeds maximum of "
              << _verifyDepthMax;
         string msg = ostr.str();
         if(_securityTraceLevel >= 1)
@@ -890,7 +959,7 @@ IceSSL::Instance::verifyPeer(SSL* ssl, SOCKET fd, const string& address, const s
 
     if(!_trustManager->verify(info))
     {
-        string msg = string(incoming ? "incoming" : "outgoing") + " connection rejected by trust manager";
+        string msg = string(info->incoming ? "incoming" : "outgoing") + " connection rejected by trust manager";
         if(_securityTraceLevel >= 1)
         {
             _logger->trace(_securityTraceCategory, msg + "\n" + IceInternal::fdToString(fd));
@@ -902,7 +971,7 @@ IceSSL::Instance::verifyPeer(SSL* ssl, SOCKET fd, const string& address, const s
 
     if(_verifier && !_verifier->verify(info))
     {
-        string msg = string(incoming ? "incoming" : "outgoing") + " connection rejected by certificate verifier";
+        string msg = string(info->incoming ? "incoming" : "outgoing") + " connection rejected by certificate verifier";
         if(_securityTraceLevel >= 1)
         {
             _logger->trace(_securityTraceCategory, msg + "\n" + IceInternal::fdToString(fd));

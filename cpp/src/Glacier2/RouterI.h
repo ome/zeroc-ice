@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -44,6 +44,7 @@ public:
                                      const Ice::Current&);
     virtual void createSessionFromSecureConnection_async(const AMD_Router_createSessionFromSecureConnectionPtr&,
                                                          const Ice::Current&);
+    virtual void refreshSession(const ::Ice::Current&);
     virtual void destroySession(const ::Ice::Current&);
     virtual Ice::Long getSessionTimeout(const ::Ice::Current&) const;
 
@@ -53,6 +54,7 @@ public:
     SessionPrx getSession() const;
 
     IceUtil::Time getTimestamp() const;
+    void updateTimestamp() const;
 
     std::string toString() const;
 
@@ -67,7 +69,8 @@ private:
     const std::string _userId;
     const SessionPrx _session;
     const Ice::Identity _controlId;
-    const Ice::Context _sslContext;
+    const Ice::Context _context;
+    const IceUtil::Mutex _timestampMutex;
     mutable IceUtil::Time _timestamp;
 };
 

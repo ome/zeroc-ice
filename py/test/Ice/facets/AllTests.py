@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -23,7 +23,7 @@ def allTests(communicator):
     communicator.getProperties().setProperty("Ice.Admin.Facets", "foobar");
     facetFilter = communicator.getProperties().getPropertyAsList("Ice.Admin.Facets");
     test(len(facetFilter) == 1 and facetFilter[0] == "foobar");
-    communicator.getProperties().setProperty("Ice.Admin.Facets", "foo'bar");
+    communicator.getProperties().setProperty("Ice.Admin.Facets", "foo\\'bar");
     facetFilter = communicator.getProperties().getPropertyAsList("Ice.Admin.Facets");
     test(len(facetFilter) == 1 and facetFilter[0] == "foo'bar");
     communicator.getProperties().setProperty("Ice.Admin.Facets", "'foo bar' toto 'titi'");
@@ -86,7 +86,7 @@ def allTests(communicator):
     adapter.deactivate()
 
     print "testing stringToProxy... ",
-    ref = "d:default -p 12010 -t 10000"
+    ref = "d:default -p 12010"
     db = communicator.stringToProxy(ref)
     test(db)
     print "ok"

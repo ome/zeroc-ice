@@ -1,11 +1,12 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
 package IceGridGUI.LiveDeployment;
 
 import javax.swing.JScrollPane;
@@ -57,11 +58,10 @@ class DbEnvEditor extends Editor
         builder.nextRow(-2);
         CellConstraints cc = new CellConstraints();
         JScrollPane scrollPane = new JScrollPane(_description);
-        builder.add(scrollPane, 
-                    cc.xywh(builder.getColumn(), builder.getRow(), 3, 3));
+        builder.add(scrollPane, cc.xywh(builder.getColumn(), builder.getRow(), 3, 3));
         builder.nextRow(2);
         builder.nextLine();
-        
+
         builder.append("DB Home" );
         builder.append(_dbHome, 3);
         builder.nextLine();
@@ -78,8 +78,7 @@ class DbEnvEditor extends Editor
         builder.append("");
         builder.nextRow(-6);
         scrollPane = new JScrollPane(_properties);
-        builder.add(scrollPane, 
-                    cc.xywh(builder.getColumn(), builder.getRow(), 3, 7));
+        builder.add(scrollPane, cc.xywh(builder.getColumn(), builder.getRow(), 3, 7));
         builder.nextRow(6);
         builder.nextLine();
     }

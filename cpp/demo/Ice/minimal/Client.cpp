@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,46 +16,30 @@ using namespace Demo;
 int
 main(int argc, char* argv[])
 {
-    int status = EXIT_SUCCESS;
     Ice::CommunicatorPtr communicator;
 
     try
     {
         communicator = Ice::initialize(argc, argv);
-        if(argc > 1)
-        {
-            cerr << argv[0] << ": too many arguments" << endl;
-            return EXIT_FAILURE;
-        }
         HelloPrx hello = HelloPrx::checkedCast(communicator->stringToProxy("hello:tcp -p 10000"));
-        if(!hello)
-        {
-            cerr << argv[0] << ": invalid proxy" << endl;
-            status = EXIT_FAILURE;
-        }
-        else
-        {
-            hello->sayHello();
-        }
+        hello->sayHello();
+        communicator->destroy();
     }
     catch(const Ice::Exception& ex)
     {
         cerr << ex << endl;
-        status = EXIT_FAILURE;
-    }
-
-    if(communicator)
-    {
         try
         {
-            communicator->destroy();
+            if(communicator)
+            {
+                communicator->destroy();
+            }
         }
         catch(const Ice::Exception& ex)
         {
             cerr << ex << endl;
-            status = EXIT_FAILURE;
         }
+        exit(1);
     }
-
-    return status;
+    return 0;
 }

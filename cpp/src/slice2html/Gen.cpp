@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@
 
 #include <IceUtil/DisableWarnings.h>
 #include <IceUtil/Functional.h>
+#include <IceUtil/StringUtil.h>
 #include <Slice/FileTracker.h>
 #include <Gen.h>
 
@@ -400,7 +401,7 @@ Slice::GeneratorBase::printComment(const ContainedPtr& p, const ContainerPtr& co
             }
             
             start("dt", "Symbol");
-            _out << toString(term, container, false, forIndex);
+            _out << toString(toSliceID(term, container->definitionContext()->filename()), container, false, forIndex);
             end();
             start("dd");
             _out << nl << item;
@@ -531,7 +532,7 @@ Slice::GeneratorBase::printComment(const ContainedPtr& p, const ContainerPtr& co
         for(StringList::const_iterator q = see.begin(); q != see.end(); ++q)
         {
             start("dt", "Symbol");
-            _out << toString(*q, container, false, forIndex);
+            _out << toString(toSliceID(*q, container->definitionContext()->filename()), container, false, forIndex);
             end();
         }
         end();
@@ -562,7 +563,7 @@ Slice::GeneratorBase::printMetaData(const ContainedPtr& p)
 }
 
 void
-Slice::GeneratorBase::printSummary(const ContainedPtr& p, const ContainerPtr& module, bool deprecated)
+Slice::GeneratorBase::printSummary(const ContainedPtr& p, const ContainerPtr& module, bool deprecated, bool forIndex)
 {
     ContainerPtr container = ContainerPtr::dynamicCast(p);
     if(!container)
@@ -575,7 +576,7 @@ Slice::GeneratorBase::printSummary(const ContainedPtr& p, const ContainerPtr& mo
         container = module;
     }
 
-    string summary = getComment(p, container, true, module);
+    string summary = getComment(p, container, true, forIndex);
     _out << nl << summary;
 
     if(deprecated)
@@ -1052,15 +1053,14 @@ string
 Slice::GeneratorBase::toString(const string& str, const ContainerPtr& container, bool asTarget, bool forIndex,
                                size_t* summarySize)
 {
-    string s = str;
 
-    TypeList types = container->lookupType(s, false);
+    TypeList types = container->lookupType(str, false);
     if(!types.empty())
     {
         return toString(types.front(), container, asTarget, forIndex, summarySize);
     }
 
-    ContainedList contList = container->lookupContained(s, false);
+    ContainedList contList = container->lookupContained(str, false);
     if(!contList.empty())
     {
         return toString(contList.front(), container, asTarget, forIndex, summarySize);
@@ -1070,7 +1070,7 @@ Slice::GeneratorBase::toString(const string& str, const ContainerPtr& container,
     // If we can't find the string, printing it in typewriter
     // font is the best we can do.
     //
-    return "<tt>" + s + "</tt>";
+    return "<tt>" + str + "</tt>";
 }
 
 string
@@ -1082,6 +1082,9 @@ Slice::GeneratorBase::getComment(const ContainedPtr& contained, const ContainerP
     string comment;
     for(unsigned int i = 0; i < s.size(); ++i)
     {
+        //
+        // TODO: Remove old-style link processing once we no longer support the [ident] syntax for links.
+        //
         if(s[i] == '\\' && i + 1 < s.size() && s[i + 1] == '[')
         {
             comment += '[';
@@ -1103,6 +1106,37 @@ Slice::GeneratorBase::getComment(const ContainedPtr& contained, const ContainerP
             size_t sz = 0;
             comment += toString(literal, container, false, forIndex, summary ? &sz : 0);
             summarySize += sz;
+
+            //
+            // TODO: Remove this warning once we no longer support the old javadoc syntax.
+            //
+            string fileName = contained->file();
+            if(_warnOldCommentFiles.find(fileName) == _warnOldCommentFiles.end())
+            {
+                _warnOldCommentFiles.insert(fileName);
+                cerr << fileName << ": warning: file contains old-style javadoc link syntax: `[" << literal << "]'";
+            }
+        }
+        else if(s[i] == '{')
+        {
+            static const string atLink = "{@link";
+            string::size_type pos = s.find(atLink, i);
+            if(pos != i)
+            {
+                comment += '{';
+                ++summarySize;
+                continue;
+            }
+            string::size_type endpos = s.find('}', pos);
+            if(endpos == string::npos)
+            {
+                continue;
+            }
+            string literal = s.substr(pos + atLink.size(), endpos - pos - atLink.size());
+            size_t sz = 0;
+            comment += toString(toSliceID(literal, contained->file()), container, false, forIndex, summary ? &sz : 0);
+            summarySize += sz;
+            i = static_cast<unsigned int>(endpos);
         }
         else if(summary && s[i] == '.' && (i + 1 >= s.size() || isspace(static_cast<unsigned char>(s[i + 1]))))
         {
@@ -1119,7 +1153,7 @@ Slice::GeneratorBase::getComment(const ContainedPtr& contained, const ContainerP
 
     if(summary && _warnSummary && summarySize > _warnSummary)
     {
-        cerr << contained->file() << ": summary size (" << summarySize << ") exceeds " << _warnSummary
+        cerr << contained->file() << ": warning: summary size (" << summarySize << ") exceeds " << _warnSummary
              << " characters: `" << comment << "'" << endl;
     }
 
@@ -1420,6 +1454,106 @@ Slice::GeneratorBase::getContainer(const SyntaxTreeBasePtr& p)
         result.push_front(contained->name());
         contained = ContainedPtr::dynamicCast(contained->container());
     }
+    return result;
+}
+
+//
+// TODO: remove warnOldStyleIdent() function once we no longer support
+// old-style javadoc comments ([...] instead of {@link ...} and
+// X::Y::Z instead of X.Y#Z).
+//
+//
+void
+Slice::GeneratorBase::warnOldStyleIdent(const string& str, const string& fileName)
+{
+    string newName;
+
+    string::size_type next = 0;
+    if(str.size() > 2 && str[0] == ':' && str[1] == ':')
+    {
+        next = 2;
+    }
+
+    int numIdents = 0;
+    string::size_type endpos;
+    while((endpos = str.find("::", next)) != string::npos)
+    {
+        if(numIdents != 0)
+        {
+            newName += ".";
+        }
+        newName += str.substr(next, endpos - next);
+        ++numIdents;
+        next = endpos;
+        if(next != string::npos)
+        {
+            next += 2;
+        }
+    }
+
+    if(numIdents != 0)
+    {
+        newName += ".";
+    }
+    newName += str.substr(next);
+
+    if(_warnOldCommentFiles.find(fileName) == _warnOldCommentFiles.end())
+    {
+        _warnOldCommentFiles.insert(fileName);
+
+        string::size_type pos;
+        pos = newName.rfind('.');
+        string alternateName;
+        string lastName;
+        if(pos != string::npos)
+        {
+            alternateName = newName;
+            alternateName[pos] = '#';
+            lastName = newName.substr(pos + 1);
+        }
+
+        cerr << fileName << ": warning: file contains old-style javadoc identifier syntax: `" << str << "'."
+             << " Use `'" << newName << "'";
+        if(!alternateName.empty())
+        {
+             cerr << " or `" << alternateName << "' if `" << lastName << "' is a member";
+        }
+        cerr << endl;
+    }
+}
+
+//
+// Convert a string of the form X.Y#Z into X::Y::Z (#Z converts to Z).
+// TODO: Remove the filename parameter once we no longer support old-style javadoc comments.
+//
+string
+Slice::GeneratorBase::toSliceID(const string& str, const string& filename)
+{
+    
+    const string s = IceUtilInternal::trim(str);
+    string result;
+    string::size_type pos;
+    string::size_type next = 0;
+    while((pos = s.find_first_of(".#", next)) != string::npos)
+    {
+        result += s.substr(next, pos - next);
+        if(s[pos] != '#' || pos != 0)
+        {
+            result += "::";
+        }
+        next = ++pos;
+    }
+    result += s.substr(next);
+
+    //
+    // TODO: Remove the warning once we no longer support the old-style
+    // javadoc syntax.
+    //
+    if(str.find("::") != string::npos)
+    {
+        warnOldStyleIdent(s, filename);
+    }
+
     return result;
 }
 
@@ -2042,7 +2176,7 @@ Slice::ModuleGenerator::visitContainer(const ContainerPtr& p)
             end();
             start("dd");
             string metadata;
-            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata));
+            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata), true);
             end();
         }
         end();
@@ -2071,7 +2205,7 @@ Slice::ModuleGenerator::visitContainer(const ContainerPtr& p)
             end();
             start("dd");
             string metadata;
-            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata));
+            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata), true);
             end();
         }
         end();
@@ -2092,7 +2226,7 @@ Slice::ModuleGenerator::visitContainer(const ContainerPtr& p)
             end();
             start("dd");
             string metadata;
-            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata));
+            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata), true);
             end();
         }
         end();
@@ -2115,7 +2249,7 @@ Slice::ModuleGenerator::visitContainer(const ContainerPtr& p)
             end();
             start("dd");
             string metadata;
-            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata));
+            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata), true);
             end();
         }
         end();
@@ -2138,7 +2272,7 @@ Slice::ModuleGenerator::visitContainer(const ContainerPtr& p)
             end();
             start("dd");
             string metadata;
-            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata));
+            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata), true);
             end();
         }
         end();
@@ -2161,7 +2295,7 @@ Slice::ModuleGenerator::visitContainer(const ContainerPtr& p)
             end();
             start("dd");
             string metadata;
-            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata));
+            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata), true);
             end();
         }
         end();
@@ -2184,7 +2318,7 @@ Slice::ModuleGenerator::visitContainer(const ContainerPtr& p)
             end();
             start("dd");
             string metadata;
-            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata));
+            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata), true);
             end();
         }
         end();
@@ -2207,7 +2341,7 @@ Slice::ModuleGenerator::visitContainer(const ContainerPtr& p)
             end();
             start("dd");
             string metadata;
-            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata));
+            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata), true);
             end();
         }
         end();
@@ -2230,7 +2364,7 @@ Slice::ModuleGenerator::visitContainer(const ContainerPtr& p)
             end();
             start("dd");
             string metadata;
-            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata));
+            printSummary(*q, p, (*q)->findMetaData("deprecate", metadata), true);
             end();
         }
         end();
@@ -2427,7 +2561,7 @@ Slice::ExceptionGenerator::generate(const ExceptionPtr& e)
             end();
             start("dd");
             string metadata;
-            printSummary(*q, e, (*q)->findMetaData("deprecate", metadata));
+            printSummary(*q, e, (*q)->findMetaData("deprecate", metadata), false);
             end();
         }
         end();
@@ -2557,7 +2691,7 @@ Slice::ClassGenerator::generate(const ClassDefPtr& c)
             end();
             start("dd");
             string metadata;
-            printSummary(*q, c, (*q)->findMetaData("deprecate", metadata));
+            printSummary(*q, c, (*q)->findMetaData("deprecate", metadata), false);
             end();
         }
         end();
@@ -2578,7 +2712,7 @@ Slice::ClassGenerator::generate(const ClassDefPtr& c)
             end();
             start("dd");
             string metadata;
-            printSummary(*q, c, (*q)->findMetaData("deprecate", metadata));
+            printSummary(*q, c, (*q)->findMetaData("deprecate", metadata), false);
             end();
         }
         end();
@@ -2739,7 +2873,7 @@ Slice::StructGenerator::generate(const StructPtr& s)
             end();
             start("dd");
             string metadata;
-            printSummary(*q, s, (*q)->findMetaData("deprecate", metadata));
+            printSummary(*q, s, (*q)->findMetaData("deprecate", metadata), false);
             end();
         }
         end();

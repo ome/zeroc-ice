@@ -1,11 +1,16 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+package test.Ice.operations;
+
+import test.Ice.operations.Test.MyClassPrx;
+import test.Ice.operations.Test.MyClassPrxHelper;
 
 class Oneways
 {
@@ -19,9 +24,10 @@ class Oneways
     }
 
     static void
-    oneways(Ice.Communicator communicator, Test.MyClassPrx p)
+    oneways(test.Util.Application app, MyClassPrx p)
     {
-        p = Test.MyClassPrxHelper.uncheckedCast(p.ice_oneway());
+        Ice.Communicator communicator = app.communicator();
+        p = MyClassPrxHelper.uncheckedCast(p.ice_oneway());
 
         {
             p.opVoid();

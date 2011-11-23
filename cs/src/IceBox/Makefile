@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -16,7 +16,7 @@ TARGETS		= $(ICEBOXNET) $(bindir)/$(LIBNAME)
 POLICY_TARGET	= $(POLICY).dll
 
 L_SRCS		= AssemblyInfo.cs
-I_SRCS		= Server.cs ServiceManagerI.cs
+I_SRCS		= AssemblyInfoExe.cs Server.cs ServiceManagerI.cs
 
 SLICE_SRCS	= $(SDIR)/IceBox.ice
 
@@ -29,6 +29,7 @@ EXE_MCSFLAGS	:= $(MCSFLAGS) -target:exe
 
 LIB_MCSFLAGS	:= $(MCSFLAGS) -target:library -out:$(bindir)/$(LIBNAME)
 LIB_MCSFLAGS	:= $(LIB_MCSFLAGS) -keyfile:$(KEYFILE)
+LIB_MCSFLAGS	:= $(LIB_MCSFLAGS) /doc:$(bindir)/$(PKG).xml /nowarn:1591
 
 SLICE2CSFLAGS	:= $(SLICE2CSFLAGS) --checksum --ice -I. -I$(slicedir)
 
@@ -40,7 +41,8 @@ $(bindir)/$(LIBNAME): $(L_SRCS) $(GEN_SRCS)
 
 install:: all
 	(cd $(bindir); $(call installassembly,$(LIBNAME),$(PKG)); $(call installpolicy,$(POLICY)); \
-	 $(call installmdb,$(LIBNAME).mdb))
+	 $(call installmdb,$(LIBNAME).mdb); \
+	 $(call installdata,$(PKG).xml,$(install_bindir)))
 
 install:: all
 	$(call installprogram,$(ICEBOXNET),$(install_bindir))
@@ -51,5 +53,7 @@ install:: all
 	$(call installdata,../../lib/pkgconfig/$(PKG).pc,$(install_pkgconfigdir))
 endif
 
+clean::
+	-rm -f $(bindir)/$(PKG).xml
 
 include .depend

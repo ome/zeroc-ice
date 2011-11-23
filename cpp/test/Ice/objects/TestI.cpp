@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -228,11 +228,13 @@ UnexpectedObjectExceptionTestI::ice_invoke(const std::vector<Ice::Byte>&,
                                            std::vector<Ice::Byte>& outParams,
                                            const Ice::Current& current)
 {
+#if !defined(_MSC_VER) || (_MSC_VER >= 1300)
     Ice::CommunicatorPtr communicator = current.adapter->getCommunicator();
     Ice::OutputStreamPtr out = Ice::createOutputStream(communicator);
     AlsoEmptyPtr ae = new AlsoEmpty;
-    ice_writeAlsoEmpty(out, ae);
+    out->write(ae);
     out->writePendingObjects();
     out->finished(outParams);
+#endif
     return true;
 }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,7 +34,7 @@ class LocatorI : public Locator, public IceUtil::Mutex
 {
 public:
 
-    class Request : public IceUtil::Shared
+    class Request : virtual public IceUtil::Shared
     {
     public:
 
@@ -64,8 +64,6 @@ public:
     bool getDirectProxy(const LocatorAdapterInfo&, const RequestPtr&);
     void getDirectProxyResponse(const LocatorAdapterInfo&, const Ice::ObjectPrx&);
     void getDirectProxyException(const LocatorAdapterInfo&, const Ice::Exception&);
-
-    void getAdapterInfo(const std::string&, LocatorAdapterInfoSeq&, int&, bool&, bool&, const std::set<std::string>&);
 
 protected:
 

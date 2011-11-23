@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -362,6 +362,7 @@ public class IncomingBase
                 _os.writeByte(ReplyStatus.replyUnknownUserException);
                 //_os.writeString(ex.toString());
                 java.io.StringWriter sw = new java.io.StringWriter();
+                sw.write(ex.ice_name() + "\n");
                 java.io.PrintWriter pw = new java.io.PrintWriter(sw);
                 ex.printStackTrace(pw);
                 pw.flush();

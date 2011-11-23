@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,12 +16,22 @@ int
 run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 {
     Ice::PropertiesPtr properties = communicator->getProperties();
-    if(argc == 2 && string(argv[1]) == "1")
+
+    int num = argc == 2 ? atoi(argv[1]) : -1;
+
+    ostringstream os;
+    os << "tcp -p " << (12010 + num);
+    properties->setProperty("ControlAdapter.Endpoints", os.str());
+    Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("ControlAdapter");
+    adapter->add(new TestIntfI, communicator->stringToIdentity("control"));
+    adapter->activate();
+
+    if(num == 0)
     {
         properties->setProperty("TestAdapter.Endpoints", "udp -p 12010");
-        Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("TestAdapter");
-        adapter->add(new TestIntfI, communicator->stringToIdentity("test"));
-        adapter->activate();
+        Ice::ObjectAdapterPtr adapter2 = communicator->createObjectAdapter("TestAdapter");
+        adapter2->add(new TestIntfI, communicator->stringToIdentity("test"));
+        adapter2->activate();
     }
 
     string host;
@@ -54,6 +64,7 @@ main(int argc, char* argv[])
         initData.properties = Ice::createProperties(argc, argv);
 
         initData.properties->setProperty("Ice.Warn.Connections", "0");
+        initData.properties->setProperty("Ice.UDP.SndSize", "16384");
         initData.properties->setProperty("Ice.UDP.RcvSize", "16384");
 
         communicator = Ice::initialize(argc, argv, initData);

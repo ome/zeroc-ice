@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,22 +29,16 @@ public class AllTests
             _called = false;
         }
         
-        public virtual bool check()
+        public virtual void check()
         {
             lock(this)
             {
                 while(!_called)
                 {
-                    Monitor.Wait(this, TimeSpan.FromMilliseconds(5000));
-                    
-                    if(!_called)
-                    {
-                        return false; // Must be timeout.
-                    }
+                    Monitor.Wait(this);
                 }
                 
                 _called = false;
-                return true;
             }
         }
         
@@ -61,14 +55,14 @@ public class AllTests
         private bool _called;
     }
     
-    private class AMI_Test_baseAsBaseI : AMI_TestIntf_baseAsBase
+    private class AsyncCallback
     {
-        public override void ice_response()
+        public void response()
         {
             AllTests.test(false);
         }
         
-        public override void ice_exception(Ice.Exception exc)
+        public void exception_baseAsBase(Ice.Exception exc)
         {
             try
             {
@@ -86,22 +80,7 @@ public class AllTests
             callback.called();
         }
         
-        public virtual bool check()
-        {
-            return callback.check();
-        }
-        
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_unknownDerivedAsBaseI : AMI_TestIntf_unknownDerivedAsBase
-    {
-        public override void ice_response()
-        {
-            AllTests.test(false);
-        }
-        
-        public override void ice_exception(Ice.Exception exc)
+        public void exception_unknownDerivedAsBase(Ice.Exception exc)
         {
             try
             {
@@ -119,22 +98,7 @@ public class AllTests
             callback.called();
         }
         
-        public virtual bool check()
-        {
-            return callback.check();
-        }
-        
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_knownDerivedAsBaseI : AMI_TestIntf_knownDerivedAsBase
-    {
-        public override void ice_response()
-        {
-            AllTests.test(false);
-        }
-        
-        public override void ice_exception(Ice.Exception exc)
+        public void exception_knownDerivedAsBase(Ice.Exception exc)
         {
             try
             {
@@ -153,22 +117,7 @@ public class AllTests
             callback.called();
         }
         
-        public virtual bool check()
-        {
-            return callback.check();
-        }
-        
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_knownDerivedAsKnownDerivedI : AMI_TestIntf_knownDerivedAsKnownDerived
-    {
-        public override void ice_response()
-        {
-            AllTests.test(false);
-        }
-        
-        public override void ice_exception(Ice.Exception exc)
+        public void exception_knownDerivedAsKnownDerived(Ice.Exception exc)
         {
             try
             {
@@ -187,22 +136,7 @@ public class AllTests
             callback.called();
         }
         
-        public virtual bool check()
-        {
-            return callback.check();
-        }
-        
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_unknownIntermediateAsBaseI : AMI_TestIntf_unknownIntermediateAsBase
-    {
-        public override void ice_response()
-        {
-            AllTests.test(false);
-        }
-        
-        public override void ice_exception(Ice.Exception exc)
+        public void exception_unknownIntermediateAsBase(Ice.Exception exc)
         {
             try
             {
@@ -220,22 +154,7 @@ public class AllTests
             callback.called();
         }
         
-        public virtual bool check()
-        {
-            return callback.check();
-        }
-        
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_knownIntermediateAsBaseI : AMI_TestIntf_knownIntermediateAsBase
-    {
-        public override void ice_response()
-        {
-            AllTests.test(false);
-        }
-        
-        public override void ice_exception(Ice.Exception exc)
+        public void exception_knownIntermediateAsBase(Ice.Exception exc)
         {
             try
             {
@@ -254,22 +173,7 @@ public class AllTests
             callback.called();
         }
         
-        public virtual bool check()
-        {
-            return callback.check();
-        }
-        
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_knownMostDerivedAsBaseI : AMI_TestIntf_knownMostDerivedAsBase
-    {
-        public override void ice_response()
-        {
-            AllTests.test(false);
-        }
-        
-        public override void ice_exception(Ice.Exception exc)
+        public void exception_knownMostDerivedAsBase(Ice.Exception exc)
         {
             try
             {
@@ -289,22 +193,7 @@ public class AllTests
             callback.called();
         }
         
-        public virtual bool check()
-        {
-            return callback.check();
-        }
-        
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_knownIntermediateAsKnownIntermediateI : AMI_TestIntf_knownIntermediateAsKnownIntermediate
-    {
-        public override void ice_response()
-        {
-            AllTests.test(false);
-        }
-        
-        public override void ice_exception(Ice.Exception exc)
+        public void exception_knownIntermediateAsKnownIntermediate(Ice.Exception exc)
         {
             try
             {
@@ -323,22 +212,7 @@ public class AllTests
             callback.called();
         }
         
-        public virtual bool check()
-        {
-            return callback.check();
-        }
-        
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_knownMostDerivedAsKnownIntermediateI : AMI_TestIntf_knownMostDerivedAsKnownIntermediate
-    {
-        public override void ice_response()
-        {
-            AllTests.test(false);
-        }
-        
-        public override void ice_exception(Ice.Exception exc)
+        public void exception_knownMostDerivedAsKnownIntermediate(Ice.Exception exc)
         {
             try
             {
@@ -358,22 +232,7 @@ public class AllTests
             callback.called();
         }
         
-        public virtual bool check()
-        {
-            return callback.check();
-        }
-        
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_knownMostDerivedAsKnownMostDerivedI : AMI_TestIntf_knownMostDerivedAsKnownMostDerived
-    {
-        public override void ice_response()
-        {
-            AllTests.test(false);
-        }
-        
-        public override void ice_exception(Ice.Exception exc)
+        public void exception_knownMostDerivedAsKnownMostDerived(Ice.Exception exc)
         {
             try
             {
@@ -393,22 +252,7 @@ public class AllTests
             callback.called();
         }
         
-        public virtual bool check()
-        {
-            return callback.check();
-        }
-        
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_unknownMostDerived1AsBaseI : AMI_TestIntf_unknownMostDerived1AsBase
-    {
-        public override void ice_response()
-        {
-            AllTests.test(false);
-        }
-        
-        public override void ice_exception(Ice.Exception exc)
+        public void exception_unknownMostDerived1AsBase(Ice.Exception exc)
         {
             try
             {
@@ -427,22 +271,7 @@ public class AllTests
             callback.called();
         }
         
-        public virtual bool check()
-        {
-            return callback.check();
-        }
-        
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_unknownMostDerived1AsKnownIntermediateI : AMI_TestIntf_unknownMostDerived1AsKnownIntermediate
-    {
-        public override void ice_response()
-        {
-            AllTests.test(false);
-        }
-        
-        public override void ice_exception(Ice.Exception exc)
+        public void exception_unknownMostDerived1AsKnownIntermediate(Ice.Exception exc)
         {
             try
             {
@@ -461,22 +290,7 @@ public class AllTests
             callback.called();
         }
         
-        public virtual bool check()
-        {
-            return callback.check();
-        }
-        
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_unknownMostDerived2AsBaseI : AMI_TestIntf_unknownMostDerived2AsBase
-    {
-        public override void ice_response()
-        {
-            AllTests.test(false);
-        }
-        
-        public override void ice_exception(Ice.Exception exc)
+        public void exception_unknownMostDerived2AsBase(Ice.Exception exc)
         {
             try
             {
@@ -494,9 +308,9 @@ public class AllTests
             callback.called();
         }
         
-        public virtual bool check()
+        public virtual void check()
         {
-            return callback.check();
+            callback.check();
         }
         
         private Callback callback = new Callback();
@@ -541,9 +355,9 @@ public class AllTests
         Console.Out.Write("base (AMI)... ");
         Console.Out.Flush();
         {
-            AMI_Test_baseAsBaseI cb = new AMI_Test_baseAsBaseI();
-            testPrx.baseAsBase_async(cb);
-            test(cb.check());
+            AsyncCallback cb = new AsyncCallback();
+            testPrx.begin_baseAsBase().whenCompleted(cb.response, cb.exception_baseAsBase);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
         
@@ -570,9 +384,9 @@ public class AllTests
         Console.Out.Write("slicing of unknown derived (AMI)... ");
         Console.Out.Flush();
         {
-            AMI_Test_unknownDerivedAsBaseI cb = new AMI_Test_unknownDerivedAsBaseI();
-            testPrx.unknownDerivedAsBase_async(cb);
-            test(cb.check());
+            AsyncCallback cb = new AsyncCallback();
+            testPrx.begin_unknownDerivedAsBase().whenCompleted(cb.response, cb.exception_unknownDerivedAsBase);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
         
@@ -600,9 +414,9 @@ public class AllTests
         Console.Out.Write("non-slicing of known derived as base (AMI)... ");
         Console.Out.Flush();
         {
-            AMI_Test_knownDerivedAsBaseI cb = new AMI_Test_knownDerivedAsBaseI();
-            testPrx.knownDerivedAsBase_async(cb);
-            test(cb.check());
+            AsyncCallback cb = new AsyncCallback();
+            testPrx.begin_knownDerivedAsBase().whenCompleted(cb.response, cb.exception_knownDerivedAsBase);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
         
@@ -630,9 +444,10 @@ public class AllTests
         Console.Out.Write("non-slicing of known derived as derived (AMI)... ");
         Console.Out.Flush();
         {
-            AMI_Test_knownDerivedAsKnownDerivedI cb = new AMI_Test_knownDerivedAsKnownDerivedI();
-            testPrx.knownDerivedAsKnownDerived_async(cb);
-            test(cb.check());
+            AsyncCallback cb = new AsyncCallback();
+            testPrx.begin_knownDerivedAsKnownDerived().whenCompleted(
+                        cb.response, cb.exception_knownDerivedAsKnownDerived);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
         
@@ -659,9 +474,10 @@ public class AllTests
         Console.Out.Write("slicing of unknown intermediate as base (AMI)... ");
         Console.Out.Flush();
         {
-            AMI_Test_unknownIntermediateAsBaseI cb = new AMI_Test_unknownIntermediateAsBaseI();
-            testPrx.unknownIntermediateAsBase_async(cb);
-            test(cb.check());
+            AsyncCallback cb = new AsyncCallback();
+            testPrx.begin_unknownIntermediateAsBase().whenCompleted(
+                        cb.response, cb.exception_unknownIntermediateAsBase);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
         
@@ -689,9 +505,10 @@ public class AllTests
         Console.Out.Write("slicing of known intermediate as base (AMI)... ");
         Console.Out.Flush();
         {
-            AMI_Test_knownIntermediateAsBaseI cb = new AMI_Test_knownIntermediateAsBaseI();
-            testPrx.knownIntermediateAsBase_async(cb);
-            test(cb.check());
+            AsyncCallback cb = new AsyncCallback();
+            testPrx.begin_knownIntermediateAsBase().whenCompleted(
+                        cb.response, cb.exception_knownIntermediateAsBase);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
         
@@ -720,9 +537,10 @@ public class AllTests
         Console.Out.Write("slicing of known most derived as base (AMI)... ");
         Console.Out.Flush();
         {
-            AMI_Test_knownMostDerivedAsBaseI cb = new AMI_Test_knownMostDerivedAsBaseI();
-            testPrx.knownMostDerivedAsBase_async(cb);
-            test(cb.check());
+            AsyncCallback cb = new AsyncCallback();
+            testPrx.begin_knownMostDerivedAsBase().whenCompleted(
+                        cb.response, cb.exception_knownMostDerivedAsBase);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
         
@@ -750,9 +568,10 @@ public class AllTests
         Console.Out.Write("non-slicing of known intermediate as intermediate (AMI)... ");
         Console.Out.Flush();
         {
-            AMI_Test_knownIntermediateAsKnownIntermediateI cb = new AMI_Test_knownIntermediateAsKnownIntermediateI();
-            testPrx.knownIntermediateAsKnownIntermediate_async(cb);
-            test(cb.check());
+            AsyncCallback cb = new AsyncCallback();
+            testPrx.begin_knownIntermediateAsKnownIntermediate().whenCompleted(
+                        cb.response, cb.exception_knownIntermediateAsKnownIntermediate);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
         
@@ -781,9 +600,10 @@ public class AllTests
         Console.Out.Write("non-slicing of known most derived as intermediate (AMI)... ");
         Console.Out.Flush();
         {
-            AMI_Test_knownMostDerivedAsKnownIntermediateI cb = new AMI_Test_knownMostDerivedAsKnownIntermediateI();
-            testPrx.knownMostDerivedAsKnownIntermediate_async(cb);
-            test(cb.check());
+            AsyncCallback cb = new AsyncCallback();
+            testPrx.begin_knownMostDerivedAsKnownIntermediate().whenCompleted(
+                        cb.response, cb.exception_knownMostDerivedAsKnownIntermediate);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
         
@@ -812,9 +632,10 @@ public class AllTests
         Console.Out.Write("non-slicing of known most derived as most derived (AMI)... ");
         Console.Out.Flush();
         {
-            AMI_Test_knownMostDerivedAsKnownMostDerivedI cb = new AMI_Test_knownMostDerivedAsKnownMostDerivedI();
-            testPrx.knownMostDerivedAsKnownMostDerived_async(cb);
-            AllTests.test(cb.check());
+            AsyncCallback cb = new AsyncCallback();
+            testPrx.begin_knownMostDerivedAsKnownMostDerived().whenCompleted(
+                        cb.response, cb.exception_knownMostDerivedAsKnownMostDerived);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
         
@@ -842,9 +663,10 @@ public class AllTests
         Console.Out.Write("slicing of unknown most derived, known intermediate as base (AMI)... ");
         Console.Out.Flush();
         {
-            AMI_Test_unknownMostDerived1AsBaseI cb = new AMI_Test_unknownMostDerived1AsBaseI();
-            testPrx.unknownMostDerived1AsBase_async(cb);
-            test(cb.check());
+            AsyncCallback cb = new AsyncCallback();
+            testPrx.begin_unknownMostDerived1AsBase().whenCompleted(
+                        cb.response, cb.exception_unknownMostDerived1AsBase);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
         
@@ -872,9 +694,10 @@ public class AllTests
         Console.Out.Write("slicing of unknown most derived, known intermediate as intermediate (AMI)... ");
         Console.Out.Flush();
         {
-            AMI_Test_unknownMostDerived1AsKnownIntermediateI cb = new AMI_Test_unknownMostDerived1AsKnownIntermediateI();
-            testPrx.unknownMostDerived1AsKnownIntermediate_async(cb);
-            test(cb.check());
+            AsyncCallback cb = new AsyncCallback();
+            testPrx.begin_unknownMostDerived1AsKnownIntermediate().whenCompleted(
+                        cb.response, cb.exception_unknownMostDerived1AsKnownIntermediate);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
         
@@ -901,9 +724,10 @@ public class AllTests
         Console.Out.Write("slicing of unknown most derived, unknown intermediate thrown as base (AMI)... ");
         Console.Out.Flush();
         {
-            AMI_Test_unknownMostDerived2AsBaseI cb = new AMI_Test_unknownMostDerived2AsBaseI();
-            testPrx.unknownMostDerived2AsBase_async(cb);
-            test(cb.check());
+            AsyncCallback cb = new AsyncCallback();
+            testPrx.begin_unknownMostDerived2AsBase().whenCompleted(
+                        cb.response, cb.exception_unknownMostDerived2AsBase);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
         

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -412,11 +412,12 @@ public final class Outgoing implements OutgoingMessageCallback
     }
 
     public synchronized void
-    finished(Ice.LocalException ex)
+    finished(Ice.LocalException ex, boolean sent)
     {
         assert(_state <= StateInProgress);
         _state = StateFailed;
         _exception = ex;
+        _sent = sent;
         notify();
     }
 
@@ -490,7 +491,7 @@ public final class Outgoing implements OutgoingMessageCallback
 
             _os.writeString(operation);
 
-            _os.writeByte((byte)mode.value());
+            _os.writeByte((byte)mode.ordinal());
 
             if(context != null)
             {

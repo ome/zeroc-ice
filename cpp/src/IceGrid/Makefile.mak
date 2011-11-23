@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -44,9 +44,6 @@ REGISTRY_OBJS	= AdminCallbackRouter.obj \
                   RegistryI.obj \
                   RegistryServerAdminRouter.obj \
 		  InternalRegistryI.obj \
-		  StringApplicationInfoDict.obj \
-		  IdentityObjectInfoDict.obj \
-		  StringAdapterInfoDict.obj \
 		  Database.obj \
 		  Allocatable.obj \
 		  AdapterCache.obj \
@@ -91,27 +88,17 @@ SRCS            = $(ADMIN_OBJS:.obj=.cpp) \
 
 HDIR		= $(headerdir)\IceGrid
 SDIR		= $(slicedir)\IceGrid
-LOCAL_HDIR	= ..\IceGrid
-LOCAL_SDIR	= ..\IceGrid
-
-SLICE2FREEZECMD = $(SLICE2FREEZE) --ice --include-dir IceGrid $(ICECPPFLAGS)
 
 !include $(top_srcdir)\config\Make.rules.mak
 
 LINKWITH 	= $(LIBS) glacier2$(LIBSUFFIX).lib
 ALINKWITH 	= $(LINKWITH) icegrid$(LIBSUFFIX).lib icexml$(LIBSUFFIX).lib icepatch2$(LIBSUFFIX).lib \
 		  icebox$(LIBSUFFIX).lib
-NLINKWITH	= $(ALINKWITH) icestorm$(LIBSUFFIX).lib freeze$(LIBSUFFIX).lib icebox$(LIBSUFFIX).lib \
-		  icessl$(LIBSUFFIX).lib icestormservice$(LIBSUFFIX).lib $(OPENSSL_LIBS)
-!if "$(BCPLUSPLUS)" != "yes"
-NLINKWITH	= $(NLINKWITH) pdh.lib ws2_32.lib
-!endif
+NLINKWITH	= $(ALINKWITH) icedb$(LIBSUFFIX).lib icestorm$(LIBSUFFIX).lib icebox$(LIBSUFFIX).lib \
+		  icessl$(LIBSUFFIX).lib icestormservice$(LIBSUFFIX).lib $(OPENSSL_LIBS) pdh.lib ws2_32.lib
 
 SLICE2CPPFLAGS	= --checksum --ice --include-dir IceGrid $(SLICE2CPPFLAGS)
-CPPFLAGS	= -I. -I.. -Idummyinclude $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
-!if "$(BCPLUSPLUS)" != "yes"
-CPPFLAGS 	= $(CPPFLAGS) -Zm200
-!endif
+CPPFLAGS	= -I. -I.. -Idummyinclude $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN -Zm200
 
 !if "$(GENERATE_PDB)" == "yes"
 APDBFLAGS       = /pdb:$(ADMIN:.exe=.pdb)
@@ -119,15 +106,9 @@ RPDBFLAGS       = /pdb:$(REGISTRY_SERVER:.exe=.pdb)
 NPDBFLAGS       = /pdb:$(NODE_SERVER:.exe=.pdb)
 !endif
 
-!if "$(BCPLUSPLUS)" == "yes"
-ARES_FILE       = ,, IceGridAdmin.res
-RRES_FILE       = ,, IceGridRegistry.res
-NRES_FILE       = ,, IceGridNode.res
-!else
 ARES_FILE       = IceGridAdmin.res
 RRES_FILE       = IceGridRegistry.res
 NRES_FILE       = IceGridNode.res
-!endif
 
 $(ADMIN): $(ADMIN_OBJS) IceGridAdmin.res
 	$(LINK) $(LD_EXEFLAGS) $(APDBFLAGS) $(ADMIN_OBJS) $(SETARGV) $(PREOUT)$@ $(PRELIBS)$(ALINKWITH) $(ARES_FILE)
@@ -145,22 +126,6 @@ $(NODE_SERVER): $(NODE_SVR_OBJS) IceGridNode.res
 	@if exist $@.manifest \
 	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
-StringApplicationInfoDict.h StringApplicationInfoDict.cpp: $(LOCAL_SDIR)\Internal.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
-	del /q StringApplicationInfoDict.h StringApplicationInfoDict.cpp
-	$(SLICE2FREEZECMD) --dict IceGrid::StringApplicationInfoDict,string,IceGrid::ApplicationInfo \
-	StringApplicationInfoDict $(LOCAL_SDIR)\Internal.ice
-
-IdentityObjectInfoDict.h IdentityObjectInfoDict.cpp: $(slicedir)\Ice\Identity.ice $(LOCAL_SDIR)\Internal.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
-	del /q IdentityObjectInfoDict.h IdentityObjectInfoDict.cpp
-	$(SLICE2FREEZECMD) --dict IceGrid::IdentityObjectInfoDict,Ice::Identity,IceGrid::ObjectInfo \
-	--dict-index IceGrid::IdentityObjectInfoDict,type \
-	IdentityObjectInfoDict $(slicedir)\Ice\Identity.ice $(LOCAL_SDIR)\Internal.ice
-
-StringAdapterInfoDict.h StringAdapterInfoDict.cpp: $(SDIR)\Admin.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
-	del /q StringAdapterInfoDict.h StringAdapterInfoDict.cpp
-	$(SLICE2FREEZECMD) --dict IceGrid::StringAdapterInfoDict,string,IceGrid::AdapterInfo \
-	--dict-index IceGrid::StringAdapterInfoDict,replicaGroupId StringAdapterInfoDict $(SDIR)\Admin.ice
-
 #Scanner.cpp : Scanner.l
 #	flex Scanner.l
 #	del /q $@
@@ -176,9 +141,6 @@ StringAdapterInfoDict.h StringAdapterInfoDict.cpp: $(SDIR)\Admin.ice $(SLICE2FRE
 #	del /q Grammar.output
 
 clean::
-	-del /q StringApplicationInfoDict.h StringApplicationInfoDict.cpp
-	-del /q StringAdapterInfoDict.h StringAdapterInfoDict.cpp
-	-del /q IdentityObjectInfoDict.h IdentityObjectInfoDict.cpp
 	-del /q Internal.cpp Internal.h
 	-del /q $(ADMIN:.exe=.*)
 	-del /q $(NODE_SERVER:.exe=.*)
@@ -186,25 +148,26 @@ clean::
 	-del /q IceGridAdmin.res IceGridNode.res IceGridRegistry.res
 
 install:: all
-	copy $(ADMIN) $(install_bindir)
-	copy $(NODE_SERVER) $(install_bindir)
-	copy $(REGISTRY_SERVER) $(install_bindir)
+	copy $(ADMIN) "$(install_bindir)"
+	copy $(NODE_SERVER) "$(install_bindir)"
+	copy $(REGISTRY_SERVER) "$(install_bindir)"
 
 
-!if "$(BCPLUSPLUS)" == "yes" && "$(OPTIMIZE)" != "yes"
-
-install:: all
-	copy $(ADMIN:.exe=.tds) $(install_bindir)
-	copy $(NODE_SERVER:.exe=.tds) $(install_bindir)
-	copy $(REGISTRY_SERVER:.exe=.tds) $(install_bindir)
-
-!elseif "$(GENERATE_PDB)" == "yes"
+!if "$(GENERATE_PDB)" == "yes"
 
 install:: all
-	copy $(ADMIN:.exe=.pdb) $(install_bindir)
-	copy $(NODE_SERVER:.exe=.pdb) $(install_bindir)
-	copy $(REGISTRY_SERVER:.exe=.pdb) $(install_bindir)
+	copy $(ADMIN:.exe=.pdb) "$(install_bindir)"
+	copy $(NODE_SERVER:.exe=.pdb) "$(install_bindir)"
+	copy $(REGISTRY_SERVER:.exe=.pdb) "$(install_bindir)"
 
 !endif
 
-!include .depend
+SUBDIRS = FreezeDB SqlDB
+
+$(EVERYTHING)::
+	@for %i in ( $(SUBDIRS) ) do \
+	    @if exist %i \
+	        @echo "making $@ in %i" && \
+	        cmd /c "cd %i && $(MAKE) -nologo -f Makefile.mak $@" || exit 1
+
+!include .depend.mak

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -46,13 +46,52 @@ struct RandomNumberGenerator : public std::unary_function<ptrdiff_t, ptrdiff_t>
         return IceUtilInternal::random(static_cast<int>(d));
     }
 };
-    
+
+template <typename K, typename V> void
+remove(multimap<K, V>& m, K k, V v)
+{
+#if defined(_MSC_VER) && (_MSC_VER < 1300)
+    pair<multimap<K, V>::iterator, multimap<K, V>::iterator> pr = m.equal_range(k);
+    assert(pr.first != pr.second);
+    for(multimap<K, V>::iterator q = pr.first; q != pr.second; ++q)
+#else
+    pair<typename multimap<K, V>::iterator, typename multimap<K, V>::iterator> pr = m.equal_range(k);
+    assert(pr.first != pr.second);
+    for(typename multimap<K, V>::iterator q = pr.first; q != pr.second; ++q)
+#endif
+    {
+        if(q->second.get() == v.get())
+        {
+            m.erase(q);
+            return;
+        }
+    }
+    assert(false); // Nothing was removed which is an error.
 }
 
-bool
-IceInternal::OutgoingConnectionFactory::ConnectorInfo::operator<(const ConnectorInfo& other) const
+template <typename K, typename V> ::IceInternal::Handle<V>
+find(const multimap<K,::IceInternal::Handle<V> >& m, 
+     K k, 
+     const ::IceUtilInternal::ConstMemFun<bool, V, ::IceInternal::Handle<V> >& predicate)
 {
-    return connector < other.connector;
+#if defined(_MSC_VER) && (_MSC_VER < 1300)
+    pair<multimap<K, ::IceInternal::Handle<V> >::const_iterator, 
+         multimap<K, ::IceInternal::Handle<V> >::const_iterator> pr = m.equal_range(k);
+    for(multimap<K, ::IceInternal::Handle<V> >::const_iterator q = pr.first; q != pr.second; ++q)
+#else
+    pair<typename multimap<K, ::IceInternal::Handle<V> >::const_iterator, 
+         typename multimap<K, ::IceInternal::Handle<V> >::const_iterator> pr = m.equal_range(k);
+    for(typename multimap<K, ::IceInternal::Handle<V> >::const_iterator q = pr.first; q != pr.second; ++q)
+#endif
+    {
+        if(predicate(q->second))
+        {
+            return q->second;
+        }
+    }
+    return IceInternal::Handle<V>();
+}
+
 }
 
 bool
@@ -74,11 +113,11 @@ IceInternal::OutgoingConnectionFactory::destroy()
 #ifdef _STLP_BEGIN_NAMESPACE
     // voidbind2nd is an STLport extension for broken compilers in IceUtil/Functional.h
     for_each(_connections.begin(), _connections.end(),
-             voidbind2nd(Ice::secondVoidMemFun1<ConnectorInfo, ConnectionI, ConnectionI::DestructionReason>
+             voidbind2nd(Ice::secondVoidMemFun1<ConnectorPtr, ConnectionI, ConnectionI::DestructionReason>
                          (&ConnectionI::destroy), ConnectionI::CommunicatorDestroyed));
 #else
     for_each(_connections.begin(), _connections.end(),
-             bind2nd(Ice::secondVoidMemFun1<const ConnectorInfo, ConnectionI, ConnectionI::DestructionReason>
+             bind2nd(Ice::secondVoidMemFun1<const ConnectorPtr, ConnectionI, ConnectionI::DestructionReason>
                      (&ConnectionI::destroy), ConnectionI::CommunicatorDestroyed));
 #endif
 
@@ -89,7 +128,7 @@ IceInternal::OutgoingConnectionFactory::destroy()
 void
 IceInternal::OutgoingConnectionFactory::waitUntilFinished()
 {
-    multimap<ConnectorInfo, ConnectionIPtr> connections;
+    multimap<ConnectorPtr, ConnectionIPtr> connections;
 
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
@@ -112,10 +151,15 @@ IceInternal::OutgoingConnectionFactory::waitUntilFinished()
     }
 
     for_each(connections.begin(), connections.end(),
-             Ice::secondVoidMemFun<const ConnectorInfo, ConnectionI>(&ConnectionI::waitUntilFinished));
+             Ice::secondVoidMemFun<const ConnectorPtr, ConnectionI>(&ConnectionI::waitUntilFinished));
 
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+        // Ensure all the connections are finished and reapable at this point.
+        vector<Ice::ConnectionIPtr> cons;
+        _reaper->swapConnections(cons);
+        assert(cons.size() == _connections.size());
+        cons.clear();
         _connections.clear();
         _connectionsByEndpoint.clear();
     }
@@ -222,14 +266,14 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointIPtr>& endpt
         catch(const Ice::CommunicatorDestroyedException& ex)
         {
             exception.reset(dynamic_cast<Ice::LocalException*>(ex.ice_clone()));
-            handleException(*exception.get(), *q, connection, hasMore || q != connectors.end() - 1);
+            handleConnectionException(*exception.get(), hasMore || q != connectors.end() - 1);
             connection = 0;
             break; // No need to continue
         }
         catch(const Ice::LocalException& ex)
         {
             exception.reset(dynamic_cast<Ice::LocalException*>(ex.ice_clone()));
-            handleException(*exception.get(), *q, connection, hasMore || q != connectors.end() - 1);
+            handleConnectionException(*exception.get(), hasMore || q != connectors.end() - 1);
             connection = 0;
         }
     }
@@ -335,7 +379,7 @@ IceInternal::OutgoingConnectionFactory::setRouterInfo(const RouterInfoPtr& route
         //
         endpoint = endpoint->compress(false);
 
-        multimap<ConnectorInfo, ConnectionIPtr>::const_iterator q;
+        multimap<ConnectorPtr, ConnectionIPtr>::const_iterator q;
         for(q = _connections.begin(); q != _connections.end(); ++q)
         {
             if(q->second->endpoint() == endpoint)
@@ -356,7 +400,7 @@ IceInternal::OutgoingConnectionFactory::removeAdapter(const ObjectAdapterPtr& ad
         return;
     }
     
-    for(multimap<ConnectorInfo, ConnectionIPtr>::const_iterator p = _connections.begin(); p != _connections.end(); ++p)
+    for(multimap<ConnectorPtr, ConnectionIPtr>::const_iterator p = _connections.begin(); p != _connections.end(); ++p)
     {
         if(p->second->getAdapter() == adapter)
         {
@@ -366,16 +410,19 @@ IceInternal::OutgoingConnectionFactory::removeAdapter(const ObjectAdapterPtr& ad
 }
 
 void
-IceInternal::OutgoingConnectionFactory::flushBatchRequests()
+IceInternal::OutgoingConnectionFactory::flushAsyncBatchRequests(const CommunicatorBatchOutgoingAsyncPtr& outAsync)
 {
     list<ConnectionIPtr> c;
 
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-        for(multimap<ConnectorInfo, ConnectionIPtr>::const_iterator p = _connections.begin(); p != _connections.end();
+        for(multimap<ConnectorPtr,  ConnectionIPtr>::const_iterator p = _connections.begin(); p != _connections.end();
             ++p)
         {
-            c.push_back(p->second);
+            if(p->second->isActiveOrHolding())
+            {
+                c.push_back(p->second);
+            }
         }
     }
 
@@ -383,7 +430,7 @@ IceInternal::OutgoingConnectionFactory::flushBatchRequests()
     {
         try
         {
-            (*p)->flushBatchRequests();
+            outAsync->flushConnection(*p);
         }
         catch(const LocalException&)
         {
@@ -394,6 +441,7 @@ IceInternal::OutgoingConnectionFactory::flushBatchRequests()
 
 IceInternal::OutgoingConnectionFactory::OutgoingConnectionFactory(const InstancePtr& instance) :
     _instance(instance),
+    _reaper(new ConnectionReaper()),
     _destroyed(false),
     _pendingConnectCount(0)
 {
@@ -439,23 +487,18 @@ IceInternal::OutgoingConnectionFactory::findConnection(const vector<EndpointIPtr
     assert(!endpoints.empty());
     for(vector<EndpointIPtr>::const_iterator p = endpoints.begin(); p != endpoints.end(); ++p)
     {
-        pair<multimap<EndpointIPtr, ConnectionIPtr>::iterator,
-            multimap<EndpointIPtr, ConnectionIPtr>::iterator> pr = _connectionsByEndpoint.equal_range(*p);
-        
-        for(multimap<EndpointIPtr, ConnectionIPtr>::iterator q = pr.first; q != pr.second; ++q)
+        ConnectionIPtr connection = find(_connectionsByEndpoint, *p, Ice::constMemFun(&ConnectionI::isActiveOrHolding));
+        if(connection)
         {
-            if(q->second->isActiveOrHolding()) // Don't return destroyed or un-validated connections
+            if(defaultsAndOverrides->overrideCompress)
             {
-                if(defaultsAndOverrides->overrideCompress)
-                {
-                    compress = defaultsAndOverrides->overrideCompressValue;
-                }
-                else
-                {
-                    compress = (*p)->compress();
-                }
-                return q->second;
+                compress = defaultsAndOverrides->overrideCompressValue;
             }
+            else
+            {
+                compress = (*p)->compress();
+            }
+            return connection;
         }
     }
     return 0;
@@ -469,38 +512,23 @@ IceInternal::OutgoingConnectionFactory::findConnection(const vector<ConnectorInf
     DefaultsAndOverridesPtr defaultsAndOverrides = _instance->defaultsAndOverrides();
     for(vector<ConnectorInfo>::const_iterator p = connectors.begin(); p != connectors.end(); ++p)
     {
-        if(_pending.find(*p) != _pending.end())
+        if(_pending.find(p->connector) != _pending.end())
         {
             continue;
         }
 
-        pair<multimap<ConnectorInfo, ConnectionIPtr>::iterator,
-            multimap<ConnectorInfo, ConnectionIPtr>::iterator> pr = _connections.equal_range(*p);
-        
-        if(pr.first == pr.second)
+        ConnectionIPtr connection = find(_connections, p->connector, Ice::constMemFun(&ConnectionI::isActiveOrHolding));
+        if(connection)
         {
-            continue;
-        }
-        
-        for(multimap<ConnectorInfo, ConnectionIPtr>::iterator q = pr.first; q != pr.second; ++q)
-        {
-            if(q->second->isActiveOrHolding()) // Don't return destroyed or un-validated connections
+            if(defaultsAndOverrides->overrideCompress)
             {
-                if(q->second->endpoint() != p->endpoint)
-                {
-                    _connectionsByEndpoint.insert(pair<const EndpointIPtr, ConnectionIPtr>(p->endpoint, q->second));
-                }
-
-                if(defaultsAndOverrides->overrideCompress)
-                {
-                    compress = defaultsAndOverrides->overrideCompressValue;
-                }
-                else
-                {
-                    compress = p->endpoint->compress();
-                }
-                return q->second;
+                compress = defaultsAndOverrides->overrideCompressValue;
             }
+            else
+            {
+                    compress = p->endpoint->compress();
+            }
+            return connection;
         }
     }
     
@@ -551,32 +579,15 @@ IceInternal::OutgoingConnectionFactory::getConnection(const vector<ConnectorInfo
         }
         
         //
-        // Reap connections for which destruction has completed.
+        // Reap closed connections
         //
-        multimap<ConnectorInfo, ConnectionIPtr>::iterator p = _connections.begin();
-        while(p != _connections.end())
+        vector<Ice::ConnectionIPtr> cons;
+        _reaper->swapConnections(cons);
+        for(vector<Ice::ConnectionIPtr>::const_iterator p = cons.begin(); p != cons.end(); ++p)
         {
-            if(p->second->isFinished())
-            {
-                _connections.erase(p++);
-            }
-            else
-            {
-                ++p;
-            }
-        }
-        
-        multimap<EndpointIPtr, ConnectionIPtr>::iterator q = _connectionsByEndpoint.begin();
-        while(q != _connectionsByEndpoint.end())
-        {
-            if(q->second->isFinished())
-            {
-                _connectionsByEndpoint.erase(q++);
-            }
-            else
-            {
-                ++q;
-            }
+            remove(_connections, (*p)->connector(), *p);
+            remove(_connectionsByEndpoint, (*p)->endpoint(), *p);
+            remove(_connectionsByEndpoint, (*p)->endpoint()->compress(true), *p);
         }
 
         //
@@ -651,13 +662,14 @@ ConnectionIPtr
 IceInternal::OutgoingConnectionFactory::createConnection(const TransceiverPtr& transceiver, const ConnectorInfo& ci)
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-    assert(_pending.find(ci) != _pending.end() && transceiver);
+    assert(_pending.find(ci.connector) != _pending.end() && transceiver);
 
     //
     // Create and add the connection to the connection map. Adding the connection to the map
     // is necessary to support the interruption of the connection initialization and validation
     // in case the communicator is destroyed.
     //
+    Ice::ConnectionIPtr connection;
     try
     {
         if(_destroyed)
@@ -665,10 +677,7 @@ IceInternal::OutgoingConnectionFactory::createConnection(const TransceiverPtr& t
             throw Ice::CommunicatorDestroyedException(__FILE__, __LINE__);
         }
 
-        Ice::ConnectionIPtr connection = new ConnectionI(_instance, transceiver, ci.endpoint->compress(false), 0);
-        _connections.insert(pair<const ConnectorInfo, ConnectionIPtr>(ci, connection));
-        _connectionsByEndpoint.insert(pair<const EndpointIPtr, ConnectionIPtr>(ci.endpoint, connection));
-        return connection;
+        connection = new ConnectionI(_instance, _reaper, transceiver, ci.connector, ci.endpoint->compress(false), 0);
     }
     catch(const Ice::LocalException&)
     {
@@ -682,6 +691,12 @@ IceInternal::OutgoingConnectionFactory::createConnection(const TransceiverPtr& t
         }
         throw;
     }
+
+    _connections.insert(pair<const ConnectorPtr, ConnectionIPtr>(ci.connector, connection));
+    _connectionsByEndpoint.insert(pair<const EndpointIPtr, ConnectionIPtr>(connection->endpoint(), connection));
+    _connectionsByEndpoint.insert(pair<const EndpointIPtr, ConnectionIPtr>(connection->endpoint()->compress(true), 
+                                                                           connection));
+    return connection;
 }
 
 void
@@ -701,7 +716,7 @@ IceInternal::OutgoingConnectionFactory::finishGetConnection(const vector<Connect
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
         for(vector<ConnectorInfo>::const_iterator p = connectors.begin(); p != connectors.end(); ++p)
         {
-            map<ConnectorInfo, set<ConnectCallbackPtr> >::iterator q = _pending.find(*p);
+            map<ConnectorPtr, set<ConnectCallbackPtr> >::iterator q = _pending.find(p->connector);
             if(q != _pending.end())
             {
                 for(set<ConnectCallbackPtr>::const_iterator r = q->second.begin(); r != q->second.end(); ++r)
@@ -770,7 +785,7 @@ IceInternal::OutgoingConnectionFactory::finishGetConnection(const vector<Connect
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
         for(vector<ConnectorInfo>::const_iterator p = connectors.begin(); p != connectors.end(); ++p)
         {
-            map<ConnectorInfo, set<ConnectCallbackPtr> >::iterator q = _pending.find(*p);
+            map<ConnectorPtr, set<ConnectCallbackPtr> >::iterator q = _pending.find(p->connector);
             if(q != _pending.end())
             {
                 for(set<ConnectCallbackPtr>::const_iterator r = q->second.begin(); r != q->second.end(); ++r)
@@ -817,7 +832,7 @@ IceInternal::OutgoingConnectionFactory::addToPending(const ConnectCallbackPtr& c
     bool found = false;
     for(vector<ConnectorInfo>::const_iterator p = connectors.begin(); p != connectors.end(); ++p)
     {
-        map<ConnectorInfo, set<ConnectCallbackPtr> >::iterator q = _pending.find(*p);
+        map<ConnectorPtr, set<ConnectCallbackPtr> >::iterator q = _pending.find(p->connector);
         if(q != _pending.end())
         {
             found = true;
@@ -840,9 +855,9 @@ IceInternal::OutgoingConnectionFactory::addToPending(const ConnectCallbackPtr& c
     //
     for(vector<ConnectorInfo>::const_iterator r = connectors.begin(); r != connectors.end(); ++r)
     {
-        if(_pending.find(*r) == _pending.end())
+        if(_pending.find(r->connector) == _pending.end())
         {
-            _pending.insert(pair<ConnectorInfo, set<ConnectCallbackPtr> >(*r, set<ConnectCallbackPtr>()));
+            _pending.insert(pair<ConnectorPtr, set<ConnectCallbackPtr> >(r->connector, set<ConnectCallbackPtr>()));
         }
     }
     return false;
@@ -854,7 +869,7 @@ IceInternal::OutgoingConnectionFactory::removeFromPending(const ConnectCallbackP
 {
     for(vector<ConnectorInfo>::const_iterator p = connectors.begin(); p != connectors.end(); ++p)
     {
-        map<ConnectorInfo, set<ConnectCallbackPtr> >::iterator q = _pending.find(*p);
+        map<ConnectorPtr, set<ConnectCallbackPtr> >::iterator q = _pending.find(p->connector);
         if(q != _pending.end())
         {
             q->second.erase(cb);
@@ -863,15 +878,14 @@ IceInternal::OutgoingConnectionFactory::removeFromPending(const ConnectCallbackP
 }
 
 void
-IceInternal::OutgoingConnectionFactory::handleException(const LocalException& ex, const ConnectorInfo& ci,
-                                                        const ConnectionIPtr& connection, bool hasMore)
+IceInternal::OutgoingConnectionFactory::handleException(const LocalException& ex, bool hasMore)
 {
     TraceLevelsPtr traceLevels = _instance->traceLevels();
     if(traceLevels->retry >= 2)
     {
         Trace out(_instance->initializationData().logger, traceLevels->retryCat);
 
-        out << "connection to endpoint failed";
+        out << "couldn't resolve endpoint host";
         if(dynamic_cast<const CommunicatorDestroyedException*>(&ex))
         {
             out << "\n";
@@ -889,51 +903,17 @@ IceInternal::OutgoingConnectionFactory::handleException(const LocalException& ex
         }
         out << ex;
     }
-
-    if(connection && connection->isFinished())
-    {
-        //
-        // If the connection is finished, we remove it right away instead of
-        // waiting for the reaping.
-        //
-        {
-            IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-            pair<multimap<ConnectorInfo, ConnectionIPtr>::iterator,
-                multimap<ConnectorInfo, ConnectionIPtr>::iterator> pr = _connections.equal_range(ci);
-            
-            for(multimap<ConnectorInfo, ConnectionIPtr>::iterator p = pr.first; p != pr.second; ++p)
-            {
-                if(p->second == connection)
-                {
-                    _connections.erase(p);
-                    break;
-                }
-            }
-
-            pair<multimap<EndpointIPtr, ConnectionIPtr>::iterator,
-                multimap<EndpointIPtr, ConnectionIPtr>::iterator> qr = _connectionsByEndpoint.equal_range(ci.endpoint);
-            
-            for(multimap<EndpointIPtr, ConnectionIPtr>::iterator q = qr.first; q != qr.second; ++q)
-            {
-                if(q->second == connection)
-                {
-                    _connectionsByEndpoint.erase(q);
-                    break;
-                }
-            }
-        }
-    }
 }
 
 void
-IceInternal::OutgoingConnectionFactory::handleException(const LocalException& ex, bool hasMore)
+IceInternal::OutgoingConnectionFactory::handleConnectionException(const LocalException& ex, bool hasMore)
 {
     TraceLevelsPtr traceLevels = _instance->traceLevels();
     if(traceLevels->retry >= 2)
     {
         Trace out(_instance->initializationData().logger, traceLevels->retryCat);
 
-        out << "couldn't resolve endpoint host";
+        out << "connection to endpoint failed";
         if(dynamic_cast<const CommunicatorDestroyedException*>(&ex))
         {
             out << "\n";
@@ -983,7 +963,7 @@ IceInternal::OutgoingConnectionFactory::ConnectCallback::connectionStartFailed(c
 {
     assert(_iter != _connectors.end());
     
-    _factory->handleException(ex, *_iter, connection, _hasMore || _iter != _connectors.end() - 1);
+    _factory->handleConnectionException(ex, _hasMore || _iter != _connectors.end() - 1);
     if(dynamic_cast<const Ice::CommunicatorDestroyedException*>(&ex)) // No need to continue.
     {
         _factory->finishGetConnection(_connectors, ex, this);
@@ -1130,9 +1110,6 @@ IceInternal::OutgoingConnectionFactory::ConnectCallback::nextConnector()
     Ice::ConnectionIPtr connection;
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         assert(_iter != _connectors.end());
         connection = _factory->createConnection(_iter->connector->connect(), *_iter);
         connection->start(this);
@@ -1222,7 +1199,7 @@ IceInternal::IncomingConnectionFactory::destroy()
 void
 IceInternal::IncomingConnectionFactory::waitUntilHolding() const
 {
-    list<ConnectionIPtr> connections;
+    set<ConnectionIPtr> connections;
 
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
@@ -1252,7 +1229,7 @@ IceInternal::IncomingConnectionFactory::waitUntilHolding() const
 void
 IceInternal::IncomingConnectionFactory::waitUntilFinished()
 {
-    list<ConnectionIPtr> connections;
+    set<ConnectionIPtr> connections;
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
         
@@ -1260,7 +1237,7 @@ IceInternal::IncomingConnectionFactory::waitUntilFinished()
         // First we wait until the factory is destroyed. If we are using
         // an acceptor, we also wait for it to be closed.
         //
-        while(_state != StateClosed || _acceptor)
+        while(_state != StateFinished)
         {
             wait();
         }
@@ -1270,7 +1247,6 @@ IceInternal::IncomingConnectionFactory::waitUntilFinished()
         //
         _adapter = 0;
 
-        //
         // We want to wait until all connections are finished outside the
         // thread synchronization.
         //
@@ -1281,6 +1257,11 @@ IceInternal::IncomingConnectionFactory::waitUntilFinished()
 
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+        // Ensure all the connections are finished and reapable at this point.
+        vector<Ice::ConnectionIPtr> cons;
+        _reaper->swapConnections(cons);
+        assert(cons.size() == _connections.size());
+        cons.clear();
         _connections.clear();
     }
 }
@@ -1309,7 +1290,7 @@ IceInternal::IncomingConnectionFactory::connections() const
 }
 
 void
-IceInternal::IncomingConnectionFactory::flushBatchRequests()
+IceInternal::IncomingConnectionFactory::flushAsyncBatchRequests(const CommunicatorBatchOutgoingAsyncPtr& outAsync)
 {
     list<ConnectionIPtr> c = connections(); // connections() is synchronized, so no need to synchronize here.
 
@@ -1317,7 +1298,7 @@ IceInternal::IncomingConnectionFactory::flushBatchRequests()
     {
         try
         {
-            (*p)->flushBatchRequests();
+            outAsync->flushConnection(*p);
         }
         catch(const LocalException&)
         {
@@ -1326,75 +1307,84 @@ IceInternal::IncomingConnectionFactory::flushBatchRequests()
     }
 }
 
+#ifdef ICE_USE_IOCP
 bool
-IceInternal::IncomingConnectionFactory::datagram() const
+IceInternal::IncomingConnectionFactory::startAsync(SocketOperation)
 {
-    return _endpoint->datagram();
-}
-
-bool
-IceInternal::IncomingConnectionFactory::readable() const
-{
-    return false;
-}
-
-bool
-IceInternal::IncomingConnectionFactory::read(BasicStream&)
-{
-    assert(false); // Must not be called, readable() returns false.
-    return false;
-}
-
-class PromoteFollower
-{
-public:
-
-    PromoteFollower(const ThreadPoolPtr& threadPool) :
-        _threadPool(threadPool)
+    if(_state >= StateClosed)
     {
+        return false;
     }
 
-    ~PromoteFollower()
+    try
     {
-        _threadPool->promoteFollower();
+        _acceptor->startAccept();
     }
+    catch(const Ice::LocalException& ex)
+    {
+        {
+            Error out(_instance->initializationData().logger);
+            out << "can't accept connections:\n" << ex << '\n' << _acceptor->toString();
+        }
+        abort();
+    }
+    return true;
+}
 
-private:
-
-    const ThreadPoolPtr _threadPool;
-};
+bool
+IceInternal::IncomingConnectionFactory::finishAsync(SocketOperation)
+{
+    assert(_acceptor);
+    try
+    {
+        _acceptor->finishAccept();
+    }
+    catch(const LocalException& ex)
+    {
+        Error out(_instance->initializationData().logger);
+        out << "couldn't accept connection:\n" << ex << '\n' << _acceptor->toString();
+        return false;
+    }    
+    return _state < StateClosed;
+}
+#endif
 
 void
-IceInternal::IncomingConnectionFactory::message(BasicStream&, const ThreadPoolPtr& threadPool)
+IceInternal::IncomingConnectionFactory::message(ThreadPoolCurrent& current)
 {
     ConnectionIPtr connection;
 
+    ThreadPoolMessage<IncomingConnectionFactory> msg(current, *this);
+
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-        
-        //
-        // This makes sure that we promote a follower before we leave
-        // the scope of the mutex above, but after we call accept()
-        // (if we call it).
-        //
-        // If _threadPool is null, then this class doesn't do
-        // anything.
-        //
-        PromoteFollower promote(threadPool);
 
-        if(_state != StateActive)
+        ThreadPoolMessage<IncomingConnectionFactory>::IOScope io(msg);
+        if(!io)
+        {
+            return;
+        }
+
+        if(_state >= StateClosed)
+        {
+            return;
+        }
+        else if(_state == StateHolding)
         {
             IceUtil::ThreadControl::yield();
             return;
         }
         
         //
-        // Reap connections for which destruction has completed.
+        // Reap closed connections
         //
-        _connections.erase(remove_if(_connections.begin(), _connections.end(),
-                                     Ice::constMemFun(&ConnectionI::isFinished)),
-                           _connections.end());
-        
+        vector<Ice::ConnectionIPtr> cons;
+        _reaper->swapConnections(cons);
+        for(vector<Ice::ConnectionIPtr>::const_iterator p = cons.begin(); p != cons.end(); ++p)
+        {
+            _connections.erase(*p);
+        }
+
         //
         // Now accept a new connection.
         //
@@ -1417,11 +1407,6 @@ IceInternal::IncomingConnectionFactory::message(BasicStream&, const ThreadPoolPt
             // Ignore socket exceptions.
             return;
         }
-        catch(const TimeoutException&)
-        {
-            // Ignore timeouts.
-            return;
-        }
         catch(const LocalException& ex)
         {
             // Warn about other Ice local exceptions.
@@ -1437,7 +1422,7 @@ IceInternal::IncomingConnectionFactory::message(BasicStream&, const ThreadPoolPt
 
         try
         {
-            connection = new ConnectionI(_instance, transceiver, _endpoint, _adapter);
+            connection = new ConnectionI(_instance, _reaper, transceiver, 0, _endpoint, _adapter);
         }
         catch(const LocalException& ex)
         {
@@ -1458,34 +1443,19 @@ IceInternal::IncomingConnectionFactory::message(BasicStream&, const ThreadPoolPt
             return;
         }
 
-        _connections.push_back(connection);
+        _connections.insert(connection);
     }
 
     assert(connection);
-
     connection->start(this);
 }
 
 void
-IceInternal::IncomingConnectionFactory::finished(const ThreadPoolPtr& threadPool)
+IceInternal::IncomingConnectionFactory::finished(ThreadPoolCurrent&)
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-
-    threadPool->promoteFollower();
-    assert(threadPool.get() == dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool().get());
     assert(_state == StateClosed);
-
-    dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool()->decFdsInUse();
-    _acceptor->close();
-    _acceptor = 0;
-    _fd = 0;
-    notifyAll();
-}
-
-void
-IceInternal::IncomingConnectionFactory::exception(const LocalException&)
-{
-    assert(false); // Must not be called.
+    setState(StateFinished);
 }
 
 string
@@ -1500,6 +1470,18 @@ IceInternal::IncomingConnectionFactory::toString() const
     
     assert(_acceptor);
     return _acceptor->toString();
+}
+
+NativeInfoPtr
+IceInternal::IncomingConnectionFactory::getNativeInfo()
+{
+    if(_transceiver)
+    {
+        return _transceiver->getNativeInfo();
+    }
+
+    assert(_acceptor);
+    return _acceptor->getNativeInfo();
 }
 
 void
@@ -1522,7 +1504,7 @@ IceInternal::IncomingConnectionFactory::connectionStartFailed(const Ice::Connect
                                                               const Ice::LocalException& ex)
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-    if(_state == StateClosed)
+    if(_state >= StateClosed)
     {
         return;
     }
@@ -1531,16 +1513,6 @@ IceInternal::IncomingConnectionFactory::connectionStartFailed(const Ice::Connect
     {
         Warning out(_instance->initializationData().logger);
         out << "connection exception:\n" << ex << '\n' << _acceptor->toString();
-    }
-        
-    //
-    // If the connection is finished, remove it right away from
-    // the connection map. Otherwise, we keep it in the map, it
-    // will eventually be reaped.
-    //
-    if(connection->isFinished())
-    {
-        _connections.remove(connection);
     }
 }
 
@@ -1552,7 +1524,8 @@ IceInternal::IncomingConnectionFactory::connectionStartFailed(const Ice::Connect
 IceInternal::IncomingConnectionFactory::IncomingConnectionFactory(const InstancePtr& instance,
                                                                   const EndpointIPtr& endpoint,
                                                                   const ObjectAdapterPtr& adapter) :
-    EventHandler(instance),
+    _instance(instance),
+    _reaper(new ConnectionReaper()),
     _endpoint(endpoint),
     _adapter(adapter),
     _warn(_instance->initializationData().properties->getPropertyAsInt("Ice.Warn.Connections") > 0),
@@ -1561,7 +1534,7 @@ IceInternal::IncomingConnectionFactory::IncomingConnectionFactory(const Instance
 }
 
 void
-IceInternal::IncomingConnectionFactory::initialize(const string& adapterName)
+IceInternal::IncomingConnectionFactory::initialize(const string& oaName)
 {
     if(_instance->defaultsAndOverrides()->overrideTimeout)
     {
@@ -1575,18 +1548,26 @@ IceInternal::IncomingConnectionFactory::initialize(const string& adapterName)
             _endpoint->compress(_instance->defaultsAndOverrides()->overrideCompressValue);
     }
 
-    ObjectAdapterI* adapterImpl = dynamic_cast<ObjectAdapterI*>(_adapter.get());
-
-    const_cast<TransceiverPtr&>(_transceiver) = _endpoint->transceiver(const_cast<EndpointIPtr&>(_endpoint));
-    if(_transceiver)
+    try
     {
-        ConnectionIPtr connection;
-
-        try
+        const_cast<TransceiverPtr&>(_transceiver) = _endpoint->transceiver(const_cast<EndpointIPtr&>(_endpoint));
+        if(_transceiver)
         {
-            connection = new ConnectionI(_instance, _transceiver, _endpoint, _adapter);
+            ConnectionIPtr connection = new ConnectionI(_instance, _reaper, _transceiver, 0, _endpoint, _adapter);
+            connection->start(0);            
+            _connections.insert(connection);
         }
-        catch(const LocalException&)
+        else
+        {
+            const_cast<AcceptorPtr&>(_acceptor) = _endpoint->acceptor(const_cast<EndpointIPtr&>(_endpoint), oaName);
+            assert(_acceptor);
+            _acceptor->listen();
+            dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool()->initialize(this);
+        }
+    }
+    catch(const Ice::Exception&)
+    {
+        if(_transceiver)
         {
             try
             {
@@ -1596,44 +1577,30 @@ IceInternal::IncomingConnectionFactory::initialize(const string& adapterName)
             {
                 // Ignore
             }
-            throw;
         }
 
-        connection->start(0);
 
-        _connections.push_back(connection);
-    }
-    else
-    {
-        _acceptor = _endpoint->acceptor(const_cast<EndpointIPtr&>(_endpoint), adapterName);
-        assert(_acceptor);
-        _acceptor->listen();
-        _fd = _acceptor->fd();
-
-        try
-        {
-            adapterImpl->getThreadPool()->incFdsInUse();
-        }
-        catch(const IceUtil::Exception&)
+        if(_acceptor)
         {
             try
             {
                 _acceptor->close();
             }
-            catch(const LocalException&)
+            catch(const Ice::LocalException&)
             {
-                // Here we ignore any exceptions in close().
+                // Ignore
             }
-            _acceptor = 0;
-            throw;
         }
+        
+        _state = StateFinished;
+        _connections.clear();
+        throw;
     }
 }
 
 IceInternal::IncomingConnectionFactory::~IncomingConnectionFactory()
 {
-    //assert(_state == StateClosed);
-    assert(!_acceptor);
+    assert(_state == StateFinished);
     assert(_connections.empty());
 }
 
@@ -1655,7 +1622,7 @@ IceInternal::IncomingConnectionFactory::setState(State state)
             }
             if(_acceptor)
             {
-                dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool()->_register(this);
+                dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool()->_register(this, SocketOperationRead);
             }
             for_each(_connections.begin(), _connections.end(), Ice::voidMemFun(&ConnectionI::activate));
             break;
@@ -1669,7 +1636,7 @@ IceInternal::IncomingConnectionFactory::setState(State state)
             }
             if(_acceptor)
             {
-                dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool()->unregister(this);
+                dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool()->unregister(this, SocketOperationRead);
             }
             for_each(_connections.begin(), _connections.end(), Ice::voidMemFun(&ConnectionI::hold));
             break;
@@ -1681,6 +1648,24 @@ IceInternal::IncomingConnectionFactory::setState(State state)
             {
                 dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool()->finish(this);
             }
+            else
+            {
+                state = StateFinished;
+            }
+
+#ifdef ICE_USE_IOCP
+            //
+            // With IOCP, we close the acceptor now to cancel all the pending asynchronous 
+            // operations. It's important to wait for the pending asynchronous operations 
+            // to return before ConnectionI::finished(). Otherwise, if there was a pending
+            // message waiting to be sent, the connection wouldn't know whether or not the 
+            // send failed or succeeded, potentially breaking at-most-once semantics.
+            //
+            if(_acceptor)
+            {
+                _acceptor->close();
+            }
+#endif
 
 #ifdef _STLP_BEGIN_NAMESPACE
             // voidbind2nd is an STLport extension for broken compilers in IceUtil/Functional.h
@@ -1689,6 +1674,18 @@ IceInternal::IncomingConnectionFactory::setState(State state)
 #else
             for_each(_connections.begin(), _connections.end(),
                      bind2nd(Ice::voidMemFun1(&ConnectionI::destroy), ConnectionI::ObjectAdapterDeactivated));
+#endif
+            break;
+        }
+
+        case StateFinished:
+        {
+            assert(_state == StateClosed);
+#ifndef ICE_USE_IOCP
+            if(_acceptor)
+            {
+                _acceptor->close();
+            }
 #endif
             break;
         }

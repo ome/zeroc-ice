@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,7 +8,8 @@
 // **********************************************************************
 
 using System.Diagnostics;
-
+using System.Globalization;
+    
 namespace IceInternal
 {
     public class Ex
@@ -19,22 +20,54 @@ namespace IceInternal
                         "expected element of type `" + expectedType + "' but received '" + actualType,
                         actualType, expectedType);
         }
+
+        public static void throwMemoryLimitException(int requested, int maximum)
+        {
+            throw new Ice.MemoryLimitException("requested " + requested + " bytes, maximum allowed is " + maximum +
+                                               " bytes (see Ice.MessageSizeMax)"); 
+        }
     }
 }
 
 namespace Ice
 {
-
+    /// <summary>
+    /// Base class for Ice exceptions.
+    /// </summary>
     public abstract class Exception : System.Exception, System.ICloneable
     {
+        /// <summary>
+        /// Creates and returns a copy of this exception.
+        /// </summary>
+        /// <returns>A copy of this exception.</returns>
         public object Clone()
         {
             return MemberwiseClone();
         }
 
+        /// <summary>
+        /// Creates a default-initialized exception.
+        /// </summary>
         public Exception() {}
+
+        /// <summary>
+        /// Creates a default-initialized exception and sets the InnerException
+        /// property to the passed exception.
+        /// </summary>
+        /// <param name="ex">The inner exception.</param>
         public Exception(System.Exception ex) : base("", ex) {}
+
+        /// <summary>
+        /// Returns the name of this exception.
+        /// </summary>
+        /// <returns>The name of this exception.</returns>
         public abstract string ice_name();
+
+        /// <summary>
+        /// Returns a string representation of this exception, including
+        /// any inner exceptions.
+        /// </summary>
+        /// <returns>The string representation of this exception.</returns>
         public override string ToString()
         {
             //
@@ -44,7 +77,7 @@ namespace Ice
             // without string parsing (perhaps tokenize on "\n"), it
             // doesn't appear to be possible to reformat it.
             //
-            System.IO.StringWriter sw = new System.IO.StringWriter();
+            System.IO.StringWriter sw = new System.IO.StringWriter(CultureInfo.CurrentCulture);
             IceUtilInternal.OutputBase op = new IceUtilInternal.OutputBase(sw);
             op.setUseTab(false);
             op.print(GetType().FullName);
@@ -72,22 +105,59 @@ namespace Ice
         }
     }
 
+    /// <summary>
+    /// Base class for local exceptions.
+    /// </summary>
     public abstract class LocalException : Exception
     {
+        /// <summary>
+        /// Creates a default-initialized local exception.
+        /// </summary>
         public LocalException() {}
+
+        /// <summary>
+        /// Creates a default-initialized local exception and sets the InnerException
+        /// property to the passed exception.
+        /// </summary>
+        /// <param name="ex">The inner exception.</param>
         public LocalException(System.Exception ex) : base(ex) {}
     }
 
+    /// <summary>
+    /// Base class for Ice run-time exceptions.
+    /// </summary>
     public abstract class SystemException : Exception
     {
+        /// <summary>
+        /// Creates a default-initialized run-time exception.
+        /// </summary>
         public SystemException() {}
+
+        /// <summary>
+        /// Creates a default-initialized run-time exception and sets the InnerException
+        /// property to the passed exception.
+        /// </summary>
+        /// <param name="ex">The inner exception.</param>
         public SystemException(System.Exception ex) : base(ex) {}
     }
 
+    /// <summary>
+    /// Base class for Slice user exceptions.
+    /// </summary>
     public abstract class UserException : Exception
     {
+        /// <summary>
+        /// Creates a default-initialized user exception.
+        /// </summary>
         public UserException() {}
+
+        /// <summary>
+        /// Creates a default-initialized user exception and sets the InnerException
+        /// property to the passed exception.
+        /// </summary>
+        /// <param name="ex">The inner exception.</param>
         public UserException(System.Exception ex) : base(ex) {}
+
         public abstract void write__(IceInternal.BasicStream os__);
         public abstract void read__(IceInternal.BasicStream is__, bool rid__);
 
@@ -150,21 +220,25 @@ namespace IceInternal
 
         public static void throwWrapper(System.Exception ex)
         {
-            if(ex is Ice.UserException)
+            Ice.UserException userException = ex as Ice.UserException;
+            if(userException != null)
             {
-                throw new LocalExceptionWrapper(new Ice.UnknownUserException(((Ice.UserException)ex).ice_name()), false);
+                throw new LocalExceptionWrapper(new Ice.UnknownUserException(userException.ice_name()), 
+                                                false);
             }
 
-            if(ex is Ice.LocalException)
+            Ice.LocalException localException = ex as Ice.LocalException;
+            if(localException != null)
             {
                 if(ex is Ice.UnknownException ||
                    ex is Ice.ObjectNotExistException ||
                    ex is Ice.OperationNotExistException ||
                    ex is Ice.FacetNotExistException)
                 {
-                    throw new LocalExceptionWrapper((Ice.LocalException)ex, false);
+                    throw new LocalExceptionWrapper(localException, false);
                 }
-                throw new LocalExceptionWrapper(new Ice.UnknownLocalException(((Ice.LocalException)ex).ice_name()), false);
+                throw new LocalExceptionWrapper(new Ice.UnknownLocalException(localException.ice_name()), 
+                                                false);
             }
             throw new LocalExceptionWrapper(new Ice.UnknownException(ex.GetType().FullName), false);
         }

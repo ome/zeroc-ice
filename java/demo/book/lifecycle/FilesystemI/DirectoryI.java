@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -170,7 +170,7 @@ public class DirectoryI extends _DirectoryDisp implements NodeI
         _destroyed = false;
         _contents = new java.util.HashMap<String, NodeI>();
 
-        _id.name = parent == null ? "RootDir" : Util.generateUUID();
+        _id.name = parent == null ? "RootDir" : java.util.UUID.randomUUID().toString();
     }
 
     // Remove the entry from the _contents map.

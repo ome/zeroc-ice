@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,8 +11,6 @@ package IceInternal;
 
 final class TcpEndpointI extends EndpointI
 {
-    final static short TYPE = 1;
-
     public
     TcpEndpointI(Instance instance, String ho, int po, int ti, String conId, boolean co)
     {
@@ -48,7 +46,8 @@ final class TcpEndpointI extends EndpointI
             String option = arr[i++];
             if(option.length() != 2 || option.charAt(0) != '-')
             {
-                throw new Ice.EndpointParseException("tcp " + str);
+                throw new Ice.EndpointParseException("expected an endpoint option but found `" + option +
+                                                     "' in endpoint `tcp " + str + "'");
             }
 
             String argument = null;
@@ -67,7 +66,8 @@ final class TcpEndpointI extends EndpointI
                 {
                     if(argument == null)
                     {
-                        throw new Ice.EndpointParseException("tcp " + str);
+                        throw new Ice.EndpointParseException("no argument provided for -h option in endpoint `tcp "
+                                                             + str + "'");
                     }
 
                     _host = argument;
@@ -78,7 +78,8 @@ final class TcpEndpointI extends EndpointI
                 {
                     if(argument == null)
                     {
-                        throw new Ice.EndpointParseException("tcp " + str);
+                        throw new Ice.EndpointParseException("no argument provided for -p option in endpoint `tcp "
+                                                             + str + "'");
                     }
 
                     try
@@ -87,12 +88,14 @@ final class TcpEndpointI extends EndpointI
                     }
                     catch(NumberFormatException ex)
                     {
-                        throw new Ice.EndpointParseException("tcp " + str);
+                        throw new Ice.EndpointParseException("invalid port value `" + argument +
+                                                             "' in endpoint `tcp " + str + "'");
                     }
 
                     if(_port < 0 || _port > 65535)
                     {
-                        throw new Ice.EndpointParseException("tcp " + str);
+                        throw new Ice.EndpointParseException("port value `" + argument +
+                                                             "' out of range in endpoint `tcp " + str + "'");
                     }
 
                     break;
@@ -102,7 +105,8 @@ final class TcpEndpointI extends EndpointI
                 {
                     if(argument == null)
                     {
-                        throw new Ice.EndpointParseException("tcp " + str);
+                        throw new Ice.EndpointParseException("no argument provided for -t option in endpoint `tcp "
+                                                             + str + "'");
                     }
 
                     try
@@ -111,7 +115,8 @@ final class TcpEndpointI extends EndpointI
                     }
                     catch(NumberFormatException ex)
                     {
-                        throw new Ice.EndpointParseException("tcp " + str);
+                        throw new Ice.EndpointParseException("invalid timeout value `" + argument +
+                                                             "' in endpoint `tcp " + str + "'");
                     }
 
                     break;
@@ -121,7 +126,8 @@ final class TcpEndpointI extends EndpointI
                 {
                     if(argument != null)
                     {
-                        throw new Ice.EndpointParseException("tcp " + str);
+                        throw new Ice.EndpointParseException("unexpected argument `" + argument +
+                                                             "' provided for -z option in `tcp " + str + "'");
                     }
 
                     _compress = true;
@@ -130,7 +136,7 @@ final class TcpEndpointI extends EndpointI
 
                 default:
                 {
-                    throw new Ice.EndpointParseException("tcp " + str);
+                    throw new Ice.EndpointParseException("unknown option `" + option + "' in `tcp " + str + "'");
                 }
             }
         }
@@ -147,7 +153,7 @@ final class TcpEndpointI extends EndpointI
             }
             else
             {
-                throw new Ice.EndpointParseException("tcp " + str);
+                throw new Ice.EndpointParseException("`-h *' not valid for proxy endpoint `tcp " + str + "'");
             }
         }
 
@@ -178,7 +184,7 @@ final class TcpEndpointI extends EndpointI
     public void
     streamWrite(BasicStream s)
     {
-        s.writeShort(TYPE);
+        s.writeShort(Ice.TCPEndpointType.value);
         s.startWriteEncaps();
         s.writeString(_host);
         s.writeInt(_port);
@@ -231,12 +237,37 @@ final class TcpEndpointI extends EndpointI
     }
 
     //
+    // Return the endpoint information.
+    //
+    public Ice.EndpointInfo
+    getInfo()
+    {
+        return new Ice.TCPEndpointInfo(_timeout, _compress, _host, _port)
+            {
+                public short type()
+                {
+                    return Ice.TCPEndpointType.value;
+                }
+                
+                public boolean datagram()
+                {
+                    return false;
+                }
+                
+                public boolean secure()
+                {
+                    return false;
+                }
+        };
+    }
+
+    //
     // Return the endpoint type
     //
     public short
     type()
     {
-        return TYPE;
+        return Ice.TCPEndpointType.value;
     }
 
     //
@@ -330,15 +361,6 @@ final class TcpEndpointI extends EndpointI
     }
 
     //
-    // Return true if the endpoint type is unknown.
-    //
-    public boolean
-    unknown()
-    {
-        return false;
-    }
-
-    //
     // Return a server side transceiver for this endpoint, or null if a
     // transceiver can only be created by an acceptor. In case a
     // transceiver is created, this operation also returns a new
@@ -392,17 +414,16 @@ final class TcpEndpointI extends EndpointI
     expand()
     {
         java.util.List<EndpointI> endps = new java.util.ArrayList<EndpointI>();
-        java.util.List<String> hosts = Network.getHostsForEndpointExpand(_host, _instance.protocolSupport());
+        java.util.List<String> hosts = Network.getHostsForEndpointExpand(_host, _instance.protocolSupport(), false);
         if(hosts == null || hosts.isEmpty())
         {
             endps.add(this);
         }
         else
         {
-            java.util.Iterator<String> p = hosts.iterator();
-            while(p.hasNext())
+            for(String h : hosts)
             {
-                endps.add(new TcpEndpointI(_instance, p.next(), _port, _timeout, _connectionId, _compress));
+                endps.add(new TcpEndpointI(_instance, h, _port, _timeout, _connectionId, _compress));
             }
         }
         return endps;
@@ -507,10 +528,9 @@ final class TcpEndpointI extends EndpointI
     connectors(java.util.List<java.net.InetSocketAddress> addresses)
     {
         java.util.List<Connector> connectors = new java.util.ArrayList<Connector>();
-        java.util.Iterator<java.net.InetSocketAddress> p = addresses.iterator();
-        while(p.hasNext())
+        for(java.net.InetSocketAddress p : addresses)
         {
-            connectors.add(new TcpConnector(_instance, p.next(), _timeout, _connectionId));
+            connectors.add(new TcpConnector(_instance, p, _timeout, _connectionId));
         }
         return connectors;
     }

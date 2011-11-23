@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -51,6 +51,12 @@ public:
     // Construct a timer and starts its execution thread.
     //
     Timer();
+
+
+    //
+    // Construct a timer and starts its execution thread with the priority.
+    //
+    Timer(int priority);
 
     //
     // Destroy the timer and detach its execution thread if the calling thread 

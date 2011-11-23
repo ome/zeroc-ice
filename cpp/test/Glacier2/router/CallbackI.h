@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -30,11 +30,11 @@ public:
     virtual void waitCallback(const ::Ice::Current&);
     virtual void callbackWithPayload(const Ice::ByteSeq&, const ::Ice::Current&);
 
-    bool callbackOK();
-    bool waitCallbackOK();
-    bool callbackWithPayloadOK();
+    void callbackOK();
+    void waitCallbackOK();
+    void callbackWithPayloadOK();
     void notifyWaitCallback();
-    bool answerConcurrentCallbacks(unsigned int);
+    void answerConcurrentCallbacks(unsigned int);
 
 private:
 

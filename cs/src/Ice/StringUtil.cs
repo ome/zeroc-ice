@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 using System.Text;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace IceUtilInternal
 {
@@ -180,7 +181,8 @@ namespace IceUtilInternal
                 {
                     if((int)special[i] < 32 || (int)special[i] > 126)
                     {
-                        throw new System.ArgumentException("special characters must be in ASCII range 32-126", "special");
+                        throw new System.ArgumentException("special characters must be in ASCII range 32-126",
+                                                           "special");
                     }
                 }
             }
@@ -197,11 +199,22 @@ namespace IceUtilInternal
             return result.ToString();
         }
         
-        private static char checkChar(char c)
+        private static char checkChar(string s, int pos)
         {
+            char c = s[pos];
             if(!(c >= 32 && c <= 126))
             {
-                throw new System.ArgumentException("illegal input character");
+                string msg;
+                if(pos > 0)
+                {
+                    msg = "character after `" + s.Substring(0, pos) + "'";
+                }
+                else
+                {
+                    msg = "first character";
+                }
+                msg += " is not a printable ASCII character (ordinal " + (int)c + ")";
+                throw new System.ArgumentException(msg);
             }
             return c;
         }
@@ -222,13 +235,13 @@ namespace IceUtilInternal
 
             if(s[start] != '\\')
             {
-                c = checkChar(s[start++]);
+                c = checkChar(s, start++);
             }
             else
             {
                 if(start + 1 == end)
                 {
-                    throw new System.ArgumentException("trailing backslash in argument");
+                    throw new System.ArgumentException("trailing backslash");
                 }
                 switch(s[++start])
                 {
@@ -278,7 +291,7 @@ namespace IceUtilInternal
                     case '6':
                     case '7':
                     {
-                        int oct = 0;
+                        int val = 0;
                         for(int j = 0; j < 3 && start < end; ++j)
                         {
                             int charVal = s[start++] - '0';
@@ -287,18 +300,20 @@ namespace IceUtilInternal
                                 --start;
                                 break;
                             }
-                            oct = oct * 8 + charVal;
+                            val = val * 8 + charVal;
                         }
-                        if(oct > 255)
+                        if(val > 255)
                         {
-                            throw new System.ArgumentException("octal value out of range", "s");
+                            string msg = "octal value \\" + System.Convert.ToString(val, 8) + " (" + val +
+                                ") is out of range";
+                            throw new System.ArgumentException(msg, "s");
                         }
-                        c = System.Convert.ToChar(oct);
+                        c = System.Convert.ToChar(val);
                         break;
                     }
                     default:
                     {
-                        c = checkChar(s[start++]);
+                        c = checkChar(s, start++);
                         break;
                     }
                 }
@@ -320,44 +335,90 @@ namespace IceUtilInternal
         }
 
         //
-        // Remove escape sequences added by escapeString.
+        // Remove escape sequences added by escapeString. Throws System.ArgumentException
+        // for an invalid input string.
         //
-        public static bool unescapeString(string s, int start, int end, out string result)
+        public static string unescapeString(string s, int start, int end)
         {
-            if(start < 0)
-            {
-                throw new System.ArgumentException("start offset must be >= 0", "start");
-            }
-            if(end > s.Length)
-            {
-                throw new System.ArgumentException("end offset must be <= s.Length", "end");
-            }
-            if(start > end)
-            {
-                throw new System.ArgumentException("start offset must be <= end offset");
-            }
-            
-            result = null;
-            try
-            {
-                StringBuilder sb = new StringBuilder();
-                decodeString(s, start, end, sb);
-                string decodedString = sb.ToString();
+            Debug.Assert(start >= 0 && start <= end && end <= s.Length);
 
-                byte[] arr = new byte[decodedString.Length];
-                for(int i = 0; i < arr.Length; ++i)
+            StringBuilder sb = new StringBuilder();
+            decodeString(s, start, end, sb);
+            string decodedString = sb.ToString();
+
+            byte[] arr = new byte[decodedString.Length];
+            for(int i = 0; i < arr.Length; ++i)
+            {
+                arr[i] = (byte)decodedString[i];
+            }
+
+            UTF8Encoding utf8 = new UTF8Encoding(false, true);
+            return utf8.GetString(arr); // May raise ArgumentException.
+        }
+
+        //
+        // Split string helper; returns null for unmatched quotes
+        //
+        static public string[] splitString(string str, string delim)
+        {
+            List<string> l = new List<string>();
+            char[] arr = new char[str.Length];
+            int pos = 0;
+
+            int n = 0;
+            char quoteChar = '\0';
+            while(pos < str.Length)
+            {
+                if(quoteChar == '\0' && (str[pos] == '"' || str[pos] == '\''))
                 {
-                    arr[i] = (byte)decodedString[i];
+                    quoteChar = str[pos++];
+                    continue; // Skip the quote.
+                }
+                else if(quoteChar == '\0' && str[pos] == '\\' && pos + 1 < str.Length &&
+                        (str[pos + 1] == '\'' || str[pos + 1] == '"'))
+                {
+                    ++pos; // Skip the backslash
+                }
+                else if(quoteChar != '\0' && str[pos] == '\\' && pos + 1 < str.Length && str[pos + 1] == quoteChar)
+                {
+                    ++pos; // Skip the backslash
+                }
+                else if(quoteChar != '\0' && str[pos] == quoteChar)
+                {
+                    ++pos;
+                    quoteChar = '\0';
+                    continue; // Skip the quote.
+                }
+                else if(delim.IndexOf(str[pos]) != -1)
+                {
+                    if(quoteChar == '\0')
+                    {
+                        ++pos;
+                        if(n > 0)
+                        {
+                            l.Add(new string(arr, 0, n));
+                            n = 0;
+                        }
+                        continue;
+                    }
+                }
+                
+                if(pos < str.Length)
+                {
+                    arr[n++] = str[pos++];
                 }
 
-                UTF8Encoding utf8 = new UTF8Encoding(false, true);
-                result = utf8.GetString(arr);
-                return true;
             }
-            catch(System.Exception)
+
+            if(n > 0)
             {
-                return false;
+                l.Add(new string(arr, 0, n));
             }
+            if(quoteChar != '\0')
+            {
+                return null; // Unmatched quote.
+            }
+            return l.ToArray();
         }
 
         public static int checkQuote(string s)
@@ -399,6 +460,6 @@ namespace IceUtilInternal
                 return string.CompareOrdinal((string)l, (string)r);
             }        
         }
-        public static readonly System.Collections.IComparer OrdinalStringComparer = new OrdinalStringComparerImpl();
+        public static System.Collections.IComparer OrdinalStringComparer = new OrdinalStringComparerImpl();
     }
 }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -297,7 +297,7 @@ struct RegistryInfo
 
 /**
  *
- * A sequence of [RegistryInfo] structures.
+ * A sequence of {@link RegistryInfo} structures.
  *
  **/
 sequence<RegistryInfo> RegistryInfoSeq;
@@ -350,10 +350,10 @@ struct ApplicationInfo
 
 /**
  *
- * A sequence of [ApplicationInfo] structures.
+ * A sequence of {@link ApplicationInfo} structures.
  *
  **/
-["java:type:{java.util.LinkedList}"] sequence<ApplicationInfo> ApplicationInfoSeq;
+["java:type:java.util.LinkedList<ApplicationInfo>"] sequence<ApplicationInfo> ApplicationInfoSeq;
 
 /**
  *
@@ -610,7 +610,7 @@ interface Admin
 
     /**
      *
-     * Get a proxy to the server's admin object
+     * Get a proxy to the server's admin object.
      *
      * @param id The server id.
      *
@@ -676,9 +676,6 @@ interface Admin
      * Start a server and wait for its activation.
      *
      * @param id The server id.
-     *
-     * @return True if the server was successfully started, false
-     * otherwise.
      *
      * @throws ServerNotExistException Raised if the server doesn't
      * exist.
@@ -806,7 +803,7 @@ interface Admin
      * Get the adapter information for the replica group or adapter
      * with the given id.
      *
-     * @param adapterId The adapter id.
+     * @param id The adapter id.
      *
      * @return A sequence of adapter information structures. If the
      * given id refers to an adapter, this sequence will contain only
@@ -825,11 +822,12 @@ interface Admin
      *
      * Remove the adapter with the given id.
      *
+     * @param id The adapter id.
      * @throws AdapterNotExistException Raised if the adapter doesn't
      * exist.
      *
      **/
-    ["ami"] void removeAdapter(string adapterId)
+    ["ami"] void removeAdapter(string id)
         throws AdapterNotExistException, DeploymentException;
 
     /**
@@ -844,7 +842,7 @@ interface Admin
     /**
      *
      * Add an object to the object registry. IceGrid will get the
-     * object type by calling [ice_id] on the given proxy. The object
+     * object type by calling <tt>ice_id</tt> on the given proxy. The object
      * must be reachable.
      *
      * @param obj The object to be added to the registry.
@@ -1006,6 +1004,30 @@ interface Admin
      **/
     ["nonmutating", "cpp:const"] idempotent NodeInfo getNodeInfo(string name)
         throws NodeNotExistException, NodeUnreachableException;
+
+    /**
+     *
+     * Get the number of physical processor sockets for the machine
+     * running the node with the given name. 
+     *
+     * Note that this method will return 0 on operating systems where
+     * this can't be automatically determined and where the
+     * IceGrid.Node.ProcessorSocketCount property for the node is not
+     * set.
+     *
+     * @param name The node name.
+     *
+     * @return The number of processor sockets or 0 if the number of
+     * sockets can't determined.
+     * 
+     * @throws NodeNotExistException Raised if the node doesn't exist.
+     *
+     * @throws NodeUnreachableException Raised if the node could not be
+     * reached.
+     *
+     **/    
+    ["nonmutating", "cpp:const"] idempotent int getNodeProcessorSocketCount(string name)
+        throws NodeNotExistException, NodeUnreachableException;
     
     /**
      *
@@ -1135,7 +1157,7 @@ interface FileIterator
      * received. The server will ensure that the returned message
      * doesn't exceed the given size.
      * 
-     * @param The lines read from the file. If there was nothing to
+     * @param lines The lines read from the file. If there was nothing to
      * read from the file since the last call to read, an empty
      * sequence is returned. The last line of the sequence is always
      * incomplete (and therefore no '\n' should be added when writing
@@ -1168,11 +1190,11 @@ interface ObjectObserver;
  *
  * Used by administrative clients to view,
  * update, and receive observer updates from the IceGrid
- * registry. Admin sessions are created either with the [Registry]
- * object or the registry admin [Glacier2::SessionManager] object.
+ * registry. Admin sessions are created either with the {@link Registry}
+ * object or the registry admin {@link Glacier2.SessionManager} object.
  * 
  * @see Registry
- * @see Glacier2::SessionManager
+ * @see Glacier2.SessionManager
  *
  **/
 interface AdminSession extends Glacier2::Session
@@ -1182,7 +1204,7 @@ interface AdminSession extends Glacier2::Session
      * Keep the session alive. Clients should call this operation
      * regularly to prevent the server from reaping the session.
      *
-     * @see Registry::getSessionTimeout
+     * @see Registry#getSessionTimeout
      *
      **/
     idempotent void keepAlive();
@@ -1224,7 +1246,7 @@ interface AdminSession extends Glacier2::Session
      *
      * @param appObs The application observer.
      *
-     * @param adapterObs The adapter observer.
+     * @param adptObs The adapter observer.
      *
      * @param objObs The object observer.
      *

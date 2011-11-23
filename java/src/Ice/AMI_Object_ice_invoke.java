@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,44 +9,45 @@
 
 package Ice;
 
-public abstract class AMI_Object_ice_invoke extends IceInternal.OutgoingAsync
+/**
+ * Callback object for {@link ObjectPrx#.ice_invoke_async}.
+ **/
+public abstract class AMI_Object_ice_invoke extends Callback_Object_ice_invoke
 {
+    /**
+     * Called when an asynchronous operation invocation completes successfully or raises a user exception.
+     *
+     * @param ok Indicates the result of the invocation. If <code>true</code>, the operation
+     * completed succesfully; if <code>false</code>, the operation raised a user exception.
+     * @param outParams Contains the encoded out-parameters of the operation (if any) if <code>ok</code>
+     * is <code>true</code>; otherwise, if <code>ok</code> is <code>false</code>, contains the
+     * encoded user exception raised by the operation.
+     **/
     public abstract void ice_response(boolean ok, byte[] outParams);
+
+    /**
+     * Called when the invocation raises an Ice run-time exception.
+     *
+     * @param ex The Ice run-time exception raised by the operation.
+     **/
     public abstract void ice_exception(LocalException ex);
 
-    public final boolean __invoke(Ice.ObjectPrx prx, String operation, OperationMode mode,
-                                  byte[] inParams, java.util.Map<String, String> context)
+    public final void response(boolean ok, byte[] outParams)
     {
-        __acquireCallback(prx);
-        try
-        {
-            __prepare(prx, operation, mode, context);
-            __os.writeBlob(inParams);
-            __os.endWriteEncaps();
-            return __send();
-        }
-        catch(LocalException ex)
-        {
-            __releaseCallback(ex);
-            return false;
-        }
+        ice_response(ok, outParams);
     }
 
-    protected final void __response(boolean ok) // ok == true means no user exception.
+    public final void exception(LocalException ex)
     {
-        byte[] outParams;
-        try
+        ice_exception(ex);
+    }
+
+    @Override
+    public final void sent(boolean sentSynchronously)
+    {
+        if(!sentSynchronously && this instanceof AMISentCallback)
         {
-            int sz = __is.getReadEncapsSize();
-            outParams = __is.readBlob(sz);
-            __is.endReadEncaps();
+            ((AMISentCallback)this).ice_sent();
         }
-        catch(LocalException ex)
-        {
-            __finished(ex);
-            return;
-        }
-        ice_response(ok, outParams);
-        __releaseCallback();
     }
 }

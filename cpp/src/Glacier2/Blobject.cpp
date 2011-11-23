@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,23 +14,23 @@ using namespace std;
 using namespace Ice;
 using namespace Glacier2;
 
-static const string serverForwardContext = "Glacier2.Server.ForwardContext";
-static const string clientForwardContext = "Glacier2.Client.ForwardContext";
-static const string serverAlwaysBatch = "Glacier2.Server.AlwaysBatch";
-static const string clientAlwaysBatch = "Glacier2.Client.AlwaysBatch";
-static const string serverTraceRequest = "Glacier2.Server.Trace.Request";
-static const string clientTraceRequest = "Glacier2.Client.Trace.Request";
-static const string serverTraceOverride = "Glacier2.Server.Trace.Override";
-static const string clientTraceOverride = "Glacier2.Client.Trace.Override";
-
 namespace
 {
+
+const string serverForwardContext = "Glacier2.Server.ForwardContext";
+const string clientForwardContext = "Glacier2.Client.ForwardContext";
+const string serverAlwaysBatch = "Glacier2.Server.AlwaysBatch";
+const string clientAlwaysBatch = "Glacier2.Client.AlwaysBatch";
+const string serverTraceRequest = "Glacier2.Server.Trace.Request";
+const string clientTraceRequest = "Glacier2.Client.Trace.Request";
+const string serverTraceOverride = "Glacier2.Server.Trace.Override";
+const string clientTraceOverride = "Glacier2.Client.Trace.Override";
 
 class AMI_Array_Object_ice_invokeTwowayI : public AMI_Array_Object_ice_invoke
 {
 public:
 
-    AMI_Array_Object_ice_invokeTwowayI(const AMD_Array_Object_ice_invokePtr& amdCB,
+    AMI_Array_Object_ice_invokeTwowayI(const AMD_Object_ice_invokePtr& amdCB,
                                        const InstancePtr& instance,
                                        const ConnectionPtr& connection) :
         _amdCB(amdCB),
@@ -72,7 +72,7 @@ public:
 
 private:
 
-    const AMD_Array_Object_ice_invokePtr _amdCB;
+    const AMD_Object_ice_invokePtr _amdCB;
     const InstancePtr _instance;
     const ConnectionPtr _connection;
 };
@@ -81,7 +81,7 @@ class AMI_Array_Object_ice_invokeOnewayI : public AMI_Array_Object_ice_invoke, p
 {
 public:
 
-    AMI_Array_Object_ice_invokeOnewayI(const AMD_Array_Object_ice_invokePtr& amdCB,
+    AMI_Array_Object_ice_invokeOnewayI(const AMD_Object_ice_invokePtr& amdCB,
                                        const InstancePtr& instance,
                                        const ConnectionPtr& connection) :
         _amdCB(amdCB),
@@ -129,7 +129,7 @@ public:
 
 private:
 
-    const AMD_Array_Object_ice_invokePtr _amdCB;
+    const AMD_Object_ice_invokePtr _amdCB;
     const InstancePtr _instance;
     const ConnectionPtr _connection;
 };
@@ -137,7 +137,7 @@ private:
 }
 
 Glacier2::Blobject::Blobject(const InstancePtr& instance, const ConnectionPtr& reverseConnection,
-                             const Ice::Context& sslContext) :
+                             const Ice::Context& context) :
     _instance(instance),
     _reverseConnection(reverseConnection),
     _forwardContext(_reverseConnection ?
@@ -152,7 +152,7 @@ Glacier2::Blobject::Blobject(const InstancePtr& instance, const ConnectionPtr& r
     _overrideTraceLevel(reverseConnection ?
                         _instance->properties()->getPropertyAsInt(serverTraceOverride) :
                         _instance->properties()->getPropertyAsInt(clientTraceOverride)),
-    _sslContext(sslContext)
+    _context(context)
 {
     RequestQueueThreadPtr t = _reverseConnection ? _instance->serverRequestQueueThread() : 
                                                    _instance->clientRequestQueueThread();
@@ -167,7 +167,7 @@ Glacier2::Blobject::~Blobject()
 }
 
 void
-Glacier2::Blobject::invoke(ObjectPrx& proxy, const AMD_Array_Object_ice_invokePtr& amdCB, 
+Glacier2::Blobject::invoke(ObjectPrx& proxy, const AMD_Object_ice_invokePtr& amdCB, 
                            const std::pair<const Ice::Byte*, const Ice::Byte*>& inParams, const Current& current)
 {
     //
@@ -337,7 +337,7 @@ Glacier2::Blobject::invoke(ObjectPrx& proxy, const AMD_Array_Object_ice_invokePt
         bool override;
         try
         {
-            override = _requestQueue->addRequest(new Request(proxy, inParams, current, _forwardContext, _sslContext, 
+            override = _requestQueue->addRequest(new Request(proxy, inParams, current, _forwardContext, _context,
                                                              amdCB));
         }
         catch(const ObjectNotExistException& ex)
@@ -402,11 +402,11 @@ Glacier2::Blobject::invoke(ObjectPrx& proxy, const AMD_Array_Object_ice_invokePt
             bool sent;
             if(_forwardContext)
             {
-                if(_sslContext.size() > 0)
+                if(_context.size() > 0)
                 {
                     Ice::Context ctx = current.ctx;
-                    ctx.insert(_sslContext.begin(), _sslContext.end());
-                    sent = proxy->ice_invoke_async(amiCB, current.operation, current.mode, inParams);
+                    ctx.insert(_context.begin(), _context.end());
+                    sent = proxy->ice_invoke_async(amiCB, current.operation, current.mode, inParams, ctx);
                 }
                 else
                 {
@@ -415,9 +415,9 @@ Glacier2::Blobject::invoke(ObjectPrx& proxy, const AMD_Array_Object_ice_invokePt
             }
             else
             {
-                if(_sslContext.size() > 0)
+                if(_context.size() > 0)
                 {
-                    sent = proxy->ice_invoke_async(amiCB, current.operation, current.mode, inParams, _sslContext);
+                    sent = proxy->ice_invoke_async(amiCB, current.operation, current.mode, inParams, _context);
                 }
                 else
                 {

@@ -1,13 +1,16 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-public class ServantI implements Test._ServantOperations
+package test.Freeze.evictor;
+import test.Freeze.evictor.Test.*;
+
+public class ServantI implements _ServantOperations
 {
     private static void
     test(boolean b)
@@ -17,19 +20,18 @@ public class ServantI implements Test._ServantOperations
             throw new RuntimeException();
         }
     }
-    
 
     static class DelayedResponse extends Thread
-    {   
-        DelayedResponse(Test.AMD_Servant_slowGetValue cb, int val)
+    {
+        DelayedResponse(AMD_Servant_slowGetValue cb, int val)
         {
             _cb = cb;
             _val = val;
         }
-        
+
         public void
         run()
-        { 
+        {
             try
             {
                 sleep(500);
@@ -41,17 +43,16 @@ public class ServantI implements Test._ServantOperations
             _cb.ice_response(_val);
         }
 
-        private Test.AMD_Servant_slowGetValue _cb;
+        private AMD_Servant_slowGetValue _cb;
         private int _val;
     }
 
-
-    ServantI(Test.Servant tie)
+    ServantI(Servant tie)
     {
         _tie = tie;
     }
 
-    ServantI(Test.Servant tie, RemoteEvictorI remoteEvictor, Freeze.Evictor evictor, int value)
+    ServantI(Servant tie, RemoteEvictorI remoteEvictor, Freeze.Evictor evictor, int value)
     {
         _tie = tie;
         _remoteEvictor = remoteEvictor;
@@ -61,7 +62,7 @@ public class ServantI implements Test._ServantOperations
 
     void
     init(RemoteEvictorI remoteEvictor, Freeze.Evictor evictor)
-    {   
+    {
         _remoteEvictor = remoteEvictor;
         _evictor = evictor;
     }
@@ -76,9 +77,9 @@ public class ServantI implements Test._ServantOperations
         //
         if(_tie.accounts != null)
         {
-            for(int i = 0; i < _tie.accounts.length; ++i)
+            for(Ice.Identity id : _tie.accounts)
             {
-                _evictor.remove(_tie.accounts[i]);
+                _evictor.remove(id);
             }
         }
     }
@@ -91,9 +92,9 @@ public class ServantI implements Test._ServantOperations
             return _tie.value;
         }
     }
-    
+
     public void
-    slowGetValue_async(Test.AMD_Servant_slowGetValue cb, Ice.Current current)
+    slowGetValue_async(AMD_Servant_slowGetValue cb, Ice.Current current)
     {
         synchronized(_tie)
         {
@@ -113,7 +114,7 @@ public class ServantI implements Test._ServantOperations
     }
 
     public void
-    setValueAsync_async(Test.AMD_Servant_setValueAsync __cb, int value, Ice.Current current)
+    setValueAsync_async(AMD_Servant_setValueAsync __cb, int value, Ice.Current current)
     {
         synchronized(_tie)
         {
@@ -148,9 +149,9 @@ public class ServantI implements Test._ServantOperations
 
     public void
     addFacet(String name, String data, Ice.Current current)
-        throws Test.AlreadyRegisteredException
+        throws AlreadyRegisteredException
     {
-        Test._FacetTie tie = new Test._FacetTie();
+        _FacetTie tie = new _FacetTie();
         tie.ice_delegate(new FacetI(tie, _remoteEvictor, _evictor, 0, data));
 
         try
@@ -159,13 +160,13 @@ public class ServantI implements Test._ServantOperations
         }
         catch(Ice.AlreadyRegisteredException ex)
         {
-            throw new Test.AlreadyRegisteredException();
+            throw new AlreadyRegisteredException();
         }
     }
 
     public void
     removeFacet(String name, Ice.Current current)
-        throws Test.NotRegisteredException
+        throws NotRegisteredException
     {
         try
         {
@@ -173,9 +174,9 @@ public class ServantI implements Test._ServantOperations
         }
         catch(Ice.NotRegisteredException ex)
         {
-            throw new Test.NotRegisteredException();
+            throw new NotRegisteredException();
         }
-   
+
     }
 
     public synchronized int
@@ -199,7 +200,7 @@ public class ServantI implements Test._ServantOperations
 
     public void
     release(Ice.Current current)
-        throws Test.NotRegisteredException
+        throws NotRegisteredException
     {
         Freeze.BackgroundSaveEvictor bse = (Freeze.BackgroundSaveEvictor)_evictor;
 
@@ -209,21 +210,21 @@ public class ServantI implements Test._ServantOperations
         }
         catch(Ice.NotRegisteredException e)
         {
-            throw new Test.NotRegisteredException();
+            throw new NotRegisteredException();
         }
     }
 
-    public Test.AccountPrx[]
+    public AccountPrx[]
     getAccounts(Ice.Current current)
     {
         Freeze.TransactionalEvictor te = (Freeze.TransactionalEvictor)_evictor;
-        
+
         if(te.getCurrentTransaction() != null)
         {
             if(_tie.accounts == null || _tie.accounts.length == 0)
-            {  
+            {
                 _tie.accounts = new Ice.Identity[10];
-                
+
                 for(int i = 0; i < _tie.accounts.length; ++i)
                 {
                     _tie.accounts[i] = new Ice.Identity(current.id.name + "-account#" + i, current.id.category);
@@ -235,17 +236,17 @@ public class ServantI implements Test._ServantOperations
                 te.getCurrentTransaction().rollback(); // not need to re-write this servant
             }
         }
-        
+
         if(_tie.accounts == null || _tie.accounts.length == 0)
         {
-            return new Test.AccountPrx[0];
+            return new AccountPrx[0];
         }
 
-        Test.AccountPrx[] result = new Test.AccountPrx[_tie.accounts.length];
+        AccountPrx[] result = new AccountPrx[_tie.accounts.length];
 
         for(int i = 0; i < _tie.accounts.length; ++i)
         {
-            result[i] = Test.AccountPrxHelper.uncheckedCast(current.adapter.createProxy(_tie.accounts[i]));
+            result[i] = AccountPrxHelper.uncheckedCast(current.adapter.createProxy(_tie.accounts[i]));
         }
         return result;
     }
@@ -253,24 +254,25 @@ public class ServantI implements Test._ServantOperations
     public int
     getTotalBalance(Ice.Current current)
     {
-        Test.AccountPrx[] accounts = getAccounts(current);
+        AccountPrx[] accounts = getAccounts(current);
 
         //
         // Need to start a transaction to ensure a consistent result
         //
         Freeze.TransactionalEvictor te = (Freeze.TransactionalEvictor)_evictor;
-     
+
         for(;;)
         {
             test(te.getCurrentTransaction() == null);
-            Freeze.Connection con = Freeze.Util.createConnection(current.adapter.getCommunicator(), _remoteEvictor.envName());
+            Freeze.Connection con =
+                Freeze.Util.createConnection(current.adapter.getCommunicator(), _remoteEvictor.envName());
             te.setCurrentTransaction(con.beginTransaction());
             int total = 0;
             try
             {
-                for(int i = 0; i < accounts.length; ++i)
+                for(AccountPrx account : accounts)
                 {
-                    total += accounts[i].getBalance();
+                    total += account.getBalance();
                 }
                 return total;
             }
@@ -288,8 +290,8 @@ public class ServantI implements Test._ServantOperations
 
     protected RemoteEvictorI _remoteEvictor;
     protected Freeze.Evictor _evictor;
-    protected Test.AMD_Servant_setValueAsync _setValueAsyncCB;
+    protected AMD_Servant_setValueAsync _setValueAsyncCB;
     protected int _setValueAsyncValue;
-    protected Test.Servant _tie;
+    protected Servant _tie;
     private int _transientValue = -1;
 }

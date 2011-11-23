@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,6 @@
 #include <Ice/Ice.h>
 #include <Glacier2/PermissionsVerifierF.h>
 #include <Glacier2/Router.h>
-#include <Glacier2/Instance.h>
 #include <set>
 #include <IceUtil/DisableWarnings.h>
 
@@ -33,12 +32,15 @@ typedef IceUtil::Handle<FilterManager> FilterManagerPtr;
 
 class CreateSession;
 typedef IceUtil::Handle<CreateSession> CreateSessionPtr;
+
+class Instance;
+typedef IceUtil::Handle<Instance> InstancePtr;
     
 class CreateSession : public IceUtil::Shared
 {
 public:
 
-    CreateSession(const SessionRouterIPtr&, const std::string&, const Ice::Current&, const Ice::Context&);
+    CreateSession(const SessionRouterIPtr&, const std::string&, const Ice::Current&);
 
     void create();
     void addPendingCallback(const CreateSessionPtr&);
@@ -63,7 +65,7 @@ protected:
     const SessionRouterIPtr _sessionRouter;
     const std::string _user;
     const Ice::Current _current;
-    Ice::Context _sslContext;
+    Ice::Context _context;
     std::vector<CreateSessionPtr> _pendingCallbacks;
     SessionControlPrx _control;
     FilterManagerPtr _filterManager;
@@ -93,10 +95,11 @@ public:
                                const Ice::Current&);
     virtual void createSessionFromSecureConnection_async(const AMD_Router_createSessionFromSecureConnectionPtr&,
                                                          const Ice::Current&);
+    virtual void refreshSession(const Ice::Current&);
     virtual void destroySession(const ::Ice::Current&);
     virtual Ice::Long getSessionTimeout(const ::Ice::Current&) const;
 
-    RouterIPtr getRouter(const Ice::ConnectionPtr&, const Ice::Identity&) const;    
+    RouterIPtr getRouter(const Ice::ConnectionPtr&, const Ice::Identity&, bool = true) const;    
     RouterIPtr getRouter(const std::string&) const;    
     
     void expireSessions();
@@ -106,6 +109,8 @@ public:
     int sessionTraceLevel() const { return _sessionTraceLevel; }
     
 private:
+
+    void sessionPingException(const Ice::Exception&, const ::Ice::ConnectionPtr&);
 
     bool startCreateSession(const CreateSessionPtr&, const Ice::ConnectionPtr&);
     void finishCreateSession(const Ice::ConnectionPtr&, const RouterIPtr&);
@@ -147,7 +152,9 @@ private:
     mutable std::map<std::string, RouterIPtr>::iterator _routersByCategoryHint;
 
     std::map<Ice::ConnectionPtr, CreateSessionPtr> _pending;
-
+    
+    Ice::Callback_Object_ice_pingPtr _sessionPingCallback;
+    
     bool _destroy;
 };
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -52,7 +52,7 @@ protected:
 
     void printComment(const ContainedPtr&, const ContainerPtr&, const ::std::string&, bool = false);
     void printMetaData(const ContainedPtr&);
-    void printSummary(const ContainedPtr&, const ContainerPtr&, bool);
+    void printSummary(const ContainedPtr&, const ContainerPtr&, bool, bool);
 
     void printHeaderFooter(const ContainedPtr&);
     void printSearch();
@@ -103,6 +103,16 @@ private:
     static ::std::string _logoURL;
     static ::std::string _searchAction;
     static ContainedList _symbols;
+
+    //
+    // TODO:
+    // Members below exist to emit warnings for old-style javadoc comments (using [...] instead of {@link ...}),
+    // and to emit warnings for old-style scoped names (X::Y::Z instead of X.Y#Z).
+    // Once we remove support for the old style comments, we also need to remove these members.
+    //
+    ::std::set< ::std::string> _warnOldCommentFiles;
+    ::std::string toSliceID(const ::std::string&, const ::std::string&);
+    void warnOldStyleIdent(const ::std::string&, const ::std::string&);
 };
 
 class StartPageGenerator : private GeneratorBase

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,14 +15,3 @@ using namespace IceInternal;
 
 IceUtil::Shared* IceInternal::upCast(InputStream* p) { return p; }
 IceUtil::Shared* IceInternal::upCast(OutputStream* p) { return p; }
-
-Ice::ReadObjectCallbackI::ReadObjectCallbackI(PatchFunc func, void* arg) :
-    _func(func), _arg(arg)
-{
-}
-
-void
-Ice::ReadObjectCallbackI::invoke(const ::Ice::ObjectPtr& p)
-{
-    _func(_arg, const_cast< ::Ice::ObjectPtr& >(p));
-}

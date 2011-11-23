@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -26,8 +26,6 @@ SRCS		= $(OBJS:.o=.cpp) \
 		  $(COBJS:.o=.cpp) \
 		  $(SOBJS:.o=.cpp)
 
-SLICE_GEN	= $(SLICE_SRCS:.ice=.cpp) $(SLICE_SRCS:.ice=.h)
-
 include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I. $(CPPFLAGS)
@@ -39,10 +37,6 @@ $(CLIENT): $(OBJS) $(COBJS)
 $(SERVER): $(OBJS) $(SOBJS)
 	rm -f $@
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(SOBJS) $(LIBS)
-
-$(SLICE_GEN): $(SLICE_SRCS) $(SLICE2CPP)
-	rm -f $(SLICE_GEN)
-	$(SLICE2CPP) $(SLICE_SRCS)
 
 test::
 

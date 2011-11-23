@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -64,7 +64,7 @@ public class Server
         
         communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p " + port + ":udp");
         Ice.ObjectAdapter adapter = communicator.createObjectAdapter("TestAdapter");
-        Ice.Object obj = new TestI(adapter);
+        Ice.Object obj = new TestI();
         adapter.add(obj, communicator.stringToIdentity("test"));
         adapter.activate();
         communicator.waitForShutdown();

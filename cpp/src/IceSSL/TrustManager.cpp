@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,17 +31,26 @@ TrustManager::TrustManager(const Ice::CommunicatorPtr& communicator) :
     try
     {
         key = "IceSSL.TrustOnly";
-        _all = parse(properties->getProperty(key));
+        parse(properties->getProperty(key), _rejectAll, _acceptAll);
         key = "IceSSL.TrustOnly.Client";
-        _client = parse(properties->getProperty(key));
+        parse(properties->getProperty(key), _rejectClient, _acceptClient);
         key = "IceSSL.TrustOnly.Server";
-        _allServer = parse(properties->getProperty(key));
+        parse(properties->getProperty(key), _rejectAllServer, _acceptAllServer);
         Ice::PropertyDict dict = properties->getPropertiesForPrefix("IceSSL.TrustOnly.Server.");
         for(Ice::PropertyDict::const_iterator p = dict.begin(); p != dict.end(); ++p)
         {
             string name = p->first.substr(string("IceSSL.TrustOnly.Server.").size());
             key = p->first;
-            _server[name] = parse(p->second);
+            list<DistinguishedName> reject, accept;
+            parse(p->second, reject, accept);
+            if(!reject.empty())
+            {
+                _rejectServer[name] = reject;
+            }
+            if(!accept.empty())
+            {
+                _acceptServer[name] = accept;
+            }
         }
     }
     catch(const ParseException& e)
@@ -53,41 +62,68 @@ TrustManager::TrustManager(const Ice::CommunicatorPtr& communicator) :
 }
 
 bool
-TrustManager::verify(const ConnectionInfo& info)
+TrustManager::verify(const NativeConnectionInfoPtr& info)
 {
-    list<list<DistinguishedName> > trustset;
-    if(_all.size() > 0)
-    {
-        trustset.push_back(_all);
-    }
+    list<list<DistinguishedName> > reject, accept;
 
-    if(info.incoming)
+    if(_rejectAll.size() > 0)
     {
-        if(_allServer.size() > 0)
+        reject.push_back(_rejectAll);
+    }
+    if(info->incoming)
+    {
+        if(_rejectAllServer.size() > 0)
         {
-            trustset.push_back(_allServer);
+            reject.push_back(_rejectAllServer);
         }
-        if(info.adapterName.size() > 0)
+        if(info->adapterName.size() > 0)
         {
-            map<string, list<DistinguishedName> >::const_iterator p = _server.find(info.adapterName);
-            if(p != _server.end())
+            map<string, list<DistinguishedName> >::const_iterator p = _rejectServer.find(info->adapterName);
+            if(p != _rejectServer.end())
             {
-                trustset.push_back(p->second);
+                reject.push_back(p->second);
             }
         }
     }
     else
     {
-        if(_client.size() > 0)
+        if(_rejectClient.size() > 0)
         {
-            trustset.push_back(_client);
+            reject.push_back(_rejectClient);
+        }
+    }
+
+    if(_acceptAll.size() > 0)
+    {
+        accept.push_back(_acceptAll);
+    }
+    if(info->incoming)
+    {
+        if(_acceptAllServer.size() > 0)
+        {
+            accept.push_back(_acceptAllServer);
+        }
+        if(info->adapterName.size() > 0)
+        {
+            map<string, list<DistinguishedName> >::const_iterator p = _acceptServer.find(info->adapterName);
+            if(p != _acceptServer.end())
+            {
+                accept.push_back(p->second);
+            }
+        }
+    }
+    else
+    {
+        if(_acceptClient.size() > 0)
+        {
+            accept.push_back(_acceptClient);
         }
     }
 
     //
     // If there is nothing to match against, then we accept the cert.
     //
-    if(trustset.size() == 0)
+    if(reject.empty() && accept.empty())
     {
         return true;
     }
@@ -95,62 +131,64 @@ TrustManager::verify(const ConnectionInfo& info)
     //
     // If there is no certificate then we match false.
     //
-    if(info.certs.size() != 0)
+    if(info->nativeCerts.size() != 0)
     {
-        DistinguishedName subject = info.certs[0]->getSubjectDN();
+        DistinguishedName subject = info->nativeCerts[0]->getSubjectDN();
         if(_traceLevel > 0)
         {
             Ice::Trace trace(_communicator->getLogger(), "Security");
-            if(info.incoming)
+            if(info->incoming)
             {
                 trace << "trust manager evaluating client:\n"
                       << "subject = " << string(subject) << '\n'
-                      << "adapter = " << info.adapterName << '\n'
-                      << "local addr = " << IceInternal::addrToString(info.localAddr) << '\n'
-                      << "remote addr = ";
-                if(info.remoteAddr.ss_family == AF_UNSPEC)
-                {
-                    //
-                    // The remote address may not be available when using Windows XP Service Pack 2
-                    // and IPv6 (see populateConnectionInfo).
-                    //
-                    trace << "<not available>";
-                }
-                else
-                {
-                    trace << IceInternal::addrToString(info.remoteAddr);
-                }
+                      << "adapter = " << info->adapterName << '\n'
+                      << "local addr = " << info->localAddress << ":" << info->localPort << '\n'
+                      << "remote addr = " << info->remoteAddress << ":" << info->remotePort;
             }
             else
             {
                 trace << "trust manager evaluating server:\n"
                       << "subject = " << string(subject) << '\n'
-                      << "local addr = " << IceInternal::addrToString(info.localAddr) << '\n'
-                      << "remote addr = ";
-                if(info.remoteAddr.ss_family == AF_UNSPEC)
-                {
-                    //
-                    // The remote address may not be available when using Windows XP Service Pack 2
-                    // and IPv6 (see populateConnectionInfo).
-                    //
-                    trace << "<not available>";
-                }
-                else
-                {
-                    trace << IceInternal::addrToString(info.remoteAddr);
-                }
+                      << "local addr = " << info->localAddress << ":" << info->localPort << '\n'
+                      << "remote addr = " << info->remoteAddress << ":" << info->remotePort;
             }
         }
-        
+
+        list<list<DistinguishedName> >::const_iterator p;
+
         //
-        // Try matching against everything in the trust set.
+        // Fail if we match anything in the reject set.
         //
-        for(list<list<DistinguishedName> >::const_iterator p = trustset.begin(); p != trustset.end(); ++p)
+        for(p = reject.begin(); p != reject.end(); ++p)
         {
             if(_traceLevel > 1)
             {
                 Ice::Trace trace(_communicator->getLogger(), "Security");
-                trace << "trust manager matching PDNs:\n";
+                trace << "trust manager rejecting PDNs:\n";
+                for(list<DistinguishedName>::const_iterator r = p->begin(); r != p->end(); ++r)
+                {
+                    if(r != p->begin())
+                    {
+                        trace << ';';
+                    }
+                    trace << string(*r);
+                }
+            }
+            if(match(*p, subject))
+            {
+                return false;
+            }
+        }
+
+        //
+        // Succeed if we match anything in the accept set.
+        //
+        for(p = accept.begin(); p != accept.end(); ++p)
+        {
+            if(_traceLevel > 1)
+            {
+                Ice::Trace trace(_communicator->getLogger(), "Security");
+                trace << "trust manager accepting PDNs:\n";
                 for(list<DistinguishedName>::const_iterator r = p->begin(); r != p->end(); ++r)
                 {
                     if(r != p->begin())
@@ -165,6 +203,11 @@ TrustManager::verify(const ConnectionInfo& info)
                 return true;
             }
         }
+
+        //
+        // At this point we accept the connection if there are no explicit accept rules.
+        //
+        return accept.empty();
     }
 
     return false;
@@ -183,17 +226,23 @@ TrustManager::match(const list< DistinguishedName>& matchSet, const Distinguishe
     return false;
 }
 
-list<DistinguishedName>
-TrustManager::parse(const string& value) const
+void
+TrustManager::parse(const string& value, list<DistinguishedName>& reject, list<DistinguishedName>& accept) const
 {
-    list<DistinguishedName> result;
     if(!value.empty())
     {
-        RFC2253::RDNSeqSeq dns = RFC2253::parse(value);
-        for(RFC2253::RDNSeqSeq::const_iterator p = dns.begin(); p != dns.end(); ++p)
+        RFC2253::RDNEntrySeq dns = RFC2253::parse(value);
+
+        for(RFC2253::RDNEntrySeq::const_iterator p = dns.begin(); p != dns.end(); ++p)
         {
-            result.push_back(DistinguishedName(*p));
+            if(p->negate)
+            {
+                reject.push_back(DistinguishedName(p->rdn));
+            }
+            else
+            {
+                accept.push_back(DistinguishedName(p->rdn));
+            }
         }
     }
-    return result;
 }

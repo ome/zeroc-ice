@@ -1,13 +1,16 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-import Test.*;
+package test.Glacier2.router;
+
+import test.Glacier2.router.Test.CallbackException;
+import test.Glacier2.router.Test._CallbackReceiverDisp;
 
 final class CallbackReceiverI extends _CallbackReceiverDisp
 {
@@ -35,18 +38,14 @@ final class CallbackReceiverI extends _CallbackReceiverDisp
         throw ex;
     }
 
-    synchronized boolean
+    synchronized void
     callbackOK()
     {
         while(!_callback)
         {
             try
             {
-                wait(5000);
-                if(!_callback)
-                {
-                    return false;
-                }
+                wait();
             }
             catch(InterruptedException ex)
             {
@@ -54,7 +53,6 @@ final class CallbackReceiverI extends _CallbackReceiverDisp
         }
 
         _callback = false;
-        return true;
     }
 
     private boolean _callback;

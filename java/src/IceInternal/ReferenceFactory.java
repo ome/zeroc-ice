@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -44,14 +44,14 @@ public final class ReferenceFactory
         //
         // Create new reference
         //
-        FixedReference ref = new FixedReference(_instance, 
-                                                _communicator, 
-                                                ident, 
-                                                _instance.getDefaultContext(),
-                                                "", // Facet
-                                                Reference.ModeTwoway,
-                                                false,
-                                                fixedConnection);
+        FixedReference ref = new FixedReference(
+            _instance, 
+            _communicator, 
+            ident, 
+            "", // Facet
+            fixedConnection.endpoint().datagram() ? Reference.ModeDatagram : Reference.ModeTwoway,
+            fixedConnection.endpoint().secure(),
+            fixedConnection);
         return updateCache(ref);
     }
 
@@ -83,7 +83,7 @@ public final class ReferenceFactory
         if(beg == -1)
         {
             Ice.ProxyParseException e = new Ice.ProxyParseException();
-            e.str = s;
+            e.str = "no non-whitespace characters found in `" + s + "'";
             throw e;
         }
 
@@ -96,7 +96,7 @@ public final class ReferenceFactory
         if(end == -1)
         {
             Ice.ProxyParseException e = new Ice.ProxyParseException();
-            e.str = s;
+            e.str = "mismatched quotes around identity in `" + s + "'";
             throw e;
         }
         else if(end == 0)
@@ -118,7 +118,7 @@ public final class ReferenceFactory
         if(beg == end)
         {
             Ice.ProxyParseException e = new Ice.ProxyParseException();
-            e.str = s;
+            e.str = "no identity in `" + s + "'";
             throw e;
         }
 
@@ -148,7 +148,7 @@ public final class ReferenceFactory
             else if(IceUtilInternal.StringUtil.findFirstNotOf(s, delim, end) != -1)
             {
                 Ice.ProxyParseException e = new Ice.ProxyParseException();
-                e.str = s;
+                e.str = "invalid characters after identity in `" + s + "'";
                 throw e;
             }
             else
@@ -190,7 +190,7 @@ public final class ReferenceFactory
             if(option.length() != 2 || option.charAt(0) != '-')
             {
                 Ice.ProxyParseException e = new Ice.ProxyParseException();
-                e.str = s;
+                e.str = "expected a proxy option but found `" + option + "' in `" + s + "'";
                 throw e;
             }
 
@@ -211,7 +211,7 @@ public final class ReferenceFactory
                     if(end == -1)
                     {
                         Ice.ProxyParseException e = new Ice.ProxyParseException();
-                        e.str = s;
+                        e.str = "mismatched quotes around value for " + option + " option in `" + s + "'";
                         throw e;
                     }
                     else if(end == 0)
@@ -243,19 +243,21 @@ public final class ReferenceFactory
                     if(argument == null)
                     {
                         Ice.ProxyParseException e = new Ice.ProxyParseException();
-                        e.str = s;
+                        e.str = "no argument provided for -f option in `" + s + "'";
                         throw e;
                     }
 
-                    Ice.StringHolder facetH = new Ice.StringHolder();
-                    if(!IceUtilInternal.StringUtil.unescapeString(argument, 0, argument.length(), facetH))
+                    try
+                    {
+                        facet = IceUtilInternal.StringUtil.unescapeString(argument, 0, argument.length());
+                    }
+                    catch(IllegalArgumentException ex)
                     {
                         Ice.ProxyParseException e = new Ice.ProxyParseException();
-                        e.str = s;
+                        e.str = "invalid facet in `" + s + "': " + ex.getMessage();
                         throw e;
                     }
 
-                    facet = facetH.value;
                     break;
                 }
 
@@ -264,7 +266,7 @@ public final class ReferenceFactory
                     if(argument != null)
                     {
                         Ice.ProxyParseException e = new Ice.ProxyParseException();
-                        e.str = s;
+                        e.str = "unexpected argument `" + argument + "' provided for -t option in `" + s + "'";
                         throw e;
                     }
                     mode = Reference.ModeTwoway;
@@ -276,7 +278,7 @@ public final class ReferenceFactory
                     if(argument != null)
                     {
                         Ice.ProxyParseException e = new Ice.ProxyParseException();
-                        e.str = s;
+                        e.str = "unexpected argument `" + argument + "' provided for -o option in `" + s + "'";
                         throw e;
                     }
                     mode = Reference.ModeOneway;
@@ -288,7 +290,7 @@ public final class ReferenceFactory
                     if(argument != null)
                     {
                         Ice.ProxyParseException e = new Ice.ProxyParseException();
-                        e.str = s;
+                        e.str = "unexpected argument `" + argument + "' provided for -O option in `" + s + "'";
                         throw e;
                     }
                     mode = Reference.ModeBatchOneway;
@@ -300,7 +302,7 @@ public final class ReferenceFactory
                     if(argument != null)
                     {
                         Ice.ProxyParseException e = new Ice.ProxyParseException();
-                        e.str = s;
+                        e.str = "unexpected argument `" + argument + "' provided for -d option in `" + s + "'";
                         throw e;
                     }
                     mode = Reference.ModeDatagram;
@@ -312,7 +314,7 @@ public final class ReferenceFactory
                     if(argument != null)
                     {
                         Ice.ProxyParseException e = new Ice.ProxyParseException();
-                        e.str = s;
+                        e.str = "unexpected argument `" + argument + "' provided for -D option in `" + s + "'";
                         throw e;
                     }
                     mode = Reference.ModeBatchDatagram;
@@ -324,7 +326,7 @@ public final class ReferenceFactory
                     if(argument != null)
                     {
                         Ice.ProxyParseException e = new Ice.ProxyParseException();
-                        e.str = s;
+                        e.str = "unexpected argument `" + argument + "' provided for -s option in `" + s + "'";
                         throw e;
                     }
                     secure = true;
@@ -334,7 +336,7 @@ public final class ReferenceFactory
                 default:
                 {
                     Ice.ProxyParseException e = new Ice.ProxyParseException();
-                    e.str = s;
+                    e.str = "unknown option `" + option + "' in `" + s + "'";
                     throw e;
                 }
             }
@@ -412,20 +414,22 @@ public final class ReferenceFactory
             }
             if(endpoints.size() == 0)
             {
+                assert(!unknownEndpoints.isEmpty());
                 Ice.EndpointParseException e = new Ice.EndpointParseException();
-                e.str = unknownEndpoints.get(0);
+                e.str = "invalid endpoint `" + unknownEndpoints.get(0) + "' in `" + s + "'";
                 throw e;
             }
             else if(unknownEndpoints.size() != 0 &&
                    _instance.initializationData().properties.getPropertyAsIntWithDefault("Ice.Warn.Endpoints", 1) > 0)
             {
-                String msg = "Proxy contains unknown endpoints:";
-                java.util.Iterator<String> iter = unknownEndpoints.iterator();
-                while(iter.hasNext())
+                StringBuffer msg = new StringBuffer("Proxy contains unknown endpoints:");
+                for(String e : unknownEndpoints)
                 {
-                    msg += " `" + iter.next() + "'";
+		    msg.append(" `");
+		    msg.append(e);
+		    msg.append("'");
                 }
-                _instance.initializationData().logger.warning(msg);
+                _instance.initializationData().logger.warning(msg.toString());
             }
 
             EndpointI[] endp = new EndpointI[endpoints.size()];
@@ -438,7 +442,7 @@ public final class ReferenceFactory
             if(beg == -1)
             {
                 Ice.ProxyParseException e = new Ice.ProxyParseException();
-                e.str = s;
+                e.str = "missing adapter id in `" + s + "'";
                 throw e;
             }
 
@@ -447,7 +451,7 @@ public final class ReferenceFactory
             if(end == -1)
             {
                 Ice.ProxyParseException e = new Ice.ProxyParseException();
-                e.str = s;
+                e.str = "mismatched quotes around adapter id in `" + s + "'";
                 throw e;
             }
             else if(end == 0)
@@ -469,24 +473,31 @@ public final class ReferenceFactory
             if(end != s.length() && IceUtilInternal.StringUtil.findFirstNotOf(s, delim, end) != -1)
             {
                 Ice.ProxyParseException e = new Ice.ProxyParseException();
-                e.str = s;
+                e.str = "invalid trailing characters after `" + s.substring(0, end + 1) + "' in `" + s + "'";
                 throw e;
             }
-            
-            Ice.StringHolder token = new Ice.StringHolder();
-            if(!IceUtilInternal.StringUtil.unescapeString(adapterstr, 0, adapterstr.length(), token) ||
-               token.value.length() == 0)
+
+            try
+            {
+                adapter = IceUtilInternal.StringUtil.unescapeString(adapterstr, 0, adapterstr.length());
+            }
+            catch(IllegalArgumentException ex)
             {
                 Ice.ProxyParseException e = new Ice.ProxyParseException();
-                e.str = s;
+                e.str = "invalid adapter id in `" + s + "': " + ex.getMessage();
                 throw e;
             }
-            adapter = token.value;
+            if(adapter.length() == 0)
+            {
+                Ice.ProxyParseException e = new Ice.ProxyParseException();
+                e.str = "empty adapter id in `" + s + "'";
+                throw e;
+            }
             return create(ident, facet, mode, secure, null, adapter, propertyPrefix);
         }
 
         Ice.ProxyParseException ex = new Ice.ProxyParseException();
-        ex.str = s;
+        ex.str = "malformed proxy `" + s + "'";
         throw ex;
     }
 
@@ -667,16 +678,14 @@ public final class ReferenceFactory
         java.util.ArrayList<String> unknownProps = new java.util.ArrayList<String>();
         java.util.Map<String, String> props =
             _instance.initializationData().properties.getPropertiesForPrefix(prefix + ".");
-        java.util.Iterator<java.util.Map.Entry<String, String> > p = props.entrySet().iterator();
-        while(p.hasNext())
+        for(java.util.Map.Entry<String, String> p : props.entrySet())
         {
-            java.util.Map.Entry<String, String> entry = p.next();
-            String prop = entry.getKey();
+            String prop = p.getKey();
 
             boolean valid = false;
-            for(int i = 0; i < _suffixes.length; ++i)
+            for(String suffix : _suffixes)
             {
-                if(prop.equals(prefix + "." + _suffixes[i]))
+                if(prop.equals(prefix + "." + suffix))
                 {
                     valid = true;
                     break;
@@ -691,13 +700,15 @@ public final class ReferenceFactory
 
         if(unknownProps.size() != 0)
         {
-            String message = "found unknown properties for proxy '" + prefix + "':";
-            java.util.Iterator<String> q = unknownProps.iterator();
-            while(q.hasNext())
+            StringBuffer message = new StringBuffer("found unknown properties for proxy '");
+	    message.append(prefix);
+	    message.append("':");
+            for(String s : unknownProps)
             {
-                message += "\n    " + q.next();
+		message.append("\n    ");
+		message.append(s);
             }
-            _instance.initializationData().logger.warning(message);
+            _instance.initializationData().logger.warning(message.toString());
         }
     }
 
@@ -781,7 +792,8 @@ public final class ReferenceFactory
                 }
                 else
                 {
-                    throw new Ice.EndpointSelectionTypeParseException(type);
+                    throw new Ice.EndpointSelectionTypeParseException("illegal value `" + type +
+                                                                      "'; expected `Random' or `Ordered'");
                 }
             }
         
@@ -795,7 +807,6 @@ public final class ReferenceFactory
         return updateCache(new RoutableReference(_instance, 
                                                  _communicator,
                                                  ident,
-                                                 _instance.getDefaultContext(), 
                                                  facet,
                                                  mode,
                                                  secure,

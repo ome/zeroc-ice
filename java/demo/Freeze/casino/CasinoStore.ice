@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -28,7 +28,7 @@ module CasinoStore
         //
         ["freeze:write:mandatory"] void win(int count);
     };
-    ["java:type:{java.util.Vector}:{java.util.Vector}"] sequence<Winner*> WinnerPrxSeq;
+    ["java:type:java.util.Vector<WinnerPrx>:java.util.Vector<WinnerPrx>"] sequence<Winner*> WinnerPrxSeq;
 
 
     class PersistentPlayer implements Casino::Player, Winner
@@ -46,12 +46,12 @@ module CasinoStore
         //
         // The total number of chips in play, i.e. amount * potentialWinners.size()
         //
-        ["cpp:const"] int getChipsInPlay();
+        int getChipsInPlay();
 
         //
         // Milliseconds since the epoch
         //
-        ["cpp:const"] long getCloseTime();
+        long getCloseTime();
 
         //
         // Decide who wins and self-destroys

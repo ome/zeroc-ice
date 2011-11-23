@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,6 +17,7 @@
 #include <Connection.h>
 #include <Util.h>
 #include <Operation.h>
+#include <Endpoint.h>
 #include <Ice/Communicator.h>
 #include <Ice/LocalException.h>
 #include <Ice/Locator.h>
@@ -29,14 +30,6 @@ using namespace IcePy;
 namespace IcePy
 {
 
-extern PyTypeObject EndpointType;
-
-struct EndpointObject
-{
-    PyObject_HEAD
-    Ice::EndpointPtr* endpoint;
-};
-
 struct ProxyObject
 {
     PyObject_HEAD
@@ -44,67 +37,6 @@ struct ProxyObject
     Ice::CommunicatorPtr* communicator;
 };
 
-}
-
-//
-// Endpoint implementation.
-//
-static EndpointObject*
-allocateEndpoint(const Ice::EndpointPtr& endpoint)
-{
-    EndpointObject* p = PyObject_New(EndpointObject, &EndpointType);
-    if(!p)
-    {
-        return 0;
-    }
-    p->endpoint = new Ice::EndpointPtr(endpoint);
-
-    return p;
-}
-
-#ifdef WIN32
-extern "C"
-#endif
-static EndpointObject*
-endpointNew(PyObject* /*arg*/)
-{
-    PyErr_Format(PyExc_RuntimeError, STRCAST("An endpoint cannot be created directly"));
-    return 0;
-}
-
-#ifdef WIN32
-extern "C"
-#endif
-static void
-endpointDealloc(EndpointObject* self)
-{
-    delete self->endpoint;
-    PyObject_Del(self);
-}
-
-#ifdef WIN32
-extern "C"
-#endif
-static PyObject*
-endpointToString(EndpointObject*);
-
-#ifdef WIN32
-extern "C"
-#endif
-static PyObject*
-endpointRepr(EndpointObject* self)
-{
-    return endpointToString(self);
-}
-
-#ifdef WIN32
-extern "C"
-#endif
-static PyObject*
-endpointToString(EndpointObject* self)
-{
-    string str = (*self->endpoint)->toString();
-    return createString(str);
 }
 
 //
@@ -223,7 +155,51 @@ proxyIceIsA(ProxyObject* self, PyObject* args)
     //
     PyObjectHandle newArgs = Py_BuildValue(STRCAST("((O), O)"), type, ctx);
 
-    return iceIsA(*self->proxy, newArgs.get());
+    return invokeBuiltin(reinterpret_cast<PyObject*>(self), "ice_isA", newArgs.get());
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyBeginIceIsA(ProxyObject* self, PyObject* args, PyObject* kwds)
+{
+    static char* argNames[] =
+    {
+        const_cast<char*>("type"),
+        const_cast<char*>("_response"),
+        const_cast<char*>("_ex"),
+        const_cast<char*>("_sent"),
+        const_cast<char*>("_ctx"),
+        0
+    };
+    PyObject* type;
+    PyObject* response = Py_None;
+    PyObject* ex = Py_None;
+    PyObject* sent = Py_None;
+    PyObject* ctx = Py_None;
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, STRCAST("O|OOOO"), argNames, &type, &response, &ex, &sent, &ctx))
+    {
+        return 0;
+    }
+
+    //
+    // We need to reformat the arguments to match what is used by the generated code:
+    //
+    // ((params...), response|None, ex|None, sent|None, ctx|None)
+    //
+    PyObjectHandle newArgs = Py_BuildValue(STRCAST("((O), O, O, O, O)"), type, response, ex, sent, ctx);
+
+    return beginBuiltin(reinterpret_cast<PyObject*>(self), "ice_isA", newArgs.get());
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyEndIceIsA(ProxyObject* self, PyObject* args)
+{
+    return endBuiltin(reinterpret_cast<PyObject*>(self), "ice_isA", args);
 }
 
 #ifdef WIN32
@@ -243,7 +219,49 @@ proxyIcePing(ProxyObject* self, PyObject* args)
     //
     PyObjectHandle newArgs = Py_BuildValue(STRCAST("((), O)"), ctx);
 
-    return icePing(*self->proxy, newArgs.get());
+    return invokeBuiltin(reinterpret_cast<PyObject*>(self), "ice_ping", newArgs.get());
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyBeginIcePing(ProxyObject* self, PyObject* args, PyObject* kwds)
+{
+    static char* argNames[] =
+    {
+        const_cast<char*>("_response"),
+        const_cast<char*>("_ex"),
+        const_cast<char*>("_sent"),
+        const_cast<char*>("_ctx"),
+        0
+    };
+    PyObject* response = Py_None;
+    PyObject* ex = Py_None;
+    PyObject* sent = Py_None;
+    PyObject* ctx = Py_None;
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, STRCAST("|OOOO"), argNames, &response, &ex, &sent, &ctx))
+    {
+        return 0;
+    }
+
+    //
+    // We need to reformat the arguments to match what is used by the generated code:
+    //
+    // ((params...), response|None, ex|None, sent|None, ctx|None)
+    //
+    PyObjectHandle newArgs = Py_BuildValue(STRCAST("((), O, O, O, O)"), response, ex, sent, ctx);
+
+    return beginBuiltin(reinterpret_cast<PyObject*>(self), "ice_ping", newArgs.get());
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyEndIcePing(ProxyObject* self, PyObject* args)
+{
+    return endBuiltin(reinterpret_cast<PyObject*>(self), "ice_ping", args);
 }
 
 #ifdef WIN32
@@ -263,7 +281,49 @@ proxyIceIds(ProxyObject* self, PyObject* args)
     //
     PyObjectHandle newArgs = Py_BuildValue(STRCAST("((), O)"), ctx);
 
-    return iceIds(*self->proxy, newArgs.get());
+    return invokeBuiltin(reinterpret_cast<PyObject*>(self), "ice_ids", newArgs.get());
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyBeginIceIds(ProxyObject* self, PyObject* args, PyObject* kwds)
+{
+    static char* argNames[] =
+    {
+        const_cast<char*>("_response"),
+        const_cast<char*>("_ex"),
+        const_cast<char*>("_sent"),
+        const_cast<char*>("_ctx"),
+        0
+    };
+    PyObject* response = Py_None;
+    PyObject* ex = Py_None;
+    PyObject* sent = Py_None;
+    PyObject* ctx = Py_None;
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, STRCAST("|OOOO"), argNames, &response, &ex, &sent, &ctx))
+    {
+        return 0;
+    }
+
+    //
+    // We need to reformat the arguments to match what is used by the generated code:
+    //
+    // ((params...), response|None, ex|None, sent|None, ctx|None)
+    //
+    PyObjectHandle newArgs = Py_BuildValue(STRCAST("((), O, O, O, O)"), response, ex, sent, ctx);
+
+    return beginBuiltin(reinterpret_cast<PyObject*>(self), "ice_ids", newArgs.get());
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyEndIceIds(ProxyObject* self, PyObject* args)
+{
+    return endBuiltin(reinterpret_cast<PyObject*>(self), "ice_ids", args);
 }
 
 #ifdef WIN32
@@ -283,7 +343,49 @@ proxyIceId(ProxyObject* self, PyObject* args)
     //
     PyObjectHandle newArgs = Py_BuildValue(STRCAST("((), O)"), ctx);
 
-    return iceId(*self->proxy, newArgs.get());
+    return invokeBuiltin(reinterpret_cast<PyObject*>(self), "ice_id", newArgs.get());
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyBeginIceId(ProxyObject* self, PyObject* args, PyObject* kwds)
+{
+    static char* argNames[] =
+    {
+        const_cast<char*>("_response"),
+        const_cast<char*>("_ex"),
+        const_cast<char*>("_sent"),
+        const_cast<char*>("_ctx"),
+        0
+    };
+    PyObject* response = Py_None;
+    PyObject* ex = Py_None;
+    PyObject* sent = Py_None;
+    PyObject* ctx = Py_None;
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, STRCAST("|OOOO"), argNames, &response, &ex, &sent, &ctx))
+    {
+        return 0;
+    }
+
+    //
+    // We need to reformat the arguments to match what is used by the generated code:
+    //
+    // ((params...), response|None, ex|None, sent|None, ctx|None)
+    //
+    PyObjectHandle newArgs = Py_BuildValue(STRCAST("((), O, O, O, O)"), response, ex, sent, ctx);
+
+    return beginBuiltin(reinterpret_cast<PyObject*>(self), "ice_id", newArgs.get());
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyEndIceId(ProxyObject* self, PyObject* args)
+{
+    return endBuiltin(reinterpret_cast<PyObject*>(self), "ice_id", args);
 }
 
 #ifdef WIN32
@@ -403,30 +505,6 @@ proxyIceContext(ProxyObject* self, PyObject* args)
     }
 
     return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
-}
-
-#ifdef WIN32
-extern "C"
-#endif
-static PyObject*
-proxyIceDefaultContext(ProxyObject* self)
-{
-    PyErr_Warn(PyExc_DeprecationWarning, STRCAST("ice_defaultContext is deprecated."));
-    assert(self->proxy);
-
-    Ice::ObjectPrx newProxy;
-    try
-    {
-        newProxy = (*self->proxy)->ice_defaultContext();
-    }
-    catch(const Ice::Exception& ex)
-    {
-        setPythonException(ex);
-        return 0;
-    }
-
-    PyTypeObject* type = self->ob_type; // Necessary to prevent GCC's strict-alias warnings.
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(type));
 }
 
 #ifdef WIN32
@@ -565,7 +643,7 @@ proxyIceGetEndpoints(ProxyObject* self)
     int i = 0;
     for(Ice::EndpointSeq::const_iterator p = endpoints.begin(); p != endpoints.end(); ++p, ++i)
     {
-        PyObjectHandle endp = reinterpret_cast<PyObject*>(allocateEndpoint(*p));
+        PyObjectHandle endp = createEndpoint(*p);
         if(!endp.get())
         {
             return 0;
@@ -607,9 +685,12 @@ proxyIceEndpoints(ProxyObject* self, PyObject* args)
             PyErr_Format(PyExc_ValueError, STRCAST("expected element of type Ice.Endpoint"));
             return 0;
         }
-        EndpointObject* o = reinterpret_cast<EndpointObject*>(p);
-        assert(*o->endpoint);
-        seq.push_back(*o->endpoint);
+        Ice::EndpointPtr endp = getEndpoint(p);
+        if(!endp)
+        {
+            return 0;
+        }
+        seq.push_back(endp);
     }
 
     Ice::ObjectPrx newProxy;
@@ -638,6 +719,26 @@ proxyIceGetLocatorCacheTimeout(ProxyObject* self)
     {
         Ice::Int timeout = (*self->proxy)->ice_getLocatorCacheTimeout();
         return PyInt_FromLong(timeout);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyIceGetConnectionId(ProxyObject* self)
+{
+    assert(self->proxy);
+
+    try
+    {
+        string connectionId = (*self->proxy)->ice_getConnectionId();
+        return createString(connectionId);
     }
     catch(const Ice::Exception& ex)
     {
@@ -976,25 +1077,20 @@ proxyIceRouter(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    PyObject* routerProxyType = lookupType("Ice.RouterPrx");
-    assert(routerProxyType);
-    Ice::RouterPrx routerProxy;
-    if(PyObject_IsInstance(p, routerProxyType))
+    Ice::ObjectPrx proxy;
+    if(!getProxyArg(p, "ice_router", "rtr", proxy, "Ice.RouterPrx"))
     {
-        routerProxy = Ice::RouterPrx::uncheckedCast(getProxy(p));
-    }
-    else if(p != Py_None)
-    {
-        PyErr_Format(PyExc_ValueError, STRCAST("ice_router requires None or Ice.RouterPrx"));
         return 0;
     }
+
+    Ice::RouterPrx router = Ice::RouterPrx::uncheckedCast(proxy);
 
     assert(self->proxy);
 
     Ice::ObjectPrx newProxy;
     try
     {
-        newProxy = (*self->proxy)->ice_router(routerProxy);
+        newProxy = (*self->proxy)->ice_router(router);
     }
     catch(const Ice::Exception& ex)
     {
@@ -1047,25 +1143,20 @@ proxyIceLocator(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    PyObject* locatorProxyType = lookupType("Ice.LocatorPrx");
-    assert(locatorProxyType);
-    Ice::LocatorPrx locatorProxy;
-    if(PyObject_IsInstance(p, locatorProxyType))
+    Ice::ObjectPrx proxy;
+    if(!getProxyArg(p, "ice_locator", "loc", proxy, "Ice.LocatorPrx"))
     {
-        locatorProxy = Ice::LocatorPrx::uncheckedCast(getProxy(p));
-    }
-    else if(p != Py_None)
-    {
-        PyErr_Format(PyExc_ValueError, STRCAST("ice_locator requires None or Ice.LocatorPrx"));
         return 0;
     }
+
+    Ice::LocatorPrx locator = Ice::LocatorPrx::uncheckedCast(proxy);
 
     assert(self->proxy);
 
     Ice::ObjectPrx newProxy;
     try
     {
-        newProxy = (*self->proxy)->ice_locator(locatorProxy);
+        newProxy = (*self->proxy)->ice_locator(locator);
     }
     catch(const Ice::Exception& ex)
     {
@@ -1465,6 +1556,8 @@ extern "C"
 static PyObject*
 proxyIceFlushBatchRequests(ProxyObject* self)
 {
+    AllowThreads allowThreads; // Release Python's global interpreter lock during remote invocations.
+
     assert(self->proxy);
 
     try
@@ -1481,30 +1574,120 @@ proxyIceFlushBatchRequests(ProxyObject* self)
     return Py_None;
 }
 
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyBeginIceFlushBatchRequests(ProxyObject* self, PyObject* args, PyObject* kwds)
+{
+    assert(self->proxy);
+
+    static char* argNames[] =
+    {
+        const_cast<char*>("_ex"),
+        const_cast<char*>("_sent"),
+        0
+    };
+    PyObject* ex = Py_None;
+    PyObject* sent = Py_None;
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, STRCAST("|OO"), argNames, &ex, &sent))
+    {
+        return 0;
+    }
+
+    if(ex == Py_None)
+    {
+        ex = 0;
+    }
+    if(sent == Py_None)
+    {
+        sent = 0;
+    }
+
+    if(!ex && sent)
+    {
+        PyErr_Format(PyExc_RuntimeError,
+            STRCAST("exception callback must also be provided when sent callback is used"));
+        return 0;
+    }
+
+    Ice::Callback_Object_ice_flushBatchRequestsPtr cb;
+    if(ex || sent)
+    {
+        FlushCallbackPtr d = new FlushCallback(ex, sent, "ice_flushBatchRequests");
+        cb = Ice::newCallback_Object_ice_flushBatchRequests(d, &FlushCallback::exception, &FlushCallback::sent);
+    }
+
+    Ice::AsyncResultPtr result;
+    try
+    {
+        AllowThreads allowThreads; // Release Python's global interpreter lock during remote invocations.
+
+        if(cb)
+        {
+            result = (*self->proxy)->begin_ice_flushBatchRequests(cb);
+        }
+        else
+        {
+            result = (*self->proxy)->begin_ice_flushBatchRequests();
+        }
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+
+    return createAsyncResult(result, reinterpret_cast<PyObject*>(self), 0, 0);
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyEndIceFlushBatchRequests(ProxyObject* self, PyObject* args)
+{
+    assert(self->proxy);
+
+    PyObject* result;
+    if(!PyArg_ParseTuple(args, STRCAST("O!"), &AsyncResultType, &result))
+    {
+        return 0;
+    }
+
+    Ice::AsyncResultPtr r = getAsyncResult(result);
+    try
+    {
+        AllowThreads allowThreads; // Release Python's global interpreter lock during blocking invocations.
+        (*self->proxy)->end_ice_flushBatchRequests(r);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 namespace IcePy
 {
-class AMI_Object_ice_flushBatchRequestsI : public Ice::AMI_Object_ice_flushBatchRequests
+class AMI_Object_ice_flushBatchRequestsI : public IceUtil::Shared
 {
 public:
 
     AMI_Object_ice_flushBatchRequestsI(PyObject*);
     ~AMI_Object_ice_flushBatchRequestsI();
 
-    virtual void ice_exception(const Ice::Exception&);
+    void exception(const Ice::Exception&);
+    void sent(bool);
 
 protected:
 
     PyObject* _callback;
 };
-
-class AMI_Object_ice_flushBatchRequestsSentI : public AMI_Object_ice_flushBatchRequestsI, public Ice::AMISentCallback
-{
-public:
-
-    AMI_Object_ice_flushBatchRequestsSentI(PyObject*);
-
-    virtual void ice_sent();
-};
+typedef IceUtil::Handle<AMI_Object_ice_flushBatchRequestsI> AMI_Object_ice_flushBatchRequestsIPtr;
 
 AMI_Object_ice_flushBatchRequestsI::AMI_Object_ice_flushBatchRequestsI(PyObject* callback) :
     _callback(callback)
@@ -1520,20 +1703,22 @@ AMI_Object_ice_flushBatchRequestsI::~AMI_Object_ice_flushBatchRequestsI()
 }
 
 void
-AMI_Object_ice_flushBatchRequestsI::ice_exception(const Ice::Exception& ex)
+AMI_Object_ice_flushBatchRequestsI::exception(const Ice::Exception& ex)
 {
     AdoptThread adoptThread; // Ensure the current thread is able to call into Python.
 
-    PyObjectHandle method = PyObject_GetAttrString(_callback, STRCAST("ice_exception"));
-    if(!method.get())
+    const string methodName = "ice_exception";
+    if(!PyObject_HasAttrString(_callback, STRCAST(methodName.c_str())))
     {
         ostringstream ostr;
-        ostr << "AMI callback object for ice_flushBatchRequests_async does not define ice_exception()";
+        ostr << "AMI callback object for ice_flushBatchRequests does not define " << methodName << "()";
         string str = ostr.str();
         PyErr_Warn(PyExc_RuntimeWarning, const_cast<char*>(str.c_str()));
     }
     else
     {
+        PyObjectHandle method = PyObject_GetAttrString(_callback, STRCAST(methodName.c_str()));
+        assert(method.get());
         PyObjectHandle exh = convertException(ex);
         assert(exh.get());
 
@@ -1546,26 +1731,16 @@ AMI_Object_ice_flushBatchRequestsI::ice_exception(const Ice::Exception& ex)
     }
 }
 
-AMI_Object_ice_flushBatchRequestsSentI::AMI_Object_ice_flushBatchRequestsSentI(PyObject* callback) :
-    AMI_Object_ice_flushBatchRequestsI(callback)
-{
-}
-
 void
-AMI_Object_ice_flushBatchRequestsSentI::ice_sent()
+AMI_Object_ice_flushBatchRequestsI::sent(bool)
 {
     AdoptThread adoptThread; // Ensure the current thread is able to call into Python.
 
-    PyObjectHandle method = PyObject_GetAttrString(_callback, STRCAST("ice_sent"));
-    if(!method.get())
+    const string methodName = "ice_sent";
+    if(PyObject_HasAttrString(_callback, STRCAST(methodName.c_str())))
     {
-        ostringstream ostr;
-        ostr << "AMI callback object for ice_flushBatchRequests_async does not define ice_sent()";
-        string str = ostr.str();
-        PyErr_Warn(PyExc_RuntimeWarning, const_cast<char*>(str.c_str()));
-    }
-    else
-    {
+        PyObjectHandle method = PyObject_GetAttrString(_callback, STRCAST(methodName.c_str()));
+        assert(method.get());
         PyObjectHandle args = PyTuple_New(0);
         PyObjectHandle tmp = PyObject_Call(method.get(), args.get(), 0);
         if(PyErr_Occurred())
@@ -1584,23 +1759,22 @@ proxyIceFlushBatchRequestsAsync(ProxyObject* self, PyObject* args)
 {
     assert(self->proxy);
 
-    PyObject* cb;
-    if(!PyArg_ParseTuple(args, STRCAST("O"), &cb))
+    PyObject* pycb;
+    if(!PyArg_ParseTuple(args, STRCAST("O"), &pycb))
     {
         return 0;
     }
 
+    AMI_Object_ice_flushBatchRequestsIPtr d = new AMI_Object_ice_flushBatchRequestsI(pycb);
+    Ice::Callback_Object_ice_flushBatchRequestsPtr cb =
+        Ice::newCallback_Object_ice_flushBatchRequests(d, &AMI_Object_ice_flushBatchRequestsI::exception,
+                                                       &AMI_Object_ice_flushBatchRequestsI::sent);
+
     bool result = false;
     try
     {
-        if(PyObject_HasAttrString(cb, STRCAST("ice_sent")))
-        {
-            result = (*self->proxy)->ice_flushBatchRequests_async(new AMI_Object_ice_flushBatchRequestsSentI(cb));
-        }
-        else
-        {
-            result = (*self->proxy)->ice_flushBatchRequests_async(new AMI_Object_ice_flushBatchRequestsI(cb));
-        }
+        Ice::AsyncResultPtr r = (*self->proxy)->begin_ice_flushBatchRequests(cb);
+        result = r->sentSynchronously();
     }
     catch(const Ice::Exception& ex)
     {
@@ -1617,7 +1791,7 @@ extern "C"
 static PyObject*
 proxyIceInvoke(ProxyObject* self, PyObject* args)
 {
-    return iceInvoke(*self->proxy, args);
+    return iceInvoke(reinterpret_cast<PyObject*>(self), args);
 }
 
 #ifdef WIN32
@@ -1626,7 +1800,25 @@ extern "C"
 static PyObject*
 proxyIceInvokeAsync(ProxyObject* self, PyObject* args)
 {
-    return iceInvokeAsync(*self->proxy, args);
+    return iceInvokeAsync(reinterpret_cast<PyObject*>(self), args);
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyBeginIceInvoke(ProxyObject* self, PyObject* args, PyObject* kwds)
+{
+    return beginIceInvoke(reinterpret_cast<PyObject*>(self), args, kwds);
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyEndIceInvoke(ProxyObject* self, PyObject* args)
+{
+    return endIceInvoke(reinterpret_cast<PyObject*>(self), args);
 }
 
 static PyObject*
@@ -1902,13 +2094,6 @@ proxyUncheckedCast(PyObject* /*self*/, PyObject* args)
     }
 }
 
-static PyMethodDef EndpointMethods[] =
-{
-    { STRCAST("toString"), reinterpret_cast<PyCFunction>(endpointToString), METH_NOARGS,
-        PyDoc_STR(STRCAST("toString() -> string")) },
-    { 0, 0 } /* sentinel */
-};
-
 static PyMethodDef ProxyMethods[] =
 {
     { STRCAST("ice_getCommunicator"), reinterpret_cast<PyCFunction>(proxyIceGetCommunicator), METH_NOARGS,
@@ -1917,12 +2102,28 @@ static PyMethodDef ProxyMethods[] =
         PyDoc_STR(STRCAST("ice_toString() -> string")) },
     { STRCAST("ice_isA"), reinterpret_cast<PyCFunction>(proxyIceIsA), METH_VARARGS,
         PyDoc_STR(STRCAST("ice_isA(type, [ctx]) -> bool")) },
+    { STRCAST("begin_ice_isA"), reinterpret_cast<PyCFunction>(proxyBeginIceIsA), METH_VARARGS | METH_KEYWORDS,
+        PyDoc_STR(STRCAST("begin_ice_isA(type[, _response][, _ex][, _sent][, _ctx]) -> Ice.AsyncResult")) },
+    { STRCAST("end_ice_isA"), reinterpret_cast<PyCFunction>(proxyEndIceIsA), METH_VARARGS,
+        PyDoc_STR(STRCAST("end_ice_isA(Ice.AsyncResult) -> bool")) },
     { STRCAST("ice_ping"), reinterpret_cast<PyCFunction>(proxyIcePing), METH_VARARGS,
         PyDoc_STR(STRCAST("ice_ping([ctx]) -> None")) },
+    { STRCAST("begin_ice_ping"), reinterpret_cast<PyCFunction>(proxyBeginIcePing), METH_VARARGS | METH_KEYWORDS,
+        PyDoc_STR(STRCAST("begin_ice_ping([_response][, _ex][, _sent][, _ctx]) -> Ice.AsyncResult")) },
+    { STRCAST("end_ice_ping"), reinterpret_cast<PyCFunction>(proxyEndIcePing), METH_VARARGS,
+        PyDoc_STR(STRCAST("end_ice_ping(Ice.AsyncResult) -> None")) },
     { STRCAST("ice_ids"), reinterpret_cast<PyCFunction>(proxyIceIds), METH_VARARGS,
         PyDoc_STR(STRCAST("ice_ids([ctx]) -> list")) },
+    { STRCAST("begin_ice_ids"), reinterpret_cast<PyCFunction>(proxyBeginIceIds), METH_VARARGS | METH_KEYWORDS,
+        PyDoc_STR(STRCAST("begin_ice_ids([_response][, _ex][, _sent][, _ctx]) -> Ice.AsyncResult")) },
+    { STRCAST("end_ice_ids"), reinterpret_cast<PyCFunction>(proxyEndIceIds), METH_VARARGS,
+        PyDoc_STR(STRCAST("end_ice_ids(Ice.AsyncResult) -> list")) },
     { STRCAST("ice_id"), reinterpret_cast<PyCFunction>(proxyIceId), METH_VARARGS,
         PyDoc_STR(STRCAST("ice_id([ctx]) -> string")) },
+    { STRCAST("begin_ice_id"), reinterpret_cast<PyCFunction>(proxyBeginIceId), METH_VARARGS | METH_KEYWORDS,
+        PyDoc_STR(STRCAST("begin_ice_id([_response][, _ex][, _sent][, _ctx]) -> Ice.AsyncResult")) },
+    { STRCAST("end_ice_id"), reinterpret_cast<PyCFunction>(proxyEndIceId), METH_VARARGS,
+        PyDoc_STR(STRCAST("end_ice_id(Ice.AsyncResult) -> string")) },
     { STRCAST("ice_getIdentity"), reinterpret_cast<PyCFunction>(proxyIceGetIdentity), METH_NOARGS,
         PyDoc_STR(STRCAST("ice_getIdentity() -> Ice.Identity")) },
     { STRCAST("ice_identity"), reinterpret_cast<PyCFunction>(proxyIceIdentity), METH_VARARGS,
@@ -1931,8 +2132,6 @@ static PyMethodDef ProxyMethods[] =
         PyDoc_STR(STRCAST("ice_getContext() -> dict")) },
     { STRCAST("ice_context"), reinterpret_cast<PyCFunction>(proxyIceContext), METH_VARARGS,
         PyDoc_STR(STRCAST("ice_context(dict) -> Ice.ObjectPrx")) },
-    { STRCAST("ice_defaultContext"), reinterpret_cast<PyCFunction>(proxyIceDefaultContext), METH_NOARGS,
-        PyDoc_STR(STRCAST("ice_defaultContext() -> Ice.ObjectPrx")) },
     { STRCAST("ice_getFacet"), reinterpret_cast<PyCFunction>(proxyIceGetFacet), METH_NOARGS,
         PyDoc_STR(STRCAST("ice_getFacet() -> string")) },
     { STRCAST("ice_facet"), reinterpret_cast<PyCFunction>(proxyIceFacet), METH_VARARGS,
@@ -1947,6 +2146,8 @@ static PyMethodDef ProxyMethods[] =
         PyDoc_STR(STRCAST("ice_endpoints(tuple) -> proxy")) },
     { STRCAST("ice_getLocatorCacheTimeout"), reinterpret_cast<PyCFunction>(proxyIceGetLocatorCacheTimeout),
         METH_NOARGS, PyDoc_STR(STRCAST("ice_getLocatorCacheTimeout() -> int")) },
+    { STRCAST("ice_getConnectionId"), reinterpret_cast<PyCFunction>(proxyIceGetConnectionId),
+        METH_NOARGS, PyDoc_STR(STRCAST("ice_getConnectionId() -> string")) },
     { STRCAST("ice_locatorCacheTimeout"), reinterpret_cast<PyCFunction>(proxyIceLocatorCacheTimeout), METH_VARARGS,
         PyDoc_STR(STRCAST("ice_locatorCacheTimeout(int) -> Ice.ObjectPrx")) },
     { STRCAST("ice_isConnectionCached"), reinterpret_cast<PyCFunction>(proxyIceIsConnectionCached), METH_NOARGS,
@@ -2003,14 +2204,22 @@ static PyMethodDef ProxyMethods[] =
         PyDoc_STR(STRCAST("ice_getConnection() -> Ice.Connection")) },
     { STRCAST("ice_getCachedConnection"), reinterpret_cast<PyCFunction>(proxyIceGetCachedConnection), METH_NOARGS,
         PyDoc_STR(STRCAST("ice_getCachedConnection() -> Ice.Connection")) },
-    { STRCAST("ice_flushBatchRequests"), reinterpret_cast<PyCFunction>(proxyIceFlushBatchRequests), METH_VARARGS,
+    { STRCAST("ice_flushBatchRequests"), reinterpret_cast<PyCFunction>(proxyIceFlushBatchRequests), METH_NOARGS,
         PyDoc_STR(STRCAST("ice_flushBatchRequests() -> void")) },
     { STRCAST("ice_flushBatchRequests_async"), reinterpret_cast<PyCFunction>(proxyIceFlushBatchRequestsAsync),
         METH_VARARGS, PyDoc_STR(STRCAST("ice_flushBatchRequests_async(cb) -> bool")) },
+    { STRCAST("begin_ice_flushBatchRequests"), reinterpret_cast<PyCFunction>(proxyBeginIceFlushBatchRequests),
+        METH_VARARGS | METH_KEYWORDS, PyDoc_STR(STRCAST("begin_ice_flushBatchRequests([_ex][, _sent]) -> Ice.AsyncResult")) },
+    { STRCAST("end_ice_flushBatchRequests"), reinterpret_cast<PyCFunction>(proxyEndIceFlushBatchRequests), METH_VARARGS,
+        PyDoc_STR(STRCAST("end_ice_flushBatchRequests(Ice.AsyncResult) -> void")) },
     { STRCAST("ice_invoke"), reinterpret_cast<PyCFunction>(proxyIceInvoke), METH_VARARGS,
         PyDoc_STR(STRCAST("ice_invoke(operation, mode, inParams) -> bool, outParams")) },
     { STRCAST("ice_invoke_async"), reinterpret_cast<PyCFunction>(proxyIceInvokeAsync), METH_VARARGS,
         PyDoc_STR(STRCAST("ice_invoke_async(cb, operation, mode, inParams) -> bool")) },
+    { STRCAST("begin_ice_invoke"), reinterpret_cast<PyCFunction>(proxyBeginIceInvoke), METH_VARARGS | METH_KEYWORDS,
+        PyDoc_STR(STRCAST("begin_ice_invoke(op, mode, inParams[, _response][, _ex][, _sent][, _ctx]) -> Ice.AsyncResult")) },
+    { STRCAST("end_ice_invoke"), reinterpret_cast<PyCFunction>(proxyEndIceInvoke), METH_VARARGS,
+        PyDoc_STR(STRCAST("end_ice_invoke(Ice.AsyncResult) -> (bool, results)")) },
     { STRCAST("ice_checkedCast"), reinterpret_cast<PyCFunction>(proxyIceCheckedCast), METH_VARARGS | METH_CLASS,
         PyDoc_STR(STRCAST("ice_checkedCast(proxy, id[, facetOrCtx[, ctx]]) -> proxy")) },
     { STRCAST("ice_uncheckedCast"), reinterpret_cast<PyCFunction>(proxyIceUncheckedCast), METH_VARARGS | METH_CLASS,
@@ -2024,54 +2233,6 @@ static PyMethodDef ProxyMethods[] =
 
 namespace IcePy
 {
-
-PyTypeObject EndpointType =
-{
-    /* The ob_type field must be initialized in the module init function
-     * to be portable to Windows without using C++. */
-    PyObject_HEAD_INIT(0)
-    0,                               /* ob_size */
-    STRCAST("Ice.Endpoint"),         /* tp_name */
-    sizeof(EndpointObject),          /* tp_basicsize */
-    0,                               /* tp_itemsize */
-    /* methods */
-    (destructor)endpointDealloc,     /* tp_dealloc */
-    0,                               /* tp_print */
-    0,                               /* tp_getattr */
-    0,                               /* tp_setattr */
-    0,                               /* tp_compare */
-    (reprfunc)endpointRepr,          /* tp_repr */
-    0,                               /* tp_as_number */
-    0,                               /* tp_as_sequence */
-    0,                               /* tp_as_mapping */
-    0,                               /* tp_hash */
-    0,                               /* tp_call */
-    0,                               /* tp_str */
-    0,                               /* tp_getattro */
-    0,                               /* tp_setattro */
-    0,                               /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,              /* tp_flags */
-    0,                               /* tp_doc */
-    0,                               /* tp_traverse */
-    0,                               /* tp_clear */
-    0,                               /* tp_richcompare */
-    0,                               /* tp_weaklistoffset */
-    0,                               /* tp_iter */
-    0,                               /* tp_iternext */
-    EndpointMethods,                 /* tp_methods */
-    0,                               /* tp_members */
-    0,                               /* tp_getset */
-    0,                               /* tp_base */
-    0,                               /* tp_dict */
-    0,                               /* tp_descr_get */
-    0,                               /* tp_descr_set */
-    0,                               /* tp_dictoffset */
-    0,                               /* tp_init */
-    0,                               /* tp_alloc */
-    (newfunc)endpointNew,            /* tp_new */
-    0,                               /* tp_free */
-    0,                               /* tp_is_gc */
-};
 
 PyTypeObject ProxyType =
 {
@@ -2137,15 +2298,6 @@ IcePy::initProxy(PyObject* module)
         return false;
     }
 
-    if(PyType_Ready(&EndpointType) < 0)
-    {
-        return false;
-    }
-    PyTypeObject* endpointType = &EndpointType; // Necessary to prevent GCC's strict-alias warnings.
-    if(PyModule_AddObject(module, STRCAST("Endpoint"), reinterpret_cast<PyObject*>(endpointType)) < 0)
-    {
-        return false;
-    }
     return true;
 }
 
@@ -2175,6 +2327,50 @@ IcePy::getProxy(PyObject* p)
     assert(checkProxy(p));
     ProxyObject* obj = reinterpret_cast<ProxyObject*>(p);
     return *obj->proxy;
+}
+
+bool
+IcePy::getProxyArg(PyObject* p, const string& func, const string& arg, Ice::ObjectPrx& proxy, const string& type)
+{
+    bool result = true;
+
+    if(checkProxy(p))
+    {
+        if(!type.empty())
+        {
+            PyObject* proxyType = lookupType(type);
+            assert(proxyType);
+            if(!PyObject_IsInstance(p, proxyType))
+            {
+                result = false;
+            }
+        }
+    }
+    else if(p != Py_None)
+    {
+        result = false;
+    }
+
+    if(result)
+    {
+        if(p != Py_None)
+        {
+            ProxyObject* obj = reinterpret_cast<ProxyObject*>(p);
+            proxy = *obj->proxy;
+        }
+        else
+        {
+            proxy = 0;
+        }
+    }
+    else
+    {
+        string typeName = type.empty() ? "Ice.ObjectPrx" : type;
+        PyErr_Format(PyExc_ValueError, STRCAST("%s expects a proxy of type %s or None for argument '%s'"),
+                     func.c_str(), typeName.c_str(), arg.c_str());
+    }
+
+    return result;
 }
 
 Ice::CommunicatorPtr

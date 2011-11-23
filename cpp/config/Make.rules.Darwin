@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -13,13 +13,14 @@
 
 CXX	                = c++
 
-CXXFLAGS		= -ftemplate-depth-128 -Wall -D_REENTRANT
+CXXFLAGS		= -Wall -D_REENTRANT
 
 ifeq ($(OPTIMIZE),yes)
-     CXXFLAGS		:= -O2 -DNDEBUG $(CXXFLAGS)
+     CXXFLAGS		:= $(CXXARCHFLAGS) -O2 -DNDEBUG $(CXXFLAGS)
 else
-     CXXFLAGS		:= -g $(CXXFLAGS)
+     CXXFLAGS		:= $(CXXARCHFLAGS) -g $(CXXFLAGS)
 endif
+
 
 #
 # C++ run-time libraries, necessary for linking some shared libraries.
@@ -34,6 +35,8 @@ ifneq ($(embedded_runpath_prefix),)
     endif
 endif
 
+LDPLATFORMFLAGS		+= -rdynamic
+
 ifdef ice_src_dist
     shlibldflags	= $(CXXFLAGS) -L$(libdir)
 else
@@ -46,17 +49,10 @@ mksoname           	= $(if $(2),lib$(1).$(2).dylib,lib$(1).dylib)
 mklibname           	= lib$(1).dylib
 curdir			= $(shell pwd)
 
-ifeq ($(OPTIMIZE),yes)
-   ifneq ($(embedded_runpath_prefix),)
-      mkshlib                 = $(CXX)  -dynamiclib $(shlibldflags) -o $(1) -install_name $(runpath_libdir)/$(2) $(3) $(4)
-   else
-      mkshlib                 = $(CXX)  -dynamiclib $(shlibldflags) -o $(1) -install_name $(2) $(3) $(4)
-   endif
+ifneq ($(embedded_runpath_prefix),)
+   mkshlib                 = $(CXX)  -dynamiclib $(shlibldflags) -o $(1) -install_name $(runpath_libdir)/$(2) $(3) $(4)
 else
-    # Don't use -install_name if we're building a debug version. GDB doesn't honor the
-    # DYLD_LIBRARY_PATH environment variable if a runpath is embedded in the 
-    # executables or libraries.
-    mkshlib                 = $(CXX)  -dynamiclib $(shlibldflags) -o $(1) $(3) $(4)
+   mkshlib                 = $(CXX)  -dynamiclib $(shlibldflags) -o $(1) -install_name $(2) $(3) $(4)
 endif
 
 ifeq ($(DB_HOME),)
@@ -75,14 +71,21 @@ ifeq ($(DB_HOME),)
    endif
 endif
 
+ifneq ($(QT_HOME),)
+   ifneq ($(QT_HOME), /Library/Frameworks)
+      # Frameworks are installed in the lib directory
+      QT_FLAGS             = -F$(QT_HOME)/lib
+      QT_LIBS              = -F$(QT_HOME)/lib
+   endif
+   QT_LIBS := $(QT_LIBS) -framework QtCore -framework QtSql
+endif
+
 BASELIBS		= -lIceUtil -lpthread 
 LIBS			= -lIce $(BASELIBS)
 
 ICONV_LIB               = -liconv
 
 ICEUTIL_OS_LIBS         = -lpthread
-ICE_OS_LIBS             = -ldl $(ICONV_LIB)
-
+ICE_OS_LIBS             = -ldl
 
 PLATFORM_HAS_READLINE   := no
-

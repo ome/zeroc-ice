@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,15 +16,9 @@ public interface Transceiver
     //
     // Initialize the transceiver.
     //
-    // Returns the status if the initialize operation. If timeout is != 0,
-    // the status will always be SocketStatus.Finished. If timeout is 0, 
-    // the operation won't block and will return SocketStatus.NeedRead or
-    // SocketStatus.NeedWrite if the initialization couldn't be completed
-    // without blocking. This operation should be called again once the 
-    // socket is ready for reading or writing and until it returns 
-    // SocketStatus.Finished.
+    // Returns the status if the initialize operation.
     //
-    SocketStatus initialize();
+    int initialize();
 
     void close();
 
@@ -49,5 +43,6 @@ public interface Transceiver
 
     String type();
     String toString();
+    Ice.ConnectionInfo getInfo();
     void checkSendSize(Buffer buf, int messageSizeMax);
 }

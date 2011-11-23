@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,7 +11,7 @@ package Ice;
 
 public final class PropertiesI implements Properties
 {
-    class PropertyValue
+    static class PropertyValue
     {
         public PropertyValue(PropertyValue v)
         {
@@ -32,49 +32,31 @@ public final class PropertiesI implements Properties
     public synchronized String
     getProperty(String key)
     {
-        String result = null;
         PropertyValue pv = _properties.get(key);
-        if(pv == null)
+        if(pv != null)
         {
-            try
-            {
-                result = System.getProperty(key, "");
-            }
-            catch(java.lang.SecurityException ex)
-            {
-                result = "";
-            }
+            pv.used = true;
+            return pv.value;
         }
         else
         {
-            pv.used = true;
-            result = pv.value;
+            return "";
         }
-        return result;
     }
 
     public synchronized String
     getPropertyWithDefault(String key, String value)
     {
-        String result = null;
         PropertyValue pv = _properties.get(key);
-        if(pv == null)
+        if(pv != null)
         {
-            try
-            {
-                result = System.getProperty(key, value);
-            }
-            catch(java.lang.SecurityException ex)
-            {
-                result = value;
-            }
+            pv.used = true;
+            return pv.value;
         }
         else
         {
-            pv.used = true;
-            result = pv.value;
+            return value;
         }
-        return result;
     }
 
     public int
@@ -86,38 +68,23 @@ public final class PropertiesI implements Properties
     public synchronized int
     getPropertyAsIntWithDefault(String key, int value)
     {
-        String result = null;
         PropertyValue pv = _properties.get(key);
-        if(pv == null)
-        {
-            try
-            {
-                result = System.getProperty(key);
-            }
-            catch(java.lang.SecurityException ex)
-            {
-            }
-        }
-        else
+        if(pv != null)
         {
             pv.used = true;
-            result = pv.value;
-        }
-        if(result == null)
-        {
-            return value;
+
+            try
+            {
+                return Integer.parseInt(pv.value);
+            }
+            catch(NumberFormatException ex)
+            {
+                Ice.Util.getProcessLogger().warning("numeric property " + key +
+                                                    " set to non-numeric value, defaulting to " + value);
+            }
         }
 
-        try
-        {
-            return Integer.parseInt(result);
-        }
-        catch(NumberFormatException ex)
-        {
-            Ice.Util.getProcessLogger().warning("numeric property " + key + 
-                                                " set to non-numeric value, defaulting to " + value);
-            return value;
-        }
+        return value;
     }
 
     public String[]
@@ -134,54 +101,40 @@ public final class PropertiesI implements Properties
             value = new String[0];
         }
 
-        String result = null;
         PropertyValue pv = _properties.get(key);
-        if(pv == null)
-        {
-            try
-            {
-                result = System.getProperty(key);
-            }
-            catch(java.lang.SecurityException ex)
-            {
-            }
-            if(result == null)
-            {
-                return value;
-            }
-        }
-        else
+        if(pv != null)
         {
             pv.used = true;
-            result = pv.value;
-        }
-        
-        String[] arr = splitString(result, ", \t\r\n");
-        if(arr == null)
-        {
-            Ice.Util.getProcessLogger().warning("mismatched quotes in property " + key 
-                                                + "'s value, returning default value");
-            return value;
+
+            String[] result = IceUtilInternal.StringUtil.splitString(pv.value, ", \t\r\n");
+            if(result == null)
+            {
+                Ice.Util.getProcessLogger().warning("mismatched quotes in property " + key
+                                                    + "'s value, returning default value");
+                return value;
+            }
+            if(result.length == 0)
+            {
+                result = value;
+            }
+            return result;
         }
         else
         {
-            return arr;
+            return value;
         }
     }
-
 
     public synchronized java.util.Map<String, String>
     getPropertiesForPrefix(String prefix)
     {
         java.util.HashMap<String, String> result = new java.util.HashMap<String, String>();
-        java.util.Iterator<java.util.Map.Entry<String, PropertyValue> > p = _properties.entrySet().iterator();
-        while(p.hasNext())
+        for(java.util.Map.Entry<String, PropertyValue> p : _properties.entrySet())
         {
-            java.util.Map.Entry<String, PropertyValue> entry = p.next();
-            String key = entry.getKey();
+            String key = p.getKey();
             if(prefix.length() == 0 || key.startsWith(prefix))
             {
-                PropertyValue pv = entry.getValue();
+                PropertyValue pv = p.getValue();
                 pv.used = true;
                 result.put(key, pv.value);
             }
@@ -281,12 +234,10 @@ public final class PropertiesI implements Properties
     getCommandLineOptions()
     {
         String[] result = new String[_properties.size()];
-        java.util.Iterator<java.util.Map.Entry<String, PropertyValue> > p = _properties.entrySet().iterator();
         int i = 0;
-        while(p.hasNext())
+        for(java.util.Map.Entry<String, PropertyValue> p : _properties.entrySet())
         {
-            java.util.Map.Entry<String, PropertyValue> entry = p.next();
-            result[i++] = "--" + entry.getKey() + "=" + entry.getValue().value;
+            result[i++] = "--" + p.getKey() + "=" + p.getValue().value;
         }
         assert(i == result.length);
         return result;
@@ -302,9 +253,8 @@ public final class PropertiesI implements Properties
         pfx = "--" + pfx;
 
         java.util.ArrayList<String> result = new java.util.ArrayList<String>();
-        for(int i = 0; i < options.length; i++)
+        for(String opt : options)
         {
-            String opt = options[i];
             if(opt.startsWith(pfx))
             {
                 if(opt.indexOf('=') == -1)
@@ -319,7 +269,7 @@ public final class PropertiesI implements Properties
                 result.add(opt);
             }
         }
-        return (String[])result.toArray(new String[0]);
+        return result.toArray(new String[0]);
     }
 
     public String[]
@@ -336,19 +286,124 @@ public final class PropertiesI implements Properties
     public void
     load(String file)
     {
-        try
+        if(System.getProperty("os.name").startsWith("Windows") && file.startsWith("HKLM\\"))
         {
-            java.io.FileInputStream fis = new java.io.FileInputStream(file);
-            java.io.InputStreamReader isr = new java.io.InputStreamReader(fis, "UTF-8");
-            java.io.BufferedReader br = new java.io.BufferedReader(isr);
-            parse(br);
+            String regQuery = "reg query " + file;
+            try
+            {
+                java.lang.Process process = Runtime.getRuntime().exec(regQuery);
+                process.waitFor();
+                if(process.exitValue() != 0)
+                {
+                    InitializationException ie = new InitializationException();
+                    ie.reason = "Could not read Windows registry key `" + file + "'";
+                    throw ie;
+                }
+
+                java.io.InputStream is = process.getInputStream();
+                java.io.StringWriter sw = new java.io.StringWriter();
+                int c;
+                while((c = is.read()) != -1)
+                {
+                    sw.write(c);
+                }
+                String[] result = sw.toString().split("\n");
+
+                for(String line : result)
+                {
+                    int pos = line.indexOf("REG_SZ");
+                    if(pos != -1)
+                    {
+                        setProperty(line.substring(0, pos).trim(), line.substring(pos + 6, line.length()).trim());
+                        continue;
+                    }
+
+                    pos = line.indexOf("REG_EXPAND_SZ");
+                    if(pos != -1)
+                    {
+                        String name = line.substring(0, pos).trim();
+                        line = line.substring(pos + 13, line.length()).trim();
+                        while(true)
+                        {
+                            int start = line.indexOf("%", 0);
+                            int end = line.indexOf("%", start + 1);
+
+                            //
+                            // If there isn't more %var% break the loop
+                            //
+                            if(start == -1 || end == -1)
+                            {
+                                break;
+                            }
+                            
+                            String envKey = line.substring(start + 1, end);
+                            String envValue = System.getenv(envKey);
+                            if(envValue == null)
+                            {
+                                envValue = "";
+                            }
+
+                            envKey = "%" + envKey + "%";
+                            do
+                            {
+                                line = line.replace(envKey , envValue);
+                            }
+                            while(line.indexOf(envKey) != -1);
+                        }
+                        setProperty(name, line);
+                        continue;
+                    }
+                }
+            }
+            catch(Ice.LocalException ex)
+            {
+                throw ex;
+            }
+            catch(Exception ex)
+            {
+                InitializationException ie = new InitializationException();
+                ie.reason = "Could not read Windows registry key `" + file + "'";
+                ie.initCause(ex); // Exception chaining
+                throw ie;
+            }
         }
-        catch(java.io.IOException ex)
+        else
         {
-            FileException fe = new FileException();
-            fe.path = file;
-            fe.initCause(ex); // Exception chaining
-            throw fe;
+            java.io.InputStream is = null;
+            try
+            {
+                is = IceInternal.Util.openResource(getClass().getClassLoader(), file);
+                if(is == null)
+                {
+                    FileException fe = new FileException();
+                    fe.path = file;
+                    throw fe;
+                }
+                java.io.InputStreamReader isr = new java.io.InputStreamReader(is, "UTF-8");
+                java.io.BufferedReader br = new java.io.BufferedReader(isr);
+                parse(br);
+            }
+            catch(java.io.IOException ex)
+            {
+                FileException fe = new FileException();
+                fe.path = file;
+                fe.initCause(ex); // Exception chaining
+                throw fe;
+            }
+            finally
+            {
+                if(is != null)
+                {
+                    try
+                    {
+                        is.close();
+                    }
+                    catch(Throwable ex)
+                    {
+                        // Ignore.
+                    }
+                }
+            }
         }
     }
 
@@ -362,14 +417,12 @@ public final class PropertiesI implements Properties
     getUnusedProperties()
     {
         java.util.List<String> unused = new java.util.ArrayList<String>();
-        java.util.Iterator<java.util.Map.Entry<String, PropertyValue> > p = _properties.entrySet().iterator();
-        while(p.hasNext())
+        for(java.util.Map.Entry<String, PropertyValue> p : _properties.entrySet())
         {
-            java.util.Map.Entry<String, PropertyValue> entry = p.next();
-            PropertyValue pv = entry.getValue();
+            PropertyValue pv = p.getValue();
             if(!pv.used)
             {
-                unused.add(entry.getKey());
+                unused.add(p.getKey());
             }
         }
         return unused;
@@ -378,15 +431,13 @@ public final class PropertiesI implements Properties
     PropertiesI(PropertiesI props)
     {
         //
-        // NOTE: we can't just do a shallow copy of the map as the map values 
+        // NOTE: we can't just do a shallow copy of the map as the map values
         // would otherwise be shared between the two PropertiesI object.
         //
         //_properties = new java.util.HashMap<String, PropertyValue>(props._properties);
-        java.util.Iterator<java.util.Map.Entry<String, PropertyValue> > p = props._properties.entrySet().iterator();
-        while(p.hasNext())
+        for(java.util.Map.Entry<String, PropertyValue> p : props._properties.entrySet())
         {
-            java.util.Map.Entry<String, PropertyValue> entry = p.next();
-            _properties.put(entry.getKey(), new PropertyValue(entry.getValue()));
+            _properties.put(p.getKey(), new PropertyValue(p.getValue()));
         }
     }
 
@@ -400,7 +451,7 @@ public final class PropertiesI implements Properties
         {
             _properties = new java.util.HashMap<String, PropertyValue>(((PropertiesI)defaults)._properties);
         }
-        
+
         boolean loadConfigFiles = false;
 
         for(int i = 0; i < args.value.length; i++)
@@ -468,7 +519,7 @@ public final class PropertiesI implements Properties
     {
         String key = "";
         String value = "";
-    
+
         int state = ParseStateKey;
 
         String whitespace = "";
@@ -496,7 +547,7 @@ public final class PropertiesI implements Properties
                               whitespace = "";
                               key += c;
                               break;
-    
+
                             case ' ':
                               if(key.length() != 0)
                               {
@@ -518,7 +569,7 @@ public final class PropertiesI implements Properties
                           key += c;
                       }
                       break;
-    
+
                     case ' ':
                     case '\t':
                     case '\r':
@@ -528,16 +579,16 @@ public final class PropertiesI implements Properties
                             whitespace += c;
                         }
                         break;
-    
+
                     case '=':
                         whitespace = "";
                         state = ParseStateValue;
                         break;
-    
+
                     case '#':
                         finished = true;
                         break;
-    
+
                     default:
                         key += whitespace;
                         whitespace = "";
@@ -546,7 +597,7 @@ public final class PropertiesI implements Properties
                   }
                   break;
               }
-    
+
               case ParseStateValue:
               {
                   switch(c)
@@ -565,12 +616,12 @@ public final class PropertiesI implements Properties
                               escapedspace = "";
                               value += c;
                               break;
-    
+
                             case ' ':
                               whitespace += c;
                               escapedspace += c;
                               break;
-    
+
                             default:
                               value += value.length() == 0 ? escapedspace : whitespace;
                               whitespace = "";
@@ -586,7 +637,7 @@ public final class PropertiesI implements Properties
                           value += c;
                       }
                       break;
-    
+
                     case ' ':
                     case '\t':
                     case '\r':
@@ -596,12 +647,12 @@ public final class PropertiesI implements Properties
                             whitespace += c;
                         }
                         break;
-    
+
                     case '#':
                         value += escapedspace;
                         finished = true;
                         break;
-    
+
                     default:
                         value += value.length() == 0 ? escapedspace : whitespace;
                         whitespace = "";
@@ -618,7 +669,7 @@ public final class PropertiesI implements Properties
             }
         }
         value += escapedspace;
-    
+
         if((state == ParseStateKey && key.length() != 0) || (state == ParseStateValue && key.length() == 0))
         {
             Ice.Util.getProcessLogger().warning("invalid config file entry: \"" + line + "\"");
@@ -655,72 +706,13 @@ public final class PropertiesI implements Properties
 
         if(value.length() > 0)
         {
-            String[] files = value.split(",");
-            for(int i = 0; i < files.length; i++)
+            for(String file : value.split(","))
             {
-                load(files[i]);
+                load(file);
             }
         }
 
         _properties.put("Ice.Config", new PropertyValue(value, true));
-    }
-
-    //
-    // Split string helper; returns null for unmatched quotes
-    //
-    private String[] splitString(String str, String delim)
-    {
-        java.util.List<String> l = new java.util.ArrayList<String>();
-        char[] arr = new char[str.length()];
-        int pos = 0;
-        
-        while(pos < str.length())
-        {
-            int n = 0;
-            char quoteChar = '\0';
-            if(str.charAt(pos) == '"' || str.charAt(pos) == '\'')
-            {
-                quoteChar = str.charAt(pos);
-                ++pos;
-            }
-            while(pos < str.length())
-            {
-                if(quoteChar != '\0' && str.charAt(pos) == '\\' && pos + 1 < str.length() &&
-                   str.charAt(pos + 1) == quoteChar)
-                {
-                    ++pos;
-                }
-                else if(quoteChar != '\0' && str.charAt(pos) == quoteChar)
-                {
-                    ++pos;
-                    quoteChar = '\0';
-                    break;
-                }
-                else if(delim.indexOf(str.charAt(pos)) != -1)
-                {
-                    if(quoteChar == '\0')
-                    {
-                        ++pos;
-                        break;
-                    }
-                }
-                
-                if(pos < str.length())
-                {
-                    arr[n++] = str.charAt(pos++);
-                }
-            }
-            if(quoteChar != '\0')
-            {
-                return null; // Unmatched quote.
-            }
-            if(n > 0)
-            {
-                l.add(new String(arr, 0, n));
-            }
-        }
-        
-        return (String[])l.toArray(new String[0]);
     }
 
     private java.util.HashMap<String, PropertyValue> _properties = new java.util.HashMap<String, PropertyValue>();

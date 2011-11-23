@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -39,7 +39,14 @@ public:
 
     ServerProxyWrapper(const DatabasePtr& database, const string& id) : _id(id)
     {
-        _proxy = database->getServer(_id)->getProxy(_activationTimeout, _deactivationTimeout, _node);
+        try
+        {
+            _proxy = database->getServer(_id)->getProxy(_activationTimeout, _deactivationTimeout, _node, false, 5);
+        }
+        catch(const SynchronizationException&)
+        {
+            throw DeploymentException("server is being updated");
+        }
     }
 
     ServerProxyWrapper(const ServerProxyWrapper& wrapper) : 
@@ -772,6 +779,29 @@ AdminI::getNodeLoad(const string& name, const Current&) const
         throw NodeUnreachableException(name, os.str());
     }    
     return LoadInfo(); // Keep the compiler happy.
+}
+
+int
+AdminI::getNodeProcessorSocketCount(const string& name, const Current&) const
+{
+    try
+    {
+        return _database->getNode(name)->getProxy()->getProcessorSocketCount();
+    }
+    catch(const Ice::OperationNotExistException&)
+    {
+        return 0; // Not supported.
+    }
+    catch(const Ice::ObjectNotExistException&)
+    {
+        throw NodeNotExistException(name);
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        ostringstream os;
+        os << ex;
+        throw NodeUnreachableException(name, os.str());
+    }
 }
 
 void

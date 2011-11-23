@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -40,7 +40,7 @@ main(int argc, char** argv)
     }
     catch(const Ice::Exception& ex)
     {
-        cerr << ex << endl;
+        cerr << ex << ": " << ex.ice_stackTrace() << endl;
         status = EXIT_FAILURE;
     }
 

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -11,13 +11,20 @@
 # Select an installation base directory. The directory will be created
 # if it does not exist.
 #
-prefix			 ?= /opt/Ice-$(VERSION)
+prefix			?= /opt/Ice-$(VERSION)
 
 #
 # The "root directory" for runpath embedded in executables. Can be unset
 # to avoid adding a runpath to Ice executables.
 #
-embedded_runpath_prefix  ?= /opt/Ice-$(VERSION_MAJOR).$(VERSION_MINOR)
+embedded_runpath_prefix ?= /opt/Ice-$(VERSION_MAJOR).$(VERSION_MINOR)
+
+#
+# Define create_runpath_symlink as yes if you would like 'make install'
+# to automatically create a symbolic link for the embedded runpath
+# directory. Only applies if embedded_runpath_prefix is also set.
+#
+create_runpath_symlink	?= no
 
 #
 # Define OPTIMIZE as yes if you want to build with
@@ -30,7 +37,6 @@ embedded_runpath_prefix  ?= /opt/Ice-$(VERSION_MAJOR).$(VERSION_MINOR)
 # default is platform-dependent
 #
 #LP64			?= yes
-
 
 #
 # Define USE_READLINE as yes if you want to build parts of Ice using
@@ -51,7 +57,6 @@ embedded_runpath_prefix  ?= /opt/Ice-$(VERSION_MAJOR).$(VERSION_MINOR)
 # 
 
 USE_READLINE		?= no
-
 
 #
 # If libbzip2 is not installed in a standard location where the
@@ -82,10 +87,16 @@ USE_READLINE		?= no
 #OPENSSL_HOME		?= /opt/openssl
 
 #
-# If Mcpp is not installed in a standard location where the  compiler 
+# If MCPP is not installed in a standard location where the compiler 
 # can find it, set MCPP_HOME to the Mcpp installation directory.
 #
 #MCPP_HOME		?= /opt/mcpp
+
+#
+# If libiconv is not installed in a standard location where the compiler 
+# can find it, set ICONV_HOME to the libiconv installation directory.
+#
+#ICONV_HOME		?= /opt/libiconv
 
 #
 # If readline is not installed in a standard location where the
@@ -95,9 +106,26 @@ USE_READLINE		?= no
 #READLINE_HOME		?= /opt/readline
 
 #
+# If you want to build the SQL database plugins for IceStorm and
+# IceGrid, set QT_HOME to the Qt installation directory.
+#
+#
+#QT_HOME	= /usr/local/Trolltech/Qt-4.5.3
+#QT_HOME	= /Library/Frameworks
+
+#
 # Generate position independent code unless GENPIC is set to no
 #
 #GENPIC                     ?= yes
+
+#
+# The build architectures for gcc based builds. The format of these
+# build flags are OS dependent. For example, under Mac OS X to build
+# binaries which support both i386 and x86_64 you would use "-arch
+# i386 -arch x86_64".  The default is OS version dependent. Be aware
+# that this value may conflict with the setting of LP64 above.
+#
+#CXXARCHFLAGS		     = -arch i386 -arch x86_64
 
 # ----------------------------------------------------------------------
 # Don't change anything below this line!
@@ -145,7 +173,8 @@ install_configdir 	:= $(prefix)/config
 
 ifneq ($(embedded_runpath_prefix),)
     runpath_libdir	:= $(embedded_runpath_prefix)/$(libsubdir)
-    create_runpath_symlink ?= yes
+else
+    create_runpath_symlink = no
 endif
 
 OPENSSL_FLAGS           = $(if $(OPENSSL_HOME),-I$(OPENSSL_HOME)/include)
@@ -156,14 +185,16 @@ BZIP2_FLAGS             = $(if $(BZIP2_HOME),-I$(BZIP2_HOME)/include)
 BZIP2_LIBS              = $(if $(BZIP2_HOME),-L$(BZIP2_HOME)/$(libsubdir)) -lbz2
 BZIP2_RPATH_LINK        = $(if $(BZIP2_HOME),$(call rpathlink,$(BZIP2_HOME)/$(libsubdir)))
 
+ICONV_LIBS              = $(if $(ICONV_HOME),-L$(ICONV_HOME)/$(libsubdir)) $(ICONV_LIB)
+
 ifneq ($(DB_HOME),)
    DB_FLAGS             = -I$(DB_HOME)/include
    DB_LIBS              = -L$(DB_HOME)/$(libsubdir) -ldb_cxx
    DB_RPATH_LINK        = $(call rpathlink,$(DB_HOME)/$(libsubdir))
 else
-   ifeq ($(shell if [ -d /usr/include/db46 -a -d /usr/$(libsubdir)/db46 ] ; then echo yes; fi), yes)
-      DB_FLAGS          = -I/usr/include/db46
-      DB_LIBS           = -L/usr/$(libsubdir)/db46 -ldb_cxx
+   ifeq ($(shell if [ -d /usr/include/db48 -a -d /usr/$(libsubdir)/db48 ] ; then echo yes; fi), yes)
+      DB_FLAGS          = -I/usr/include/db48
+      DB_LIBS           = -L/usr/$(libsubdir)/db48 -ldb_cxx
    else
       DB_LIBS           = -ldb_cxx
    endif
@@ -181,6 +212,9 @@ ifeq ($(PLATFORM_HAS_READLINE),yes)
         READLINE_FLAGS  = -DHAVE_READLINE $(if $(READLINE_HOME),-I$(READLINE_HOME)/include)
         READLINE_LIBS   = $(if $(READLINE_HOME),-L$(READLINE_HOME)/$(libsubdir)) -lreadline -lncurses        
     endif
+endif
+
+ifneq ($(DB_HOME),)
 endif
 
 ICECPPFLAGS		= -I$(slicedir)
@@ -219,13 +253,11 @@ ifdef ice_src_dist
     SLICE2CPP		= $(bindir)/slice2cpp
     SLICE2XSD		= $(bindir)/slice2xsd
     SLICE2FREEZE	= $(bindir)/slice2freeze
-    SLICE2DOCBOOK	= $(bindir)/slice2docbook
 else
     SLICEPARSERLIB	= $(ice_dir)/$(libsubdir)/$(call mklibfilename,Slice,$(VERSION))
     SLICE2CPP		= $(ice_dir)/$(binsubdir)/slice2cpp
     SLICE2XSD		= $(ice_dir)/$(binsubdir)/slice2xsd
     SLICE2FREEZE	= $(ice_dir)/$(binsubdir)/slice2freeze
-    SLICE2DOCBOOK	= $(ice_dir)/$(binsubdir)/slice2docbook
 endif
 
 EVERYTHING		= all depend clean install 
@@ -272,12 +304,12 @@ $(HDIR)/%.h %.cpp: $(SDIR)/%.ice $(SLICE2CPP) $(SLICEPARSERLIB)
 all:: $(SRCS) $(TARGETS)
 
 depend:: $(SRCS)  $(patsubst $(SDIR)/%.ice,$(HDIR)/%.h,$(wildcard $(SDIR)/*F.ice)) $(SLICE_SRCS)
-	-rm -f .depend
+	-rm -f .depend .depend.mak
 	if test -n "$(SRCS)" ; then \
-	    $(CXX) -DMAKEDEPEND -M $(CXXFLAGS) $(CPPFLAGS) $(SRCS) | $(ice_dir)/config/makedepend.py >> .depend; \
+	    $(CXX) -DMAKEDEPEND -M $(CXXFLAGS) $(CPPFLAGS) $(SRCS) | $(ice_dir)/config/makedepend.py; \
 	fi
 	if test -n "$(SLICE_SRCS)" ; then \
-	    $(SLICE2CPP) --depend $(SLICE2CPPFLAGS) $(SLICE_SRCS) | $(ice_dir)/config/makedepend.py >> .depend; \
+	    $(SLICE2CPP) --depend $(SLICE2CPPFLAGS) $(SLICE_SRCS) | $(ice_dir)/config/makedepend.py; \
 	fi
 
 clean::
@@ -285,9 +317,6 @@ clean::
 	-rm -f core *.o *.bak
 
 ifneq ($(SLICE_SRCS),)
-depend::
-	$(foreach slice, $(SLICE_SRCS), echo '$(slice): $$(SLICE2CPP) $$(SLICEPARSERLIB)' >> .depend;)
-
 clean::
 	rm -f $(addsuffix .cpp, $(basename $(notdir $(SLICE_SRCS))))
 	rm -f $(addsuffix .h, $(basename $(notdir $(SLICE_SRCS))))

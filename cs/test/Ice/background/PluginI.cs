@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,7 +16,7 @@ internal class PluginI : Ice.Plugin
 
     public void initialize()
     {
-        IceInternal.ProtocolPluginFacade facade = Ice.Util.getProtocolPluginFacade(_communicator);
+        IceInternal.ProtocolPluginFacade facade = IceInternal.Util.getProtocolPluginFacade(_communicator);
         for(short s = 0; s < 100; ++s)
         {
             IceInternal.EndpointFactory factory = facade.getEndpointFactory(s);

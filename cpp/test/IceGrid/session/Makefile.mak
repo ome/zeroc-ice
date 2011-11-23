@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -43,7 +43,7 @@ $(CLIENT): $(COBJS)
 	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
 $(VERIFIER): $(VOBJS)
-	$(LINK) $(LD_EXEFLAGS) $(VPDBFLAGS) $(SETARGV) $(VOBJS) $(PREOUT)$@ $(PRELIBS)$(LINKWITH)
+	$(LINK) $(LD_EXEFLAGS) $(VPDBFLAGS) $(SETARGV) $(VOBJS) $(PREOUT)$@ $(PRELIBS)$(LINKWITH) icessl$(LIBSUFFIX).lib
 	@if exist $@.manifest echo ^ ^ ^ Embedding manifest using $(MT) && \
 	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
@@ -58,4 +58,4 @@ clean::
 	if exist db\node-1 rmdir /s /q db\node-1 
 	if exist db\replica-1 rmdir /s /q db\replica-1
 
-!include .depend
+!include .depend.mak

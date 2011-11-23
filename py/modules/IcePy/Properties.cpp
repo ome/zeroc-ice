@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -96,7 +96,14 @@ propertiesInit(PropertiesObject* self, PyObject* args, PyObject* /*kwds*/)
     Ice::PropertiesPtr props;
     try
     {
-        props = Ice::createProperties(seq, defaults);
+        if(defaults || (arglist && arglist != Py_None))
+        {
+            props = Ice::createProperties(seq, defaults);
+        }
+        else
+        {
+            props = Ice::createProperties();
+        }
     }
     catch(const Ice::Exception& ex)
     {

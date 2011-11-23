@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,18 +27,14 @@ public:
     {
     }
 
-    bool check()
+    void check()
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
         while(!_called)
         {
-            if(!timedWait(IceUtil::Time::seconds(5)))
-            {
-                return false;
-            }
+            wait();
         }
         _called = false;
-        return true;
     }
 
 protected:
@@ -56,16 +52,19 @@ private:
     bool _called;
 };
 
-class AMI_Test_baseAsBaseI : public AMI_TestIntf_baseAsBase, public CallbackBase
+
+class Callback : public CallbackBase, public IceUtil::Shared
 {
-    virtual void
-    ice_response()
+public:
+
+    void
+    response()
     {
         test(false);
     }
 
-    virtual void
-    ice_exception(const Ice::Exception& exc)
+    void
+    exception_baseAsBase(const Ice::Exception& exc)
     {
         try
         {
@@ -82,20 +81,9 @@ class AMI_Test_baseAsBaseI : public AMI_TestIntf_baseAsBase, public CallbackBase
         }
         called();
     }
-};
 
-typedef IceUtil::Handle<AMI_Test_baseAsBaseI> AMI_Test_baseAsBaseIPtr;
-
-class AMI_Test_unknownDerivedAsBaseI : public AMI_TestIntf_unknownDerivedAsBase, public CallbackBase
-{
-    virtual void
-    ice_response()
-    {
-        test(false);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception& exc)
+    void
+    exception_unknownDerivedAsBase(const Ice::Exception& exc)
     {
         try
         {
@@ -112,20 +100,9 @@ class AMI_Test_unknownDerivedAsBaseI : public AMI_TestIntf_unknownDerivedAsBase,
         }
         called();
     }
-};
 
-typedef IceUtil::Handle<AMI_Test_unknownDerivedAsBaseI> AMI_Test_unknownDerivedAsBaseIPtr;
-
-class AMI_Test_knownDerivedAsBaseI : public AMI_TestIntf_knownDerivedAsBase, public CallbackBase
-{
-    virtual void
-    ice_response()
-    {
-        test(false);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception& exc)
+    void
+    exception_knownDerivedAsBase(const Ice::Exception& exc)
     {
         try
         {
@@ -143,20 +120,9 @@ class AMI_Test_knownDerivedAsBaseI : public AMI_TestIntf_knownDerivedAsBase, pub
         }
         called();
     }
-};
 
-typedef IceUtil::Handle<AMI_Test_knownDerivedAsBaseI> AMI_Test_knownDerivedAsBaseIPtr;
-
-class AMI_Test_knownDerivedAsKnownDerivedI : public AMI_TestIntf_knownDerivedAsKnownDerived, public CallbackBase
-{
-    virtual void
-    ice_response()
-    {
-        test(false);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception& exc)
+    void
+    exception_knownDerivedAsKnownDerived(const Ice::Exception& exc)
     {
         try
         {
@@ -174,20 +140,9 @@ class AMI_Test_knownDerivedAsKnownDerivedI : public AMI_TestIntf_knownDerivedAsK
         }
         called();
     }
-};
 
-typedef IceUtil::Handle<AMI_Test_knownDerivedAsKnownDerivedI> AMI_Test_knownDerivedAsKnownDerivedIPtr;
-
-class AMI_Test_unknownIntermediateAsBaseI : public AMI_TestIntf_unknownIntermediateAsBase, public CallbackBase
-{
-    virtual void
-    ice_response()
-    {
-        test(false);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception& exc)
+    void
+    exception_unknownIntermediateAsBase(const Ice::Exception& exc)
     {
         try
         {
@@ -204,20 +159,9 @@ class AMI_Test_unknownIntermediateAsBaseI : public AMI_TestIntf_unknownIntermedi
         }
         called();
     }
-};
 
-typedef IceUtil::Handle<AMI_Test_unknownIntermediateAsBaseI> AMI_Test_unknownIntermediateAsBaseIPtr;
-
-class AMI_Test_knownIntermediateAsBaseI : public AMI_TestIntf_knownIntermediateAsBase, public CallbackBase
-{
-    virtual void
-    ice_response()
-    {
-        test(false);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception& exc)
+    void
+    exception_knownIntermediateAsBase(const Ice::Exception& exc)
     {
         try
         {
@@ -235,21 +179,9 @@ class AMI_Test_knownIntermediateAsBaseI : public AMI_TestIntf_knownIntermediateA
         }
         called();
     }
-};
 
-typedef IceUtil::Handle<AMI_Test_knownIntermediateAsBaseI> AMI_Test_knownIntermediateAsBaseIPtr;
-
-class AMI_Test_knownMostDerivedAsBaseI : public AMI_TestIntf_knownMostDerivedAsBase,
-                                         public CallbackBase
-{
-    virtual void
-    ice_response()
-    {
-        test(false);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception& exc)
+    void
+    exception_knownMostDerivedAsBase(const Ice::Exception& exc)
     {
         try
         {
@@ -268,21 +200,9 @@ class AMI_Test_knownMostDerivedAsBaseI : public AMI_TestIntf_knownMostDerivedAsB
         }
         called();
     }
-};
 
-typedef IceUtil::Handle<AMI_Test_knownMostDerivedAsBaseI> AMI_Test_knownMostDerivedAsBaseIPtr;
-
-class AMI_Test_knownIntermediateAsKnownIntermediateI : public AMI_TestIntf_knownIntermediateAsKnownIntermediate,
-                                                       public CallbackBase
-{
-    virtual void
-    ice_response()
-    {
-        test(false);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception& exc)
+    void
+    exception_knownIntermediateAsKnownIntermediate(const Ice::Exception& exc)
     {
         try
         {
@@ -300,21 +220,9 @@ class AMI_Test_knownIntermediateAsKnownIntermediateI : public AMI_TestIntf_known
         }
         called();
     }
-};
 
-typedef IceUtil::Handle<AMI_Test_knownIntermediateAsKnownIntermediateI> AMI_Test_knownIntermediateAsKnownIntermediateIPtr;
-
-class AMI_Test_knownMostDerivedAsKnownMostDerivedI : public AMI_TestIntf_knownMostDerivedAsKnownMostDerived,
-                                                      public CallbackBase
-{
-    virtual void
-    ice_response()
-    {
-        test(false);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception& exc)
+    void
+    exception_knownMostDerivedAsKnownMostDerived(const Ice::Exception& exc)
     {
         try
         {
@@ -333,21 +241,9 @@ class AMI_Test_knownMostDerivedAsKnownMostDerivedI : public AMI_TestIntf_knownMo
         }
         called();
     }
-};
 
-typedef IceUtil::Handle<AMI_Test_knownMostDerivedAsKnownMostDerivedI> AMI_Test_knownMostDerivedAsKnownMostDerivedIPtr;
-
-class AMI_Test_knownMostDerivedAsKnownIntermediateI : public AMI_TestIntf_knownMostDerivedAsKnownIntermediate,
-                                                      public CallbackBase
-{
-    virtual void
-    ice_response()
-    {
-        test(false);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception& exc)
+    void
+    exception_knownMostDerivedAsKnownIntermediate(const Ice::Exception& exc)
     {
         try
         {
@@ -366,21 +262,9 @@ class AMI_Test_knownMostDerivedAsKnownIntermediateI : public AMI_TestIntf_knownM
         }
         called();
     }
-};
 
-typedef IceUtil::Handle<AMI_Test_knownMostDerivedAsKnownIntermediateI> AMI_Test_knownMostDerivedAsKnownIntermediateIPtr;
-
-class AMI_Test_unknownMostDerived1AsBaseI : public AMI_TestIntf_unknownMostDerived1AsBase,
-                                            public CallbackBase
-{
-    virtual void
-    ice_response()
-    {
-        test(false);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception& exc)
+    void
+    exception_unknownMostDerived1AsBase(const Ice::Exception& exc)
     {
         try
         {
@@ -398,21 +282,9 @@ class AMI_Test_unknownMostDerived1AsBaseI : public AMI_TestIntf_unknownMostDeriv
         }
         called();
     }
-};
 
-typedef IceUtil::Handle<AMI_Test_unknownMostDerived1AsBaseI> AMI_Test_unknownMostDerived1AsBaseIPtr;
-
-class AMI_Test_unknownMostDerived1AsKnownIntermediateI : public AMI_TestIntf_unknownMostDerived1AsKnownIntermediate,
-                                                         public CallbackBase
-{
-    virtual void
-    ice_response()
-    {
-        test(false);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception& exc)
+    void
+    exception_unknownMostDerived1AsKnownIntermediate(const Ice::Exception& exc)
     {
         try
         {
@@ -430,22 +302,9 @@ class AMI_Test_unknownMostDerived1AsKnownIntermediateI : public AMI_TestIntf_unk
         }
         called();
     }
-};
 
-typedef IceUtil::Handle<AMI_Test_unknownMostDerived1AsKnownIntermediateI>
-            AMI_Test_unknownMostDerived1AsKnownIntermediateIPtr;
-
-class AMI_Test_unknownMostDerived2AsBaseI : public AMI_TestIntf_unknownMostDerived2AsBase,
-                                            public CallbackBase
-{
-    virtual void
-    ice_response()
-    {
-        test(false);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception& exc)
+    void
+    exception_unknownMostDerived2AsBase(const Ice::Exception& exc)
     {
         try
         {
@@ -464,7 +323,7 @@ class AMI_Test_unknownMostDerived2AsBaseI : public AMI_TestIntf_unknownMostDeriv
     }
 };
 
-typedef IceUtil::Handle<AMI_Test_unknownMostDerived2AsBaseI> AMI_Test_unknownMostDerived2AsBaseIPtr;
+typedef IceUtil::Handle<Callback> CallbackPtr;
 
 TestIntfPrx
 allTests(const Ice::CommunicatorPtr& communicator)
@@ -493,9 +352,10 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "base (AMI)... " << flush;
     {
-        AMI_Test_baseAsBaseIPtr cb = new AMI_Test_baseAsBaseI;
-        test->baseAsBase_async(cb);
-        test(cb->check());
+        CallbackPtr cb = new Callback;
+        test->begin_baseAsBase(
+            newCallback_TestIntf_baseAsBase(cb, &Callback::response, &Callback::exception_baseAsBase));
+        cb->check();
     }
     cout << "ok" << endl;
 
@@ -520,9 +380,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "slicing of unknown derived (AMI)... " << flush;
     {
-        AMI_Test_unknownDerivedAsBaseIPtr cb = new AMI_Test_unknownDerivedAsBaseI;
-        test->unknownDerivedAsBase_async(cb);
-        test(cb->check());
+        CallbackPtr cb = new Callback;
+        test->begin_unknownDerivedAsBase(
+            newCallback_TestIntf_unknownDerivedAsBase(cb, &Callback::response,
+                                                      &Callback::exception_unknownDerivedAsBase));
+        cb->check();
     }
     cout << "ok" << endl;
 
@@ -548,9 +410,10 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "non-slicing of known derived as base (AMI)... " << flush;
     {
-        AMI_Test_knownDerivedAsBaseIPtr cb = new AMI_Test_knownDerivedAsBaseI;
-        test->knownDerivedAsBase_async(cb);
-        test(cb->check());
+        CallbackPtr cb = new Callback;
+        test->begin_knownDerivedAsBase(
+            newCallback_TestIntf_knownDerivedAsBase(cb, &Callback::response, &Callback::exception_knownDerivedAsBase));
+        cb->check();
     }
     cout << "ok" << endl;
 
@@ -576,9 +439,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "non-slicing of known derived as derived (AMI)... " << flush;
     {
-        AMI_Test_knownDerivedAsKnownDerivedIPtr cb = new AMI_Test_knownDerivedAsKnownDerivedI;
-        test->knownDerivedAsKnownDerived_async(cb);
-        test(cb->check());
+        CallbackPtr cb = new Callback;
+        test->begin_knownDerivedAsKnownDerived(
+            newCallback_TestIntf_knownDerivedAsKnownDerived(cb, &Callback::response, 
+                                                            &Callback::exception_knownDerivedAsKnownDerived));
+        cb->check();
     }
     cout << "ok" << endl;
 
@@ -603,9 +468,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "slicing of unknown intermediate as base (AMI)... " << flush;
     {
-        AMI_Test_unknownIntermediateAsBaseIPtr cb = new AMI_Test_unknownIntermediateAsBaseI;
-        test->unknownIntermediateAsBase_async(cb);
-        test(cb->check());
+        CallbackPtr cb = new Callback;
+        test->begin_unknownIntermediateAsBase(
+            newCallback_TestIntf_unknownIntermediateAsBase(cb, &Callback::response, 
+                                                           &Callback::exception_unknownIntermediateAsBase));
+        cb->check();
     }
     cout << "ok" << endl;
 
@@ -631,9 +498,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "slicing of known intermediate as base (AMI)... " << flush;
     {
-        AMI_Test_knownIntermediateAsBaseIPtr cb = new AMI_Test_knownIntermediateAsBaseI;
-        test->knownIntermediateAsBase_async(cb);
-        test(cb->check());
+        CallbackPtr cb = new Callback;
+        test->begin_knownIntermediateAsBase(
+            newCallback_TestIntf_knownIntermediateAsBase(cb, &Callback::response, 
+                                                         &Callback::exception_knownIntermediateAsBase));
+        cb->check();
     }
     cout << "ok" << endl;
 
@@ -660,9 +529,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "slicing of known most derived as base (AMI)... " << flush;
     {
-        AMI_Test_knownMostDerivedAsBaseIPtr cb = new AMI_Test_knownMostDerivedAsBaseI;
-        test->knownMostDerivedAsBase_async(cb);
-        test(cb->check());
+        CallbackPtr cb = new Callback;
+        test->begin_knownMostDerivedAsBase(
+            newCallback_TestIntf_knownMostDerivedAsBase(cb, &Callback::response, 
+                                                        &Callback::exception_knownMostDerivedAsBase));
+        cb->check();
     }
     cout << "ok" << endl;
 
@@ -688,9 +559,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "non-slicing of known intermediate as intermediate (AMI)... " << flush;
     {
-        AMI_Test_knownIntermediateAsKnownIntermediateIPtr cb = new AMI_Test_knownIntermediateAsKnownIntermediateI;
-        test->knownIntermediateAsKnownIntermediate_async(cb);
-        test(cb->check());
+        CallbackPtr cb = new Callback;
+        test->begin_knownIntermediateAsKnownIntermediate(
+            newCallback_TestIntf_knownIntermediateAsKnownIntermediate(cb, &Callback::response, 
+                                                        &Callback::exception_knownIntermediateAsKnownIntermediate));
+        cb->check();
     }
     cout << "ok" << endl;
 
@@ -717,9 +590,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "non-slicing of known most derived as intermediate (AMI)... " << flush;
     {
-        AMI_Test_knownMostDerivedAsKnownIntermediateIPtr cb = new AMI_Test_knownMostDerivedAsKnownIntermediateI;
-        test->knownMostDerivedAsKnownIntermediate_async(cb);
-        test(cb->check());
+        CallbackPtr cb = new Callback;
+        test->begin_knownMostDerivedAsKnownIntermediate(
+            newCallback_TestIntf_knownMostDerivedAsKnownIntermediate(cb, &Callback::response, 
+                                                        &Callback::exception_knownMostDerivedAsKnownIntermediate));
+        cb->check();
     }
     cout << "ok" << endl;
 
@@ -746,9 +621,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "non-slicing of known most derived as most derived (AMI)... " << flush;
     {
-        AMI_Test_knownMostDerivedAsKnownMostDerivedIPtr cb = new AMI_Test_knownMostDerivedAsKnownMostDerivedI;
-        test->knownMostDerivedAsKnownMostDerived_async(cb);
-        test(cb->check());
+        CallbackPtr cb = new Callback;
+        test->begin_knownMostDerivedAsKnownMostDerived(
+            newCallback_TestIntf_knownMostDerivedAsKnownMostDerived(cb, &Callback::response, 
+                                                        &Callback::exception_knownMostDerivedAsKnownMostDerived));
+        cb->check();
     }
     cout << "ok" << endl;
 
@@ -774,9 +651,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "slicing of unknown most derived, known intermediate as base (AMI)... " << flush;
     {
-        AMI_Test_unknownMostDerived1AsBaseIPtr cb = new AMI_Test_unknownMostDerived1AsBaseI;
-        test->unknownMostDerived1AsBase_async(cb);
-        test(cb->check());
+        CallbackPtr cb = new Callback;
+        test->begin_unknownMostDerived1AsBase(
+            newCallback_TestIntf_unknownMostDerived1AsBase(cb, &Callback::response, 
+                                                           &Callback::exception_unknownMostDerived1AsBase));
+        cb->check();
     }
     cout << "ok" << endl;
 
@@ -802,9 +681,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "slicing of unknown most derived, known intermediate as intermediate (AMI)... " << flush;
     {
-        AMI_Test_unknownMostDerived1AsKnownIntermediateIPtr cb = new AMI_Test_unknownMostDerived1AsKnownIntermediateI;
-        test->unknownMostDerived1AsKnownIntermediate_async(cb);
-        test(cb->check());
+        CallbackPtr cb = new Callback;
+        test->begin_unknownMostDerived1AsKnownIntermediate(
+            newCallback_TestIntf_unknownMostDerived1AsKnownIntermediate(cb, &Callback::response, 
+                                                         &Callback::exception_unknownMostDerived1AsKnownIntermediate));
+        cb->check();
     }
     cout << "ok" << endl;
 
@@ -829,9 +710,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     cout << "slicing of unknown most derived, unknown intermediate as base (AMI)... " << flush;
     {
-        AMI_Test_unknownMostDerived2AsBaseIPtr cb = new AMI_Test_unknownMostDerived2AsBaseI;
-        test->unknownMostDerived2AsBase_async(cb);
-        test(cb->check());
+        CallbackPtr cb = new Callback;
+        test->begin_unknownMostDerived2AsBase(
+            newCallback_TestIntf_unknownMostDerived2AsBase(cb, &Callback::response, 
+                                                         &Callback::exception_unknownMostDerived2AsBase));
+        cb->check();
     }
     cout << "ok" << endl;
 

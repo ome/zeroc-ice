@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,14 +12,13 @@ using Test;
 
 public sealed class TestI : TestIntfDisp_
 {
-    public TestI(Ice.ObjectAdapter adapter)
+    public TestI()
     {
-        _adapter = adapter;
     }
     
     public override void shutdown_async(AMD_TestIntf_shutdown cb, Ice.Current current)
     {
-        _adapter.getCommunicator().shutdown();
+        current.adapter.getCommunicator().shutdown();
         cb.ice_response();
     }
     
@@ -136,5 +135,4 @@ public sealed class TestI : TestIntfDisp_
         umd2.umd2 = "UnknownMostDerived2.umd2";
         cb.ice_exception(umd2);
     }
-    private Ice.ObjectAdapter _adapter;
 }

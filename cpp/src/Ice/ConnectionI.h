@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,8 @@
 #include <IceUtil/Mutex.h>
 #include <IceUtil/Monitor.h>
 #include <IceUtil/Time.h>
+#include <IceUtil/Timer.h>
+
 #include <Ice/Connection.h>
 #include <Ice/ConnectionIF.h>
 #include <Ice/ConnectionFactoryF.h>
@@ -21,12 +23,12 @@
 #include <Ice/ObjectAdapterF.h>
 #include <Ice/ServantManagerF.h>
 #include <Ice/EndpointIF.h>
+#include <Ice/ConnectorF.h>
 #include <Ice/LoggerF.h>
 #include <Ice/TraceLevelsF.h>
 #include <Ice/OutgoingAsyncF.h>
 #include <Ice/EventHandler.h>
-#include <Ice/SocketReadyCallback.h>
-#include <Ice/SelectorThreadF.h>
+#include <Ice/Dispatcher.h>
 
 #include <deque>
 #include <memory>
@@ -37,7 +39,20 @@ namespace IceInternal
 class Outgoing;
 class BatchOutgoing;
 class OutgoingMessageCallback;
-class FlushSentCallbacks;
+
+class ConnectionReaper : public IceUtil::Mutex, public IceUtil::Shared
+{
+public:
+
+    void add(const Ice::ConnectionIPtr&);
+    void swapConnections(std::vector<Ice::ConnectionIPtr>&);
+
+private:
+
+    std::vector<Ice::ConnectionIPtr> _connections;
+};
+typedef IceUtil::Handle<ConnectionReaper> ConnectionReaperPtr;
+
 }
 
 namespace Ice
@@ -45,10 +60,7 @@ namespace Ice
 
 class LocalException;
 
-class ICE_API ConnectionI : public Connection, 
-                            public IceInternal::EventHandler,
-                            public IceInternal::SocketReadyCallback,
-                            public IceUtil::Monitor<IceUtil::Mutex>
+class ICE_API ConnectionI : public Connection, public IceInternal::EventHandler, public IceUtil::Monitor<IceUtil::Mutex>
 {
 public:
 
@@ -84,7 +96,7 @@ public:
     void monitor(const IceUtil::Time&);
 
     bool sendRequest(IceInternal::Outgoing*, bool, bool);
-    bool sendAsyncRequest(const IceInternal::OutgoingAsyncPtr&, bool, bool);
+    IceInternal::AsyncStatus sendAsyncRequest(const IceInternal::OutgoingAsyncPtr&, bool, bool);
 
     void prepareBatchRequest(IceInternal::BasicStream*);
     void finishBatchRequest(IceInternal::BasicStream*, bool);
@@ -92,50 +104,53 @@ public:
 
     virtual void flushBatchRequests(); // From Connection.
 
+    virtual AsyncResultPtr begin_flushBatchRequests();
+    virtual AsyncResultPtr begin_flushBatchRequests(const CallbackPtr&, const LocalObjectPtr& = 0);
+    virtual AsyncResultPtr begin_flushBatchRequests(const Callback_Connection_flushBatchRequestsPtr&,
+                                                    const LocalObjectPtr& = 0);
+    virtual void end_flushBatchRequests(const AsyncResultPtr&);
+
     bool flushBatchRequests(IceInternal::BatchOutgoing*);
-    bool flushAsyncBatchRequests(const IceInternal::BatchOutgoingAsyncPtr&);
+    IceInternal::AsyncStatus flushAsyncBatchRequests(const IceInternal::BatchOutgoingAsyncPtr&);
 
     void sendResponse(IceInternal::BasicStream*, Byte);
     void sendNoResponse();
 
     IceInternal::EndpointIPtr endpoint() const;
+    IceInternal::ConnectorPtr connector() const;
 
     virtual void setAdapter(const ObjectAdapterPtr&); // From Connection.
     virtual ObjectAdapterPtr getAdapter() const; // From Connection.
+    virtual EndpointPtr getEndpoint() const; // From Connection.
     virtual ObjectPrx createProxy(const Identity& ident) const; // From Connection.
 
     //
     // Operations from EventHandler
     //
-    virtual bool datagram() const;
-    virtual bool readable() const;
-    virtual bool read(IceInternal::BasicStream&);
-    virtual void message(IceInternal::BasicStream&, const IceInternal::ThreadPoolPtr&);
-    virtual void finished(const IceInternal::ThreadPoolPtr&);
-    virtual void exception(const LocalException&);
-    virtual void invokeException(const LocalException&, int);
+#ifdef ICE_USE_IOCP
+    bool startAsync(IceInternal::SocketOperation);
+    bool finishAsync(IceInternal::SocketOperation);
+#endif
+    virtual void message(IceInternal::ThreadPoolCurrent&);
+    virtual void finished(IceInternal::ThreadPoolCurrent&);
+    virtual std::string toString() const; // From Connection and EvantHandler.
+    virtual IceInternal::NativeInfoPtr getNativeInfo();
+
+    void timedOut();
+
     virtual std::string type() const; // From Connection.
     virtual Ice::Int timeout() const; // From Connection.
-    virtual std::string toString() const;  // From Connection and EvantHandler.
+    virtual ConnectionInfoPtr getInfo() const; // From Connection
 
-    //
-    // Operations from SocketReadyCallback
-    //
-    virtual IceInternal::SocketStatus socketReady();
-    virtual void socketFinished();
-    virtual void socketTimeout();
+    void exception(const LocalException&);
+    void invokeException(const LocalException&, int);
 
-    // SSL plug-in needs to be able to get the transceiver.
-    IceInternal::TransceiverPtr getTransceiver() const;
+    void dispatch(const StartCallbackPtr&, const std::vector<IceInternal::OutgoingAsyncMessageCallbackPtr>&,
+                  Byte, Int, Int, const IceInternal::ServantManagerPtr&, const ObjectAdapterPtr&, 
+                  const IceInternal::OutgoingAsyncPtr&, IceInternal::BasicStream&);
+    void finish();
 
 private:
-
-    ConnectionI(const IceInternal::InstancePtr&, const IceInternal::TransceiverPtr&, const IceInternal::EndpointIPtr&, 
-                const ObjectAdapterPtr&);
-    virtual ~ConnectionI();
-
-    friend class IceInternal::IncomingConnectionFactory;
-    friend class IceInternal::OutgoingConnectionFactory;
 
     enum State
     {
@@ -144,50 +159,58 @@ private:
         StateActive,
         StateHolding,
         StateClosing,
-        StateClosed
+        StateClosed,
+        StateFinished
     };
-
-    void setState(State, const LocalException&);
-    void setState(State);
-
-    void initiateShutdown();
 
     struct OutgoingMessage
     {
         OutgoingMessage(IceInternal::BasicStream* str, bool comp) : 
-	    stream(str), out(0), compress(comp), response(false), adopted(false)
+	    stream(str), out(0), compress(comp), requestId(0), adopted(false), isSent(false)
 	{
 	}
 
-        OutgoingMessage(IceInternal::OutgoingMessageCallback* o, IceInternal::BasicStream* str, bool comp, bool resp) :
-	    stream(str), out(o), compress(comp), response(resp), adopted(false)
+        OutgoingMessage(IceInternal::OutgoingMessageCallback* o, IceInternal::BasicStream* str, bool comp, int rid) :
+	    stream(str), out(o), compress(comp), requestId(rid), adopted(false), isSent(false)
 	{
 	}
 
         OutgoingMessage(const IceInternal::OutgoingAsyncMessageCallbackPtr& o, IceInternal::BasicStream* str, 
-                        bool comp, bool resp) :
-	    stream(str), out(0), outAsync(o), compress(comp), response(resp), adopted(false)
+                        bool comp, int rid) :
+	    stream(str), out(0), outAsync(o), compress(comp), requestId(rid), adopted(false), isSent(false)
 	{
 	}
 
         void adopt(IceInternal::BasicStream*);
-        void sent(ConnectionI*, bool);
+        bool sent(ConnectionI*, bool);
         void finished(const Ice::LocalException&);
 
         IceInternal::BasicStream* stream;
         IceInternal::OutgoingMessageCallback* out;
         IceInternal::OutgoingAsyncMessageCallbackPtr outAsync;
         bool compress;
-        bool response;
+        int requestId;
         bool adopted;
+        bool isSent;
     };
 
-    IceInternal::SocketStatus initialize();
-    IceInternal::SocketStatus validate();
-    bool send();
-    friend class IceInternal::FlushSentCallbacks;
-    void flushSentCallbacks();
-    bool sendMessage(OutgoingMessage&);
+    ConnectionI(const IceInternal::InstancePtr&, const IceInternal::ConnectionReaperPtr&, 
+                const IceInternal::TransceiverPtr&, const IceInternal::ConnectorPtr&, 
+                const IceInternal::EndpointIPtr&, const ObjectAdapterPtr&);
+    virtual ~ConnectionI();
+
+    friend class IceInternal::IncomingConnectionFactory;
+    friend class IceInternal::OutgoingConnectionFactory;
+
+    void setState(State, const LocalException&);
+    void setState(State);
+
+    void initiateShutdown();
+
+    bool initialize(IceInternal::SocketOperation = IceInternal::SocketOperationNone);
+    bool validate(IceInternal::SocketOperation = IceInternal::SocketOperationNone);
+    void sendNextMessage(std::vector<IceInternal::OutgoingAsyncMessageCallbackPtr>&);
+    IceInternal::AsyncStatus sendMessage(OutgoingMessage&);
 
     void doCompress(IceInternal::BasicStream&, IceInternal::BasicStream&);
     void doUncompress(IceInternal::BasicStream&, IceInternal::BasicStream&);
@@ -197,22 +220,78 @@ private:
     void invokeAll(IceInternal::BasicStream&, Int, Int, Byte,
                    const IceInternal::ServantManagerPtr&, const ObjectAdapterPtr&);
 
-    IceInternal::TransceiverPtr _transceiver;
+    void scheduleTimeout(IceInternal::SocketOperation status, int timeout)
+    {
+        if(timeout < 0)
+        {
+            return;
+        }
+
+        try
+        {
+            if(status & IceInternal::SocketOperationRead)
+            {
+                _timer->schedule(_readTimeout, IceUtil::Time::milliSeconds(timeout));
+                _readTimeoutScheduled = true;
+            }
+            if(status & (IceInternal::SocketOperationWrite | IceInternal::SocketOperationConnect))
+            {
+                _timer->schedule(_writeTimeout, IceUtil::Time::milliSeconds(timeout));
+                _writeTimeoutScheduled = true;
+            }
+        }
+        catch(const IceUtil::Exception&)
+        {
+            assert(false);
+        }
+    }
+
+    void unscheduleTimeout(IceInternal::SocketOperation status)
+    {
+        if((status & IceInternal::SocketOperationRead) && _readTimeoutScheduled)
+        {
+            _timer->cancel(_readTimeout);
+            _readTimeoutScheduled = false;
+        }
+        if((status & (IceInternal::SocketOperationWrite | IceInternal::SocketOperationConnect)) &&
+           _writeTimeoutScheduled)
+        {
+            _timer->cancel(_writeTimeout);
+            _writeTimeoutScheduled = false;
+        }
+    }
+
+    int connectTimeout();
+    int closeTimeout();
+
+    AsyncResultPtr begin_flushBatchRequestsInternal(const IceInternal::CallbackBasePtr&, const LocalObjectPtr&);
+
+    const IceInternal::TransceiverPtr _transceiver;
+    const IceInternal::InstancePtr _instance;
+    const IceInternal::ConnectionReaperPtr _reaper;
     const std::string _desc;
     const std::string _type;
+    const IceInternal::ConnectorPtr _connector;
     const IceInternal::EndpointIPtr _endpoint;
 
     ObjectAdapterPtr _adapter;
     IceInternal::ServantManagerPtr _servantManager;
 
+    const DispatcherPtr _dispatcher;
     const LoggerPtr _logger;
     const IceInternal::TraceLevelsPtr _traceLevels;
     const IceInternal::ThreadPoolPtr _threadPool;
-    const IceInternal::SelectorThreadPtr _selectorThread;
+
+    const IceUtil::TimerPtr _timer;
+    const IceUtil::TimerTaskPtr _writeTimeout;
+    bool _writeTimeoutScheduled;
+    const IceUtil::TimerTaskPtr _readTimeout;
+    bool _readTimeoutScheduled;
 
     StartCallbackPtr _startCallback;
 
     const bool _warn;
+    const bool _warnUdp;
     const int _acmTimeout;
     IceUtil::Time _acmAbsoluteTimeout;
 
@@ -236,15 +315,14 @@ private:
     size_t _batchMarker;
 
     std::deque<OutgoingMessage> _sendStreams;
-    bool _sendInProgress;
 
-    std::vector<IceInternal::OutgoingAsyncMessageCallbackPtr> _sentCallbacks;
-    IceInternal::ThreadPoolWorkItemPtr _flushSentCallbacks;
-    
+    IceInternal::BasicStream _readStream;
+    bool _readHeader;
+    IceInternal::BasicStream _writeStream;
+
     int _dispatchCount;
 
     State _state; // The current state.
-    IceUtil::Time _stateTime; // The last time when the state was changed.
 };
 
 }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,7 +17,7 @@ public final class LocatorInfo
         void setException(Ice.LocalException ex);
     }
 
-    private class RequestCallback
+    private static class RequestCallback
     {
         public void 
         response(LocatorInfo locatorInfo, Ice.ObjectPrx proxy)
@@ -245,19 +245,19 @@ public final class LocatorInfo
                             public void
                             ice_response(Ice.ObjectPrx proxy)
                             {
-                                response(proxy);
+                                ObjectRequest.this.response(proxy);
                             }
                             
                             public void
                             ice_exception(Ice.UserException ex)
                             {
-                                exception(ex);
+                                ObjectRequest.this.exception(ex);
                             }
                             
                             public void
                             ice_exception(Ice.LocalException ex)
                             {
-                                exception(ex);
+                                ObjectRequest.this.exception(ex);
                             }
                         },
                         _ref.getIdentity());
@@ -295,19 +295,19 @@ public final class LocatorInfo
                             public void
                             ice_response(Ice.ObjectPrx proxy)
                             {
-                                response(proxy);
+                                AdapterRequest.this.response(proxy);
                             }
                             
                             public void
                             ice_exception(Ice.UserException ex)
                             {
-                                exception(ex);
+                                AdapterRequest.this.exception(ex);
                             }
                             
                             public void
                             ice_exception(Ice.LocalException ex)
                             {
-                                exception(ex);
+                                AdapterRequest.this.exception(ex);
                             }
                         },
                         _ref.getAdapterId());
@@ -354,6 +354,12 @@ public final class LocatorInfo
         return false;
     }
 
+    public int
+    hashCode()
+    {
+         return _locator.hashCode();
+    }
+
     public Ice.LocatorPrx
     getLocator()
     {
@@ -363,20 +369,30 @@ public final class LocatorInfo
         return _locator;
     }
 
-    public synchronized Ice.LocatorRegistryPrx
+    public Ice.LocatorRegistryPrx
     getLocatorRegistry()
     {
-        if(_locatorRegistry == null) // Lazy initialization
+        synchronized(this)
         {
-            _locatorRegistry = _locator.getRegistry();
+            if(_locatorRegistry != null)
+            {
+                return _locatorRegistry;
+            }
+        }
 
+        //
+        // Do not make locator calls from within sync.
+        //
+        Ice.LocatorRegistryPrx locatorRegistry = _locator.getRegistry();
+
+        synchronized(this)
+        {
             //
             // The locator registry can't be located.
             //
-            _locatorRegistry = Ice.LocatorRegistryPrxHelper.uncheckedCast(_locatorRegistry.ice_locator(null));
+            _locatorRegistry = Ice.LocatorRegistryPrxHelper.uncheckedCast(locatorRegistry.ice_locator(null));
+            return _locatorRegistry;
         }
-        
-        return _locatorRegistry;
     }
 
     public EndpointI[]

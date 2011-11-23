@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -20,8 +20,9 @@ if len(path) == 0:
 sys.path.append(os.path.join(path[0]))
 from scripts import *
 
-IceGridAdmin.iceGridTest("application.xml", '--TestDir="%s"' % os.getcwd(), '"icebox.exe=%s"' % TestUtil.getIceBox())
+IceGridAdmin.iceGridTest("application.xml", '--TestDir="%s"' % os.getcwd(), "icebox.exe='%s'" % TestUtil.getIceBox())
 
 # Tests with targets
 IceGridAdmin.iceGridTest("application.xml", '-t --TestDir="%s"' % os.getcwd(),
-                         "icebox.exe=%s moreservers moreservices moreproperties" % TestUtil.getIceBox())
+                         "icebox.exe='%s' moreservers moreservices moreproperties" % TestUtil.getIceBox())
+

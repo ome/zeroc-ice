@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,7 +9,7 @@
 
 package IceInternal;
 
-public class IncomingAsync extends IncomingBase
+public class IncomingAsync extends IncomingBase implements Ice.AMDCallback
 {
     public
     IncomingAsync(Incoming in) // Adopts the argument. It must not be used afterwards.
@@ -22,6 +22,48 @@ public class IncomingAsync extends IncomingBase
             in.setActive(this);
             _active = true;
         }
+    }
+
+    public void
+    ice_exception(java.lang.Exception ex)
+    {
+        //
+        // Only call __exception if this incoming is not retriable or if
+        // all the interceptors return true and no response has been sent
+        // yet.
+        //
+
+        if(_retriable)
+        {
+            try
+            {
+                if(_interceptorAsyncCallbackList != null)
+                {
+                    for(Ice.DispatchInterceptorAsyncCallback cb : _interceptorAsyncCallbackList)
+                    {
+                        if(cb.exception(ex) == false)
+                        {
+                            return;
+                        }
+                    }
+                }
+            }
+            catch(java.lang.RuntimeException exc)
+            {
+                return;
+            }
+    
+            synchronized(this)
+            {
+                if(!_active)
+                {
+                    return;
+                }
+                _active = false;
+            }
+        }
+
+        __exception(ex);
     }
 
     final void
@@ -108,93 +150,43 @@ public class IncomingAsync extends IncomingBase
     final protected boolean
     __validateResponse(boolean ok)
     {
-        if(!_retriable)
-        {
-            return true;
-        }
+        //
+        // Only returns true if this incoming is not retriable or if all
+        // the interceptors return true and no response has been sent
+        // yet. Upon getting a true return value, the caller should send
+        // the response.
+        //
 
-        try
+        if(_retriable)
         {
-            if(_interceptorAsyncCallbackList != null)
+            try
             {
-                java.util.Iterator<Ice.DispatchInterceptorAsyncCallback> p = _interceptorAsyncCallbackList.iterator();
-                while(p.hasNext())
+                if(_interceptorAsyncCallbackList != null)
                 {
-                    Ice.DispatchInterceptorAsyncCallback cb = p.next();
-                    if(cb.response(ok) == false)
+                    for(Ice.DispatchInterceptorAsyncCallback cb : _interceptorAsyncCallbackList)
                     {
-                        return false;
+                        if(cb.response(ok) == false)
+                        {
+                            return false;
+                        }
                     }
                 }
             }
-        }
-        catch(java.lang.RuntimeException ex)
-        {
-            return false;
-        }
-
-        //
-        // interceptorAsyncCallbackList is null or all its elements returned OK
-        //
-
-        synchronized(this)
-        {
-            if(_active)
-            {
-                _active = false;
-                return true;
-            }
-            else
+            catch(java.lang.RuntimeException ex)
             {
                 return false;
             }
-        }
-    }
 
-    final protected boolean
-    __validateException(java.lang.Exception exc)
-    {
-        if(!_retriable)
-        {
-            return true;
-        }
-
-        try
-        {
-            if(_interceptorAsyncCallbackList != null)
+            synchronized(this)
             {
-                java.util.Iterator<Ice.DispatchInterceptorAsyncCallback> p = _interceptorAsyncCallbackList.iterator();
-                while(p.hasNext())
+                if(!_active)
                 {
-                    Ice.DispatchInterceptorAsyncCallback cb = p.next();
-                    if(cb.exception(exc) == false)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
-            }
-        }
-        catch(java.lang.RuntimeException ex)
-        {
-            return false;
-        }
-
-        //
-        // interceptorAsyncCallbackList is null or all its elements returned OK
-        //
-
-        synchronized(this)
-        {
-            if(_active)
-            {
                 _active = false;
-                return true;
-            }
-            else
-            {
-                return false;
             }
         }
+        return true;
     }
 
     final protected BasicStream

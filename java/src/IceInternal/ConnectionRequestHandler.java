@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@ public class ConnectionRequestHandler implements RequestHandler
 {
     public void
     prepareBatchRequest(BasicStream out)
+        throws LocalExceptionWrapper
     {
         _connection.prepareBatchRequest(out);
     }
@@ -43,7 +44,7 @@ public class ConnectionRequestHandler implements RequestHandler
         }
     }
 
-    public boolean
+    public int
     sendAsyncRequest(OutgoingAsync out)
         throws LocalExceptionWrapper
     {
@@ -56,7 +57,7 @@ public class ConnectionRequestHandler implements RequestHandler
         return _connection.flushBatchRequests(out);
     }
 
-    public boolean
+    public int
     flushAsyncBatchRequests(BatchOutgoingAsync out)
     {
         return _connection.flushAsyncBatchRequests(out);

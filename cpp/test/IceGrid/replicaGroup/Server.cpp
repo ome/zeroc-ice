@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,7 +24,7 @@ int
 Server::run(int argc, char* argv[])
 {
     Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("ReplicatedAdapter");
-    Ice::ObjectPtr object = new TestI(adapter, communicator()->getProperties());
+    Ice::ObjectPtr object = new TestI(communicator()->getProperties());
     adapter->add(object, communicator()->stringToIdentity(communicator()->getProperties()->getProperty("Identity")));
     shutdownOnInterrupt();
     try

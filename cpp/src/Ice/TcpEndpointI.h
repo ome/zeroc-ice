@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,8 +16,6 @@
 namespace IceInternal
 {
 
-const Ice::Short TcpEndpointType = 1;
-
 class TcpEndpointI : public EndpointI
 {
 public:
@@ -28,6 +26,7 @@ public:
 
     virtual void streamWrite(BasicStream*) const;
     virtual std::string toString() const;
+    virtual Ice::EndpointInfoPtr getInfo() const;
     virtual Ice::Short type() const;
     virtual Ice::Int timeout() const;
     virtual EndpointIPtr timeout(Ice::Int) const;
@@ -36,7 +35,6 @@ public:
     virtual EndpointIPtr compress(bool) const;
     virtual bool datagram() const;
     virtual bool secure() const;
-    virtual bool unknown() const;
     virtual TransceiverPtr transceiver(EndpointIPtr&) const;
     virtual std::vector<ConnectorPtr> connectors() const;
     virtual void connectors_async(const EndpointI_connectorsPtr&) const;
@@ -44,22 +42,13 @@ public:
     virtual std::vector<EndpointIPtr> expand() const;
     virtual bool equivalent(const EndpointIPtr&) const;
 
-    virtual bool operator==(const EndpointI&) const;
-    virtual bool operator!=(const EndpointI&) const;
-    virtual bool operator<(const EndpointI&) const;
+    virtual bool operator==(const Ice::LocalObject&) const;
+    virtual bool operator<(const Ice::LocalObject&) const;
 
 private:
 
+    virtual ::Ice::Int hashInit() const;
     virtual std::vector<ConnectorPtr> connectors(const std::vector<struct sockaddr_storage>&) const;
-
-#if defined(__SUNPRO_CC)
-    //
-    // COMPILERFIX: prevent the compiler from emitting a warning about
-    // hidding these operators.
-    //
-    using LocalObject::operator==;
-    using LocalObject::operator<;
-#endif
 
     //
     // All members are const, because endpoints are immutable.

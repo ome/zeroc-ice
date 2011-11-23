@@ -1,16 +1,17 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
 package IceGridGUI.Application;
 
 interface TemplateInstance
 {
-    Object rebuild(java.util.List editables) throws UpdateFailedException;
+    Object rebuild(java.util.List<Editable> editables) throws UpdateFailedException;
     void restore(Object backupObj);
 }
 

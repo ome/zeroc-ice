@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,10 +11,13 @@
 #   include <IceUtil/Config.h>
 #endif
 #include <Connection.h>
+#include <ConnectionInfo.h>
+#include <Endpoint.h>
 #include <ObjectAdapter.h>
+#include <Operation.h>
 #include <Proxy.h>
 #include <Util.h>
-#include <Ice/Connection.h>
+#include <Ice/ConnectionAsync.h>
 
 using namespace std;
 using namespace IcePy;
@@ -222,6 +225,103 @@ connectionFlushBatchRequests(ConnectionObject* self)
 extern "C"
 #endif
 static PyObject*
+connectionBeginFlushBatchRequests(ConnectionObject* self, PyObject* args, PyObject* kwds)
+{
+    assert(self->connection);
+
+    static char* argNames[] =
+    {
+        const_cast<char*>("_ex"),
+        const_cast<char*>("_sent"),
+        0
+    };
+    PyObject* ex = Py_None;
+    PyObject* sent = Py_None;
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, STRCAST("|OO"), argNames, &ex, &sent))
+    {
+        return 0;
+    }
+
+    if(ex == Py_None)
+    {
+        ex = 0;
+    }
+    if(sent == Py_None)
+    {
+        sent = 0;
+    }
+
+    if(!ex && sent)
+    {
+        PyErr_Format(PyExc_RuntimeError,
+            STRCAST("exception callback must also be provided when sent callback is used"));
+        return 0;
+    }
+
+    Ice::Callback_Connection_flushBatchRequestsPtr cb;
+    if(ex || sent)
+    {
+        FlushCallbackPtr d = new FlushCallback(ex, sent, "flushBatchRequests");
+        cb = Ice::newCallback_Connection_flushBatchRequests(d, &FlushCallback::exception, &FlushCallback::sent);
+    }
+
+    Ice::AsyncResultPtr result;
+    try
+    {
+        AllowThreads allowThreads; // Release Python's global interpreter lock during remote invocations.
+
+        if(cb)
+        {
+            result = (*self->connection)->begin_flushBatchRequests(cb);
+        }
+        else
+        {
+            result = (*self->connection)->begin_flushBatchRequests();
+        }
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+
+    return createAsyncResult(result, 0, reinterpret_cast<PyObject*>(self), 0);
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+connectionEndFlushBatchRequests(ConnectionObject* self, PyObject* args)
+{
+    assert(self->connection);
+
+    PyObject* result;
+    if(!PyArg_ParseTuple(args, STRCAST("O!"), &AsyncResultType, &result))
+    {
+        return 0;
+    }
+
+    Ice::AsyncResultPtr r = getAsyncResult(result);
+    try
+    {
+        AllowThreads allowThreads; // Release Python's global interpreter lock during blocking invocations.
+        (*self->connection)->end_flushBatchRequests(r);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
 connectionType(ConnectionObject* self)
 {
     assert(self->connection);
@@ -281,6 +381,44 @@ connectionToString(ConnectionObject* self)
     return createString(str);
 }
 
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+connectionGetInfo(ConnectionObject* self)
+{
+    assert(self->connection);
+    try
+    {
+        Ice::ConnectionInfoPtr info = (*self->connection)->getInfo();
+        return createConnectionInfo(info);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+connectionGetEndpoint(ConnectionObject* self)
+{
+    assert(self->connection);
+    try
+    {
+        Ice::EndpointPtr endpoint = (*self->connection)->getEndpoint();
+        return createEndpoint(endpoint);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+}
+
 static PyMethodDef ConnectionMethods[] =
 {
     { STRCAST("close"), reinterpret_cast<PyCFunction>(connectionClose), METH_VARARGS,
@@ -293,12 +431,20 @@ static PyMethodDef ConnectionMethods[] =
         PyDoc_STR(STRCAST("getAdapter() -> Ice.ObjectAdapter")) },
     { STRCAST("flushBatchRequests"), reinterpret_cast<PyCFunction>(connectionFlushBatchRequests), METH_NOARGS,
         PyDoc_STR(STRCAST("flushBatchRequests() -> None")) },
+    { STRCAST("begin_flushBatchRequests"), reinterpret_cast<PyCFunction>(connectionBeginFlushBatchRequests),
+        METH_VARARGS | METH_KEYWORDS, PyDoc_STR(STRCAST("begin_flushBatchRequests([_ex][, _sent]) -> Ice.AsyncResult")) },
+    { STRCAST("end_flushBatchRequests"), reinterpret_cast<PyCFunction>(connectionEndFlushBatchRequests), METH_VARARGS,
+        PyDoc_STR(STRCAST("end_flushBatchRequests(Ice.AsyncResult) -> None")) },
     { STRCAST("type"), reinterpret_cast<PyCFunction>(connectionType), METH_NOARGS,
         PyDoc_STR(STRCAST("type() -> string")) },
     { STRCAST("timeout"), reinterpret_cast<PyCFunction>(connectionTimeout), METH_NOARGS,
         PyDoc_STR(STRCAST("timeout() -> int")) },
     { STRCAST("toString"), reinterpret_cast<PyCFunction>(connectionToString), METH_NOARGS,
         PyDoc_STR(STRCAST("toString() -> string")) },
+    { STRCAST("getInfo"), reinterpret_cast<PyCFunction>(connectionGetInfo), METH_NOARGS,
+        PyDoc_STR(STRCAST("getInfo() -> Ice.ConnectionInfo")) },
+    { STRCAST("getEndpoint"), reinterpret_cast<PyCFunction>(connectionGetEndpoint), METH_NOARGS,
+        PyDoc_STR(STRCAST("getEndpoint() -> Ice.Endpoint")) },
     { 0, 0 } /* sentinel */
 };
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,7 @@
 #include <IceGrid/Query.h>
 #include <IceGrid/Admin.h>
 #include <IceGrid/Registry.h>
+#include <IceUtil/FileUtil.h>
 #include <IceUtil/Thread.h>
 #include <TestCommon.h>
 #include <Test.h>
@@ -137,9 +138,6 @@ logTests(const Ice::CommunicatorPtr& comm, const AdminSessionPrx& session)
     assert(!testDir.empty());
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         session->openServerStdErr("LogServer", -1);
         test(false);
     }
@@ -148,9 +146,6 @@ logTests(const Ice::CommunicatorPtr& comm, const AdminSessionPrx& session)
     }
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         session->openServerStdOut("LogServer", -1);
         test(false);
     }
@@ -159,9 +154,6 @@ logTests(const Ice::CommunicatorPtr& comm, const AdminSessionPrx& session)
     }
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         session->openServerLog("LogServer", "unknown.txt", -1);
         test(false);
     }
@@ -188,7 +180,7 @@ logTests(const Ice::CommunicatorPtr& comm, const AdminSessionPrx& session)
         //
         // Test with empty file.
         // 
-        ofstream os((testDir + "/log1.txt").c_str());
+        IceUtilInternal::ofstream os((testDir + "/log1.txt"));
         os.close();
 
         it = session->openServerLog("LogServer", testDir + "/log1.txt", -1);
@@ -217,7 +209,7 @@ logTests(const Ice::CommunicatorPtr& comm, const AdminSessionPrx& session)
         //
         // Test with log file with one line with no EOL on last line.
         // 
-        ofstream os((testDir + "/log2.txt").c_str());
+        IceUtilInternal::ofstream os((testDir + "/log2.txt"));
         os << "one line file with no EOL on last line";
         os.close();
 
@@ -255,7 +247,7 @@ logTests(const Ice::CommunicatorPtr& comm, const AdminSessionPrx& session)
         //
         // Test with log file with one line with EOL on last line.
         // 
-        ofstream os((testDir + "/log3.txt").c_str());
+        IceUtilInternal::ofstream os((testDir + "/log3.txt"));
         os << "one line file with EOL on last line" << endl;
         os.close();
 
@@ -301,7 +293,7 @@ logTests(const Ice::CommunicatorPtr& comm, const AdminSessionPrx& session)
         //
         // Test with log file with multiple lines
         // 
-        ofstream os((testDir + "/log4.txt").c_str());
+        IceUtilInternal::ofstream os((testDir + "/log4.txt"));
         os << "line 1" << endl;
         os << "line 2" << endl;
         os << "line 3" << endl;
@@ -350,7 +342,7 @@ logTests(const Ice::CommunicatorPtr& comm, const AdminSessionPrx& session)
 
     try
     {
-        ofstream os((testDir + "/log1.txt").c_str(), ios_base::out | ios_base::trunc);
+        IceUtilInternal::ofstream os((testDir + "/log1.txt").c_str(), ios_base::out | ios_base::trunc);
         os << flush;
 
         it = session->openServerLog("LogServer", testDir + "/log1.txt", -1);

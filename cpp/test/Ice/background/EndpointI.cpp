@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -100,12 +100,6 @@ bool
 EndpointI::secure() const
 {
     return _endpoint->secure();
-}
-
-bool
-EndpointI::unknown() const
-{
-    return _endpoint->unknown();
 }
 
 IceInternal::TransceiverPtr
@@ -224,8 +218,14 @@ EndpointI::toString() const
     return "test-" + _endpoint->toString();
 }
 
+Ice::EndpointInfoPtr
+EndpointI::getInfo() const
+{
+    return _endpoint->getInfo();
+}
+
 bool
-EndpointI::operator==(const IceInternal::EndpointI& r) const
+EndpointI::operator==(const Ice::LocalObject& r) const
 {
     const EndpointI* p = dynamic_cast<const EndpointI*>(&r);
     if(!p)
@@ -243,18 +243,17 @@ EndpointI::operator==(const IceInternal::EndpointI& r) const
 }
 
 bool
-EndpointI::operator!=(const IceInternal::EndpointI& r) const
-{
-    return !operator==(r);
-}
-
-bool
-EndpointI::operator<(const IceInternal::EndpointI& r) const
+EndpointI::operator<(const Ice::LocalObject& r) const
 {
     const EndpointI* p = dynamic_cast<const EndpointI*>(&r);
     if(!p)
     {
-        return type() < r.type();
+        const IceInternal::EndpointI* e = dynamic_cast<const IceInternal::EndpointI*>(&r);
+        if(!e)
+        {
+            return false;
+        }
+        return type() < e->type();
     }
 
     if(this == p)
@@ -263,4 +262,10 @@ EndpointI::operator<(const IceInternal::EndpointI& r) const
     }
 
     return *p->_endpoint < *_endpoint;
+}
+
+Ice::Int
+EndpointI::hashInit() const
+{
+    return _endpoint->ice_getHash();
 }

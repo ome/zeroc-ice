@@ -1,11 +1,15 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+package test.Ice.udp;
+
+import test.Ice.udp.Test.*;
 
 public class AllTests
 {
@@ -18,7 +22,7 @@ public class AllTests
         }
     }
 
-    public static class PingReplyI extends Test._PingReplyDisp
+    public static class PingReplyI extends _PingReplyDisp
     {
         public synchronized void
         reply(Ice.Current current)
@@ -61,20 +65,21 @@ public class AllTests
         private int _replies;
     }
 
-    public static Test.TestIntfPrx
+    public static void
     allTests(Ice.Communicator communicator)
     {
         communicator.getProperties().setProperty("ReplyAdapter.Endpoints", "udp -p 12030");
         Ice.ObjectAdapter adapter = communicator.createObjectAdapter("ReplyAdapter");
         PingReplyI replyI = new PingReplyI();
-        Test.PingReplyPrx reply = 
-            (Test.PingReplyPrx)Test.PingReplyPrxHelper.uncheckedCast(adapter.addWithUUID(replyI)).ice_datagram();
+
+        PingReplyPrx reply = 
+            (PingReplyPrx)PingReplyPrxHelper.uncheckedCast(adapter.addWithUUID(replyI)).ice_datagram();
         adapter.activate();
 
         System.out.print("testing udp... ");
         System.out.flush();
-        Ice.ObjectPrx base = communicator.stringToProxy("test:udp -p 12010").ice_datagram();
-        Test.TestIntfPrx obj = Test.TestIntfPrxHelper.uncheckedCast(base);
+        Ice.ObjectPrx base = communicator.stringToProxy("test -d:udp -p 12010");
+        TestIntfPrx obj = TestIntfPrxHelper.uncheckedCast(base);
 
         int nRetry = 5;
         boolean ret = false;
@@ -93,7 +98,7 @@ public class AllTests
             // If the 3 datagrams were not received within the 2 seconds, we try again to
             // receive 3 new datagrams using a new object. We give up after 5 retries. 
             replyI = new PingReplyI();
-            reply =(Test.PingReplyPrx)Test.PingReplyPrxHelper.uncheckedCast(adapter.addWithUUID(replyI)).ice_datagram();
+            reply = (PingReplyPrx)PingReplyPrxHelper.uncheckedCast(adapter.addWithUUID(replyI)).ice_datagram();
         }
         test(ret == true);
 
@@ -119,7 +124,7 @@ public class AllTests
             {
                 test(seq.length > 16384);
             }
-            
+            obj.ice_getConnection().close(false);
             communicator.getProperties().setProperty("Ice.UDP.SndSize", "64000");
             seq = new byte[50000];
             try
@@ -140,7 +145,7 @@ public class AllTests
         System.out.print("testing udp multicast... ");
         System.out.flush();
         String host;
-        if(communicator.getProperties().getProperty("Ice.IPv6") == "1")
+        if(communicator.getProperties().getProperty("Ice.IPv6").equals("1"))
         {
             host = "\"ff01::1:1\"";
         }
@@ -148,28 +153,81 @@ public class AllTests
         {
             host = "239.255.1.1";
         }
-        base = communicator.stringToProxy("test:udp -h " + host + " -p 12020").ice_datagram();
-        obj = Test.TestIntfPrxHelper.uncheckedCast(base);
+        base = communicator.stringToProxy("test -d:udp -h " + host + " -p 12020");
+        TestIntfPrx objMcast = TestIntfPrxHelper.uncheckedCast(base);
 
-        replyI.reset();
-        obj.ping(reply);
-        if(!replyI.waitReply(5, 2000))
+        nRetry = 5;
+        while(nRetry-- > 0)
+        {
+            replyI.reset();
+            objMcast.ping(reply);
+            ret = replyI.waitReply(5, 2000);
+            if(ret)
+            {
+                break; // Success
+            }
+            replyI = new PingReplyI();
+            reply = (PingReplyPrx)PingReplyPrxHelper.uncheckedCast(adapter.addWithUUID(replyI)).ice_datagram();
+        }
+        if(!ret)
         {
             System.out.println("failed (is a firewall enabled?)");
-            return obj;
         }
-
-        replyI.reset();
-        obj.ping(reply);
-        ret = replyI.waitReply(5, 2000);
-        if(!replyI.waitReply(5, 2000))
+        else
         {
-            System.out.println("failed (is a firewall enabled?)");
-            return obj;
+            System.out.println("ok");
         }
 
+        System.out.print("testing udp bi-dir connection... ");
+        System.out.flush();
+        obj.ice_getConnection().setAdapter(adapter);
+        objMcast.ice_getConnection().setAdapter(adapter);
+        nRetry = 5;
+        while(nRetry-- > 0)
+        {
+            replyI.reset();
+            obj.pingBiDir(reply.ice_getIdentity());
+            obj.pingBiDir(reply.ice_getIdentity());
+            obj.pingBiDir(reply.ice_getIdentity());
+            ret = replyI.waitReply(3, 2000);
+            if(ret)
+            {
+                break; // Success
+            }
+            replyI = new PingReplyI();
+            reply = (PingReplyPrx)PingReplyPrxHelper.uncheckedCast(adapter.addWithUUID(replyI)).ice_datagram();
+        }
+        test(ret);
         System.out.println("ok");
 
-        return obj;
+        //
+        // Sending the replies back on the multicast UDP connection doesn't work for most
+        // platform (it works for OS X Leopard but not Snow Leopard, doesn't work on SLES,
+        // Windows...). For Windows, see UdpTransceiver constructor for the details. So
+        // we don't run this test.
+        // 
+//         System.out.print("testing udp bi-dir connection... ");
+//         nRetry = 5;
+//         while(nRetry-- > 0)
+//         {
+//             replyI.reset();
+//             objMcast.pingBiDir(reply.ice_getIdentity());
+//             ret = replyI.waitReply(5, 2000);
+//             if(ret)
+//             {
+//                 break; // Success
+//             }
+//             replyI = new PingReplyI();
+//             reply = (PingReplyPrx)PingReplyPrxHelper.uncheckedCast(adapter.addWithUUID(replyI)).ice_datagram();
+//         }
+
+//         if(!ret)
+//         {
+//             System.out.println("failed (is a firewall enabled?)");
+//         }
+//         else
+//         {
+//             System.out.println("ok");
+//         }
     }
 }

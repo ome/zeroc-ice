@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,14 +12,13 @@ using Test;
 
 public class ThrowerI : ThrowerDisp_
 {
-    public ThrowerI(Ice.ObjectAdapter adapter)
+    public ThrowerI()
     {
-        _adapter = adapter;
     }
 
     public override void shutdown_async(AMD_Thrower_shutdown cb, Ice.Current current)
     {
-        _adapter.getCommunicator().shutdown();
+        current.adapter.getCommunicator().shutdown();
         cb.ice_response();
     }
 
@@ -139,6 +138,4 @@ public class ThrowerI : ThrowerDisp_
     {
         Debug.Assert(false);
     }
-
-    private Ice.ObjectAdapter _adapter;
 }

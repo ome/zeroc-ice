@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,7 +14,7 @@ public class OutputStreamI implements OutputStream
     public
     OutputStreamI(Communicator communicator)
     {
-        this(communicator, new IceInternal.BasicStream(Util.getInstance(communicator)));
+        this(communicator, new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator)));
     }
 
     public
@@ -138,7 +138,7 @@ public class OutputStreamI implements OutputStream
     {
         if(sz < 0)
         {
-            throw new NegativeSizeException();
+            throw new MarshalException();
         }
 
         _os.writeSize(sz);
@@ -206,6 +206,23 @@ public class OutputStreamI implements OutputStream
         buf.b.get(result);
 
         return result;
+    }
+
+    public void
+    reset(boolean clearBuffer)
+    {
+        _os.clear();
+
+        IceInternal.Buffer buf = _os.getBuffer();
+        if(clearBuffer)
+        {
+            buf.clear();
+        }
+        else
+        {
+            buf.reset();
+        }
+        buf.b.position(0);
     }
 
     public void

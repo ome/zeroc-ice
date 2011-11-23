@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -16,7 +16,7 @@ if not slice_dir:
     print sys.argv[0] + ': Slice directory not found.'
     sys.exit(1)
 
-Ice.loadSlice('-I' + slice_dir + ' TestAMD.ice')
+Ice.loadSlice("'-I" + slice_dir + "' TestAMD.ice")
 import Test
 
 class MyDerivedClassI(Test.MyDerivedClass):
@@ -38,7 +38,7 @@ class MyDerivedClassI(Test.MyDerivedClass):
         return Test.MyDerivedClass.ice_isA(self, s, current)
 
 def run(args, communicator):
-    communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000:udp")
+    communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010:udp")
     adapter = communicator.createObjectAdapter("TestAdapter")
     adapter.add(MyDerivedClassI(), communicator.stringToIdentity("test"))
     adapter.activate()

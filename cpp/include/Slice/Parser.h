@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -437,7 +437,7 @@ public:
     bool hasClassDecls() const;
     bool hasClassDefs() const;
     bool hasAbstractClassDefs() const;
-    bool hasDataOnlyClasses() const;
+    bool hasNonLocalDataOnlyClasses() const;
     bool hasOtherConstructedOrExceptions() const; // Exceptions or constructed types other than classes.
     bool hasContentsWithMetaData(const std::string&) const;
     bool hasAsyncOps() const;
@@ -459,6 +459,7 @@ protected:
     void checkPrefix(const std::string&) const;
     bool checkInterfaceAndLocal(const std::string&, bool, bool, bool, bool, bool);
     bool checkGlobalMetaData(const StringList&, const StringList&);
+    bool validateConstant(const std::string&, const TypePtr&, const SyntaxTreeBasePtr&, const std::string&, bool);
 
     ContainedList _contents;
     std::map<std::string, ContainedPtr, CICompare> _introducedMap;
@@ -608,7 +609,8 @@ public:
 
     virtual void destroy();
     OperationPtr createOperation(const std::string&, const TypePtr&, Operation::Mode = Operation::Normal);
-    DataMemberPtr createDataMember(const std::string&, const TypePtr&);
+    DataMemberPtr createDataMember(const std::string&, const TypePtr&, const SyntaxTreeBasePtr&, const std::string&,
+                                   const std::string&);
     ClassDeclPtr declaration() const;
     ClassList bases() const;
     ClassList allBases() const;
@@ -625,6 +627,7 @@ public:
     virtual bool isLocal() const;
     bool hasDataMembers() const;
     bool hasOperations() const;
+    bool hasDefaultValues() const;
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual std::string kindOf() const;
@@ -676,7 +679,8 @@ class SLICE_API Exception : virtual public Container, virtual public Contained
 public:
 
     virtual void destroy();
-    DataMemberPtr createDataMember(const std::string&, const TypePtr&);
+    DataMemberPtr createDataMember(const std::string&, const TypePtr&, const SyntaxTreeBasePtr&, const std::string&,
+                                   const std::string&);
     DataMemberList dataMembers() const;
     DataMemberList allDataMembers() const;
     DataMemberList classDataMembers() const;
@@ -688,6 +692,7 @@ public:
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     bool usesClasses() const;
+    bool hasDefaultValues() const;
     virtual std::string kindOf() const;
     virtual void visit(ParserVisitor*, bool);
 
@@ -708,7 +713,8 @@ class SLICE_API Struct : virtual public Container, virtual public Constructed
 {
 public:
 
-    DataMemberPtr createDataMember(const std::string&, const TypePtr&);
+    DataMemberPtr createDataMember(const std::string&, const TypePtr&, const SyntaxTreeBasePtr&, const std::string&,
+                                   const std::string&);
     DataMemberList dataMembers() const;
     DataMemberList classDataMembers() const;
     virtual ContainedType containedType() const;
@@ -716,6 +722,7 @@ public:
     virtual bool usesClasses() const;
     virtual size_t minWireSize() const;
     virtual bool isVariableLength() const;
+    bool hasDefaultValues() const;
     virtual std::string kindOf() const;
     virtual void visit(ParserVisitor*, bool);
     virtual void recDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.
@@ -856,15 +863,10 @@ public:
     virtual std::string kindOf() const;
     virtual void visit(ParserVisitor*, bool);
 
-    static bool isLegalType(const std::string&, const TypePtr&, const UnitPtr&);
-    static bool typesAreCompatible(const std::string&, const TypePtr&,
-                                   const SyntaxTreeBasePtr&, const std::string&, const UnitPtr&);
-    static bool isInRange(const std::string&, const TypePtr&, const std::string&, const UnitPtr&);
-
 protected:
 
-    Const(const ContainerPtr&, const std::string&, const TypePtr&,
-          const StringList&, const std::string&, const std::string&);
+    Const(const ContainerPtr&, const std::string&, const TypePtr&, const StringList&, const std::string&,
+          const std::string&);
     friend class Container;
 
     TypePtr _type;
@@ -906,6 +908,9 @@ class SLICE_API DataMember : virtual public Contained
 public:
 
     TypePtr type() const;
+    bool hasDefaultValue() const;
+    std::string defaultValue() const;
+    std::string defaultLiteral() const;
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual std::string kindOf() const;
@@ -913,12 +918,15 @@ public:
 
 protected:
     
-    DataMember(const ContainerPtr&, const std::string&, const TypePtr&);
+    DataMember(const ContainerPtr&, const std::string&, const TypePtr&, bool, const std::string&, const std::string&);
     friend class ClassDef;
     friend class Struct;
     friend class Exception;
 
     TypePtr _type;
+    bool _hasDefaultValue;
+    std::string _defaultValue;
+    std::string _defaultLiteral;
 };
 
 // ----------------------------------------------------------------------
@@ -929,12 +937,11 @@ class SLICE_API Unit : virtual public Container
 {
 public:
 
-    static UnitPtr createUnit(bool, bool, bool, bool, const StringList& = StringList());
+    static UnitPtr createUnit(bool, bool, bool, const StringList& = StringList());
 
     bool ignRedefs() const;
 
     bool allowIcePrefix() const;
-    bool caseSensitive() const;
 
     void setComment(const std::string&);
     std::string currentComment(); // Not const, as this function removes the current comment.
@@ -943,7 +950,7 @@ public:
     int currentLine() const;
 
     void nextLine();
-    void scanPosition(const char*);
+    bool scanPosition(const char*);
     int currentIncludeLevel() const;
 
     void addGlobalMetaData(const StringList&);
@@ -997,13 +1004,12 @@ public:
 
 private:
 
-    Unit(bool, bool, bool, bool, const StringList&);
+    Unit(bool, bool, bool, const StringList&);
     static void eraseWhiteSpace(::std::string&);
 
     bool _ignRedefs;
     bool _all;
     bool _allowIcePrefix;
-    bool _caseSensitive;
     StringList _defaultGlobalMetaData;
     int _errors;
     std::string _currentComment;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,7 +21,6 @@
 #include <climits>
 
 #if defined(_WIN32)
-#   include <direct.h> // For _getcwd
 #   include <pdhmsg.h> // For PDH_MORE_DATA
 #else
 #   include <sys/utsname.h>
@@ -66,12 +65,12 @@ getLocalizedPerfName(int idx, const Ice::LoggerPtr& logger)
 
     if(err != ERROR_SUCCESS)
     {
-	Ice::Warning out(logger);
-	out << "Unable to lookup the performance counter name:\n";
-	out << pdhErrorToString(err);
-	out << "\nThis usually occurs when you do not have sufficient privileges";
-         
-	throw Ice::SyscallException(__FILE__, __LINE__, err);
+        Ice::Warning out(logger);
+        out << "Unable to lookup the performance counter name:\n";
+        out << pdhErrorToString(err);
+        out << "\nThis usually occurs when you do not have sufficient privileges";
+
+        throw Ice::SyscallException(__FILE__, __LINE__, err);
     }
     return string(&localized[0]);
 }
@@ -80,7 +79,9 @@ class UpdateUtilizationAverageThread : public IceUtil::Thread
 {
 public:
 
-    UpdateUtilizationAverageThread(PlatformInfo& platform) : _platform(platform)
+    UpdateUtilizationAverageThread(PlatformInfo& platform) : 
+        IceUtil::Thread("IceGrid update utilization average thread"),
+        _platform(platform)
     { 
     }
 
@@ -94,6 +95,56 @@ private:
     
     PlatformInfo& _platform;
 };
+
+typedef BOOL (WINAPI *LPFN_GLPI)(PSYSTEM_LOGICAL_PROCESSOR_INFORMATION, PDWORD);
+
+int
+getSocketCount(const Ice::LoggerPtr& logger)
+{
+    LPFN_GLPI glpi;
+    glpi = (LPFN_GLPI) GetProcAddress(GetModuleHandle(TEXT("kernel32")), "GetLogicalProcessorInformation");
+    if(!glpi) 
+    {
+        Ice::Warning out(logger);
+        out << "Unable to figure out the number of process sockets:\n";
+        out << "GetLogicalProcessInformation not supported on this OS;";
+        return 0;
+    }
+
+    vector<SYSTEM_LOGICAL_PROCESSOR_INFORMATION> buffer(1);
+    DWORD returnLength = sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION) * static_cast<int>(buffer.size());
+    while(true)
+    {
+        DWORD rc = glpi(&buffer[0], &returnLength);
+        if(!rc) 
+        {
+            if(GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+            {
+                buffer.resize(returnLength / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION) + 1);
+                continue;
+            } 
+            else
+            { 
+                Ice::Warning out(logger);
+                out << "Unable to figure out the number of process sockets:\n";
+                out << IceUtilInternal::lastErrorToString();
+                return 0;
+            }
+        }
+        buffer.resize(returnLength / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION));
+        break;
+    }
+
+    int socketCount = 0;
+    for(vector<SYSTEM_LOGICAL_PROCESSOR_INFORMATION>::const_iterator p = buffer.begin(); p != buffer.end(); ++p)
+    {
+        if(p->Relationship == RelationProcessorPackage)
+        {
+            socketCount++;
+        }
+    }
+    return socketCount;
+}
 #endif
 
 }
@@ -177,7 +228,7 @@ PlatformInfo::PlatformInfo(const string& prefix,
     if(sysctl(ncpu, 2, &_nProcessors, &sz, 0, 0) == -1)
     {
         Ice::SyscallException ex(__FILE__, __LINE__);
-        ex.error = getSystemErrno();
+        ex.error = IceInternal::getSystemErrno();
         throw ex;
     }
 #elif defined(__hpux)
@@ -243,6 +294,33 @@ PlatformInfo::PlatformInfo(const string& prefix,
 #endif
 
     Ice::PropertiesPtr properties = communicator->getProperties();
+
+    //
+    // Try to obtain the number of processor sockets.
+    //
+    _nProcessorSockets = properties->getPropertyAsIntWithDefault("IceGrid.Node.ProcessorSocketCount", 0);
+    if(_nProcessorSockets == 0)
+    {
+#if defined(_WIN32)
+        _nProcessorSockets = getSocketCount(_traceLevels->logger);
+#elif defined(__linux)
+        IceUtilInternal::ifstream is(string("/proc/cpuinfo"));
+        set<string> ids;
+        while(is)
+        {
+            string line;
+            getline(is, line);
+            if(line.find("physical id") == 0)
+            {
+                ids.insert(line);
+            }
+        }
+        _nProcessorSockets = ids.size();
+#else
+        // Not supported.
+#endif
+    }
+
     string endpointsPrefix;
     if(prefix == "IceGrid.Registry")
     {
@@ -266,13 +344,8 @@ PlatformInfo::PlatformInfo(const string& prefix,
         _endpoints = properties->getProperty(endpointsPrefix + ".Endpoints");
     }
 
-#ifdef _WIN32
-    char cwd[_MAX_PATH];
-    if(_getcwd(cwd, _MAX_PATH) == NULL)
-#else
-    char cwd[PATH_MAX];
-    if(getcwd(cwd, PATH_MAX) == NULL)
-#endif
+    string cwd;
+    if(IceUtilInternal::getcwd(cwd) != 0)
     {
         throw "cannot get the current directory:\n" + IceUtilInternal::lastErrorToString();
     }
@@ -413,6 +486,12 @@ PlatformInfo::getLoadInfo()
     }
 #endif
     return info;
+}
+
+int
+PlatformInfo::getProcessorSocketCount() const
+{
+    return _nProcessorSockets;
 }
 
 std::string

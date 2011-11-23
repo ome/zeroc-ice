@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -13,11 +13,11 @@
 
 SHELL			= /bin/sh
 VERSION_MAJOR   	= 3
-VERSION_MINOR   	= 3
-VERSION_PATCH           = 1
-VERSION			= 3.3.1
-SHORT_VERSION           = 3.3
-SOVERSION		= 33
+VERSION_MINOR   	= 4
+VERSION_PATCH           = 0
+VERSION			= 3.4.0
+SHORT_VERSION           = 3.4
+SOVERSION		= 34
 
 INSTALL			= cp -fp
 INSTALL_PROGRAM		= ${INSTALL}
@@ -95,6 +95,34 @@ endif
 ifndef ice_bin_dist
     ifeq ($(shell test -d $(top_srcdir)/../$(ice_language) && echo 0),0)
         ice_dir = $(top_srcdir)/..
+        ice_src_dist = 1
+
+        #
+        # When building a source distribution, if ICE_HOME is specified, it takes precedence over 
+        # the source tree for building the language mappings. For example, this can be used to 
+        # build the Python language mapping using the translators from the distribution specified
+        # by ICE_HOME.
+        #
+	ifneq ($(ICE_HOME),)
+	    ifdef slice_translator
+		ifneq ($(shell test -f $(ICE_HOME)/$(binsubdir)/$(slice_translator) && echo 0), 0)
+$(error Unable to find $(slice_translator) in $(ICE_HOME)/$(binsubdir), please verify ICE_HOME is properly configured and Ice is correctly installed.)
+		endif
+		ifeq ($(shell test -f $(ice_dir)/cpp/bin/$(slice_translator) && echo 0), 0)
+$(warning Found $(slice_translator) in both ICE_HOME/bin and $(ice_dir)/cpp/bin, ICE_HOME/bin/$(slice_translator) will be used!)
+		endif
+		ice_cpp_dir = $(ICE_HOME)
+	    else
+$(warning Ignoring ICE_HOME environment variable to build current source tree.)
+		ice_cpp_dir = $(ice_dir)/cpp
+	    endif
+	else
+	    ice_cpp_dir = $(ice_dir)/cpp
+	endif
+
+    endif
+    ifeq ($(shell test -d $(top_srcdir)/ice/$(ice_language) && echo 0),0)
+        ice_dir = $(top_srcdir)/ice
         ice_src_dist = 1
 
         #
@@ -250,11 +278,16 @@ endif
 #
 
 ifeq ($(mklibfilename),)
-    mklibfilename	= $(if $(2),lib$(1).so.$(2),lib$(1).so)
+    # These default platform-specific rules are needed for cs/config/Make.rules.cs
+    ifeq ($(UNAME),Darwin)
+	mklibfilename	= $(if $(2),lib$(1).$(2).dylib,lib$(1).dylib)
+    else
+	mklibfilename	= $(if $(2),lib$(1).so.$(2),lib$(1).so)
+    endif
 endif
 
 ifeq ($(mksoname),)
-    mksoname		= $(if $(2),lib$(1).so.$(2),lib$(1).so)
+    mksoname	= $(if $(2),lib$(1).so.$(2),lib$(1).so)
 endif
 
 ifeq ($(mklibname),)
@@ -296,7 +329,7 @@ ifeq ($(installprogram),)
 endif
 
 ifeq ($(mkdir),)
-    mkdir		= mkdir $(1) $(2); \
+    mkdir		= $(if $(2),mkdir $(2) $(1),mkdir $(1)); \
 			  chmod a+rx $(1)
 endif
 

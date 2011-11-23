@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -69,7 +69,7 @@ public:
     virtual ~OutgoingMessageCallback() { }
  
     virtual void sent(bool) = 0;
-    virtual void finished(const Ice::LocalException&) = 0;
+    virtual void finished(const Ice::LocalException&, bool) = 0;
 };
 
 class ICE_API Outgoing : public OutgoingMessageCallback
@@ -82,7 +82,7 @@ public:
     void abort(const Ice::LocalException&);
     virtual void sent(bool);
     virtual void finished(BasicStream&);
-    void finished(const Ice::LocalException&);
+    void finished(const Ice::LocalException&, bool);
 
     // Inlined for speed optimization.
     BasicStream* is() { return &_is; }
@@ -134,7 +134,7 @@ public:
     void invoke();
     
     virtual void sent(bool);
-    virtual void finished(const Ice::LocalException&);
+    virtual void finished(const Ice::LocalException&, bool);
     
     BasicStream* os() { return &_os; }
 

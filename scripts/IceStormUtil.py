@@ -2,7 +2,7 @@
 
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -25,7 +25,9 @@ origIceStormService = ' --IceBox.Service.IceStorm=IceStormService,' + TestUtil.g
                   ' --IceBox.InheritProperties=1' + \
                   ' --Ice.Warn.Dispatch=0 --Ice.Warn.Connections=0' + \
                   ' --Ice.ServerIdleTime=0'
+
 origIceStormProxy = '%s/TopicManager:default -p %d'
+
 origIceStormReference = ' --IceStormAdmin.TopicManager.Default="%s"'
 
 class IceStormUtil(object):
@@ -33,8 +35,12 @@ class IceStormUtil(object):
         self.toplevel = toplevel
         self.testdir = testdir
         self.iceBox = TestUtil.getIceBox()
-        self.iceBoxAdmin = os.path.join(TestUtil.getCppBinDir(), "iceboxadmin")
-        self.iceStormAdmin = os.path.join(TestUtil.getCppBinDir(), "icestormadmin")
+        if TestUtil.isBCC2010() or TestUtil.isVC6():
+            self.iceBoxAdmin = os.path.join(TestUtil.getServiceDir(), "iceboxadmin")
+            self.iceStormAdmin = os.path.join(TestUtil.getServiceDir(), "icestormadmin")
+        else:
+            self.iceBoxAdmin = os.path.join(TestUtil.getCppBinDir(), "iceboxadmin")
+            self.iceStormAdmin = os.path.join(TestUtil.getCppBinDir(), "icestormadmin")
 
     def runIceBoxAdmin(self, endpts, command):
         proc = TestUtil.startClient(self.iceBoxAdmin, endpts + " " + command, echo = False)
@@ -81,7 +87,7 @@ class Replicated(IceStormUtil):
         replicaPublishEndpoints = ''
         for replica in range(0, 3):
             replicaProperties = replicaProperties + \
-                ' --IceStorm.Nodes.%d="%s/node%d:default -p %d -t 1000"' % (
+                ' --IceStorm.Nodes.%d="%s/node%d:default -p %d"' % (
                 replica, instanceName, replica, self.nendpoints[replica])
             replicaTopicManagerEndpoints = replicaTopicManagerEndpoints + "%sdefault -p %d" % (
                 sep, self.isendpoints[replica])
@@ -120,7 +126,12 @@ class Replicated(IceStormUtil):
             dbHome = os.path.join(self.testdir, "%d.%s" % (replica, dbDir))
             self.dbHome.append(dbHome)
             TestUtil.cleanDbDir(dbHome)
-            self.iceStormDBEnv.append(" --Freeze.DbEnv.IceStorm.DbHome=%s" % dbHome)
+
+            sqlOptions = TestUtil.getQtSqlOptions('IceStorm', dbHome)
+            if len(sqlOptions) == 0:
+                self.iceStormDBEnv.append(' --Freeze.DbEnv.IceStorm.DbHome="%s"' % dbHome)
+            else:
+                self.iceStormDBEnv.append(" %s" % sqlOptions)
             self.procs.append(None)
 
         topicReplicaProxy = '%s/TopicManager:%s' % (instanceName, replicaTopicManagerEndpoints)
@@ -215,7 +226,12 @@ class NonReplicated(IceStormUtil):
 
         self.dbHome = os.path.join(self.testdir, self.dbDir)
         TestUtil.cleanDbDir(self.dbHome)
-        self.iceStormDBEnv=" --Freeze.DbEnv.IceStorm.DbHome=" + self.dbHome
+
+        sqlOptions = TestUtil.getQtSqlOptions('IceStorm', self.dbHome)
+        if len(sqlOptions) == 0:
+            self.iceStormDBEnv = ' --Freeze.DbEnv.IceStorm.DbHome="%s"' % self.dbHome
+        else:
+            self.iceStormDBEnv = " " + sqlOptions
 
     def clean(self):
         TestUtil.cleanDbDir(self.dbHome)

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,12 @@ public:
 
     virtual bool operator==(const LocalObject&) const;
     virtual bool operator<(const LocalObject&) const;
-    virtual ::Ice::Int ice_hash() const;
+    virtual ::Ice::Int ice_getHash() const;
+    
+    ICE_DEPRECATED_API ::Ice::Int ice_hash() const
+    {
+        return ice_getHash();
+    }
 };
 
 }

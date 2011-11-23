@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,7 +17,7 @@ class TestI : virtual public Test::TestIntf
 {
 public:
 
-    TestI(const ::Ice::ObjectAdapterPtr&);
+    TestI();
 
     virtual ::Ice::ObjectPtr SBaseAsObject(const ::Ice::Current&);
     virtual ::Test::SBasePtr SBaseAsSBase(const ::Ice::Current&);
@@ -44,7 +44,7 @@ public:
     virtual ::Test::BPtr returnTest2(::Test::BPtr&, ::Test::BPtr&, const ::Ice::Current&);
     virtual ::Test::BPtr returnTest3(const ::Test::BPtr&, const ::Test::BPtr&, const ::Ice::Current&);
 
-    virtual ::Test::SS sequenceTest(const ::Test::SS1Ptr&, const ::Test::SS2Ptr&, const ::Ice::Current&);
+    virtual ::Test::SS3 sequenceTest(const ::Test::SS1Ptr&, const ::Test::SS2Ptr&, const ::Ice::Current&);
 
     virtual ::Test::BDict dictionaryTest(const ::Test::BDict&, ::Test::BDict&, const ::Ice::Current&);
 
@@ -56,10 +56,6 @@ public:
     virtual void useForward(::Test::ForwardPtr&, const ::Ice::Current&);
 
     virtual void shutdown(const ::Ice::Current&);
-
-private:
-
-    const ::Ice::ObjectAdapterPtr _adapter;
 };
 
 #endif

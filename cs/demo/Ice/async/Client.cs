@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,23 +21,20 @@ public class Client
 {
     public class App : Ice.Application
     {
-        public class AMI_Hello_sayHelloI : AMI_Hello_sayHello
+        public void success()
         {
-            public override void ice_response()
-            {
-            }
+        }
 
-            public override void ice_exception(Ice.Exception ex)
+        public void exception(Ice.Exception ex)
+        {
+            if(ex is RequestCanceledException)
             {
-                if(ex is RequestCanceledException)
-                {
-                    Console.Error.WriteLine("RequestCanceledException");
-                }
-                else
-                {
-                    Console.Error.WriteLine("sayHello AMI call failed:");
-                    Console.Error.WriteLine(ex);
-                }
+                Console.Error.WriteLine("RequestCanceledException");
+            }
+            else
+            {
+                Console.Error.WriteLine("sayHello AMI call failed:");
+                Console.Error.WriteLine(ex);
             }
         }
 
@@ -87,7 +84,7 @@ public class Client
                     }
                     else if(line.Equals("d"))
                     {
-                        hello.sayHello_async(new AMI_Hello_sayHelloI(), 5000);
+                        hello.begin_sayHello(5000).whenCompleted(success, exception);
                     }
                     else if(line.Equals("s"))
                     {

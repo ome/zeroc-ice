@@ -1,13 +1,16 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-public final class RemoteEvictorI extends Test._RemoteEvictorDisp
+package test.Freeze.evictor;
+import test.Freeze.evictor.Test.*;
+
+public final class RemoteEvictorI extends _RemoteEvictorDisp
 {
     static class Initializer implements Freeze.ServantInitializer
     {
@@ -21,12 +24,12 @@ public final class RemoteEvictorI extends Test._RemoteEvictorDisp
             }
             else if(facet.length() == 0)
             {
-                ServantI servantImpl =  (ServantI) ((Test._ServantTie) servant).ice_delegate();
+                ServantI servantImpl =  (ServantI) ((_ServantTie) servant).ice_delegate();
                 servantImpl.init(_remoteEvictor, _evictor);
             }
             else
             {
-                ServantI servantImpl =  (ServantI) ((Test._FacetTie) servant).ice_delegate();
+                ServantI servantImpl =  (ServantI) ((_FacetTie) servant).ice_delegate();
                 servantImpl.init(_remoteEvictor, _evictor);
             }
         }
@@ -41,10 +44,8 @@ public final class RemoteEvictorI extends Test._RemoteEvictorDisp
         private Freeze.Evictor _evictor;
     }
 
-
-    RemoteEvictorI(Ice.ObjectAdapter adapter, String envName, String category, boolean transactional)
+    RemoteEvictorI(Ice.Communicator communicator, String envName, String category, boolean transactional)
     {
-        _adapter = adapter;
         _envName = envName;
         _category = category;
 
@@ -52,22 +53,24 @@ public final class RemoteEvictorI extends Test._RemoteEvictorDisp
         // NOTE: COMPILERBUG: The timeout here is required for MacOS X. It shouldn't be too low since
         // some operations can take some time to complete on slow machines.
         //
-        _evictorAdapter = _adapter.getCommunicator().
-            createObjectAdapterWithEndpoints(Ice.Util.generateUUID(), "default -t 60000");
+        _evictorAdapter = communicator.
+            createObjectAdapterWithEndpoints(java.util.UUID.randomUUID().toString(), "default -t 60000");
 
         Initializer initializer = new Initializer();
 
         if(transactional)
         {
-            _evictor = Freeze.Util.createTransactionalEvictor(_evictorAdapter, envName, category, null, initializer, null, true);
+            _evictor = Freeze.Util.createTransactionalEvictor(_evictorAdapter, envName, category, null, initializer,
+                                                              null, true);
         }
         else
         {
-            _evictor = Freeze.Util.createBackgroundSaveEvictor(_evictorAdapter, envName, category, initializer, null, true);
+            _evictor = Freeze.Util.createBackgroundSaveEvictor(_evictorAdapter, envName, category, initializer, null,
+                                                               true);
         }
 
         initializer.init(this, _evictor);
-        
+
         _evictorAdapter.addServantLocator(_evictor, category);
         _evictorAdapter.activate();
     }
@@ -78,30 +81,30 @@ public final class RemoteEvictorI extends Test._RemoteEvictorDisp
         _evictor.setSize(size);
     }
 
-    public Test.ServantPrx
+    public ServantPrx
     createServant(String id, int value, Ice.Current current)
-        throws Test.AlreadyRegisteredException, Test.EvictorDeactivatedException
+        throws AlreadyRegisteredException, EvictorDeactivatedException
     {
         Ice.Identity ident = new Ice.Identity();
         ident.category = _category;
         ident.name = id;
-        Test._ServantTie tie = new Test._ServantTie();
+        _ServantTie tie = new _ServantTie();
         tie.ice_delegate(new ServantI(tie, this, _evictor, value));
         try
         {
-            return Test.ServantPrxHelper.uncheckedCast(_evictor.add(tie, ident));
+            return ServantPrxHelper.uncheckedCast(_evictor.add(tie, ident));
         }
         catch(Ice.AlreadyRegisteredException e)
         {
-            throw new Test.AlreadyRegisteredException();
+            throw new AlreadyRegisteredException();
         }
         catch(Ice.ObjectAdapterDeactivatedException e)
         {
-            throw new Test.EvictorDeactivatedException();
+            throw new EvictorDeactivatedException();
         }
         catch(Freeze.EvictorDeactivatedException e)
         {
-            throw new Test.EvictorDeactivatedException();
+            throw new EvictorDeactivatedException();
         }
         catch(Ice.LocalException e)
         {
@@ -110,13 +113,13 @@ public final class RemoteEvictorI extends Test._RemoteEvictorDisp
         }
     }
 
-    public Test.ServantPrx
+    public ServantPrx
     getServant(String id, Ice.Current current)
     {
         Ice.Identity ident = new Ice.Identity();
         ident.category = _category;
         ident.name = id;
-        return Test.ServantPrxHelper.uncheckedCast(_evictorAdapter.createProxy(ident));
+        return ServantPrxHelper.uncheckedCast(_evictorAdapter.createProxy(ident));
     }
 
     public void
@@ -135,14 +138,14 @@ public final class RemoteEvictorI extends Test._RemoteEvictorDisp
     deactivate(Ice.Current current)
     {
         _evictorAdapter.destroy();
-        _adapter.remove(_adapter.getCommunicator().stringToIdentity(_category));
+        current.adapter.remove(current.adapter.getCommunicator().stringToIdentity(_category));
     }
-    
+
     public void
     destroyAllServants(String facet, Ice.Current current)
     {
         //
-        // Only for test purpose: don't use such a small value in 
+        // Only for test purpose: don't use such a small value in
         // a real application!
         //
         int batchSize = 2;
@@ -154,14 +157,12 @@ public final class RemoteEvictorI extends Test._RemoteEvictorDisp
         }
     }
 
-    final public String 
+    final public String
     envName()
     {
         return _envName;
-    }    
+    }
 
-
-    private Ice.ObjectAdapter _adapter;
     private final String _envName;
     private String _category;
     private Freeze.Evictor _evictor;

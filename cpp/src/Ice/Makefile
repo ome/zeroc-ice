@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -35,15 +35,16 @@ OBJS		= Acceptor.o \
 		  Direct.o \
                   DispatchInterceptor.o \
 		  DynamicLibrary.o \
+		  Endpoint.o \
 		  EndpointFactoryManager.o \
 		  EndpointFactory.o \
-		  Endpoint.o \
 		  EndpointI.o \
+		  EndpointTypes.o \
 		  EventHandler.o \
 		  Exception.o \
 		  FacetMap.o \
-		  FactoryTableDef.o \
 		  FactoryTable.o \
+		  FactoryTableInit.o \
 		  GC.o \
 		  Identity.o \
 		  ImplicitContextI.o \
@@ -66,6 +67,7 @@ OBJS		= Acceptor.o \
 		  ObjectFactoryManager.o \
 		  ObjectFactory.o \
 		  Object.o \
+		  OpaqueEndpointI.o \
 		  OutgoingAsync.o \
 		  Outgoing.o \
 		  PluginManagerI.o \
@@ -84,7 +86,7 @@ OBJS		= Acceptor.o \
 		  RequestHandler.o \
 		  RouterInfo.o \
 		  Router.o \
-		  SelectorThread.o \
+		  Selector.o \
 		  ServantLocator.o \
 		  ServantManager.o \
 		  Service.o \
@@ -105,12 +107,10 @@ OBJS		= Acceptor.o \
 		  Transceiver.o \
 		  UdpConnector.o \
 		  UdpEndpointI.o \
-		  UdpTransceiver.o \
-		  UnknownEndpointI.o
+		  UdpTransceiver.o
 
 SRCS		= $(OBJS:.o=.cpp) \
-		  DLLMain.cpp \
-		  EventLoggerI.cpp
+		  DLLMain.cpp
 
 SLICE_SRCS	= $(SDIR)/BuiltinSequences.ice \
 		  $(SDIR)/CommunicatorF.ice \
@@ -119,6 +119,8 @@ SLICE_SRCS	= $(SDIR)/BuiltinSequences.ice \
 		  $(SDIR)/Connection.ice \
 		  $(SDIR)/Current.ice \
 		  $(SDIR)/Endpoint.ice \
+		  $(SDIR)/EndpointF.ice \
+		  $(SDIR)/EndpointTypes.ice \
 		  $(SDIR)/FacetMap.ice \
 		  $(SDIR)/Identity.ice \
 		  $(SDIR)/ImplicitContextF.ice \
@@ -154,7 +156,7 @@ include $(top_srcdir)/config/Make.rules
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_API_EXPORTS $(BZIP2_FLAGS)
 SLICE2CPPFLAGS	:= --ice --include-dir Ice --dll-export ICE_API $(SLICE2CPPFLAGS)
 
-LINKWITH        := -lIceUtil $(BZIP2_LIBS) $(ICE_OS_LIBS)
+LINKWITH        := -lIceUtil $(BZIP2_LIBS) $(ICONV_LIBS) $(ICE_OS_LIBS)
 
 $(libdir)/$(LIBFILENAME): $(OBJS)
 	rm -f $@
@@ -171,19 +173,9 @@ $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 install:: all
 	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))
 
-clean::
-	-rm -f EventLoggerMsg.h
-
 $(HDIR)/BuiltinSequences.h BuiltinSequences.cpp: $(SDIR)/BuiltinSequences.ice $(SLICE2CPP) $(SLICEPARSERLIB)
 	rm -f $(HDIR)/BuiltinSequences.h BuiltinSequences.cpp
 	$(SLICE2CPP) $(SLICE2CPPFLAGS) --stream $(SDIR)/BuiltinSequences.ice
 	mv BuiltinSequences.h $(HDIR)
-
-# The dummy EventLoggerMsg.h is necessary to get correct dependencies
-# for windows
-EventLoggerI.cpp: EventLoggerMsg.h
-
-EventLoggerMsg.h:
-	-touch EventLoggerMsg.h
 
 include .depend

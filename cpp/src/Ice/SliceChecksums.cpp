@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,13 +8,36 @@
 // **********************************************************************
 
 #include <Ice/SliceChecksums.h>
-#include <IceUtil/StaticMutex.h>
+#include <IceUtil/Mutex.h>
+#include <IceUtil/MutexPtrLock.h>
 
 using namespace std;
 using namespace Ice;
 
-static SliceChecksumDict* _sliceChecksums = 0;
-static IceUtil::StaticMutex _mutex = ICE_STATIC_MUTEX_INITIALIZER;
+namespace
+{
+
+SliceChecksumDict* _sliceChecksums = 0;
+
+IceUtil::Mutex* _mutex = 0;
+
+class Init
+{
+public:
+
+    Init()
+    {
+        _mutex = new IceUtil::Mutex;
+    }
+
+    ~Init()
+    {
+        delete _mutex;
+        _mutex = 0;
+    }
+};
+
+Init init;
 
 class SliceChecksumDictDestroyer
 {
@@ -26,12 +49,15 @@ public:
         _sliceChecksums = 0;
     }
 };
-static SliceChecksumDictDestroyer destroyer;
+
+SliceChecksumDictDestroyer destroyer;
+
+}
 
 SliceChecksumDict
 Ice::sliceChecksums()
 {
-    IceUtil::StaticMutex::Lock lock(_mutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(_mutex);
     if(_sliceChecksums == 0)
     {
         _sliceChecksums = new SliceChecksumDict();
@@ -41,7 +67,7 @@ Ice::sliceChecksums()
 
 IceInternal::SliceChecksumInit::SliceChecksumInit(const char* checksums[])
 {
-    IceUtil::StaticMutex::Lock lock(_mutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(_mutex);
     if(_sliceChecksums == 0)
     {
         _sliceChecksums = new SliceChecksumDict();

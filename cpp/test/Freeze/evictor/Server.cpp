@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -68,14 +68,14 @@ public:
 int
 run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator, const string& envName)
 {
-    communicator->getProperties()->setProperty("Factory.Endpoints", "default -p 12010 -t 30000");
+    communicator->getProperties()->setProperty("Factory.Endpoints", "default -p 12010");
     Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("Factory");
 
     communicator->addObjectFactory(new ServantFactory, "::Test::Servant");
     communicator->addObjectFactory(new FacetFactory, "::Test::Facet");
     communicator->addObjectFactory(new AccountFactory, "::Test::Account");
 
-    Test::RemoteEvictorFactoryPtr factory = new Test::RemoteEvictorFactoryI(adapter, envName);
+    Test::RemoteEvictorFactoryPtr factory = new Test::RemoteEvictorFactoryI(envName);
     adapter->add(factory, communicator->stringToIdentity("factory"));
 
     adapter->activate();

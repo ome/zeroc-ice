@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,6 +10,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 [assembly: CLSCompliant(true)]
 
@@ -18,8 +19,10 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyCompany("ZeroC, Inc.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyProduct("Glacier2 for .NET")]
-[assembly: AssemblyCopyright("Copyright (c) 2003-2009 ZeroC, Inc.")]
+[assembly: AssemblyCopyright("Copyright (c) 2003-2010 ZeroC, Inc.")]
 [assembly: AssemblyTrademark("Ice")]
 [assembly: AssemblyCulture("")]         
-[assembly: AssemblyVersion("3.3.1")]
+[assembly: AssemblyVersion("3.4.0")]
 [assembly: AssemblyDelaySign(false)]
+
+[assembly: ComVisible(false)]

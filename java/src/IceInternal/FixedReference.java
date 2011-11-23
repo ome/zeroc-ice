@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,20 +15,19 @@ public class FixedReference extends Reference
     FixedReference(Instance instance,
                    Ice.Communicator communicator,
                    Ice.Identity identity,
-                   java.util.Map<String, String> context,
                    String facet,
                    int mode,
                    boolean secure,
                    Ice.ConnectionI connection)
     {
-        super(instance, communicator, identity, context, facet, mode, secure);
+        super(instance, communicator, identity, facet, mode, secure);
         _fixedConnection = connection;
     }
 
     public EndpointI[]
     getEndpoints()
     {
-        return new EndpointI[0];
+        return _emptyEndpoints;
     }
 
     public String
@@ -77,6 +76,12 @@ public class FixedReference extends Reference
     getLocatorCacheTimeout()
     {
         return 0;
+    }
+
+    public String
+    getConnectionId()
+    {
+        return "";
     }
 
     public Reference
@@ -167,6 +172,12 @@ public class FixedReference extends Reference
     public String
     toString()
         throws Ice.MarshalException
+    {
+        throw new Ice.FixedProxyException();
+    }
+
+    public java.util.Map<String, String>
+    toProperty(String prefix)
     {
         throw new Ice.FixedProxyException();
     }
@@ -268,5 +279,12 @@ public class FixedReference extends Reference
         return _fixedConnection.equals(rhs._fixedConnection);
     }
 
+    public int
+    hashCode()
+    {
+        return super.hashCode();
+    }
+
     private Ice.ConnectionI _fixedConnection;
+    private static EndpointI[] _emptyEndpoints = new EndpointI[0];
 }

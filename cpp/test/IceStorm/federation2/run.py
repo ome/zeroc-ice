@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -20,10 +20,19 @@ if len(path) == 0:
 sys.path.append(os.path.join(path[0]))
 from scripts import *
 
-iceStormAdmin = os.path.join(TestUtil.getCppBinDir(), "icestormadmin")
+iceStormAdmin = ""
+if TestUtil.isBCC2010():
+    iceStormAdmin = os.path.join(TestUtil.getServiceDir(), "icestormadmin")
+else:
+    iceStormAdmin = os.path.join(TestUtil.getCppBinDir(), "icestormadmin")
 
 publisher = os.path.join(os.getcwd(), "publisher")
 subscriber = os.path.join(os.getcwd(), "subscriber")
+
+targets = []
+if TestUtil.appverifier:
+    targets = [TestUtil.getIceBox(), publisher, subscriber, TestUtil.getIceBoxAdmin(), TestUtil.getIceStormAdmin()]
+    TestUtil.setAppVerifierSettings(targets, cwd = os.getcwd())
 
 def admin(ref, command):
     proc = TestUtil.startClient(iceStormAdmin, ref + ' -e "%s"' % command, echo = False)
@@ -262,5 +271,8 @@ def runtest(type, **args):
 runtest("persistent")
 runtest("replicated", replicatedPublisher = False)
 runtest("replicated", replicatedPublisher = True)
+
+if TestUtil.appverifier:
+    TestUtil.appVerifierAfterTestEnd(targets, cwd = os.getcwd())
 
 sys.exit(0)

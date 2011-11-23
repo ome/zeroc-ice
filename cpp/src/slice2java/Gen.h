@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,10 +27,13 @@ protected:
 
     JavaVisitor(const std::string&);
 
+    enum ParamDir { InParam, OutParam };
+
     //
     // Compose the parameter lists for an operation.
     //
     std::vector<std::string> getParams(const OperationPtr&, const std::string&, bool = false);
+    std::vector<std::string> getInOutParams(const OperationPtr&, const std::string&, ParamDir);
     std::vector<std::string> getParamsAsync(const OperationPtr&, const std::string&, bool);
     std::vector<std::string> getParamsAsyncCB(const OperationPtr&, const std::string&);
 
@@ -38,6 +41,7 @@ protected:
     // Compose the argument lists for an operation.
     //
     std::vector<std::string> getArgs(const OperationPtr&);
+    std::vector<std::string> getInOutArgs(const OperationPtr&, ParamDir);
     std::vector<std::string> getArgsAsync(const OperationPtr&);
     std::vector<std::string> getArgsAsyncCB(const OperationPtr&);
 
@@ -62,6 +66,30 @@ protected:
     // Generate dispatch and marshalling methods for a class or interface.
     //
     void writeDispatchAndMarshalling(::IceUtilInternal::Output&, const ClassDefPtr&, bool);
+
+    //
+    // Write a constant or default value initializer.
+    //
+    void writeConstantValue(::IceUtilInternal::Output&, const TypePtr&, const std::string&, const std::string&);
+
+    //
+    // Generate assignment statements for those data members that have default values.
+    //
+    void writeDataMemberInitializers(::IceUtilInternal::Output&, const DataMemberList&, const std::string&);
+
+    //
+    // Write doc comments.
+    //
+    static StringList splitComment(const ContainedPtr&);
+    static void writeDocComment(::IceUtilInternal::Output&, const ContainedPtr&,
+                                const std::string&, const std::string& = "");
+    static void writeDocCommentOp(::IceUtilInternal::Output&, const OperationPtr&);
+
+    static void writeDocCommentAsync(::IceUtilInternal::Output&, const OperationPtr&,
+                                     ParamDir, const std::string& = "");
+    static void writeDocCommentAMI(::IceUtilInternal::Output&, const OperationPtr&, ParamDir, const std::string& = "",
+                                   const std::string& = "", const std::string& = "");
+    static void writeDocCommentParam(::IceUtilInternal::Output&, const OperationPtr&, ParamDir, bool = true);
 };
 
 class Gen : private ::IceUtil::noncopyable
@@ -79,7 +107,7 @@ public:
     void generateImpl(const UnitPtr&);
     void generateImplTie(const UnitPtr&);
 
-    static void writeChecksumClass(const std::string&, const std::string&, const ChecksumMap&, bool);
+    static void writeChecksumClass(const std::string&, const std::string&, const ChecksumMap&);
 
 private:
 
@@ -281,6 +309,10 @@ private:
         AsyncVisitor(const std::string&);
 
         virtual void visitOperation(const OperationPtr&);
+
+    private:
+
+        static std::string initValue(const TypePtr&);
     };
 };
 

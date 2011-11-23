@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -16,7 +16,7 @@ if not slice_dir:
     print sys.argv[0] + ': Slice directory not found.'
     sys.exit(1)
 
-Ice.loadSlice('-I' + slice_dir + ' Test.ice')
+Ice.loadSlice("'-I" + slice_dir + "' Test.ice")
 import Test
 
 class ServerLocatorRegistry(Test.TestLocatorRegistry):
@@ -78,8 +78,7 @@ class ServerLocator(Test.TestLocator):
         return self._requestCount
 
 class ServerManagerI(Test.ServerManager):
-    def __init__(self, adapter, registry, initData):
-        self._adapter = adapter
+    def __init__(self, registry, initData):
         self._registry = registry
         self._communicators = []
         self._initData = initData
@@ -120,7 +119,7 @@ class ServerManagerI(Test.ServerManager):
     def shutdown(self, current=None):
         for i in self._communicators:
             i.destroy()
-        self._adapter.getCommunicator().shutdown()
+        current.adapter.getCommunicator().shutdown()
 
 class HelloI(Test.Hello):
     def sayHello(self, current=None):
@@ -168,7 +167,7 @@ def run(args, communicator, initData):
     #
     registry = ServerLocatorRegistry()
     registry.addObject(adapter.createProxy(communicator.stringToIdentity("ServerManager")))
-    object = ServerManagerI(adapter, registry, initData)
+    object = ServerManagerI(registry, initData)
     adapter.add(object, communicator.stringToIdentity("ServerManager"))
 
     registryPrx = Ice.LocatorRegistryPrx.uncheckedCast(adapter.add(registry, communicator.stringToIdentity("registry")))

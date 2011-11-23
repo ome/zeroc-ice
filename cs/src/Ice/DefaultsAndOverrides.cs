@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -54,6 +54,18 @@ namespace IceInternal
                 overrideConnectTimeoutValue = -1;
             }
 
+            val = properties.getProperty("Ice.Override.CloseTimeout");
+            if(val.Length > 0)
+            {
+                overrideCloseTimeout = true;
+                overrideCloseTimeoutValue = properties.getPropertyAsInt("Ice.Override.CloseTimeout");
+            }
+            else
+            {
+                overrideCloseTimeout = false;
+                overrideCloseTimeoutValue = -1;
+            }
+
             val = properties.getProperty("Ice.Override.Compress");
             if(val.Length > 0)
             {
@@ -99,7 +111,7 @@ namespace IceInternal
             else
             {
                 Ice.EndpointSelectionTypeParseException ex = new Ice.EndpointSelectionTypeParseException();
-                ex.str = val;
+                ex.str = "illegal value `" + val + "'; expected `Random' or `Ordered'";
                 throw ex;
             }
 
@@ -119,6 +131,8 @@ namespace IceInternal
         public int overrideTimeoutValue;
         public bool overrideConnectTimeout;
         public int overrideConnectTimeoutValue;
+        public bool overrideCloseTimeout;
+        public int overrideCloseTimeoutValue;
         public bool overrideCompress;
         public bool overrideCompressValue;
         public bool overrideSecure;

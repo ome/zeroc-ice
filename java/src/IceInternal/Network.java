@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,45 +15,6 @@ public final class Network
     public final static int EnableIPv4 = 0;
     public final static int EnableIPv6 = 1;
     public final static int EnableBoth = 2;
-
-    public static boolean
-    connectionLost(java.io.IOException ex)
-    {
-        //
-        // TODO: The JDK raises a generic IOException for certain
-        // cases of connection loss. Unfortunately, our only choice is
-        // to search the exception message for distinguishing phrases.
-        //
-        String msg = ex.getMessage();
-        if(msg != null)
-        {
-            msg = msg.toLowerCase();
-
-            final String[] msgs =
-            {
-                "connection reset by peer", // ECONNRESET
-                "cannot send after socket shutdown", // ESHUTDOWN (Win32)
-                "cannot send after transport endpoint shutdown", // ESHUTDOWN (Linux)
-                "software caused connection abort", // ECONNABORTED
-                "an existing connection was forcibly closed", // unknown
-                "connection closed by remote host", // unknown
-                "an established connection was aborted by the software in your host machine", // unknown (Win32)
-                "broken pipe", // EPIPE
-                "there is no process to read data written to a pipe", // EPIPE? (AIX JDK 1.4.2)
-                "socket is closed" // unknown (AIX JDK 1.4.2)
-            };
-
-            for(int i = 0; i < msgs.length; i++)
-            {
-                if(msg.indexOf(msgs[i]) != -1)
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
 
     public static boolean
     connectionRefused(java.net.ConnectException ex)
@@ -75,9 +36,9 @@ public final class Network
                 "remote host refused an attempted connect operation" // ECONNREFUSED (AIX JDK 1.4.2)
             };
 
-            for(int i = 0; i < msgs.length; i++)
+            for(String m : msgs)
             {
-                if(msg.indexOf(msgs[i]) != -1)
+                if(msg.indexOf(m) != -1)
                 {
                     return true;
                 }
@@ -102,9 +63,9 @@ public final class Network
                 "too many open files in system" // ENFILE
             };
 
-            for(int i = 0; i < msgs.length; i++)
+            for(String m : msgs)
             {
-                if(msg.indexOf(msgs[i]) != -1)
+                if(msg.indexOf(m) != -1)
                 {
                     return true;
                 }
@@ -854,11 +815,11 @@ public final class Network
                 addrs = java.net.InetAddress.getAllByName(host);
             }
 
-            for(int i = 0; i < addrs.length; ++i)
+            for(java.net.InetAddress addr : addrs)
             {
-                if(protocol == EnableBoth || isValidAddr(addrs[i], protocol))
+                if(protocol == EnableBoth || isValidAddr(addr, protocol))
                 {
-                    addresses.add(new java.net.InetSocketAddress(addrs[i], port));
+                    addresses.add(new java.net.InetSocketAddress(addr, port));
                 }
             }
         }
@@ -955,7 +916,7 @@ public final class Network
     }
 
     public static java.util.ArrayList<String>
-    getHostsForEndpointExpand(String host, int protocolSupport)
+    getHostsForEndpointExpand(String host, int protocolSupport, boolean includeLoopback)
     {
         boolean wildcard = (host == null || host.length() == 0);
         if(!wildcard)
@@ -979,21 +940,19 @@ public final class Network
         if(wildcard)
         {
             java.util.ArrayList<java.net.InetAddress> addrs = getLocalAddresses(protocolSupport);
-            java.util.Iterator<java.net.InetAddress> p = addrs.iterator();
-            while(p.hasNext())
+            for(java.net.InetAddress addr : addrs)
             {
                 //
                 // NOTE: We don't publish link-local IPv6 addresses as these addresses can only 
                 // be accessed in general with a scope-id.
                 //
-                java.net.InetAddress addr = p.next();
                 if(!addr.isLinkLocalAddress())
                 {
                     hosts.add(addr.getHostAddress());
                 }
             }
             
-            if(hosts.isEmpty())
+            if(includeLoopback || hosts.isEmpty())
             {
                 if(protocolSupport != EnableIPv6)
                 {
@@ -1175,9 +1134,7 @@ public final class Network
     public static boolean
     interrupted(java.io.IOException ex)
     {
-        return ex instanceof java.io.InterruptedIOException ||
-            ex.getMessage().indexOf("Interrupted system call") >= 0 ||
-            ex.getMessage().indexOf("A system call received an interrupt") >= 0; // AIX JDK 1.4.2
+        return ex instanceof java.io.InterruptedIOException;
     }
 
     private static boolean
@@ -1216,11 +1173,11 @@ public final class Network
                 addrs = java.net.InetAddress.getAllByName(host);
             }
 
-            for(int i = 0; i < addrs.length; ++i)
+            for(java.net.InetAddress addr : addrs)
             {
-                if(protocol == EnableBoth || isValidAddr(addrs[i], protocol))
+                if(protocol == EnableBoth || isValidAddr(addr, protocol))
                 {
-                    return new java.net.InetSocketAddress(addrs[i], port);
+                    return new java.net.InetSocketAddress(addr, port);
                 }
             }
         }

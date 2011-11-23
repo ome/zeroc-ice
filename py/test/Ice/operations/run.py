@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -26,3 +26,4 @@ print "tests with AMD server."
 TestUtil.clientServerTest(server="ServerAMD.py")
 print "tests with collocated server."
 TestUtil.collocatedTest(" --Ice.ThreadPool.Client.SizeMax=2 --Ice.ThreadPool.Client.SizeWarn=0")
+

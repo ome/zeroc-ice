@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,7 +19,7 @@ using namespace std;
 using namespace Ice;
 using namespace IceInternal;
 
-IceInternal::GCShared* IceInternal::upCast(Object* p) { return p; }
+IceUtil::Shared* IceInternal::upCast(Object* p) { return p; }
 
 bool
 Ice::Object::operator==(const Object& r) const
@@ -34,15 +34,20 @@ Ice::Object::operator<(const Object& r) const
 }
 
 Int
-Ice::Object::ice_hash() const
+Ice::Object::ice_getHash() const
 {
     return static_cast<Int>(reinterpret_cast<Long>(this) >> 4);
 }
 
-static const string __Ice__Object_ids[] =
+namespace
+{
+
+const string __Ice__Object_ids[] =
 {
     "::Ice::Object"
 };
+
+}
 
 bool
 Ice::Object::ice_isA(const string& s, const Current&) const
@@ -300,7 +305,10 @@ Ice::__patch__ObjectPtr(void* __addr, ObjectPtr& v)
     *p = v;
 }
 
-static string
+namespace
+{
+
+string
 operationModeToString(OperationMode mode)
 {
     switch(mode)
@@ -318,6 +326,8 @@ operationModeToString(OperationMode mode)
     ostringstream os;
     os << "unknown value (" << mode << ")";
     return os.str();
+}
+
 }
 
 void
@@ -431,7 +441,7 @@ Ice::BlobjectArrayAsync::__dispatch(Incoming& in, const Current& current)
     is->readBlob(inParams.first, sz);
     inParams.second = inParams.first + sz;
     is->endReadEncaps();
-    AMD_Array_Object_ice_invokePtr cb = new ::IceAsync::Ice::AMD_Array_Object_ice_invoke(in);
+    AMD_Object_ice_invokePtr cb = new ::IceAsync::Ice::AMD_Object_ice_invoke(in);
     try
     {
         ice_invoke_async(cb, inParams, current);
@@ -449,12 +459,11 @@ Ice::BlobjectArrayAsync::__dispatch(Incoming& in, const Current& current)
 void
 Ice::ice_writeObject(const OutputStreamPtr& out, const ObjectPtr& p)
 {
-    out->writeObject(p);
+    out->write(p);
 }
 
 void
 Ice::ice_readObject(const InputStreamPtr& in, ObjectPtr& p)
 {
-    Ice::ReadObjectCallbackPtr cb = new ReadObjectCallbackI(__patch__ObjectPtr, &p);
-    in->readObject(cb);
+    in->read(p);
 }

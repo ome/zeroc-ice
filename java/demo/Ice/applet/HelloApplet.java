@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -42,13 +42,15 @@ public class HelloApplet extends JApplet
         {
             Ice.InitializationData initData = new Ice.InitializationData();
             initData.properties = Ice.Util.createProperties();
-            initData.properties.setProperty("Ice.ACM.Client", "10");
-            initData.properties.setProperty("Ice.Trace.Network", "3");
-            initData.properties.setProperty("IceSSL.Trace.Security", "3");
-            initData.properties.setProperty("IceSSL.Password", "password");
-            initData.properties.setProperty("IceSSL.Keystore", "client.jks");
-            initData.properties.setProperty("IceSSL.Truststore", "client.jks");
-            initData.properties.setProperty("Ice.Plugin.IceSSL", "IceSSL.PluginFactory");
+            initData.properties.load("config.applet");
+            initData.dispatcher = new Ice.Dispatcher()
+            {
+                public void
+                dispatch(Runnable runnable, Ice.Connection connection)
+                {
+                    SwingUtilities.invokeLater(runnable);
+                }
+            };
             _communicator = Ice.Util.initialize(initData);
         }
         catch(Throwable ex)
@@ -328,13 +330,7 @@ public class HelloApplet extends JApplet
         String host = _hostname.getText().toString().trim();
         if(host.length() == 0)
         {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                public void run()
-                {
-                    _status.setText("No hostname");
-                }
-            });
+            _status.setText("No hostname");
             return null;
         }
 
@@ -349,58 +345,42 @@ public class HelloApplet extends JApplet
         return Demo.HelloPrxHelper.uncheckedCast(prx);
     }
 
-    class SayHelloI extends Demo.AMI_Hello_sayHello implements Ice.AMISentCallback
+    class SayHelloI extends Demo.Callback_Hello_sayHello
     {
         private boolean _response = false;
 
-        synchronized public void ice_exception(final Ice.LocalException ex)
+        @Override
+        synchronized public void response()
         {
             assert (!_response);
             _response = true;
-
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                public void run()
-                {
-                    handleException(ex);
-                }
-            });
+            _status.setText("Ready");
         }
 
-        synchronized public void ice_sent()
+        @Override
+        synchronized public void exception(final Ice.LocalException ex)
+        {
+            assert (!_response);
+            _response = true;
+            handleException(ex);
+        }
+
+        @Override
+        synchronized public void sent(boolean ss)
         {
             if(_response)
             {
                 return;
             }
 
-            SwingUtilities.invokeLater(new Runnable()
+            if(_deliveryMode == DeliveryMode.TWOWAY || _deliveryMode == DeliveryMode.TWOWAY_SECURE)
             {
-                public void run()
-                {
-                    if(_deliveryMode == DeliveryMode.TWOWAY || _deliveryMode == DeliveryMode.TWOWAY_SECURE)
-                    {
-                        _status.setText("Waiting for response");
-                    }
-                    else
-                    {
-                        _status.setText("Ready");
-                    }
-                }
-            });
-        }
-
-        synchronized public void ice_response()
-        {
-            assert (!_response);
-            _response = true;
-            SwingUtilities.invokeLater(new Runnable()
+                _status.setText("Waiting for response");
+            }
+            else
             {
-                public void run()
-                {
-                    _status.setText("Ready");
-                }
-            });
+                _status.setText("Ready");
+            }
         }
     }
 
@@ -417,14 +397,8 @@ public class HelloApplet extends JApplet
         {
             if(!_deliveryMode.isBatch())
             {
-                if(hello.sayHello_async(new SayHelloI(), delay))
-                {
-                    if(_deliveryMode == DeliveryMode.TWOWAY || _deliveryMode == DeliveryMode.TWOWAY_SECURE)
-                    {
-                        _status.setText("Waiting for response");
-                    }
-                }
-                else
+                Ice.AsyncResult r = hello.begin_sayHello(delay, new SayHelloI());
+                if(!r.sentSynchronously())
                 {
                     _status.setText("Sending request");
                 }
@@ -454,28 +428,18 @@ public class HelloApplet extends JApplet
         {
             if(!_deliveryMode.isBatch())
             {
-                hello.shutdown_async(new Demo.AMI_Hello_shutdown()
+                hello.begin_shutdown(new Demo.Callback_Hello_shutdown()
                 {
-                    public void ice_exception(final Ice.LocalException ex)
+                    @Override
+                    public void response()
                     {
-                        SwingUtilities.invokeLater(new Runnable()
-                        {
-                            public void run()
-                            {
-                                handleException(ex);
-                            }
-                        });
+                        _status.setText("Ready");
                     }
 
-                    public void ice_response()
+                    @Override
+                    public void exception(final Ice.LocalException ex)
                     {
-                        SwingUtilities.invokeLater(new Runnable()
-                        {
-                            public void run()
-                            {
-                                _status.setText("Ready");
-                            }
-                        });
+                        handleException(ex);
                     }
                 });
                 if(_deliveryMode == DeliveryMode.TWOWAY || _deliveryMode == DeliveryMode.TWOWAY_SECURE)
@@ -498,26 +462,13 @@ public class HelloApplet extends JApplet
 
     private void flush()
     {
-        new Thread(new Runnable()
-        {
-            public void run()
+        _communicator.begin_flushBatchRequests(new Ice.Callback_Communicator_flushBatchRequests()
             {
-                try
+                public void exception(final Ice.LocalException ex)
                 {
-                    _communicator.flushBatchRequests();
+                    handleException(ex);
                 }
-                catch(final Ice.LocalException ex)
-                {
-                    SwingUtilities.invokeLater(new Runnable()
-                    {
-                        public void run()
-                        {
-                            handleException(ex);
-                        }
-                    });
-                }
-            }
-        }).start();
+            });
 
         _flush.setEnabled(false);
         _status.setText("Flushed batch requests");
@@ -557,14 +508,7 @@ public class HelloApplet extends JApplet
     private void handleException(final Throwable ex)
     {
         ex.printStackTrace();
-        SwingUtilities.invokeLater(new Runnable()
-            {
-                public void run()
-                {
-                    _status.setText(ex.getClass().getName());
-                }
-            }
-        );
+        _status.setText(ex.getClass().getName());
     }
 
     private static class SliderListener implements ChangeListener

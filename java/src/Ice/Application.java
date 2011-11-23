@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,37 +9,93 @@
 
 package Ice;
 
+/**
+ * Utility base class that makes it easy to to correctly initialize and finalize
+ * the Ice run time, as well as handle signals. Unless the application specifies
+ * a logger, <Application> installs a per-process logger that logs to the standard
+ * error output.
+ * <p>
+ * Applications must create a derived class that implements the {@link #run} method.
+ * <p>
+ * A program can contain only one instance of this class.
+ *
+ * @see #run
+ * @see Communicator
+ * @see Logger
+ **/
 public abstract class Application
 {
-
+    /**
+     * Initializes an instance that calls {@link Communicator#shutdown} if
+     * a signal is received.
+     **/
     public
     Application()
     {
     }
 
+    /**
+     * Initializes an instance that handles signals according to the signal
+     * policy.
+     *
+     * @param signalPolicy Determines how to respond to signals.
+     *
+     * @see SignalPolicy
+     **/
     public
     Application(SignalPolicy signalPolicy)
     {
         _signalPolicy = signalPolicy;
     }
 
-    //
-    // This main() must be called by the global main(). main()
-    // initializes the Communicator, calls run(), and destroys
-    // the Communicator upon return from run(). It thereby handles
-    // all exceptions properly, i.e., error messages are printed
-    // if exceptions propagate to main(), and the Communicator is
-    // always destroyed, regardless of exceptions.
-    //
+    /**
+     * The application must call <code>main</code> after it has
+     * instantiated the derived class. <code>main</code> creates
+     * a communicator, establishes the specified signal policy, and,
+     * once {@link #run} returns, destroys the communicator.
+     * <p>
+     * The method prints an error message for any exception that propagates
+     * out of <code>run</code> and ensures that the communicator is
+     * destroyed correctly even if <code>run</code> completes abnormally.
+     *
+     * @param appName The name of the application. This parameter is used to initialize
+     * the value of the <code>Ice.ProgramName</code> property.
+     * @param args The arguments for the application (as passed to <code>Main(String[])</code>
+     * by the operating system.
+     * @return The value returned by <code>run</code>. If <code>run</code> terminates with an exception,
+     * the return value is non-zero.
+     **/
     public final int
     main(String appName, String[] args)
     {
         return main(appName, args, new InitializationData());
     }
 
+    /**
+     * The application must call <code>main</code> after it has
+     * instantiated the derived class. <code>main</code> creates
+     * a communicator, establishes the specified signal policy, and,
+     * once {@link run} returns, destroys the communicator.
+     * <p>
+     * The method prints an error message for any exception that propagates
+     * out of <code>#run</code> and ensures that the communicator is
+     * destroyed correctly even if <code>run</code> completes abnormally.
+     *
+     * @param appName The name of the application. This parameter is used to initialize
+     * the value of the <code>Ice.ProgramName</code> property.
+     * @param configFile The configuration file with which to initialize
+     * Ice properties.
+     * @return The value returned by <code>run</code>. If <code>run</code> terminates with an exception,
+     * the return value is non-zero.
+     **/
     public final int
     main(String appName, String[] args, String configFile)
     {
+        if(Util.getProcessLogger() instanceof LoggerI)
+        {
+            Util.setProcessLogger(new LoggerI(appName, ""));
+        }
+
         InitializationData initData = new InitializationData();
         if(configFile != null)
         {
@@ -50,26 +106,48 @@ public abstract class Application
             }
             catch(LocalException ex)
             {
-                System.err.println(appName + ": " + ex);
-                ex.printStackTrace();
+                Util.getProcessLogger().error(IceInternal.Ex.toString(ex));
                 return 1;
             }
             catch(java.lang.Exception ex)
             {
-                System.err.println(appName + ": unknown exception");
-                ex.printStackTrace();
+                Util.getProcessLogger().error("unknown exception: " + IceInternal.Ex.toString(ex));
                 return 1;
             }
         }
         return main(appName, args, initData);
     }
 
+    /**
+     * The application must call <code>main</code> after it has
+     * instantiated the derived class. <code>main</code> creates
+     * a communicator, establishes the specified signal policy, and,
+     * once {@link #run} returns, destroys the communicator.
+     * <p>
+     * The method prints an error message for any exception that propagates
+     * out of <code>run</code> and ensures that the communicator is
+     * destroyed correctly even if <code>run</code> completes abnormally.
+     *
+     * @param appName The name of the application. This parameter is used to initialize
+     * the value of the <code>Ice.ProgramName</code> property.
+     * @param args The arguments for the application (as passed to <code>Main(String[])</code>.
+     * @param initializationData Additional data used to initialize the communicator.
+     * @return The value returned by <code>run</code>. If <code>run</code> terminates with an exception,
+     * the return value is non-zero.
+     *
+     * @see InitializationData
+     **/
     public final int
     main(String appName, String[] args, InitializationData initializationData)
     {
+        if(Util.getProcessLogger() instanceof LoggerI)
+        {
+            Util.setProcessLogger(new LoggerI(appName, ""));
+        }
+
         if(_communicator != null)
         {
-            System.err.println(appName + ": only one instance of the Application class can be used");
+            Util.getProcessLogger().error("only one instance of the Application class can be used");
             return 1;
         }
 
@@ -94,11 +172,17 @@ public abstract class Application
         // If the process logger is the default logger, we replace it with a
         // a logger which is using the program name for the prefix.
         //
-        if(Util.getProcessLogger() instanceof LoggerI)
+        if(!initData.properties.getProperty("Ice.ProgramName").equals("") && Util.getProcessLogger() instanceof LoggerI)
         {
-            Util.setProcessLogger(new LoggerI(initData.properties.getProperty("Ice.ProgramName")));
+            Util.setProcessLogger(new LoggerI(initData.properties.getProperty("Ice.ProgramName"), ""));
         }
 
+        return doMain(argHolder, initData);
+    }
+
+    protected int
+    doMain(StringSeqHolder argHolder, Ice.InitializationData initData)
+    {
         int status = 0;
 
         try
@@ -117,14 +201,12 @@ public abstract class Application
         }
         catch(LocalException ex)
         {
-            System.err.println(_appName + ": " + ex);
-            ex.printStackTrace();
+            Util.getProcessLogger().error(IceInternal.Ex.toString(ex));
             status = 1;
         }
         catch(java.lang.Exception ex)
         {
-            System.err.println(_appName + ": unknown exception");
-            ex.printStackTrace();
+            Util.getProcessLogger().error("unknown exception: " + IceInternal.Ex.toString(ex));
             status = 1;
         }
         catch(java.lang.Error err)
@@ -132,8 +214,7 @@ public abstract class Application
             //
             // We catch Error to avoid hangs in some non-fatal situations
             //
-            System.err.println(_appName + ": Java error");
-            err.printStackTrace();
+            Util.getProcessLogger().error("Java error: " + IceInternal.Ex.toString(err));
             status = 1;
         }
 
@@ -179,14 +260,12 @@ public abstract class Application
             }
             catch(LocalException ex)
             {
-                System.err.println(_appName + ": " + ex);
-                ex.printStackTrace();
+                Util.getProcessLogger().error(IceInternal.Ex.toString(ex));
                 status = 1;
             }
             catch(java.lang.Exception ex)
             {
-                System.err.println(_appName + ": unknown exception");
-                ex.printStackTrace();
+                Util.getProcessLogger().error("unknown exception: " + IceInternal.Ex.toString(ex));
                 status = 1;
             }
             _communicator = null;
@@ -203,32 +282,55 @@ public abstract class Application
         return status;
     }
 
+    /**
+     * Called once the communicator has been initialized. The derived class must
+     * implement <code>run</code>, which is the application's starting method.
+     *
+     * @param args The argument vector for the application. <code>Application</code>
+     * scans the argument vector passed to <code>main</code> for options that are
+     * specific to the Ice run time and removes them; therefore, the vector passed
+     * to <code>run</code> is free from Ice-related options and contains only options
+     * and arguments that are application-specific.
+     *
+     * @return The <code>run</code> method should return zero for successful termination, and
+     * non-zero otherwise. <code>Application.main</code> returns the value returned by <code>run</code>.
+     **/
     public abstract int
     run(String[] args);
 
-    //
-    // Return the application name, i.e., argv[0].
-    //
+    /**
+     * Returns the value of <code>appName</code> that is passed to <code>main</code> (which is also the
+     * the value of <code>Ice.ProgramName</code>). This method is useful mainly for error messages that
+     * include the application name. Because <appName> is a static method, it is available from anywhere
+     * in the program.
+     *
+     * @return The name of the application.
+     **/
     public static String
     appName()
     {
         return _appName;
     }
 
-    //
-    // One limitation of this class is that there can only be one
-    // Application instance, with one global Communicator, accessible
-    // with this communicator() operation. This limitiation is due to
-    // how the signal handling functions below operate. If you require
-    // multiple Communicators, then you cannot use this Application
-    // framework class.
-    //
+    /**
+     * Returns the communicator for the application. Because <communicator> is a static method,
+     * it permits access to the communicator from anywhere in the program. Note that, as a consequence,
+     * you cannot have more than one instance of <code>Application</code> in a program.
+     *
+     * @return The communicator for the application.
+     **/
     public static Communicator
     communicator()
     {
         return _communicator;
     }
 
+    /**
+     * Instructs <code>Application</code> to call {@link Communicator#destroy} on receipt of a signal.
+     * This is default signal handling policy established by the default constructor.
+     *
+     * @see Communicator#destroy
+     **/
     public static void
     destroyOnInterrupt()
     {
@@ -256,11 +358,16 @@ public abstract class Application
         }
         else
         {
-            System.err.println(_appName + 
-                        ": warning: interrupt method called on Application configured to not handle interrupts.");
+            Util.getProcessLogger().warning(
+                "interrupt method called on Application configured to not handle interrupts.");
         }
     }
     
+    /**
+     * Instructs <code>Application</code> to call {@link Communicator#shutdown} on receipt of a signal.
+     *
+     * @see Communicator#shutdown
+     **/
     public static void
     shutdownOnInterrupt()
     {
@@ -288,20 +395,22 @@ public abstract class Application
         }
         else
         {
-            System.err.println(_appName + 
-                        ": warning: interrupt method called on Application configured to not handle interrupts.");
+            Util.getProcessLogger().warning(
+                "interrupt method called on Application configured to not handle interrupts.");
         }
     }
 
-    //
-    // Install a custom shutdown hook. This hook is registered as a
-    // shutdown hook and should do whatever is necessary to terminate
-    // the application. Note that this runs as a shutdown hook so the
-    // code must obey the same rules as a shutdown hook (specifically
-    // don't call exit!). The shutdown and destroy shutdown interrupts
-    // are cleared. This hook is automatically unregistered after
-    // Application.run() returns.
-    //
+    /**
+     * Installs a custom shutdown hook. The implementation of the shutdown
+     * hook can do whatever cleanup is necessary to shut down the application.
+     * The hook is unregistered once {@link #run} returns.
+     * Note that the hook must obey the rules for shutdown hooks; specifically,
+     * it must not call <code>exit</code>.
+     *
+     * @param newHook The thread to run on shutdown.
+     *
+     * @see java.lang.Runtime#addShutdownHook
+     **/
     public static void
     setInterruptHook(java.lang.Thread newHook) // Pun intended.
     {
@@ -318,14 +427,15 @@ public abstract class Application
         }
         else
         {
-            System.err.println(_appName + 
-                        ": warning: interrupt method called on Application configured to not handle interrupts.");
+            Util.getProcessLogger().warning(
+                "interrupt method called on Application configured to not handle interrupts.");
         }
     }
     
-    //
-    // This clears any shutdown hooks including any custom hook.
-    //
+    /**
+     * Clears any shutdown hooks, including any hook established with {@link #destroyOnInterrupt}code> or
+     * {@link #shutdownOnInterrupt}.
+     **/
     public static void
     defaultInterrupt()
     {
@@ -335,11 +445,17 @@ public abstract class Application
         }
         else
         {
-            System.err.println(_appName + 
-                        ": warning: interrupt method called on Application configured to not handle interrupts.");
+            Util.getProcessLogger().warning(
+                "interrupt method called on Application configured to not handle interrupts.");
         }
     }
 
+    /**
+     * Determines whether the application shut down intentionally or was forced to shut down by the JVM. This
+     * is useful for logging purposes.
+     *
+     * @return <code>true</code> if a shutdown hook caused the communicator to shut down; false otherwise.
+     **/
     public static boolean
     interrupted()
     {
@@ -414,9 +530,10 @@ public abstract class Application
         }
     }
 
-    static class AppHook extends Thread
+    // For use by Glacier2.Application
+    static public class AppHook extends Thread
     {
-        void
+        public void
         done()
         {
             synchronized(_doneMutex)
@@ -532,12 +649,12 @@ public abstract class Application
         private Thread _hook;
     }
 
-    private static String _appName;
-    private static Communicator _communicator;
-    private static AppHook _appHook;
-    private static java.lang.Object _mutex = new java.lang.Object();
-    private static boolean _callbackInProgress = false;
-    private static boolean _destroyed = false;
-    private static boolean _interrupted = false;
-    private static SignalPolicy _signalPolicy = SignalPolicy.HandleSignals;
+    protected static String _appName;
+    protected static Communicator _communicator;
+    protected static AppHook _appHook;
+    protected static java.lang.Object _mutex = new java.lang.Object();
+    protected static boolean _callbackInProgress = false;
+    protected static boolean _destroyed = false;
+    protected static boolean _interrupted = false;
+    protected static SignalPolicy _signalPolicy = SignalPolicy.HandleSignals;
 }

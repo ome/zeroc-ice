@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -71,6 +71,7 @@ dictionary<short, int> ShortIntD;
 dictionary<long, float> LongFloatD;
 dictionary<string, string> StringStringD;
 dictionary<string, MyEnum> StringMyEnumD;
+dictionary<MyEnum, string> MyEnumStringD;
 dictionary<MyStruct, MyEnum> MyStructMyEnumD;
 
 ["ami"] class MyClass
@@ -150,6 +151,9 @@ dictionary<MyStruct, MyEnum> MyStructMyEnumD;
     StringMyEnumD opStringMyEnumD(StringMyEnumD p1, StringMyEnumD p2,
                                   out StringMyEnumD p3);
 
+    MyEnumStringD opMyEnumStringD(MyEnumStringD p1, MyEnumStringD p2,
+                                  out MyEnumStringD p3);
+
     MyStructMyEnumD opMyStructMyEnumD(MyStructMyEnumD p1, MyStructMyEnumD p2,
                                       out MyStructMyEnumD p3);
 
@@ -158,6 +162,8 @@ dictionary<MyStruct, MyEnum> MyStructMyEnumD;
     void opByteSOneway(ByteS s);
 
     Ice::Context opContext();
+
+    void opDoubleMarshaling(double p1, DoubleS p2);
 };
 
 ["ami"] class MyDerivedClass extends MyClass

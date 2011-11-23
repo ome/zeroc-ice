@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,18 @@
 
 using namespace std;
 using namespace Demo;
+
+class DummyPermissionsVerifierI : public Glacier2::PermissionsVerifier
+{
+public:
+
+    virtual bool
+    checkPermissions(const string& userId, const string& password, string&, const Ice::Current&) const
+    {
+        cout << "verified user `" << userId << "' with password `" << password << "'" << endl;
+        return true;
+    }
+};
 
 class ChatSessionManagerI : public Glacier2::SessionManager
 {
@@ -40,6 +52,8 @@ public:
 
         Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("ChatServer");
         
+        Glacier2::PermissionsVerifierPtr dpv = new DummyPermissionsVerifierI;
+        adapter->add(dpv, communicator()->stringToIdentity("ChatSessionVerifier"));
         Glacier2::SessionManagerPtr csm = new ChatSessionManagerI;
         adapter->add(csm, communicator()->stringToIdentity("ChatSessionManager"));
         adapter->activate();

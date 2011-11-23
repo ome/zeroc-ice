@@ -1,11 +1,16 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+package test.Ice.checksum;
+
+import java.io.PrintWriter;
+import test.Ice.checksum.Test.*;
 
 public class AllTests
 {
@@ -18,26 +23,24 @@ public class AllTests
         }
     }
 
-    public static Test.ChecksumPrx
-    allTests(Ice.Communicator communicator, boolean collocated)
+    public static ChecksumPrx
+    allTests(Ice.Communicator communicator, boolean collocated, PrintWriter out)
     {
-        String ref = "test:default -p 12010 -t 10000";
+        String ref = "test:default -p 12010";
         Ice.ObjectPrx base = communicator.stringToProxy(ref);
         test(base != null);
 
-        Test.ChecksumPrx checksum = Test.ChecksumPrxHelper.checkedCast(base);
+        ChecksumPrx checksum = ChecksumPrxHelper.checkedCast(base);
         test(checksum != null);
 
         //
         // Verify that no checksums are present for local types.
         //
-        System.out.print("testing checksums... ");
-        System.out.flush();
-        java.util.Iterator<java.util.Map.Entry<String, String> > p = SliceChecksums.checksums.entrySet().iterator();
-        while(p.hasNext())
+        out.print("testing checksums... ");
+        out.flush();
+        for(java.util.Map.Entry<String, String> p : SliceChecksums.checksums.entrySet())
         {
-            java.util.Map.Entry<String, String> entry = p.next();
-            String key = entry.getKey();
+            String key = p.getKey();
             int pos = key.indexOf("Local");
             test(pos == -1);
         }
@@ -52,13 +55,11 @@ public class AllTests
         // we assume that the server's type does not change for N = 1, and does
         // change for N > 1.
         //
-        p = d.entrySet().iterator();
         java.util.regex.Pattern patt = java.util.regex.Pattern.compile("\\d+");
-        while(p.hasNext())
+        for(java.util.Map.Entry<String, String> p : d.entrySet())
         {
             int n = 0;
-            java.util.Map.Entry<String, String> entry = p.next();
-            String key = entry.getKey();
+            String key = p.getKey();
             java.util.regex.Matcher m = patt.matcher(key);
             if(m.find())
             {
@@ -77,14 +78,14 @@ public class AllTests
 
             if(n <= 1)
             {
-                test(value.equals(entry.getValue()));
+                test(value.equals(p.getValue()));
             }
             else
             {
-                test(!value.equals(entry.getValue()));
+                test(!value.equals(p.getValue()));
             }
         }
-        System.out.println("ok");
+        out.println("ok");
 
         return checksum;
     }

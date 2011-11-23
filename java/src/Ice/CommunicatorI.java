@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -53,6 +53,12 @@ public final class CommunicatorI implements Communicator
         return _instance.proxyFactory().propertyToProxy(s);
     }
 
+    public java.util.Map<String, String>
+    proxyToProperty(Ice.ObjectPrx proxy, String prefix)
+    {
+        return _instance.proxyFactory().proxyToProperty(proxy, prefix);
+    }
+
     public Ice.Identity
     stringToIdentity(String s)
     {
@@ -68,19 +74,39 @@ public final class CommunicatorI implements Communicator
     public ObjectAdapter
     createObjectAdapter(String name)
     {
-        return _instance.objectAdapterFactory().createObjectAdapter(name, "", null);
+        return _instance.objectAdapterFactory().createObjectAdapter(name, null);
     }
 
     public ObjectAdapter
     createObjectAdapterWithEndpoints(String name, String endpoints)
     {
-        return _instance.objectAdapterFactory().createObjectAdapter(name, endpoints, null);
+        if(name.length() == 0)
+        {
+            name = java.util.UUID.randomUUID().toString();
+        }
+        
+        getProperties().setProperty(name + ".Endpoints", endpoints);
+        return _instance.objectAdapterFactory().createObjectAdapter(name, null);
     }
 
     public ObjectAdapter
     createObjectAdapterWithRouter(String name, RouterPrx router)
     {
-        return _instance.objectAdapterFactory().createObjectAdapter(name, "", router);
+        if(name.length() == 0)
+        {
+            name = java.util.UUID.randomUUID().toString();
+        }
+
+        //
+        // We set the proxy properties here, although we still use the proxy supplied.
+        //
+        java.util.Map<String, String> properties = proxyToProperty(router, name + ".Router");
+        for(java.util.Map.Entry<String, String> p : properties.entrySet())
+        {
+            getProperties().setProperty(p.getKey(), p.getValue());
+        }
+
+        return _instance.objectAdapterFactory().createObjectAdapter(name, router);
     }
 
     public void
@@ -137,24 +163,6 @@ public final class CommunicatorI implements Communicator
         _instance.setDefaultLocator(locator);
     }
 
-    /**
-     * @deprecated
-     **/
-    public java.util.Map
-    getDefaultContext()
-    {
-        return _instance.getDefaultContext();
-    }
-
-    /**
-     * @deprecated
-     **/
-    public void
-    setDefaultContext(java.util.Map ctx)
-    {
-        _instance.setDefaultContext(ctx);
-    }
-
     public ImplicitContext
     getImplicitContext()
     {
@@ -170,7 +178,60 @@ public final class CommunicatorI implements Communicator
     public void
     flushBatchRequests()
     {
-        _instance.flushBatchRequests();
+        AsyncResult r = begin_flushBatchRequests();
+        end_flushBatchRequests(r);
+    }
+
+    public AsyncResult
+    begin_flushBatchRequests()
+    {
+        return begin_flushBatchRequestsInternal(null);
+    }
+
+    public AsyncResult
+    begin_flushBatchRequests(Callback cb)
+    {
+        return begin_flushBatchRequestsInternal(cb);
+    }
+
+    public AsyncResult
+    begin_flushBatchRequests(Callback_Communicator_flushBatchRequests cb)
+    {
+        return begin_flushBatchRequestsInternal(cb);
+    }
+
+    private static final String __flushBatchRequests_name = "flushBatchRequests";
+
+    private Ice.AsyncResult
+    begin_flushBatchRequestsInternal(IceInternal.CallbackBase cb)
+    {
+        IceInternal.OutgoingConnectionFactory connectionFactory = _instance.outgoingConnectionFactory();
+        IceInternal.ObjectAdapterFactory adapterFactory = _instance.objectAdapterFactory();
+
+        //
+        // This callback object receives the results of all invocations
+        // of Connection.begin_flushBatchRequests.
+        //
+        IceInternal.CommunicatorBatchOutgoingAsync result =
+            new IceInternal.CommunicatorBatchOutgoingAsync(this, _instance, __flushBatchRequests_name, cb);
+
+        connectionFactory.flushAsyncBatchRequests(result);
+        adapterFactory.flushAsyncBatchRequests(result);
+
+        //
+        // Inform the callback that we have finished initiating all of the
+        // flush requests.
+        //
+        result.ready();
+
+        return result;
+    }
+
+    public void
+    end_flushBatchRequests(AsyncResult r)
+    {
+        AsyncResult.__check(r, this, __flushBatchRequests_name);
+        r.__wait();
     }
 
     public ObjectPrx 
@@ -232,9 +293,9 @@ public final class CommunicatorI implements Communicator
     }
 
     //
-    // For use by Util.getInstance()
+    // For use by IceInternal.Util.getInstance()
     //
-    IceInternal.Instance
+    public IceInternal.Instance
     getInstance()
     {
         return _instance;

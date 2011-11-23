@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -10,7 +10,6 @@
 top_srcdir	= ..\..\..
 
 TARGETS		= client.exe server.exe
-TARGETS_CONFIG	= $(TARGETS:.exe=.exe.config)
 
 C_SRCS		= Client.cs
 S_SRCS		= GreetI.cs Server.cs
@@ -25,13 +24,11 @@ GDIR		= generated
 
 MCSFLAGS	= $(MCSFLAGS) -target:exe
 
-SLICE2CSFLAGS	= $(SLICE2CSFLAGS) --ice -I. -I$(slicedir)
-
 client.exe: $(C_SRCS) $(GEN_SRCS) MyGreeting.dll
-	$(MCS) $(MCSFLAGS) -out:$@ -r:$(refdir)\Ice.dll -r:MyGreeting.dll $(C_SRCS) $(GEN_SRCS)
+	$(MCS) $(MCSFLAGS) -out:$@ -r:"$(refdir)\Ice.dll" -r:MyGreeting.dll $(C_SRCS) $(GEN_SRCS)
 
 server.exe: $(S_SRCS) $(GEN_SRCS) MyGreeting.dll
-	$(MCS) $(MCSFLAGS) -out:$@ -r:$(refdir)\Ice.dll -r:MyGreeting.dll $(S_SRCS) $(GEN_SRCS)
+	$(MCS) $(MCSFLAGS) -out:$@ -r:"$(refdir)\Ice.dll" -r:MyGreeting.dll $(S_SRCS) $(GEN_SRCS)
 
 MyGreeting.dll: MyGreeting.cs
 	$(MCS) $(MCSFLAGS) -target:library -out:MyGreeting.dll MyGreeting.cs
@@ -39,4 +36,4 @@ MyGreeting.dll: MyGreeting.cs
 clean::
 	del /q Serializable.dll
 
-!include .depend
+!include .depend.mak

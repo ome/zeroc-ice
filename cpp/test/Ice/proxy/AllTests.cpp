@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,7 +19,7 @@ Test::MyClassPrx
 allTests(const Ice::CommunicatorPtr& communicator)
 {
     cout << "testing stringToProxy... " << flush;
-    string ref = "test:default -p 12010 -t 10000";
+    string ref = "test:default -p 12010";
     Ice::ObjectPrx base = communicator->stringToProxy(ref);
     test(base);
 
@@ -40,9 +40,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
          b1->ice_getFacet().empty());
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-	IceUtil::DummyBCC dummy;
-#endif
         b1 = communicator->stringToProxy("\"test -f facet'");
         test(false);
     }
@@ -60,9 +57,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
          b1->ice_getFacet().empty());
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-	IceUtil::DummyBCC dummy;
-#endif
         b1 = communicator->stringToProxy("test test");
         test(false);
     }
@@ -73,9 +67,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
     test(b1->ice_getIdentity().name == "test test" && b1->ice_getIdentity().category.empty());
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-	IceUtil::DummyBCC dummy;
-#endif
         b1 = communicator->stringToProxy("test\\777");
         test(false);
     }
@@ -102,14 +93,32 @@ allTests(const Ice::CommunicatorPtr& communicator)
     test(b1->ice_getIdentity().name == "test" && b1->ice_getIdentity().category == "category" &&
          b1->ice_getAdapterId().empty());
 
+    b1 = communicator->stringToProxy("");
+    test(!b1);
+    b1 = communicator->stringToProxy("\"\"");
+    test(!b1);
+    try
+    {
+        b1 = communicator->stringToProxy("\"\" test"); // Invalid trailing characters.
+        test(false);
+    }
+    catch(const Ice::ProxyParseException&)
+    {
+    }
+    try
+    {
+        b1 = communicator->stringToProxy("test:"); // Missing endpoint.
+        test(false);
+    }
+    catch(const Ice::EndpointParseException&)
+    {
+    }
+
     b1 = communicator->stringToProxy("test@adapter");
     test(b1->ice_getIdentity().name == "test" && b1->ice_getIdentity().category.empty() &&
          b1->ice_getAdapterId() == "adapter");
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-	IceUtil::DummyBCC dummy;
-#endif
         b1 = communicator->stringToProxy("id@adapter test");
         test(false);
     }
@@ -149,9 +158,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
          b1->ice_getFacet() == "facet x");
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-	IceUtil::DummyBCC dummy;
-#endif
         b1 = communicator->stringToProxy("id -f \"facet x");
         test(false);
     }
@@ -160,9 +166,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
     }
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-	IceUtil::DummyBCC dummy;
-#endif
         b1 = communicator->stringToProxy("id -f \'facet x");
         test(false);
     }
@@ -186,9 +189,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
          b1->ice_getFacet() == "facet@test" && b1->ice_getAdapterId() == "test");
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-	IceUtil::DummyBCC dummy;
-#endif
         b1 = communicator->stringToProxy("test -f facet@test @test");
         test(false);
     }
@@ -214,9 +214,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-	IceUtil::DummyBCC dummy;
-#endif
         b1 = communicator->stringToProxy("test:tcp@adapterId");
         test(false);
     }
@@ -235,9 +232,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
     //}
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-	IceUtil::DummyBCC dummy;
-#endif
         b1 = communicator->stringToProxy("test::tcp");
         test(false);
     }
@@ -249,7 +243,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
     cout << "testing propertyToProxy... " << flush;
     Ice::PropertiesPtr prop = communicator->getProperties();
     string propertyPrefix = "Foo.Proxy";
-    prop->setProperty(propertyPrefix, "test:default -p 12010 -t 10000");
+    prop->setProperty(propertyPrefix, "test:default -p 12010");
     b1 = communicator->propertyToProxy(propertyPrefix);
     test(b1->ice_getIdentity().name == "test" && b1->ice_getIdentity().category.empty() &&
          b1->ice_getAdapterId().empty() && b1->ice_getFacet().empty());
@@ -293,7 +287,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
     //test(b1->ice_getLocatorCacheTimeout() == 60);
     //prop->setProperty("Ice.Default.LocatorCacheTimeout", "");
 
-    prop->setProperty(propertyPrefix, "test:default -p 12010 -t 10000");
+    prop->setProperty(propertyPrefix, "test:default -p 12010");
 
     property = propertyPrefix + ".Router";
     test(!b1->ice_getRouter());
@@ -332,6 +326,58 @@ allTests(const Ice::CommunicatorPtr& communicator)
     b1 = communicator->propertyToProxy(propertyPrefix);
     test(!b1->ice_isCollocationOptimized());
     prop->setProperty(property, "");
+
+    cout << "ok" << endl;
+
+    cout << "testing proxyToProperty... " << flush;
+
+    b1 = communicator->stringToProxy("test");
+    b1 = b1->ice_collocationOptimized(true);
+    b1 = b1->ice_connectionCached(true);
+    b1 = b1->ice_preferSecure(false);
+    b1 = b1->ice_endpointSelection(Ice::Ordered);
+    b1 = b1->ice_locatorCacheTimeout(100);
+
+    Ice::ObjectPrx router = communicator->stringToProxy("router");
+    router = router->ice_collocationOptimized(false);
+    router = router->ice_connectionCached(true);
+    router = router->ice_preferSecure(true);
+    router = router->ice_endpointSelection(Ice::Random);
+    router = router->ice_locatorCacheTimeout(200);
+
+    Ice::ObjectPrx locator = communicator->stringToProxy("locator");
+    locator = locator->ice_collocationOptimized(true);
+    locator = locator->ice_connectionCached(false);
+    locator = locator->ice_preferSecure(true);
+    locator = locator->ice_endpointSelection(Ice::Random);
+    locator = locator->ice_locatorCacheTimeout(300);
+
+    locator = locator->ice_router(Ice::RouterPrx::uncheckedCast(router));
+    b1 = b1->ice_locator(Ice::LocatorPrx::uncheckedCast(locator));
+
+    Ice::PropertyDict proxyProps = communicator->proxyToProperty(b1, "Test");
+    test(proxyProps.size() == 18);
+
+    test(proxyProps["Test"] == "test -t");
+    test(proxyProps["Test.CollocationOptimized"] == "1");
+    test(proxyProps["Test.ConnectionCached"] == "1");
+    test(proxyProps["Test.PreferSecure"] == "0");
+    test(proxyProps["Test.EndpointSelection"] == "Ordered");
+    test(proxyProps["Test.LocatorCacheTimeout"] == "100");
+
+    test(proxyProps["Test.Locator"] == "locator -t");
+    test(proxyProps["Test.Locator.CollocationOptimized"] == "1");
+    test(proxyProps["Test.Locator.ConnectionCached"] == "0");
+    test(proxyProps["Test.Locator.PreferSecure"] == "1");
+    test(proxyProps["Test.Locator.EndpointSelection"] == "Random");
+    test(proxyProps["Test.Locator.LocatorCacheTimeout"] == "300");
+
+    test(proxyProps["Test.Locator.Router"] == "router -t");
+    test(proxyProps["Test.Locator.Router.CollocationOptimized"] == "0");
+    test(proxyProps["Test.Locator.Router.ConnectionCached"] == "1");
+    test(proxyProps["Test.Locator.Router.PreferSecure"] == "1");
+    test(proxyProps["Test.Locator.Router.EndpointSelection"] == "Random");
+    test(proxyProps["Test.Locator.Router.LocatorCacheTimeout"] == "200");
 
     cout << "ok" << endl;
 
@@ -400,6 +446,9 @@ allTests(const Ice::CommunicatorPtr& communicator)
     test(compObj->ice_connectionId("id1") != compObj->ice_connectionId("id2"));
     test(compObj->ice_connectionId("id1") < compObj->ice_connectionId("id2"));
     test(!(compObj->ice_connectionId("id2") < compObj->ice_connectionId("id1")));
+
+    test(compObj->ice_connectionId("id1")->ice_getConnectionId() == "id1");
+    test(compObj->ice_connectionId("id2")->ice_getConnectionId() == "id2");
 
     test(compObj->ice_compress(true) == compObj->ice_compress(true));
     test(compObj->ice_compress(false) != compObj->ice_compress(true));
@@ -474,6 +523,13 @@ allTests(const Ice::CommunicatorPtr& communicator)
     test(compObj1 != compObj2);
     test(compObj1 < compObj2);
     test(!(compObj2 < compObj1));
+
+    Ice::EndpointSeq endpts1 = communicator->stringToProxy("foo:tcp -h 127.0.0.1 -p 10000")->ice_getEndpoints();
+    Ice::EndpointSeq endpts2 = communicator->stringToProxy("foo:tcp -h 127.0.0.1 -p 10001")->ice_getEndpoints();
+    test(endpts1 != endpts2);
+    test(endpts1 < endpts2);
+    test(!(endpts2 < endpts1));
+    test(endpts1 == communicator->stringToProxy("foo:tcp -h 127.0.0.1 -p 10000")->ice_getEndpoints());
 
     //
     // TODO: Ideally we should also test comparison of fixed proxies.
@@ -704,9 +760,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
         //
         try
         {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-	    IceUtil::DummyBCC dummy;
-#endif
             p1->ice_ping();
             test(false);
         }

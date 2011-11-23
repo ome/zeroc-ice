@@ -1,13 +1,16 @@
+
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-import Test.*;
+package test.Ice.hold;
+
+import test.Ice.hold.Test._HoldDisp;
 
 public final class HoldI extends _HoldDisp
 {
@@ -30,7 +33,11 @@ public final class HoldI extends _HoldDisp
     public void
     putOnHold(int milliSeconds, Ice.Current current)
     {
-        if(milliSeconds <= 0)
+        if(milliSeconds < 0)
+        {
+            _adapter.hold();
+        }
+        else if(milliSeconds == 0)
         {
             _adapter.hold();
             _adapter.activate();
@@ -53,6 +60,32 @@ public final class HoldI extends _HoldDisp
                             }, milliSeconds);
         }
     }
+
+    public void
+    waitForHold(final Ice.Current current)
+    {
+        _timer.schedule(new java.util.TimerTask() 
+                        {
+                            public void 
+                            run()
+                            {
+                                try
+                                {
+                                    current.adapter.waitForHold();
+                                    current.adapter.activate();
+                                }
+                                catch(Ice.ObjectAdapterDeactivatedException ex)
+                                {
+                                    //
+                                    // This shouldn't occur. The test ensures all the waitForHold timers are 
+                                    // finished before shutting down the communicator.
+                                    //
+                                    test(false);
+                                }
+                            }
+                        }, 0);
+    }
+
 
     public int
     set(int value, int delay, Ice.Current current)
@@ -78,6 +111,7 @@ public final class HoldI extends _HoldDisp
     {
         if(_last != expected)
         {
+            System.err.println("_last = " + _last + " expected = " + expected);
             _adapter.getCommunicator().shutdown();
             test(false);
         }

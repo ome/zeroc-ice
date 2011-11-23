@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -39,7 +39,7 @@ CC			= xlc_r -qcpluscmt
 #
 
 ifneq ($(OBJECT_MODE),64)
-    CXXARCHFLAGS	= -D_LARGE_FILES 
+    CXXARCHFLAGS	+= -D_LARGE_FILES 
 endif
 
 CXXFLAGS		= -brtl -qrtti=all -qstaticinline $(CXXARCHFLAGS)

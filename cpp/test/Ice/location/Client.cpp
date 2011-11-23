@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,7 +17,7 @@ int
 run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 {
     void allTests(const Ice::CommunicatorPtr&, const string&);
-    allTests(communicator, "ServerManager:default -p 12010 -t 10000");
+    allTests(communicator, "ServerManager:default -p 12010");
     return EXIT_SUCCESS;
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -22,6 +22,9 @@ from scripts import *
 
 transformdb = os.path.join(TestUtil.getCppBinDir(), "transformdb")
 
+if TestUtil.appverifier:
+    TestUtil.setAppVerifierSettings([transformdb])
+
 dbdir = os.path.join(os.getcwd(), "db")
 TestUtil.cleanDbDir(dbdir)
 
@@ -38,7 +41,7 @@ os.mkdir(tmp_dbdir)
 print "creating test database...",
 sys.stdout.flush()
 
-makedb = os.path.join(os.getcwd(), "makedb") + " " + os.getcwd()
+makedb = '"%s" "%s"' % (os.path.join(os.getcwd(), "makedb"), os.getcwd())
 proc = TestUtil.spawn(makedb)
 proc.waitTestSuccess()
 print "ok"
@@ -51,8 +54,8 @@ checkxml = os.path.join(os.getcwd(), "check.xml")
 print "executing evictor transformations...",
 sys.stdout.flush()
 
-command = transformdb + " -e -p --old " + testold + " --new " + testnew + " -f " + transformxml + " " + dbdir + \
-    " evictor.db " + check_dbdir
+command = '"' + transformdb + '" -e -p --old "' + testold + '" --new "' + testnew + '" -f "' + transformxml + '" "' + dbdir + \
+    '" evictor.db "' + check_dbdir + '" '
 proc = TestUtil.spawn(command)
 proc.waitTestSuccess()
 print "ok"
@@ -60,8 +63,11 @@ print "ok"
 print "validating database...",
 sys.stdout.flush()
 
-command = transformdb + " -e --old " + testnew + " --new " + testnew + " -f " + checkxml + " " + check_dbdir + \
-    " evictor.db " + tmp_dbdir
+command = '"' + transformdb + '" -e --old "' + testnew + '" --new "' + testnew + '" -f "' + checkxml + '" "' + check_dbdir + \
+    '" evictor.db "' + tmp_dbdir + '"'
 proc = TestUtil.spawn(command)
 proc.waitTestSuccess()
 print "ok"
+
+if TestUtil.appverifier:
+    TestUtil.appVerifierAfterTestEnd([transformdb])

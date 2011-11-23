@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -67,9 +67,9 @@ $(COLLOCATED): $(OBJS) $(COLOBJS)
 	@if exist $@.manifest echo ^ ^ ^ Embedding manifest using $(MT) && \
 	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
-NameIndex.h NameIndex.cpp: PhoneBook.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
+NameIndex.h NameIndex.cpp: PhoneBook.ice "$(SLICE2FREEZE)" "$(SLICEPARSERLIB)"
 	del /q NameIndex.h NameIndex.cpp
-	$(SLICE2FREEZE) $(ICECPPFLAGS) --index NameIndex,Demo::Contact,name,case-insensitive NameIndex PhoneBook.ice
+	"$(SLICE2FREEZE)" $(ICECPPFLAGS) --index NameIndex,Demo::Contact,name,case-insensitive NameIndex PhoneBook.ice
 
 #Scanner.cpp : Scanner.l
 #	flex Scanner.l
@@ -90,6 +90,7 @@ clean::
 
 clean::
 	-del /q NameIndex.h NameIndex.cpp
+	-if exist db\__Freeze rmdir /q /s db\__Freeze
 	-for %f in (db\*) do if not %f == db\.gitignore del /q %f
 
-!include .depend
+!include .depend.mak

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -12,9 +12,9 @@ top_srcdir	= ../../..
 TARGETS		= client.exe server.exe serveramd.exe collocated.exe
 
 C_SRCS		= Client.cs AllTests.cs
-S_SRCS		= Server.cs CookieI.cs ServantLocatorI.cs TestI.cs
-COL_SRCS	= Collocated.cs AllTests.cs CookieI.cs ServantLocatorI.cs TestI.cs
-SAMD_SRCS	= Server.cs CookieI.cs ServantLocatorI.cs TestAMDI.cs
+S_SRCS		= Server.cs CookieI.cs ServantLocatorI.cs TestI.cs TestActivationI.cs
+COL_SRCS	= Collocated.cs AllTests.cs CookieI.cs ServantLocatorI.cs TestI.cs TestActivationI.cs
+SAMD_SRCS	= Server.cs CookieI.cs ServantLocatorI.cs TestAMDI.cs TestActivationI.cs
 
 SLICE_SRCS	= $(SDIR)/Test.ice
 SLICE_AMD_SRCS	= $(SDIR)/TestAMD.ice

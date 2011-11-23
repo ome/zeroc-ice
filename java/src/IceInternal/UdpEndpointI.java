@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,8 +11,6 @@ package IceInternal;
 
 final class UdpEndpointI extends EndpointI
 {
-    final static short TYPE = 3;
-
     public
     UdpEndpointI(Instance instance, String ho, int po, String mif, int mttl, byte pma, byte pmi, byte ema, byte emi,
                  boolean conn, String conId, boolean co)
@@ -59,7 +57,8 @@ final class UdpEndpointI extends EndpointI
             String option = arr[i++];
             if(option.charAt(0) != '-')
             {
-                throw new Ice.EndpointParseException("udp " + str);
+                throw new Ice.EndpointParseException("expected an endpoint option but found `" + option +
+                                                     "' in endpoint `udp " + str + "'");
             }
 
             String argument = null;
@@ -76,13 +75,15 @@ final class UdpEndpointI extends EndpointI
             {
                 if(argument == null)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("no argument provided for -v option in endpoint `udp "
+                                                         + str + "'");
                 }
 
                 int pos = argument.indexOf('.');
                 if(pos == -1)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("malformed protocol version `" + argument +
+                                                         "' in endpoint `udp " + str + "'");
                 }
 
                 String majStr = argument.substring(0, pos);
@@ -96,12 +97,14 @@ final class UdpEndpointI extends EndpointI
                 }
                 catch(NumberFormatException ex)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("invalid protocol version `" + argument +
+                                                         "' in endpoint `udp " + str + "'");
                 }
 
                 if(majVersion < 1 || majVersion > 255 || minVersion < 0 || minVersion > 255)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("range error in protocol version `" + argument +
+                                                         "' in endpoint `udp " + str + "'");
                 }
 
                 if(majVersion != Protocol.protocolMajor)
@@ -121,13 +124,15 @@ final class UdpEndpointI extends EndpointI
             {
                 if(argument == null)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("no argument provided for -e option in endpoint `udp "
+                                                         + str + "'");
                 }
 
                 int pos = argument.indexOf('.');
                 if(pos == -1)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("malformed encoding version `" + argument +
+                                                         "' in endpoint `udp " + str + "'");
                 }
 
                 String majStr = argument.substring(0, pos);
@@ -141,12 +146,14 @@ final class UdpEndpointI extends EndpointI
                 }
                 catch(NumberFormatException ex)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("invalid encoding version `" + argument +
+                                                         "' in endpoint `udp " + str + "'");
                 }
 
                 if(majVersion < 1 || majVersion > 255 || minVersion < 0 || minVersion > 255)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("range error in encoding version `" + argument +
+                                                         "' in endpoint `udp " + str + "'");
                 }
 
                 if(majVersion != Protocol.encodingMajor)
@@ -166,7 +173,8 @@ final class UdpEndpointI extends EndpointI
             {
                 if(argument == null)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("no argument provided for -h option in endpoint `udp "
+                                                         + str + "'");
                 }
 
                 _host = argument;
@@ -175,7 +183,8 @@ final class UdpEndpointI extends EndpointI
             {
                 if(argument == null)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("no argument provided for -p option in endpoint `udp "
+                                                         + str + "'");
                 }
 
                 try
@@ -184,19 +193,22 @@ final class UdpEndpointI extends EndpointI
                 }
                 catch(NumberFormatException ex)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("invalid port value `" + argument + "' in endpoint `udp " +
+                                                         str + "'");
                 }
 
                 if(_port < 0 || _port > 65535)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("port value `" + argument +
+                                                         "' out of range in endpoint `udp " + str + "'");
                 }
             }
             else if(option.equals("-c"))
             {
                 if(argument != null)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("unexpected argument `" + argument +
+                                                         "' provided for -c option in `udp " + str + "'");
                 }
 
                 _connect = true;
@@ -206,7 +218,8 @@ final class UdpEndpointI extends EndpointI
             {
                 if(argument != null)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("unexpected argument `" + argument +
+                                                         "' provided for -z option in `udp " + str + "'");
                 }
 
                 _compress = true;
@@ -216,7 +229,8 @@ final class UdpEndpointI extends EndpointI
             {
                 if(argument == null)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("no argument provided for --interface option in endpoint `udp "
+                                                         + str + "'");
                 }
 
                 _mcastInterface = argument;
@@ -225,7 +239,8 @@ final class UdpEndpointI extends EndpointI
             {
                 if(argument == null)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("no argument provided for --ttl option in endpoint `udp "
+                                                         + str + "'");
                 }
 
                 try
@@ -234,17 +249,19 @@ final class UdpEndpointI extends EndpointI
                 }
                 catch(NumberFormatException ex)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("invalid TTL value `" + argument + "' in endpoint `udp " +
+                                                         str + "'");
                 }
 
                 if(_mcastTtl < 0)
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("TTL value `" + argument +
+                                                         "' out of range in endpoint `udp " + str + "'");
                 }
             }
             else
             {
-                throw new Ice.EndpointParseException("udp " + str);
+                throw new Ice.EndpointParseException("unknown option `" + option + "' in `udp " + str + "'");
             }
         }
 
@@ -260,7 +277,7 @@ final class UdpEndpointI extends EndpointI
             }
             else
             {
-                throw new Ice.EndpointParseException("udp " + str);
+                throw new Ice.EndpointParseException("`-h *' not valid for proxy endpoint `udp " + str + "'");
             }
         }
 
@@ -315,7 +332,7 @@ final class UdpEndpointI extends EndpointI
     public void
     streamWrite(BasicStream s)
     {
-        s.writeShort(TYPE);
+        s.writeShort(Ice.UDPEndpointType.value);
         s.startWriteEncaps();
         s.writeString(_host);
         s.writeInt(_port);
@@ -397,12 +414,38 @@ final class UdpEndpointI extends EndpointI
     }
 
     //
+    // Return the endpoint information.
+    //
+    public Ice.EndpointInfo
+    getInfo()
+    {
+        return new Ice.UDPEndpointInfo(-1, _compress, _host, _port, _protocolMajor, _protocolMinor, _encodingMajor,
+                                       _encodingMinor, _mcastInterface, _mcastTtl)
+            {
+                public short type()
+                {
+                    return Ice.UDPEndpointType.value;
+                }
+                
+                public boolean datagram()
+                {
+                    return true;
+                }
+                
+                public boolean secure()
+                {
+                    return false;
+                }
+        };
+    }
+
+    //
     // Return the endpoint type
     //
     public short
     type()
     {
-        return TYPE;
+        return Ice.UDPEndpointType.value;
     }
 
     //
@@ -493,15 +536,6 @@ final class UdpEndpointI extends EndpointI
     }
 
     //
-    // Return true if the endpoint type is unknown.
-    //
-    public boolean
-    unknown()
-    {
-        return false;
-    }
-
-    //
     // Return a server side transceiver for this endpoint, or null if a
     // transceiver can only be created by an acceptor. In case a
     // transceiver is created, this operation also returns a new
@@ -556,17 +590,17 @@ final class UdpEndpointI extends EndpointI
     expand()
     {
         java.util.ArrayList<EndpointI> endps = new java.util.ArrayList<EndpointI>();
-        java.util.ArrayList<String> hosts = Network.getHostsForEndpointExpand(_host, _instance.protocolSupport());
+        java.util.ArrayList<String> hosts =
+            Network.getHostsForEndpointExpand(_host, _instance.protocolSupport(), false);
         if(hosts == null || hosts.isEmpty())
         {
             endps.add(this);
         }
         else
         {
-            java.util.Iterator<String> p = hosts.iterator();
-            while(p.hasNext())
+            for(String host : hosts)
             {
-                endps.add(new UdpEndpointI(_instance, p.next(), _port, _mcastInterface, _mcastTtl,
+                endps.add(new UdpEndpointI(_instance, host, _port, _mcastInterface, _mcastTtl,
                                            _protocolMajor, _protocolMinor, _encodingMajor, _encodingMinor,
                                            _connect, _connectionId, _compress));
             }
@@ -725,11 +759,10 @@ final class UdpEndpointI extends EndpointI
     connectors(java.util.List<java.net.InetSocketAddress> addresses)
     {
         java.util.ArrayList<Connector> connectors = new java.util.ArrayList<Connector>();
-        java.util.Iterator<java.net.InetSocketAddress> p = addresses.iterator();
-        while(p.hasNext())
+        for(java.net.InetSocketAddress p : addresses)
         {
             connectors.add(
-                new UdpConnector(_instance, p.next(), _mcastInterface, _mcastTtl, _protocolMajor, _protocolMinor,
+                new UdpConnector(_instance, p, _mcastInterface, _mcastTtl, _protocolMajor, _protocolMinor,
                                  _encodingMajor, _encodingMinor, _connectionId));
         }
         return connectors;

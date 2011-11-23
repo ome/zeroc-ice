@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,13 +16,19 @@
 #include <Ice/ObjectFactoryF.h>
 #include <Ice/Buffer.h>
 #include <Ice/Protocol.h>
-#include <Ice/StringConverter.h>
-#include <IceUtil/Unicode.h>
 
 namespace Ice
 {
 
 class UserException;
+
+template<typename charT> class BasicStringConverter;
+
+typedef BasicStringConverter<char> StringConverter;
+typedef IceUtil::Handle<StringConverter> StringConverterPtr;
+
+typedef BasicStringConverter<wchar_t> WstringConverter;
+typedef IceUtil::Handle<WstringConverter> WstringConverterPtr;
 
 }
 
@@ -33,47 +39,6 @@ class ICE_API BasicStream : public Buffer
 {
 public:
 
-    class StreamUTF8BufferI : public Ice::UTF8Buffer
-    {
-    public:
-
-        StreamUTF8BufferI(BasicStream& stream) : 
-            _stream(stream)
-        {
-        }
-
-        Ice::Byte*
-        getMoreBytes(size_t howMany, Ice::Byte* firstUnused)
-        {
-            assert(howMany > 0);
-
-            if(firstUnused != 0)
-            {
-                //
-                // Return unused bytes
-                //
-                _stream.b.resize(firstUnused - _stream.b.begin());
-            }
-
-            //
-            // Index of first unused byte
-            //
-            Container::size_type pos = _stream.b.size();
-
-            //
-            // Since resize may reallocate the buffer, when firstUnused != 0, the
-            // return value can be != firstUnused
-            //
-            _stream.resize(pos + howMany);
-
-            return &_stream.b[pos];
-        }
-
-    private:
-
-        BasicStream& _stream;
-    };
-
     typedef void (*PatchFunc)(void*, Ice::ObjectPtr&);
 
     BasicStream(Instance*, bool = false);
@@ -83,7 +48,7 @@ public:
 
         if(_currentReadEncaps != &_preAllocatedReadEncaps ||
            _currentWriteEncaps != &_preAllocatedWriteEncaps ||
-           _seqDataStack || _objectList)
+           _objectList)
         {
             clear(); // Not inlined.
         }
@@ -109,46 +74,11 @@ public:
         //
         if(!_unlimited && sz > _messageSizeMax)
         {
-            throwMemoryLimitException(__FILE__, __LINE__);
+            IceInternal::Ex::throwMemoryLimitException(__FILE__, __LINE__, sz, _messageSizeMax);
         }
         
         b.resize(sz);
     }
-
-    void startSeq(int, int);
-    void checkSeq()
-    {
-        checkSeq(static_cast<int>(b.end() - i));
-    }
-    void checkSeq(int bytesLeft)
-    {
-        //
-        // Check, given the number of elements requested for this sequence,
-        // that this sequence, plus the sum of the sizes of the remaining
-        // number of elements of all enclosing sequences, would still fit
-        // within the message.
-        //
-        int size = 0;
-        SeqData* sd = _seqDataStack;
-        do
-        {
-            size += (sd->numElements - 1) * sd->minSize;
-            sd = sd->previous;
-        }
-        while(sd);
-
-        if(size > bytesLeft)
-        {
-            throwUnmarshalOutOfBoundsException(__FILE__, __LINE__);
-        }
-    }
-    void checkFixedSeq(int, int); // For sequences of fixed-size types.
-    void endElement()
-    {
-        assert(_seqDataStack);
-        --_seqDataStack->numElements;
-    }
-    void endSeq(int);
 
     void startWriteEncaps()
     {
@@ -225,9 +155,9 @@ public:
         //
         Ice::Int sz;
         read(sz);
-        if(sz < 0)
+        if(sz < 6)
         {
-            throwNegativeSizeException(__FILE__, __LINE__);
+            throwUnmarshalOutOfBoundsException(__FILE__, __LINE__);
         }
         if(i - sizeof(Ice::Int) + sz > b.end())
         {
@@ -283,11 +213,6 @@ public:
     {
         Ice::Int sz;
         read(sz);
-        if(sz < 0)
-        {
-            throwNegativeSizeException(__FILE__, __LINE__);
-        }
-
         if(sz != static_cast<Ice::Int>(sizeof(Ice::Int)) + 2)
         {
             throwEncapsulationException(__FILE__, __LINE__);
@@ -359,7 +284,7 @@ public:
             read(v);
             if(v < 0)
             {
-                throwNegativeSizeException(__FILE__, __LINE__);
+                throwUnmarshalOutOfBoundsException(__FILE__, __LINE__);
             }
         }
         else
@@ -367,6 +292,8 @@ public:
             v = static_cast<Ice::Int>(static_cast<unsigned char>(byte));
         }
     }
+
+    void  readAndCheckSeqSize(int, Ice::Int&);
 
     void writeTypeId(const std::string&);
     void readTypeId(std::string&);
@@ -539,8 +466,9 @@ public:
         }
     }
     void write(const std::string*, const std::string*, bool = true);
-    void read(std::string& v, bool convert = true)
 
+    void readConverted(std::string&, Ice::Int);
+    void read(std::string& v, bool convert = true)
     {
         Ice::Int sz;
         readSize(sz);
@@ -552,7 +480,7 @@ public:
             }
             if(convert && _stringConverter != 0)
             {
-                _stringConverter->fromUTF8(i, i + sz, v);
+                readConverted(v, sz);
             }
             else
             {
@@ -569,25 +497,7 @@ public:
 
     void write(const std::wstring& v);
     void write(const std::wstring*, const std::wstring*);
-    void read(std::wstring& v)
-    {
-        Ice::Int sz;
-        readSize(sz);
-        if(sz > 0)
-        {
-            if(b.end() - i < sz)
-            {
-                throwUnmarshalOutOfBoundsException(__FILE__, __LINE__);
-            }
-
-            _wstringConverter->fromUTF8(i, i + sz, v);
-            i += sz;
-        }
-        else
-        {
-            v.clear();
-        }
-    }
+    void read(std::wstring&);
     void read(std::vector<std::wstring>&);
 
     void write(const Ice::ObjectPrx&);
@@ -629,8 +539,6 @@ private:
     // ordering.
     //
     void throwUnmarshalOutOfBoundsException(const char*, int);
-    void throwMemoryLimitException(const char*, int);
-    void throwNegativeSizeException(const char*, int);
     void throwUnsupportedEncodingException(const char*, int, Ice::Byte, Ice::Byte);
     void throwEncapsulationException(const char*, int);
 
@@ -754,14 +662,8 @@ private:
     const Ice::StringConverterPtr& _stringConverter;
     const Ice::WstringConverterPtr& _wstringConverter;
 
-    struct SeqData
-    {
-        SeqData(int, int);
-        int numElements;
-        int minSize;
-        SeqData* previous;
-    };
-    SeqData* _seqDataStack;
+    int _startSeq;
+    int _minSeqSize;
 
     ObjectList* _objectList;
 };

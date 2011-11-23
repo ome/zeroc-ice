@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -141,12 +141,7 @@ public:
 
         while(!_updated)
         {
-            if(!timedWait(IceUtil::Time::seconds(10)))
-            {
-                cerr << "timeout: " << file << ":" << line << endl;
-                ObserverBase::printStack();
-                test(false); // Timeout
-            }
+            wait();
         }
         --_updated;
     }
@@ -634,9 +629,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
         session2 = SessionPrx::uncheckedCast(registry2->createSession("client2", "test2")->ice_connectionId("reg2"));
         try
         {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-            IceUtil::DummyBCC dummy;
-#endif
             registry1->createSession("client3", "test1");
             test(false);
         }
@@ -693,9 +685,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
             registry2->createAdminSession("admin2", "test2")->ice_connectionId("reg2"));
         try
         {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-            IceUtil::DummyBCC dummy;
-#endif
             registry1->createAdminSession("admin3", "test1");
             test(false);
         }
@@ -818,9 +807,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
         cout << "testing sessions from secure connection... " << flush;
         try
         {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-            IceUtil::DummyBCC dummy;
-#endif
             registry1->createSessionFromSecureConnection();
             test(false);
         }
@@ -829,9 +815,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
         }
         try
         {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-            IceUtil::DummyBCC dummy;
-#endif
             registry1->createAdminSessionFromSecureConnection();
             test(false);
         }
@@ -858,9 +841,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
         try
         {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-            IceUtil::DummyBCC dummy;
-#endif
             router1->createSession("client3", "test1");
             test(false);
         }
@@ -910,22 +890,8 @@ allTests(const Ice::CommunicatorPtr& communicator)
         {
         }
 
-        try
-        {
-            router1->destroySession();
-            test(false);
-        }
-        catch(const Ice::ConnectionLostException&)
-        {
-        }
-        try
-        {
-            router2->destroySession();
-            test(false);
-        }
-        catch(const Ice::ConnectionLostException&)
-        {
-        }
+        router1->destroySession();
+        router2->destroySession();
 
         AdminSessionPrx admSession1, admSession2;
 
@@ -937,9 +903,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
         try
         {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-            IceUtil::DummyBCC dummy;
-#endif
             adminRouter1->createSession("client3", "test1");
             test(false);
         }
@@ -994,20 +957,8 @@ allTests(const Ice::CommunicatorPtr& communicator)
         {
         }
 
-        try
-        {
-            adminRouter1->destroySession();
-        }
-        catch(const Ice::ConnectionLostException&)
-        {
-        }
-        try
-        {
-            adminRouter2->destroySession();
-        }
-        catch(const Ice::ConnectionLostException&)
-        {
-        }
+        adminRouter1->destroySession();
+        adminRouter2->destroySession();
 
         cout << "ok" << endl;
     }
@@ -1074,21 +1025,9 @@ allTests(const Ice::CommunicatorPtr& communicator)
         {
         }
 
-        try
-        {
-            router1->destroySession();
-        }
-        catch(const Ice::ConnectionLostException&)
-        {
-        }
-        try
-        {
-            router2->destroySession();
-        }
-        catch(const Ice::ConnectionLostException&)
-        {
-        }
-
+        router1->destroySession();
+        router2->destroySession();
+            
         AdminSessionPrx admSession1, admSession2;
 
         //
@@ -1150,20 +1089,8 @@ allTests(const Ice::CommunicatorPtr& communicator)
         {
         }
 
-        try
-        {
-            adminRouter1->destroySession();
-        }
-        catch(const Ice::ConnectionLostException&)
-        {
-        }
-        try
-        {
-            adminRouter2->destroySession();
-        }
-        catch(const Ice::ConnectionLostException&)
-        {
-        }
+        adminRouter1->destroySession();
+        adminRouter2->destroySession();
 
         cout << "ok" << endl;
     }

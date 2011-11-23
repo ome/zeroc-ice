@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,11 +14,40 @@
 using namespace std;
 using namespace Test;
 
+void
+testUOE(const Ice::CommunicatorPtr& communicator)
+{
+    string ref = "uoet:default -p 12010";
+    Ice::ObjectPrx base = communicator->stringToProxy(ref);
+    test(base);
+    UnexpectedObjectExceptionTestPrx uoet = UnexpectedObjectExceptionTestPrx::uncheckedCast(base);
+    test(uoet);
+    try
+    {
+        uoet->op();
+        test(false);
+    }
+    catch(const Ice::UnexpectedObjectException& ex)
+    {
+        test(ex.type == "::Test::AlsoEmpty");
+        test(ex.expectedType == "::Test::Empty");
+    }
+    catch(const Ice::Exception& ex)
+    {
+        cout << ex << endl;
+        test(false);
+    }
+    catch(...)
+    {
+        test(false);
+    }
+}
+
 InitialPrx
 allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 {
     cout << "testing stringToProxy... " << flush;
-    string ref = "initial:default -p 12010 -t 10000";
+    string ref = "initial:default -p 12010";
     Ice::ObjectPrx base = communicator->stringToProxy(ref);
     test(base);
     cout << "ok" << endl;
@@ -161,38 +190,14 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     initial->setI(h);
     cout << "ok" << endl;
 
+#if !defined(_MSC_VER) || (_MSC_VER >= 1300)
     if(!collocated)
     {
         cout << "testing UnexpectedObjectException... " << flush;
-        ref = "uoet:default -p 12010 -t 10000";
-        base = communicator->stringToProxy(ref);
-        test(base);
-        UnexpectedObjectExceptionTestPrx uoet = UnexpectedObjectExceptionTestPrx::uncheckedCast(base);
-        test(uoet);
-        try
-        {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-            IceUtil::DummyBCC dummy;
-#endif
-            uoet->op();
-            test(false);
-        }
-        catch(const Ice::UnexpectedObjectException& ex)
-        {
-            test(ex.type == "::Test::AlsoEmpty");
-            test(ex.expectedType == "::Test::Empty");
-        }
-        catch(const Ice::Exception& ex)
-        {
-            cout << ex << endl;
-            test(false);
-        }
-        catch(...)
-        {
-            test(false);
-        }
+        testUOE(communicator);
         cout << "ok" << endl;
     }
+#endif
 
     return initial;
 }

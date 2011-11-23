@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,11 +15,11 @@ using namespace std;
 namespace
 {
 
-class AMICallback : public AMI_Array_Object_ice_invoke
+class InvokeAMICallback : public AMI_Array_Object_ice_invoke
 {
 public:
 
-    AMICallback(const AMD_Array_Object_ice_invokePtr& cb) :
+    InvokeAMICallback(const AMD_Object_ice_invokePtr& cb) :
         _cb(cb)
     {
     }
@@ -35,7 +35,7 @@ public:
     }
     
 private:
-    AMD_Array_Object_ice_invokePtr _cb;
+    AMD_Object_ice_invokePtr _cb;
 };
 
 }
@@ -69,7 +69,7 @@ IceGrid::AdminCallbackRouter::removeMapping(const string& category)
 
 
 void
-IceGrid::AdminCallbackRouter::ice_invoke_async(const AMD_Array_Object_ice_invokePtr& cb, 
+IceGrid::AdminCallbackRouter::ice_invoke_async(const AMD_Object_ice_invokePtr& cb, 
                                                const pair<const Byte*, const Byte*>& inParams,
                                                const Current& current)
 {
@@ -92,6 +92,6 @@ IceGrid::AdminCallbackRouter::ice_invoke_async(const AMD_Array_Object_ice_invoke
     //
     // Call with AMI
     //
-    target->ice_invoke_async(new AMICallback(cb), current.operation, current.mode, inParams, current.ctx);
+    target->ice_invoke_async(new InvokeAMICallback(cb), current.operation, current.mode, inParams, current.ctx);
 }
 

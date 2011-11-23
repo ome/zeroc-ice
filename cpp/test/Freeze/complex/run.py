@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -30,14 +30,20 @@ TestUtil.cleanDbDir(dbdir)
 
 client = os.path.join(os.getcwd(), "client")
 
+if TestUtil.appverifier:
+    TestUtil.setAppVerifierSettings([client])
+
 print "starting populate...",
-populateProc = TestUtil.startClient(client, " --dbdir %s populate" % os.getcwd(), startReader = False)
+populateProc = TestUtil.startClient(client, ' --dbdir "%s" populate' % os.getcwd(), startReader = False)
 print "ok"
 populateProc.startReader()
 populateProc.waitTestSuccess()
 
 print "starting verification client...",
-clientProc = TestUtil.startClient(client, " --dbdir %s validate" % os.getcwd(), startReader = False)
+clientProc = TestUtil.startClient(client, ' --dbdir "%s" validate' % os.getcwd(), startReader = False)
 print "ok"
 clientProc.startReader()
 clientProc.waitTestSuccess()
+
+if TestUtil.appverifier:
+    TestUtil.appVerifierAfterTestEnd([client])

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -36,17 +36,24 @@ namespace Slice
 enum Outdest
 {
     Out=0, Err=1, Dbg=2, Num_Outdest=3
-}; 
-
 };
+
+}
 
 extern "C" int   mcpp_lib_main(int argc, char** argv);
 extern "C" void  mcpp_use_mem_buffers(int tf);
 extern "C" char* mcpp_get_mem_buffer(Outdest od);
 
+Slice::PreprocessorPtr
+Slice::Preprocessor::create(const string& path, const string& fileName, const vector<string>& args)
+{
+    return new Preprocessor(path, fileName, args);
+}
+
 Slice::Preprocessor::Preprocessor(const string& path, const string& fileName, const vector<string>& args) :
     _path(path),
-    _fileName(fileName),
+    _fileName(fullPath(fileName)),
+    _shortFileName(fileName),
     _args(args),
     _cppHandle(0)
 {
@@ -87,23 +94,43 @@ Slice::Preprocessor::normalizeIncludePath(const string& path)
 {
     string result = path;
 
-    replace(result.begin(), result.end(), '\\', '/');
+#ifdef _WIN32
+    //
+    // MCPP does not handle "-IC:/" well as an include path.
+    //
+    if(path.size() != 3 || !(path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z') ||
+       path[1] != ':' || path[2] != '\\')
+#endif
+    {
+        replace(result.begin(), result.end(), '\\', '/');
+    }
 
+    string::size_type startReplace = 0;
+#ifdef _WIN32
+    //
+    // For UNC paths we need to ensure they are in the format that is
+    // used by MCPP. IE. "//MACHINE/PATH"
+    //
+    if(result.find("//") == 0)
+    {
+        startReplace = 2;
+    }
+#endif
     string::size_type pos;
-    while((pos = result.find("//")) != string::npos)
+    while((pos = result.find("//", startReplace)) != string::npos)
     {
         result.replace(pos, 2, "/");
     }
 
-    if(result == "/" || (result.size() == 3 && isalpha(static_cast<unsigned char>(result[0])) && result[1] == ':' &&
-       result[2] == '/'))
+    if(result == "/" || (result.size() == 3 && IceUtilInternal::isAlpha(result[0]) && result[1] == ':' && 
+                         result[2] == '/'))
     {
-	return result;
+        return result;
     }
-    
+
     if(result.size() > 1 && result[result.size() - 1] == '/')
     {
-	result.erase(result.size() - 1);
+        result.erase(result.size() - 1);
     }
 
     return result;
@@ -153,6 +180,14 @@ Slice::Preprocessor::preprocess(bool keepComments)
         for(vector<string>::const_iterator i = messages.begin(); i != messages.end(); ++i)
         {
             emitRaw(i->c_str());
+
+            //
+            // MCPP FIX: mcpp does not always return non-zero exit status when there is an error.
+            //
+            if(i->find("error:") != string::npos)
+            {
+                status = 1;
+            }
         }
     }
 
@@ -170,26 +205,21 @@ Slice::Preprocessor::preprocess(bool keepComments)
         wchar_t* name = _wtempnam(NULL, L".preprocess");
         if(name)
         {
-            _cppFile = wstring(name);
+            _cppFile = IceUtil::wstringToString(name);
             free(name);
-            _cppHandle = ::_wfopen(_cppFile.c_str(), L"w+");
+            _cppHandle = IceUtilInternal::fopen(_cppFile, "w+");
         }
 #else
         _cppHandle = tmpfile();
 #endif
-        
+
         //
         // If that fails try to open file in current directory.
         //
         if(_cppHandle == 0)
         {
-#ifdef _WIN32
-            _cppFile = L".preprocess." + IceUtil::stringToWstring(IceUtil::generateUUID());
-            _cppHandle = ::_wfopen(_cppFile.c_str(), L"w+");
-#else
             _cppFile = ".preprocess." + IceUtil::generateUUID();
-            _cppHandle = ::fopen(_cppFile.c_str(), "w+");
-#endif
+            _cppHandle = IceUtilInternal::fopen(_cppFile, "w+");
         }
 
         if(_cppHandle != 0)
@@ -204,11 +234,7 @@ Slice::Preprocessor::preprocess(bool keepComments)
         {
             ostream& os = getErrorStream();
             os << _path << ": error: could not open temporary file: ";
-#ifdef _WIN32
-            os << IceUtil::wstringToString(_cppFile);
-#else
             os << _cppFile;
-#endif
             os << endl;
         }
     }
@@ -223,7 +249,7 @@ Slice::Preprocessor::preprocess(bool keepComments)
 
 bool
 Slice::Preprocessor::printMakefileDependencies(Language lang, const vector<string>& includePaths,
-                                               const string& cppSourceExt)
+                                               const string& cppSourceExt, const string& pyPrefix)
 {
     if(!checkInputFile())
     {
@@ -244,7 +270,7 @@ Slice::Preprocessor::printMakefileDependencies(Language lang, const vector<strin
     {
         argv[i + 1] = args[i].c_str();
     }
-    
+
     //
     // Call mcpp using memory buffer.
     //
@@ -258,7 +284,11 @@ Slice::Preprocessor::printMakefileDependencies(Language lang, const vector<strin
     char* err = mcpp_get_mem_buffer(Err);
     if(err)
     {
-        emitRaw(err);
+        vector<string> messages = filterMcppWarnings(err);
+        for(vector<string>::const_iterator i = messages.begin(); i != messages.end(); ++i)
+        {
+            emitRaw(i->c_str());
+        }
     }
 
     if(status != 0)
@@ -316,7 +346,6 @@ Slice::Preprocessor::printMakefileDependencies(Language lang, const vector<strin
     {
         fullIncludePaths.push_back(fullPath(*p));
     }
-    string absoluteFileName = fullPath(_fileName);
 
     //
     // Process each dependency.
@@ -328,9 +357,9 @@ Slice::Preprocessor::printMakefileDependencies(Language lang, const vector<strin
         string file = IceUtilInternal::trim(unprocessed.substr(pos, end - pos));
         if(IceUtilInternal::isAbsolutePath(file))
         {
-            if(file == absoluteFileName)
+            if(file == _fileName)
             {
-                file = _fileName;
+                file = _shortFileName;
             }
             else
             {
@@ -399,17 +428,17 @@ Slice::Preprocessor::printMakefileDependencies(Language lang, const vector<strin
      *
      * x.o[bj]: /path/x.ice /path/y.ice
      *
-     * x.o[bj]: /path/x.ice \ 
+     * x.o[bj]: /path/x.ice \
      *  /path/y.ice
      *
-     * x.o[bj]: /path/x.ice /path/y.ice \ 
+     * x.o[bj]: /path/x.ice /path/y.ice \
      *  /path/z.ice
      *
-     * x.o[bj]: \ 
+     * x.o[bj]: \
      *  /path/x.ice
      *
-     * x.o[bj]: \ 
-     *  /path/x.ice \ 
+     * x.o[bj]: \
+     *  /path/x.ice \
      *  /path/y.ice
      *
      * Spaces embedded within filenames are escaped with a backslash. Note that
@@ -491,6 +520,46 @@ Slice::Preprocessor::printMakefileDependencies(Language lang, const vector<strin
             }
             break;
         }
+        case Python:
+        {
+            //
+            // Change .o[bj] suffix to .py suffix.
+            //
+            if(pyPrefix.size() != 0)
+            {
+                result = pyPrefix + result;
+            }
+            string::size_type pos;
+            while((pos = result.find(suffix)) != string::npos)
+            {
+                result.replace(pos, suffix.size() - 1, "_ice.py");
+            }
+            break;
+        }
+        case Ruby:
+        {
+            //
+            // Change .o[bj] suffix to .rb suffix.
+            //
+            string::size_type pos;
+            while((pos = result.find(suffix)) != string::npos)
+            {
+                result.replace(pos, suffix.size() - 1, ".rb");
+            }
+            break;
+        }
+        case PHP:
+        {
+            //
+            // Change .o[bj] suffix to .php suffix.
+            //
+            string::size_type pos;
+            while((pos = result.find(suffix)) != string::npos)
+            {
+                result.replace(pos, suffix.size() - 1, ".php");
+            }
+            break;
+        }
         default:
         {
             abort();
@@ -515,11 +584,7 @@ Slice::Preprocessor::close()
 
         if(_cppFile.size() != 0)
         {
-#ifdef _WIN32
-            _wunlink(_cppFile.c_str());
-#else
-            unlink(_cppFile.c_str());
-#endif
+            IceUtilInternal::unlink(_cppFile);
         }
 
         if(status != 0)
@@ -527,7 +592,7 @@ Slice::Preprocessor::close()
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -546,7 +611,7 @@ Slice::Preprocessor::checkInputFile()
         getErrorStream() << _path << ": error: input files must end with `.ice'" << endl;
         return false;
     }
-    
+
     ifstream test(_fileName.c_str());
     if(!test)
     {

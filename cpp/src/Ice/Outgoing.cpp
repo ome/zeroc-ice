@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -58,6 +58,9 @@ IceInternal::LocalExceptionWrapper::throwWrapper(const std::exception& ex)
         }
         stringstream s;
         s << *le;
+#ifdef __GNUC__
+        s << "\n" << le->ice_stackTrace();
+#endif
         throw LocalExceptionWrapper(UnknownLocalException(__FILE__, __LINE__, s.str()), false);
     }
     string msg = "std::exception: ";
@@ -294,7 +297,6 @@ IceInternal::Outgoing::invoke()
 
                 if(_exception.get())
                 {
-                    assert(!_sent);
                     _exception->ice_throw();
                 }
             }
@@ -512,13 +514,13 @@ IceInternal::Outgoing::finished(BasicStream& is)
 }
 
 void
-IceInternal::Outgoing::finished(const LocalException& ex)
+IceInternal::Outgoing::finished(const LocalException& ex, bool sent)
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_monitor);
     assert(_state <= StateInProgress);
-    
     _state = StateFailed;
     _exception.reset(dynamic_cast<LocalException*>(ex.ice_clone()));
+    _sent = sent;
     _monitor.notify();
 }
 
@@ -540,7 +542,7 @@ IceInternal::Outgoing::throwUserException()
 IceInternal::BatchOutgoing::BatchOutgoing(RequestHandler* handler) :
     _handler(handler),
     _connection(0),
-    _sent(false), 
+    _sent(false),
     _os(handler->getReference()->getInstance().get())
 {
 }
@@ -567,7 +569,6 @@ IceInternal::BatchOutgoing::invoke()
         
         if(_exception.get())
         {
-            assert(!_sent);
             _exception->ice_throw();
         }
     }
@@ -589,7 +590,7 @@ IceInternal::BatchOutgoing::sent(bool notify)
 }
 
 void
-IceInternal::BatchOutgoing::finished(const Ice::LocalException& ex)
+IceInternal::BatchOutgoing::finished(const Ice::LocalException& ex, bool)
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_monitor);
     _exception.reset(dynamic_cast<LocalException*>(ex.ice_clone()));

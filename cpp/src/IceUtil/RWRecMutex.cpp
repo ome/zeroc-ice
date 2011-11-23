@@ -1,11 +1,19 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+//
+// We disable deprecation warning here, to allow clean compilation of
+// of deprecated methods.
+//
+#ifdef _MSC_VER
+#   pragma warning( disable : 4996 )
+#endif
 
 #include <IceUtil/RWRecMutex.h>
 #include <IceUtil/Exception.h>

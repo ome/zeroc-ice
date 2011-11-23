@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,12 +20,33 @@ namespace IceInternal
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Threading;
 
+#if !MANAGED
+    internal static class NativeMethods
+    {
+        [DllImport("bzip2.dll")]
+        internal static extern IntPtr BZ2_bzlibVersion();
+
+        [DllImport("bzip2.dll")]
+        internal static extern int BZ2_bzBuffToBuffCompress(byte[] dest,
+                                                            ref int destLen,
+                                                            byte[] source,
+                                                            int sourceLen,
+                                                            int blockSize100k,
+                                                            int verbosity,
+                                                            int workFactor);
+
+        [DllImport("bzip2.dll")]
+        internal static extern int BZ2_bzBuffToBuffDecompress(byte[] dest,
+                                                              ref int destLen,
+                                                              byte[] source,
+                                                              int sourceLen,
+                                                              int small,
+                                                              int verbosity);
+    }
+#endif
+
     public class BasicStream
     {
-#if !MANAGED
-        [DllImport("bzip2.dll")]
-        static extern IntPtr BZ2_bzlibVersion();
-#endif
 
         static BasicStream()
         {
@@ -51,7 +72,7 @@ namespace IceInternal
             string lib = AssemblyUtil.runtime_ == AssemblyUtil.Runtime.Mono ? "bzip2 library" : "bzip2.dll";
             try
             {
-                BZ2_bzlibVersion();
+                NativeMethods.BZ2_bzlibVersion();
                 _bzlibInstalled = true;
             }
             catch(DllNotFoundException)
@@ -106,7 +127,7 @@ namespace IceInternal
 
             _messageSizeMax = instance_.messageSizeMax(); // Cached for efficiency.
 
-            _seqDataStack = null;
+            _startSeq = -1;
             _objectList = null;
         }
 
@@ -117,7 +138,11 @@ namespace IceInternal
         public virtual void reset()
         {
             _buf.reset();
+            clear();
+        }
 
+        public virtual void clear()
+        {
             if(_readEncapsStack != null)
             {
                 Debug.Assert(_readEncapsStack.next == null);
@@ -126,6 +151,17 @@ namespace IceInternal
                 _readEncapsStack = null;
                 _readEncapsCache.reset();
             }
+
+            if(_writeEncapsStack != null)
+            {
+                Debug.Assert(_writeEncapsStack.next == null);
+                _writeEncapsStack.next = _writeEncapsCache;
+                _writeEncapsCache = _writeEncapsStack;
+                _writeEncapsStack = null;
+                _writeEncapsCache.reset();
+            }
+
+            _startSeq = -1;
 
             if(_objectList != null)
             {
@@ -188,9 +224,13 @@ namespace IceInternal
             other._writeSlice = _writeSlice;
             _writeSlice = tmpWriteSlice;
 
-            SeqData tmpSeqDataStack = other._seqDataStack;
-            other._seqDataStack = _seqDataStack;
-            _seqDataStack = tmpSeqDataStack;
+            int tmpStartSeq = other._startSeq;
+            other._startSeq = _startSeq;
+            _startSeq = tmpStartSeq;
+
+            int tmpMinSeqSize = other._minSeqSize;
+            other._minSeqSize = _minSeqSize;
+            _minSeqSize = tmpMinSeqSize;
 
             ArrayList tmpObjectList = other._objectList;
             other._objectList = _objectList;
@@ -208,7 +248,7 @@ namespace IceInternal
             //
             if(!_unlimited && sz > _messageSizeMax)
             {
-                throw new Ice.MemoryLimitException("Message size > Ice.MessageSizeMax");
+                Ex.throwMemoryLimitException(sz, _messageSizeMax);
             }
 
             _buf.resize(sz, reading);
@@ -225,156 +265,6 @@ namespace IceInternal
         public virtual Buffer getBuffer()
         {
             return _buf;
-        }
-
-        //
-        // startSeq() and endSeq() sanity-check sequence sizes during
-        // unmarshaling and prevent malicious messages with incorrect
-        // sequence sizes from causing the receiver to use up all
-        // available memory by allocating sequences with an impossibly
-        // large number of elements.
-        //
-        // The code generator inserts calls to startSeq() and endSeq()
-        // around the code to unmarshal a sequence. startSeq() is
-        // called immediately after reading the sequence size, and
-        // endSeq() is called after reading the final element of a
-        // sequence.
-        //
-        // For sequences that contain constructed types that, in turn,
-        // contain sequences, the code generator also inserts a call
-        // to endElement() after unmarshaling each element.
-        //
-        // startSeq() is passed the unmarshaled element count, plus
-        // the minimum size (in bytes) occupied by the sequence's
-        // element type. numElements * minSize is the smallest
-        // possible number of bytes that the sequence will occupy on
-        // the wire.
-        //
-        // Every time startSeq() is called, it pushes the element
-        // count and the minimum size on a stack. Every time endSeq()
-        // is called, it pops the stack.
-        //
-        // For an ordinary sequence (one that does not (recursively)
-        // contain nested sequences), numElements * minSize must be
-        // less than the number of bytes remaining in the stream.
-        //
-        // For a sequence that is nested within some other sequence,
-        // there must be enough bytes remaining in the stream for this
-        // sequence (numElements + minSize), plus the sum of the bytes
-        // required by the remaining elements of all the enclosing
-        // sequences.
-        //
-        // For the enclosing sequences, numElements - 1 is the number
-        // of elements for which unmarshaling has not started
-        // yet. (The call to endElement() in the generated code
-        // decrements that number whenever a sequence element is
-        // unmarshaled.)
-        //
-        // For sequence that variable-length elements, checkSeq() is
-        // called whenever an element is unmarshaled. checkSeq() also
-        // checks whether the stream has a sufficient number of bytes
-        // remaining.  This means that, for messages with bogus
-        // sequence sizes, unmarshaling is aborted at the earliest
-        // possible point.
-        //
-
-        public void startSeq(int numElements, int minSize)
-        {
-            if(numElements == 0) // Optimization to avoid pushing a useless stack frame.
-            {
-                return;
-            }
-
-            //
-            // Push the current sequence details on the stack.
-            //
-            SeqData sd = new SeqData(numElements, minSize);
-            sd.previous = _seqDataStack;
-            _seqDataStack = sd;
-
-            int bytesLeft = _buf.b.remaining();
-            if(_seqDataStack.previous == null) // Outermost sequence
-            {
-                //
-                // The sequence must fit within the message.
-                //
-                if(numElements * minSize > bytesLeft) 
-                {
-                    throw new Ice.UnmarshalOutOfBoundsException();
-                }
-            }
-            else // Nested sequence
-            {
-                checkSeq(bytesLeft);
-            }
-        }
-
-        //
-        // Check, given the number of elements requested for this
-        // sequence, that this sequence, plus the sum of the sizes of
-        // the remaining number of elements of all enclosing
-        // sequences, would still fit within the message.
-        //
-        public void checkSeq()
-        {
-            checkSeq(_buf.b.remaining());
-        }
-
-        public void checkSeq(int bytesLeft)
-        {
-            int size = 0;
-            SeqData sd = _seqDataStack;
-            do
-            {
-                size += (sd.numElements - 1) * sd.minSize;
-                sd = sd.previous;
-            }
-            while(sd != null);
-
-            if(size > bytesLeft)
-            {
-                throw new Ice.UnmarshalOutOfBoundsException();
-            }
-        }
-
-        public void checkFixedSeq(int numElements, int elemSize)
-        {
-            int bytesLeft = _buf.b.remaining();
-            if(_seqDataStack == null) // Outermost sequence
-            {
-                //
-                // The sequence must fit within the message.
-                //
-                if(numElements * elemSize > bytesLeft) 
-                {
-                    throw new Ice.UnmarshalOutOfBoundsException();
-                }
-            }
-            else // Nested sequence
-            {
-                checkSeq(bytesLeft - numElements * elemSize);
-            }
-        }
-
-        public void endElement()
-        {
-            Debug.Assert(_seqDataStack != null);
-            --_seqDataStack.numElements;
-        }
-
-        public void endSeq(int sz)
-        {
-            if(sz == 0) // Pop only if something was pushed previously.
-            {
-                return;
-            }
-
-            //
-            // Pop the sequence stack.
-            //
-            SeqData oldSeqData = _seqDataStack;
-            Debug.Assert(oldSeqData != null);
-            _seqDataStack = oldSeqData.previous;
         }
 
         public virtual void startWriteEncaps()
@@ -452,12 +342,12 @@ namespace IceInternal
             // readSize()/writeSize(), it could be 1 or 5 bytes.
             //
             int sz = readInt();
-            if(sz < 0)
+            if(sz < 6)
             {
-                throw new Ice.NegativeSizeException();
+                throw new Ice.UnmarshalOutOfBoundsException();
             }
 
-            if(sz - 4 > _buf.b.limit())
+            if(sz - 4 > _buf.b.remaining())
             {
                 throw new Ice.UnmarshalOutOfBoundsException();
             }
@@ -474,8 +364,8 @@ namespace IceInternal
                 e.minor = Protocol.encodingMinor;
                 throw e;
             }
-            _readEncapsStack.encodingMajor = eMajor;
-            _readEncapsStack.encodingMinor = eMinor;
+            // _readEncapsStack.encodingMajor = eMajor; // Currently unused
+            // _readEncapsStack.encodingMinor = eMinor; // Currently unused
         }
 
         public virtual void endReadEncaps()
@@ -514,11 +404,6 @@ namespace IceInternal
         public virtual void skipEmptyEncaps()
         {
             int sz = readInt();
-            if(sz < 0)
-            {
-                throw new Ice.NegativeSizeException();
-            }
-
             if(sz != 6)
             {
                 throw new Ice.EncapsulationException();
@@ -553,9 +438,9 @@ namespace IceInternal
         public virtual void skipEncaps()
         {
             int sz = readInt();
-            if(sz < 0)
+            if(sz < 6)
             {
-                throw new Ice.NegativeSizeException();
+                throw new Ice.UnmarshalOutOfBoundsException();
             }
             try
             {
@@ -582,9 +467,9 @@ namespace IceInternal
         public virtual void startReadSlice()
         {
             int sz = readInt();
-            if(sz < 0)
+            if(sz < 4)
             {
-                throw new Ice.NegativeSizeException();
+                throw new Ice.UnmarshalOutOfBoundsException();
             }
             _readSlice = _buf.b.position();
         }
@@ -596,9 +481,9 @@ namespace IceInternal
         public virtual void skipSlice()
         {
             int sz = readInt();
-            if(sz < 0)
+            if(sz < 4)
             {
-                throw new Ice.NegativeSizeException();
+                throw new Ice.UnmarshalOutOfBoundsException();
             }
             try
             {
@@ -608,6 +493,55 @@ namespace IceInternal
             {
                 throw new Ice.UnmarshalOutOfBoundsException(ex);
             }
+        }
+
+        public int readAndCheckSeqSize(int minSize)
+        {
+            int sz = readSize();
+            
+            if(sz == 0)
+            {
+                return 0;
+            }
+
+            //
+            // The _startSeq variable points to the start of the sequence for which
+            // we expect to read at least _minSeqSize bytes from the stream.
+            //
+            // If not initialized or if we already read more data than _minSeqSize, 
+            // we reset _startSeq and _minSeqSize for this sequence (possibly a 
+            // top-level sequence or enclosed sequence it doesn't really matter).
+            //
+            // Otherwise, we are reading an enclosed sequence and we have to bump
+            // _minSeqSize by the minimum size that this sequence will  require on
+            // the stream.
+            //
+            // The goal of this check is to ensure that when we start un-marshalling
+            // a new sequence, we check the minimal size of this new sequence against
+            // the estimated remaining buffer size. This estimatation is based on 
+            // the minimum size of the enclosing sequences, it's _minSeqSize.
+            //
+            if(_startSeq == -1 || _buf.b.position() > (_startSeq + _minSeqSize))
+            {
+                _startSeq = _buf.b.position();
+                _minSeqSize = sz * minSize;
+            }
+            else
+            {
+                _minSeqSize += sz * minSize;
+            }
+
+            //
+            // If there isn't enough data to read on the stream for the sequence (and
+            // possibly enclosed sequences), something is wrong with the marshalled 
+            // data: it's claiming having more data that what is possible to read.
+            //
+            if(_startSeq + _minSeqSize > _buf.size())
+            {
+                throw new Ice.UnmarshalOutOfBoundsException();
+            }
+
+            return sz;
         }
 
         public virtual void writeSize(int v)
@@ -639,7 +573,7 @@ namespace IceInternal
                     int v = _buf.b.getInt();
                     if(v < 0)
                     {
-                        throw new Ice.NegativeSizeException();
+                        throw new Ice.UnmarshalOutOfBoundsException();
                     }
                     return v;
                 }
@@ -728,6 +662,10 @@ namespace IceInternal
 
         public virtual byte[] readBlob(int sz)
         {
+            if(_buf.b.remaining() < sz)
+            {
+                throw new Ice.UnmarshalOutOfBoundsException();
+            }
             byte[] v = new byte[sz];
             try
             {
@@ -777,36 +715,53 @@ namespace IceInternal
                 return;
             }
 
-            if(v is List<byte>)
             {
-                writeByteSeq(((List<byte>)v).ToArray());
-            }
-            else if(v is LinkedList<byte>)
-            {
-                writeSize(count);
-                expand(count);
-                IEnumerator<byte> i = v.GetEnumerator();
-                while(i.MoveNext())
+                List<byte> value = v as List<byte>;
+                if(value != null)
                 {
-                    _buf.b.put(i.Current);
+                    writeByteSeq(value.ToArray());
+                    return;
                 }
             }
-            else if(v is Queue<byte>)
+
             {
-                writeByteSeq(((Queue<byte>)v).ToArray());
-            }
-            else if (v is Stack<byte>)
-            {
-                writeByteSeq(((Stack<byte>)v).ToArray());
-            }
-            else
-            {
-                writeSize(count);
-                expand(count);
-                foreach(byte b in v)
+                LinkedList<byte> value = v as LinkedList<byte>;
+                if(value != null)
                 {
-                    _buf.b.put(b);
+                    writeSize(count);
+                    expand(count);
+                    IEnumerator<byte> i = v.GetEnumerator();
+                    while(i.MoveNext())
+                    {
+                        _buf.b.put(i.Current);
+                    }
+                    return;
                 }
+            }
+
+            {
+                Queue<byte> value = v as Queue<byte>;
+                if(value != null)
+                {
+                    writeByteSeq(value.ToArray());
+                    return;
+                }
+            }
+
+            {
+                Stack<byte> value = v as Stack<byte>;
+                if(value != null)
+                {
+                    writeByteSeq(value.ToArray());
+                    return;
+                }
+            }
+
+            writeSize(count);
+            expand(count);
+            foreach(byte b in v)
+            {
+                _buf.b.put(b);
             }
         }
 
@@ -856,8 +811,7 @@ namespace IceInternal
         {
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 1);
+                int sz = readAndCheckSeqSize(1);
                 byte[] v = new byte[sz];
                 _buf.b.get(v);
                 return v;
@@ -914,12 +868,11 @@ namespace IceInternal
 
         public virtual object readSerializable()
         {
-            int sz = readSize();
+            int sz = readAndCheckSeqSize(1);
             if(sz == 0)
             {
                 return null;
             }
-            checkFixedSeq(sz, 1);
             try
             {
                 StreamWrapper w = new StreamWrapper(sz, this);
@@ -960,36 +913,53 @@ namespace IceInternal
                 return;
             }
 
-            if(v is List<bool>)
             {
-                writeBoolSeq(((List<bool>)v).ToArray());
-            }
-            else if(v is LinkedList<bool>)
-            {
-                writeSize(count);
-                expand(count);
-                IEnumerator<bool> i = v.GetEnumerator();
-                while(i.MoveNext())
+                List<bool> value = v as List<bool>;
+                if(value != null)
                 {
-                    _buf.b.putBool(i.Current);
+                    writeBoolSeq(value.ToArray());
+                    return;
                 }
             }
-            else if(v is Queue<bool>)
+
             {
-                writeBoolSeq(((Queue<bool>)v).ToArray());
-            }
-            else if (v is Stack<bool>)
-            {
-                writeBoolSeq(((Stack<bool>)v).ToArray());
-            }
-            else
-            {
-                writeSize(count);
-                expand(count);
-                foreach(bool b in v)
+                LinkedList<bool> value = v as LinkedList<bool>;
+                if(value != null)
                 {
-                    _buf.b.putBool(b);
+                    writeSize(count);
+                    expand(count);
+                    IEnumerator<bool> i = v.GetEnumerator();
+                    while(i.MoveNext())
+                    {
+                        _buf.b.putBool(i.Current);
+                    }
+                    return;
                 }
+            }
+
+            {
+                Queue<bool> value = v as Queue<bool>;
+                if(value != null)
+                {
+                    writeBoolSeq(value.ToArray());
+                    return;
+                }
+            }
+
+            {
+                Stack<bool> value = v as Stack<bool>;
+                if(value != null)
+                {
+                    writeBoolSeq(value.ToArray());
+                    return;
+                }
+            }
+
+            writeSize(count);
+            expand(count);
+            foreach(bool b in v)
+            {
+                _buf.b.putBool(b);
             }
         }
 
@@ -1009,8 +979,7 @@ namespace IceInternal
         {
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 1);
+                int sz = readAndCheckSeqSize(1);
                 bool[] v = new bool[sz];
                 _buf.b.getBoolSeq(v);
                 return v;
@@ -1092,37 +1061,54 @@ namespace IceInternal
                 writeSize(0);
                 return;
             }
+            
+            {
+                List<short> value = v as List<short>;
+                if(value != null)
+                {
+                    writeShortSeq(value.ToArray());
+                    return;
+                }
+            }
 
-            if(v is List<short>)
             {
-                writeShortSeq(((List<short>)v).ToArray());
-            }
-            else if(v is LinkedList<short>)
-            {
-                writeSize(count);
-                expand(count * 2);
-                IEnumerator<short> i = v.GetEnumerator();
-                while(i.MoveNext())
+                LinkedList<short> value = v as LinkedList<short>;
+                if(value != null)
                 {
-                    _buf.b.putShort(i.Current);
+                    writeSize(count);
+                    expand(count * 2);
+                    IEnumerator<short> i = v.GetEnumerator();
+                    while(i.MoveNext())
+                    {
+                        _buf.b.putShort(i.Current);
+                    }
+                    return;
                 }
             }
-            else if(v is Queue<short>)
+
             {
-                writeShortSeq(((Queue<short>)v).ToArray());
-            }
-            else if (v is Stack<short>)
-            {
-                writeShortSeq(((Stack<short>)v).ToArray());
-            }
-            else
-            {
-                writeSize(count);
-                expand(count * 2);
-                foreach(short s in v)
+                Queue<short> value = v as Queue<short>;
+                if(value != null)
                 {
-                    _buf.b.putShort(s);
+                    writeShortSeq(value.ToArray());
+                    return;
                 }
+            }
+
+            {
+                Stack<short> value = v as Stack<short>;
+                if(value != null)
+                {
+                    writeShortSeq(value.ToArray());
+                    return;
+                }
+            }
+
+            writeSize(count);
+            expand(count * 2);
+            foreach(short s in v)
+            {
+                _buf.b.putShort(s);
             }
         }
 
@@ -1142,8 +1128,7 @@ namespace IceInternal
         {
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 2);
+                int sz = readAndCheckSeqSize(2);
                 short[] v = new short[sz];
                 _buf.b.getShortSeq(v);
                 return v;
@@ -1226,36 +1211,53 @@ namespace IceInternal
                 return;
             }
 
-            if(v is List<int>)
             {
-                writeIntSeq(((List<int>)v).ToArray());
-            }
-            else if(v is LinkedList<int>)
-            {
-                writeSize(count);
-                expand(count * 4);
-                IEnumerator<int> i = v.GetEnumerator();
-                while(i.MoveNext())
+                List<int> value = v as List<int>;
+                if(value != null)
                 {
-                    _buf.b.putInt(i.Current);
+                    writeIntSeq(value.ToArray());
+                    return;
                 }
             }
-            else if(v is Queue<int>)
+
             {
-                writeIntSeq(((Queue<int>)v).ToArray());
-            }
-            else if (v is Stack<int>)
-            {
-                writeIntSeq(((Stack<int>)v).ToArray());
-            }
-            else
-            {
-                writeSize(count);
-                expand(count * 4);
-                foreach(int i in v)
+                LinkedList<int> value = v as LinkedList<int>;
+                if(value != null)
                 {
-                    _buf.b.putInt(i);
+                    writeSize(count);
+                    expand(count * 4);
+                    IEnumerator<int> i = v.GetEnumerator();
+                    while(i.MoveNext())
+                    {
+                        _buf.b.putInt(i.Current);
+                    }
+                    return;
                 }
+            }
+
+            {
+                Queue<int> value = v as Queue<int>;
+                if(value != null)
+                {
+                    writeIntSeq(value.ToArray());
+                    return;
+                }
+            }
+    
+            {
+                Stack<int> value = v as Stack<int>;
+                if(value != null)
+                {
+                    writeIntSeq(value.ToArray());
+                    return;
+                }
+            }
+
+            writeSize(count);
+            expand(count * 4);
+            foreach(int i in v)
+            {
+                _buf.b.putInt(i);
             }
         }
 
@@ -1275,8 +1277,7 @@ namespace IceInternal
         {
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 4);
+                int sz = readAndCheckSeqSize(4);
                 int[] v = new int[sz];
                 _buf.b.getIntSeq(v);
                 return v;
@@ -1301,8 +1302,7 @@ namespace IceInternal
         {
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 4);
+                int sz = readAndCheckSeqSize(4);
                 l = new LinkedList<int>();
                 for(int i = 0; i < sz; ++i)
                 {
@@ -1325,8 +1325,7 @@ namespace IceInternal
             //
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 4);
+                int sz = readAndCheckSeqSize(4);
                 l = new Queue<int>(sz);
                 for(int i = 0; i < sz; ++i)
                 {
@@ -1381,36 +1380,53 @@ namespace IceInternal
                 return;
             }
 
-            if(v is List<long>)
             {
-                writeLongSeq(((List<long>)v).ToArray());
-            }
-            else if(v is LinkedList<long>)
-            {
-                writeSize(count);
-                expand(count * 8);
-                IEnumerator<long> i = v.GetEnumerator();
-                while(i.MoveNext())
+                List<long> value = v as List<long>;
+                if(value != null)
                 {
-                    _buf.b.putLong(i.Current);
+                    writeLongSeq(value.ToArray());
+                    return;
                 }
             }
-            else if(v is Queue<long>)
+
             {
-                writeLongSeq(((Queue<long>)v).ToArray());
-            }
-            else if (v is Stack<long>)
-            {
-                writeLongSeq(((Stack<long>)v).ToArray());
-            }
-            else
-            {
-                writeSize(count);
-                expand(count * 8);
-                foreach(long l in v)
+                LinkedList<long> value = v as LinkedList<long>;
+                if(value != null)
                 {
-                    _buf.b.putLong(l);
+                    writeSize(count);
+                    expand(count * 8);
+                    IEnumerator<long> i = v.GetEnumerator();
+                    while(i.MoveNext())
+                    {
+                        _buf.b.putLong(i.Current);
+                    }
+                    return;
                 }
+            }
+
+            {
+                Queue<long> value = v as Queue<long>;
+                if(value != null)
+                {
+                    writeLongSeq(value.ToArray());
+                    return;
+                }
+            }
+
+            {
+                Stack<long> value = v as Stack<long>;
+                if(value != null)
+                {
+                    writeLongSeq(value.ToArray());
+                    return;
+                }
+            }
+
+            writeSize(count);
+            expand(count * 8);
+            foreach(long l in v)
+            {
+                _buf.b.putLong(l);
             }
         }
 
@@ -1430,8 +1446,7 @@ namespace IceInternal
         {
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 8);
+                int sz = readAndCheckSeqSize(8);
                 long[] v = new long[sz];
                 _buf.b.getLongSeq(v);
                 return v;
@@ -1456,8 +1471,7 @@ namespace IceInternal
         {
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 4);
+                int sz = readAndCheckSeqSize(4);
                 l = new LinkedList<long>();
                 for(int i = 0; i < sz; ++i)
                 {
@@ -1480,8 +1494,7 @@ namespace IceInternal
             //
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 4);
+                int sz = readAndCheckSeqSize(4);
                 l = new Queue<long>(sz);
                 for(int i = 0; i < sz; ++i)
                 {
@@ -1536,36 +1549,53 @@ namespace IceInternal
                 return;
             }
 
-            if(v is List<float>)
             {
-                writeFloatSeq(((List<float>)v).ToArray());
-            }
-            else if(v is LinkedList<float>)
-            {
-                writeSize(count);
-                expand(count * 4);
-                IEnumerator<float> i = v.GetEnumerator();
-                while(i.MoveNext())
+                List<float> value = v as List<float>;
+                if(value != null)
                 {
-                    _buf.b.putFloat(i.Current);
+                    writeFloatSeq(value.ToArray());
+                    return;
                 }
             }
-            else if(v is Queue<float>)
+
             {
-                writeFloatSeq(((Queue<float>)v).ToArray());
-            }
-            else if (v is Stack<float>)
-            {
-                writeFloatSeq(((Stack<float>)v).ToArray());
-            }
-            else
-            {
-                writeSize(count);
-                expand(count * 4);
-                foreach(float f in v)
+                LinkedList<float> value = v as LinkedList<float>;
+                if(value != null)
                 {
-                    _buf.b.putFloat(f);
+                    writeSize(count);
+                    expand(count * 4);
+                    IEnumerator<float> i = v.GetEnumerator();
+                    while(i.MoveNext())
+                    {
+                        _buf.b.putFloat(i.Current);
+                    }
+                    return;
                 }
+            }
+
+            {
+                Queue<float> value = v as Queue<float>;
+                if(value != null)
+                {
+                    writeFloatSeq(value.ToArray());
+                    return;
+                }
+            }
+            
+            {
+                Stack<float> value = v as Stack<float>;
+                if(value != null)
+                {
+                    writeFloatSeq(value.ToArray());
+                    return;
+                }
+            }
+
+            writeSize(count);
+            expand(count * 4);
+            foreach(float f in v)
+            {
+                _buf.b.putFloat(f);
             }
         }
 
@@ -1585,8 +1615,7 @@ namespace IceInternal
         {
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 4);
+                int sz = readAndCheckSeqSize(4);
                 float[] v = new float[sz];
                 _buf.b.getFloatSeq(v);
                 return v;
@@ -1611,8 +1640,7 @@ namespace IceInternal
         {
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 4);
+                int sz = readAndCheckSeqSize(4);
                 l = new LinkedList<float>();
                 for(int i = 0; i < sz; ++i)
                 {
@@ -1635,8 +1663,7 @@ namespace IceInternal
             //
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 4);
+                int sz = readAndCheckSeqSize(4);
                 l = new Queue<float>(sz);
                 for(int i = 0; i < sz; ++i)
                 {
@@ -1691,36 +1718,53 @@ namespace IceInternal
                 return;
             }
 
-            if(v is List<double>)
             {
-                writeDoubleSeq(((List<double>)v).ToArray());
-            }
-            else if(v is LinkedList<double>)
-            {
-                writeSize(count);
-                expand(count * 8);
-                IEnumerator<double> i = v.GetEnumerator();
-                while(i.MoveNext())
+                List<double> value = v as List<double>;
+                if(value != null)
                 {
-                    _buf.b.putDouble(i.Current);
+                    writeDoubleSeq(value.ToArray());
+                    return;
                 }
             }
-            else if(v is Queue<double>)
+
             {
-                writeDoubleSeq(((Queue<double>)v).ToArray());
-            }
-            else if (v is Stack<double>)
-            {
-                writeDoubleSeq(((Stack<double>)v).ToArray());
-            }
-            else
-            {
-                writeSize(count);
-                expand(count * 8);
-                foreach(double d in v)
+                LinkedList<double> value = v as LinkedList<double>;
+                if(value != null)
                 {
-                    _buf.b.putDouble(d);
+                    writeSize(count);
+                    expand(count * 8);
+                    IEnumerator<double> i = v.GetEnumerator();
+                    while(i.MoveNext())
+                    {
+                        _buf.b.putDouble(i.Current);
+                    }
+                    return;
                 }
+            }
+
+            {
+                Queue<double> value = v as Queue<double>;
+                if(value != null)
+                {
+                    writeDoubleSeq(value.ToArray());
+                    return;
+                }
+            }
+            
+            {
+                Stack<double> value = v as Stack<double>;
+                if (value != null)
+                {
+                    writeDoubleSeq(value.ToArray());
+                    return;
+                }
+            }
+
+            writeSize(count);
+            expand(count * 8);
+            foreach(double d in v)
+            {
+                _buf.b.putDouble(d);
             }
         }
 
@@ -1740,8 +1784,7 @@ namespace IceInternal
         {
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 8);
+                int sz = readAndCheckSeqSize(8);
                 double[] v = new double[sz];
                 _buf.b.getDoubleSeq(v);
                 return v;
@@ -1766,8 +1809,7 @@ namespace IceInternal
         {
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 4);
+                int sz = readAndCheckSeqSize(4);
                 l = new LinkedList<double>();
                 for(int i = 0; i < sz; ++i)
                 {
@@ -1790,8 +1832,7 @@ namespace IceInternal
             //
             try
             {
-                int sz = readSize();
-                checkFixedSeq(sz, 4);
+                int sz = readAndCheckSeqSize(4);
                 l = new Queue<double>(sz);
                 for(int i = 0; i < sz; ++i)
                 {
@@ -1870,6 +1911,14 @@ namespace IceInternal
                 return "";
             }
 
+            //
+            // Check the buffer has enough bytes to read.
+            //
+            if(_buf.b.remaining() < len)
+            {
+                throw new Ice.UnmarshalOutOfBoundsException();
+            }
+
             try
             {
                 //
@@ -1891,25 +1940,16 @@ namespace IceInternal
             {
                 throw new Ice.MarshalException("Invalid UTF8 string", ex);
             }
-            catch(Exception)
-            {
-                Debug.Assert(false);
-                return "";
-            }
         }
 
         public virtual string[] readStringSeq()
         {
-            int sz = readSize();
-            startSeq(sz, 1);
+            int sz = readAndCheckSeqSize(1);
             string[] v = new string[sz];
             for(int i = 0; i < sz; i++)
             {
                 v[i] = readString();
-                checkSeq();
-                endElement();
             }
-            endSeq(sz);
             return v;
         }
 
@@ -1920,16 +1960,12 @@ namespace IceInternal
             // list is slower than constructing the list
             // and adding to it one element at a time.
             //
-            int sz = readSize();
-            startSeq(sz, 1);
+            int sz = readAndCheckSeqSize(1);
             l = new List<string>(sz);
             for(int i = 0; i < sz; ++i)
             {
                 l.Add(readString());
-                checkSeq();
-                endElement();
             }
-            endSeq(sz);
         }
 
         public virtual void readStringSeq(out LinkedList<string> l)
@@ -1939,16 +1975,12 @@ namespace IceInternal
             // list is slower than constructing the list
             // and adding to it one element at a time.
             //
-            int sz = readSize();
-            startSeq(sz, 1);
+            int sz = readAndCheckSeqSize(1);
             l = new LinkedList<string>();
             for(int i = 0; i < sz; ++i)
             {
                 l.AddLast(readString());
-                checkSeq();
-                endElement();
             }
-            endSeq(sz);
         }
 
         public virtual void readStringSeq(out Queue<string> l)
@@ -1958,16 +1990,12 @@ namespace IceInternal
             // queue is slower than constructing the queue
             // and adding to it one element at a time.
             //
-            int sz = readSize();
-            startSeq(sz, 1);
+            int sz = readAndCheckSeqSize(1);
             l = new Queue<string>();
             for(int i = 0; i < sz; ++i)
             {
                 l.Enqueue(readString());
-                checkSeq();
-                endElement();
             }
-            endSeq(sz);
         }
 
         public virtual void readStringSeq(out Stack<string> l)
@@ -2111,7 +2139,7 @@ namespace IceInternal
             }
 
             string mostDerivedId = readTypeId();
-            string id = string.Copy(mostDerivedId);
+            string id = mostDerivedId;
 
             while(true)
             {
@@ -2255,7 +2283,7 @@ namespace IceInternal
                         {
                             readPendingObjects();
                         }
-                        throw ex;
+                        throw;
                     }
                 }
                 else
@@ -2287,7 +2315,7 @@ namespace IceInternal
                         // so we set the reason member to a more helpful message.
                         //
                         ex.reason = "unknown exception type `" + origId + "'";
-                        throw ex;
+                        throw;
                     }
                 }
             }
@@ -2548,17 +2576,6 @@ namespace IceInternal
             return _bzlibInstalled;
         }
 
-#if !MANAGED
-        [DllImport("bzip2.dll")]
-        extern static int BZ2_bzBuffToBuffCompress(byte[] dest,
-                                                   ref int destLen,
-                                                   byte[] source,
-                                                   int sourceLen,
-                                                   int blockSize100k,
-                                                   int verbosity,
-                                                   int workFactor);
-#endif
-
         public bool compress(ref BasicStream cstream, int headerSize, int compressionLevel)
         {
 #if MANAGED
@@ -2579,8 +2596,8 @@ namespace IceInternal
             int compressedLen = (int)(uncompressedLen * 1.01 + 600);
             byte[] compressed = new byte[compressedLen];
 
-            int rc = BZ2_bzBuffToBuffCompress(compressed, ref compressedLen, uncompressed, uncompressedLen,
-                                              compressionLevel, 0, 0);
+            int rc = NativeMethods.BZ2_bzBuffToBuffCompress(compressed, ref compressedLen, uncompressed, 
+                                                            uncompressedLen, compressionLevel, 0, 0);
             if(rc == BZ_OUTBUFF_FULL)
             {
                 cstream = null;
@@ -2627,16 +2644,6 @@ namespace IceInternal
 #endif
         }
 
-#if !MANAGED
-        [DllImport("bzip2.dll")]
-        extern static int BZ2_bzBuffToBuffDecompress(byte[] dest,
-                                                     ref int destLen,
-                                                     byte[] source,
-                                                     int sourceLen,
-                                                     int small,
-                                                     int verbosity);
-#endif
-
         public BasicStream uncompress(int headerSize)
         {
 #if MANAGED
@@ -2658,7 +2665,8 @@ namespace IceInternal
             byte[] compressed = _buf.b.rawBytes(headerSize + 4, compressedLen);
             int uncompressedLen = uncompressedSize - headerSize;
             byte[] uncompressed = new byte[uncompressedLen];
-            int rc = BZ2_bzBuffToBuffDecompress(uncompressed, ref uncompressedLen, compressed, compressedLen, 0, 0);
+            int rc = NativeMethods.BZ2_bzBuffToBuffDecompress(uncompressed, ref uncompressedLen, compressed, 
+                                                              compressedLen, 0, 0);
             if(rc < 0)
             {
                 Ice.CompressionException ex = new Ice.CompressionException("BZ2_bzBuffToBuffDecompress failed");
@@ -2698,7 +2706,7 @@ namespace IceInternal
         {
             if(!_unlimited && _buf.b != null && _buf.b.position() + n > _messageSizeMax)
             {   
-                throw new Ice.MemoryLimitException("Message larger than Ice.MessageSizeMax");
+                Ex.throwMemoryLimitException(_buf.b.position() + n, _messageSizeMax);
             }
             _buf.expand(n);
         }
@@ -2847,7 +2855,7 @@ namespace IceInternal
 
         private static string typeToClass(string id)
         {
-            if(!id.StartsWith("::"))
+            if(!id.StartsWith("::", StringComparison.Ordinal))
             {
                 throw new Ice.MarshalException("type ID does not start with `::'");
             }
@@ -2864,8 +2872,8 @@ namespace IceInternal
             internal int start;
             internal int sz;
 
-            internal byte encodingMajor;
-            internal byte encodingMinor;
+            // internal byte encodingMajor; // Currently unused
+            // internal byte encodingMinor; // Currently unused
 
             internal Hashtable patchMap;
             internal Hashtable unmarshaledMap;
@@ -2925,19 +2933,8 @@ namespace IceInternal
         private int _messageSizeMax;
         private bool _unlimited;
 
-        private sealed class SeqData
-        {
-            public SeqData(int numElements, int minSize)
-            {
-                this.numElements = numElements;
-                this.minSize = minSize;
-            }
-
-            public int numElements;
-            public int minSize;
-            public SeqData previous;
-        }
-        SeqData _seqDataStack;
+        int _startSeq;
+        int _minSeqSize;
 
         private ArrayList _objectList;
 

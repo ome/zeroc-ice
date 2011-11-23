@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -16,8 +16,12 @@ if not slice_dir:
     print sys.argv[0] + ': Slice directory not found.'
     sys.exit(1)
 
-Ice.loadSlice('-I' + slice_dir + ' TestAMD.ice')
+Ice.loadSlice("'-I" + slice_dir + "' TestAMD.ice")
 import Test
+
+def test(b):
+    if not b:
+        raise RuntimeError('test assertion failed')
 
 class Thread_opVoid(threading.Thread):
     def __init__(self, cb):
@@ -191,6 +195,12 @@ class MyDerivedClassI(Test.MyDerivedClass):
         r.update(p2)
         cb.ice_response(r, p3)
 
+    def opMyEnumStringD_async(self, cb, p1, p2, current=None):
+        p3 = p1.copy()
+        r = p1.copy()
+        r.update(p2)
+        cb.ice_response(r, p3)
+
     def opMyStructMyEnumD_async(self, cb, p1, p2, current=None):
         p3 = p1.copy()
         r = p1.copy()
@@ -203,6 +213,13 @@ class MyDerivedClassI(Test.MyDerivedClass):
     def opByteSOneway_async(self, cb, s, current=None):
         cb.ice_response()
 
+    def opDoubleMarshaling_async(self, cb, p1, p2, current=None):
+        d = 1278312346.0 / 13.0;
+        test(p1 == d)
+        for i in p2:
+            test(i == d)
+        cb.ice_response()
+
     def opContext_async(self, cb, current=None):
         cb.ice_response(current.ctx)
 
@@ -210,7 +227,7 @@ class MyDerivedClassI(Test.MyDerivedClass):
         cb.ice_response()
 
 def run(args, communicator):
-    communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000:udp")
+    communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010:udp")
     adapter = communicator.createObjectAdapter("TestAdapter")
     adapter.add(MyDerivedClassI(), communicator.stringToIdentity("test"))
     adapter.activate()

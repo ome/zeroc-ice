@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -57,7 +57,7 @@ def allTests(communicator)
 
     print "testing stringToProxy... "
     STDOUT.flush
-    ref = "initial:default -p 12010 -t 10000"
+    ref = "initial:default -p 12010"
     base = communicator.stringToProxy(ref)
     test(base)
     puts "ok"
@@ -202,7 +202,7 @@ def allTests(communicator)
 
     print "testing UnexpectedObjectException... "
     STDOUT.flush
-    ref = "uoet:default -p 12010 -t 10000"
+    ref = "uoet:default -p 12010"
     base = communicator.stringToProxy(ref)
     test(base)
     uoet = Test::UnexpectedObjectExceptionTestPrx::uncheckedCast(base)
@@ -213,6 +213,10 @@ def allTests(communicator)
     rescue Ice::UnexpectedObjectException => ex
         test(ex.type == "::Test::AlsoEmpty")
         test(ex.expectedType == "::Test::Empty")
+    rescue Ice::UnmarshalOutOfBoundsException => ex
+        # This test raises Ice::UnmarshalOutOfBoundsException on Windows when the
+        # server is compiled with VC6.
+        test(RUBY_PLATFORM =~ /(win|w)32$/)
     rescue Ice::Exception => ex
         puts $!
         print ex.backtrace.join("\n")

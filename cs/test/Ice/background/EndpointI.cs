@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -35,6 +35,11 @@ internal class EndpointI : IceInternal.EndpointI
     public override string ice_toString_()
     {
         return "test-" + _endpoint.ToString();
+    }
+
+    public override Ice.EndpointInfo getInfo()
+    {
+        return _endpoint.getInfo();
     }
 
     //
@@ -129,14 +134,6 @@ internal class EndpointI : IceInternal.EndpointI
     public override bool secure()
     {
         return _endpoint.secure();
-    }
-
-    //
-    // Return true if the endpoint type is unknown.
-    //
-    public override bool unknown()
-    {
-        return _endpoint.unknown();
     }
 
     //

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,9 +14,33 @@
 
 #include <Ice/ObjectAdapterF.ice>
 #include <Ice/Identity.ice>
+#include <Ice/Endpoint.ice>
 
 module Ice
 {
+
+/**
+ *
+ * Base class providing access to the connection details.
+ *
+ **/
+local class ConnectionInfo
+{
+    /**
+     *
+     * Whether or not the connection is an incoming or outgoing
+     * connection.
+     *
+     **/
+    bool incoming;
+
+    /**
+     *
+     * The name of the adapter associated with the connection.
+     *
+     **/
+    string adapterName;
+};
 
 /**
  *
@@ -53,7 +77,7 @@ local interface Connection
      * @return A proxy that matches the given identity and uses this
      * connection.
      *
-     * @see setAdapter
+     * @see #setAdapter
      *
      **/
     ["cpp:const"] Object* createProxy(Identity id);
@@ -73,8 +97,8 @@ local interface Connection
      * activated. When the object adapter is deactivated, it is
      * automatically removed from the connection.
      *
-     * @see createProxy
-     * @see setAdapter
+     * @see #createProxy
+     * @see #setAdapter
      *
      **/
     void setAdapter(ObjectAdapter adapter);
@@ -87,10 +111,19 @@ local interface Connection
      * @return The object adapter that dispatches requests for the
      * connection, or null if no adapter is set.
      *
-     * @see setAdapter
+     * @see #setAdapter
      *
      **/
     ["cpp:const"] ObjectAdapter getAdapter();
+
+    /**
+     *
+     * Get the endpoint from which the creation was created.
+     *
+     * @return The endpoint from which the connection was created.
+     *
+     **/
+    ["cpp:const"] Endpoint getEndpoint();
 
     /**
      *
@@ -99,7 +132,7 @@ local interface Connection
      * this connection to be sent to the server.
      *
      **/
-    void flushBatchRequests();
+    ["async"] void flushBatchRequests();
 
     /**
      *
@@ -130,6 +163,58 @@ local interface Connection
      *
      **/
     ["cpp:const"] string toString();
+
+    /**
+     *
+     * Returns the connection information.
+     *
+     * @return The connection information.
+     *
+     **/
+    ["cpp:const"] ConnectionInfo getInfo();
+};
+
+/**
+ *
+ * Provides access to the connection details of an IP connection
+ *
+ **/
+local class IPConnectionInfo extends ConnectionInfo
+{
+    /** The local address. */
+    string localAddress;
+
+    /** The local port. */
+    int localPort;
+
+    /** The remote address. */
+    string remoteAddress;
+
+    /** The remote port. */
+    int remotePort;
+};
+
+/**
+ *
+ * Provides access to the connection details of a TCP connection
+ *
+ **/
+local class TCPConnectionInfo extends IPConnectionInfo
+{
+};
+
+/**
+ *
+ * Provides access to the connection details of a UDP connection
+ *
+ **/
+local class UDPConnectionInfo extends IPConnectionInfo
+{
+    /** The multicast address. */
+    string mcastAddress;
+
+    /** The multicast port. */
+    int mcastPort;
 };
 
 };

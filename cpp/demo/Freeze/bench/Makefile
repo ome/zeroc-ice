@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -27,7 +27,10 @@ $(CLIENT): $(OBJS) $(COBJS)
 	rm -f $@
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(COBJS) $(DB_RPATH_LINK) -lFreeze $(LIBS)
 
-BenchTypes.h BenchTypes.cpp: Test.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
+# The slice2freeze rules are structured like this to avoid issues with
+# parallel make.
+BenchTypes.h: BenchTypes.cpp
+BenchTypes.cpp: Test.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
 	rm -f BenchTypes.h BenchTypes.cpp
 	$(SLICE2FREEZE) -I$(slicedir) --dict Demo::IntIntMap,int,int --dict Demo::Struct1Struct2Map,Demo::Struct1,Demo::Struct2 \
 	--dict Demo::Struct1Class1Map,Demo::Struct1,Demo::Class1 \
@@ -41,7 +44,7 @@ BenchTypes.h BenchTypes.cpp: Test.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
         BenchTypes Test.ice
 
 clean::
-	-rm -f db/*
+	-rm -rf db/*
 	-rm -f BenchTypes.h BenchTypes.cpp
 
 include .depend

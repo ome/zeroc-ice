@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -101,11 +101,6 @@ public:
     virtual bool secure() const = 0;
 
     //
-    // Return true if the endpoint type is unknown.
-    //
-    virtual bool unknown() const = 0;
-
-    //
     // Return a server side transceiver for this endpoint, or null if a
     // transceiver can only be created by an acceptor. In case a
     // transceiver is created, this operation also returns a new
@@ -140,30 +135,37 @@ public:
     // Check whether the endpoint is equivalent to another one.
     //
     virtual bool equivalent(const EndpointIPtr&) const = 0;
-
+    
     //
     // Compare endpoints for sorting purposes.
     //
-    virtual bool operator==(const EndpointI&) const = 0;
-    virtual bool operator!=(const EndpointI&) const = 0;
-    virtual bool operator<(const EndpointI&) const = 0;
+    virtual bool operator==(const Ice::LocalObject&) const = 0;
+    virtual bool operator<(const Ice::LocalObject&) const = 0;
+    virtual ::Ice::Int ice_getHash() const;
 
 protected:
 
     virtual std::vector<ConnectorPtr> connectors(const std::vector<struct sockaddr_storage>&) const;
     friend class EndpointHostResolver;
 
+    EndpointI();
+    virtual ::Ice::Int hashInit() const = 0;
+
 private:
 
-#if defined(__SUNPRO_CC) || defined(__HP_aCC)
-    //
-    // COMPILERFIX: prevent the compiler from emitting a warning about
-    // hidding these operators.
-    //
-    using LocalObject::operator==;
-    using LocalObject::operator<;
-#endif
+    mutable bool _hashInitialized;
+    mutable Ice::Int _hashValue;
 };
+
+inline bool operator==(const EndpointI& l, const EndpointI& r)
+{
+    return static_cast<const ::Ice::LocalObject&>(l) == static_cast<const ::Ice::LocalObject&>(r);
+}
+
+inline bool operator<(const EndpointI& l, const EndpointI& r)
+{
+    return static_cast<const ::Ice::LocalObject&>(l) < static_cast<const ::Ice::LocalObject&>(r);
+}
 
 class ICE_API EndpointHostResolver : public IceUtil::Thread, public IceUtil::Monitor<IceUtil::Mutex>
 {

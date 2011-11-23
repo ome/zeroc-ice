@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,7 @@ public class Server
         //
         Ice.Properties properties = communicator.getProperties();
         properties.setProperty("Ice.ThreadPool.Server.Size", "2");
-        properties.setProperty("ServerManagerAdapter.Endpoints", "default -p 12010 -t 30000:udp");
+        properties.setProperty("ServerManagerAdapter.Endpoints", "default -p 12010:udp");
         
         Ice.ObjectAdapter adapter = communicator.createObjectAdapter("ServerManagerAdapter");
         
@@ -39,7 +39,7 @@ public class Server
         // 'servers' created with the server manager interface.
         //
         ServerLocatorRegistry registry = new ServerLocatorRegistry();
-        Ice.Object @object = new ServerManagerI(adapter, registry, initData);
+        Ice.Object @object = new ServerManagerI(registry, initData);
         adapter.add(@object, communicator.stringToIdentity("ServerManager"));
         registry.addObject(adapter.createProxy(communicator.stringToIdentity("ServerManager")));
         Ice.LocatorRegistryPrx registryPrx = Ice.LocatorRegistryPrxHelper.uncheckedCast(

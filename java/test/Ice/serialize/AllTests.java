@@ -1,13 +1,14 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-import Test.*;
+package test.Ice.serialize;
+import test.Ice.serialize.Test.*;
 import java.io.*;
 
 public class AllTests
@@ -22,14 +23,14 @@ public class AllTests
     }
 
     public static InitialPrx
-    allTests(Ice.Communicator communicator, boolean collocated)
+    allTests(Ice.Communicator communicator, boolean collocated, PrintWriter out)
     {
-        String ref = "initial:default -p 12010 -t 10000";
+        String ref = "initial:default -p 12010";
         Ice.ObjectPrx base = communicator.stringToProxy(ref);
         InitialPrx initial = InitialPrxHelper.checkedCast(base);
 
-        System.out.print("testing serialization... ");
-        System.out.flush();
+        out.print("testing serialization... ");
+        out.flush();
 
         //
         // Call getStruct1 and force an error.
@@ -105,7 +106,7 @@ public class AllTests
             test(false);
         }
 
-        System.out.println("ok");
+        out.println("ok");
 
         return initial;
     }

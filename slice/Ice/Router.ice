@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,7 +20,7 @@ module Ice
 /**
  *
  * The Ice router interface. Routers can be set either globally with
- * [Communicator::setDefaultRouter], or with [ice_router] on specific
+ * {@link Communicator.setDefaultRouter}, or with <tt>ice_router</tt> on specific
  * proxies.
  *
  **/

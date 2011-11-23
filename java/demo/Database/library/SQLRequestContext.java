@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -150,10 +150,9 @@ class SQLRequestContext
                 }
             }
 
-            java.util.Iterator<java.sql.Statement> p = _statements.iterator();
-            while(p.hasNext())
+            for(java.sql.Statement p : _statements)
             {
-                p.next().close();
+                p.close();
             }
         }
         catch(java.sql.SQLException e)

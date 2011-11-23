@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,7 +19,7 @@ TestIntfPrx
 allTests(const CommunicatorPtr& communicator)
 {
     cout << "testing stringToProxy... " << flush;
-    ObjectPrx base = communicator->stringToProxy("test:default -p 12010 -t 10000");
+    ObjectPrx base = communicator->stringToProxy("test:default -p 12010");
     test(base);
     cout << "ok" << endl;
 
@@ -35,9 +35,6 @@ allTests(const CommunicatorPtr& communicator)
             communicator->createObjectAdapterWithEndpoints("TransientTestAdapter", "default");
         try
         {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
             communicator->createObjectAdapterWithEndpoints("TransientTestAdapter", "default");
             test(false);
         }

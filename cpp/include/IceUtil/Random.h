@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,7 +17,7 @@ namespace IceUtilInternal
 {
 
 ICE_UTIL_API void generateRandom(char*, int);
-ICE_UTIL_API int random(int = 0);
+ICE_UTIL_API unsigned int random(int = 0);
 
 }
 

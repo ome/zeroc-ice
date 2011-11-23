@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,8 +14,18 @@
 
 #include <Ice/Handle.h>
 
+namespace Ice
+{
+
+class AsyncResult;
+typedef IceInternal::Handle<AsyncResult> AsyncResultPtr;
+
+}
+
 namespace IceInternal
 {
+
+ICE_API IceUtil::Shared* upCast(::Ice::AsyncResult*);
 
 class OutgoingAsync;
 ICE_API IceUtil::Shared* upCast(OutgoingAsync*);
@@ -29,32 +39,17 @@ class BatchOutgoingAsync;
 ICE_API IceUtil::Shared* upCast(BatchOutgoingAsync*);
 typedef IceInternal::Handle<BatchOutgoingAsync> BatchOutgoingAsyncPtr;
 
-}
+class ProxyBatchOutgoingAsync;
+ICE_API IceUtil::Shared* upCast(ProxyBatchOutgoingAsync*);
+typedef IceInternal::Handle<ProxyBatchOutgoingAsync> ProxyBatchOutgoingAsyncPtr;
 
-namespace Ice
-{
+class ConnectionBatchOutgoingAsync;
+ICE_API IceUtil::Shared* upCast(ConnectionBatchOutgoingAsync*);
+typedef IceInternal::Handle<ConnectionBatchOutgoingAsync> ConnectionBatchOutgoingAsyncPtr;
 
-class AMI_Object_ice_invoke;
-class AMI_Array_Object_ice_invoke;
-class AMI_Object_ice_flushBatchRequests;
-
-}
-
-namespace IceInternal
-{
-
-ICE_API IceUtil::Shared* upCast(::Ice::AMI_Object_ice_invoke*);
-ICE_API IceUtil::Shared* upCast(::Ice::AMI_Array_Object_ice_invoke*);
-ICE_API IceUtil::Shared* upCast(::Ice::AMI_Object_ice_flushBatchRequests*);
-
-}
-
-namespace Ice
-{
-
-typedef IceInternal::Handle<AMI_Object_ice_invoke> AMI_Object_ice_invokePtr;
-typedef IceInternal::Handle<AMI_Array_Object_ice_invoke> AMI_Array_Object_ice_invokePtr;
-typedef IceInternal::Handle<AMI_Object_ice_flushBatchRequests> AMI_Object_ice_flushBatchRequestsPtr;
+class CommunicatorBatchOutgoingAsync;
+ICE_API IceUtil::Shared* upCast(CommunicatorBatchOutgoingAsync*);
+typedef IceInternal::Handle<CommunicatorBatchOutgoingAsync> CommunicatorBatchOutgoingAsyncPtr;
 
 }
 

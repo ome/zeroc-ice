@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,6 +19,7 @@ public:
     HoldI(const IceUtil::TimerPtr&, const Ice::ObjectAdapterPtr&);
 
     virtual void putOnHold(Ice::Int, const Ice::Current&);
+    virtual void waitForHold(const Ice::Current&);
     virtual Ice::Int set(Ice::Int, Ice::Int, const Ice::Current&);
     virtual void setOneway(Ice::Int, Ice::Int, const Ice::Current&);
     virtual void shutdown(const Ice::Current&);

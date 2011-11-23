@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,7 +14,10 @@
 using namespace std;
 using namespace IceUtil;
 
-static string
+namespace
+{
+
+string
 toOctalString(unsigned int n)
 {
     string s;
@@ -38,7 +41,7 @@ toOctalString(unsigned int n)
 // that should be escaped can be passed in special. If b is any of these
 // characters, b is preceded by a backslash in s.
 //
-static void
+void
 encodeChar(string::value_type b, string& s, const string& special)
 {
     switch(b)
@@ -126,6 +129,8 @@ encodeChar(string::value_type b, string& s, const string& special)
     }
 }
 
+}
+
 //
 // Add escape sequences (such as "\n", or "\007") to make a string
 // readable in ASCII. Any characters that appear in special are
@@ -152,12 +157,26 @@ IceUtilInternal::escapeString(const string& s, const string& special)
     return result;
 }
 
-static char
-checkChar(char c)
+namespace
 {
-    if(!(static_cast<unsigned char>(c) >= 32 && static_cast<unsigned char>(c) <= 126))
+
+char
+checkChar(const string& s, string::size_type pos)
+{
+    unsigned char c = static_cast<unsigned char>(s[pos]);
+    if(!(c >= 32 && c <= 126))
     {
-        throw IllegalArgumentException(__FILE__, __LINE__, "illegal input character");
+        ostringstream ostr;
+        if(pos > 0)
+        {
+            ostr << "character after `" << s.substr(0, pos) << "'";
+        }
+        else
+        {
+            ostr << "first character";
+        }
+        ostr << " is not a printable ASCII character (ordinal " << (int)c << ")";
+        throw IllegalArgumentException(__FILE__, __LINE__, ostr.str());
     }
     return c;
 }
@@ -168,7 +187,7 @@ checkChar(char c)
 // nextStart is set to the index of the first character following the decoded
 // character or escape sequence.
 //
-static char
+char
 decodeChar(const string& s, string::size_type start, string::size_type end, string::size_type& nextStart)
 {
     assert(start < end);
@@ -178,13 +197,13 @@ decodeChar(const string& s, string::size_type start, string::size_type end, stri
 
     if(s[start] != '\\')
     {
-        c = checkChar(s[start++]);
+        c = checkChar(s, start++);
     }
     else
     {
         if(start + 1 == end)
         {
-            throw IllegalArgumentException(__FILE__, __LINE__, "trailing backslash in argument");
+            throw IllegalArgumentException(__FILE__, __LINE__, "trailing backslash");
         }
         switch(s[++start])
         {
@@ -234,7 +253,7 @@ decodeChar(const string& s, string::size_type start, string::size_type end, stri
             case '6':
             case '7':
             {
-                int oct = 0;
+                int val = 0;
                 for(int j = 0; j < 3 && start < end; ++j)
                 {
                     int charVal = s[start++] - '0';
@@ -243,18 +262,20 @@ decodeChar(const string& s, string::size_type start, string::size_type end, stri
                         --start;
                         break;
                     }
-                    oct = oct * 8 + charVal;
+                    val = val * 8 + charVal;
                 }
-                if(oct > 255)
+                if(val > 255)
                 {
-                    throw IllegalArgumentException(__FILE__, __LINE__, "octal value out of range");
+                    ostringstream ostr;
+                    ostr << "octal value \\" << oct << val << dec << " (" << val << ") is out of range";
+                    throw IllegalArgumentException(__FILE__, __LINE__, ostr.str());
                 }
-                c = (char)oct;
+                c = (char)val;
                 break;
             }
             default:
             {
-                c = checkChar(s[start++]);
+                c = checkChar(s, start++);
                 break;
             }
         }
@@ -267,7 +288,8 @@ decodeChar(const string& s, string::size_type start, string::size_type end, stri
 // Remove escape sequences from s and append the result to sb.
 // Return true if successful, false otherwise.
 //
-static void decodeString(const string& s, string::size_type start, string::size_type end, string& sb)
+void
+decodeString(const string& s, string::size_type start, string::size_type end, string& sb)
 {
     while(start < end)
     {
@@ -275,33 +297,21 @@ static void decodeString(const string& s, string::size_type start, string::size_
     }
 }
 
+}
+
 //
 // Remove escape sequences added by escapeString.
 //
-bool
-IceUtilInternal::unescapeString(const string& s, string::size_type start, string::size_type end, string& result)
+string
+IceUtilInternal::unescapeString(const string& s, string::size_type start, string::size_type end)
 {
-    if(end > s.size())
-    {
-        throw IllegalArgumentException(__FILE__, __LINE__, "end offset must be <= s.size()");
-    }
-    if(start > end)
-    {
-        throw IllegalArgumentException(__FILE__, __LINE__, "start offset must <= end offset");
-    }
+    assert(start <= end && end <= s.size());
 
+    string result;
     result.reserve(end - start);
-
-    try
-    {
-        result.clear();
-        decodeString(s, start, end, result);
-        return true;
-    }
-    catch(...)
-    {
-        return false;
-    }
+    result.clear();
+    decodeString(s, start, end, result);
+    return result;
 }
 
 bool
@@ -311,51 +321,73 @@ IceUtilInternal::splitString(const string& str, const string& delim, vector<stri
     string::size_type length = str.length();
     string elt;
 
+    char quoteChar = '\0';
     while(pos < length)
     {
-        char quoteChar = '\0';
-        if(str[pos] == '"' || str[pos] == '\'')
+        if(quoteChar == '\0' && (str[pos] == '"' || str[pos] == '\''))
         {
-            quoteChar = str[pos];
+            quoteChar = str[pos++];
+            continue; // Skip the quote
+        }
+        else if(quoteChar == '\0' && str[pos] == '\\' && pos + 1 < length && 
+                (str[pos + 1] == '\'' || str[pos + 1] == '"'))
+        {
             ++pos;
         }
-        while(pos < length)
+        else if(quoteChar != '\0' && str[pos] == '\\' && pos + 1 < length && str[pos + 1] == quoteChar)
         {
-            if(quoteChar != '\0' && str[pos] == '\\' && pos + 1 < length && str[pos + 1] == quoteChar)
+            ++pos;
+        }
+        else if(quoteChar != '\0' && str[pos] == quoteChar)
+        {
+            ++pos;
+            quoteChar = '\0';
+            continue; // Skip the end quote
+        }
+        else if(delim.find(str[pos]) != string::npos)
+        {
+            if(quoteChar == '\0')
             {
                 ++pos;
-            }
-            else if(quoteChar != '\0' && str[pos] == quoteChar)
-            {
-                ++pos;
-                quoteChar = '\0';
-                break;
-            }
-            else if(delim.find(str[pos]) != string::npos)
-            {
-                if(quoteChar == '\0')
+                if(elt.length() > 0)
                 {
-                    ++pos;
-                    break;
+                    result.push_back(elt);
+                    elt = "";
                 }
+                continue;
             }
+        }
             
-            if(pos < length)
-            {
-               elt += str[pos++];
-            }
-        }
-        if(quoteChar != '\0')
+        if(pos < length)
         {
-            return false; // Unmatched quote.
-        }
-        if(elt.length() > 0)
-        {
-            result.push_back(elt);
-            elt = "";
+            elt += str[pos++];
         }
     }
+
+    if(elt.length() > 0)
+    {
+        result.push_back(elt);
+    }
+    if(quoteChar != '\0')
+    {
+        return false; // Unmatched quote.
+    }
     return true;
+}
+
+string
+IceUtilInternal::joinString(const std::vector<std::string>& values, const std::string& delimiter)
+{
+    ostringstream out;
+    for(unsigned int i = 0; i < values.size(); i++)
+    {
+        if(i != 0)
+        {
+            out << delimiter;
+        }
+        out << values[i];
+    }
+    return out.str();
 }
 
 //
@@ -689,7 +721,14 @@ IceUtilInternal::toLower(const std::string& s)
     result.reserve(s.size());
     for(unsigned int i = 0; i < s.length(); ++i)
     {
-         result += tolower(static_cast<unsigned char>(s[i]));
+        if(isascii(s[i]))
+        {
+            result += tolower(static_cast<unsigned char>(s[i]));
+        }
+        else
+        {
+            result += s[i];
+        }
     }
     return result;
 }
@@ -701,9 +740,28 @@ IceUtilInternal::toUpper(const std::string& s)
     result.reserve(s.size());
     for(unsigned int i = 0; i < s.length(); ++i)
     {
-         result += toupper(static_cast<unsigned char>(s[i]));
+        if(isascii(s[i]))
+        {
+            result += toupper(static_cast<unsigned char>(s[i]));
+        }
+        else
+        {
+            result += s[i];
+        }
     }
     return result;
+}
+
+bool
+IceUtilInternal::isAlpha(char c)
+{
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
+bool
+IceUtilInternal::isDigit(char c)
+{
+    return c >= '0' && c <= '9';
 }
 
 string

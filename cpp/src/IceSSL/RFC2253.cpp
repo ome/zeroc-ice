@@ -1,11 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+#include <IceUtil/StringUtil.h>
 
 #include <IceSSL/Plugin.h>
 #include <IceSSL/RFC2253.h>
@@ -13,12 +15,17 @@
 using namespace std;
 using namespace IceSSL;
 
+namespace
+{
+
 //
 // See RFC 2253 and RFC 1779.
 //
 
-static string special = ",=+<>#;";
-static string hexvalid = "0123456789abcdefABCDEF";
+string special = ",=+<>#;";
+string hexvalid = "0123456789abcdefABCDEF";
+
+}
 
 static char unescapeHex(const string&, size_t);
 static pair<string,string> parseNameComponent(const string&, size_t&);
@@ -29,15 +36,26 @@ static string parsePair(const string&, size_t&);
 static string parseHexPair(const string&, size_t&, bool);
 static void eatWhite(const string&, size_t&);
 
-IceSSL::RFC2253::RDNSeqSeq
+IceSSL::RFC2253::RDNEntrySeq
 IceSSL::RFC2253::parse(const string& data)
 {
-    RDNSeqSeq results;
-    RDNSeq current;
+    RDNEntrySeq results;
+    RDNEntry current;
+    current.negate = false;
     size_t pos = 0;
     while(pos < data.size())
     {
-        current.push_back(parseNameComponent(data, pos));
+        eatWhite(data, pos);
+        if(pos < data.size() && data[pos] == '!')
+        {
+            if(!current.rdn.empty())
+            {
+                throw ParseException(__FILE__, __LINE__, "negation symbol '!' must appear at start of list");
+            }
+            ++pos;
+            current.negate = true;
+        }
+        current.rdn.push_back(parseNameComponent(data, pos));
         eatWhite(data, pos);
         if(pos < data.size() && data[pos] == ',')
         {
@@ -47,14 +65,15 @@ IceSSL::RFC2253::parse(const string& data)
         {
             ++pos;
             results.push_back(current);
-            current.clear();
+            current.rdn.clear();
+            current.negate = false;
         }
         else if(pos < data.size())
         {
             throw ParseException(__FILE__, __LINE__, "expected ',' or ';' at `" + data.substr(pos) + "'");
         }
     }
-    if(!current.empty())
+    if(!current.rdn.empty())
     {
         results.push_back(current);
     }
@@ -150,7 +169,7 @@ IceSSL::RFC2253::unescape(const string& data)
 
     return result;
 }
-        
+
 static int
 hexToInt(char v)
 {
@@ -253,10 +272,10 @@ parseAttributeType(const string& data, size_t& pos)
     // 
     // First the OID case.
     //
-    if(isdigit(static_cast<unsigned char>(data[pos])) ||
+    if(IceUtilInternal::isDigit(data[pos]) ||
        (data.size() - pos >= 4 && (data.substr(pos, 4) == "oid." || data.substr(pos, 4) == "OID.")))
     {
-        if(!isdigit(static_cast<unsigned char>(data[pos])))
+        if(!IceUtilInternal::isDigit(data[pos]))
         {
             result += data.substr(pos, 4);
             pos += 4;
@@ -265,7 +284,7 @@ parseAttributeType(const string& data, size_t& pos)
         while(true)
         {
             // 1*DIGIT
-            while(pos < data.size() && isdigit(static_cast<unsigned char>(data[pos])))
+            while(pos < data.size() && IceUtilInternal::isDigit(data[pos]))
             {
                 result += data[pos];
                 ++pos;
@@ -276,7 +295,7 @@ parseAttributeType(const string& data, size_t& pos)
                 result += data[pos];
                 ++pos;
                 // 1*DIGIT must follow "."
-                if(pos < data.size() && !isdigit(static_cast<unsigned char>(data[pos])))
+                if(pos < data.size() && !IceUtilInternal::isDigit(data[pos]))
                 {
                     throw ParseException(__FILE__, __LINE__, "invalid attribute type (expected end of data)");
                 }
@@ -287,7 +306,7 @@ parseAttributeType(const string& data, size_t& pos)
             }
         }
     }
-    else if(isalpha(static_cast<unsigned char>(data[pos])))
+    else if(IceUtilInternal::isAlpha(data[pos]))
     {
         //
         // The grammar is wrong in this case. It should be ALPHA
@@ -297,8 +316,8 @@ parseAttributeType(const string& data, size_t& pos)
         result += data[pos];
         ++pos;
         // 1* KEYCHAR
-        while(pos < data.size() && (isalpha(static_cast<unsigned char>(data[pos])) || 
-              isdigit(static_cast<unsigned char>(data[pos])) || data[pos] == '-'))
+        while(pos < data.size() && 
+              (IceUtilInternal::isAlpha(data[pos]) || IceUtilInternal::isDigit(data[pos]) || data[pos] == '-'))
         {
             result += data[pos];
             ++pos;

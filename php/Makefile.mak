@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -9,14 +9,14 @@
 
 top_srcdir	= .
 
-!include $(top_srcdir)\config\Make.rules.mak
+!include $(top_srcdir)\config\Make.rules.mak.php
 
-SUBDIRS		= src
+SUBDIRS		= src lib demo test
 
 install:: install-common
-	@if not exist $(install_libdir) \
+	@if not exist "$(install_libdir)" \
 	    @echo "Creating $(install_libdir)..." && \
-	    mkdir $(install_libdir)
+	    mkdir "$(install_libdir)"
 
 $(EVERYTHING)::
 	@for %i in ( $(SUBDIRS) ) do \

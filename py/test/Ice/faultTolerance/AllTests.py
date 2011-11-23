@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -25,12 +25,8 @@ class CallbackBase:
         self._cond.acquire()
         try:
             while not self._called:
-                self._cond.wait(5.0)
-            if self._called:
-                self._called = False
-                return True;
-            else:
-                return False
+                self._cond.wait()
+            self._called = False
         finally:
             self._cond.release()
 
@@ -40,29 +36,21 @@ class CallbackBase:
         self._cond.notify()
         self._cond.release()
 
-class AMI_Test_pidI(CallbackBase):
-    def ice_response(self, pid):
+class Callback(CallbackBase):
+    def response(self):
+        test(False)
+
+    def exception(self, ex):
+        test(False)
+
+    def opPidI(self, pid):
         self._pid = pid
         self.called()
 
-    def ice_exception(self, ex):
-        test(False)
-
-    def pid(self):
-        return self._pid
-
-class AMI_Test_shutdownI(CallbackBase):
-    def ice_response(self):
+    def opShutdownI(self):
         self.called()
 
-    def ice_exception(self, ex):
-        test(False)
-
-class AMI_Test_abortI(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, ex):
+    def exceptAbortI(self, ex):
         try:
             raise ex
         except Ice.ConnectionLostException:
@@ -74,18 +62,14 @@ class AMI_Test_abortI(CallbackBase):
             test(False)
         self.called()
 
-class AMI_Test_idempotentAbortI(AMI_Test_abortI):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, ex):
-        AMI_Test_abortI.ice_exception(self, ex)
+    def pid(self):
+        return self._pid
 
 def allTests(communicator, ports):
     print "testing stringToProxy... ",
     ref = "test"
     for p in ports:
-        ref = ref + ":default -t 60000 -p " + str(p)
+        ref = ref + ":default -p " + str(p)
     base = communicator.stringToProxy(ref)
     test(base)
     print "ok"
@@ -113,9 +97,9 @@ def allTests(communicator, ports):
             oldPid = pid
         else:
             print "testing server #%d with AMI... " % i,
-            cb = AMI_Test_pidI()
-            obj.pid_async(cb)
-            test(cb.check())
+            cb = Callback()
+            obj.begin_pid(cb.opPidI, cb.exception)
+            cb.check()
             pid = cb.pid()
             test(pid != oldPid)
             print "ok"
@@ -128,9 +112,9 @@ def allTests(communicator, ports):
                 print "ok"
             else:
                 print "shutting down server #%d with AMI... " % i,
-                cb = AMI_Test_shutdownI()
-                obj.shutdown_async(cb)
-                test(cb.check())
+                cb = Callback()
+                obj.begin_shutdown(cb.opShutdownI, cb.exception)
+                cb.check()
                 print "ok"
         elif j == 1 or i + 1 > len(ports):
             if not ami:
@@ -144,9 +128,9 @@ def allTests(communicator, ports):
                     print "ok"
             else:
                 print "aborting server #%d with AMI... " % i,
-                cb = AMI_Test_abortI()
-                obj.abort_async(cb)
-                test(cb.check())
+                cb = Callback()
+                obj.begin_abort(cb.response, cb.exceptAbortI)
+                cb.check()
                 print "ok"
         elif j == 2 or j == 3:
             if not ami:
@@ -160,9 +144,9 @@ def allTests(communicator, ports):
                     print "ok"
             else:
                 print "aborting server #%d and #%d with idempotent AMI call... " % (i, i + 1),
-                cb = AMI_Test_idempotentAbortI()
-                obj.idempotentAbort_async(cb)
-                test(cb.check())
+                cb = Callback()
+                obj.begin_idempotentAbort(cb.response, cb.exceptAbortI)
+                cb.check()
                 print "ok"
 
             i = i + 1

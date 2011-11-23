@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,7 +16,7 @@ public class InputStreamI implements InputStream
     {
         _communicator = communicator;
 
-        _is = new IceInternal.BasicStream(Util.getInstance(communicator));
+        _is = new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator));
         _is.closure(this);
         _is.resize(data.length, true);
         IceInternal.Buffer buf = _is.getBuffer();
@@ -145,6 +145,12 @@ public class InputStreamI implements InputStream
         return _is.readSize();
     }
 
+    public int
+    readAndCheckSeqSize(int minWire)
+    {
+        return _is.readAndCheckSeqSize(minWire);
+    }
+
     public ObjectPrx
     readProxy()
     {
@@ -232,6 +238,13 @@ public class InputStreamI implements InputStream
     readPendingObjects()
     {
         _is.readPendingObjects();
+    }
+
+    public void
+    rewind()
+    {
+        _is.clear();
+        _is.getBuffer().b.position(0);
     }
 
     public void

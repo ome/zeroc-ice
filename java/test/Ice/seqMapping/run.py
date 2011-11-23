@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -24,10 +24,8 @@ print "tests with regular server."
 TestUtil.clientServerTest()
 
 print "tests with AMD server."
-import copy
-amdenv = copy.deepcopy(os.environ)
-TestUtil.addClasspath(os.path.join(os.getcwd(), "..", "seqMappingAMD", "classes"), amdenv)
-TestUtil.clientServerTest(serverenv = amdenv)
+TestUtil.clientServerTest(server="test.Ice.seqMapping.AMDServer")
 
 print "tests with collocated server."
 TestUtil.collocatedTest()
+

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -49,6 +49,11 @@ namespace Ice
             return instance_.proxyFactory().propertyToProxy(s);
         }
         
+        public Dictionary<string, string> proxyToProperty(Ice.ObjectPrx proxy, string prefix)
+        {
+            return instance_.proxyFactory().proxyToProperty(proxy, prefix);
+        }
+        
         public Ice.Identity stringToIdentity(string s)
         {
             return instance_.stringToIdentity(s);
@@ -61,17 +66,37 @@ namespace Ice
 
         public ObjectAdapter createObjectAdapter(string name)
         {
-            return instance_.objectAdapterFactory().createObjectAdapter(name, "", null);
+            return instance_.objectAdapterFactory().createObjectAdapter(name, null);
         }
         
         public ObjectAdapter createObjectAdapterWithEndpoints(string name, string endpoints)
         {
-            return instance_.objectAdapterFactory().createObjectAdapter(name, endpoints, null);
+            if(name.Length == 0)
+            {
+                name = System.Guid.NewGuid().ToString();
+            }
+
+            getProperties().setProperty(name + ".Endpoints", endpoints);
+            return instance_.objectAdapterFactory().createObjectAdapter(name, null);
         }
         
         public ObjectAdapter createObjectAdapterWithRouter(string name, RouterPrx router)
         {
-            return instance_.objectAdapterFactory().createObjectAdapter(name, "", router);
+            if(name.Length == 0)
+            {
+                name = System.Guid.NewGuid().ToString();
+            }
+
+            //
+            // We set the proxy properties here, although we still use the proxy supplied.
+            //
+            Dictionary<string, string> properties = proxyToProperty(router, name + ".Router");
+            foreach(KeyValuePair<string, string> entry in properties)
+            {
+                getProperties().setProperty(entry.Key, entry.Value);
+            }
+
+            return instance_.objectAdapterFactory().createObjectAdapter(name, router);
         }
         
         public void addObjectFactory(ObjectFactory factory, string id)
@@ -119,16 +144,6 @@ namespace Ice
             instance_.setDefaultLocator(locator);
         }
         
-        public Dictionary<string, string> getDefaultContext()
-        {
-            return instance_.getDefaultContext();
-        }
-        
-        public void setDefaultContext(Dictionary<string, string> ctx)
-        {
-            instance_.setDefaultContext(ctx);
-        }
-
         public ImplicitContext getImplicitContext()
         {
             return instance_.getImplicitContext();
@@ -141,7 +156,52 @@ namespace Ice
 
         public void flushBatchRequests()
         {
-            instance_.flushBatchRequests();
+            AsyncResult r = begin_flushBatchRequests();
+            end_flushBatchRequests(r);
+        }
+
+        public AsyncResult begin_flushBatchRequests()
+        {
+            return begin_flushBatchRequests(null, null);
+        }
+
+        private const string __flushBatchRequests_name = "flushBatchRequests";
+
+        public AsyncResult begin_flushBatchRequests(AsyncCallback cb, object cookie)
+        {
+            IceInternal.OutgoingConnectionFactory connectionFactory = instance_.outgoingConnectionFactory();
+            IceInternal.ObjectAdapterFactory adapterFactory = instance_.objectAdapterFactory();
+
+            //
+            // This callback object receives the results of all invocations
+            // of Connection.begin_flushBatchRequests.
+            //
+            IceInternal.CommunicatorBatchOutgoingAsync result =
+                new IceInternal.CommunicatorBatchOutgoingAsync(this, instance_, __flushBatchRequests_name, cookie);
+
+            if(cb != null)
+            {
+                result.whenCompletedWithAsyncCallback(cb);
+            }
+
+            connectionFactory.flushAsyncBatchRequests(result);
+            adapterFactory.flushAsyncBatchRequests(result);
+
+            //
+            // Inform the callback that we have finished initiating all of the
+            // flush requests. If all of the requests have already completed,
+            // the callback is invoked now.
+            //
+            result.ready();
+
+            return result;
+        }
+
+        public void end_flushBatchRequests(AsyncResult result)
+        {
+            IceInternal.OutgoingAsyncBase outAsync = (IceInternal.OutgoingAsyncBase)result;
+            IceInternal.OutgoingAsyncBase.check__(outAsync, this, __flushBatchRequests_name);
+            outAsync.wait__();
         }
         
         public Ice.ObjectPrx 

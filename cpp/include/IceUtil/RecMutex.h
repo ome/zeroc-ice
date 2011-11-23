@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@
 #include <IceUtil/Config.h>
 #include <IceUtil/Lock.h>
 #include <IceUtil/ThreadException.h>
+#include <IceUtil/MutexProtocol.h>
 
 namespace IceUtil
 {
@@ -36,6 +37,7 @@ public:
     typedef TryLockT<RecMutex> TryLock;
 
     RecMutex();
+    RecMutex(const MutexProtocol);
     ~RecMutex();
 
     //
@@ -67,6 +69,7 @@ public:
 
 private:
 
+    void init(const MutexProtocol);
     // noncopyable
     RecMutex(const RecMutex&);
     void operator=(const RecMutex&);

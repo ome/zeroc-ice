@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -8,6 +8,10 @@
 # **********************************************************************
 
 import Ice, Test
+
+def test(b):
+    if not b:
+        raise RuntimeError('test assertion failed')
 
 class MyDerivedClassI(Test.MyDerivedClass):
     def shutdown(self, current=None):
@@ -154,6 +158,12 @@ class MyDerivedClassI(Test.MyDerivedClass):
         r.update(p2)
         return (r, p3)
 
+    def opMyEnumStringD(self, p1, p2, current=None):
+        p3 = p1.copy()
+        r = p1.copy()
+        r.update(p2)
+        return (r, p3)
+
     def opMyStructMyEnumD(self, p1, p2, current=None):
         p3 = p1.copy()
         r = p1.copy()
@@ -168,6 +178,12 @@ class MyDerivedClassI(Test.MyDerivedClass):
 
     def opContext(self, current=None):
         return current.ctx
+
+    def opDoubleMarshaling(self, p1, p2, current=None):
+        d = 1278312346.0 / 13.0;
+        test(p1 == d)
+        for i in p2:
+            test(i == d)
 
     def opDerived(self, current=None):
         pass

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,10 +15,10 @@ import javax.swing.SwingUtilities;
 
 public class Logger extends Ice.LoggerI
 {
-    public 
+    public
     Logger(JFrame mainFrame)
     {
-        super("IceGrid Admin");
+        super("IceGrid Admin", "");
 
         _mainFrame = mainFrame;
     }
@@ -26,7 +26,7 @@ public class Logger extends Ice.LoggerI
     public void
     warning(final String message)
     {
-        SwingUtilities.invokeLater(new Runnable() 
+        SwingUtilities.invokeLater(new Runnable()
             {
                 public void run()
                 {
@@ -42,7 +42,7 @@ public class Logger extends Ice.LoggerI
     public void
     error(final String message)
     {
-        SwingUtilities.invokeLater(new Runnable() 
+        SwingUtilities.invokeLater(new Runnable()
             {
                 public void run()
                 {

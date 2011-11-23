@@ -1,7 +1,7 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
@@ -20,27 +20,6 @@
 
     <!-- Load build configuration properties -->
     <property file="${top.dir}/config/build.properties"/>
-
-    <!-- Check which Ice language mapping we're supposed to build, "java2" or "java5" -->
-    <condition property="ice.mapping" value="java5">
-      <not><isset property="ice.mapping"/></not>
-    </condition>
-    <fail message="Invalid ${ice.mapping} value specified in build.properties.">
-      <condition>
-        <and>
-          <not><equals arg1="${ice.mapping}" arg2="java2" trim="true"/></not>
-          <not><equals arg1="${ice.mapping}" arg2="java5" trim="true"/></not>
-        </and>
-      </condition>
-    </fail>
-    <condition property="java2">
-        <equals arg1="${ice.mapping}" arg2="java2"/>
-    </condition>
-
-    <!-- Use the global metadata "java:java2" when using java2 mapping -->
-    <condition property="java2metadata" value="java:java2" else="">
-        <isset property="java2"/>
-    </condition>
 
     <!-- Use -Xlint when requested -->
     <condition property="javac.lint" value="-Xlint:${lint}" else="-Xlint:none">
@@ -103,6 +82,15 @@
             <not><isset property="ice.bin.dist"/></not>
         </and>
     </condition>
+    <condition property="ice.dir" value="${ice.top.dir}/ice">
+        <and>
+            <!-- Don't just look for ${ice.top.dir}/ice/java - we want to make sure we are really
+                 in a source distribution. -->
+            <not><isset property="ice.dir"/></not>
+            <available file="${ice.top.dir}/ice/java/src/Ice/Util.java"/>
+            <not><isset property="ice.bin.dist"/></not>
+        </and>
+    </condition>
     <!-- When building a source distribution, we allow using either the
          translators from a binary distribution or the local translators, -->
     <condition property="ice.cpp.dir" value="${ice.home}">
@@ -158,11 +146,19 @@
           <available file="/usr/bin/${slice.translator}"/>
         </and>
     </condition>
-    <condition property="ice.dir" value="C:\Ice-${ice.version}">
+    <condition property="ice.dir" value="C:\Program Files\ZeroC\Ice-${ice.version}">
         <and>
             <os family="windows"/>
             <not><isset property="ice.dir"/></not>
-            <available file="C:\Ice-${ice.version}\bin\${slice.translator}"/>
+            <available file="C:\Program Files\ZeroC\Ice-${ice.version}\bin\${slice.translator}"/>
+        </and>
+    </condition>
+    <condition property="ice.dir" value="C:\Program Files (x86)\ZeroC\Ice-${ice.version}">
+        <and>
+            <!-- We can't check for PROCESSOR_ARCHITECTURE because it's set to x86 by ant even on AMD64 platforms. -->
+            <os family="windows"/>
+            <not><isset property="ice.dir"/></not>
+            <available file="C:\Program Files (x86)\ZeroC\Ice-${ice.version}\bin\${slice.translator}"/>
         </and>
     </condition>
     <condition property="ice.dir" value="/opt/Ice-${ice.version}">
@@ -213,7 +209,7 @@
     </condition>
 
     <path id="db.classpath">
-        <pathelement path="${db.jar.file}"/>
+        <pathelement location="${db.jar.file}"/>
     </path>
 
     <target name="config-init-warn" if="ice.warn.duplicate.translator">
@@ -244,21 +240,6 @@
             </and>
         </condition>
 
-        <condition property="dist.jar.file" value="${dist.lib.dir}/Ice-java2-${ice.version}.jar">
-            <and>
-                <available file="${dist.lib.dir}/Ice-java2-${ice.version}.jar"/>
-                <isset property="java2"/>
-            </and>
-        </condition>
-
-        <condition property="dist.jar.file" value="${dist.lib.dir}/java2/Ice.jar">
-            <and>
-                <not><isset property="dist.jar.file"/></not>
-                <available file="${dist.lib.dir}/java2/Ice.jar"/>
-                <isset property="java2"/>
-            </and>
-        </condition>
-
         <condition property="dist.jar.file" value="${dist.lib.dir}/Ice-${ice.version}.jar">
             <and>
                 <not><isset property="dist.jar.file"/></not>
@@ -274,7 +255,27 @@
         </condition>
 
         <path id="ice.classpath">
-            <fileset file="${dist.jar.file}"/>
+            <pathelement location="${dist.jar.file}"/>
+        </path>
+
+        <!-- Set freeze.classpath with the distribution Freeze.jar file -->
+        <condition property="freeze.jar.file" value="${dist.lib.dir}/Freeze-${ice.version}.jar">
+            <and>
+                <not><isset property="freeze.jar.file"/></not>
+                <available file="${dist.lib.dir}/Freeze-${ice.version}.jar"/>
+            </and>
+        </condition>
+
+        <condition property="freeze.jar.file" value="${dist.lib.dir}/Freeze.jar">
+            <and>
+                <not><isset property="freeze.jar.file"/></not>
+                <available file="${dist.lib.dir}/Freeze.jar"/>
+            </and>
+        </condition>
+
+        <path id="freeze.classpath">
+            <pathelement location="${freeze.jar.file}"/>
+            <path refid="db.classpath"/>
         </path>
 
         <condition property="certs.dir" value="${ice.top.dir}/certs" else="${ice.top.dir}/../certs">

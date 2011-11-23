@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,7 +12,6 @@
 #include <IceUtil/ScopedArray.h>
 #include <IceUtil/Unicode.h>
 #include <IcePatch2/FileServerI.h>
-#include <OS.h>
 
 #ifdef _WIN32
 #   include <io.h>
@@ -92,7 +91,7 @@ IcePatch2::FileServerI::getFileCompressed_async(const AMD_FileServer_getFileComp
         return;
     }
 
-    int fd = OS::open(_dataDir + '/' + path + ".bz2", O_RDONLY|O_BINARY);
+    int fd = IceUtilInternal::open(_dataDir + '/' + path + ".bz2", O_RDONLY|O_BINARY);
     if(fd == -1)
     {
         FileAccessException ex;
@@ -109,11 +108,7 @@ IcePatch2::FileServerI::getFileCompressed_async(const AMD_FileServer_getFileComp
 #endif
         != static_cast<off_t>(pos))
     {
-#if defined(_MSC_VER) && (_MSC_VER >= 1400)
-        _close(fd);
-#else
-        close(fd);
-#endif
+        IceUtilInternal::close(fd);
 
         ostringstream posStr;
         posStr << pos;
@@ -124,7 +119,7 @@ IcePatch2::FileServerI::getFileCompressed_async(const AMD_FileServer_getFileComp
         return;
     }
 
-    IceUtilInternal::ScopedArray<Byte> bytes(new Byte[num]);
+    IceUtil::ScopedArray<Byte> bytes(new Byte[num]);
 #ifdef _WIN32
     int r;
     if((r =
@@ -139,11 +134,7 @@ IcePatch2::FileServerI::getFileCompressed_async(const AMD_FileServer_getFileComp
     if((r = read(fd, bytes.get(), static_cast<size_t>(num))) == -1)
 #endif
     {
-#if defined(_MSC_VER) && (_MSC_VER >= 1400)
-        _close(fd);
-#else
-        close(fd);
-#endif
+        IceUtilInternal::close(fd);
 
         FileAccessException ex;
         ex.reason = "cannot read `" + path + "': " + strerror(errno);
@@ -151,11 +142,7 @@ IcePatch2::FileServerI::getFileCompressed_async(const AMD_FileServer_getFileComp
         return;
     }
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1400)
-    _close(fd);
-#else
-    close(fd);
-#endif
+    IceUtilInternal::close(fd);
 
     ret.first = bytes.get();
     ret.second = ret.first + r;

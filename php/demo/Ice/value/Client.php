@@ -1,14 +1,17 @@
 <?php
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-Ice_loadProfile();
+require 'Ice.php';
+require 'Value.php';
+
+$ICE = Ice_initialize();
 
 class PrinterI extends Demo_Printer
 {
@@ -35,12 +38,12 @@ class ObjectFactory implements Ice_ObjectFactory
 {
     function create($type)
     {
-        if($type == "::Demo::Printer")
+        if($type == Demo_Printer::ice_staticId())
         {
             return new PrinterI;
         }
 
-        if($type == "::Demo::DerivedPrinter")
+        if($type == Demo_DerivedPrinter::ice_staticId())
         {
             return new DerivedPrinterI;
         }
@@ -57,7 +60,7 @@ class ObjectFactory implements Ice_ObjectFactory
 try
 {
     $base = $ICE->stringToProxy("initial:default -p 10000");
-    $initial = $base->ice_checkedCast("::Demo::Initial");
+    $initial = Demo_InitialPrxHelper::checkedCast($base);
 
     echo "\n";
     echo "Let's first transfer a simple object, for a class without\n";
@@ -94,7 +97,7 @@ try
     fgets(STDIN);
 
     $factory = new ObjectFactory;
-    $ICE->addObjectFactory($factory, "::Demo::Printer");
+    $ICE->addObjectFactory($factory, Demo_Printer::ice_staticId());
 
     $initial->getPrinter($printer, $printerProxy);
     echo "==> ",$printer->message,"\n";
@@ -125,7 +128,7 @@ try
     fgets(STDIN);
 
     $derivedAsBase = $initial->getDerivedPrinter();
-    echo "==> The type ID of the received object is \"",get_class($derivedAsBase),"\"\n";
+    echo "==> The class of the received object is \"",get_class($derivedAsBase),"\"\n";
     assert($derivedAsBase instanceof Demo_Printer);
 
     echo "\n";
@@ -135,13 +138,13 @@ try
     echo "[press enter]\n";
     fgets(STDIN);
 
-    $ICE->addObjectFactory($factory, "::Demo::DerivedPrinter");
+    $ICE->addObjectFactory($factory, Demo_DerivedPrinter::ice_staticId());
 
     $derivedAsBase = $initial->getDerivedPrinter();
     assert($derivedAsBase instanceof Demo_DerivedPrinter);
     $derived = $derivedAsBase;
     echo "==> dynamic_cast<> to derived object succeeded\n";
-    echo "==> The type ID of the received object is \"",get_class($derived),"\"\n";
+    echo "==> The class of the received object is \"",get_class($derived),"\"\n";
 
     echo "\n";
     echo "Let's print the message contained in the derived object, and\n";

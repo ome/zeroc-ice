@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -17,7 +17,10 @@ TARGETS		= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(li
 
 OBJS		= Communicator.o \
 		  Connection.o \
+		  ConnectionInfo.o \
 		  Current.o \
+		  Endpoint.o \
+		  EndpointInfo.o \
 		  ImplicitContext.o \
 		  Init.o \
 		  Logger.o \

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,6 +23,8 @@ IceInternal::DefaultsAndOverrides::DefaultsAndOverrides(const PropertiesPtr& pro
     overrideTimeoutValue(-1),
     overrideConnectTimeout(false),
     overrideConnectTimeoutValue(-1),
+    overrideCloseTimeout(false),
+    overrideCloseTimeoutValue(-1),
     overrideCompress(false),
     overrideCompressValue(false),
     overrideSecure(false),
@@ -46,6 +48,13 @@ IceInternal::DefaultsAndOverrides::DefaultsAndOverrides(const PropertiesPtr& pro
     {
         const_cast<bool&>(overrideConnectTimeout) = true;
         const_cast<Int&>(overrideConnectTimeoutValue) = properties->getPropertyAsInt("Ice.Override.ConnectTimeout");
+    }
+
+    value = properties->getProperty("Ice.Override.CloseTimeout");
+    if(!value.empty())
+    {
+        const_cast<bool&>(overrideCloseTimeout) = true;
+        const_cast<Int&>(overrideCloseTimeoutValue) = properties->getPropertyAsInt("Ice.Override.CloseTimeout");
     }
 
     value = properties->getProperty("Ice.Override.Compress");
@@ -77,7 +86,7 @@ IceInternal::DefaultsAndOverrides::DefaultsAndOverrides(const PropertiesPtr& pro
     else
     {
         EndpointSelectionTypeParseException ex(__FILE__, __LINE__);
-        ex.str = value;
+        ex.str = "illegal value `" + value + "'; expected `Random' or `Ordered'";
         throw ex;
     }
 

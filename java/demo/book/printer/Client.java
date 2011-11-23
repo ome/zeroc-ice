@@ -1,40 +1,49 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-public class Client {
+public class Client
+{
     public static void
     main(String[] args)
     {
         int status = 0;
         Ice.Communicator ic = null;
-        try {
+        try
+        {
             ic = Ice.Util.initialize(args);
-            Ice.ObjectPrx base = ic.stringToProxy(
-                    "SimplePrinter:default -p 10000");
+            Ice.ObjectPrx base = ic.stringToProxy("SimplePrinter:default -p 10000");
             Demo.PrinterPrx printer = Demo.PrinterPrxHelper.checkedCast(base);
-            if (printer == null)
+            if(printer == null)
+            {
                 throw new Error("Invalid proxy");
+            }
 
             printer.printString("Hello World!");
-        } catch (Ice.LocalException e) {
+        }
+        catch(Ice.LocalException e)
+        {
             e.printStackTrace();
             status = 1;
-        } catch (Exception e) {
+        }
+        catch(Exception e)
+        {
             System.err.println(e.getMessage());
             status = 1;
         }
-        if (ic != null) {
-            // Clean up
-            //
-            try {
+        if(ic != null)
+        {
+            try
+            {
                 ic.destroy();
-            } catch (Exception e) {
+            }
+            catch(Exception e)
+            {
                 System.err.println(e.getMessage());
                 status = 1;
             }

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -45,7 +45,16 @@ else
     RUBY = ruby
 endif
 
-RUBY_INCLUDE_DIR	= $(shell $(RUBY) -e 'require "rbconfig"; puts Config::expand("$$(archdir)")')
+RUBY_MAJOR_VERSION	= $(shell $(RUBY) -e 'require "rbconfig"; puts Config::expand("$$(MAJOR)")')
+RUBY_MINOR_VERSION	= $(shell $(RUBY) -e 'require "rbconfig"; puts Config::expand("$$(MINOR)")')
+
+ifeq ("$(RUBY_MAJOR_VERSION).$(RUBY_MINOR_VERSION)", "1.8")
+    RUBY_FLAGS		= -I$(shell $(RUBY) -e 'require "rbconfig"; puts Config::expand("$$(archdir)")')
+else
+    RUBY_FLAGS		= -I$(shell $(RUBY) -e 'require "rbconfig"; puts Config::expand("$$(rubyhdrdir)")') \
+                          -I$(shell $(RUBY) -e 'require "rbconfig"; puts Config::expand("$$(rubyhdrdir)/$$(arch)")')
+endif
+
 RUBY_LIB_DIR		= $(shell $(RUBY) -e 'require "rbconfig"; puts Config::expand("$$(libdir)")')
 
 RUBY_SHARED		= $(shell $(RUBY) -e 'require "rbconfig"; puts Config::MAKEFILE_CONFIG["ENABLE_SHARED"]')
@@ -56,8 +65,16 @@ else
     RUBY_LIB		= $(shell $(RUBY) -e 'require "rbconfig"; puts Config::expand("-l$$(RUBY_SO_NAME)-static")')
 endif
 
-RUBY_FLAGS		= -I$(RUBY_INCLUDE_DIR)
 RUBY_LIBS		= -L$(RUBY_LIB_DIR) $(RUBY_LIB)
+
+#
+# The build architectures for gcc based builds. The format of these
+# build flags are OS dependent. For example, under Mac OS X to build
+# binaries which support both i386 and x86_64 you would use "-arch
+# i386 -arch x86_64".  The default is OS version dependent. Be aware
+# that this value may conflict with the setting of LP64 above.
+#
+#CXXARCHFLAGS                = -arch i386 -arch x86_64
 
 # ----------------------------------------------------------------------
 # Don't change anything below this line!
@@ -115,12 +132,15 @@ LDFLAGS			= $(LDPLATFORMFLAGS) $(CXXFLAGS) -L$(libdir)
 
 ifdef ice_src_dist
     ifeq ($(ice_cpp_dir), $(ice_dir)/cpp)
-        SLICE2RB = $(ice_cpp_dir)/bin/slice2rb
+        SLICE2RB 	= $(ice_cpp_dir)/bin/slice2rb
+	SLICEPARSERLIB	= $(ice_cpp_dir)/lib/$(call mklibfilename,Slice,$(VERSION))
     else
-        SLICE2RB = $(ice_cpp_dir)/$(binsubdir)/slice2rb
+        SLICE2RB 	= $(ice_cpp_dir)/$(binsubdir)/slice2rb
+	SLICEPARSERLIB	= $(ice_cpp_dir)/$(libsubdir)/$(call mklibfilename,Slice,$(VERSION))
     endif
 else
-    SLICE2RB = $(ice_dir)/$(binsubdir)/slice2rb
+    SLICE2RB 		= $(ice_dir)/$(binsubdir)/slice2rb
+    SLICEPARSERLIB	= $(ice_dir)/$(libsubdir)/$(call mklibfilename,Slice,$(VERSION))
 endif
 
 #
@@ -151,11 +171,13 @@ clean::
 
 all:: $(SRCS) $(TARGETS)
 
-depend:: $(SRCS) $(SLICE_SRCS)
-	-rm -f .depend
+ifneq ($(SRCS),)
+depend:: $(SRCS)
+	-rm -f .depend .depend.mak
 	if test -n "$(SRCS)" ; then \
-	    $(CXX) -DMAKEDEPEND -M $(CXXFLAGS) $(CPPFLAGS) $(SRCS) | $(ice_dir)/config/makedepend.py >> .depend; \
+	    $(CXX) -DMAKEDEPEND -M $(CXXFLAGS) $(CPPFLAGS) $(SRCS) | $(ice_dir)/config/makedepend.py; \
 	fi
+endif
 
 ifneq ($(TEMPLATE_REPOSITORY),)
 clean::

@@ -1,27 +1,33 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-public final class CBI extends Test.MB.CB
+package test.Ice.inheritance;
+
+import test.Ice.inheritance.Test.MA.CAPrx;
+import test.Ice.inheritance.Test.MB.CB;
+import test.Ice.inheritance.Test.MB.CBPrx;
+
+public final class CBI extends CB
 {
     public
     CBI()
     {
     }
 
-    public Test.MA.CAPrx
-    caop(Test.MA.CAPrx p, Ice.Current current)
+    public CAPrx
+    caop(CAPrx p, Ice.Current current)
     {
         return p;
     }
 
-    public Test.MB.CBPrx
-    cbop(Test.MB.CBPrx p, Ice.Current current)
+    public CBPrx
+    cbop(CBPrx p, Ice.Current current)
     {
         return p;
     }

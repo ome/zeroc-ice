@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -60,6 +60,14 @@ public:
     // EXIT_SUCCESS.
     //
     int main(int&, char*[], const InitializationData& = InitializationData());
+    int main(int, char* const [], const Ice::InitializationData& = Ice::InitializationData());
+
+#ifdef _WIN32
+
+    int main(int&, wchar_t*[], const InitializationData& = InitializationData());
+
+#endif
+
     int main(StringSeq&, const InitializationData& = InitializationData());
 
     //
@@ -162,7 +170,7 @@ protected:
     // Prepare a service for execution, including the creation and
     // activation of object adapters and servants.
     //
-    virtual bool start(int, char*[]) = 0;
+    virtual bool start(int, char*[], int&) = 0;
 
     //
     // Blocks until the service shuts down. The default implementation

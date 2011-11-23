@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -106,6 +106,65 @@ public class Client
             }
         }
 
+        System.Console.Out.WriteLine("ok");
+
+        System.Console.Out.Write("checking string splitting... ");
+        System.Console.Out.Flush();
+        {
+            string[] arr;
+
+            arr = IceUtilInternal.StringUtil.splitString("", "");
+            test(arr.Length == 0);
+            arr = IceUtilInternal.StringUtil.splitString("", ":");
+            test(arr.Length == 0);
+            arr = IceUtilInternal.StringUtil.splitString("a", "");
+            test(arr.Length == 1 && arr[0].Equals("a"));
+            arr = IceUtilInternal.StringUtil.splitString("a", ":");
+            test(arr.Length == 1 && arr[0].Equals("a"));
+            arr = IceUtilInternal.StringUtil.splitString("ab", "");
+            test(arr.Length == 1 && arr[0].Equals("ab"));
+            arr = IceUtilInternal.StringUtil.splitString("ab:", ":");
+            test(arr.Length == 1 && arr[0].Equals("ab"));
+            arr = IceUtilInternal.StringUtil.splitString(":ab", ":");
+            test(arr.Length == 1 && arr[0].Equals("ab"));
+            arr = IceUtilInternal.StringUtil.splitString("a:b", ":");
+            test(arr.Length == 2 && arr[0].Equals("a") && arr[1].Equals("b"));
+            arr = IceUtilInternal.StringUtil.splitString(":a:b:", ":");
+            test(arr.Length == 2 && arr[0].Equals("a") && arr[1].Equals("b"));
+                 
+            arr = IceUtilInternal.StringUtil.splitString("\"a\"", ":");
+            test(arr.Length == 1 && arr[0].Equals("a"));
+            arr = IceUtilInternal.StringUtil.splitString("\"a\":b", ":");
+            test(arr.Length == 2 && arr[0].Equals("a") && arr[1].Equals("b"));
+            arr = IceUtilInternal.StringUtil.splitString("\"a\":\"b\"", ":");
+            test(arr.Length == 2 && arr[0].Equals("a") && arr[1].Equals("b"));
+            arr = IceUtilInternal.StringUtil.splitString("\"a:b\"", ":");
+            test(arr.Length == 1 && arr[0].Equals("a:b"));
+            arr = IceUtilInternal.StringUtil.splitString("a=\"a:b\"", ":");
+            test(arr.Length == 1 && arr[0].Equals("a=a:b"));
+
+            arr = IceUtilInternal.StringUtil.splitString("'a'", ":");
+            test(arr.Length == 1 && arr[0].Equals("a"));
+            arr = IceUtilInternal.StringUtil.splitString("'\"a'", ":");
+            test(arr.Length == 1 && arr[0].Equals("\"a"));
+            arr = IceUtilInternal.StringUtil.splitString("\"'a\"", ":");
+            test(arr.Length == 1 && arr[0].Equals("'a"));
+            
+            arr = IceUtilInternal.StringUtil.splitString("a\\'b", ":");
+            test(arr.Length == 1 && arr[0].Equals("a'b"));
+            arr = IceUtilInternal.StringUtil.splitString("'a:b\\'c'", ":");
+            test(arr.Length == 1 && arr[0].Equals("a:b'c"));
+            arr = IceUtilInternal.StringUtil.splitString("a\\\"b", ":");
+            test(arr.Length == 1 && arr[0].Equals("a\"b"));
+            arr = IceUtilInternal.StringUtil.splitString("\"a:b\\\"c\"", ":");
+            test(arr.Length == 1 && arr[0].Equals("a:b\"c"));
+            arr = IceUtilInternal.StringUtil.splitString("'a:b\"c'", ":");
+            test(arr.Length == 1 && arr[0].Equals("a:b\"c"));
+            arr = IceUtilInternal.StringUtil.splitString("\"a:b'c\"", ":");
+            test(arr.Length == 1 && arr[0].Equals("a:b'c"));
+
+            test(IceUtilInternal.StringUtil.splitString("a\"b", ":") == null);
+        }
         System.Console.Out.WriteLine("ok");
     }
 }

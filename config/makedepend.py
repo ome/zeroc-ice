@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
-import sys, os, fileinput, re, string
+import sys, os, fileinput, re, string, getopt
 
 previous = ""
 
@@ -24,7 +24,27 @@ else:
 subincludedir = top_srcdir + "/include"
 subcppincludedir = top_srcdir + "/../cpp/include"
 
-for line in fileinput.input():
+try:
+    opts, args = getopt.getopt(sys.argv[1:], "n", ["nmake"])
+except getopt.GetoptError:
+    raise "invalid arguments"
+
+prefix = None
+if len(args) > 0:
+    prefix = args[0]
+
+nmake = False
+for o, a in opts:
+    if o in ("-n", "--nmake"):
+        nmake = True
+
+depend = None
+if not nmake:
+    depend = open(".depend", "a")
+dependmak = open(".depend.mak", "a")
+
+lang = None
+for line in fileinput.input("-"):
     line = line.strip()
 
     if commentre.search(line, 0):
@@ -48,23 +68,76 @@ for line in fileinput.input():
         if(s[0] == "/"):
             continue
 
+        if s.endswith(".cs:"):
+            lang = "cs"
+            s = "generated/" + s
+            if depend:
+                print >>depend, s,
+            print >>dependmak, s,
+            continue
+
+        if s.endswith(".cpp:"):
+            lang = "cpp"
+
+        if s.endswith(".rb:") and prefix != None:
+            s = prefix + "/" + s
+            if depend:
+                print >>depend, s,
+            print >>dependmak, s,
+            continue
+
+        if s.endswith(".php:"):
+            lang = "php"
+            if prefix != None:
+                s = prefix + "/" + s
+                if depend:
+                    print >>depend, s,
+                print >>dependmak, s,
+                continue
+
         if s.startswith(subincludedir):
             s = "$(includedir)" + s[len(subincludedir):]
-            print s,
+            if depend:
+                print >>depend, s,
+            print >>dependmak, '"' + s + '"',
             continue
 
         if s.startswith(subcppincludedir):
             s = "$(ice_cpp_dir)/include" + s[len(subcppincludedir):]
-            print s,
+            if depend:
+                print >>depend, s,
+            print >>dependmak, '"' + s + '"',
             continue
 
         idx = s.find("./slice")
         if idx >= 0:
             s = "$(slicedir)" + s[idx + 7:]
-            print s,
+            if depend:
+                print >>depend, s,
+            print >>dependmak, '"' + s + '"',
             continue
 
-        print s,
+        if depend:
+            print >>depend, s,
+        print >>dependmak, s,
 
-    print
-            
+    if lang == "cpp":
+        if depend:
+            print >>depend, "$(SLICE2CPP) $(SLICEPARSERLIB)"
+        print >>dependmak, "\"$(SLICE2CPP)\" \"$(SLICEPARSERLIB)\""
+    elif lang == "cs":
+        if depend:
+            print >>depend, "$(SLICE2CS) $(SLICEPARSERLIB)"
+        print >>dependmak, "\"$(SLICE2CS)\" \"$(SLICEPARSERLIB)\""
+    elif lang == "php":
+        if depend:
+            print >>depend, "$(SLICE2PHP) $(SLICEPARSERLIB)"
+        print >>dependmak, "\"$(SLICE2PHP)\" \"$(SLICEPARSERLIB)\""
+    else:
+        if depend:
+            print >>depend
+        print >>dependmak
+
+if depend:
+    depend.close()
+dependmak.close()

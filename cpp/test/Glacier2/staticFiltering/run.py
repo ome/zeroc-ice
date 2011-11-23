@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -24,6 +24,15 @@ hostname = socket.gethostname()
 fqdn = socket.getfqdn()
 
 limitedTests = False
+
+router = TestUtil.getGlacier2Router()
+clientCmd = os.path.join(os.getcwd(), 'client')
+serverCmd = os.path.join(os.getcwd(), 'server')
+
+targets = []
+if TestUtil.appverifier:
+    targets = [serverCmd, clientCmd, router]
+    TestUtil.setAppVerifierSettings(targets)
 
 # 
 # Try and figure out what tests are reasonable with this host's
@@ -223,8 +232,6 @@ elif len(testcases) < 6:
     print "WARNING: The network configuration for this host does not permit all "
     print "         tests to run correctly, some tests have been disabled."
 
-router = os.path.join(TestUtil.getCppBinDir(), "glacier2router")
-
 def pingProgress():
     sys.stdout.write('.')
     sys.stdout.flush()
@@ -272,9 +279,9 @@ for testcase in testcases:
     # these tests.
     #
 
-    routerArgs = " --Ice.Config=" + os.path.join(os.getcwd(), "router.cfg") + \
-          ' --Glacier2.Client.Endpoints="default -p 12347 -t 60000"' + \
-          ' --Ice.Admin.Endpoints="tcp -h 127.0.0.1 -p 12348 -t 60000"' + \
+    routerArgs = ' --Ice.Config="' + os.path.join(os.getcwd(), "router.cfg") + '"' + \
+          ' --Glacier2.Client.Endpoints="default -p 12347"' + \
+          ' --Ice.Admin.Endpoints="tcp -h 127.0.0.1 -p 12348"' + \
           ' --Ice.Admin.InstanceName=Glacier2' + \
           ' --Glacier2.CryptPasswords="'  + os.path.join(os.getcwd(), "passwords") + '"'
 
@@ -321,13 +328,12 @@ for testcase in testcases:
 
     if TestUtil.protocol != "ssl":
         serverConfig = file(os.path.join(os.getcwd(), "server.cfg"), "w")
-        serverOptions = ' --Ice.Config=' + os.path.join(os.getcwd(), "server.cfg") + " " 
-        serverConfig.write("BackendAdapter.Endpoints=tcp -p 12010 -t 20000\n")
+        serverOptions = ' --Ice.Config="' + os.path.join(os.getcwd(), "server.cfg") + '" ' 
+        serverConfig.write("BackendAdapter.Endpoints=tcp -p 12010\n")
         serverConfig.close()
     else:
         serverOptions = ""
 
-    serverCmd = os.path.join(os.getcwd(), 'server')
     serverDriver = TestUtil.DriverConfig("server")
     if serverDriver.host == "127.0.0.1":
         serverDriver.host = None
@@ -342,13 +348,15 @@ for testcase in testcases:
     # The client is responsible for reporting success or failure. A test
     # failure will result in an assertion and the test will abort.
     #
-    clientCmd = os.path.join(os.getcwd(), 'client')
     clientDriver = TestUtil.DriverConfig("client")
     if clientDriver.host == "127.0.0.1":
         clientDriver.host = None
     clientDriver.host = commonClientOptions
-    clientArgs = " --Ice.Config=" + os.path.join(os.getcwd(), 'attack.cfg') + " "
+    clientArgs = ' --Ice.Config="%s"' % os.path.join(os.getcwd(), 'attack.cfg')
     clientProc = TestUtil.startClient(clientCmd, clientArgs, clientDriver)
     clientProc.waitTestSuccess()
     serverProc.waitTestSuccess()
     starterProc.waitTestSuccess()
+
+if TestUtil.appverifier:
+    TestUtil.appVerifierAfterTestEnd(targets)

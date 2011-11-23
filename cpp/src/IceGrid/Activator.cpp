@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,6 @@
 #   include <sys/wait.h>
 #   include <signal.h>
 #else
-#   include <direct.h> // For _getcwd
 #ifndef SIGKILL
 #   define SIGKILL 9
 #endif
@@ -40,7 +39,10 @@
 
 using namespace std;
 using namespace Ice;
+using namespace IceInternal;
 using namespace IceGrid;
+
+#define ICE_STRING(X) #X
 
 namespace IceGrid
 {
@@ -50,6 +52,7 @@ class TerminationListenerThread : public IceUtil::Thread
 public:
 
     TerminationListenerThread(Activator& activator) :
+        IceUtil::Thread("IceGrid termination listener thread"),
         _activator(activator)
     {
     }
@@ -64,13 +67,6 @@ private:
     
     Activator& _activator;
 };
-
-}
-
-#define ICE_STRING(X) #X
-
-namespace IceGrid
-{
 
 #ifndef _WIN32
 //
@@ -266,6 +262,21 @@ stringToSignal(const string& str)
     }
 }
 
+#ifdef _WIN32
+struct UnicodeStringLess
+{
+
+bool
+operator()(const wstring& lhs, const wstring& rhs) const
+{
+    int r = CompareStringW(LOCALE_INVARIANT, NORM_IGNORECASE, lhs.c_str(), -1, rhs.c_str(), -1);
+    assert(r > 0);
+    return r == CSTR_LESS_THAN;
+}
+
+};
+#endif
+
 }
 
 Activator::Activator(const TraceLevelsPtr& traceLevels) :
@@ -353,10 +364,10 @@ Activator::activate(const string& name,
             //
             // Get the absolute pathname of the executable.
             //
-            char absbuf[_MAX_PATH];
-            char* filePart;
-            string ext = path.size() <= 4 || path[path.size() - 4] != '.' ? ".exe" : "";
-            if(SearchPath(NULL, path.c_str(), ext.c_str(), _MAX_PATH, absbuf, &filePart) == 0)
+            wchar_t absbuf[_MAX_PATH];
+            wchar_t* fPart;
+            wstring ext = path.size() <= 4 || path[path.size() - 4] != '.' ? L".exe" : L"";
+            if(SearchPathW(NULL, IceUtil::stringToWstring(path).c_str(), ext.c_str(), _MAX_PATH, absbuf, &fPart) == 0)
             {
                 if(_traceLevels->activator > 0)
                 {
@@ -365,7 +376,7 @@ Activator::activate(const string& name,
                 }
                 throw string("Couldn't find `" + path + "' executable.");
             }
-            path = absbuf;
+            path = IceUtil::wstringToString(absbuf);
         }
         else if(!pwd.empty())
         {
@@ -378,8 +389,8 @@ Activator::activate(const string& name,
     //
     if(!pwd.empty())
     {
-        char absbuf[_MAX_PATH];
-        if(_fullpath(absbuf, pwd.c_str(), _MAX_PATH) == NULL)
+        wchar_t absbuf[_MAX_PATH];
+        if(_wfullpath(absbuf, IceUtil::stringToWstring(pwd).c_str(), _MAX_PATH) == NULL)
         {
             if(_traceLevels->activator > 0)
             {
@@ -388,7 +399,7 @@ Activator::activate(const string& name,
             }
             throw string("The server working directory path `" + pwd + "' can't be converted into an absolute path.");
         }
-        pwd = absbuf;
+        pwd = IceUtil::wstringToString(absbuf);
     }
 #endif
 
@@ -398,7 +409,7 @@ Activator::activate(const string& name,
     StringSeq args;
     args.push_back(path);
     args.insert(args.end(), options.begin(), options.end());
-    
+
     if(_traceLevels->activator > 0)
     {
         Ice::Trace out(_traceLevels->logger, _traceLevels->activatorCat);
@@ -409,15 +420,10 @@ Activator::activate(const string& name,
             out << "path = " << path << "\n";
             if(pwd.empty())
             {
-#ifdef _WIN32
-                char cwd[_MAX_PATH];
-                if(_getcwd(cwd, _MAX_PATH) != NULL)
-#else
-                char cwd[PATH_MAX];
-                if(getcwd(cwd, PATH_MAX) != NULL)
-#endif
+                string cwd;
+                if(IceUtilInternal::getcwd(cwd) == 0)
                 {
-                    out << "pwd = " << string(cwd) << "\n";
+                    out << "pwd = " << cwd << "\n";
                 }
             }
             else
@@ -469,23 +475,16 @@ Activator::activate(const string& name,
         }
     }
 
-    const char* dir;
-    if(!pwd.empty())
-    {
-        dir = pwd.c_str();
-    }
-    else
-    {
-        dir = NULL;
-    }
+    wstring wpwd = IceUtil::stringToWstring(pwd);
+    const wchar_t* dir = !wpwd.empty() ? wpwd.c_str() : NULL;
 
     //
     // Make a copy of the command line.
     //
 #if defined(_MSC_VER) && (_MSC_VER >= 1400)
-    char* cmdbuf = _strdup(cmd.c_str());
+    wchar_t* cmdbuf = _wcsdup(IceUtil::stringToWstring(cmd).c_str());
 #else
-    char* cmdbuf = strdup(cmd.c_str());
+    wchar_t* cmdbuf = wcsdup(IceUtil::stringToWstring(cmd).c_str());
 #endif
 
     //
@@ -494,75 +493,72 @@ Activator::activate(const string& name,
     // Since Windows is case insensitive wrt environment variables we convert the keys to
     // uppercase to ensure matches are found.
     //
-    const char* env = NULL;
-    string envbuf;
+    const wchar_t* env = NULL;
+    wstring envbuf;
     if(!envs.empty())
     {
-        map<string, string> envMap;
-        LPVOID parentEnv = GetEnvironmentStrings();
-        const char* var = reinterpret_cast<const char*>(parentEnv);
-        if(*var == '=')
+        map<wstring, wstring, UnicodeStringLess> envMap;
+        LPVOID parentEnv = GetEnvironmentStringsW();
+        const wchar_t* var = reinterpret_cast<const wchar_t*>(parentEnv);
+        if(*var == L'=')
         {
             //
             // The environment block may start with some information about the
             // current drive and working directory. This is indicated by a leading
             // '=' character, so we skip to the first '\0' byte.
             //
-            while(*var)
+            while(*var != L'\0')
                 var++;
             var++;
         }
-        while(*var)
+        while(*var != L'\0')
         {
-            string s(var);
-            string::size_type pos = s.find('=');
-            if(pos != string::npos)
+            wstring s(var);
+            wstring::size_type pos = s.find(L'=');
+            if(pos != wstring::npos)
             {
-                string key = IceUtilInternal::toUpper(s.substr(0, pos));
-                envMap.insert(map<string, string>::value_type(key, s.substr(pos + 1)));
+                envMap[s.substr(0, pos)] = s.substr(pos + 1);
             }
             var += s.size();
             var++; // Skip the '\0' byte
         }
-        FreeEnvironmentStrings(static_cast<char*>(parentEnv));
+        FreeEnvironmentStringsW(static_cast<wchar_t*>(parentEnv));
         for(p = envs.begin(); p != envs.end(); ++p)
         {
-            string s = *p;
-            string::size_type pos = s.find('=');
-            if(pos != string::npos)
+            wstring s = IceUtil::stringToWstring(*p);
+            wstring::size_type pos = s.find(L'=');
+            if(pos != wstring::npos)
             {
-                string key = IceUtilInternal::toUpper(s.substr(0, pos));
-                envMap.erase(key);
-                envMap.insert(map<string, string>::value_type(key, s.substr(pos + 1)));
+                envMap[s.substr(0, pos)] = s.substr(pos + 1);
             }
         }
-        for(map<string, string>::const_iterator q = envMap.begin(); q != envMap.end(); ++q)
+
+        for(map<wstring, wstring, UnicodeStringLess>::const_iterator q = envMap.begin(); q != envMap.end(); ++q)
         {
             envbuf.append(q->first);
-            envbuf.push_back('=');
+            envbuf.push_back(L'=');
             envbuf.append(q->second);
-            envbuf.push_back('\0');
+            envbuf.push_back(L'\0');
         }
-        envbuf.push_back('\0');
+        envbuf.push_back(L'\0');
         env = envbuf.c_str();
     }
 
     Process process;
 
-    STARTUPINFO si;
+    STARTUPINFOW si;
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
     
     PROCESS_INFORMATION pi;
     ZeroMemory(&pi, sizeof(pi));
-
-    BOOL b = CreateProcess(
+    BOOL b = CreateProcessW(
         NULL,                     // Executable
         cmdbuf,                   // Command line
         NULL,                     // Process attributes
         NULL,                     // Thread attributes
         FALSE,                    // Do NOT inherit handles
-        CREATE_NEW_PROCESS_GROUP, // Process creation flags
+        CREATE_NEW_PROCESS_GROUP | CREATE_UNICODE_ENVIRONMENT, // Process creation flags
         (LPVOID)env,              // Process environment
         dir,                      // Current directory
         &si,                      // Startup info
@@ -581,7 +577,6 @@ Activator::activate(const string& name,
     // keep the thread handle, so we close it now. The process handle will be closed later.
     //
     CloseHandle(pi.hThread);
-
     
     process.pid = pi.dwProcessId;
     process.hnd = pi.hProcess;
@@ -1376,44 +1371,53 @@ Activator::setInterrupt()
 int
 Activator::waitPid(pid_t processPid)
 {
-    int status;
-#if defined(__linux)
-    int nRetry = 0;
-    while(true) // The while loop is necessary for the linux workaround.
+    try
     {
+        int status;
+#if defined(__linux)
+        int nRetry = 0;
+        while(true) // The while loop is necessary for the linux workaround.
+        {
+            pid_t pid = waitpid(processPid, &status, 0);
+            if(pid < 0)
+            {
+                //
+                // Some Linux distribution have a bogus waitpid() (e.g.: CentOS 4.x). It doesn't 
+                // block and reports an incorrect ECHILD error on the first call. We sleep a 
+                // little and retry to work around this issue (it appears from testing that a
+                // single retry is enough but to make sure we retry up to 10 times before to throw.)
+                //
+                if(errno == ECHILD && nRetry < 10)
+                {
+                    // Wait 1ms, 11ms, 21ms, etc.
+                    IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(nRetry * 10 + 1)); 
+                    ++nRetry;
+                    continue;
+                }
+                SyscallException ex(__FILE__, __LINE__);
+                ex.error = getSystemErrno();
+                throw ex;
+            }
+            assert(pid == processPid);
+            break;
+        }
+#else
         pid_t pid = waitpid(processPid, &status, 0);
         if(pid < 0)
         {
-            //
-            // Some Linux distribution have a bogus waitpid() (e.g.: CentOS 4.x). It doesn't 
-            // block and reports an incorrect ECHILD error on the first call. We sleep a 
-            // little and retry to work around this issue (it appears from testing that a
-            // single retry is enough but to make sure we retry up to 10 times before to throw.)
-            //
-            if(errno == ECHILD && nRetry < 10)
-            {
-                // Wait 1ms, 11ms, 21ms, etc.
-                IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(nRetry * 10 + 1)); 
-                ++nRetry;
-                continue;
-            }
             SyscallException ex(__FILE__, __LINE__);
             ex.error = getSystemErrno();
             throw ex;
         }
         assert(pid == processPid);
-        break;
-    }
-#else
-    pid_t pid = waitpid(processPid, &status, 0);
-    if(pid < 0)
-    {
-        SyscallException ex(__FILE__, __LINE__);
-        ex.error = getSystemErrno();
-        throw ex;
-    }
-    assert(pid == processPid);
 #endif
-    return status;
+        return status;
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Error out(_traceLevels->logger);
+        out << "unable to get process status:\n" << ex;
+        return -1;
+    }
 }
 #endif

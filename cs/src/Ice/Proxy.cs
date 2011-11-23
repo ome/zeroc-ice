@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,130 +15,596 @@ using IceUtilInternal;
 
 namespace Ice
 {
-    public interface ObjectPrx
+    public delegate void Callback_Object_ice_isA(bool ret__);
+
+    public delegate void Callback_Object_ice_ids(string[] ret__);
+
+    public delegate void Callback_Object_ice_id(string ret__);
+
+    public delegate void Callback_Object_ice_ping();
+
+    public delegate void Callback_Object_ice_invoke(bool ret__, byte[] outParams);
+
+    /// <summary>
+    /// Callback object for Blobject AMI invocations.
+    /// </summary>
+    public abstract class AMI_Object_ice_invoke : AMICallbackBase
     {
-        int ice_getHash();
+         /// <summary>
+         /// The Ice run time calls <code>ice_response</code> when an asynchronous operation invocation
+         /// completes successfully or raises a user exception.
+         /// </summary>
+         /// <param name="ok">Indicates the result of the invocation. If true, the operation
+         /// completed succesfully; if false, the operation raised a user exception.</param>
+         /// <param name="outParams">Contains the encoded out-parameters of the operation (if any) if ok
+         /// is true; otherwise, if ok is false, contains the
+         /// encoded user exception raised by the operation.</param>
+        public abstract void ice_response(bool ok, byte[] outParams);
 
-        Communicator ice_getCommunicator();
-
-        string ice_toString();
-
-        bool ice_isA(string id__);
-        bool ice_isA(string id__, Dictionary<string, string> context__);
-
-        void ice_ping();
-        void ice_ping(Dictionary<string, string> context__);
-
-        string[] ice_ids();
-        string[] ice_ids(Dictionary<string, string> context__);
-
-        string ice_id();
-        string ice_id(Dictionary<string, string> context__);
-
-        // Returns true if ok, false if user exception.
-        bool ice_invoke(string operation, OperationMode mode, byte[] inParams, out byte[] outParams);
-        bool ice_invoke(string operation, OperationMode mode, byte[] inParams, out byte[] outParams,
-            Dictionary<string, string> context__);
-
-        bool ice_invoke_async(AMI_Object_ice_invoke cb, string operation, OperationMode mode, byte[] inParams);
-        bool ice_invoke_async(AMI_Object_ice_invoke cb, string operation, OperationMode mode, byte[] inParams,
-            Dictionary<string, string> context);
-
-        Identity ice_getIdentity();
-        ObjectPrx ice_identity(Identity newIdentity);
-        
-        Dictionary<string, string> ice_getContext();
-        ObjectPrx ice_context(Dictionary<string, string> newContext);
-        [Obsolete("This method is deprecated.")]
-        ObjectPrx ice_defaultContext();
-        
-        string ice_getFacet();
-        ObjectPrx ice_facet(string newFacet);
-
-        string ice_getAdapterId();
-        ObjectPrx ice_adapterId(string newAdapterId);
-
-        Endpoint[] ice_getEndpoints();
-        ObjectPrx ice_endpoints(Endpoint[] newEndpoints);
-
-        int ice_getLocatorCacheTimeout();
-        ObjectPrx ice_locatorCacheTimeout(int timeout);
-        
-        bool ice_isConnectionCached();
-        ObjectPrx ice_connectionCached(bool newCache);
-
-        EndpointSelectionType ice_getEndpointSelection();
-        ObjectPrx ice_endpointSelection(EndpointSelectionType newType);
-
-        bool ice_isSecure();
-        ObjectPrx ice_secure(bool b);
-
-        bool ice_isPreferSecure();
-        ObjectPrx ice_preferSecure(bool b);
-
-        Ice.RouterPrx ice_getRouter();
-        ObjectPrx ice_router(Ice.RouterPrx router);
-
-        Ice.LocatorPrx ice_getLocator();
-        ObjectPrx ice_locator(Ice.LocatorPrx locator);
-
-        bool ice_isCollocationOptimized();
-        ObjectPrx ice_collocationOptimized(bool b);
-
-        ObjectPrx ice_twoway();
-        bool ice_isTwoway();
-        ObjectPrx ice_oneway();
-        bool ice_isOneway();
-        ObjectPrx ice_batchOneway();
-        bool ice_isBatchOneway();
-        ObjectPrx ice_datagram();
-        bool ice_isDatagram();
-        ObjectPrx ice_batchDatagram();
-        bool ice_isBatchDatagram();
-
-        ObjectPrx ice_compress(bool co);
-        ObjectPrx ice_timeout(int t);
-        ObjectPrx ice_connectionId(string connectionId);
-
-        void ice_flushBatchRequests();
-        bool ice_flushBatchRequests_async(AMI_Object_ice_flushBatchRequests cb);
-
-        Connection ice_getConnection();
-        Connection ice_getCachedConnection();
+        public void response__(bool ok, byte[] outParams)
+        {
+            ice_response(ok, outParams);
+        }
     }
 
+    /// <summary>
+    /// Callback object for ObjectPrx.ice_flushBatchRequests_async.
+    /// </summary>
+    public abstract class AMI_Object_ice_flushBatchRequests : AMICallbackBase
+    {
+        //
+        // Subclass must override ice_exception, which is inherited from AMICallbackBase.
+        //
+    }
+
+    /// <summary>
+    /// Base interface of all object proxies.
+    /// </summary>
+    public interface ObjectPrx
+    {
+        /// <summary>
+        /// This method is deprecated. Use GetHashCode instead.
+        /// </summary>
+        [Obsolete("This method is deprecated. Use GetHashCode instead.")]
+        int ice_getHash();
+
+        /// <summary>
+        /// Returns the communicator that created this proxy.
+        /// </summary>
+        /// <returns>The communicator that created this proxy.</returns>
+        Communicator ice_getCommunicator();
+
+        /// <summary>
+        /// This method is deprecated. Use ToString instead.
+        /// </summary>
+        [Obsolete("This method is deprecated. Use ToString instead.")]
+        string ice_toString();
+
+        /// <summary>
+        /// Tests whether this object supports a specific Slice interface.
+        /// </summary>
+        /// <param name="id__">The type ID of the Slice interface to test against.</param>
+        /// <returns>True if the target object has the interface specified by id__ or derives
+        /// from the interface specified by id__.</returns>
+        bool ice_isA(string id__);
+
+        /// <summary>
+        /// Tests whether this object supports a specific Slice interface.
+        /// </summary>
+        /// <param name="id__">The type ID of the Slice interface to test against.</param>
+        /// <param name="context__">The context dictionary for the invocation.</param>
+        /// <returns>True if the target object has the interface specified by id__ or derives
+        /// from the interface specified by id__.</returns>
+        bool ice_isA(string id__, Dictionary<string, string> context__);
+
+        AsyncResult<Callback_Object_ice_isA> begin_ice_isA(string id);
+        AsyncResult<Callback_Object_ice_isA> begin_ice_isA(string id, Dictionary<string, string> context__);
+        AsyncResult begin_ice_isA(string id, AsyncCallback cb__, object cookie__);
+        AsyncResult begin_ice_isA(string id, Dictionary<string, string> context__, AsyncCallback cb__, object cookie__);
+
+        bool end_ice_isA(AsyncResult r__);
+
+        /// <summary>
+        /// Tests whether the target object of this proxy can be reached.
+        /// </summary>
+        void ice_ping();
+
+        /// <summary>
+        /// Tests whether the target object of this proxy can be reached.
+        /// </summary>
+        /// <param name="context__">The context dictionary for the invocation.</param>
+        void ice_ping(Dictionary<string, string> context__);
+
+        AsyncResult<Callback_Object_ice_ping> begin_ice_ping();
+        AsyncResult<Callback_Object_ice_ping> begin_ice_ping(Dictionary<string, string> context__);
+        AsyncResult begin_ice_ping(AsyncCallback cb__, object cookie__);
+        AsyncResult begin_ice_ping(Dictionary<string, string> context__, AsyncCallback cb__, object cookie__);
+
+        void end_ice_ping(AsyncResult r__);
+
+        /// <summary>
+        /// Returns the Slice type IDs of the interfaces supported by the target object of this proxy.
+        /// </summary>
+        /// <returns>The Slice type IDs of the interfaces supported by the target object, in base-to-derived
+        /// order. The first element of the returned array is always ::Ice::Object.</returns>
+        string[] ice_ids();
+
+        /// <summary>
+        /// Returns the Slice type IDs of the interfaces supported by the target object of this proxy.
+        /// </summary>
+        /// <param name="context__">The context dictionary for the invocation.</param>
+        /// <returns>The Slice type IDs of the interfaces supported by the target object, in base-to-derived
+        /// order. The first element of the returned array is always ::Ice::Object.</returns>
+        string[] ice_ids(Dictionary<string, string> context__);
+
+        AsyncResult<Callback_Object_ice_ids> begin_ice_ids();
+        AsyncResult<Callback_Object_ice_ids> begin_ice_ids(Dictionary<string, string> context__);
+        AsyncResult begin_ice_ids(AsyncCallback cb__, object cookie__);
+        AsyncResult begin_ice_ids(Dictionary<string, string> context__, AsyncCallback cb__, object cookie__);
+
+        string[] end_ice_ids(AsyncResult r__);
+
+        /// <summary>
+        /// Returns the Slice type ID of the most-derived interface supported by the target object of this proxy.
+        /// </summary>
+        /// <returns>The Slice type ID of the most-derived interface.</returns>
+        string ice_id();
+
+        /// <summary>
+        /// Returns the Slice type ID of the most-derived interface supported by the target object of this proxy.
+        /// </summary>
+        /// <param name="context__">The context dictionary for the invocation.</param>
+        /// <returns>The Slice type ID of the most-derived interface.</returns>
+        string ice_id(Dictionary<string, string> context__);
+
+        AsyncResult<Callback_Object_ice_id> begin_ice_id();
+        AsyncResult<Callback_Object_ice_id> begin_ice_id(Dictionary<string, string> context__);
+        AsyncResult begin_ice_id(AsyncCallback cb__, object cookie__);
+        AsyncResult begin_ice_id(Dictionary<string, string> context__, AsyncCallback cb__, object cookie__);
+
+        string end_ice_id(AsyncResult r__);
+
+        /// <summary>
+        /// Invokes an operation dynamically.
+        /// </summary>
+        /// <param name="operation">The name of the operation to invoke.</param>
+        /// <param name="mode">The operation mode (normal or idempotent).</param>
+        /// <param name="inParams">The encoded in-parameters for the operation.</param>
+        /// <param name="outParams">The encoded out-paramaters and return value
+        /// for the operation. The return value follows any out-parameters.</param>
+        /// <returns>If the operation completed successfully, the return value
+        /// is true. If the operation raises a user exception,
+        /// the return value is false; in this case, outParams
+        /// contains the encoded user exception. If the operation raises a run-time exception,
+        /// it throws it directly.</returns>
+        bool ice_invoke(string operation, OperationMode mode, byte[] inParams, out byte[] outParams);
+
+        /// <summary>
+        /// Invokes an operation dynamically.
+        /// </summary>
+        /// <param name="operation">The name of the operation to invoke.</param>
+        /// <param name="mode">The operation mode (normal or idempotent).</param>
+        /// <param name="inParams">The encoded in-parameters for the operation.</param>
+        /// <param name="outParams">The encoded out-paramaters and return value
+        /// for the operation. The return value follows any out-parameters.</param>
+        /// <param name="context__">The context dictionary for the invocation.</param>
+        /// <returns>If the operation completed successfully, the return value
+        /// is true. If the operation raises a user exception,
+        /// the return value is false; in this case, outParams
+        /// contains the encoded user exception. If the operation raises a run-time exception,
+        /// it throws it directly.</returns>
+        bool ice_invoke(string operation, OperationMode mode, byte[] inParams, out byte[] outParams,
+                        Dictionary<string, string> context__);
+
+        /// <summary>
+        /// Invokes an operation dynamically and asynchronously.
+        /// </summary>
+        /// <param name="cb">The callback object to notify when the operation completes.</param>
+        /// <param name="operation">The name of the operation to invoke.</param>
+        /// <param name="mode">The operation mode (normal or idempotent).</param>
+        /// <param name="inParams">The encoded in-parameters for the operation.</param>
+        /// <returns> If the operation was invoked synchronously (because there
+        /// was no need to queue the request), the return value is true;
+        /// otherwise, if the invocation was queued, the return value is false.</returns>
+        bool ice_invoke_async(AMI_Object_ice_invoke cb, string operation, OperationMode mode, byte[] inParams);
+
+        /// <summary>
+        /// Invokes an operation dynamically and asynchronously.
+        /// </summary>
+        /// <param name="cb">The callback object to notify when the operation completes.</param>
+        /// <param name="operation">The name of the operation to invoke.</param>
+        /// <param name="mode">The operation mode (normal or idempotent).</param>
+        /// <param name="inParams">The encoded in-parameters for the operation.</param>
+        /// <param name="context">The context dictionary for the invocation.</param>
+        /// <returns> If the operation was invoked synchronously (because there
+        /// was no need to queue the request), the return value is true;
+        /// otherwise, if the invocation was queued, the return value is false.</returns>
+        bool ice_invoke_async(AMI_Object_ice_invoke cb, string operation, OperationMode mode, byte[] inParams,
+                              Dictionary<string, string> context);
+
+        AsyncResult<Callback_Object_ice_invoke> begin_ice_invoke(string operation, OperationMode mode, 
+                                                                    byte[] inParams);
+        AsyncResult<Callback_Object_ice_invoke> begin_ice_invoke(string operation, OperationMode mode, 
+                                                                    byte[] inParams,
+                                                                    Dictionary<string, string> context__);
+        AsyncResult begin_ice_invoke(string operation, OperationMode mode, byte[] inParams, AsyncCallback cb__,
+                                     object cookie__);
+        AsyncResult begin_ice_invoke(string operation, OperationMode mode, byte[] inParams,
+                                     Dictionary<string, string> context__, AsyncCallback cb__, object cookie__);
+
+        bool end_ice_invoke(out byte[] outParams, AsyncResult r__);
+
+        /// <summary>
+        /// Returns the identity embedded in this proxy.
+        /// <returns>The identity of the target object.</returns>
+        /// </summary>
+        Identity ice_getIdentity();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the per-proxy context.
+        /// <param name="newIdentity">The identity for the new proxy.</param>
+        /// <returns>The proxy with the new identity.</returns>
+        /// </summary>
+        ObjectPrx ice_identity(Identity newIdentity);
+
+        /// <summary>
+        /// Returns the per-proxy context for this proxy.
+        /// </summary>
+        /// <returns>The per-proxy context. If the proxy does not have a per-proxy (implicit) context, the return value
+        /// is null.</returns>
+        Dictionary<string, string> ice_getContext();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the per-proxy context.
+        /// </summary>
+        /// <param name="newContext">The context for the new proxy.</param>
+        /// <returns>The proxy with the new per-proxy context.</returns>
+        ObjectPrx ice_context(Dictionary<string, string> newContext);
+
+        /// <summary>
+        /// Returns the facet for this proxy.
+        /// </summary>
+        /// <returns>The facet for this proxy. If the proxy uses the default facet, the return value is the
+        /// empty string.</returns>
+        string ice_getFacet();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the facet.
+        /// </summary>
+        /// <param name="newFacet">The facet for the new proxy.</param>
+        /// <returns>The proxy with the new facet.</returns>
+        ObjectPrx ice_facet(string newFacet);
+
+        /// <summary>
+        /// Returns the adapter ID for this proxy.
+        /// </summary>
+        /// <returns>The adapter ID. If the proxy does not have an adapter ID, the return value is the
+        /// empty string.</returns>
+        string ice_getAdapterId();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the adapter ID.
+        /// </summary>
+        /// <param name="newAdapterId">The adapter ID for the new proxy.</param>
+        /// <returns>The proxy with the new adapter ID.</returns>
+        ObjectPrx ice_adapterId(string newAdapterId);
+
+        /// <summary>
+        /// Returns the endpoints used by this proxy.
+        /// </summary>
+        /// <returns>The endpoints used by this proxy.</returns>
+        Endpoint[] ice_getEndpoints();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the endpoints.
+        /// </summary>
+        /// <param name="newEndpoints">The endpoints for the new proxy.</param>
+        /// <returns>The proxy with the new endpoints.</returns>
+        ObjectPrx ice_endpoints(Endpoint[] newEndpoints);
+
+        /// <summary>
+        /// Returns the locator cache timeout of this proxy.
+        /// </summary>
+        /// <returns>The locator cache timeout value (in seconds).</returns>
+        int ice_getLocatorCacheTimeout();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the locator cache timeout.
+        /// </summary>
+        /// <param name="timeout">The new locator cache timeout (in seconds).</param>
+        ObjectPrx ice_locatorCacheTimeout(int timeout);
+
+        /// <summary>
+        /// Returns whether this proxy caches connections.
+        /// </summary>
+        /// <returns>True if this proxy caches connections; false, otherwise.</returns>
+        bool ice_isConnectionCached();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for connection caching.
+        /// </summary>
+        /// <param name="newCache">True if the new proxy should cache connections; false, otherwise.</param>
+        /// <returns>The new proxy with the specified caching policy.</returns>
+        ObjectPrx ice_connectionCached(bool newCache);
+
+        /// <summary>
+        /// Returns how this proxy selects endpoints (randomly or ordered).
+        /// </summary>
+        /// <returns>The endpoint selection policy.</returns>
+        EndpointSelectionType ice_getEndpointSelection();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the endpoint selection policy.
+        /// </summary>
+        /// <param name="newType">The new endpoint selection policy.</param>
+        /// <returns>The new proxy with the specified endpoint selection policy.</returns>
+        ObjectPrx ice_endpointSelection(EndpointSelectionType newType);
+
+        /// <summary>
+        /// Returns whether this proxy communicates only via secure endpoints.
+        /// </summary>
+        /// <returns>True if this proxy communicates only vi secure endpoints; false, otherwise.</returns>
+        bool ice_isSecure();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for how it selects endpoints.
+        /// </summary>
+        /// <param name="b"> If b is true, only endpoints that use a secure transport are
+        /// used by the new proxy. If b is false, the returned proxy uses both secure and insecure
+        /// endpoints.</param>
+        /// <returns>The new proxy with the specified selection policy.</returns>
+        ObjectPrx ice_secure(bool b);
+
+        /// <summary>
+        /// Returns whether this proxy prefers secure endpoints.
+        /// </summary>
+        /// <returns>True if the proxy always attempts to invoke via secure endpoints before it
+        /// attempts to use insecure endpoints; false, otherwise.</returns>
+        bool ice_isPreferSecure();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for its endpoint selection policy.
+        /// </summary>
+        /// <param name="b">If b is true, the new proxy will use secure endpoints for invocations
+        /// and only use insecure endpoints if an invocation cannot be made via secure endpoints. If b is
+        /// false, the proxy prefers insecure endpoints to secure ones.</param>
+        /// <returns>The new proxy with the new endpoint selection policy.</returns>
+        ObjectPrx ice_preferSecure(bool b);
+
+        /// <summary>
+        /// Returns the router for this proxy.
+        /// </summary>
+        /// <returns>The router for the proxy. If no router is configured for the proxy, the return value
+        /// is null.</returns>
+        Ice.RouterPrx ice_getRouter();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the router.
+        /// </summary>
+        /// <param name="router">The router for the new proxy.</param>
+        /// <returns>The new proxy with the specified router.</returns>
+        ObjectPrx ice_router(Ice.RouterPrx router);
+
+        /// <summary>
+        /// Returns the locator for this proxy.
+        /// </summary>
+        /// <returns>The locator for this proxy. If no locator is configured, the return value is null.</returns>
+        Ice.LocatorPrx ice_getLocator();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the locator.
+        /// </summary>
+        /// <param name="locator">The locator for the new proxy.</param>
+        /// <returns>The new proxy with the specified locator.</returns>
+        ObjectPrx ice_locator(Ice.LocatorPrx locator);
+
+        /// <summary>
+        /// Returns whether this proxy uses collocation optimization.
+        /// </summary>
+        /// <returns>True if the proxy uses collocation optimization; false, otherwise.</returns>
+        bool ice_isCollocationOptimized();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for collocation optimization.
+        /// </summary>
+        /// <param name="b">True if the new proxy enables collocation optimization; false, otherwise.</param>
+        /// <returns>The new proxy the specified collocation optimization.</returns>
+        ObjectPrx ice_collocationOptimized(bool b);
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, but uses twoway invocations.
+        /// </summary>
+        /// <returns>A new proxy that uses twoway invocations.</returns>
+        ObjectPrx ice_twoway();
+
+        /// <summary>
+        /// Returns whether this proxy uses twoway invocations.
+        /// </summary>
+        /// <returns>True if this proxy uses twoway invocations; false, otherwise.</returns>
+        bool ice_isTwoway();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, but uses oneway invocations.
+        /// </summary>
+        /// <returns>A new proxy that uses oneway invocations.</returns>
+        ObjectPrx ice_oneway();
+
+        /// <summary>
+        /// Returns whether this proxy uses oneway invocations.
+        /// </summary>
+        /// <returns>True if this proxy uses oneway invocations; false, otherwise.</returns>
+        bool ice_isOneway();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, but uses batch oneway invocations.
+        /// </summary>
+        /// <returns>A new proxy that uses batch oneway invocations.</returns>
+        ObjectPrx ice_batchOneway();
+
+        /// <summary>
+        /// Returns whether this proxy uses batch oneway invocations.
+        /// </summary>
+        /// <returns>True if this proxy uses batch oneway invocations; false, otherwise.</returns>
+        bool ice_isBatchOneway();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, but uses datagram invocations.
+        /// </summary>
+        /// <returns>A new proxy that uses datagram invocations.</returns>
+        ObjectPrx ice_datagram();
+
+        /// <summary>
+        /// Returns whether this proxy uses datagram invocations.
+        /// </summary>
+        /// <returns>True if this proxy uses datagram invocations; false, otherwise.</returns>
+        bool ice_isDatagram();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, but uses batch datagram invocations.
+        /// </summary>
+        /// <returns>A new proxy that uses batch datagram invocations.</returns>
+        ObjectPrx ice_batchDatagram();
+
+        /// <summary>
+        /// Returns whether this proxy uses batch datagram invocations.
+        /// </summary>
+        /// <returns>True if this proxy uses batch datagram invocations; false, otherwise.</returns>
+        bool ice_isBatchDatagram();
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for compression.
+        /// </summary>
+        /// <param name="co">True enables compression for the new proxy; false disables compression.</param>
+        /// <returns>A new proxy with the specified compression setting.</returns>
+        ObjectPrx ice_compress(bool co);
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for its timeout setting.
+        /// </summary>
+        /// <param name="t">The timeout for the new proxy in milliseconds.</param>
+        /// <returns>A new proxy with the specified timeout.</returns>
+        ObjectPrx ice_timeout(int t);
+
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for its connection ID.
+        /// </summary>
+        /// <param name="connectionId">The connection ID for the new proxy. An empty string removes the
+        /// connection ID.</param>
+        /// <returns>A new proxy with the specified connection ID.</returns>
+        ObjectPrx ice_connectionId(string connectionId);
+
+        /// <summary>
+        /// Returns the connection id of this proxy.
+        /// </summary>
+        /// <returns>The connection id.</returns>
+        string ice_getConnectionId();
+
+        /// <summary>
+        /// Returns the Connection for this proxy. If the proxy does not yet have an established connection,
+        /// it first attempts to create a connection.
+        /// </summary>
+        /// <returns>The Connection for this proxy.</returns>
+        /// <exception name="CollocationOptimizationException">If the proxy uses collocation optimization and denotes a
+        /// collocated object.</exception>
+        Connection ice_getConnection();
+
+        /// <summary>
+        /// Returns the cached Connection for this proxy. If the proxy does not yet have an established
+        /// connection, it does not attempt to create a connection.
+        /// </summary>
+        /// <returns>The cached Connection for this proxy (null if the proxy does not have
+        /// an established connection).</returns>
+        /// <exception name="CollocationOptimizationException">If the proxy uses collocation optimization and denotes a
+        /// collocated object.</exception>
+        Connection ice_getCachedConnection();
+
+        /// <summary>
+        /// Flushes any pending batched requests for this communicator. The call blocks until the flush is complete.
+        /// </summary>
+        void ice_flushBatchRequests();
+
+        /// <summary>
+        /// Asynchronously flushes any pending batched requests for this communicator. The call does not block.
+        /// </summary>
+        /// <param name="cb">The callback object to notify the application when the flush is complete.</param>
+        /// <returns>True if the requests were flushed immediately without blocking; false
+        /// if the requests could not be flushed immediately.</returns>
+        bool ice_flushBatchRequests_async(AMI_Object_ice_flushBatchRequests cb);
+
+        AsyncResult begin_ice_flushBatchRequests();
+        AsyncResult begin_ice_flushBatchRequests(AsyncCallback cb__, object cookie__);
+
+        void end_ice_flushBatchRequests(AsyncResult r__);
+    }
+
+    /// <summary>
+    /// Base class of all object proxies.
+    /// </summary>
     public class ObjectPrxHelperBase : ObjectPrx
     {
+        /// <summary>
+        /// Returns a hash code for this proxy.
+        /// </summary>
+        /// <returns>The hash code.</returns>
         public override int GetHashCode()
         {
             return _reference.GetHashCode();
         }
 
+        /// <summary>
+        /// This method is deprecated. Use GetHashCode instead.
+        /// </summary>
+        [Obsolete("This method is deprecated. Use GetHashCode instead.")]
         public int ice_getHash()
         {
             return _reference.GetHashCode();
         }
 
+        /// <summary>
+        /// Returns the communicator that created this proxy.
+        /// </summary>
+        /// <returns>The communicator that created this proxy.</returns>
         public Communicator ice_getCommunicator()
         {
             return _reference.getCommunicator();
         }
 
+        /// <summary>
+        /// Returns the stringified form of this proxy.
+        /// </summary>
+        /// <returns>The stringified proxy.</returns>
         public override string ToString()
         {
             return _reference.ToString();
         }
 
+        /// <summary>
+        /// This method is deprecated. Use ToString instead.
+        /// </summary>
+        [Obsolete("This method is deprecated. Use ToString instead.")]
         public string ice_toString()
         {
             return ToString();
         }
 
+        /// <summary>
+        /// Tests whether this object supports a specific Slice interface.
+        /// </summary>
+        /// <param name="id__">The type ID of the Slice interface to test against.</param>
+        /// <returns>True if the target object has the interface specified by id__ or derives
+        /// from the interface specified by id__.</returns>
         public bool ice_isA(string id__)
         {
             return ice_isA(id__, null, false);
         }
 
+        /// <summary>
+        /// Tests whether this object supports a specific Slice interface.
+        /// </summary>
+        /// <param name="id__">The type ID of the Slice interface to test against.</param>
+        /// <param name="context__">The context dictionary for the invocation.</param>
+        /// <returns>True if the target object has the interface specified by id__ or derives
+        /// from the interface specified by id__.</returns>
         public bool ice_isA(string id__, Dictionary<string, string> context__)
         {
             return ice_isA(id__, context__, true);
@@ -163,20 +629,123 @@ namespace Ice
                 }
                 catch(IceInternal.LocalExceptionWrapper ex__)
                 {
-                    handleExceptionWrapperRelaxed__(del__, ex__, null, ref cnt__);
+                    handleExceptionWrapperRelaxed__(del__, ex__, true, ref cnt__);
                 }
                 catch(LocalException ex__)
                 {
-                    handleException__(del__, ex__, null, ref cnt__);
+                    handleException__(del__, ex__, true, ref cnt__);
                 }
             }
         }
 
+        public AsyncResult<Callback_Object_ice_isA> begin_ice_isA(string id)
+        {
+            return begin_ice_isA(id, null, false, null, null);
+        }
+
+        public AsyncResult<Callback_Object_ice_isA> begin_ice_isA(string id, Dictionary<string, string> context__)
+        {
+            return begin_ice_isA(id, context__, true, null, null);
+        }
+
+        public AsyncResult begin_ice_isA(string id, AsyncCallback cb__, object cookie__)
+        {
+            return begin_ice_isA(id, null, false, cb__, cookie__);
+        }
+
+        public AsyncResult begin_ice_isA(string id, Dictionary<string, string> context__, AsyncCallback cb__,
+                                         object cookie__)
+        {
+            return begin_ice_isA(id, null, false, cb__, cookie__);
+        }
+
+        private const string __ice_isA_name = "ice_isA";
+
+        public bool end_ice_isA(AsyncResult r__)
+        {
+            IceInternal.OutgoingAsync outAsync__ = (IceInternal.OutgoingAsync)r__;
+            IceInternal.OutgoingAsync.check__(outAsync__, this, __ice_isA_name);
+            if(!outAsync__.wait__())
+            {
+                try
+                {
+                    outAsync__.throwUserException__();
+                }
+                catch(Ice.UserException ex__)
+                {
+                    throw new Ice.UnknownUserException(ex__.ice_name(), ex__);
+                }
+            }
+            bool ret__;
+            IceInternal.BasicStream is__ = outAsync__.istr__;
+            is__.startReadEncaps();
+            ret__ = is__.readBool();
+            is__.endReadEncaps();
+            return ret__;
+        }
+
+        private AsyncResult<Callback_Object_ice_isA> begin_ice_isA(string id, Dictionary<string, string> context__,
+                                                                      bool explicitContext__, 
+                                                                      Ice.AsyncCallback cb__, 
+                                                                      object cookie__)
+        {
+            IceInternal.TwowayOutgoingAsync<Callback_Object_ice_isA> result__ = 
+                new IceInternal.TwowayOutgoingAsync<Callback_Object_ice_isA>(this, __ice_isA_name, ice_isA_completed__, 
+                                                                             cookie__);
+            if(cb__ != null)
+            {
+                result__.whenCompletedWithAsyncCallback(cb__);
+            }
+            checkAsyncTwowayOnly__(__ice_isA_name);
+
+            try
+            {
+                result__.prepare__(__ice_isA_name, OperationMode.Normal, context__, explicitContext__);
+                IceInternal.BasicStream os__ = result__.ostr__;
+                os__.writeString(id);
+                os__.endWriteEncaps();
+                result__.send__(true);
+            }
+            catch(Ice.LocalException ex__)
+            {
+                result__.exceptionAsync__(ex__);
+            }
+            return result__;
+        }
+
+        private void ice_isA_completed__(AsyncResult r__, Callback_Object_ice_isA cb__, Ice.ExceptionCallback excb__)
+        {
+            bool ret__;
+            try
+            {
+                ret__ = end_ice_isA(r__);
+            }
+            catch(Ice.Exception ex__)
+            {
+                if(excb__ != null)
+                {
+                    excb__(ex__);
+                }
+                return;
+            }
+            if(cb__ != null)
+            {
+                cb__(ret__);
+            }
+        }
+
+        /// <summary>
+        /// Tests whether the target object of this proxy can be reached.
+        /// </summary>
         public void ice_ping()
         {
             ice_ping(null, false);
         }
 
+        /// <summary>
+        /// Tests whether the target object of this proxy can be reached.
+        /// </summary>
+        /// <param name="context__">The context dictionary for the invocation.</param>
         public void ice_ping(Dictionary<string, string> context__)
         {
             ice_ping(context__, true);
@@ -201,20 +770,93 @@ namespace Ice
                 }
                 catch(IceInternal.LocalExceptionWrapper ex__)
                 {
-                    handleExceptionWrapperRelaxed__(del__, ex__, null, ref cnt__);
+                    handleExceptionWrapperRelaxed__(del__, ex__, true, ref cnt__);
                 }
                 catch(LocalException ex__)
                 {
-                    handleException__(del__, ex__, null, ref cnt__);
+                    handleException__(del__, ex__, true, ref cnt__);
                 }
             }
         }
 
+        public AsyncResult<Callback_Object_ice_ping> begin_ice_ping()
+        {
+            return begin_ice_ping(null, false, null, null);
+        }
+
+        public AsyncResult<Callback_Object_ice_ping> begin_ice_ping(Dictionary<string, string> context__)
+        {
+            return begin_ice_ping(context__, true, null, null);
+        }
+
+        public AsyncResult begin_ice_ping(AsyncCallback cb__, object cookie__)
+        {
+            return begin_ice_ping(null, false, cb__, cookie__);
+        }
+
+        public AsyncResult begin_ice_ping(Dictionary<string, string> context__, AsyncCallback cb__, object cookie__)
+        {
+            return begin_ice_ping(null, false, cb__, cookie__);
+        }
+
+        private const string __ice_ping_name = "ice_ping";
+
+        public void end_ice_ping(AsyncResult r__)
+        {
+            end__(r__, __ice_ping_name);
+        }
+
+        private AsyncResult<Callback_Object_ice_ping> begin_ice_ping(Dictionary<string, string> context__, 
+                                                                 bool explicitContext__,
+                                                                 Ice.AsyncCallback cb__, 
+                                                                 object cookie__)
+        {
+            IceInternal.OnewayOutgoingAsync<Callback_Object_ice_ping> result__ = 
+                new IceInternal.OnewayOutgoingAsync<Callback_Object_ice_ping>(this, __ice_ping_name, 
+                                                                              ice_ping_completed__, cookie__);
+            if(cb__ != null)
+            {
+                result__.whenCompletedWithAsyncCallback(cb__);
+            }
+
+            try
+            {
+                result__.prepare__(__ice_ping_name, OperationMode.Normal, context__, explicitContext__);
+                IceInternal.BasicStream os__ = result__.ostr__;
+                os__.endWriteEncaps();
+                result__.send__(true);
+            }
+            catch(Ice.LocalException ex__)
+            {
+                result__.exceptionAsync__(ex__);
+            }
+            return result__;
+        }
+
+        private void ice_ping_completed__(Callback_Object_ice_ping cb)
+        {
+            if(cb != null)
+            {
+                cb();
+            }
+        }
+
+        /// <summary>
+        /// Returns the Slice type IDs of the interfaces supported by the target object of this proxy.
+        /// </summary>
+        /// <returns>The Slice type IDs of the interfaces supported by the target object, in base-to-derived
+        /// order. The first element of the returned array is always ::Ice::Object.</returns>
         public string[] ice_ids()
         {
             return ice_ids(null, false);
         }
 
+        /// <summary>
+        /// Returns the Slice type IDs of the interfaces supported by the target object of this proxy.
+        /// </summary>
+        /// <param name="context__">The context dictionary for the invocation.</param>
+        /// <returns>The Slice type IDs of the interfaces supported by the target object, in base-to-derived
+        /// order. The first element of the returned array is always ::Ice::Object.</returns>
         public string[] ice_ids(Dictionary<string, string> context__)
         {
             return ice_ids(context__, true);
@@ -238,20 +880,123 @@ namespace Ice
                 }
                 catch(IceInternal.LocalExceptionWrapper ex__)
                 {
-                    handleExceptionWrapperRelaxed__(del__, ex__, null, ref cnt__);
+                    handleExceptionWrapperRelaxed__(del__, ex__, true, ref cnt__);
                 }
                 catch(LocalException ex__)
                 {
-                    handleException__(del__, ex__, null, ref cnt__);
+                    handleException__(del__, ex__, true, ref cnt__);
                 }
             }
         }
 
+        public AsyncResult<Callback_Object_ice_ids> begin_ice_ids()
+        {
+            return begin_ice_ids(null, false, null, null);
+        }
+
+        public AsyncResult<Callback_Object_ice_ids> begin_ice_ids(Dictionary<string, string> context__)
+        {
+            return begin_ice_ids(context__, true, null, null);
+        }
+
+        public AsyncResult begin_ice_ids(AsyncCallback cb__, object cookie__)
+        {
+            return begin_ice_ids(null, false, cb__, cookie__);
+        }
+
+        public AsyncResult begin_ice_ids(Dictionary<string, string> context__, AsyncCallback cb__, object cookie__)
+        {
+            return begin_ice_ids(null, false, cb__, cookie__);
+        }
+
+        private const string __ice_ids_name = "ice_ids";
+
+        public string[] end_ice_ids(AsyncResult r__)
+        {
+            IceInternal.OutgoingAsync outAsync__ = (IceInternal.OutgoingAsync)r__;
+            IceInternal.OutgoingAsync.check__(outAsync__, this, __ice_ids_name);
+            if(!outAsync__.wait__())
+            {
+                try
+                {
+                    outAsync__.throwUserException__();
+                }
+                catch(Ice.UserException ex__)
+                {
+                    throw new Ice.UnknownUserException(ex__.ice_name(), ex__);
+                }
+            }
+            string[] ret__;
+            IceInternal.BasicStream is__ = outAsync__.istr__;
+            is__.startReadEncaps();
+            ret__ = is__.readStringSeq();
+            is__.endReadEncaps();
+            return ret__;
+        }
+
+        private AsyncResult<Callback_Object_ice_ids> begin_ice_ids(Dictionary<string, string> context__,
+                                                                      bool explicitContext__,
+                                                                      Ice.AsyncCallback cb__, 
+                                                                      object cookie__)
+        {
+            IceInternal.TwowayOutgoingAsync<Callback_Object_ice_ids> result__ = 
+                new IceInternal.TwowayOutgoingAsync<Callback_Object_ice_ids>(this, __ice_ids_name, ice_ids_completed__,
+                                                                             cookie__);
+            if(cb__ != null)
+            {
+                result__.whenCompletedWithAsyncCallback(cb__);
+            }
+            checkAsyncTwowayOnly__(__ice_ids_name);
+
+            try
+            {
+                result__.prepare__(__ice_ids_name, OperationMode.Normal, context__, explicitContext__);
+                IceInternal.BasicStream os__ = result__.ostr__;
+                os__.endWriteEncaps();
+                result__.send__(true);
+            }
+            catch(Ice.LocalException ex__)
+            {
+                result__.exceptionAsync__(ex__);
+            }
+            return result__;
+        }
+
+        private void ice_ids_completed__(AsyncResult r__, Callback_Object_ice_ids cb__, Ice.ExceptionCallback excb__)
+        {
+            string[] ret__;
+            try
+            {
+                ret__ = end_ice_ids(r__);
+            }
+            catch(Ice.Exception ex__)
+            {
+                if(excb__ != null)
+                {
+                    excb__(ex__);
+                }
+                return;
+            }
+            if(cb__ != null)
+            {
+                cb__(ret__);
+            }
+        }
+
+        /// <summary>
+        /// Returns the Slice type ID of the most-derived interface supported by the target object of this proxy.
+        /// </summary>
+        /// <returns>The Slice type ID of the most-derived interface.</returns>
         public string ice_id()
         {
             return ice_id(null, false);
         }
 
+        /// <summary>
+        /// Returns the Slice type ID of the most-derived interface supported by the target object of this proxy.
+        /// </summary>
+        /// <param name="context__">The context dictionary for the invocation.</param>
+        /// <returns>The Slice type ID of the most-derived interface.</returns>
         public string ice_id(Dictionary<string, string> context__)
         {
              return ice_id(context__, true);
@@ -275,26 +1020,147 @@ namespace Ice
                 }
                 catch(IceInternal.LocalExceptionWrapper ex__)
                 {
-                    handleExceptionWrapperRelaxed__(del__, ex__, null, ref cnt__);
+                    handleExceptionWrapperRelaxed__(del__, ex__, true, ref cnt__);
                 }
                 catch(LocalException ex__)
                 {
-                    handleException__(del__, ex__, null, ref cnt__);
+                    handleException__(del__, ex__, true, ref cnt__);
                 }
             }
         }
 
+        public AsyncResult<Callback_Object_ice_id> begin_ice_id()
+        {
+            return begin_ice_id(null, false, null, null);
+        }
+
+        public AsyncResult<Callback_Object_ice_id> begin_ice_id(Dictionary<string, string> context__)
+        {
+            return begin_ice_id(context__, true, null, null);
+        }
+
+        public AsyncResult begin_ice_id(AsyncCallback cb__, object cookie__)
+        {
+            return begin_ice_id(null, false, cb__, cookie__);
+        }
+
+        public AsyncResult begin_ice_id(Dictionary<string, string> context__, AsyncCallback cb__, object cookie__)
+        {
+            return begin_ice_id(null, false, cb__, cookie__);
+        }
+
+        private const string __ice_id_name = "ice_id";
+
+        public string end_ice_id(AsyncResult r__)
+        {
+            IceInternal.OutgoingAsync outAsync__ = (IceInternal.OutgoingAsync)r__;
+            IceInternal.OutgoingAsync.check__(outAsync__, this, __ice_id_name);
+            if(!outAsync__.wait__())
+            {
+                try
+                {
+                    outAsync__.throwUserException__();
+                }
+                catch(Ice.UserException ex__)
+                {
+                    throw new Ice.UnknownUserException(ex__.ice_name(), ex__);
+                }
+            }
+            string ret__;
+            IceInternal.BasicStream is__ = outAsync__.istr__;
+            is__.startReadEncaps();
+            ret__ = is__.readString();
+            is__.endReadEncaps();
+            return ret__;
+        }
+
+        private AsyncResult<Callback_Object_ice_id> begin_ice_id(Dictionary<string, string> context__, 
+                                                                    bool explicitContext__,
+                                                                    Ice.AsyncCallback cb__, 
+                                                                    object cookie__)
+        {
+            IceInternal.TwowayOutgoingAsync<Callback_Object_ice_id> result__ = 
+                new IceInternal.TwowayOutgoingAsync<Callback_Object_ice_id>(this, __ice_id_name, ice_id_completed__, 
+                                                                            cookie__);
+            if(cb__ != null)
+            {
+                result__.whenCompletedWithAsyncCallback(cb__);
+            }
+            checkAsyncTwowayOnly__(__ice_id_name);
+
+            try
+            {
+                result__.prepare__(__ice_id_name, OperationMode.Normal, context__, explicitContext__);
+                IceInternal.BasicStream os__ = result__.ostr__;
+                os__.endWriteEncaps();
+                result__.send__(true);
+            }
+            catch(Ice.LocalException ex__)
+            {
+                result__.exceptionAsync__(ex__);
+            }
+            return result__;
+        }
+
+        private void ice_id_completed__(AsyncResult r__, Callback_Object_ice_id cb__, Ice.ExceptionCallback excb__)
+        {
+            string ret__;
+            try
+            {
+                ret__ = end_ice_id(r__);
+            }
+            catch(Ice.Exception ex__)
+            {
+                if(excb__ != null)
+                {
+                    excb__(ex__);
+                }
+                return;
+            }
+            if(cb__ != null)
+            {
+                cb__(ret__);
+            }
+        }
+
+        /// <summary>
+        /// Invokes an operation dynamically.
+        /// </summary>
+        /// <param name="operation">The name of the operation to invoke.</param>
+        /// <param name="mode">The operation mode (normal or idempotent).</param>
+        /// <param name="inParams">The encoded in-parameters for the operation.</param>
+        /// <param name="outParams">The encoded out-paramaters and return value
+        /// for the operation. The return value follows any out-parameters.</param>
+        /// <returns>If the operation completed successfully, the return value
+        /// is true. If the operation raises a user exception,
+        /// the return value is false; in this case, outParams
+        /// contains the encoded user exception. If the operation raises a run-time exception,
+        /// it throws it directly.</returns>
         public bool ice_invoke(string operation, OperationMode mode, byte[] inParams, out byte[] outParams)
         {
             return ice_invoke(operation, mode, inParams, out outParams, null, false);
         }
 
+        /// <summary>
+        /// Invokes an operation dynamically.
+        /// </summary>
+        /// <param name="operation">The name of the operation to invoke.</param>
+        /// <param name="mode">The operation mode (normal or idempotent).</param>
+        /// <param name="inParams">The encoded in-parameters for the operation.</param>
+        /// <param name="outParams">The encoded out-paramaters and return value
+        /// for the operation. The return value follows any out-parameters.</param>
+        /// <param name="context">The context dictionary for the invocation.</param>
+        /// <returns>If the operation completed successfully, the return value
+        /// is true. If the operation raises a user exception,
+        /// the return value is false; in this case, outParams
+        /// contains the encoded user exception. If the operation raises a run-time exception,
+        /// it throws it directly.</returns>
         public bool ice_invoke(string operation, OperationMode mode, byte[] inParams, out byte[] outParams,
                                Dictionary<string, string> context)
         {
             return ice_invoke(operation, mode, inParams, out outParams, context, true);
         }
-            
+
         private bool ice_invoke(string operation, OperationMode mode, byte[] inParams, out byte[] outParams,
                                 Dictionary<string, string> context,  bool explicitContext)
         {
@@ -316,45 +1182,185 @@ namespace Ice
                 {
                     if(mode == OperationMode.Nonmutating || mode == OperationMode.Idempotent)
                     {
-                        handleExceptionWrapperRelaxed__(del__, ex__, null, ref cnt__);
+                        handleExceptionWrapperRelaxed__(del__, ex__, true, ref cnt__);
                     }
                     else
                     {
-                        handleExceptionWrapper__(del__, ex__, null);
+                        handleExceptionWrapper__(del__, ex__);
                     }
                 }
                 catch(LocalException ex__)
                 {
-                    handleException__(del__, ex__, null, ref cnt__);
+                    handleException__(del__, ex__, true, ref cnt__);
                 }
             }
         }
 
+        /// <summary>
+        /// Invokes an operation dynamically and asynchronously.
+        /// </summary>
+        /// <param name="cb">The callback object to notify when the operation completes.</param>
+        /// <param name="operation">The name of the operation to invoke.</param>
+        /// <param name="mode">The operation mode (normal or idempotent).</param>
+        /// <param name="inParams">The encoded in-parameters for the operation.</param>
+        /// <returns> If the operation was invoked synchronously (because there
+        /// was no need to queue the request), the return value is true;
+        /// otherwise, if the invocation was queued, the return value is false.</returns>
         public bool ice_invoke_async(AMI_Object_ice_invoke cb, string operation, OperationMode mode, byte[] inParams)
         {
-            checkTwowayOnly__("ice_invoke_async");
-            return cb.invoke__(this, operation, mode, inParams, null);
+            AsyncResult<Callback_Object_ice_invoke> result = begin_ice_invoke(operation, mode, inParams);
+            result.whenCompleted(cb.response__, cb.exception__);
+            if(cb is Ice.AMISentCallback)
+            {
+                result.whenSent((Ice.AsyncCallback)cb.sent__);
+            }
+            return result.sentSynchronously();
         }
 
+        /// <summary>
+        /// Invokes an operation dynamically and asynchronously.
+        /// </summary>
+        /// <param name="cb">The callback object to notify when the operation completes.</param>
+        /// <param name="operation">The name of the operation to invoke.</param>
+        /// <param name="mode">The operation mode (normal or idempotent).</param>
+        /// <param name="inParams">The encoded in-parameters for the operation.</param>
+        /// <param name="context">The context dictionary for the invocation.</param>
+        /// <returns> If the operation was invoked synchronously (because there
+        /// was no need to queue the request), the return value is true;
+        /// otherwise, if the invocation was queued, the return value is false.</returns>
         public bool ice_invoke_async(AMI_Object_ice_invoke cb, string operation, OperationMode mode, byte[] inParams,
                                      Dictionary<string, string> context)
         {
-            if(context == null)
+            AsyncResult<Callback_Object_ice_invoke> result = begin_ice_invoke(operation, mode, inParams, context);
+            result.whenCompleted(cb.response__, cb.exception__);
+            if(cb is Ice.AMISentCallback)
             {
-                context = emptyContext_;
+                result.whenSent((Ice.AsyncCallback)cb.sent__);
             }
-            checkTwowayOnly__("ice_invoke_async");
-            return cb.invoke__(this, operation, mode, inParams, context);
+            return result.sentSynchronously();
         }
 
+        public AsyncResult<Callback_Object_ice_invoke> begin_ice_invoke(string operation,
+                                                                           OperationMode mode,
+                                                                           byte[] inParams)
+        {
+            return begin_ice_invoke(operation, mode, inParams, null, false, null, null);
+        }
+
+        public AsyncResult<Callback_Object_ice_invoke> begin_ice_invoke(string operation, 
+                                                                           OperationMode mode, 
+                                                                           byte[] inParams,
+                                                                           Dictionary<string, string> context__)
+        {
+            return begin_ice_invoke(operation, mode, inParams, context__, true, null, null);
+        }
+
+        public AsyncResult begin_ice_invoke(string operation, OperationMode mode, byte[] inParams, AsyncCallback cb__,
+                                            object cookie__)
+        {
+            return begin_ice_invoke(operation, mode, inParams, null, false, cb__, cookie__);
+        }
+
+        public AsyncResult begin_ice_invoke(string operation, OperationMode mode, byte[] inParams,
+                                            Dictionary<string, string> context__, AsyncCallback cb__, object cookie__)
+        {
+            return begin_ice_invoke(operation, mode, inParams, null, false, cb__, cookie__);
+        }
+
+        private const string __ice_invoke_name = "ice_invoke";
+
+        public bool end_ice_invoke(out byte[] outParams, AsyncResult r__)
+        {
+            IceInternal.OutgoingAsync outAsync__ = (IceInternal.OutgoingAsync)r__;
+            IceInternal.OutgoingAsync.check__(outAsync__, this, __ice_invoke_name);
+            bool ok = outAsync__.wait__();
+            if(_reference.getMode() == IceInternal.Reference.Mode.ModeTwoway)
+            {
+                IceInternal.BasicStream is__ = outAsync__.istr__;
+                is__.startReadEncaps();
+                int sz = is__.getReadEncapsSize();
+                outParams = is__.readBlob(sz);
+                is__.endReadEncaps();
+            }
+            else
+            {
+                outParams = null; // Satisfy compiler
+            }
+            return ok;
+        }
+
+        private AsyncResult<Callback_Object_ice_invoke> begin_ice_invoke(string operation, 
+                                                                         OperationMode mode,
+                                                                         byte[] inParams,
+                                                                         Dictionary<string, string> context__,
+                                                                         bool explicitContext__,
+                                                                         Ice.AsyncCallback cb__, 
+                                                                         object cookie__)
+        {
+            IceInternal.TwowayOutgoingAsync<Callback_Object_ice_invoke> result__ =
+                new IceInternal.TwowayOutgoingAsync<Callback_Object_ice_invoke>(this, __ice_invoke_name,
+                                                                                ice_invoke_completed__, cookie__);
+            if(cb__ != null)
+            {
+                result__.whenCompletedWithAsyncCallback(cb__);
+            }
+
+            try
+            {
+                result__.prepare__(operation, mode, context__, explicitContext__);
+                IceInternal.BasicStream os__ = result__.ostr__;
+                os__.writeBlob(inParams);
+                os__.endWriteEncaps();
+                result__.send__(true);
+            }
+            catch(Ice.LocalException ex__)
+            {
+                result__.exceptionAsync__(ex__);
+            }
+            return result__;
+        }
+
+        private void ice_invoke_completed__(AsyncResult r__, 
+                                            Callback_Object_ice_invoke cb__,
+                                            Ice.ExceptionCallback excb__)
+        {
+            byte[] outParams;
+            bool ret__;
+            try
+            {
+                ret__ = end_ice_invoke(out outParams, r__);
+            }
+            catch(Ice.Exception ex__)
+            {
+                if(excb__ != null)
+                {
+                    excb__(ex__);
+                }
+                return;
+            }
+            if(cb__ != null)
+            {
+                cb__(ret__, outParams);
+            }
+        }
+
+        /// <summary>
+        /// Returns the identity embedded in this proxy.
+        /// <returns>The identity of the target object.</returns>
+        /// </summary>
         public Identity ice_getIdentity()
         {
-            return _reference.getIdentity();
+            return (Identity)_reference.getIdentity().Clone();
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the per-proxy context.
+        /// <param name="newIdentity">The identity for the new proxy.</param>
+        /// <returns>The proxy with the new identity.</returns>
+        /// </summary>
         public ObjectPrx ice_identity(Identity newIdentity)
         {
-            if(newIdentity.name.Equals(""))
+            if(newIdentity.name.Length == 0)
             {
                 throw new IllegalIdentityException();
             }
@@ -370,26 +1376,41 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns the per-proxy context for this proxy.
+        /// </summary>
+        /// <returns>The per-proxy context. If the proxy does not have a per-proxy (implicit) context, the return value
+        /// is null.</returns>
         public Dictionary<string, string> ice_getContext()
         {
-            return _reference.getContext();
+            return new Dictionary<string, string>(_reference.getContext());
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the per-proxy context.
+        /// </summary>
+        /// <param name="newContext">The context for the new proxy.</param>
+        /// <returns>The proxy with the new per-proxy context.</returns>
         public ObjectPrx ice_context(Dictionary<string, string> newContext)
         {
             return newInstance(_reference.changeContext(newContext));
         }
 
-        public ObjectPrx ice_defaultContext()
-        {
-            return newInstance(_reference.defaultContext());
-        }
-
+        /// <summary>
+        /// Returns the facet for this proxy.
+        /// </summary>
+        /// <returns>The facet for this proxy. If the proxy uses the default facet, the return value is the
+        /// empty string.</returns>
         public string ice_getFacet()
         {
             return _reference.getFacet();
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the facet.
+        /// </summary>
+        /// <param name="newFacet">The facet for the new proxy.</param>
+        /// <returns>The proxy with the new facet.</returns>
         public ObjectPrx ice_facet(string newFacet)
         {
             if(newFacet == null)
@@ -409,11 +1430,21 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns the adapter ID for this proxy.
+        /// </summary>
+        /// <returns>The adapter ID. If the proxy does not have an adapter ID, the return value is the
+        /// empty string.</returns>
         public string ice_getAdapterId()
         {
             return _reference.getAdapterId();
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the adapter ID.
+        /// </summary>
+        /// <param name="newAdapterId">The adapter ID for the new proxy.</param>
+        /// <returns>The proxy with the new adapter ID.</returns>
         public ObjectPrx ice_adapterId(string newAdapterId)
         {
             if(newAdapterId == null)
@@ -431,11 +1462,20 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns the endpoints used by this proxy.
+        /// </summary>
+        /// <returns>The endpoints used by this proxy.</returns>
         public Endpoint[] ice_getEndpoints()
         {
-            return _reference.getEndpoints();
+            return (Endpoint[])_reference.getEndpoints().Clone();
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the endpoints.
+        /// </summary>
+        /// <param name="newEndpoints">The endpoints for the new proxy.</param>
+        /// <returns>The proxy with the new endpoints.</returns>
         public ObjectPrx ice_endpoints(Endpoint[] newEndpoints)
         {
             if(Arrays.Equals(newEndpoints, _reference.getEndpoints()))
@@ -450,11 +1490,19 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns the locator cache timeout of this proxy.
+        /// </summary>
+        /// <returns>The locator cache timeout value (in seconds).</returns>
         public int ice_getLocatorCacheTimeout()
         {
             return _reference.getLocatorCacheTimeout();
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the locator cache timeout.
+        /// </summary>
+        /// <param name="newTimeout">The new locator cache timeout (in seconds).</param>
         public ObjectPrx ice_locatorCacheTimeout(int newTimeout)
         {
             if(newTimeout == _reference.getLocatorCacheTimeout())
@@ -467,11 +1515,20 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns whether this proxy caches connections.
+        /// </summary>
+        /// <returns>True if this proxy caches connections; false, otherwise.</returns>
         public bool ice_isConnectionCached()
         {
             return _reference.getCacheConnection();
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for connection caching.
+        /// </summary>
+        /// <param name="newCache">True if the new proxy should cache connections; false, otherwise.</param>
+        /// <returns>The new proxy with the specified caching policy.</returns>
         public ObjectPrx ice_connectionCached(bool newCache)
         {
             if(newCache == _reference.getCacheConnection())
@@ -484,11 +1541,20 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns how this proxy selects endpoints (randomly or ordered).
+        /// </summary>
+        /// <returns>The endpoint selection policy.</returns>
         public EndpointSelectionType ice_getEndpointSelection()
         {
             return _reference.getEndpointSelection();
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the endpoint selection policy.
+        /// </summary>
+        /// <param name="newType">The new endpoint selection policy.</param>
+        /// <returns>The new proxy with the specified endpoint selection policy.</returns>
         public ObjectPrx ice_endpointSelection(EndpointSelectionType newType)
         {
             if(newType == _reference.getEndpointSelection())
@@ -501,11 +1567,22 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns whether this proxy communicates only via secure endpoints.
+        /// </summary>
+        /// <returns>True if this proxy communicates only vi secure endpoints; false, otherwise.</returns>
         public bool ice_isSecure()
         {
             return _reference.getSecure();
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for how it selects endpoints.
+        /// </summary>
+        /// <param name="b"> If b is true, only endpoints that use a secure transport are
+        /// used by the new proxy. If b is false, the returned proxy uses both secure and insecure
+        /// endpoints.</param>
+        /// <returns>The new proxy with the specified selection policy.</returns>
         public ObjectPrx ice_secure(bool b)
         {
             if(b == _reference.getSecure())
@@ -518,11 +1595,23 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns whether this proxy prefers secure endpoints.
+        /// </summary>
+        /// <returns>True if the proxy always attempts to invoke via secure endpoints before it
+        /// attempts to use insecure endpoints; false, otherwise.</returns>
         public bool ice_isPreferSecure()
         {
             return _reference.getPreferSecure();
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for its endpoint selection policy.
+        /// </summary>
+        /// <param name="b">If b is true, the new proxy will use secure endpoints for invocations
+        /// and only use insecure endpoints if an invocation cannot be made via secure endpoints. If b is
+        /// false, the proxy prefers insecure endpoints to secure ones.</param>
+        /// <returns>The new proxy with the new endpoint selection policy.</returns>
         public ObjectPrx ice_preferSecure(bool b)
         {
             if(b == _reference.getPreferSecure())
@@ -535,12 +1624,22 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns the router for this proxy.
+        /// </summary>
+        /// <returns>The router for the proxy. If no router is configured for the proxy, the return value
+        /// is null.</returns>
         public Ice.RouterPrx ice_getRouter()
         {
             IceInternal.RouterInfo ri = _reference.getRouterInfo();
             return ri != null ? ri.getRouter() : null;
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the router.
+        /// </summary>
+        /// <param name="router">The router for the new proxy.</param>
+        /// <returns>The new proxy with the specified router.</returns>
         public ObjectPrx ice_router(RouterPrx router)
         {
             IceInternal.Reference @ref = _reference.changeRouter(router);
@@ -554,12 +1653,21 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns the locator for this proxy.
+        /// </summary>
+        /// <returns>The locator for this proxy. If no locator is configured, the return value is null.</returns>
         public Ice.LocatorPrx ice_getLocator()
         {
             IceInternal.LocatorInfo li = _reference.getLocatorInfo();
             return li != null ? li.getLocator() : null;
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for the locator.
+        /// </summary>
+        /// <param name="locator">The locator for the new proxy.</param>
+        /// <returns>The new proxy with the specified locator.</returns>
         public ObjectPrx ice_locator(LocatorPrx locator)
         {
             IceInternal.Reference @ref = _reference.changeLocator(locator);
@@ -573,11 +1681,20 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns whether this proxy uses collocation optimization.
+        /// </summary>
+        /// <returns>True if the proxy uses collocation optimization; false, otherwise.</returns>
         public bool ice_isCollocationOptimized()
         {
             return _reference.getCollocationOptimized();
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for collocation optimization.
+        /// </summary>
+        /// <param name="b">True if the new proxy enables collocation optimization; false, otherwise.</param>
+        /// <returns>The new proxy the specified collocation optimization.</returns>
         public ObjectPrx ice_collocationOptimized(bool b)
         {
             if(b == _reference.getCollocationOptimized())
@@ -590,6 +1707,10 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, but uses twoway invocations.
+        /// </summary>
+        /// <returns>A new proxy that uses twoway invocations.</returns>
         public ObjectPrx ice_twoway()
         {
             if(_reference.getMode() == IceInternal.Reference.Mode.ModeTwoway)
@@ -602,11 +1723,19 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns whether this proxy uses twoway invocations.
+        /// </summary>
+        /// <returns>True if this proxy uses twoway invocations; false, otherwise.</returns>
         public bool ice_isTwoway()
         {
             return _reference.getMode() == IceInternal.Reference.Mode.ModeTwoway;
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, but uses oneway invocations.
+        /// </summary>
+        /// <returns>A new proxy that uses oneway invocations.</returns>
         public ObjectPrx ice_oneway()
         {
             if(_reference.getMode() == IceInternal.Reference.Mode.ModeOneway)
@@ -619,11 +1748,19 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns whether this proxy uses oneway invocations.
+        /// </summary>
+        /// <returns>True if this proxy uses oneway invocations; false, otherwise.</returns>
         public bool ice_isOneway()
         {
             return _reference.getMode() == IceInternal.Reference.Mode.ModeOneway;
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, but uses batch oneway invocations.
+        /// </summary>
+        /// <returns>A new proxy that uses batch oneway invocations.</returns>
         public ObjectPrx ice_batchOneway()
         {
             if(_reference.getMode() == IceInternal.Reference.Mode.ModeBatchOneway)
@@ -636,11 +1773,19 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns whether this proxy uses batch oneway invocations.
+        /// </summary>
+        /// <returns>True if this proxy uses batch oneway invocations; false, otherwise.</returns>
         public bool ice_isBatchOneway()
         {
             return _reference.getMode() == IceInternal.Reference.Mode.ModeBatchOneway;
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, but uses datagram invocations.
+        /// </summary>
+        /// <returns>A new proxy that uses datagram invocations.</returns>
         public ObjectPrx ice_datagram()
         {
             if(_reference.getMode() == IceInternal.Reference.Mode.ModeDatagram)
@@ -653,11 +1798,19 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns whether this proxy uses datagram invocations.
+        /// </summary>
+        /// <returns>True if this proxy uses datagram invocations; false, otherwise.</returns>
         public bool ice_isDatagram()
         {
             return _reference.getMode() == IceInternal.Reference.Mode.ModeDatagram;
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, but uses batch datagram invocations.
+        /// </summary>
+        /// <returns>A new proxy that uses batch datagram invocations.</returns>
         public ObjectPrx ice_batchDatagram()
         {
             if(_reference.getMode() == IceInternal.Reference.Mode.ModeBatchDatagram)
@@ -670,11 +1823,20 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns whether this proxy uses batch datagram invocations.
+        /// </summary>
+        /// <returns>True if this proxy uses batch datagram invocations; false, otherwise.</returns>
         public bool ice_isBatchDatagram()
         {
             return _reference.getMode() == IceInternal.Reference.Mode.ModeBatchDatagram;
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for compression.
+        /// </summary>
+        /// <param name="co">True enables compression for the new proxy; false disables compression.</param>
+        /// <returns>A new proxy with the specified compression setting.</returns>
         public ObjectPrx ice_compress(bool co)
         {
             IceInternal.Reference @ref = _reference.changeCompress(co);
@@ -688,6 +1850,11 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for its timeout setting.
+        /// </summary>
+        /// <param name="t">The timeout for the new proxy in milliseconds.</param>
+        /// <returns>A new proxy with the specified timeout.</returns>
         public ObjectPrx ice_timeout(int t)
         {
             IceInternal.Reference @ref = _reference.changeTimeout(t);
@@ -701,6 +1868,12 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Creates a new proxy that is identical to this proxy, except for its connection ID.
+        /// </summary>
+        /// <param name="connectionId">The connection ID for the new proxy. An empty string removes the
+        /// connection ID.</param>
+        /// <returns>A new proxy with the specified connection ID.</returns>
         public ObjectPrx ice_connectionId(string connectionId)
         {
             IceInternal.Reference @ref = _reference.changeConnectionId(connectionId);
@@ -714,6 +1887,22 @@ namespace Ice
             }
         }
 
+        /// <summary>
+        /// Returns the connection id of this proxy.
+        /// </summary>
+        /// <returns>The connection id.</returns>
+        public string ice_getConnectionId()
+        {
+            return _reference.getConnectionId();
+        }
+
+        /// <summary>
+        /// Returns the Connection for this proxy. If the proxy does not yet have an established connection,
+        /// it first attempts to create a connection.
+        /// </summary>
+        /// <returns>The Connection for this proxy.</returns>
+        /// <exception name="CollocationOptimizationException">If the proxy uses collocation optimization and denotes a
+        /// collocated object.</exception>
         public Connection ice_getConnection()
         {
             int cnt__ = 0;
@@ -728,11 +1917,19 @@ namespace Ice
                 }
                 catch(LocalException ex__)
                 {
-                    handleException__(del__, ex__, null, ref cnt__);
+                    handleException__(del__, ex__, true, ref cnt__);
                 }
             }
         }
 
+        /// <summary>
+        /// Returns the cached Connection for this proxy. If the proxy does not yet have an established
+        /// connection, it does not attempt to create a connection.
+        /// </summary>
+        /// <returns>The cached Connection for this proxy (null if the proxy does not have
+        /// an established connection).</returns>
+        /// <exception name="CollocationOptimizationException">If the proxy uses collocation optimization and denotes a
+        /// collocated object.</exception>
         public Connection ice_getCachedConnection()
         {
             ObjectDel_ del__ = null;
@@ -755,6 +1952,9 @@ namespace Ice
             return null;
         }
 
+        /// <summary>
+        /// Flushes any pending batched requests for this communicator. The call blocks until the flush is complete.
+        /// </summary>
         public void ice_flushBatchRequests()
         {
             //
@@ -771,31 +1971,102 @@ namespace Ice
             }
             catch(LocalException ex__)
             {
-                handleException__(del__, ex__, null, ref cnt__);
+                handleException__(del__, ex__, true, ref cnt__);
             }
         }
 
+        /// <summary>
+        /// Asynchronously flushes any pending batched requests for this communicator. The call does not block.
+        /// </summary>
+        /// <param name="cb">The callback object to notify the application when the flush is complete.</param>
+        /// <returns>True if the requests were flushed immediately without blocking; false
+        /// if the requests could not be flushed immediately.</returns>
         public bool ice_flushBatchRequests_async(AMI_Object_ice_flushBatchRequests cb)
         {
-            return cb.invoke__(this);
+            Ice.AsyncResult result = begin_ice_flushBatchRequests().whenCompleted(cb.exception__);
+            if(cb is Ice.AMISentCallback)
+            {
+                result.whenSent((Ice.AsyncCallback)cb.sent__);
+            }
+            return result.sentSynchronously();
         }
 
+        private const string __ice_flushBatchRequests_name = "ice_flushBatchRequests";
+
+        public AsyncResult begin_ice_flushBatchRequests()
+        {
+            return begin_ice_flushBatchRequests(null, null);
+        }
+
+        public AsyncResult begin_ice_flushBatchRequests(Ice.AsyncCallback cb__, object cookie__)
+        {
+            IceInternal.ProxyBatchOutgoingAsync result__ =
+                new IceInternal.ProxyBatchOutgoingAsync(this, __ice_flushBatchRequests_name, cookie__);
+            if(cb__ != null)
+            {
+                result__.whenCompletedWithAsyncCallback(cb__);
+            }
+            try
+            {
+                result__.send__();
+            }
+            catch(Ice.LocalException ex__)
+            {
+                result__.exceptionAsync__(ex__);
+            }
+            return result__;
+        }
+
+        public void end_ice_flushBatchRequests(Ice.AsyncResult r__)
+        {
+            IceInternal.BatchOutgoingAsync outAsync__ = (IceInternal.BatchOutgoingAsync)r__;
+            IceInternal.BatchOutgoingAsync.check__(outAsync__, this, __ice_flushBatchRequests_name);
+            outAsync__.wait__();
+        }
+
+        /// <summary>
+        /// Returns whether this proxy equals the passed object. Two proxies are equal if they are equal in all
+        /// respects, that is, if their object identity, endpoints timeout settings, and so on are all equal.
+        /// </summary>
+        /// <param name="r">The object to compare this proxy with.</param>
+        /// <returns>True if this proxy is equal to r; false, otherwise.</returns>
         public override bool Equals(object r)
         {
             ObjectPrxHelperBase rhs = r as ObjectPrxHelperBase;
             return object.ReferenceEquals(rhs, null) ? false : _reference.Equals(rhs._reference);
         }
 
-        public static bool Equals(Ice.ObjectPrxHelperBase lhs, Ice.ObjectPrxHelperBase rhs)
+        /// <summary>
+        /// Returns whether two proxies are equal. Two proxies are equal if they are equal in all
+        /// respects, that is, if their object identity, endpoints timeout settings, and so on are all equal.
+        /// </summary>
+        /// <param name="lhs">A proxy to compare with the proxy rhs.</param>
+        /// <param name="rhs">A proxy to compare with the proxy lhs.</param>
+        /// <returns>True if the proxies are equal; false, otherwise.</returns>
+        public static bool Equals(ObjectPrxHelperBase lhs, ObjectPrxHelperBase rhs)
         {
             return object.ReferenceEquals(lhs, null) ? object.ReferenceEquals(rhs, null) : lhs.Equals(rhs);
         }
 
+        /// <summary>
+        /// Returns whether two proxies are equal. Two proxies are equal if they are equal in all
+        /// respects, that is, if their object identity, endpoints timeout settings, and so on are all equal.
+        /// </summary>
+        /// <param name="lhs">A proxy to compare with the proxy rhs.</param>
+        /// <param name="rhs">A proxy to compare with the proxy lhs.</param>
+        /// <returns>True if the proxies are equal; false, otherwise.</returns>
         public static bool operator==(ObjectPrxHelperBase lhs, ObjectPrxHelperBase rhs)
         {
             return Equals(lhs, rhs);
         }
 
+        /// <summary>
+        /// Returns whether two proxies are not equal. Two proxies are equal if they are equal in all
+        /// respects, that is, if their object identity, endpoints timeout settings, and so on are all equal.
+        /// </summary>
+        /// <param name="lhs">A proxy to compare with the proxy rhs.</param>
+        /// <param name="rhs">A proxy to compare with the proxy lhs.</param>
+        /// <returns>True if the proxies are not equal; false, otherwise.</returns>
         public static bool operator!=(ObjectPrxHelperBase lhs, ObjectPrxHelperBase rhs)
         {
             return !Equals(lhs, rhs);
@@ -836,7 +2107,7 @@ namespace Ice
                 // The _delegate attribute is only used if "cache connection"
                 // is enabled. If it's not enabled, we don't keep track of the
                 // delegate -- a new delegate is created for each invocations.
-                //      
+                //
 
                 if(delegateD != null)
                 {
@@ -853,10 +2124,7 @@ namespace Ice
             }
         }
 
-        public void handleException__(ObjectDel_ @delegate, 
-                                      LocalException ex, 
-                                      IceInternal.OutgoingAsync outAsync,
-                                      ref int cnt)
+        public int handleException__(ObjectDel_ @delegate, LocalException ex, bool sleep, ref int cnt)
         {
             //
             // Only _delegate needs to be mutex protected here.
@@ -877,7 +2145,7 @@ namespace Ice
 
             try
             {
-                _reference.getInstance().proxyFactory().checkRetryAfterException(ex, _reference, outAsync, ref cnt);
+                return _reference.getInstance().proxyFactory().checkRetryAfterException(ex, _reference, sleep, ref cnt);
             }
             catch(CommunicatorDestroyedException)
             {
@@ -889,8 +2157,7 @@ namespace Ice
             }
         }
 
-        public void handleExceptionWrapper__(ObjectDel_ @delegate, IceInternal.LocalExceptionWrapper ex, 
-                                             IceInternal.OutgoingAsync outAsync)
+        public int handleExceptionWrapper__(ObjectDel_ @delegate, IceInternal.LocalExceptionWrapper ex)
         {
             lock(this)
             {
@@ -905,18 +2172,15 @@ namespace Ice
                 throw ex.get();
             }
 
-            if(outAsync != null)
-            {
-                outAsync.send__();
-            }
+            return 0;
         }
 
-        public void handleExceptionWrapperRelaxed__(ObjectDel_ @delegate, IceInternal.LocalExceptionWrapper ex, 
-                                                    IceInternal.OutgoingAsync outAsync, ref int cnt)
+        public int handleExceptionWrapperRelaxed__(ObjectDel_ @delegate, IceInternal.LocalExceptionWrapper ex,
+                                                   bool sleep, ref int cnt)
         {
             if(!ex.retry())
             {
-                handleException__(@delegate, ex.get(), outAsync, ref cnt);
+                return handleException__(@delegate, ex.get(), sleep, ref cnt);
             }
             else
             {
@@ -928,10 +2192,7 @@ namespace Ice
                     }
                 }
 
-                if(outAsync != null)
-                {
-                    outAsync.send__();
-                }
+                return 0;
             }
         }
 
@@ -947,6 +2208,42 @@ namespace Ice
                 TwowayOnlyException ex = new TwowayOnlyException();
                 ex.operation = name;
                 throw ex;
+            }
+        }
+
+        public void checkAsyncTwowayOnly__(string name)
+        {
+            //
+            // No mutex lock necessary, there is nothing mutable in this
+            // operation.
+            //
+
+            if(!ice_isTwoway())
+            {
+                throw new System.ArgumentException("`" + name + "' can only be called with a twoway proxy");
+            }
+        }
+
+        public void end__(AsyncResult result, string operation)
+        {
+            IceInternal.OutgoingAsync outAsync = (IceInternal.OutgoingAsync)result;
+            IceInternal.OutgoingAsync.check__(outAsync, this, operation);
+            bool ok = outAsync.wait__();
+            if(_reference.getMode() == IceInternal.Reference.Mode.ModeTwoway)
+            {
+                if(!ok)
+                {
+                    try
+                    {
+                        outAsync.throwUserException__();
+                    }
+                    catch(Ice.UserException ex)
+                    {
+                        throw new Ice.UnknownUserException(ex.ice_name(), ex);
+                    }
+                }
+                IceInternal.BasicStream is__ = outAsync.istr__;
+                is__.skipEmptyEncaps();
             }
         }
 
@@ -968,7 +2265,7 @@ namespace Ice
             else
             {
                 IceInternal.Reference.Mode mode = _reference.getMode();
-                return createDelegate(ami || 
+                return createDelegate(ami ||
                                       mode == IceInternal.Reference.Mode.ModeBatchOneway ||
                                       mode == IceInternal.Reference.Mode.ModeBatchDatagram);
             }
@@ -1050,26 +2347,53 @@ namespace Ice
         private ObjectDel_ _delegate;
     }
 
+    /// <summary>
+    /// Base class for all proxy helpers.
+    /// </summary>
     public class ObjectPrxHelper : ObjectPrxHelperBase
     {
-        public static ObjectPrx checkedCast(Ice.ObjectPrx b)
+        /// <summary>
+        /// Casts a proxy to {@link ObjectPrx}. This call contacts
+        /// the server and will throw an Ice run-time exception if the target
+        /// object does not exist or the server cannot be reached.
+        /// </summary>
+        /// <param name="b">The proxy to cast to ObjectPrx.</param>
+        /// <returns>b.</returns>
+        public static ObjectPrx checkedCast(ObjectPrx b)
         {
             return b;
         }
 
-        public static ObjectPrx checkedCast(Ice.ObjectPrx b, Dictionary<string, string> ctx)
+        /// <summary>
+        /// Casts a proxy to {@link ObjectPrx}. This call contacts
+        /// the server and throws an Ice run-time exception if the target
+        /// object does not exist or the server cannot be reached.
+        /// </summary>
+        /// <param name="b">The proxy to cast to ObjectPrx.</param>
+        /// <param name="ctx">The Context map for the invocation.</param>
+        /// <returns>b.</returns>
+        public static ObjectPrx checkedCast(ObjectPrx b, Dictionary<string, string> ctx)
         {
             return b;
         }
 
-        public static ObjectPrx checkedCast(Ice.ObjectPrx b, string f)
+        /// <summary>
+        /// Creates a new proxy that is identical to the passed proxy, except
+        /// for its facet. This call contacts
+        /// the server and throws an Ice run-time exception if the target
+        /// object does not exist, the specified facet does not exist, or the server cannot be reached.
+        /// </summary>
+        /// <param name="b">The proxy to cast to ObjectPrx.</param>
+        /// <param name="f">The facet for the new proxy.</param>
+        /// <returns>The new proxy with the specified facet.</returns>
+        public static ObjectPrx checkedCast(ObjectPrx b, string f)
         {
             ObjectPrx d = null;
             if(b != null)
             {
                 try
                 {
-                    Ice.ObjectPrx bb = b.ice_facet(f);
+                    ObjectPrx bb = b.ice_facet(f);
                     bool ok = bb.ice_isA("::Ice::Object");
                     Debug.Assert(ok);
                     ObjectPrxHelper h = new ObjectPrxHelper();
@@ -1083,14 +2407,24 @@ namespace Ice
             return d;
         }
 
-        public static ObjectPrx checkedCast(Ice.ObjectPrx b, string f, Dictionary<string, string> ctx)
+        /// <summary>
+        /// Creates a new proxy that is identical to the passed proxy, except
+        /// for its facet. This call contacts
+        /// the server and throws an Ice run-time exception if the target
+        /// object does not exist, the specified facet does not exist, or the server cannot be reached.
+        /// </summary>
+        /// <param name="b">The proxy to cast to ObjectPrx.</param>
+        /// <param name="f">The facet for the new proxy.</param>
+        /// <param name="ctx">The Context map for the invocation.</param>
+        /// <returns>The new proxy with the specified facet.</returns>
+        public static ObjectPrx checkedCast(ObjectPrx b, string f, Dictionary<string, string> ctx)
         {
             ObjectPrx d = null;
             if(b != null)
             {
                 try
                 {
-                    Ice.ObjectPrx bb = b.ice_facet(f);
+                    ObjectPrx bb = b.ice_facet(f);
                     bool ok = bb.ice_isA("::Ice::Object", ctx);
                     Debug.Assert(ok);
                     ObjectPrxHelper h = new ObjectPrxHelper();
@@ -1104,17 +2438,30 @@ namespace Ice
             return d;
         }
 
-        public static ObjectPrx uncheckedCast(Ice.ObjectPrx b)
+        /// <summary>
+        /// Casts a proxy to {@link ObjectPrx}. This call does
+        /// not contact the server and always succeeds.
+        /// </summary>
+        /// <param name="b">The proxy to cast to ObjectPrx.</param>
+        /// <returns>b.</returns>
+        public static ObjectPrx uncheckedCast(ObjectPrx b)
         {
             return b;
         }
 
-        public static ObjectPrx uncheckedCast(Ice.ObjectPrx b, string f)
+        /// <summary>
+        /// Creates a new proxy that is identical to the passed proxy, except
+        /// for its facet. This call does not contact the server and always succeeds.
+        /// </summary>
+        /// <param name="b">The proxy to cast to ObjectPrx.</param>
+        /// <param name="f">The facet for the new proxy.</param>
+        /// <returns>The new proxy with the specified facet.</returns>
+        public static ObjectPrx uncheckedCast(ObjectPrx b, string f)
         {
             ObjectPrx d = null;
             if(b != null)
             {
-                Ice.ObjectPrx bb = b.ice_facet(f);
+                ObjectPrx bb = b.ice_facet(f);
                 ObjectPrxHelper h = new ObjectPrxHelper();
                 h.copyFrom__(bb);
                 d = h;
@@ -1129,7 +2476,7 @@ namespace Ice
         void ice_ping(Dictionary<string, string> context);
         string[] ice_ids(Dictionary<string, string> context);
         string ice_id(Dictionary<string, string> context);
-        bool ice_invoke(string operation, Ice.OperationMode mode, byte[] inParams, out byte[] outParams,
+        bool ice_invoke(string operation, OperationMode mode, byte[] inParams, out byte[] outParams,
                         Dictionary<string, string> context);
 
         void ice_flushBatchRequests();
@@ -1146,7 +2493,7 @@ namespace Ice
             initCurrent__(ref current__, "ice_isA", OperationMode.Nonmutating, context__);
 
             bool result__ = false;
-            IceInternal.Direct.RunDelegate run__ = delegate(Ice.Object servant__)
+            IceInternal.Direct.RunDelegate run__ = delegate(Object servant__)
             {
                 result__ = servant__.ice_isA(id__, current__);
                 return Ice.DispatchStatus.DispatchOK;
@@ -1164,7 +2511,7 @@ namespace Ice
 
             try
             {
-                DispatchStatus status__ = direct__.servant().collocDispatch__(direct__); 
+                DispatchStatus status__ = direct__.servant().collocDispatch__(direct__);
                 Debug.Assert(status__ == DispatchStatus.DispatchOK);
                 return result__;
             }
@@ -1180,13 +2527,13 @@ namespace Ice
                 }
             }
         }
-        
+
         public virtual void ice_ping(Dictionary<string, string> context__)
         {
             Current current__ = new Current();
             initCurrent__(ref current__, "ice_ping", OperationMode.Nonmutating, context__);
-         
-            IceInternal.Direct.RunDelegate run__ = delegate(Ice.Object servant__)
+
+            IceInternal.Direct.RunDelegate run__ = delegate(Object servant__)
             {
                 servant__.ice_ping(current__);
                 return Ice.DispatchStatus.DispatchOK;
@@ -1201,10 +2548,10 @@ namespace Ice
             {
                 IceInternal.LocalExceptionWrapper.throwWrapper(ex__);
             }
-            
+
             try
             {
-                DispatchStatus status__ = direct__.servant().collocDispatch__(direct__); 
+                DispatchStatus status__ = direct__.servant().collocDispatch__(direct__);
                 Debug.Assert(status__ == DispatchStatus.DispatchOK);
             }
             finally
@@ -1219,14 +2566,14 @@ namespace Ice
                 }
             }
         }
-        
+
         public virtual string[] ice_ids(Dictionary<string, string> context__)
         {
             Current current__ = new Current();
             initCurrent__(ref current__, "ice_ids", OperationMode.Nonmutating, context__);
 
             string[] result__ = null;
-            IceInternal.Direct.RunDelegate run__ = delegate(Ice.Object servant__)
+            IceInternal.Direct.RunDelegate run__ = delegate(Object servant__)
             {
                 result__ = servant__.ice_ids(current__);
                 return Ice.DispatchStatus.DispatchOK;
@@ -1241,10 +2588,10 @@ namespace Ice
             {
                 IceInternal.LocalExceptionWrapper.throwWrapper(ex__);
             }
-            
+
             try
             {
-                DispatchStatus status__ = direct__.servant().collocDispatch__(direct__); 
+                DispatchStatus status__ = direct__.servant().collocDispatch__(direct__);
                 Debug.Assert(status__ == DispatchStatus.DispatchOK);
                 return result__;
             }
@@ -1260,14 +2607,14 @@ namespace Ice
                 }
             }
         }
-        
+
         public virtual string ice_id(Dictionary<string, string> context__)
         {
             Current current__ = new Current();
             initCurrent__(ref current__, "ice_id", OperationMode.Nonmutating, context__);
-            
+
             string result__ = null;
-            IceInternal.Direct.RunDelegate run__ = delegate(Ice.Object servant__)
+            IceInternal.Direct.RunDelegate run__ = delegate(Object servant__)
             {
                 result__ = servant__.ice_id(current__);
                 return Ice.DispatchStatus.DispatchOK;
@@ -1282,10 +2629,10 @@ namespace Ice
             {
                 IceInternal.LocalExceptionWrapper.throwWrapper(ex__);
             }
-            
+
             try
             {
-                DispatchStatus status__ = direct__.servant().collocDispatch__(direct__); 
+                DispatchStatus status__ = direct__.servant().collocDispatch__(direct__);
                 Debug.Assert(status__ == DispatchStatus.DispatchOK);
                 return result__;
             }
@@ -1301,8 +2648,8 @@ namespace Ice
                 }
             }
         }
-        
-        public virtual bool ice_invoke(string operation, Ice.OperationMode mode, byte[] inParams,
+
+        public virtual bool ice_invoke(string operation, OperationMode mode, byte[] inParams,
                                        out byte[] outParams, Dictionary<string, string> context)
         {
             throw new CollocationOptimizationException();
@@ -1332,23 +2679,23 @@ namespace Ice
             // No need to synchronize "from", as the delegate is immutable
             // after creation.
             //
-            
+
             //
             // No need to synchronize, as this operation is only called
             // upon initialization.
             //
-            
+
             Debug.Assert(reference__ == null);
             Debug.Assert(adapter__ == null);
-            
+
             reference__ = from.reference__;
             adapter__ = from.adapter__;
         }
-        
+
         protected internal IceInternal.Reference reference__;
-        protected internal Ice.ObjectAdapter adapter__;
-        
-        protected internal void initCurrent__(ref Current current, string op, Ice.OperationMode mode,
+        protected internal ObjectAdapter adapter__;
+
+        protected internal void initCurrent__(ref Current current, string op, OperationMode mode,
                                               Dictionary<string, string> context)
         {
             current.adapter = adapter__;
@@ -1368,9 +2715,9 @@ namespace Ice
                 //
                 ImplicitContextI implicitContext =
                     reference__.getInstance().getImplicitContext();
-            
+
                 Dictionary<string, string> prxContext = reference__.getContext();
-                
+
                 if(implicitContext == null)
                 {
                     current.ctx = new Dictionary<string, string>(prxContext);
@@ -1380,25 +2727,25 @@ namespace Ice
                     current.ctx = implicitContext.combine(prxContext);
                 }
             }
-            
+
             current.requestId = -1;
         }
-        
-        public virtual void setup(IceInternal.Reference rf, Ice.ObjectAdapter adapter)
+
+        public virtual void setup(IceInternal.Reference rf, ObjectAdapter adapter)
         {
             //
             // No need to synchronize, as this operation is only called
             // upon initialization.
             //
-            
+
             Debug.Assert(reference__ == null);
             Debug.Assert(adapter__ == null);
-            
+
             reference__ = rf;
             adapter__ = adapter;
         }
     }
-            
+
     public class ObjectDelM_ : ObjectDel_
     {
         public virtual bool ice_isA(string id__, Dictionary<string, string> context__)
@@ -1445,7 +2792,7 @@ namespace Ice
                 handler__.reclaimOutgoing(og__);
             }
         }
-        
+
         public virtual void ice_ping(Dictionary<string, string> context__)
         {
             IceInternal.Outgoing og__ = handler__.getOutgoing("ice_ping", OperationMode.Nonmutating, context__);
@@ -1480,7 +2827,7 @@ namespace Ice
                 handler__.reclaimOutgoing(og__);
             }
         }
-        
+
         public virtual string[] ice_ids(Dictionary<string, string> context__)
         {
             IceInternal.Outgoing og__ = handler__.getOutgoing("ice_ids", OperationMode.Nonmutating, context__);
@@ -1516,7 +2863,7 @@ namespace Ice
                 handler__.reclaimOutgoing(og__);
             }
         }
-        
+
         public virtual string ice_id(Dictionary<string, string> context__)
         {
             IceInternal.Outgoing og__ = handler__.getOutgoing("ice_id", OperationMode.Nonmutating, context__);
@@ -1592,7 +2939,7 @@ namespace Ice
                 handler__.reclaimOutgoing(og__);
             }
         }
-        
+
         public virtual void ice_flushBatchRequests()
         {
             IceInternal.BatchOutgoing @out = new IceInternal.BatchOutgoing(handler__);
@@ -1608,7 +2955,7 @@ namespace Ice
         {
             handler__ = handler;
         }
-        
+
         //
         // Only for use by ObjectPrx
         //
@@ -1628,10 +2975,10 @@ namespace Ice
 
             handler__ = from.handler__;
         }
-        
+
         protected IceInternal.RequestHandler handler__;
 
-        public virtual void setup(IceInternal.Reference rf, Ice.ObjectPrx proxy, bool async)
+        public virtual void setup(IceInternal.Reference rf, ObjectPrx proxy, bool async)
         {
             //
             // No need to synchronize, as this operation is only called

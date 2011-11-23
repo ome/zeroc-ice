@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -199,11 +199,22 @@ public final class StringUtil
     }
 
     private static char
-    checkChar(char c)
+    checkChar(String s, int pos)
     {
+        char c = s.charAt(pos);
         if(!(c >= 32 && c <= 126))
         {
-            throw new IllegalArgumentException("illegal input character");
+            String msg;
+            if(pos > 0)
+            {
+                msg = "character after `" + s.substring(0, pos) + "'";
+            }
+            else
+            {
+                msg = "first character";
+            }
+            msg += " is not a printable ASCII character (ordinal " + (int)c + ")";
+            throw new IllegalArgumentException(msg);
         }
         return c;
     }
@@ -223,13 +234,13 @@ public final class StringUtil
 
         if(s.charAt(start) != '\\')
         {
-            c = checkChar(s.charAt(start++));
+            c = checkChar(s, start++);
         }
         else
         {
             if(start + 1 == end)
             {
-                throw new IllegalArgumentException("trailing backslash in argument");
+                throw new IllegalArgumentException("trailing backslash");
             }
             switch(s.charAt(++start))
             {
@@ -279,7 +290,7 @@ public final class StringUtil
                 case '6':
                 case '7':
                 {
-                    int oct = 0;
+                    int val = 0;
                     for(int j = 0; j < 3 && start < end; ++j)
                     {
                         int charVal = s.charAt(start++) - '0';
@@ -288,18 +299,19 @@ public final class StringUtil
                             --start;
                             break;
                         }
-                        oct = oct * 8 + charVal;
+                        val = val * 8 + charVal;
                     }
-                    if(oct > 255)
+                    if(val > 255)
                     {
-                        throw new IllegalArgumentException("octal value out of range");
+                        String msg = "octal value \\" + Integer.toOctalString(val) + " (" + val + ") is out of range";
+                        throw new IllegalArgumentException(msg);
                     }
-                    c = (char)oct;
+                    c = (char)val;
                     break;
                 }
                 default:
                 {
-                    c = checkChar(s.charAt(start++));
+                    c = checkChar(s, start++);
                     break;
                 }
             }
@@ -324,43 +336,120 @@ public final class StringUtil
     }
 
     //
-    // Remove escape sequences added by escapeString.
+    // Remove escape sequences added by escapeString. Throws IllegalArgumentException
+    // for an invalid input string.
     //
-    public static boolean
-    unescapeString(String s, int start, int end, Ice.StringHolder result)
+    public static String
+    unescapeString(String s, int start, int end)
     {
-        if(start < 0)
+        assert(start >= 0 && start <= end && end <= s.length());
+
+        StringBuilder sb = new StringBuilder(end - start);
+        decodeString(s, start, end, sb);
+        String decodedString = sb.toString();
+
+        byte[] arr = new byte[decodedString.length()];
+        for(int i = 0; i < arr.length; ++i)
         {
-            throw new IllegalArgumentException("start offset must be >= 0");
-        }
-        if(end > s.length())
-        {
-            throw new IllegalArgumentException("end offset must <= s.length()");
-        }
-        if(start > end)
-        {
-            throw new IllegalArgumentException("start offset must <= end offset");
+            arr[i] = (byte)decodedString.charAt(i);
         }
 
         try
         {
-            StringBuilder sb = new StringBuilder(end - start);
-            decodeString(s, start, end, sb);
-            String decodedString = sb.toString();
+            return new String(arr, 0, arr.length, "UTF8");
+        }
+        catch(java.io.UnsupportedEncodingException ex)
+        {
+            IllegalArgumentException e = new IllegalArgumentException("unsupported encoding");
+            e.initCause(ex);
+            throw e;
+        }
+    }
 
-            byte[] arr = new byte[decodedString.length()];
-            for(int i = 0; i < arr.length; ++i)
+    //
+    // Join a list of strings using the given delimiter.
+    //
+    public static String
+    joinString(java.util.List<String> values, String delimiter)
+    {
+        StringBuffer s = new StringBuffer();
+        boolean first = true;
+        for(String v : values)
+        {
+            if(!first)
             {
-                arr[i] = (byte)decodedString.charAt(i);
+                s.append(delimiter);
+            }
+            s.append(v);
+            first = false;
+        }
+        return s.toString();
+    }
+
+    //
+    // Split string helper; returns null for unmatched quotes
+    //
+    static public String[]
+    splitString(String str, String delim)
+    {
+        java.util.List<String> l = new java.util.ArrayList<String>();
+        char[] arr = new char[str.length()];
+        int pos = 0;
+        
+        int n = 0;
+        char quoteChar = '\0';
+        while(pos < str.length())
+        {
+            if(quoteChar == '\0' && (str.charAt(pos) == '"' || str.charAt(pos) == '\''))
+            {
+                quoteChar = str.charAt(pos++);
+                continue; // Skip the quote.
+            }
+            else if(quoteChar == '\0' && str.charAt(pos) == '\\' && pos + 1 < str.length() && 
+                    (str.charAt(pos + 1) == '"' || str.charAt(pos + 1) == '\''))
+            {
+                ++pos; // Skip the backslash
+            }
+            else if(quoteChar != '\0' && str.charAt(pos) == '\\' && pos + 1 < str.length() && 
+                    str.charAt(pos + 1) == quoteChar)
+            {
+                ++pos; // Skip the backslash
+            }
+            else if(quoteChar != '\0' && str.charAt(pos) == quoteChar)
+            {
+                ++pos;
+                quoteChar = '\0';
+                continue; // Skip the quote.
+            }
+            else if(delim.indexOf(str.charAt(pos)) != -1)
+            {
+                if(quoteChar == '\0')
+                {
+                    ++pos;
+                    if(n > 0)
+                    {
+                        l.add(new String(arr, 0, n));
+                        n = 0;
+                    }
+                    continue;
+                }
             }
 
-            result.value = new String(arr, 0, arr.length, "UTF8");
-            return true;
+            if(pos < str.length())
+            {
+                arr[n++] = str.charAt(pos++);
+            }
         }
-        catch(java.lang.Exception ex)
+
+        if(n > 0)
         {
-            return false;
+            l.add(new String(arr, 0, n));
         }
+        if(quoteChar != '\0')
+        {
+            return null; // Unmatched quote.
+        }
+        return (String[])l.toArray(new String[0]);
     }
 
     public static int

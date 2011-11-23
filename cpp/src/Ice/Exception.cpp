@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -32,10 +32,17 @@ throwUOE(const string& expectedType, const string& actualType)
                                          actualType, expectedType);
 }
 
+void
+throwMemoryLimitException(const char* file, int line, size_t requested, size_t maximum)
+{
+    ostringstream s;
+    s << "requested " << requested << " bytes, maximum allowed is " << maximum << " bytes (see Ice.MessageSizeMax)";
+    throw Ice::MemoryLimitException(file, line, s.str());
 }
 
 }
 
+}
 
 bool
 Ice::UserException::__usesClasses() const
@@ -554,17 +561,6 @@ Ice::UnmarshalOutOfBoundsException::ice_print(ostream& out) const
 }
 
 void
-Ice::IllegalIndirectionException::ice_print(ostream& out) const
-{
-    Exception::ice_print(out);
-    out << ":\nprotocol error: encountered illegal protocol indirection";
-    if(!reason.empty())
-    {
-        out << ":\n" << reason;
-    }
-}
-
-void
 Ice::NoObjectFactoryException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
@@ -614,17 +610,6 @@ Ice::EncapsulationException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: illegal encapsulation";
-    if(!reason.empty())
-    {
-        out << ":\n" << reason;
-    }
-}
-
-void
-Ice::NegativeSizeException::ice_print(ostream& out) const
-{
-    Exception::ice_print(out);
-    out << ":\nprotocol error: negative size for sequence, dictionary, etc.";
     if(!reason.empty())
     {
         out << ":\n" << reason;

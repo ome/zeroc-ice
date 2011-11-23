@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,7 +26,7 @@ public:
 
 protected:
 
-    void invoke(Ice::ObjectPrx&, const Ice::AMD_Array_Object_ice_invokePtr&, 
+    void invoke(Ice::ObjectPrx&, const Ice::AMD_Object_ice_invokePtr&, 
                 const std::pair<const Ice::Byte*, const Ice::Byte*>&, const Ice::Current&);
 
     const InstancePtr _instance;
@@ -39,7 +39,7 @@ private:
     const int _requestTraceLevel;
     const int _overrideTraceLevel;
     const RequestQueuePtr _requestQueue;
-    const Ice::Context _sslContext;
+    const Ice::Context _context;
 };
 
 }

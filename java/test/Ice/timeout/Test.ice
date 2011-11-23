@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,6 +10,7 @@
 #ifndef TEST_ICE
 #define TEST_ICE
 
+[["java:package:test.Ice.timeout"]]
 module Test
 {
 
@@ -17,9 +18,9 @@ sequence<byte> ByteSeq;
 
 interface Timeout
 {
-    ["ami"] void op();
-    ["ami"] void sendData(ByteSeq seq);
-    ["ami"] void sleep(int to);
+    void op();
+    void sendData(ByteSeq seq);
+    void sleep(int to);
 
     void holdAdapter(int to);
 

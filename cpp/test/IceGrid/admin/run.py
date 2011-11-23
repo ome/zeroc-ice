@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -20,17 +20,29 @@ if len(path) == 0:
 sys.path.append(path[0])
 from scripts import *
 
+if not TestUtil.isWin32() and os.getuid() == 0:
+    print
+    print "*** can't run test as root ***"
+    print
+    sys.exit(0)
+
 testdir = os.getcwd();
+
+router = TestUtil.getGlacier2Router()
+targets = []
+if TestUtil.appverifier:
+    targets = [ TestUtil.getIceGridNode(), TestUtil.getIceGridRegistry(), router]
+    TestUtil.setAppVerifierSettings(targets)
 
 registryProcs = IceGridAdmin.startIceGridRegistry(testdir)
 nodeProc = IceGridAdmin.startIceGridNode(testdir)
 
 print "starting glacier2...",
 sys.stdout.flush()
-router = os.path.join(TestUtil.getCppBinDir(), "glacier2router")
+
 args = ' --Glacier2.SessionTimeout=5' + \
-       ' --Glacier2.Client.Endpoints="default -p 12347 -t 10000"' + \
-       ' --Glacier2.Server.Endpoints="tcp -h 127.0.0.1 -t 10000"' \
+       ' --Glacier2.Client.Endpoints="default -p 12347"' + \
+       ' --Glacier2.Server.Endpoints="tcp -h 127.0.0.1"' \
        ' --Glacier2.SessionManager=IceGrid/AdminSessionManager' + \
        ' --Glacier2.PermissionsVerifier=Glacier2/NullPermissionsVerifier' + \
        ' --Glacier2.SSLSessionManager=IceGrid/AdminSSLSessionManager' + \
@@ -44,7 +56,7 @@ print "testing login with username/password...",
 sys.stdout.flush()
 
 # Direct registry connection with username/password
-icegridadmin = os.path.join(TestUtil.getCppBinDir(), "icegridadmin")
+icegridadmin = TestUtil.getIceGridAdmin()
 args = ' --Ice.Default.Locator="IceGrid/Locator:default -p 12010"' + \
        ' --IceGridAdmin.Username=demo' + \
        ' --IceGridAdmin.Password=dummy'
@@ -73,7 +85,7 @@ if TestUtil.protocol == "ssl":
     sys.stdout.flush()
 
     # Direct registry connection with SSL
-    icegridadmin = os.path.join(TestUtil.getCppBinDir(), "icegridadmin")
+    icegridadmin = TestUtil.getIceGridAdmin()
     args = ' --Ice.Default.Locator="IceGrid/Locator:default -p 12010" --ssl'
     admin = TestUtil.startClient(icegridadmin, args, None, None, False)
     admin.expect('>>> ')
@@ -95,7 +107,7 @@ if TestUtil.protocol == "ssl":
 
 print "testing commands...",
 sys.stdout.flush()
-icegridadmin = os.path.join(TestUtil.getCppBinDir(), "icegridadmin")
+icegridadmin = TestUtil.getIceGridAdmin()
 args = ' --Ice.Default.Locator="IceGrid/Locator:default -p 12010"' + \
        ' --IceGridAdmin.Username=demo' + \
        ' --IceGridAdmin.Password=dummy'
@@ -240,3 +252,7 @@ print "ok"
 IceGridAdmin.iceGridAdmin("node shutdown localnode")
 IceGridAdmin.shutdownIceGridRegistry(registryProcs)
 nodeProc.waitTestSuccess()
+
+if TestUtil.appverifier:
+    TestUtil.appVerifierAfterTestEnd(targets)
+

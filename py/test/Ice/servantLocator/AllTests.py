@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -123,7 +123,7 @@ def testExceptions(obj, collocated):
 def allTests(communicator, collocated):
     print "testing stringToProxy...",
     sys.stdout.flush()
-    base = communicator.stringToProxy("asm:default -p 12010 -t 10000")
+    base = communicator.stringToProxy("asm:default -p 12010")
     test(base)
     print "ok"
 
@@ -137,7 +137,7 @@ def allTests(communicator, collocated):
     print "testing ice_ids...",
     sys.stdout.flush()
     try:
-        obj = communicator.stringToProxy("category/locate:default -p 12010 -t 10000")
+        obj = communicator.stringToProxy("category/locate:default -p 12010")
         obj.ice_ids()
         test(False)
     except Ice.UnknownUserException, ex:
@@ -146,7 +146,7 @@ def allTests(communicator, collocated):
         test(False)
 
     try:
-        obj = communicator.stringToProxy("category/finished:default -p 12010 -t 10000")
+        obj = communicator.stringToProxy("category/finished:default -p 12010")
         obj.ice_ids()
         test(False)
     except Ice.UnknownUserException, ex:
@@ -157,42 +157,63 @@ def allTests(communicator, collocated):
 
     print "testing servant locator...",
     sys.stdout.flush()
-    base = communicator.stringToProxy("category/locate:default -p 12010 -t 10000")
+    base = communicator.stringToProxy("category/locate:default -p 12010")
     obj = Test.TestIntfPrx.checkedCast(base)
     try:
-        Test.TestIntfPrx.checkedCast(communicator.stringToProxy("category/unknown:default -p 12010 -t 10000"))
+        Test.TestIntfPrx.checkedCast(communicator.stringToProxy("category/unknown:default -p 12010"))
     except Ice.ObjectNotExistException:
         pass
     print "ok"
 
     print "testing default servant locator...",
     sys.stdout.flush()
-    base = communicator.stringToProxy("anothercat/locate:default -p 12010 -t 10000")
+    base = communicator.stringToProxy("anothercat/locate:default -p 12010")
     obj = Test.TestIntfPrx.checkedCast(base)
-    base = communicator.stringToProxy("locate:default -p 12010 -t 10000")
+    base = communicator.stringToProxy("locate:default -p 12010")
     obj = Test.TestIntfPrx.checkedCast(base)
     try:
-        Test.TestIntfPrx.checkedCast(communicator.stringToProxy("anothercat/unknown:default -p 12010 -t 10000"))
+        Test.TestIntfPrx.checkedCast(communicator.stringToProxy("anothercat/unknown:default -p 12010"))
     except Ice.ObjectNotExistException:
         pass
     try:
-        Test.TestIntfPrx.checkedCast(communicator.stringToProxy("unknown:default -p 12010 -t 10000"))
+        Test.TestIntfPrx.checkedCast(communicator.stringToProxy("unknown:default -p 12010"))
     except Ice.ObjectNotExistException:
         pass
     print "ok"
 
     print "testing locate exceptions...",
     sys.stdout.flush()
-    base = communicator.stringToProxy("category/locate:default -p 12010 -t 10000")
+    base = communicator.stringToProxy("category/locate:default -p 12010")
     obj = Test.TestIntfPrx.checkedCast(base)
     testExceptions(obj, collocated)
     print "ok"
 
     print "testing finished exceptions...",
     sys.stdout.flush()
-    base = communicator.stringToProxy("category/finished:default -p 12010 -t 10000")
+    base = communicator.stringToProxy("category/finished:default -p 12010")
     obj = Test.TestIntfPrx.checkedCast(base)
     testExceptions(obj, collocated)
     print "ok"
 
+    print "testing servant locator removal...",
+    sys.stdout.flush()
+    base = communicator.stringToProxy("test/activation:default -p 12010")
+    activation = Test.TestActivationPrx.checkedCast(base)
+    activation.activateServantLocator(False)
+    try:
+        obj.ice_ping()
+        test(False)
+    except Ice.ObjectNotExistException:
+        pass
+    print "ok"
+
+    print "testing servant locator addition...",
+    sys.stdout.flush()
+    activation.activateServantLocator(True)
+    try:
+        obj.ice_ping()
+    except:
+        test(False)
+    print "ok"
+    
     return obj

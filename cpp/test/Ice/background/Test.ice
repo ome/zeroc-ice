@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,14 +11,15 @@
 #define TEST_ICE
 
 #include <Ice/BuiltinSequences.ice>
+#include <Ice/Endpoint.ice>
 
 module Test
 {
 
 interface Background
 {
-    ["ami"] void op();
-    ["ami"] void opWithPayload(Ice::ByteSeq seq);
+    void op();
+    void opWithPayload(Ice::ByteSeq seq);
 
     void shutdown();
 };
@@ -31,7 +32,7 @@ interface BackgroundController
     void holdAdapter();
     void resumeAdapter();
 
-    void initializeSocketStatus(int status);
+    void initializeSocketOperation(int status);
     void initializeException(bool enable);
 
     void readReady(bool enable);

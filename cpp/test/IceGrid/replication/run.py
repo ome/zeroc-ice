@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -22,5 +22,16 @@ from scripts import *
 
 TestUtil.addLdPath(os.getcwd())
 
+if TestUtil.sqlType != None and TestUtil.sqlType != "QSQLITE":
+    print "*** This test only supports Freeze or SQLite databases"
+    sys.exit(0)
+
+variables = "properties-override='%s'" % IceGridAdmin.iceGridNodePropertiesOverride()
+
+if TestUtil.sqlType != None:
+    variables += " db-plugin=IceGridSqlDB:createSqlDB"
+else:
+    variables += " db-plugin=IceGridFreezeDB:createFreezeDB"
+
 IceGridAdmin.iceGridTest("application.xml", '--IceDir="%s" --TestDir="%s"' % (TestUtil.toplevel, os.getcwd()),
-    "'properties-override=%s'" % TestUtil.getCommandLine("", TestUtil.DriverConfig("server")).replace("--", ""))
+                         variables)

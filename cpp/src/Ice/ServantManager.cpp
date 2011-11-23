@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -47,7 +47,8 @@ IceInternal::ServantManager::addServant(const ObjectPtr& object, const Identity&
             ex.id = _instance->identityToString(ident);
             if(!facet.empty())
             {
-                ex.id += " -f " + IceUtilInternal::escapeString(facet, "");
+                string fs = nativeToUTF8(_instance->initializationData().stringConverter, facet);
+                ex.id += " -f " + IceUtilInternal::escapeString(fs, "");
             }
             throw ex;
         }
@@ -56,6 +57,25 @@ IceInternal::ServantManager::addServant(const ObjectPtr& object, const Identity&
     _servantMapMapHint = p;
 
     p->second.insert(pair<const string, ObjectPtr>(facet, object));
+}
+
+void
+IceInternal::ServantManager::addDefaultServant(const ObjectPtr& object, const string& category)
+{
+    IceUtil::Mutex::Lock sync(*this);
+
+    assert(_instance); // Must not be called after destruction.
+
+    DefaultServantMap::iterator p = _defaultServantMap.find(category);
+    if(p != _defaultServantMap.end())
+    {
+        AlreadyRegisteredException ex(__FILE__, __LINE__);
+        ex.kindOfObject = "default servant";
+        ex.id = category;
+        throw ex;
+    }
+
+    _defaultServantMap.insert(pair<const string, ObjectPtr>(category, object));
 }
 
 ObjectPtr
@@ -87,7 +107,8 @@ IceInternal::ServantManager::removeServant(const Identity& ident, const string& 
         ex.id = _instance->identityToString(ident);
         if(!facet.empty())
         {
-            ex.id += " -f " + IceUtilInternal::escapeString(facet, "");
+            string fs = nativeToUTF8(_instance->initializationData().stringConverter, facet);
+            ex.id += " -f " + IceUtilInternal::escapeString(fs, "");
         }
         throw ex;
     }
@@ -107,6 +128,35 @@ IceInternal::ServantManager::removeServant(const Identity& ident, const string& 
             _servantMapMap.erase(p);
         }
     }
+    return servant;
+}
+
+ObjectPtr
+IceInternal::ServantManager::removeDefaultServant(const string& category)
+{
+    //
+    // We return the removed servant to avoid releasing the last reference count
+    // with *this locked. We don't want to run user code, such as the servant
+    // destructor, with an internal Ice mutex locked.
+    //
+    ObjectPtr servant = 0;
+
+    IceUtil::Mutex::Lock sync(*this);
+
+    assert(_instance); // Must not be called after destruction.
+
+    DefaultServantMap::iterator p = _defaultServantMap.find(category);
+    if(p == _defaultServantMap.end())
+    {
+        NotRegisteredException ex(__FILE__, __LINE__);
+        ex.kindOfObject = "default servant";
+        ex.id = category;
+        throw ex;
+    }
+
+    servant = p->second;
+    _defaultServantMap.erase(p);
+
     return servant;
 }
 
@@ -172,12 +222,44 @@ IceInternal::ServantManager::findServant(const Identity& ident, const string& fa
     
     if(p == servantMapMap.end() || (q = p->second.find(facet)) == p->second.end())
     {
-        return 0;
+        DefaultServantMap::const_iterator p = _defaultServantMap.find(ident.category);
+        if(p == _defaultServantMap.end())
+        {
+            p = _defaultServantMap.find("");
+            if(p == _defaultServantMap.end())
+            {
+                return 0;
+            }
+            else
+            {
+                return p->second;
+            }
+        }
+        else
+        {
+            return p->second;
+        }
     }
     else
     {
         _servantMapMapHint = p;
         return q->second;
+    }
+}
+
+ObjectPtr
+IceInternal::ServantManager::findDefaultServant(const string& category) const
+{
+    IceUtil::Mutex::Lock sync(*this);
+
+    DefaultServantMap::const_iterator p = _defaultServantMap.find(category);
+    if(p == _defaultServantMap.end())
+    {
+        return 0;
+    }
+    else
+    {
+        return p->second;
     }
 }
 
@@ -253,11 +335,46 @@ IceInternal::ServantManager::addServantLocator(const ServantLocatorPtr& locator,
     {
         AlreadyRegisteredException ex(__FILE__, __LINE__);
         ex.kindOfObject = "servant locator";
-        ex.id = IceUtilInternal::escapeString(category, "");
+        ex.id = category;
         throw ex;
     }
     
     _locatorMapHint = _locatorMap.insert(_locatorMapHint, pair<const string, ServantLocatorPtr>(category, locator));
+}
+
+ServantLocatorPtr
+IceInternal::ServantManager::removeServantLocator(const string& category)
+{
+    IceUtil::Mutex::Lock sync(*this);
+
+    assert(_instance); // Must not be called after destruction.
+
+    map<string, ServantLocatorPtr>::iterator p = _locatorMap.end();
+    if(_locatorMapHint != p)
+    {
+        if(_locatorMapHint->first == category)
+        {
+            p = _locatorMapHint;
+        }
+    }
+
+    if(p == _locatorMap.end())
+    {
+        p = _locatorMap.find(category);
+    }
+
+    if(p == _locatorMap.end())
+    {
+        NotRegisteredException ex(__FILE__, __LINE__);
+        ex.kindOfObject = "servant locator";
+        ex.id = category;
+        throw ex;
+    }
+
+    ServantLocatorPtr locator = p->second;
+    _locatorMap.erase(p);
+    _locatorMapHint = _locatorMap.begin();
+    return locator;
 }
 
 ServantLocatorPtr
@@ -324,42 +441,43 @@ IceInternal::ServantManager::destroy()
 {
     ServantMapMap servantMapMap;
     map<string, ServantLocatorPtr> locatorMap;
+    Ice::LoggerPtr logger;
 
     {
         IceUtil::Mutex::Lock sync(*this);
         
         assert(_instance); // Must not be called after destruction.
         
+        logger = _instance->initializationData().logger;
         servantMapMap.swap(_servantMapMap);
         _servantMapMapHint = _servantMapMap.end();
         
-        for(map<string, ServantLocatorPtr>::const_iterator p = _locatorMap.begin(); p != _locatorMap.end(); ++p)
-        {
-            try
-            {
-                p->second->deactivate(p->first);
-            }
-            catch(const Exception& ex)
-            {
-                Error out(_instance->initializationData().logger);
-                out << "exception during locator deactivation:\n"
-                    << "object adapter: `" << _adapterName << "'\n"
-                    << "locator category: `" << p->first << "'\n"
-                    << ex;
-            }
-            catch(...)
-            {
-                Error out(_instance->initializationData().logger);
-                out << "unknown exception during locator deactivation:\n"
-                    << "object adapter: `" << _adapterName << "'\n"
-                    << "locator category: `" << p->first << "'";
-            }
-        }
-        
         locatorMap.swap(_locatorMap);
         _locatorMapHint = _locatorMap.end();
-        
         _instance = 0;
+    }
+
+    for(map<string, ServantLocatorPtr>::const_iterator p = locatorMap.begin(); p != locatorMap.end(); ++p)
+    {
+        try
+        {
+            p->second->deactivate(p->first);
+        }
+        catch(const Exception& ex)
+        {
+            Error out(logger);
+            out << "exception during locator deactivation:\n"
+                << "object adapter: `" << _adapterName << "'\n"
+                << "locator category: `" << p->first << "'\n"
+                << ex;
+        }
+        catch(...)
+        {
+            Error out(logger);
+            out << "unknown exception during locator deactivation:\n"
+                << "object adapter: `" << _adapterName << "'\n"
+                << "locator category: `" << p->first << "'";
+        }
     }
 
     //

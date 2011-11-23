@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,7 @@
 
 #include <Ice/Identity.ice>
 
+[["java:package:test.Freeze.evictor"]]
 module Test
 {
 
@@ -61,7 +62,7 @@ sequence<Ice::Identity> AccountIdSeq;
 
     idempotent void setValue(int value);
 
-    ["ami", "amd"] void setValueAsync(int value);
+    ["amd"] void setValueAsync(int value);
     ["freeze:read", "cpp:const"] void releaseAsync();
 
     ["freeze:read", "cpp:const"] void addFacet(string name, string data) throws AlreadyRegisteredException;

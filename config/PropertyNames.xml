@@ -2,7 +2,7 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
@@ -259,9 +259,12 @@ generated from the section label.
         <suffix name="SizeWarn" />
         <suffix name="StackSize" />
         <suffix name="Serialize" />
+        <suffix name="ThreadIdleTime" />
+        <suffix name="ThreadPriority" />
     </class>
 
     <class name="objectadapter" prefix-only="true">
+        <suffix name="ACM" />
         <suffix name="AdapterId" />
         <suffix name="Endpoints" />
         <suffix name="Locator" />
@@ -304,6 +307,7 @@ generated from the section label.
         <property name="ChangeUser" />
         <property name="Compression.Level" />
         <property name="Config" />
+        <property name="ConsoleListener" />
         <property name="Default.CollocationOptimization" deprecated="true" 
             deprecatedBy="Ice.Default.CollocationOptimized" />
         <property name="Default.CollocationOptimized" />
@@ -321,10 +325,12 @@ generated from the section label.
         <property name="GC.Interval" />
         <property name="ImplicitContext" />
         <property name="InitPlugins" />
+        <property name="LogFile" />
         <property name="MessageSizeMax" />
         <property name="MonitorConnections" />
         <property name="Nohup" />
         <property name="NullHandleAbort" />
+        <property name="Override.CloseTimeout" />
         <property name="Override.Compress" />
         <property name="Override.ConnectTimeout" />
         <property name="Override.Timeout" />
@@ -334,14 +340,17 @@ generated from the section label.
         <property name="PluginLoadOrder" />
         <property name="PrintAdapterReady" />
         <property name="PrintProcessId" />
+        <property name="PrintStackTraces" />
         <property name="ProgramName" />
         <property name="RetryIntervals" />
         <property name="ServerId" deprecated="true" />
         <property name="ServerIdleTime" />
         <property name="StdErr" />
         <property name="StdOut" />
+        <property name="SyslogFacility" />
         <property name="ThreadPool.Client" class="threadpool" />
         <property name="ThreadPool.Server" class="threadpool" />
+        <property name="ThreadPriority"/>
         <property name="Trace.GC" />
         <property name="Trace.Location" deprecated="true" deprecatedBy="Ice.Trace.Locator" />
         <property name="Trace.Locator" />
@@ -349,6 +358,7 @@ generated from the section label.
         <property name="Trace.Protocol" />
         <property name="Trace.Retry" />
         <property name="Trace.Slicing" />
+        <property name="Trace.ThreadPool" />
         <property name="UDP.RcvSize" />
         <property name="UDP.SndSize" />
         <property name="TCP.Backlog" />
@@ -399,6 +409,7 @@ generated from the section label.
         <property name="Node.DisableOnFailure" />
         <property name="Node.Name" />
         <property name="Node.Output" />
+        <property name="Node.ProcessorSocketCount" />
         <property name="Node.PrintServersReady" />
         <property name="Node.PropertiesOverride" />
         <property name="Node.RedirectErrToOut" />
@@ -443,6 +454,12 @@ generated from the section label.
         <property name="Registry.Trace.Topic"/>
         <property name="Registry.Trace.TopicManager"/>
         <property name="Registry.UserAccounts" />
+        <property name="SQL.DatabaseType" />
+        <property name="SQL.HostName" />
+        <property name="SQL.Port" />
+        <property name="SQL.DatabaseName" />
+        <property name="SQL.UserName" />
+        <property name="SQL.Password" />
 </section>
     
     <section name="IcePatch2">
@@ -479,15 +496,15 @@ generated from the section label.
         <property name="Protocols" />
         <property name="Random" />
         <property name="Trace.Security" />
+        <property name="TrustOnly" />
+        <property name="TrustOnly.Client" />
+        <property name="TrustOnly.Server" />
+        <property name="TrustOnly.Server.[any]" />
         <property name="Truststore" />
         <property name="TruststorePassword" />
         <property name="TruststoreType" />
         <property name="VerifyDepthMax" />
         <property name="VerifyPeer" />
-        <property name="TrustOnly" />
-        <property name="TrustOnly.Client" />
-        <property name="TrustOnly.Server" />
-        <property name="TrustOnly.Server.[any]" />
     </section>
 
     <section name="IceStormAdmin">
@@ -495,11 +512,9 @@ generated from the section label.
     </section>
 
     <section name="Glacier2">
-        <property name="AddSSLContext" />
-        <property name="AddUserToAllowCategories" deprecated="true"
-            deprecatedBy="Glacier2.Filter.Category.AcceptUser" />
+        <property name="AddSSLContext" deprecated="true"/>
+        <property name="AddConnectionContext"/>
         <property name="Admin" class="deprecatedobjectadapter" />
-        <property name="AllowCategories" deprecated="true" deprecatedBy="Glacier2.Filter.Category.Accept" />
         <property name="Client" class="objectadapter"/>
         <property name="Client.AlwaysBatch" />
         <property name="Client.Buffered" />
@@ -551,7 +566,6 @@ generated from the section label.
         <property name="Evictor.[any].SavePeriod" />
         <property name="Evictor.[any].SaveSizeTrigger" />
         <property name="Evictor.[any].StreamTimeout" />
-        <property name="Evictor.UseNonmutating" />
         <property name="Map.[any].BtreeMinKey" />
         <property name="Map.[any].Checksum" />
         <property name="Map.[any].PageSize" />
@@ -559,7 +573,6 @@ generated from the section label.
         <property name="Trace.Evictor" />
         <property name="Trace.Map" />
         <property name="Trace.Transaction" />
-        <property name="Warn.CloseInFinalize" />
         <property name="Warn.Deadlocks" />
         <property name="Warn.Rollback" />
     </section>

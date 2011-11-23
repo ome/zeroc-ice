@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -20,8 +20,6 @@ if len(path) == 0:
 sys.path.append(os.path.join(path[0]))
 from scripts import *
 
-TestUtil.addClasspath(os.path.join(os.getcwd(), "classes"))
-
 #
 # Clean the contents of the database directory.
 #
@@ -29,14 +27,15 @@ dbdir = os.path.join(os.getcwd(), "db")
 TestUtil.cleanDbDir(dbdir)
 
 print "starting populate...",
-populateProc = TestUtil.startClient("Client", " --dbdir %s populate" % os.getcwd(), startReader = False)
+populateProc = TestUtil.startClient("test.Freeze.complex.Client", ' --dbdir "%s" populate' % os.getcwd(),
+                                    startReader=False)
 print "ok"
 populateProc.startReader()
 
 populateProc.waitTestSuccess()
 
 print "starting verification client...",
-clientProc = TestUtil.startClient("Client", " --dbdir %s validate" % os.getcwd(), startReader = False)
+clientProc = TestUtil.startClient("test.Freeze.complex.Client", ' --dbdir "%s" validate' % os.getcwd(), startReader=False)
 
 print "ok"
 clientProc.startReader()

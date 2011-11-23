@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,11 +11,18 @@
 #include <IcePatch2/Util.h>
 #include <IceGrid/Util.h>
 #include <IceGrid/Admin.h>
-
-#include <fstream>
+#include <IceGrid/Internal.h>
 
 using namespace std;
+using namespace Ice;
 using namespace IceGrid;
+
+void
+IceGrid::SynchronizationException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\nsynchronization exception";
+}
 
 string 
 IceGrid::toString(const vector<string>& v, const string& sep)
@@ -129,6 +136,38 @@ IceGrid::escapeProperty(const string& s)
         }
     }
     return result;
+}
+
+void
+IceGrid::setupThreadPool(const PropertiesPtr& properties, const string& name, int size, int sizeMax, bool serialize)
+{
+    if(properties->getPropertyAsIntWithDefault(name + ".Size", 0) < size)
+    {
+        ostringstream os;
+        os << size;
+        properties->setProperty(name + ".Size", os.str());
+    }
+    else
+    {
+        size = properties->getPropertyAsInt(name + ".Size");
+    }
+
+    if(sizeMax > 0 && properties->getPropertyAsIntWithDefault(name + ".SizeMax", 0) < sizeMax)
+    {
+        if(size >= sizeMax)
+        {
+            sizeMax = size * 10;
+        }
+        
+        ostringstream os;
+        os << sizeMax;
+        properties->setProperty(name + ".SizeMax", os.str());
+    }
+
+    if(serialize)
+    {
+        properties->setProperty(name + ".Serialize", "1");
+    }
 }
 
 int

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,7 +25,7 @@ public class AllTests
     {
         Console.Out.Write("testing stringToProxy... ");
         Console.Out.Flush();
-        string rf = "test:default -p 12010 -t 10000";
+        string rf = "test:default -p 12010";
         Ice.ObjectPrx baseProxy = communicator.stringToProxy(rf);
         test(baseProxy != null);
 
@@ -98,7 +98,28 @@ public class AllTests
         b1 = communicator.stringToProxy("category/test");
         test(b1.ice_getIdentity().name.Equals("test") && b1.ice_getIdentity().category.Equals("category") &&
              b1.ice_getAdapterId().Length == 0);
-             
+
+        b1 = communicator.stringToProxy("");
+        test(b1 == null);
+        b1 = communicator.stringToProxy("\"\"");
+        test(b1 == null);
+        try
+        {
+            b1 = communicator.stringToProxy("\"\" test"); // Invalid trailing characters.
+            test(false);
+        }
+        catch(Ice.ProxyParseException)
+        {
+        }
+        try
+        {
+            b1 = communicator.stringToProxy("test:"); // Missing endpoint.
+            test(false);
+        }
+        catch(Ice.EndpointParseException)
+        {
+        }
+
         b1 = communicator.stringToProxy("test@adapter");
         test(b1.ice_getIdentity().name.Equals("test") && b1.ice_getIdentity().category.Length == 0 &&
              b1.ice_getAdapterId().Equals("adapter"));
@@ -229,7 +250,7 @@ public class AllTests
         Console.Out.Flush();
         Ice.Properties prop = communicator.getProperties();
         String propertyPrefix = "Foo.Proxy";
-        prop.setProperty(propertyPrefix, "test:default -p 12010 -t 10000");
+        prop.setProperty(propertyPrefix, "test:default -p 12010");
         b1 = communicator.propertyToProxy(propertyPrefix);
         test(b1.ice_getIdentity().name.Equals("test") && b1.ice_getIdentity().category.Length == 0 &&
              b1.ice_getAdapterId().Length == 0 && b1.ice_getFacet().Length == 0);
@@ -273,7 +294,7 @@ public class AllTests
         //test(b1.ice_getLocatorCacheTimeout() == 60);
         //prop.setProperty("Ice.Default.LocatorCacheTimeout", "");
 
-        prop.setProperty(propertyPrefix, "test:default -p 12010 -t 10000");
+        prop.setProperty(propertyPrefix, "test:default -p 12010");
 
         property = propertyPrefix + ".Router";
         test(b1.ice_getRouter() == null);
@@ -315,6 +336,59 @@ public class AllTests
 
         prop.setProperty(property, "");
 
+        Console.Out.WriteLine("ok");
+
+        Console.Out.Write("testing proxyToProperty... ");
+        Console.Out.Flush();
+
+        b1 = communicator.stringToProxy("test");
+        b1 = b1.ice_collocationOptimized(true);
+        b1 = b1.ice_connectionCached(true);
+        b1 = b1.ice_preferSecure(false);
+        b1 = b1.ice_endpointSelection(Ice.EndpointSelectionType.Ordered);
+        b1 = b1.ice_locatorCacheTimeout(100);
+
+        Ice.ObjectPrx router = communicator.stringToProxy("router");
+        router = router.ice_collocationOptimized(false);
+        router = router.ice_connectionCached(true);
+        router = router.ice_preferSecure(true);
+        router = router.ice_endpointSelection(Ice.EndpointSelectionType.Random);
+        router = router.ice_locatorCacheTimeout(200);
+
+        Ice.ObjectPrx locator = communicator.stringToProxy("locator");
+        locator = locator.ice_collocationOptimized(true);
+        locator = locator.ice_connectionCached(false);
+        locator = locator.ice_preferSecure(true);
+        locator = locator.ice_endpointSelection(Ice.EndpointSelectionType.Random);
+        locator = locator.ice_locatorCacheTimeout(300);
+
+        locator = locator.ice_router(Ice.RouterPrxHelper.uncheckedCast(router));
+        b1 = b1.ice_locator(Ice.LocatorPrxHelper.uncheckedCast(locator));
+
+        Dictionary<string, string> proxyProps = communicator.proxyToProperty(b1, "Test");
+        test(proxyProps.Count == 18);
+
+        test(proxyProps["Test"].Equals("test -t"));
+        test(proxyProps["Test.CollocationOptimized"].Equals("1"));
+        test(proxyProps["Test.ConnectionCached"].Equals("1"));
+        test(proxyProps["Test.PreferSecure"].Equals("0"));
+        test(proxyProps["Test.EndpointSelection"].Equals("Ordered"));
+        test(proxyProps["Test.LocatorCacheTimeout"].Equals("100"));
+
+        test(proxyProps["Test.Locator"].Equals("locator -t"));
+        test(proxyProps["Test.Locator.CollocationOptimized"].Equals("1"));
+        test(proxyProps["Test.Locator.ConnectionCached"].Equals("0"));
+        test(proxyProps["Test.Locator.PreferSecure"].Equals("1"));
+        test(proxyProps["Test.Locator.EndpointSelection"].Equals("Random"));
+        test(proxyProps["Test.Locator.LocatorCacheTimeout"].Equals("300"));
+                                                        
+        test(proxyProps["Test.Locator.Router"].Equals("router -t"));
+        test(proxyProps["Test.Locator.Router.CollocationOptimized"].Equals("0"));
+        test(proxyProps["Test.Locator.Router.ConnectionCached"].Equals("1"));
+        test(proxyProps["Test.Locator.Router.PreferSecure"].Equals("1"));
+        test(proxyProps["Test.Locator.Router.EndpointSelection"].Equals("Random"));
+        test(proxyProps["Test.Locator.Router.LocatorCacheTimeout"].Equals("200"));
+                                                          
         Console.Out.WriteLine("ok");
 
         Console.Out.Write("testing ice_getCommunicator... ");
@@ -370,6 +444,8 @@ public class AllTests
 
         test(compObj.ice_connectionId("id2").Equals(compObj.ice_connectionId("id2")));
         test(!compObj.ice_connectionId("id1").Equals(compObj.ice_connectionId("id2")));
+        test(compObj.ice_connectionId("id1").ice_getConnectionId().Equals("id1"));
+        test(compObj.ice_connectionId("id2").ice_getConnectionId().Equals("id2"));
 
         test(compObj.ice_compress(true).Equals(compObj.ice_compress(true)));
         test(!compObj.ice_compress(false).Equals(compObj.ice_compress(true)));
@@ -420,6 +496,11 @@ public class AllTests
         compObj1 = communicator.stringToProxy("foo:tcp -h 127.0.0.1 -p 1000");
         compObj2 = communicator.stringToProxy("foo@MyAdapter1");
         test(!compObj1.Equals(compObj2));
+
+        Ice.Endpoint[] endpts1 = communicator.stringToProxy("foo:tcp -h 127.0.0.1 -p 10000").ice_getEndpoints();
+        Ice.Endpoint[] endpts2 = communicator.stringToProxy("foo:tcp -h 127.0.0.1 -p 10001").ice_getEndpoints();
+        test(!endpts1[0].Equals(endpts2[0]));
+        test(endpts1[0].Equals(communicator.stringToProxy("foo:tcp -h 127.0.0.1 -p 10000").ice_getEndpoints()[0]));
 
         //
         // TODO: Ideally we should also test comparison of fixed proxies.

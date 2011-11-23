@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -21,10 +21,15 @@ if len(path) == 0:
 sys.path.append(os.path.join(path[0]))
 from scripts import *
 
-def doTest(icestorm, batch):
+publisher = os.path.join(os.getcwd(), "publisher")
+subscriber = os.path.join(os.getcwd(), "subscriber")
 
-    publisher = os.path.join(os.getcwd(), "publisher")
-    subscriber = os.path.join(os.getcwd(), "subscriber")
+targets = []
+if TestUtil.appverifier:
+    targets = [TestUtil.getIceBox(), publisher, subscriber, TestUtil.getIceBoxAdmin(), TestUtil.getIceStormAdmin()]
+    TestUtil.setAppVerifierSettings(targets, cwd = os.getcwd())
+
+def doTest(icestorm, batch):
 
     if batch:
         name = "batch subscriber"
@@ -85,3 +90,6 @@ runtest("persistent")
 runtest("transient")
 runtest("replicated", replicatedPublisher = False)
 runtest("replicated", replicatedPublisher = True)
+
+if TestUtil.appverifier:
+    TestUtil.appVerifierAfterTestEnd(targets, cwd = os.getcwd())

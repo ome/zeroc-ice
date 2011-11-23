@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,11 +24,11 @@ namespace
 {
 
 template<class T>
-class AMICallback : public T
+class AMICallbackT : public T
 {
 public:
     
-    AMICallback(const ServiceManagerIPtr& serviceManager, const ServiceObserverPrx& observer) :
+    AMICallbackT(const ServiceManagerIPtr& serviceManager, const ServiceObserverPrx& observer) :
         _serviceManager(serviceManager),
         _observer(observer)
     {
@@ -128,7 +128,6 @@ IceBox::ServiceManagerI::ServiceManagerI(CommunicatorPtr communicator, int& argc
     _traceServiceObserver(0)
 { 
     _logger = _communicator->getLogger();
-
     _traceServiceObserver = _communicator->getProperties()->getPropertyAsInt("IceBox.Trace.ServiceObserver");
 
     for(int i = 1; i < argc; i++)
@@ -331,7 +330,7 @@ IceBox::ServiceManagerI::addObserver(const ServiceObserverPrx& observer, const I
        
         if(activeServices.size() > 0)
         {
-            observer->servicesStarted_async(new AMICallback<AMI_ServiceObserver_servicesStarted>(this, observer),
+            observer->servicesStarted_async(new AMICallbackT<AMI_ServiceObserver_servicesStarted>(this, observer),
                                             activeServices);
         }
     }
@@ -598,9 +597,6 @@ IceBox::ServiceManagerI::start(const string& service, const string& entryPoint, 
     SERVICE_FACTORY factory = (SERVICE_FACTORY)sym;
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         info.service = factory(_communicator);
     }
     catch(const Exception& ex)
@@ -656,6 +652,11 @@ IceBox::ServiceManagerI::start(const string& service, const string& entryPoint, 
                 //
                 info.args = initData.properties->parseCommandLineOptions(service, info.args);
             }
+            
+            //
+            // Clone the logger to assign a new prefix.
+            //
+            initData.logger = _logger->cloneWithPrefix(initData.properties->getProperty("Ice.ProgramName"));
             
             //
             // Remaining command line options are passed to the communicator. This is 
@@ -885,7 +886,7 @@ IceBox::ServiceManagerI::stopAll()
         catch(const std::exception& ex)
         {
             Warning out(_logger);
-            out << "ServiceManager: unknown exception while destroying shared communicator:\n" << ex.what();
+            out << "ServiceManager: unknown exception while destroying shared communicator:\n" << ex;
         }
         _sharedCommunicator = 0;
     }
@@ -903,7 +904,7 @@ IceBox::ServiceManagerI::servicesStarted(const vector<string>& services, const s
         for(set<ServiceObserverPrx>::const_iterator p = observers.begin(); p != observers.end(); ++p)
         {
             ServiceObserverPrx observer = *p;
-            observer->servicesStarted_async(new AMICallback<AMI_ServiceObserver_servicesStarted>(this, observer),
+            observer->servicesStarted_async(new AMICallbackT<AMI_ServiceObserver_servicesStarted>(this, observer),
                                             services);
         }
     }
@@ -917,7 +918,7 @@ IceBox::ServiceManagerI::servicesStopped(const vector<string>& services, const s
         for(set<ServiceObserverPrx>::const_iterator p = observers.begin(); p != observers.end(); ++p)
         {
             ServiceObserverPrx observer = *p;
-            observer->servicesStopped_async(new AMICallback<AMI_ServiceObserver_servicesStopped>(this, observer),
+            observer->servicesStopped_async(new AMICallbackT<AMI_ServiceObserver_servicesStopped>(this, observer),
                                             services);
         }
     }

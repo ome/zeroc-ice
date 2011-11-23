@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -17,9 +17,9 @@ import Test, TestI, AllTests
 def run(args, communicator):
     properties = communicator.getProperties()
     properties.setProperty("Ice.Warn.Dispatch", "0")
-    properties.setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000")
+    properties.setProperty("TestAdapter.Endpoints", "default -p 12010")
     adapter = communicator.createObjectAdapter("TestAdapter")
-    object = TestI.ThrowerI(adapter)
+    object = TestI.ThrowerI()
     adapter.add(object, communicator.stringToIdentity("thrower"))
     adapter.activate()
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,11 +13,10 @@
 #include <Ice/EndpointI.h>
 #include <Ice/EndpointFactory.h>
 #include <IceSSL/InstanceF.h>
+#include <IceSSL/EndpointInfo.h>
 
 namespace IceSSL
 {
-
-const Ice::Short EndpointType = 2;
 
 class EndpointI : public IceInternal::EndpointI
 {
@@ -29,6 +28,7 @@ public:
 
     virtual void streamWrite(IceInternal::BasicStream*) const;
     virtual std::string toString() const;
+    virtual Ice::EndpointInfoPtr getInfo() const;
     virtual Ice::Short type() const;
     virtual Ice::Int timeout() const;
     virtual IceInternal::EndpointIPtr timeout(Ice::Int) const;
@@ -37,7 +37,6 @@ public:
     virtual IceInternal::EndpointIPtr compress(bool) const;
     virtual bool datagram() const;
     virtual bool secure() const;
-    virtual bool unknown() const;
     virtual IceInternal::TransceiverPtr transceiver(IceInternal::EndpointIPtr&) const;
     virtual std::vector<IceInternal::ConnectorPtr> connectors() const;
     virtual void connectors_async(const IceInternal::EndpointI_connectorsPtr&) const;
@@ -45,22 +44,13 @@ public:
     virtual std::vector<IceInternal::EndpointIPtr> expand() const;
     virtual bool equivalent(const IceInternal::EndpointIPtr&) const;
 
-    virtual bool operator==(const IceInternal::EndpointI&) const;
-    virtual bool operator!=(const IceInternal::EndpointI&) const;
-    virtual bool operator<(const IceInternal::EndpointI&) const;
+    virtual bool operator==(const Ice::LocalObject&) const;
+    virtual bool operator<(const Ice::LocalObject&) const;
 
 private:
 
-    virtual std::vector<IceInternal::ConnectorPtr> connectors(const std::vector<struct sockaddr_storage>&) const;
-    
-#if defined(__SUNPRO_CC)
-    //
-    // COMPILERFIX: prevent the compiler from emitting a warning about
-    // hidding these operators.
-    //
-    using LocalObject::operator==;
-    using LocalObject::operator<;
-#endif
+    virtual ::Ice::Int hashInit() const;
+    virtual std::vector<IceInternal::ConnectorPtr> connectors(const std::vector<struct sockaddr_storage>&) const;    
 
     //
     // All members are const, because endpoints are immutable.

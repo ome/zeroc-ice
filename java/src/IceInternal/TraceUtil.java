@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -305,21 +305,21 @@ public final class TraceUtil
         {
             byte mode = stream.readByte();
             out.write("\nmode = " + (int)mode + ' ');
-            switch(mode)
+            switch(Ice.OperationMode.values()[mode])
             {
-                case Ice.OperationMode._Normal:
+                case Normal:
                 {
                     out.write("(normal)");
                     break;
                 }
                 
-                case Ice.OperationMode._Nonmutating:
+                case Nonmutating:
                 {
                     out.write("(nonmutating)");
                     break;
                 }
                 
-                case Ice.OperationMode._Idempotent:
+                case Idempotent:
                 {
                     out.write("(idempotent)");
                     break;

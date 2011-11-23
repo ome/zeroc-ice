@@ -1,52 +1,72 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+package test.Ice.operations;
+import java.io.PrintWriter;
+
+import test.Ice.operations.Test.MyClassPrx;
+import test.Ice.operations.Test.MyClassPrxHelper;
+import test.Ice.operations.Test.MyDerivedClassPrx;
+import test.Ice.operations.Test.MyDerivedClassPrxHelper;
+
 public class AllTests
 {
-    public static Test.MyClassPrx
-    allTests(Ice.Communicator communicator, boolean collocated)
+    public static MyClassPrx
+    allTests(test.Util.Application app, boolean collocated, PrintWriter out)
     {
-        String ref = "test:default -p 12010 -t 10000";
+        Ice.Communicator communicator = app.communicator();
+        String ref = "test:default -p 12010";
         Ice.ObjectPrx base = communicator.stringToProxy(ref);
-        Test.MyClassPrx cl = Test.MyClassPrxHelper.checkedCast(base);
-        Test.MyDerivedClassPrx derived = Test.MyDerivedClassPrxHelper.checkedCast(cl);
+        MyClassPrx cl = MyClassPrxHelper.checkedCast(base);
+        MyDerivedClassPrx derived = MyDerivedClassPrxHelper.checkedCast(cl);
 
-        System.out.print("testing twoway operations... ");
-        System.out.flush();
-        Twoways.twoways(communicator, cl);
-        Twoways.twoways(communicator, derived);
+        out.print("testing twoway operations... ");
+        out.flush();
+        Twoways.twoways(app, cl);
+        Twoways.twoways(app, derived);
         derived.opDerived();
-        System.out.println("ok");
+        out.println("ok");
 
-        System.out.print("testing oneway operations... ");
-        System.out.flush();
-        Oneways.oneways(communicator, cl);
-        System.out.println("ok");
+        out.print("testing oneway operations... ");
+        out.flush();
+        Oneways.oneways(app, cl);
+        out.println("ok");
 
         if(!collocated)
         {
-            System.out.print("testing twoway operations with AMI... ");
-            System.out.flush();
-            TwowaysAMI.twowaysAMI(communicator, cl);
-            TwowaysAMI.twowaysAMI(communicator, derived);
-            System.out.println("ok");
+            out.print("testing twoway operations with AMI... ");
+            out.flush();
+            TwowaysAMI.twowaysAMI(app, cl);
+            TwowaysAMI.twowaysAMI(app, derived);
+            out.println("ok");
 
-            System.out.print("testing oneway operations with AMI... ");
-            System.out.flush();
-            OnewaysAMI.onewaysAMI(communicator, cl);
-            System.out.println("ok");
+            out.print("testing twoway operations with new AMI mapping... ");
+            out.flush();
+            TwowaysNewAMI.twowaysNewAMI(app, cl);
+            TwowaysNewAMI.twowaysNewAMI(app, derived);
+            out.println("ok");
 
-            System.out.print("testing batch oneway operations... ");
-            System.out.flush();
-            BatchOneways.batchOneways(cl);
-            BatchOneways.batchOneways(derived);
-            System.out.println("ok");
+            out.print("testing oneway operations with AMI... ");
+            out.flush();
+            OnewaysAMI.onewaysAMI(app, cl);
+            out.println("ok");
+
+            out.print("testing oneway operations with new AMI mapping... ");
+            out.flush();
+            OnewaysNewAMI.onewaysNewAMI(app, cl);
+            out.println("ok");
+
+            out.print("testing batch oneway operations... ");
+            out.flush();
+            BatchOneways.batchOneways(cl, out);
+            BatchOneways.batchOneways(derived, out);
+            out.println("ok");
         }
 
         return cl;

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -15,11 +15,8 @@ Ice.loadSlice('TestAMD.ice')
 import Test
 
 class ThrowerI(Test.Thrower):
-    def __init__(self, adapter):
-        self._adapter = adapter
-
     def shutdown_async(self, cb, current=None):
-        self._adapter.getCommunicator().shutdown()
+        current.adapter.getCommunicator().shutdown()
         cb.ice_response()
 
     def supportsUndeclaredExceptions_async(self, cb, current=None):
@@ -115,9 +112,9 @@ class ThrowerI(Test.Thrower):
 def run(args, communicator):
     properties = communicator.getProperties()
     properties.setProperty("Ice.Warn.Dispatch", "0")
-    properties.setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000:udp")
+    properties.setProperty("TestAdapter.Endpoints", "default -p 12010:udp")
     adapter = communicator.createObjectAdapter("TestAdapter")
-    object = ThrowerI(adapter)
+    object = ThrowerI()
     adapter.add(object, communicator.stringToIdentity("thrower"))
     adapter.activate()
     communicator.waitForShutdown()

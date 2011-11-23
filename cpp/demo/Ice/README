@@ -29,6 +29,12 @@ Demos in this directory:
   well as how to invoke oneway operations, use datagrams, secure
   invocations, and how to use batched invocations.
 
+- interleaved
+
+  A more advanced throughput demo that allows you to send sequences of
+  various types between client and server and to measure the maximum
+  bandwidth that can be achieved using asynchronous requests & replies.
+
 - invoke
 
   This demo illustrates the use of the Ice streaming API.
@@ -60,6 +66,10 @@ Demos in this directory:
 
   A demo that shows how Ice takes advantage of NRVO (Named Return
   Value Optimization) which is included in modern C++ compilers.
+
+- plugin
+
+  A demo to illustrate how to write and use Ice plugins.
 
 - session
 

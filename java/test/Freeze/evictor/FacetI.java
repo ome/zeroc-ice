@@ -1,31 +1,34 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-public class FacetI extends ServantI implements Test._FacetOperations
+package test.Freeze.evictor;
+import test.Freeze.evictor.Test.*;
+
+public class FacetI extends ServantI implements _FacetOperations
 {
-    FacetI(Test.Facet tie)
+    FacetI(Facet tie)
     {
         super(tie);
     }
 
-    FacetI(Test.Servant tie, RemoteEvictorI remoteEvictor, Freeze.Evictor evictor, int value, String data)
+    FacetI(Servant tie, RemoteEvictorI remoteEvictor, Freeze.Evictor evictor, int value, String data)
     {
         super(tie, remoteEvictor, evictor, value);
-        ((Test.Facet)_tie).data = data;
+        ((Facet)_tie).data = data;
     }
-    
+
     public String
     getData(Ice.Current current)
     {
         synchronized(_tie)
         {
-            return ((Test.Facet)_tie).data;
+            return ((Facet)_tie).data;
         }
     }
 
@@ -34,7 +37,7 @@ public class FacetI extends ServantI implements Test._FacetOperations
     {
         synchronized(_tie)
         {
-            ((Test.Facet)_tie).data = data;
+            ((Facet)_tie).data = data;
         }
     }
 }

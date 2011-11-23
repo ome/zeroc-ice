@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,7 +27,7 @@ public:
 
 protected:
 
-    virtual bool start(int, char*[]);
+    virtual bool start(int, char*[], int&);
     virtual bool stop();
 
 private:
@@ -43,7 +43,7 @@ IceBox::IceBoxService::IceBoxService()
 }
 
 bool
-IceBox::IceBoxService::start(int argc, char* argv[])
+IceBox::IceBoxService::start(int argc, char* argv[], int& status)
 {
     // Run through the command line arguments removing all the service
     // properties.
@@ -72,9 +72,6 @@ IceBox::IceBoxService::start(int argc, char* argv[])
 
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         args = opts.parse(args);
     }
     catch(const IceUtilInternal::BadOptException& e)
@@ -87,11 +84,13 @@ IceBox::IceBoxService::start(int argc, char* argv[])
     if(opts.isSet("help"))
     {
         usage(argv[0]);
+        status = EXIT_SUCCESS;
         return false;
     }
     if(opts.isSet("version"))
     {
         print(ICE_STRING_VERSION);
+        status = EXIT_SUCCESS;
         return false;
     }
 
@@ -137,8 +136,18 @@ IceBox::IceBoxService::usage(const string& appName)
     print("Usage: " + appName + " [options]\n" + options);
 }
 
+//COMPILERFIX: Borland C++ 2010 doesn't support wmain for console applications.
+#if defined(_WIN32 ) && !defined(__BCPLUSPLUS__)
+
+int
+wmain(int argc, wchar_t* argv[])
+
+#else
+
 int
 main(int argc, char* argv[])
+
+#endif
 {
     IceBox::IceBoxService svc;
 

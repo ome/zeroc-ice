@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,6 +19,7 @@ namespace IceInternal
     using System.Net.Sockets;
     using System.Runtime.InteropServices;
     using System.Threading;
+    using System.Globalization;
 
     public sealed class Network
     {
@@ -252,7 +253,7 @@ namespace IceInternal
             // TODO: Instead of testing for an English substring, we need to examine the inner
             // exception (if there is one).
             //
-            return ex.Message.IndexOf("period of time") >= 0;
+            return ex.Message.IndexOf("period of time", StringComparison.Ordinal) >= 0;
         }
 
         public static bool noMoreFds(System.Exception ex)
@@ -269,14 +270,14 @@ namespace IceInternal
 
         public static bool isMulticast(IPEndPoint addr)
         {
-            string ip = addr.Address.ToString().ToLower();
+            string ip = addr.Address.ToString().ToUpperInvariant();
             if(addr.AddressFamily == AddressFamily.InterNetwork)
             {
                 char[] splitChars = { '.' };
                 string[] arr = ip.Split(splitChars);
                 try
                 {
-                    int i = System.Int32.Parse(arr[0]);
+                    int i = System.Int32.Parse(arr[0], CultureInfo.InvariantCulture);
                     if(i >= 223 && i <= 239)
                     {
                         return true;
@@ -289,7 +290,7 @@ namespace IceInternal
             }
             else // AddressFamily.InterNetworkV6
             {
-                if(ip.StartsWith("ff"))
+                if(ip.StartsWith("FF", StringComparison.Ordinal))
                 {
                     return true;
                 }
@@ -501,7 +502,7 @@ namespace IceInternal
                         {
                             try
                             {
-                                ifaceIndex = System.Int32.Parse(iface);
+                                ifaceIndex = System.Int32.Parse(iface, CultureInfo.InvariantCulture);
                             }
                             catch(System.FormatException ex)
                             {
@@ -636,8 +637,13 @@ namespace IceInternal
             return true;
         }
 
-        public static IAsyncResult doBeginConnectAsync(Socket fd, EndPoint addr, AsyncCallback callback)
+        public static IAsyncResult doConnectAsync(Socket fd, EndPoint addr, AsyncCallback callback, object state)
         {
+            //
+            // NOTE: It's the caller's responsability to close the socket upon
+            // failure to connect. The socket isn't closed by this method.
+            //
+
         repeatConnect:
             try
             {
@@ -649,7 +655,7 @@ namespace IceInternal
                 //
                 IPAddress any = fd.AddressFamily == AddressFamily.InterNetworkV6 ? IPAddress.IPv6Any : IPAddress.Any;
                 fd.Bind(new IPEndPoint(any, 0));
-                return fd.BeginConnect(addr, callback, fd);
+                return fd.BeginConnect(addr, callback, state);
             }
             catch(SocketException ex)
             {
@@ -657,8 +663,6 @@ namespace IceInternal
                 {
                     goto repeatConnect;
                 }
-
-                closeSocketNoThrow(fd);
 
                 if(connectionRefused(ex))
                 {
@@ -671,14 +675,13 @@ namespace IceInternal
             }
         }
 
-        public static Socket doEndConnectAsync(IAsyncResult result)
+        public static void doFinishConnectAsync(Socket fd, IAsyncResult result)
         {
             //
-            // Note: we don't close the socket if there's an exception. It's the responsibility
-            // of the caller to do so.
+            // NOTE: It's the caller's responsability to close the socket upon
+            // failure to connect. The socket isn't closed by this method.
             //
 
-            Socket fd = (Socket)result.AsyncState;
             try
             {
                 fd.EndConnect(result);
@@ -714,7 +717,6 @@ namespace IceInternal
                     throw new Ice.ConnectionRefusedException();
                 }
             }
-            return fd;
         }
 
         public static IPEndPoint getAddress(string host, int port, int protocol)
@@ -966,7 +968,7 @@ namespace IceInternal
             }
         }
 
-        public static List<string> getHostsForEndpointExpand(string host, int protocol)
+        public static List<string> getHostsForEndpointExpand(string host, int protocol, bool includeLoopback)
         {
             bool wildcard = host.Length == 0;
             if(!wildcard)
@@ -993,7 +995,7 @@ namespace IceInternal
                     }
                 }
                 
-                if(hosts.Count == 0)
+                if(includeLoopback || hosts.Count == 0)
                 {
                     if(protocol != EnableIPv6)
                     {
@@ -1007,14 +1009,21 @@ namespace IceInternal
             }
             return hosts;
         }
-
+        
         public static string fdToString(Socket socket)
         {
-            if(socket == null)
+            try
+            {
+                if(socket == null)
+                {
+                    return "<closed>";
+                }
+                return addressesToString(getLocalAddress(socket), getRemoteAddress(socket));
+            }
+            catch(ObjectDisposedException)
             {
                 return "<closed>";
             }
-            return addressesToString(getLocalAddress(socket), getRemoteAddress(socket));
         }
 
         public static string
@@ -1076,7 +1085,6 @@ namespace IceInternal
             }
             catch(SocketException)
             {
-                remoteEndpoint = null;
             }
             return remoteEndpoint;
         }

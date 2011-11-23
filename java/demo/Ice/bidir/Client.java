@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -30,7 +30,7 @@ public class Client extends Ice.Application
 
         Ice.ObjectAdapter adapter = communicator().createObjectAdapter("");
         Ice.Identity ident = new Ice.Identity();
-        ident.name = Ice.Util.generateUUID();
+        ident.name = java.util.UUID.randomUUID().toString();
         ident.category = "";
         adapter.add(new CallbackReceiverI(), ident);
         adapter.activate();

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,14 +29,17 @@ public:
     virtual const char* what() const throw();
     virtual Exception* ice_clone() const;
     virtual void ice_throw() const;
+
     const char* ice_file() const;
     int ice_line() const;
+    const std::string& ice_stackTrace() const;
     
 private:
     
     const char* _file;
     int _line;
     static const char* _name;
+    const std::string _stackTrace;
     mutable ::std::string _str; // Initialized lazily in what().
 };
 
@@ -93,6 +96,27 @@ private:
 
     const int _error;
     static const char* _name;
+};
+
+class ICE_UTIL_API FileLockException : public Exception
+{
+public:
+
+    FileLockException(const char*, int, int, const std::string&);
+    virtual ~FileLockException() throw();
+    virtual std::string ice_name() const;
+    virtual void ice_print(std::ostream&) const;
+    virtual Exception* ice_clone() const;
+    virtual void ice_throw() const;
+
+    std::string path() const;
+    int error() const;
+
+private:
+
+    const int _error;
+    static const char* _name;
+    std::string _path;
 };
 
 }

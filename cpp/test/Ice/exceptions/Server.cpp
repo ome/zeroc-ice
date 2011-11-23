@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,9 +17,9 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 {
     Ice::PropertiesPtr properties = communicator->getProperties();
     properties->setProperty("Ice.Warn.Dispatch", "0");
-    communicator->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000:udp");
+    communicator->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12010:udp");
     Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("TestAdapter");
-    Ice::ObjectPtr object = new ThrowerI(adapter);
+    Ice::ObjectPtr object = new ThrowerI();
     adapter->add(object, communicator->stringToIdentity("thrower"));
     adapter->activate();
     communicator->waitForShutdown();

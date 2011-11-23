@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,8 +34,18 @@ private:
     bool _pause;
 };
 
+//COMPILERFIX: Borland C++ 2010 doesn't support wmain for console applications.
+#ifdef __BCPLUSPLUS__
+
 int
 main(int argc, char* argv[])
+
+#else
+
+int
+wmain(int argc, wchar_t* argv[])
+
+#endif
 {
     Install app;
     int status = app.main(argc, argv);
@@ -67,9 +77,6 @@ Install::run(int argc, char* argv[])
     vector<string> commands;
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         commands = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtilInternal::BadOptException& e)
@@ -196,6 +203,9 @@ Install::usage() const
         "service must be icegridregistry, icegridnode or glacier2router.\n"
         "\n"
         "config-file          Path to the Ice configuration file for this service.\n"
+        "                     If the path starts with HKLM\\ the configuration will be\n"
+        "                     read from the corresponding Windows registry keyword in\n"
+        "                     HKEY_LOCAL_MACHINE.\n"
         "\n"
         "Valid properties:\n"
         "ImagePath            Full path to <service>.exe. The default value is\n"

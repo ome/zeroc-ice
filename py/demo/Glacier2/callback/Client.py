@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
-import sys, Ice, Glacier2
-
+import sys, threading, Ice, Glacier2
 Ice.loadSlice('Callback.ice')
 import Demo
 
@@ -23,6 +22,7 @@ f: flush all batch requests
 v: set/reset override context field
 F: set/reset fake category
 s: shutdown server
+r: restart the session
 x: exit
 ?: help
 """
@@ -31,36 +31,29 @@ class CallbackReceiverI(Demo.CallbackReceiver):
     def callback(self, current=None):
         print "received callback"
 
-class Client(Ice.Application):
-    def run(self, args):
-        if len(args) > 1:
-            print self.appName() + ": too many arguments"
-            return 1
-
-        defaultRouter = self.communicator().getDefaultRouter()
-        if not defaultRouter:
-            print self.appName() + ": no default router set"
-            return 1
-
-        router = Glacier2.RouterPrx.checkedCast(defaultRouter)
-        if not router:
-            print self.appName() + ": configured router is not a Glacier2 router"
-            return 1
-
+class Client(Glacier2.Application):
+    def createSession(self):
+        session = None
         while True:
             print "This demo accepts any user-id / password combination."
             id = raw_input("user id: ")
             pw = raw_input("password: ")
             try:
-                router.createSession(id, pw)
+                session = self.router().createSession(id, pw)
                 break
             except Glacier2.PermissionDeniedException, ex:
                 print "permission denied:\n" + ex.reason
+            except Glacier2.CannotCreateSessionException, ex:
+                print "cannot create session:\n" + ex.reason
+        return session
 
-        category = router.getCategoryForClient()
-        callbackReceiverIdent = Ice.Identity()
-        callbackReceiverIdent.name = "callbackReceiver"
-        callbackReceiverIdent.category = category
+    def runWithSession(self, args):
+        if len(args) > 1:
+            print self.appName() + ": too many arguments"
+            return 1
+
+        callbackReceiverIdent = self.createCallbackIdentity("callbackReceiver")
+
         callbackReceiverFakeIdent = Ice.Identity()
         callbackReceiverFakeIdent.name = "callbackReceiver"
         callbackReceiverFakeIdent.category = "fake"
@@ -70,12 +63,12 @@ class Client(Ice.Application):
         oneway = Demo.CallbackPrx.uncheckedCast(twoway.ice_oneway())
         batchOneway = Demo.CallbackPrx.uncheckedCast(twoway.ice_batchOneway())
 
-        adapter = self.communicator().createObjectAdapterWithRouter("Callback.Client", defaultRouter)
-        adapter.add(CallbackReceiverI(), callbackReceiverIdent)
-        adapter.add(CallbackReceiverI(), callbackReceiverFakeIdent)
-        adapter.activate()
+        self.objectAdapter().add(CallbackReceiverI(), callbackReceiverIdent)
 
-        twowayR = Demo.CallbackReceiverPrx.uncheckedCast(adapter.createProxy(callbackReceiverIdent))
+        # Should never be called for the fake identity.
+        self.objectAdapter().add(CallbackReceiverI(), callbackReceiverFakeIdent)
+
+        twowayR = Demo.CallbackReceiverPrx.uncheckedCast(self.objectAdapter().createProxy(callbackReceiverIdent))
         onewayR = Demo.CallbackReceiverPrx.uncheckedCast(twowayR.ice_oneway())
 
         override = ''
@@ -125,6 +118,8 @@ class Client(Ice.Application):
                         onewayR = Demo.CallbackReceiverPrx.uncheckedCast(twowayR.ice_identity(callbackReceiverIdent))
                 elif c == 's':
                     twoway.shutdown()
+                elif c == 'r':
+                    self.restart()
                 elif c == 'x':
                     pass # Nothing to do
                 elif c == '?':
@@ -136,14 +131,6 @@ class Client(Ice.Application):
                 break
             except EOFError:
                 break
-
-        try:
-            router.destroySession()
-        except Glacier2.SessionNotExistException, ex:
-            print ex
-        except Ice.ConnectionLostException:
-            # Expected: the router closed the connection.
-            pass
 
         return 0
 

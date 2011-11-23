@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -28,6 +28,32 @@ public sealed class TestIntfI : Test.TestIntfDisp_
         try
         {
             reply.reply();
+        }
+        catch(Ice.LocalException)
+        {
+            Debug.Assert(false);
+        }
+    }
+
+    public override void pingBiDir(Ice.Identity id, Ice.Current current)
+    {
+        try
+        {
+            //
+            // Ensure sending too much data doesn't cause the UDP connection
+            // to be closed.
+            //
+            try
+            {
+                byte[] seq = new byte[32 * 1024];
+                Test.TestIntfPrxHelper.uncheckedCast(current.con.createProxy(id)).sendByteSeq(seq, null);
+            }
+            catch(Ice.DatagramLimitException)
+            {
+                // Expected.
+            }
+
+            Test.PingReplyPrxHelper.uncheckedCast(current.con.createProxy(id)).reply();
         }
         catch(Ice.LocalException)
         {

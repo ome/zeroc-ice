@@ -1,11 +1,16 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2008 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+package test.Ice.seqMapping;
+
+import test.Ice.seqMapping.Test.*;
+import test.Ice.seqMapping.Serialize.*;
 
 class TwowaysAMI
 {
@@ -32,16 +37,10 @@ class TwowaysAMI
             {
                 try
                 {
-                    wait(5000);
+                    wait();
                 }
                 catch(InterruptedException ex)
                 {
-                    continue;
-                }
-
-                if(!_called)
-                {
-                    return false; // Must be timeout.
                 }
             }
 
@@ -60,10 +59,10 @@ class TwowaysAMI
         private boolean _called;
     }
 
-    private static class AMI_MyClass_opSerialSmallJavaNull extends Test.AMI_MyClass_opSerialSmallJava
+    private static class AMI_MyClass_opSerialSmallJavaNull extends AMI_MyClass_opSerialSmallJava
     {
         public void
-        ice_response(Serialize.Small r, Serialize.Small o)
+        ice_response(Small r, Small o)
         {
             test(o == null);
             test(r == null);
@@ -85,10 +84,10 @@ class TwowaysAMI
         private Callback callback = new Callback();
     }
 
-    private static class AMI_MyClass_opSerialSmallJava extends Test.AMI_MyClass_opSerialSmallJava
+    private static class AMI_MyClass_opSerialSmallJavaI extends AMI_MyClass_opSerialSmallJava
     {
         public void
-        ice_response(Serialize.Small r, Serialize.Small o)
+        ice_response(Small r, Small o)
         {
             test(o.i == 99);
             test(r.i == 99);
@@ -110,10 +109,10 @@ class TwowaysAMI
         private Callback callback = new Callback();
     }
 
-    private static class AMI_MyClass_opSerialLargeJava extends Test.AMI_MyClass_opSerialLargeJava
+    private static class AMI_MyClass_opSerialLargeJavaI extends AMI_MyClass_opSerialLargeJava
     {
         public void
-        ice_response(Serialize.Large r, Serialize.Large o)
+        ice_response(Large r, Large o)
         {
             test(o.d1 == 1.0);
             test(o.d2 == 2.0);
@@ -153,21 +152,21 @@ class TwowaysAMI
         private Callback callback = new Callback();
     }
 
-    private static class AMI_MyClass_opSerialStructJava extends Test.AMI_MyClass_opSerialStructJava
+    private static class AMI_MyClass_opSerialStructJavaI extends AMI_MyClass_opSerialStructJava
     {
         public void
-        ice_response(Serialize.Struct r, Serialize.Struct o)
+        ice_response(Struct r, Struct o)
         {
             test(o.o == null);
             test(o.o2 != null);
-            test(((Serialize.Struct)(o.o2)).o == null);
-            test(((Serialize.Struct)(o.o2)).o2 == o.o2);
+            test(((Struct)(o.o2)).o == null);
+            test(((Struct)(o.o2)).o2 == o.o2);
             test(o.s == null);
             test(o.s2.equals("Hello"));
             test(r.o == null);
             test(r.o2 != null);
-            test(((Serialize.Struct)(r.o2)).o == null);
-            test(((Serialize.Struct)(r.o2)).o2 == r.o2);
+            test(((Struct)(r.o2)).o == null);
+            test(((Struct)(r.o2)).o2 == r.o2);
             test(r.s == null);
             test(r.s2.equals("Hello"));
             callback.called();
@@ -189,10 +188,10 @@ class TwowaysAMI
     }
 
     static void
-    twowaysAMI(Ice.Communicator communicator, Test.MyClassPrx p)
+    twowaysAMI(MyClassPrx p)
     {
         {
-            Serialize.Small i = null;
+            Small i = null;
 
             AMI_MyClass_opSerialSmallJavaNull cb = new AMI_MyClass_opSerialSmallJavaNull();
             p.opSerialSmallJava_async(cb, i);
@@ -200,16 +199,16 @@ class TwowaysAMI
         }
 
         {
-            Serialize.Small i = new Serialize.Small();
+            Small i = new Small();
             i.i = 99;
 
-            AMI_MyClass_opSerialSmallJava cb = new AMI_MyClass_opSerialSmallJava();
+            AMI_MyClass_opSerialSmallJavaI cb = new AMI_MyClass_opSerialSmallJavaI();
             p.opSerialSmallJava_async(cb, i);
             test(cb.check());
         }
 
         {
-            Serialize.Large i = new Serialize.Large();
+            Large i = new Large();
             i.d1 = 1.0;
             i.d2 = 2.0;
             i.d3 = 3.0;
@@ -221,19 +220,19 @@ class TwowaysAMI
             i.d9 = 9.0;
             i.d10 = 10.0;
 
-            AMI_MyClass_opSerialLargeJava cb = new AMI_MyClass_opSerialLargeJava();
+            AMI_MyClass_opSerialLargeJavaI cb = new AMI_MyClass_opSerialLargeJavaI();
             p.opSerialLargeJava_async(cb, i);
             test(cb.check());
         }
 
         {
-            Serialize.Struct i = new Serialize.Struct();
+            Struct i = new Struct();
             i.o = null;
             i.o2 = i;
             i.s = null;
             i.s2 = "Hello";
 
-            AMI_MyClass_opSerialStructJava cb = new AMI_MyClass_opSerialStructJava();
+            AMI_MyClass_opSerialStructJavaI cb = new AMI_MyClass_opSerialStructJavaI();
             p.opSerialStructJava_async(cb, i);
             test(cb.check());
         }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,7 +16,7 @@ class GreetI : public Demo::Greet
 {
 public:
 
-    virtual std::string exchangeGreeting(const std::string&, const Ice::Current&) const;
+    virtual std::string exchangeGreeting(const std::string&, const Ice::Current&);
     virtual void shutdown(const Ice::Current&);
 };
 

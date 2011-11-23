@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -61,6 +61,7 @@ dictionary<short, int> ShortIntD;
 dictionary<long, float> LongFloatD;
 dictionary<string, string> StringStringD;
 dictionary<string, MyEnum> StringMyEnumD;
+dictionary<MyEnum, string> MyEnumStringD;
 
 ["ami"] class MyClass
 {
@@ -135,6 +136,9 @@ dictionary<string, MyEnum> StringMyEnumD;
 
     StringMyEnumD opStringMyEnumD(StringMyEnumD p1, StringMyEnumD p2,
                                   out StringMyEnumD p3);
+
+    MyEnumStringD opMyEnumStringD(MyEnumStringD p1, MyEnumStringD p2,
+                                  out MyEnumStringD p3);
 
     IntS opIntS(IntS s);
 

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -44,10 +44,6 @@ REGISTRY_OBJS   = AdminCallbackRouter.o \
                   RegistryI.o \
                   RegistryServerAdminRouter.o \
 	  	  InternalRegistryI.o \
-		  StringApplicationInfoDict.o \
-		  IdentityObjectInfoDict.o \
-		  StringAdapterInfoDict.o \
-		  Database.o \
 	          Allocatable.o \
 		  AdapterCache.o \
 		  ObjectCache.o \
@@ -55,6 +51,7 @@ REGISTRY_OBJS   = AdminCallbackRouter.o \
 		  ServerCache.o \
 		  NodeCache.o \
 		  ReplicaCache.o \
+		  Database.o \
 		  LocatorI.o \
 		  LocatorRegistryI.o \
 		  AdminI.o \
@@ -93,17 +90,12 @@ SLICE_SRCS	= ../IceGrid/Internal.ice
 
 HDIR		= $(headerdir)/IceGrid
 SDIR		= $(slicedir)/IceGrid
-LOCAL_HDIR	= ../IceGrid
-LOCAL_SDIR	= ../IceGrid
-
-SLICE2FREEZECMD = $(SLICE2FREEZE) --ice --include-dir IceGrid $(ICECPPFLAGS)
 
 include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= $(CPPFLAGS) -I.. $(OPENSSL_FLAGS) $(READLINE_FLAGS)
 ICECPPFLAGS	:= $(ICECPPFLAGS) -I..
 SLICE2CPPFLAGS 	:= --checksum --ice --include-dir IceGrid $(SLICE2CPPFLAGS)
-LINKWITH        := -lGlacier2 $(BZIP2_RPATH_LINK) -lIce -lIceUtil
 
 $(ADMIN): $(ADMIN_OBJS) $(LIBTARGETS)
 	rm -f $@
@@ -112,45 +104,35 @@ $(ADMIN): $(ADMIN_OBJS) $(LIBTARGETS)
 
 $(REGISTRY_SERVER): $(REGISTRY_SVR_OBJS) $(LIBTARGETS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(REGISTRY_SVR_OBJS) -lIceGrid -lIceStormService -lGlacier2 -lIcePatch2 \
-	$(DB_RPATH_LINK) -lFreeze -lIceBox $(EXPAT_RPATH_LINK) -lIceXML -lIceSSL $(OPENSSL_LIBS) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(REGISTRY_SVR_OBJS) -lIceGrid -lIceStorm -lIceStormService -lGlacier2 -lIcePatch2 \
+	-lIceDB -lIceBox $(EXPAT_RPATH_LINK) -lIceXML -lIceSSL $(OPENSSL_LIBS) $(LIBS)
 
 $(NODE_SERVER): $(NODE_SVR_OBJS) $(LIBTARGETS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(NODE_SVR_OBJS) -lIceGrid -lIceStormService -lIceBox -lGlacier2 -lIcePatch2 \
-	$(DB_RPATH_LINK) -lFreeze $(EXPAT_RPATH_LINK) -lIceXML -lIceSSL $(OPENSSL_LIBS) $(LIBS)
-
-$(LOCAL_HDIR)/StringApplicationInfoDict.h StringApplicationInfoDict.cpp: $(LOCAL_SDIR)/Internal.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
-	rm -f StringApplicationInfoDict.h StringApplicationInfoDict.cpp
-	$(SLICE2FREEZECMD) --dict IceGrid::StringApplicationInfoDict,string,IceGrid::ApplicationInfo \
-	StringApplicationInfoDict $(LOCAL_SDIR)/Internal.ice
-
-clean::
-	-rm -f StringApplicationInfoDict.h StringApplicationInfoDict.cpp
-
-$(LOCAL_HDIR)/IdentityObjectInfoDict.h IdentityObjectInfoDict.cpp: $(slicedir)/Ice/Identity.ice $(LOCAL_SDIR)/Internal.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
-	rm -f IdentityObjectInfoDict.h IdentityObjectInfoDict.cpp
-	$(SLICE2FREEZECMD) --dict IceGrid::IdentityObjectInfoDict,Ice::Identity,IceGrid::ObjectInfo \
-	--dict-index IceGrid::IdentityObjectInfoDict,type \
-	IdentityObjectInfoDict $(slicedir)/Ice/Identity.ice $(LOCAL_SDIR)/Internal.ice
-
-clean::
-	rm -f IdentityObjectInfoDict.h IdentityObjectInfoDict.cpp
-
-$(LOCAL_HDIR)/StringAdapterInfoDict.h StringAdapterInfoDict.cpp: $(SDIR)/Admin.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
-	rm -f StringAdapterInfoDict.h StringAdapterInfoDict.cpp
-	$(SLICE2FREEZECMD) --dict IceGrid::StringAdapterInfoDict,string,IceGrid::AdapterInfo \
-	--dict-index IceGrid::StringAdapterInfoDict,replicaGroupId StringAdapterInfoDict $(SDIR)/Admin.ice
-
-clean::
-	rm -f StringAdapterInfoDict.h StringAdapterInfoDict.cpp
-
-# Needed for make -jn to work.
-##../IceGrid/Grammar.y: Grammar.h
+	$(CXX) $(LDFLAGS) -o $@ $(NODE_SVR_OBJS) -lIceGrid -lIceStorm -lIceStormService -lIceBox -lGlacier2 \
+	-lIcePatch2 -lIceDB $(EXPAT_RPATH_LINK) -lIceXML -lIceSSL $(OPENSSL_LIBS) $(LIBS)
 
 install:: all
 	$(call installprogram,$(ADMIN),$(install_bindir))
 	$(call installprogram,$(NODE_SERVER),$(install_bindir))
 	$(call installprogram,$(REGISTRY_SERVER),$(install_bindir))
+
+SUBDIRS = FreezeDB
+ifneq ($(QT_HOME),)
+   SUBDIRS += SqlDB
+endif
+
+$(EVERYTHING)::
+	@for subdir in $(SUBDIRS); \
+	do \
+	    if test -d $$subdir ; \
+	    then \
+		echo "making $@ in $$subdir"; \
+		( cd $$subdir && $(MAKE) $@ ) || exit 1; \
+	    fi; \
+	done
+
+# Needed for make -jn to work.
+##../IceGrid/Grammar.y: Grammar.h
 
 include .depend

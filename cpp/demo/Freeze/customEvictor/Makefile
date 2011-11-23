@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -45,12 +45,15 @@ $(SERVER): $(OBJS) $(SOBJS)
 	rm -f $@
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(SOBJS) $(DB_RPATH_LINK) -lFreeze $(LIBS)
 
-Database.h Database.cpp: ItemInfo.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
+# The slice2freeze rules are structured like this to avoid issues with
+# parallel make.
+Database.h: Database.cpp
+Database.cpp: ItemInfo.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
 	rm -f Database.h Database.cpp
 	$(SLICE2FREEZE) -I$(slicedir) --dict Database,string,Warehouse::ItemInfo Database ItemInfo.ice
 
 clean::
-	-rm -rf db/__* db/items db/log*
+	-rm -rf db/__* db/items db/log* db/__Freeze
 	-rm -f Database.h Database.cpp
 
 include .depend

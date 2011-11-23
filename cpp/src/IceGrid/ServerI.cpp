@@ -1,13 +1,15 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <IceUtil/FileUtil.h>
 #include <Ice/Ice.h>
+#include <Ice/Instance.h>
 #include <IceGrid/ServerI.h>
 #include <IceGrid/TraceLevels.h>
 #include <IceGrid/Activator.h>
@@ -17,11 +19,9 @@
 #include <IceGrid/DescriptorHelper.h>
 
 #include <IcePatch2/Util.h>
-#include <IcePatch2/OS.h>
 #include <IceUtil/FileUtil.h>
 
 #include <sys/types.h>
-#include <sys/stat.h>
 
 #ifdef _WIN32
 #  include <direct.h>
@@ -33,8 +33,6 @@
 #  include <unistd.h>
 #  include <dirent.h>
 #endif
-
-#include <fstream>
 
 using namespace std;
 using namespace IceGrid;
@@ -97,8 +95,8 @@ chownRecursive(const string& path, uid_t uid, gid_t gid)
         {
             name = path + "/" + name;
 
-            OS::structstat buf;
-            if(OS::osstat(name, &buf) == -1)
+            IceUtilInternal::structstat buf;
+            if(IceUtilInternal::stat(name, &buf) == -1)
             {
                 throw "cannot stat `" + name + "':\n" + IceUtilInternal::lastErrorToString();
             }
@@ -276,6 +274,7 @@ private:
 
 struct EnvironmentEval : std::unary_function<string, string>
 {
+    
     string
     operator()(const std::string& value)
     {
@@ -290,7 +289,8 @@ struct EnvironmentEval : std::unary_function<string, string>
         string::size_type beg = 0;
         string::size_type end;
 #ifdef _WIN32
-        char buf[32767];
+        vector<wchar_t> buf;
+        buf.resize(32767);
         while((beg = v.find("%", beg)) != string::npos && beg < v.size() - 1)
         {
             end = v.find("%", beg + 1);
@@ -299,8 +299,8 @@ struct EnvironmentEval : std::unary_function<string, string>
                 break;
             }
             string variable = v.substr(beg + 1, end - beg - 1);
-            DWORD ret = GetEnvironmentVariable(variable.c_str(), buf, sizeof(buf));
-            string valstr = (ret > 0 && ret < sizeof(buf)) ? string(buf) : string("");
+            DWORD ret = GetEnvironmentVariableW(IceUtil::stringToWstring(variable).c_str(), &buf[0], static_cast<DWORD>(buf.size()));
+            string valstr = (ret > 0 && ret < sizeof(buf.size())) ? IceUtil::wstringToString(&buf[0]) : string("");
             v.replace(beg, end - beg + 1, valstr);
             beg += valstr.size();
         }
@@ -336,6 +336,7 @@ struct EnvironmentEval : std::unary_function<string, string>
 #endif
         return value.substr(0, assignment) + "=" + v;
     }
+
 };
 
 }
@@ -1084,7 +1085,7 @@ ServerI::load(const AMD_Node_loadServerPtr& amdCB, const InternalServerDescripto
         }
         return 0;
     }
-    
+
     if(!StopCommand::isStopped(_state) && !_stop)
     {
         _stop = new StopCommand(this, _node->getTimer(), _deactivationTimeout);
@@ -1750,6 +1751,11 @@ ServerI::shutdown()
 {
     Lock sync(*this);
     assert(_state == ServerI::Inactive);
+    assert(!_destroy);
+    assert(!_stop);
+    assert(!_load);
+    assert(!_patch);
+    assert(!_start);
     _timerTask = 0;
 }
 
@@ -2038,7 +2044,7 @@ ServerI::updateImpl(const InternalServerDescriptorPtr& descriptor)
         if(!success)
         {
             Ice::SyscallException ex(__FILE__, __LINE__);
-            ex.error = getSystemErrno();
+            ex.error = IceInternal::getSystemErrno();
             throw ex;
         }
         if(user != string(&buf[0]))
@@ -2197,7 +2203,7 @@ ServerI::updateImpl(const InternalServerDescriptorPtr& descriptor)
             knownFiles.push_back(p->first);
 
             const string configFilePath = _serverDir + "/config/" + p->first;
-            ofstream configfile(configFilePath.c_str());
+            IceUtilInternal::ofstream configfile(configFilePath); // configFilePath is a UTF-8 string
             if(!configfile.good())
             {
                 throw "couldn't create configuration file: " + configFilePath;
@@ -2257,7 +2263,8 @@ ServerI::updateImpl(const InternalServerDescriptorPtr& descriptor)
             if(!(*q)->properties.empty())
             {
                 string file = dbEnvHome + "/DB_CONFIG";
-                ofstream configfile(file.c_str());
+
+                IceUtilInternal::ofstream configfile(file); // file is a UTF-8 string
                 if(!configfile.good())
                 {
                     throw "couldn't create configuration file `" + file + "'";
@@ -2324,7 +2331,7 @@ ServerI::checkRevision(const string& replicaName, const string& uuid, int revisi
     else
     {
         string idFilePath = _serverDir + "/revision";
-        ifstream is(idFilePath.c_str());
+        IceUtilInternal::ifstream is(idFilePath); // idFilePath is a UTF-8 string
         if(!is.good())
         {
             return;
@@ -2362,7 +2369,7 @@ ServerI::updateRevision(const string& uuid, int revision)
     _desc->revision = revision;
 
     string idFilePath = _serverDir + "/revision";
-    ofstream os(idFilePath.c_str());
+    IceUtilInternal::ofstream os(idFilePath); // idFilePath is a UTF-8 string
     if(os.good())
     {
         os << "#" << endl;
@@ -2567,6 +2574,12 @@ ServerI::setStateNoSync(InternalServerState st, const std::string& reason)
         break;
     }
 
+    if(_timerTask)
+    {
+        _node->getTimer()->cancel(_timerTask);
+        _timerTask = 0;
+    }
+
     if(_state == Destroyed && !_load)
     {
         //
@@ -2587,6 +2600,7 @@ ServerI::setStateNoSync(InternalServerState st, const std::string& reason)
     {
         if(_activation == Always)
         {
+            assert(!_timerTask);
             _timerTask = new DelayedStart(this, _node->getTraceLevels());
             try
             {
@@ -2606,12 +2620,21 @@ ServerI::setStateNoSync(InternalServerState st, const std::string& reason)
             // server will be ready to be reactivated when the
             // callback is executed.  
             //
+            assert(!_timerTask);
             _timerTask = new DelayedStart(this, _node->getTraceLevels());
             try
             {
-                _node->getTimer()->schedule(_timerTask, 
-                                            IceUtil::Time::seconds(_disableOnFailure) + 
-                                            IceUtil::Time::milliSeconds(500));
+                IceUtil::Time now = IceUtil::Time::now(IceUtil::Time::Monotonic);
+                if(now - _failureTime < IceUtil::Time::seconds(_disableOnFailure))
+                {
+                    _node->getTimer()->schedule(_timerTask, 
+                                                IceUtil::Time::seconds(_disableOnFailure) - now + _failureTime +
+                                                IceUtil::Time::milliSeconds(500));
+                }
+                else
+                {
+                    _node->getTimer()->schedule(_timerTask, IceUtil::Time::milliSeconds(500));
+                }
             }
             catch(const IceUtil::Exception&)
             {

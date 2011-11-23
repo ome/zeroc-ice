@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,7 +8,9 @@
 // **********************************************************************
 
 #include <IceUtil/DisableWarnings.h>
-#include <IceUtil/StaticMutex.h>
+#include <IceUtil/Mutex.h>
+#include <IceUtil/MutexPtrLock.h>
+#include <IceUtil/StringUtil.h>
 #include <IceSSL/Plugin.h>
 #include <IceSSL/Util.h>
 #include <IceSSL/RFC2253.h>
@@ -80,6 +82,31 @@ CertificateEncodingException::ice_throw() const
     throw *this;
 }
 
+namespace
+{
+
+IceUtil::Mutex* mut = 0;
+
+class Init
+{
+public:
+
+    Init()
+    {
+        mut = new IceUtil::Mutex;
+    }
+
+    ~Init()
+    {
+        delete mut;
+        mut = 0;
+    }
+};
+
+Init init;
+
+}
+
 static IceUtil::Time
 ASMUtcTimeToIceUtilTime(const ASN1_UTCTIME* s)
 {
@@ -119,8 +146,7 @@ ASMUtcTimeToIceUtilTime(const ASN1_UTCTIME* s)
     //
     time_t tzone;
     {
-        static IceUtil::StaticMutex mutex = ICE_STATIC_MUTEX_INITIALIZER;
-        IceUtil::StaticMutex::Lock sync(mutex);
+        IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(mut);
         time_t now = time(0);
         tzone = mktime(localtime(&now)) - mktime(gmtime(&now));
     }
@@ -159,7 +185,7 @@ convertGeneralNames(GENERAL_NAMES* gens)
             ASN1_IA5STRING* str = gen->d.rfc822Name;
             if(str && str->type == V_ASN1_IA5STRING && str->data && str->length > 0)
             {
-                p.second = reinterpret_cast<const char*>(str->data);
+                p.second = string(reinterpret_cast<const char*>(str->data), str->length);
             }
             break;
         }
@@ -168,7 +194,7 @@ convertGeneralNames(GENERAL_NAMES* gens)
             ASN1_IA5STRING* str = gen->d.dNSName;
             if(str && str->type == V_ASN1_IA5STRING && str->data && str->length > 0)
             {
-                p.second = reinterpret_cast<const char*>(str->data);
+                p.second = string(reinterpret_cast<const char*>(str->data), str->length);
             }
             break;
         }
@@ -182,7 +208,7 @@ convertGeneralNames(GENERAL_NAMES* gens)
             ASN1_IA5STRING* str = gen->d.uniformResourceIdentifier;
             if(str && str->type == V_ASN1_IA5STRING && str->data && str->length > 0)
             {
-                p.second = reinterpret_cast<const char*>(str->data);
+                p.second = string(reinterpret_cast<const char*>(str->data), str->length);
             }
             break;
         }

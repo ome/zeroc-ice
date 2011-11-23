@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,7 +24,6 @@
 #include <Ice/ReferenceFactoryF.h>
 #include <Ice/ProxyFactoryF.h>
 #include <Ice/ThreadPoolF.h>
-#include <Ice/SelectorThreadF.h>
 #include <Ice/ConnectionFactoryF.h>
 #include <Ice/ConnectionMonitorF.h>
 #include <Ice/ObjectFactoryManagerF.h>
@@ -34,11 +33,11 @@
 #include <Ice/DynamicLibraryF.h>
 #include <Ice/PluginF.h>
 #include <Ice/Initialize.h>
-#include <Ice/SharedContext.h>
 #include <Ice/ImplicitContextI.h>
 #include <Ice/FacetMap.h>
 #include <Ice/Process.h>
 #include <list>
+#include <memory>
 
 namespace Ice
 {
@@ -70,7 +69,6 @@ public:
     ProtocolSupport protocolSupport() const;
     ThreadPoolPtr clientThreadPool();
     ThreadPoolPtr serverThreadPool();
-    SelectorThreadPtr selectorThread();
     EndpointHostResolverPtr endpointHostResolver();
     RetryQueuePtr retryQueue();
     IceUtil::TimerPtr timer();
@@ -80,9 +78,6 @@ public:
     size_t messageSizeMax() const { return _messageSizeMax; }
     Ice::Int clientACM() const;
     Ice::Int serverACM() const;
-    void flushBatchRequests();
-    void setDefaultContext(const ::Ice::Context&);
-    SharedContextPtr getDefaultContext() const;
     Ice::Identity stringToIdentity(const std::string&) const;
     std::string identityToString(const Ice::Identity&) const;
 
@@ -101,6 +96,7 @@ public:
     void setStringConverter(const Ice::StringConverterPtr&);
     void setWstringConverter(const Ice::WstringConverterPtr&);
     void setLogger(const Ice::LoggerPtr&);
+    void setThreadHook(const Ice::ThreadNotificationPtr&);
 
 private:
 
@@ -134,14 +130,12 @@ private:
     ProtocolSupport _protocolSupport;
     ThreadPoolPtr _clientThreadPool;
     ThreadPoolPtr _serverThreadPool;
-    SelectorThreadPtr _selectorThread;
     EndpointHostResolverPtr _endpointHostResolver;
     RetryQueuePtr _retryQueue;
     IceUtil::TimerPtr _timer;
     EndpointFactoryManagerPtr _endpointFactoryManager;
     DynamicLibraryListPtr _dynamicLibraryList;
     Ice::PluginManagerPtr _pluginManager;
-    SharedContextPtr _defaultContext;
     const Ice::ImplicitContextIPtr _implicitContext;
     Ice::ObjectAdapterPtr _adminAdapter;
     Ice::FacetMap _adminFacets;
@@ -165,7 +159,6 @@ private:
     Ice::Byte* _buffer;
     size_t _offset;
 };
-
 
 class ProcessI : public Ice::Process
 {

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,7 +9,8 @@
 
 #include <FreezeScript/Parser.h>
 #include <FreezeScript/GrammarUtil.h>
-#include <IceUtil/StaticMutex.h>
+#include <IceUtil/Mutex.h>
+#include <IceUtil/MutexPtrLock.h>
 
 using namespace std;
 
@@ -64,9 +65,33 @@ FreezeScript::ErrorReporterPtr FreezeScript::parseErrorReporter;
 FreezeScript::NodePtr FreezeScript::parseResult;
 int FreezeScript::parseLine;
 
-static string _input;
-static string::size_type _pos;
-static IceUtil::StaticMutex _parserMutex = ICE_STATIC_MUTEX_INITIALIZER;
+namespace
+{
+
+string _input;
+string::size_type _pos;
+
+IceUtil::Mutex* _parserMutex = 0;
+
+class Init
+{
+public:
+
+    Init()
+    {
+        _parserMutex = new IceUtil::Mutex;
+    }
+
+    ~Init()
+    {
+        delete _parserMutex;
+        _parserMutex = 0;
+    }
+};
+
+Init init;
+
+}
 
 //
 // parseExpression
@@ -77,7 +102,7 @@ FreezeScript::parseExpression(const string& expr, const DataFactoryPtr& factory,
     //
     // The bison grammar is not thread-safe.
     //
-    IceUtil::StaticMutex::Lock sync(_parserMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(_parserMutex);
 
     parseDataFactory = factory;
     parseErrorReporter = errorReporter;
@@ -141,10 +166,10 @@ FreezeScript::EvaluateException::ice_name() const
 void
 FreezeScript::EvaluateException::ice_print(ostream& out) const
 {
-#ifdef __BCPLUSPLUS__
-    Ice::Exception::ice_print(out);
-#else
+#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug
     Exception::ice_print(out);
+#else
+    Ice::Exception::ice_print(out);
 #endif
     out << ":\nerror occurred while evaluating expression";
     if(!_reason.empty())

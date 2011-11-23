@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,25 +12,6 @@
 
 using namespace std;
 using namespace Demo;
-
-class InvokeClient : public Ice::Application
-{
-public:
-
-    InvokeClient();
-    virtual int run(int, char*[]);
-
-private:
-
-    void menu();
-};
-
-int
-main(int argc, char* argv[])
-{
-    InvokeClient app;
-    return app.main(argc, argv, "config.client");
-}
 
 static ostream&
 operator<<(ostream& out, Demo::Color c)
@@ -48,6 +29,26 @@ operator<<(ostream& out, Demo::Color c)
         break;
     }
     return out;
+}
+
+class InvokeClient : public Ice::Application
+{
+public:
+
+    InvokeClient();
+    virtual int run(int, char*[]);
+
+private:
+
+    void usage(const string&);
+    void menu();
+};
+
+int
+main(int argc, char* argv[])
+{
+    InvokeClient app;
+    return app.main(argc, argv, "config.client");
 }
 
 InvokeClient::InvokeClient() :
@@ -86,7 +87,7 @@ InvokeClient::run(int argc, char* argv[])
                 //
                 Ice::ByteSeq inParams, outParams;
                 Ice::OutputStreamPtr out = Ice::createOutputStream(communicator());
-                out->writeString("The streaming API works!");
+                out->write("The streaming API works!");
                 out->finished(inParams);
 
                 //
@@ -109,7 +110,7 @@ InvokeClient::run(int argc, char* argv[])
                 arr.push_back("streaming");
                 arr.push_back("API");
                 arr.push_back("works!");
-                out->writeStringSeq(arr);
+                out->write(arr);
                 out->finished(inParams);
 
                 //
@@ -130,7 +131,7 @@ InvokeClient::run(int argc, char* argv[])
                 Demo::StringDict dict;
                 dict["The"] = "streaming";
                 dict["API"] = "works!";
-                Demo::ice_writeStringDict(out, dict);
+                out->write(dict);
                 out->finished(inParams);
 
                 //
@@ -148,7 +149,7 @@ InvokeClient::run(int argc, char* argv[])
                 //
                 Ice::ByteSeq inParams, outParams;
                 Ice::OutputStreamPtr out = Ice::createOutputStream(communicator());
-                Demo::ice_writeColor(out, Demo::green);
+                out->write(Demo::green);
                 out->finished(inParams);
 
                 //
@@ -169,7 +170,7 @@ InvokeClient::run(int argc, char* argv[])
                 Demo::Structure s;
                 s.name = "red";
                 s.value = Demo::red;
-                Demo::ice_writeStructure(out, s);
+                out->write(s);
                 out->finished(inParams);
 
                 //
@@ -197,7 +198,7 @@ InvokeClient::run(int argc, char* argv[])
                 arr.push_back(Demo::Structure());
                 arr.back().name = "blue";
                 arr.back().value = Demo::blue;
-                Demo::ice_writeStructureSeq(out, arr);
+                out->write(arr);
                 out->finished(inParams);
 
                 //
@@ -218,7 +219,7 @@ InvokeClient::run(int argc, char* argv[])
                 Demo::CPtr c = new Demo::C;
                 c->s.name = "blue";
                 c->s.value = Demo::blue;
-                Demo::ice_writeC(out, c);
+                out->write(c);
                 out->writePendingObjects();
                 out->finished(inParams);
 
@@ -247,8 +248,9 @@ InvokeClient::run(int argc, char* argv[])
                 //
                 Ice::InputStreamPtr in = Ice::createInputStream(communicator(), outParams);
                 Demo::CPtr c;
-                Demo::ice_readC(in, c);
-                string str = in->readString();
+                in->read(c);
+                string str;
+                in->read(str);
                 in->readPendingObjects();
                 cout << "Got string `" << str << "' and class: s.name=" << c->s.name
                      << ", s.value=" << c->s.value << endl;

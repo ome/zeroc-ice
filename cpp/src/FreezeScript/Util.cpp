@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -90,8 +90,8 @@ FreezeScript::createEvictorSliceTypes(const Slice::UnitPtr& u)
     {
         identity = ice->createStruct("Identity", false);
         Slice::TypePtr str = u->builtin(Slice::Builtin::KindString);
-        identity->createDataMember("name", str);
-        identity->createDataMember("category", str);
+        identity->createDataMember("name", str, 0, "", "");
+        identity->createDataMember("category", str, 0, "", "");
     }
     else
     {
@@ -132,9 +132,9 @@ FreezeScript::createEvictorSliceTypes(const Slice::UnitPtr& u)
     {
         stats = freeze->createStruct("Statistics", false);
         Slice::TypePtr tl = u->builtin(Slice::Builtin::KindLong);
-        stats->createDataMember("creationTime", tl);
-        stats->createDataMember("lastSaveTime", tl);
-        stats->createDataMember("avgSaveTime", tl);
+        stats->createDataMember("creationTime", tl, 0, "", "");
+        stats->createDataMember("lastSaveTime", tl, 0, "", "");
+        stats->createDataMember("avgSaveTime", tl, 0, "", "");
     }
     else
     {
@@ -155,8 +155,8 @@ FreezeScript::createEvictorSliceTypes(const Slice::UnitPtr& u)
     {
         Slice::StructPtr rec = freeze->createStruct("ObjectRecord", false);
         Slice::TypePtr obj = u->builtin(Slice::Builtin::KindObject);
-        rec->createDataMember("servant", obj);
-        rec->createDataMember("stats", stats);
+        rec->createDataMember("servant", obj, 0, "", "");
+        rec->createDataMember("stats", stats, 0, "", "");
     }
     else
     {
@@ -177,9 +177,9 @@ FreezeScript::parseSlice(const string& n, const Slice::UnitPtr& u, const vector<
     //
     for(vector<string>::const_iterator p = files.begin(); p != files.end(); ++p)
     {
-        Preprocessor icecpp(n, *p, cppArgs);
+        PreprocessorPtr icecpp = Preprocessor::create(n, *p, cppArgs);
 
-        FILE* cppHandle = icecpp.preprocess(false);
+        FILE* cppHandle = icecpp->preprocess(false);
 
         if(cppHandle == 0)
         {
@@ -188,7 +188,7 @@ FreezeScript::parseSlice(const string& n, const Slice::UnitPtr& u, const vector<
 
         int status = u->parse(*p, cppHandle, debug);
 
-        if(!icecpp.close())
+        if(!icecpp->close())
         {
             return false;            
         }

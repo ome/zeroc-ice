@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,8 +11,6 @@ package IceSSL;
 
 final class EndpointI extends IceInternal.EndpointI
 {
-    final static short TYPE = 2;
-
     public
     EndpointI(Instance instance, String ho, int po, int ti, String conId, boolean co)
     {
@@ -48,7 +46,8 @@ final class EndpointI extends IceInternal.EndpointI
             String option = arr[i++];
             if(option.length() != 2 || option.charAt(0) != '-')
             {
-                throw new Ice.EndpointParseException("ssl " + str);
+                throw new Ice.EndpointParseException("expected an endpoint option but found `" + option +
+                                                     "' in endpoint `ssl " + str + "'");
             }
 
             String argument = null;
@@ -67,7 +66,8 @@ final class EndpointI extends IceInternal.EndpointI
                 {
                     if(argument == null)
                     {
-                        throw new Ice.EndpointParseException("ssl " + str);
+                        throw new Ice.EndpointParseException("no argument provided for -h option in endpoint `ssl "
+                                                             + str + "'");
                     }
 
                     _host = argument;
@@ -78,7 +78,8 @@ final class EndpointI extends IceInternal.EndpointI
                 {
                     if(argument == null)
                     {
-                        throw new Ice.EndpointParseException("ssl " + str);
+                        throw new Ice.EndpointParseException("no argument provided for -p option in endpoint `ssl "
+                                                             + str + "'");
                     }
 
                     try
@@ -87,12 +88,14 @@ final class EndpointI extends IceInternal.EndpointI
                     }
                     catch(NumberFormatException ex)
                     {
-                        throw new Ice.EndpointParseException("ssl " + str);
+                        throw new Ice.EndpointParseException("invalid port value `" + argument +
+                                                             "' in endpoint `ssl " + str + "'");
                     }
 
                     if(_port < 0 || _port > 65535)
                     {
-                        throw new Ice.EndpointParseException("ssl " + str);
+                        throw new Ice.EndpointParseException("port value `" + argument +
+                                                             "' out of range in endpoint `ssl " + str + "'");
                     }
 
                     break;
@@ -102,7 +105,8 @@ final class EndpointI extends IceInternal.EndpointI
                 {
                     if(argument == null)
                     {
-                        throw new Ice.EndpointParseException("ssl " + str);
+                        throw new Ice.EndpointParseException("no argument provided for -t option in endpoint `ssl "
+                                                             + str + "'");
                     }
 
                     try
@@ -111,7 +115,8 @@ final class EndpointI extends IceInternal.EndpointI
                     }
                     catch(NumberFormatException ex)
                     {
-                        throw new Ice.EndpointParseException("ssl " + str);
+                        throw new Ice.EndpointParseException("invalid timeout value `" + argument +
+                                                             "' in endpoint `ssl " + str + "'");
                     }
 
                     break;
@@ -121,7 +126,8 @@ final class EndpointI extends IceInternal.EndpointI
                 {
                     if(argument != null)
                     {
-                        throw new Ice.EndpointParseException("ssl " + str);
+                        throw new Ice.EndpointParseException("unexpected argument `" + argument +
+                                                             "' provided for -z option in `ssl " + str + "'");
                     }
 
                     _compress = true;
@@ -130,7 +136,7 @@ final class EndpointI extends IceInternal.EndpointI
 
                 default:
                 {
-                    throw new Ice.EndpointParseException("ssl " + str);
+                    throw new Ice.EndpointParseException("unknown option `" + option + "' in `ssl " + str + "'");
                 }
             }
         }
@@ -147,7 +153,7 @@ final class EndpointI extends IceInternal.EndpointI
             }
             else
             {
-                throw new Ice.EndpointParseException("ssl " + str);
+                throw new Ice.EndpointParseException("`-h *' not valid for proxy endpoint `ssl " + str + "'");
             }
         }
 
@@ -178,7 +184,7 @@ final class EndpointI extends IceInternal.EndpointI
     public void
     streamWrite(IceInternal.BasicStream s)
     {
-        s.writeShort(TYPE);
+        s.writeShort(EndpointType.value);
         s.startWriteEncaps();
         s.writeString(_host);
         s.writeInt(_port);
@@ -231,12 +237,37 @@ final class EndpointI extends IceInternal.EndpointI
     }
 
     //
+    // Return the endpoint information.
+    //
+    public Ice.EndpointInfo
+    getInfo()
+    {
+        return new IceSSL.EndpointInfo(_timeout, _compress, _host, _port)
+            {
+                public short type()
+                {
+                    return EndpointType.value;
+                }
+                
+                public boolean datagram()
+                {
+                    return false;
+                }
+                
+                public boolean secure()
+                {
+                    return true;
+                }
+        };
+    }
+
+    //
     // Return the endpoint type
     //
     public short
     type()
     {
-        return TYPE;
+        return EndpointType.value;
     }
 
     //
@@ -330,15 +361,6 @@ final class EndpointI extends IceInternal.EndpointI
     }
 
     //
-    // Return true if the endpoint type is unknown.
-    //
-    public boolean
-    unknown()
-    {
-        return false;
-    }
-
-    //
     // Return a server side transceiver for this endpoint, or null if a
     // transceiver can only be created by an acceptor. In case a
     // transceiver is created, this operation also returns a new
@@ -393,17 +415,16 @@ final class EndpointI extends IceInternal.EndpointI
     {
         java.util.ArrayList<IceInternal.EndpointI> endps = new java.util.ArrayList<IceInternal.EndpointI>();
         java.util.ArrayList<String> hosts =
-            IceInternal.Network.getHostsForEndpointExpand(_host, _instance.protocolSupport());
+            IceInternal.Network.getHostsForEndpointExpand(_host, _instance.protocolSupport(), false);
         if(hosts == null || hosts.isEmpty())
         {
             endps.add(this);
         }
         else
         {
-            java.util.Iterator<String> p = hosts.iterator();
-            while(p.hasNext())
+            for(String host : hosts)
             {
-                endps.add(new EndpointI(_instance, p.next(), _port, _timeout, _connectionId, _compress));
+                endps.add(new EndpointI(_instance, host, _port, _timeout, _connectionId, _compress));
             }
         }
         return endps;
@@ -508,10 +529,9 @@ final class EndpointI extends IceInternal.EndpointI
     connectors(java.util.List<java.net.InetSocketAddress> addresses)
     {
         java.util.List<IceInternal.Connector> connectors = new java.util.ArrayList<IceInternal.Connector>();
-        java.util.Iterator<java.net.InetSocketAddress> p = addresses.iterator();
-        while(p.hasNext())
+        for(java.net.InetSocketAddress p : addresses)
         {
-            connectors.add(new ConnectorI(_instance, p.next(), _timeout, _connectionId));
+            connectors.add(new ConnectorI(_instance, _host, p, _timeout, _connectionId));
         }
         return connectors;
     }

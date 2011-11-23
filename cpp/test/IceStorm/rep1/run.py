@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -23,6 +23,12 @@ from scripts import *
 publisher = os.path.join(os.getcwd(), "publisher")
 subscriber = os.path.join(os.getcwd(), "subscriber")
 subscriber2 = os.path.join(os.getcwd(), "sub")
+
+targets = []
+if TestUtil.appverifier:
+    targets = [TestUtil.getIceBox(), publisher, subscriber, subscriber2, TestUtil.getIceBoxAdmin(), \
+               TestUtil.getIceStormAdmin()]
+    TestUtil.setAppVerifierSettings(targets, cwd = os.getcwd())
 
 def runsub(opt, ref, arg = "", echo=False):
     qos = ""
@@ -281,3 +287,6 @@ print "stopping replicas...",
 sys.stdout.flush()
 icestorm.stop()
 print "ok"
+
+if TestUtil.appverifier:
+    TestUtil.appVerifierAfterTestEnd(targets, cwd = os.getcwd())

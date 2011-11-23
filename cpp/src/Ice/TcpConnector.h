@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -47,7 +47,7 @@ private:
     const InstancePtr _instance;
     const TraceLevelsPtr _traceLevels;
     const ::Ice::LoggerPtr _logger;
-    struct sockaddr_storage _addr;
+    const struct sockaddr_storage _addr;
     const Ice::Int _timeout;
     const std::string _connectionId;
 };

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,12 +12,34 @@
 
 using namespace std;
 
-static IceUtil::StaticMutex outputMutex = ICE_STATIC_MUTEX_INITIALIZER;
+namespace
+{
+IceUtil::Mutex* outputMutex = 0;
+
+class Init
+{
+public:
+
+    Init()
+    {
+        outputMutex = new IceUtil::Mutex;
+    }
+
+    ~Init()
+    {
+        delete outputMutex;
+        outputMutex = 0;
+    }
+};
+
+Init init;
+
+}
 
 void
 mtprint(const string& data)
 {
-    IceUtil::StaticMutex::Lock sync(outputMutex);
+    IceUtil::Mutex::Lock sync(*outputMutex);
     cout << data << flush;
 }
 

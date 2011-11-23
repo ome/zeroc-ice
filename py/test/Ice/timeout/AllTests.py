@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -27,42 +27,26 @@ class CallbackBase:
     def check(self):
         self._cond.acquire()
         while not self._called:
-            self._cond.wait(5.0)
+            self._cond.wait()
         self._called = False
         return True
 
-class AMISendData(CallbackBase):
-    def ice_response(self):
+class Callback(CallbackBase):
+    def response(self):
         self.called()
 
-    def ice_exception(self, ex):
+    def exception(self, ex):
         test(False)
 
-class AMISendDataEx(CallbackBase):
-    def ice_response(self):
+    def responseEx(self):
         test(False)
 
-    def ice_exception(self, ex):
-        test(isinstance(ex, Ice.TimeoutException))
-        self.called()
-
-class AMISleep(CallbackBase):
-    def ice_response(self):
-        self.called()
-
-    def ice_exception(self, ex):
-        test(False)
-
-class AMISleepEx(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, ex):
+    def exceptionEx(self, ex):
         test(isinstance(ex, Ice.TimeoutException))
         self.called()
 
 def allTests(communicator, collocated):
-    sref = "timeout:default -p 12010 -t 10000"
+    sref = "timeout:default -p 12010"
     obj = communicator.stringToProxy(sref)
     test(obj != None)
 
@@ -147,17 +131,17 @@ def allTests(communicator, collocated):
     # Expect TimeoutException.
     #
     to = Test.TimeoutPrx.uncheckedCast(obj.ice_timeout(500))
-    cb = AMISleepEx()
-    to.sleep_async(cb, 2000)
-    test(cb.check())
+    cb = Callback()
+    to.begin_sleep(2000, cb.responseEx, cb.exceptionEx)
+    cb.check()
     #
     # Expect success.
     #
     timeout.op() # Ensure adapter is active.
     to = Test.TimeoutPrx.uncheckedCast(obj.ice_timeout(1000))
-    cb = AMISleep()
-    to.sleep_async(cb, 500)
-    test(cb.check())
+    cb = Callback()
+    to.begin_sleep(500, cb.response, cb.exception)
+    cb.check()
     print "ok"
 
     print "testing AMI write timeout... ",
@@ -166,18 +150,18 @@ def allTests(communicator, collocated):
     #
     to = Test.TimeoutPrx.uncheckedCast(obj.ice_timeout(500))
     to.holdAdapter(2000)
-    cb = AMISendDataEx()
-    to.sendData_async(cb, seq)
-    test(cb.check())
+    cb = Callback()
+    to.begin_sendData(seq, cb.responseEx, cb.exceptionEx)
+    cb.check()
     #
     # Expect success.
     #
     timeout.op() # Ensure adapter is active.
     to = Test.TimeoutPrx.uncheckedCast(obj.ice_timeout(1000))
     to.holdAdapter(500)
-    cb = AMISendData()
-    to.sendData_async(cb, seq)
-    test(cb.check())
+    cb = Callback()
+    to.begin_sendData(seq, cb.response, cb.exception)
+    cb.check()
     print "ok"
 
     print "testing timeout overrides... ",
@@ -236,7 +220,7 @@ def allTests(communicator, collocated):
     #
     to.op() # Force connection.
     try:
-        to.sleep(1500)
+        to.sleep(2000)
         test(False)
     except Ice.TimeoutException:
        pass # Expected.

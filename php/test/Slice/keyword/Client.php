@@ -1,7 +1,7 @@
 <?
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,19 @@ if(!extension_loaded("ice"))
     echo "\nerror: Ice extension is not loaded.\n\n";
     exit(1);
 }
-Ice_loadProfileWithArgs($argv);
+
+$NS = function_exists("Ice\\initialize");
+require ($NS ? 'Ice_ns.php' : 'Ice.php');
+require 'Key.php';
+
+if($NS)
+{
+    $code = <<<EOT
+        abstract class and_echo extends _and\_echo {}
+        abstract class and_enddeclare extends _and\_enddeclare {}
+EOT;
+    eval($code);
+}
 
 function test($b)
 {
@@ -28,32 +40,34 @@ function test($b)
 
 class echoI extends and_echo
 {
-    function _else($a, &$b)
+    public function _else($a, $b)
     {
     }
 }
 
 class enddeclareI extends and_enddeclare
 {
-    function _else($a, &$b)
+    public function _else($a, $b)
     {
     }
-    function _continue($a, $b)
+
+    public function _continue($a, $b)
     {
     }
-    function _do()
+
+    public function _do()
     {
     }
 }
 
-function allTests()
+function allTests($communicator)
 {
-    global $ICE;
+    global $NS;
 
     echo "testing type names... ";
     flush();
-    $a = and_array::_as;
-    $b = new and_xor();
+    $a = $NS ? constant("_and\\_array::_as") : constant("and_array::_as");
+    $b = $NS ? eval("return new _and\\_xor();") : eval("return new and_xor();");
     test($b->_abstract == 0);
     test($b->_clone == 0);
     test($b->_private == 0);
@@ -63,20 +77,27 @@ function allTests()
     test($b->_throw == 0);
     test($b->_use == 0);
     test($b->_var == 0);
-    $c = $ICE->stringToProxy("test:tcp -p 10000")->ice_uncheckedCast("::and::function");
-    $d = $ICE->stringToProxy("test:tcp -p 10000")->ice_uncheckedCast("::and::die");
-    $e = $ICE->stringToProxy("test:tcp -p 10000")->ice_uncheckedCast("::and::echo");
+    $p = $communicator->stringToProxy("test:tcp -p 10000");
+    $c = $NS ? eval("return _and\\functionPrxHelper::uncheckedCast(\$p);") :
+               eval("return and_functionPrxHelper::uncheckedCast(\$p);");
+    $d = $NS ? eval("return _and\\diePrxHelper::uncheckedCast(\$p);") :
+               eval("return and_diePrxHelper::uncheckedCast(\$p);");
+    $e = $NS ? eval("return _and\\echoPrxHelper::uncheckedCast(\$p);") :
+               eval("return and_echoPrxHelper::uncheckedCast(\$p);");
     $e1 = new echoI();
-    $f = $ICE->stringToProxy("test:tcp -p 10000")->ice_uncheckedCast("::and::enddeclare");
+    $f = $NS ? eval("return _and\\enddeclarePrxHelper::uncheckedCast(\$p);") :
+               eval("return and_enddeclarePrxHelper::uncheckedCast(\$p);");
     $f1 = new enddeclareI();
-    $g = new and_endif();
-    $h = new and_endwhile();
-    $i = constant("and_or");
-    $j = constant("and_print");
+    $g = $NS ? eval("return new _and\\_endif();") : eval("return new and_endif();");
+    $h = $NS ? eval("return new _and\\_endwhile();") : eval("return new and_endwhile();");
+    $i = $NS ? constant("_and\\_or") : constant("and_or");
+    $j = $NS ? constant("_and\\_print") : constant("and_print");
     echo "ok\n";
 }
 
-allTests();
+$communicator = Ice_initialize(&$argv);
+allTests($communicator);
+$communicator->destroy();
 
 exit();
 ?>

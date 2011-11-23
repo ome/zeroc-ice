@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,8 @@
 
 #include <Freeze/ObjectStore.h>
 
-
+#include <IceUtil/Mutex.h>
+#include <IceUtil/MutexPtrLock.h>
 
 #include <typeinfo>
 
@@ -51,17 +52,39 @@ Freeze::createBackgroundSaveEvictor(const ObjectAdapterPtr& adapter,
     return new BackgroundSaveEvictorI(adapter, envName, &dbEnv, filename, initializer, indices, createDb);
 }
 
+namespace
+{
+
 //
 // Fatal error callback
 //
 
-static Freeze::FatalErrorCallback fatalErrorCallback = 0;
-static IceUtil::StaticMutex fatalErrorCallbackMutex = ICE_STATIC_MUTEX_INITIALIZER;
+Freeze::FatalErrorCallback fatalErrorCallback = 0;
+IceUtil::Mutex* fatalErrorCallbackMutex = 0;
+
+class Init
+{
+public:
+
+    Init()
+    {
+        fatalErrorCallbackMutex = new IceUtil::Mutex;
+    }
+
+    ~Init()
+    {
+        delete fatalErrorCallbackMutex;
+        fatalErrorCallbackMutex = 0;
+    }
+};
+Init init;
+
+}
 
 FatalErrorCallback 
 Freeze::registerFatalErrorCallback(FatalErrorCallback cb)
 {
-    IceUtil::StaticMutex::Lock lock(fatalErrorCallbackMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(fatalErrorCallbackMutex);
     FatalErrorCallback result = fatalErrorCallback;
     fatalErrorCallback = cb;
     return result;
@@ -70,7 +93,7 @@ Freeze::registerFatalErrorCallback(FatalErrorCallback cb)
 static void 
 handleFatalError(const Freeze::BackgroundSaveEvictorPtr& evictor, const Ice::CommunicatorPtr& communicator)
 {
-    IceUtil::StaticMutex::Lock lock(fatalErrorCallbackMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(fatalErrorCallbackMutex);
     if(fatalErrorCallback != 0)
     {
         fatalErrorCallback(evictor, communicator);
@@ -87,6 +110,7 @@ handleFatalError(const Freeze::BackgroundSaveEvictorPtr& evictor, const Ice::Com
 //
 
 Freeze::WatchDogThread::WatchDogThread(long timeout, BackgroundSaveEvictorI& evictor) :
+    IceUtil::Thread("Freeze background save evictor watchdog thread"),
     _timeout(IceUtil::Time::milliSeconds(timeout)),
     _evictor(evictor),
     _done(false),
@@ -154,6 +178,7 @@ Freeze::BackgroundSaveEvictorI::BackgroundSaveEvictorI(const ObjectAdapterPtr& a
                                                        const vector<IndexPtr>& indices,
                                                        bool createDb) :
     EvictorI<BackgroundSaveEvictorElement>(adapter, envName, dbEnv, filename, FacetTypeMap(), initializer, indices, createDb),
+    IceUtil::Thread("Freeze background save evictor thread"),
     _currentEvictorSize(0),
     _savingThreadDone(false)
 {
@@ -754,8 +779,7 @@ Freeze::BackgroundSaveEvictorI::finished(const Current& current, const ObjectPtr
     
         bool enqueue = false;
         
-        if((_useNonmutating && current.mode != Nonmutating) ||
-           (!_useNonmutating && servant->ice_operationAttributes(current.operation) & 0x1) != 0)
+        if((servant->ice_operationAttributes(current.operation) & 0x1) != 0)
         {
             IceUtil::Mutex::Lock lock(element->mutex);
             
@@ -1216,7 +1240,7 @@ Freeze::BackgroundSaveEvictorI::run()
     catch(const std::exception& ex)
     {
         Error out(_communicator->getLogger());
-        out << "Saving thread killed by exception: " << ex.what();
+        out << "Saving thread killed by exception: " << ex;
         out.flush();
         handleFatalError(this, _communicator);
     }

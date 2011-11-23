@@ -3,19 +3,14 @@ Build instructions
 
 Ice for .NET has been built and tested with:
 
-- Microsoft Visual Studio 2005 Version 8.0.50727.762 and .NET
-  Framework Version 2.0.50727 SP1.
-
-- Microsoft Visual Studio 2008 Version 9.0.21022.8 RTM and .NET
-  Framework Version 3.5.
+- Microsoft Visual Studio 2008 SP1 and .NET Framework Version 3.5 SP1
 
 Unpack the archive. The .NET sources will be contained in the
-Ice-3.3.1\cs subdirectory.
+Ice-3.4.0\cs subdirectory.
 
 You will need the Slice to C# translator and supporting executables
-and libraries from the Ice for C++ distribution. You can download a
-binary distribution from the ZeroC web site, or you can build Ice for
-C++ yourself.
+and libraries from Ice for C++. You can download a binary distribution
+from the ZeroC web site, or you can build Ice for C++ yourself.
 
 Binary distributions for the supported platforms are available at
 
@@ -23,16 +18,16 @@ Binary distributions for the supported platforms are available at
 
 Follow these steps to build the source:
 
-1) If you have not built Ice for C++ from the cpp subdirectory, set
+1) If you have not built Ice for C++ in the cpp subdirectory, set
    ICE_HOME to the directory of your Ice for C++ installation.
    For example:
 
-   > set ICE_HOME=C:\Ice-3.3.1
+   > set ICE_HOME=C:\Ice-3.4.0
 
 2) Change to the top-level directory of the Ice for .NET source
-   distribution.
+   distribution:
 
-   > cd Ice-3.3.1\cs
+   > cd Ice-3.4.0\cs
 
 3) Open config\Make.rules.mak.cs and review the comments that describe
    the settings you can modify. For example, you may wish to enable
@@ -43,8 +38,13 @@ Follow these steps to build the source:
    > nmake /f Makefile.mak
 
 The tests and sample programs are built automatically. If you modify
-the source code of a sample program, you can rebuild it using nmake,
-or you can open the Visual Studio solution located in demo\demo.sln.
+the source code of a sample program, you can rebuild it using nmake.
+
+You can also build the demos using the Visual Studio solution located 
+in demo\demo.sln. Note that the demo projects require the Ice Visual
+Studio Extension. The extension is installed automatically when you
+use the Ice installer, or you can install the extension manually by
+following the instructions in ..\vsplugin\INSTALL.txt.
 
 
 Managed Code
@@ -91,13 +91,13 @@ Ice applications.
 Running the tests
 -----------------
 
-Some of the Ice for .NET tests employ applications that are part of the
-Ice for C++ distribution. If you have not built Ice for C++ from the cpp
-subdirectory then you need to set the ICE_HOME environment variable to
-the path where these applications are installed for these tests to run
-properly:
+Some of the Ice for .NET tests employ applications that are part of
+Ice for C++. If you have not built Ice for C++ from the cpp
+subdirectory, then you need to set the ICE_HOME environment variable
+to the path where these applications are installed for the tests to
+run properly:
 
-  > set ICE_HOME=c:\Ice-3.3.1
+  > set ICE_HOME=c:\Ice-3.4.0
 
 Python is required to run the test suite:
 
@@ -120,23 +120,23 @@ case of a failure, the tests abort with "failed".
 Running the demos
 -----------------
 
-To run the demos, you need to have the Ice bin directory in your PATH.
-See the README file in each demo directory for a description of the
-demo.
+To run the demos, you need to have the cpp\bin directory in your PATH 
+and the cs\bin directory in your DEVPATH. See the README file in each
+demo directory for a description of the demo.
 
-Note that in demos that use IceSSL, the IceSSL plug-in configuration
+Note that for demos that use IceSSL, the IceSSL plug-in configuration
 does not contain the fully-qualified name (FQN) for the IceSSL
 assembly. Instead it just contains the partial name:
 
   Ice.Plugin.IceSSL=IceSSL:IceSSL.PluginFactory
 
-The FQN is found in the *.exe.config files that are generated when the
-demos are built. If you want to run an application using the IceSSL
-assembly installed in the GAC without the use of the *.exe.config
-files, you must add the FQN to the IceSSL plug-in configuration, as
-shown below:
+The IceSSL assembly is found though the use of DEVPATH, which is
+enabled in the *.exe.config files. If you want to run an application
+using the IceSSL assembly installed in the GAC without the use of the
+*.exe.config files, you must add the FQN to the IceSSL plug-in
+configuration, as shown below:
 
-  Ice.Plugin.IceSSL=IceSSL, Version=3.3.1.0, Culture=neutral, PublicKeyToken=1f998c50fec78381:IceSSL.PluginFactory
+  Ice.Plugin.IceSSL=IceSSL, Version=3.4.0.0, Culture=neutral, PublicKeyToken=1f998c50fec78381:IceSSL.PluginFactory
 
 
 Installation
@@ -154,19 +154,19 @@ GAC Installation
 You can add the assemblies to the Global Assembly Cache (GAC). To do
 this, open Windows Explorer and navigate to the directory
 C:\WINDOWS\assembly. Next, drag and drop (or copy and paste) the
-assemblies from IceNET-3.3.1\bin into the right-hand pane to install
+assemblies from Ice-3.4.0\bin into the right-hand pane to install
 them in the cache.
 
-Or you can use gacutil from the command line to achieve the same
+You can also use gacutil from the command line to achieve the same
 result:
 
   > gacutil /i <library.dll>
 
-You can find gacutil.exe in the SDK\Tools\Bin folder of your Visual C#
-installation. For example, if you have installed Visual C# 8.0 in
-C:\Program Files, the path to gacutil is
+The gacutil tool is included with your Visual C# installation. For
+example, if you have installed Visual C# 9.0 in C:\Program Files, the
+path to gacutil is
 
-  C:\Program Files\Microsoft Visual Studio 8\SDK\v2.0\Bin\gacutil.exe
+  C:\Program Files\Microsoft SDKs\Windows\v6.0A\bin\gacutil.exe
 
 Once installed in the cache, the assemblies will always be located
 correctly without having to set environment variables or copy them
@@ -175,8 +175,8 @@ into the same directory as an executable.
 If you want line numbers for stack traces, you must also install the
 PDB (.pdb) files in the GAC. Unfortunately, you cannot do this using
 Explorer, so you have to do it from the command line. Open a command
-shell window and navigate to C:\WINDOWS\assembly\GAC_MSIL\Ice.
-(Assuming C:\WINDOWS is your system root.) Doing a directory listing
+shell window and navigate to C:\WINDOWS\assembly\GAC_MSIL\Ice
+(assuming C:\WINDOWS is your system root). Doing a directory listing
 there, you will find a directory named @dotnetver@__<UUID>, for 
 example:
 
@@ -207,8 +207,8 @@ Binary compatibility of patch releases
 --------------------------------------
 
 Ice patch releases are binary compatible. For example, Ice version 
-3.3.1 is compatible with 3.3.0: you can run an application built 
-against Ice 3.3.0 with Ice 3.3.1 (or later) without having to
+3.4.1 is compatible with 3.4.0: you can run an application built 
+against Ice 3.4.0 with Ice 3.4.1 (or later) without having to
 recompile or relink this application.
 
 Please refer to the RELEASE_NOTES file included in this distribution

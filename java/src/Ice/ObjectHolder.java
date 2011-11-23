@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,39 +9,48 @@
 
 package Ice;
 
-public final class ObjectHolder
+/**
+ * Holder class for Ice objects that are out- or inout-parameters.
+ **/
+public final class ObjectHolder extends ObjectHolderBase<Ice.Object>
 {
+    /**
+     * Instantiates the class with a <code>null</code> value.
+     **/
     public
     ObjectHolder()
     {
     }
 
+    /**
+     * Instantiates the class with the passed Ice object.
+     **/
     public
     ObjectHolder(Ice.Object value)
     {
-        this.value = value;
+        super(value);
     }
 
-    public class Patcher implements IceInternal.Patcher
+    /**
+     * Sets the Ice object of this holder to the passed instance.
+     *
+     * @param v The new object for this holder.
+     **/
+    public void
+    patch(Ice.Object v)
     {
-        public void
-        patch(Ice.Object v)
-        {
-            value = v;
-        }
-
-        public String
-        type()
-        {
-            return Ice.ObjectImpl.ice_staticId();
-        }
+        value = v;
     }
 
-    public Patcher
-    getPatcher()
+    /**
+     * Returns the Slice type ID of the most-derived Slice type supported
+     * by this instance.
+     *
+     * @return The Slice type ID.
+     **/
+    public String
+    type()
     {
-        return new Patcher();
+        return Ice.ObjectImpl.ice_staticId();
     }
-
-    public Ice.Object value;
 }

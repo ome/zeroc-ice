@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,7 +10,8 @@
 #include <IceUtil/DisableWarnings.h>
 #include <IceUtil/Options.h>
 #include <IceUtil/CtrlCHandler.h>
-#include <IceUtil/StaticMutex.h>
+#include <IceUtil/Mutex.h>
+#include <IceUtil/MutexPtrLock.h>
 #include <Slice/Preprocessor.h>
 #include <Slice/FileTracker.h>
 #include <Slice/RubyUtil.h>
@@ -35,22 +36,45 @@ using namespace std;
 using namespace Slice;
 using namespace Slice::Ruby;
 
-static IceUtil::StaticMutex _mutex = ICE_STATIC_MUTEX_INITIALIZER;
-static bool _interrupted = false;
+namespace
+{
+
+IceUtil::Mutex* mutex = 0;
+bool interrupted = false;
+
+class Init
+{
+public:
+
+    Init()
+    {
+        mutex = new IceUtil::Mutex;
+    }
+
+    ~Init()
+    {
+        delete mutex;
+        mutex = 0;
+    }
+};
+
+Init init;
+
+}
 
 void
 interruptedCallback(int signal)
 {
-    IceUtil::StaticMutex::Lock lock(_mutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(mutex);
 
-    _interrupted = true;
+    interrupted = true;
 }
 
 void
 usage(const char* n)
 {
-    cerr << "Usage: " << n << " [options] slice-files...\n";
-    cerr <<        
+    getErrorStream() << "Usage: " << n << " [options] slice-files...\n";
+    getErrorStream() <<        
         "Options:\n"
         "-h, --help           Show this message.\n"
         "-v, --version        Display the Ice version.\n"
@@ -60,16 +84,16 @@ usage(const char* n)
         "-IDIR                Put DIR in the include file search path.\n"
         "-E                   Print preprocessor output on stdout.\n"
         "--output-dir DIR     Create files in the directory DIR.\n"
+        "--depend             Generate Makefile dependencies.\n"
         "-d, --debug          Print debug messages.\n"
         "--ice                Permit `Ice' prefix (for building Ice source code only)\n"
         "--all                Generate code for Slice definitions in included files.\n"
         "--checksum           Generate checksums for Slice definitions.\n"
         ;
-    // Note: --case-sensitive is intentionally not shown here!
 }
 
 int
-main(int argc, char* argv[])
+compile(int argc, char* argv[])
 {
     IceUtilInternal::Options opts;
     opts.addOpt("h", "help");
@@ -79,23 +103,20 @@ main(int argc, char* argv[])
     opts.addOpt("I", "", IceUtilInternal::Options::NeedArg, "", IceUtilInternal::Options::Repeat);
     opts.addOpt("E");
     opts.addOpt("", "output-dir", IceUtilInternal::Options::NeedArg);
+    opts.addOpt("", "depend");
     opts.addOpt("d", "debug");
     opts.addOpt("", "ice");
     opts.addOpt("", "all");
     opts.addOpt("", "checksum");
-    opts.addOpt("", "case-sensitive");
      
     vector<string> args;
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         args = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtilInternal::BadOptException& e)
     {
-        cerr << argv[0] << ": error: " << e.reason << endl;
+        getErrorStream() << argv[0] << ": error: " << e.reason << endl;
         usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -108,7 +129,7 @@ main(int argc, char* argv[])
 
     if(opts.isSet("version"))
     {
-        cerr << ICE_STRING_VERSION << endl;
+        getErrorStream() << ICE_STRING_VERSION << endl;
         return EXIT_SUCCESS;
     }
 
@@ -136,6 +157,8 @@ main(int argc, char* argv[])
 
     string output = opts.optArg("output-dir");
 
+    bool depend = opts.isSet("depend");
+
     bool debug = opts.isSet("debug");
 
     bool ice = opts.isSet("ice");
@@ -143,8 +166,6 @@ main(int argc, char* argv[])
     bool all = opts.isSet("all");
 
     bool checksum = opts.isSet("checksum");
-
-    bool caseSensitive = opts.isSet("case-sensitive");
 
     if(args.empty())
     {
@@ -160,100 +181,131 @@ main(int argc, char* argv[])
 
     for(i = args.begin(); i != args.end(); ++i)
     {
-
-        Preprocessor icecpp(argv[0], *i, cppArgs);
-        FILE* cppHandle = icecpp.preprocess(false);
-
-        if(cppHandle == 0)
+        if(depend)
         {
-            return EXIT_FAILURE;
-        }
+            PreprocessorPtr icecpp = Preprocessor::create(argv[0], *i, cppArgs);
+            FILE* cppHandle = icecpp->preprocess(false);
 
-        if(preprocess)
-        {
-            char buf[4096];
-            while(fgets(buf, static_cast<int>(sizeof(buf)), cppHandle) != NULL)
+            if(cppHandle == 0)
             {
-                if(fputs(buf, stdout) == EOF)
-                {
-                    return EXIT_FAILURE;
-                }
+                return EXIT_FAILURE;
             }
-            if(!icecpp.close())
+
+            UnitPtr u = Unit::createUnit(false, false, ice);
+            int parseStatus = u->parse(*i, cppHandle, debug);
+            u->destroy();
+
+            if(parseStatus == EXIT_FAILURE)
+            {
+                return EXIT_FAILURE;
+            }
+
+            if(!icecpp->printMakefileDependencies(Preprocessor::Ruby, includePaths))
+            {
+                return EXIT_FAILURE;
+            }
+
+            if(!icecpp->close())
             {
                 return EXIT_FAILURE;
             }
         }
         else
         {
-            UnitPtr u = Unit::createUnit(false, all, ice, caseSensitive);
-            int parseStatus = u->parse(*i, cppHandle, debug);
+            PreprocessorPtr icecpp = Preprocessor::create(argv[0], *i, cppArgs);
+            FILE* cppHandle = icecpp->preprocess(false);
 
-            if(!icecpp.close())
+            if(cppHandle == 0)
             {
-                u->destroy();
                 return EXIT_FAILURE;
             }
 
-            if(parseStatus == EXIT_FAILURE)
+            if(preprocess)
             {
-                status = EXIT_FAILURE;
-            }
-            else
-            {
-                string base = icecpp.getBaseName();
-                string::size_type pos = base.find_last_of("/\\");
-                if(pos != string::npos)
+                char buf[4096];
+                while(fgets(buf, static_cast<int>(sizeof(buf)), cppHandle) != NULL)
                 {
-                    base.erase(0, pos + 1);
-                }
-
-                string file = base + ".rb";
-                if(!output.empty())
-                {
-                    file = output + '/' + file;
-                }
-
-                try
-                {
-                    IceUtilInternal::Output out;
-                    out.open(file.c_str());
-                    if(!out)
+                    if(fputs(buf, stdout) == EOF)
                     {
-                        ostringstream os;
-                        os << "cannot open`" << file << "': " << strerror(errno);
-                        throw FileException(__FILE__, __LINE__, os.str());
+                        return EXIT_FAILURE;
                     }
-                    FileTracker::instance()->addFile(file);
-
-                    printHeader(out);
-                    out << "\n# Generated from file `" << base << ".ice'\n";
-
-                    //
-                    // Generate the Ruby mapping.
-                    //
-                    generate(u, all, checksum, includePaths, out);
-
-                    out.close();
                 }
-                catch(const Slice::FileException& ex)
+                if(!icecpp->close())
                 {
-                    // If a file could not be created, then cleanup
-                    // any created files.
-                    FileTracker::instance()->cleanup();
-                    u->destroy();
-                    getErrorStream() << argv[0] << ": error: " << ex.reason() << endl;
                     return EXIT_FAILURE;
                 }
             }
+            else
+            {
+                UnitPtr u = Unit::createUnit(false, all, ice);
+                int parseStatus = u->parse(*i, cppHandle, debug);
 
-            u->destroy();
+                if(!icecpp->close())
+                {
+                    u->destroy();
+                    return EXIT_FAILURE;
+                }
+
+                if(parseStatus == EXIT_FAILURE)
+                {
+                    status = EXIT_FAILURE;
+                }
+                else
+                {
+                    string base = icecpp->getBaseName();
+                    string::size_type pos = base.find_last_of("/\\");
+                    if(pos != string::npos)
+                    {
+                        base.erase(0, pos + 1);
+                    }
+
+                    string file = base + ".rb";
+                    if(!output.empty())
+                    {
+                        file = output + '/' + file;
+                    }
+
+                    try
+                    {
+                        IceUtilInternal::Output out;
+                        out.open(file.c_str());
+                        if(!out)
+                        {
+                            ostringstream os;
+                            os << "cannot open`" << file << "': " << strerror(errno);
+                            throw FileException(__FILE__, __LINE__, os.str());
+                        }
+                        FileTracker::instance()->addFile(file);
+
+                        printHeader(out);
+                        printGeneratedHeader(out, base + ".ice", "#");
+
+                        //
+                        // Generate the Ruby mapping.
+                        //
+                        generate(u, all, checksum, includePaths, out);
+
+                        out.close();
+                    }
+                    catch(const Slice::FileException& ex)
+                    {
+                        // If a file could not be created, then cleanup
+                        // any created files.
+                        FileTracker::instance()->cleanup();
+                        u->destroy();
+                        getErrorStream() << argv[0] << ": error: " << ex.reason() << endl;
+                        return EXIT_FAILURE;
+                    }
+                }
+
+                u->destroy();
+            }
         }
 
         {
-            IceUtil::StaticMutex::Lock lock(_mutex);
+            IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(mutex);
 
-            if(_interrupted)
+            if(interrupted)
             {
                 FileTracker::instance()->cleanup();
                 return EXIT_FAILURE;
@@ -262,4 +314,33 @@ main(int argc, char* argv[])
     }
 
     return status;
+}
+
+int
+main(int argc, char* argv[])
+{
+    try
+    {
+        return compile(argc, argv);
+    }
+    catch(const std::exception& ex)
+    {
+        getErrorStream() << argv[0] << ": error:" << ex.what() << endl;
+        return EXIT_FAILURE;
+    }
+    catch(const std::string& msg)
+    {
+        getErrorStream() << argv[0] << ": error:" << msg << endl;
+        return EXIT_FAILURE;
+    }
+    catch(const char* msg)
+    {
+        getErrorStream() << argv[0] << ": error:" << msg << endl;
+        return EXIT_FAILURE;
+    }
+    catch(...)
+    {
+        getErrorStream() << argv[0] << ": error:" << "unknown exception" << endl;
+        return EXIT_FAILURE;
+    }
 }

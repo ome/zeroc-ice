@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -13,25 +13,11 @@ import sys, traceback, Ice
 Ice.loadSlice('Hello.ice')
 import Demo
 
-status = 0
-communicator = None
 try:
     communicator = Ice.initialize(sys.argv)
     hello = Demo.HelloPrx.checkedCast(communicator.stringToProxy("hello:tcp -p 10000"))
-    if not hello:
-        print sys.argv[0] + ": invalid proxy"
-        status = 1
-    else:
-        hello.sayHello()
+    hello.sayHello()
+    communicator.destroy()
 except:
     traceback.print_exc()
-    status = 1
-
-if communicator:
-    try:
-        communicator.destroy()
-    except:
-        traceback.print_exc()
-        status = 1
-
-sys.exit(status)
+    sys.exit(1)

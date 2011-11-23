@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -559,19 +559,28 @@ IceInternal::LocatorInfo::getLocator() const
 LocatorRegistryPrx
 IceInternal::LocatorInfo::getLocatorRegistry()
 {
-    IceUtil::Mutex::Lock sync(*this);
-    
-    if(!_locatorRegistry) // Lazy initialization.
     {
-        _locatorRegistry = _locator->getRegistry();
+        IceUtil::Mutex::Lock sync(*this);
+        if(_locatorRegistry)
+        {
+            return _locatorRegistry;
+        }
+    }
+
+    //
+    // Do not make locator calls from within sync.
+    //
+    LocatorRegistryPrx locatorRegistry = _locator->getRegistry();
+    
+    {
+        IceUtil::Mutex::Lock sync(*this);
 
         //
         // The locator registry can't be located.
         //
-        _locatorRegistry = LocatorRegistryPrx::uncheckedCast(_locatorRegistry->ice_locator(0));
+        _locatorRegistry = LocatorRegistryPrx::uncheckedCast(locatorRegistry->ice_locator(0));
+        return _locatorRegistry;
     }
-    
-    return _locatorRegistry;
 }
 
 vector<EndpointIPtr>

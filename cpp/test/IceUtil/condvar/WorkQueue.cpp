@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,7 +10,6 @@
 #include <IceUtil/Thread.h>
 #include <IceUtil/Time.h>
 #include <IceUtil/Monitor.h>
-#include <IceUtil/StaticMutex.h>
 #include <IceUtil/Options.h>
 
 #include <iostream>

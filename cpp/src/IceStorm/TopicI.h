@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,9 +11,7 @@
 #define TOPIC_I_H
 
 #include <IceStorm/IceStormInternal.h>
-#include <IceStorm/SubscriberMap.h>
 #include <IceStorm/Election.h>
-#include <IceStorm/LLUMap.h>
 #include <list>
 
 namespace IceStorm
@@ -25,6 +23,9 @@ typedef IceUtil::Handle<Instance> InstancePtr;
 
 class Subscriber;
 typedef IceUtil::Handle<Subscriber> SubscriberPtr;
+
+class DatabaseCache;
+typedef IceUtil::Handle<DatabaseCache> DatabaseCachePtr;
 
 class TopicImpl : public IceUtil::Shared
 {
@@ -77,6 +78,8 @@ private:
     const std::string _name; // The topic name
     const Ice::Identity _id; // The topic identity
     const std::string _envName;
+    const DatabaseCachePtr _databaseCache; // The database cache.
+
 
     /*const*/ Ice::ObjectPrx _publisherPrx; // The actual publisher proxy.
     /*const*/ TopicLinkPrx _linkPrx; // The link proxy.
@@ -94,11 +97,6 @@ private:
     // was the fastest of the three.
     //
     std::vector<SubscriberPtr> _subscribers;
-
-    const Freeze::ConnectionPtr _connection; // The database connection.
-
-    SubscriberMap _subscriberMap; // The subscribers.
-    LLUMap _llumap; // The LLU map.
 
     bool _destroyed; // Has this Topic been destroyed?
 };

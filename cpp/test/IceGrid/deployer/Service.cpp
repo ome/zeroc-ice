@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -65,7 +65,7 @@ ServiceI::start(const string& name,
         //
         Freeze::createConnection(communicator, name);
     }
-    Ice::ObjectPtr object = new TestI(adapter, properties);
+    Ice::ObjectPtr object = new TestI(properties);
     adapter->add(object, communicator->stringToIdentity(properties->getProperty(name + ".Identity")));
     adapter->activate();
 }

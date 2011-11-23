@@ -1,11 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+package test.Ice.background;
 
 public final class Configuration
 {
@@ -40,9 +42,9 @@ public final class Configuration
     }
 
     public synchronized void
-    initializeSocketStatus(IceInternal.SocketStatus status)
+    initializeSocketStatus(int status)
     {
-        if(status == IceInternal.SocketStatus.Finished)
+        if(status == IceInternal.SocketOperation.None)
         {
             _initializeResetCount = 0;
             return;
@@ -57,12 +59,12 @@ public final class Configuration
         _initializeException = ex;
     }
     
-    public synchronized IceInternal.SocketStatus
+    public synchronized int
     initializeSocketStatus()
     {
         if(_initializeResetCount == 0)
         {
-            return IceInternal.SocketStatus.Finished;
+            return IceInternal.SocketOperation.None;
         }
         --_initializeResetCount;
         return _initializeSocketStatus;
@@ -141,21 +143,13 @@ public final class Configuration
         }
     }
 
-    static public synchronized Configuration
-    getInstance()
-    {
-        return _instance;
-    }
-
     private Ice.LocalException _connectorsException;
     private Ice.LocalException _connectException;
-    private IceInternal.SocketStatus _initializeSocketStatus;
+    private int _initializeSocketStatus;
     private int _initializeResetCount;
     private Ice.LocalException _initializeException;
     private int _readReadyCount;
     private Ice.LocalException _readException;
     private int _writeReadyCount;
     private Ice.LocalException _writeException;
-
-    private final static Configuration _instance = new Configuration();
 }

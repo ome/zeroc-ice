@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -104,11 +104,13 @@ class ICE_UTIL_API Thread : virtual public IceUtil::Shared
 public:
 
     Thread();
+    Thread(const std::string&);
     virtual ~Thread();
 
     virtual void run() = 0;
 
     ThreadControl start(size_t = 0);
+    ThreadControl start(size_t, int priority);
 
     ThreadControl getThreadControl() const;
 
@@ -127,7 +129,13 @@ public:
     //
     void _done();
 
+    //
+    // Get the thread name
+    //
+    const std::string& name() const;
+
 protected:
+    const std::string _name;
     Mutex _stateMutex;
     bool _started;
     bool _running;
@@ -140,6 +148,12 @@ protected:
 #endif
 
 private:
+
+#ifdef _WIN32
+#else
+    ThreadControl start(size_t, bool, int);
+#endif
+
     Thread(const Thread&);              // Copying is forbidden
     void operator=(const Thread&);      // Assignment is forbidden
 };

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -58,13 +58,11 @@ protected:
 
     JavaGenerator(const std::string&);
 
-    JavaGenerator(const std::string&, Slice::FeatureProfile profile);
-
     //
     // Given the fully-scoped Java class name, create any intermediate
-    // package directories and open the class file
+    // package directories and open the class file,
     //
-    void open(const std::string&);
+    void open(const std::string&, const std::string&);
 
     ::IceUtilInternal::Output& output() const;
 
@@ -191,11 +189,7 @@ protected:
 
     virtual JavaOutput* createOutput();
 
-    Slice::FeatureProfile _featureProfile;
-
     static const std::string _getSetMetaData;
-    static const std::string _java2MetaData;
-    static const std::string _java5MetaData;
 
 private:
 

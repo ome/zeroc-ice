@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -53,14 +53,15 @@ $(SERVER): $(OBJS) $(SOBJS)
 	@if exist $@.manifest echo ^ ^ ^ Embedding manifest using $(MT) && \
 	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
-Database.h Database.cpp: ItemInfo.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
+Database.h Database.cpp: ItemInfo.ice "$(SLICE2FREEZE)" "$(SLICEPARSERLIB)"
 	del /q Database.h Database.cpp
-	$(SLICE2FREEZE) -I$(slicedir) --dict Database,string,Warehouse::ItemInfo Database ItemInfo.ice
+	"$(SLICE2FREEZE)" -I"$(slicedir)" --dict Database,string,Warehouse::ItemInfo Database ItemInfo.ice
 
 clean::
 	del /q Item.h Item.cpp
 	del /q ItemInfo.h ItemInfo.cpp
 	del /q Database.h Database.cpp
+	if exist db\__Freeze rmdir /q /s db\__Freeze
 	for %f in (db\*) do if not %f == db\DB_CONFIG del /q %f
 
-include .depend
+include .depend.mak

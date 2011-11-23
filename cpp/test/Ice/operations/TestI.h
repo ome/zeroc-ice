@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,6 +17,8 @@ class MyDerivedClassI : public Test::MyDerivedClass
 public:
 
     virtual void shutdown(const Ice::Current&);
+
+    virtual void delay(Ice::Int, const Ice::Current&);
 
     virtual void opVoid(const Ice::Current&);
 
@@ -142,6 +144,10 @@ public:
 
     virtual Test::StringMyEnumD opStringMyEnumD(const Test::StringMyEnumD&, const Test::StringMyEnumD&,
                                                 Test::StringMyEnumD&,
+                                                const Ice::Current&);
+
+    virtual Test::MyEnumStringD opMyEnumStringD(const Test::MyEnumStringD&, const Test::MyEnumStringD&,
+                                                Test::MyEnumStringD&,
                                                 const Ice::Current&);
 
     virtual Test::MyStructMyEnumD opMyStructMyEnumD(const Test::MyStructMyEnumD&, const Test::MyStructMyEnumD&,

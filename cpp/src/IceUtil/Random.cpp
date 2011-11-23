@@ -1,14 +1,19 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#if defined(_MSC_VER) && (_MSC_VER > 1400)
+#  define _CRT_RAND_S
+#endif
+
 #include <IceUtil/Random.h>
-#include <IceUtil/StaticMutex.h>
+#include <IceUtil/Mutex.h>
+#include <IceUtil/MutexPtrLock.h>
 
 #ifdef _WIN32
 #   include <Wincrypt.h>
@@ -19,6 +24,10 @@
 
 using namespace std;
 using namespace IceUtil;
+
+#if !defined(_WIN32) || !defined(_MSC_VER) || (_MSC_VER < 1400)
+namespace
+{
 
 //
 // The static mutex is required to lazy initialize the file
@@ -33,24 +42,23 @@ using namespace IceUtil;
 // widespread. Therefore, we serialize access to /dev/urandom using a
 // static mutex.
 // 
-static StaticMutex staticMutex = ICE_STATIC_MUTEX_INITIALIZER;
+Mutex* staticMutex = 0;
 #ifdef _WIN32
-static HCRYPTPROV context = NULL;
+HCRYPTPROV context = NULL;
 #else
-static int fd = -1;
+int fd = -1;
 #endif
 
-namespace
-{
-
-//
-// Close fd at exit
-//
-class RandomCleanup
+class Init
 {
 public:
+
+    Init()
+    {
+        staticMutex = new IceUtil::Mutex;
+    }
     
-    ~RandomCleanup()
+    ~Init()
     {
 #ifdef _WIN32
         if(context != NULL)
@@ -65,15 +73,27 @@ public:
             fd = -1;
         }
 #endif
+        delete staticMutex;
+        staticMutex = 0;
     }
 };
-static RandomCleanup uuidCleanup;
+
+Init init;
+
 }
+#endif
 
 void
 IceUtilInternal::generateRandom(char* buffer, int size)
 {
 #ifdef _WIN32
+
+#  if defined(_MSC_VER) && (_MSC_VER >= 1400)
+    for(int i = 0; i < size; ++i)
+    {
+        buffer[i] = random(256);
+    }
+#  else
     //
     // It's not clear from the Microsoft documentation if CryptGenRandom 
     // can be called concurrently from several threads. To be on the safe
@@ -81,7 +101,7 @@ IceUtilInternal::generateRandom(char* buffer, int size)
     // mutex.
     //
 
-    IceUtil::StaticMutex::Lock lock(staticMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(staticMutex);
     if(context == NULL)
     {
         if(!CryptAcquireContext(&context, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
@@ -94,12 +114,14 @@ IceUtilInternal::generateRandom(char* buffer, int size)
     {
         throw SyscallException(__FILE__, __LINE__, GetLastError());
     }
+#  endif
+
 #else
 
     //
     // Serialize access to /dev/urandom; see comment above.
     //
-    StaticMutex::Lock lock(staticMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(staticMutex);
     if(fd == -1)
     {
         fd = open("/dev/urandom", O_RDONLY);
@@ -142,18 +164,25 @@ IceUtilInternal::generateRandom(char* buffer, int size)
 #endif
 }
 
-int
+unsigned int
 IceUtilInternal::random(int limit)
 {
-    int r;
-    generateRandom(reinterpret_cast<char*>(&r), static_cast<int>(sizeof(int)));
+    unsigned int r;
+#if defined(_MSC_VER) && (_MSC_VER > 1400)
+    errno_t err = rand_s(&r);
+    if(err != 0)
+    {
+        SyscallException ex(__FILE__, __LINE__, errno);
+        cerr << "rand_s failed:\n" << ex << endl;
+        assert(0);
+        throw ex;
+    }
+#else
+    generateRandom(reinterpret_cast<char*>(&r), static_cast<unsigned int>(sizeof(unsigned int)));
+#endif
     if(limit > 0)
     {
         r = r % limit;
-    }
-    if(r < 0)
-    {
-        r = -r;
     }
     return r;
 }

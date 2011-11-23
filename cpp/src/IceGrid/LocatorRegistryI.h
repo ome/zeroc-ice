@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,6 +18,9 @@ namespace IceGrid
 
 class Database;
 typedef IceUtil::Handle<Database> DatabasePtr;
+
+class TraceLevels;
+typedef IceUtil::Handle<TraceLevels> TraceLevelsPtr;
 
 class ReplicaSessionManager;
 
@@ -37,10 +40,12 @@ public:
     virtual void setServerProcessProxy_async(const Ice::AMD_LocatorRegistry_setServerProcessProxyPtr&,
                                              const ::std::string&, const ::Ice::ProcessPrx&, const ::Ice::Current&);
 
-private:
-
     void setAdapterDirectProxy(const AMI_Adapter_setDirectProxyPtr&, const std::string&, const std::string&,
                                const Ice::ObjectPrx&);
+
+    const TraceLevelsPtr& getTraceLevels() const;
+
+private:
     
     const DatabasePtr _database;
     const bool _dynamicRegistration;

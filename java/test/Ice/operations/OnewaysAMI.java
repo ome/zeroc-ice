@@ -1,11 +1,18 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+package test.Ice.operations;
+
+import test.Ice.operations.Test.AMI_MyClass_opByte;
+import test.Ice.operations.Test.AMI_MyClass_opVoid;
+import test.Ice.operations.Test.MyClassPrx;
+import test.Ice.operations.Test.MyClassPrxHelper;
 
 class OnewaysAMI
 {
@@ -25,28 +32,21 @@ class OnewaysAMI
             _called = false;
         }
 
-        public synchronized boolean
+        public synchronized void
         check()
         {
             while(!_called)
             {
                 try
                 {
-                    wait(5000);
+                    wait();
                 }
                 catch(InterruptedException ex)
                 {
-                    continue;
-                }
-
-                if(!_called)
-                {
-                    return false; // Must be timeout.
                 }
             }
 
             _called = false;
-            return true;
         }
         
         public synchronized void
@@ -60,7 +60,7 @@ class OnewaysAMI
         private boolean _called;
     }
 
-    private static class AMI_MyClass_opVoidI extends Test.AMI_MyClass_opVoid
+    private static class AMI_MyClass_opVoidI extends AMI_MyClass_opVoid
     {
         public void
         ice_response()
@@ -75,7 +75,7 @@ class OnewaysAMI
         }
     }
 
-    private static class AMI_MyClass_opVoidExI extends Test.AMI_MyClass_opVoid
+    private static class AMI_MyClass_opVoidExI extends AMI_MyClass_opVoid
     {
         public void
         ice_response()
@@ -90,16 +90,16 @@ class OnewaysAMI
             callback.called();
         }
 
-        public boolean
+        public void
         check()
         {
-            return callback.check();
+            callback.check();
         }
 
         private Callback callback = new Callback();
     }
 
-    private static class AMI_MyClass_opByteExI extends Test.AMI_MyClass_opByte
+    private static class AMI_MyClass_opByteExI extends AMI_MyClass_opByte
     {
         public void
         ice_response(byte r, byte b)
@@ -114,19 +114,20 @@ class OnewaysAMI
             callback.called();
         }
 
-        public boolean
+        public void
         check()
         {
-            return callback.check();
+            callback.check();
         }
 
         private Callback callback = new Callback();
     }
 
     static void
-    onewaysAMI(Ice.Communicator communicator, Test.MyClassPrx p)
+    onewaysAMI(test.Util.Application app, MyClassPrx p)
     {
-        p = Test.MyClassPrxHelper.uncheckedCast(p.ice_oneway());
+        Ice.Communicator communicator = app.communicator();
+        p = MyClassPrxHelper.uncheckedCast(p.ice_oneway());
 
         {
             AMI_MyClass_opVoidI cb = new AMI_MyClass_opVoidI();
@@ -138,7 +139,7 @@ class OnewaysAMI
         {
             // Check that a call to a void operation raises NoEndpointException
             // in the ice_exception() callback instead of at the point of call.
-            Test.MyClassPrx indirect = Test.MyClassPrxHelper.uncheckedCast(p.ice_adapterId("dummy"));
+            MyClassPrx indirect = MyClassPrxHelper.uncheckedCast(p.ice_adapterId("dummy"));
             AMI_MyClass_opVoidExI cb = new AMI_MyClass_opVoidExI();
             try
             {
@@ -148,13 +149,13 @@ class OnewaysAMI
             {
                 test(false);
             }
-            test(cb.check());
+            cb.check();
         }
 
         {
             AMI_MyClass_opByteExI cb = new AMI_MyClass_opByteExI();
             p.opByte_async(cb, (byte)0xff, (byte)0x0f);
-            test(cb.check());
+            cb.check();
         }
 
     }

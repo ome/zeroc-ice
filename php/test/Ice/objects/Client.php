@@ -1,7 +1,7 @@
 <?
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,27 @@ if(!extension_loaded("ice"))
     echo "\nerror: Ice extension is not loaded.\n\n";
     exit(1);
 }
-Ice_loadProfileWithArgs($argv);
+
+$NS = function_exists("Ice\\initialize");
+require ($NS ? 'Ice_ns.php' : 'Ice.php');
+require 'Test.php';
+
+if($NS)
+{
+    $code = <<<EOT
+        abstract class Test_B extends Test\B {}
+        abstract class Test_C extends Test\C {}
+        abstract class Test_D extends Test\D {}
+        abstract class Test_E extends Test\E {}
+        abstract class Test_F extends Test\F {}
+        interface Test_I extends Test\I {}
+        interface Test_J extends Test\J {}
+        class Test_H extends Test\H {}
+        class Ice_ObjectImpl extends Ice\ObjectImpl {}
+        interface Ice_ObjectFactory extends Ice\ObjectFactory {}
+EOT;
+    eval($code);
+}
 
 class BI extends Test_B
 {
@@ -29,7 +49,7 @@ class BI extends Test_B
         return $this->_postUnmarshalInvoked;
     }
 
-    var $_postUnmarshalInvoked = false;
+    private $_postUnmarshalInvoked = false;
 }
 
 class CI extends Test_C
@@ -44,7 +64,7 @@ class CI extends Test_C
         return $this->_postUnmarshalInvoked;
     }
 
-    var $_postUnmarshalInvoked = false;
+    private $_postUnmarshalInvoked = false;
 }
 
 class DI extends Test_D
@@ -59,7 +79,7 @@ class DI extends Test_D
         return $this->_postUnmarshalInvoked;
     }
 
-    var $_postUnmarshalInvoked = false;
+    private $_postUnmarshalInvoked = false;
 }
 
 class EI extends Test_E
@@ -155,14 +175,14 @@ function test($b)
     }
 }
 
-function allTests()
+function allTests($communicator)
 {
-    global $ICE;
+    global $NS;
 
     echo "testing stringToProxy... ";
     flush();
-    $ref = "initial:default -p 12010 -t 2000";
-    $base = $ICE->stringToProxy($ref);
+    $ref = "initial:default -p 12010";
+    $base = $communicator->stringToProxy($ref);
     test($base != null);
     echo "ok\n";
 
@@ -336,8 +356,8 @@ function allTests()
  
     echo "testing UnexpectedObjectException... ";
     flush();
-    $ref = "uoet:default -p 12010 -t 2000";
-    $base = $ICE->stringToProxy($ref);
+    $ref = "uoet:default -p 12010";
+    $base = $communicator->stringToProxy($ref);
     test($base != null);
     $uoet = $base->ice_uncheckedCast("::Test::UnexpectedObjectExceptionTest");
     test($uoet != null);
@@ -346,30 +366,43 @@ function allTests()
         $uoet->op();
         test(false);
     }
-    catch(Ice_UnexpectedObjectException $ex)
-    {
-        test($ex->type == "::Test::AlsoEmpty");
-        test($ex->expectedType == "::Test::Empty");
-    }
     catch(Exception $ex)
     {
-        echo $ex.getTraceAsString();
+        $uoe = $NS ? "Ice\\UnexpectedObjectException" : "Ice_UnexpectedObjectException";
+        $uoob = $NS ? "Ice\\UnmarshalOutOfBoundsException" : "Ice_UnmarshalOutOfBoundsException";
+        if($ex instanceof $uoe)
+        {
+            test($ex->type == "::Test::AlsoEmpty");
+            test($ex->expectedType == "::Test::Empty");
+        }
+        else if($ex instanceof $uoob)
+        {
+            //
+            // We get UnmarshalOutOfBoundsException on Windows with VC6.
+            //
+        }
+        else
+        {
+            throw $ex;
+        }
     }
     echo "ok\n";
 
     return $initial;
 }
 
+$communicator = Ice_initialize(&$argv);
 $factory = new MyObjectFactory();
-$ICE->addObjectFactory($factory, "::Test::B");
-$ICE->addObjectFactory($factory, "::Test::C");
-$ICE->addObjectFactory($factory, "::Test::D");
-$ICE->addObjectFactory($factory, "::Test::E");
-$ICE->addObjectFactory($factory, "::Test::F");
-$ICE->addObjectFactory($factory, "::Test::I");
-$ICE->addObjectFactory($factory, "::Test::J");
-$ICE->addObjectFactory($factory, "::Test::H");
-$initial = allTests();
+$communicator->addObjectFactory($factory, "::Test::B");
+$communicator->addObjectFactory($factory, "::Test::C");
+$communicator->addObjectFactory($factory, "::Test::D");
+$communicator->addObjectFactory($factory, "::Test::E");
+$communicator->addObjectFactory($factory, "::Test::F");
+$communicator->addObjectFactory($factory, "::Test::I");
+$communicator->addObjectFactory($factory, "::Test::J");
+$communicator->addObjectFactory($factory, "::Test::H");
+$initial = allTests($communicator);
 $initial->shutdown();
+$communicator->destroy();
 exit();
 ?>

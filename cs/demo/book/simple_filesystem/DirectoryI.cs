@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,10 +19,11 @@ public class DirectoryI : DirectoryDisp_
         _name = name;
         _parent = parent;
 
+        //
         // Create an identity. The root directory has the fixed identity "RootDir"
         //
         _id = new Ice.Identity();
-        _id.name = _parent != null ? Ice.Util.generateUUID() : "RootDir";
+        _id.name = _parent != null ? System.Guid.NewGuid().ToString() : "RootDir";
     }
 
     // Slice Node::name() operation

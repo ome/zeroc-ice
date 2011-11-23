@@ -1,60 +1,53 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-import Test.*;
+package test.Ice.udp;
 
-public class Client
+import test.Ice.udp.Test.*;
+
+public class Client extends test.Util.Application
 {
-    private static int
-    run(String[] args, Ice.Communicator communicator)
+    public int run(String[] args)
     {
-        TestIntfPrx obj = AllTests.allTests(communicator);
-        obj.shutdown();
+        AllTests.allTests(communicator());
+
+        int num;
+        try 
+        {
+            num = args.length == 1 ? Integer.parseInt(args[0]) : 0;
+        }
+        catch(NumberFormatException ex)
+        {
+            num = 0;
+        }
+        for(int i = 0; i < num; ++i)
+        {
+            TestIntfPrxHelper.uncheckedCast(communicator().stringToProxy("control:tcp -p " + (12010 + i))).shutdown();
+        }
         return 0;
     }
 
-    public static void
-    main(String[] args)
+    protected Ice.InitializationData getInitData(Ice.StringSeqHolder argsH)
     {
-        int status = 0;
-        Ice.Communicator communicator = null;
+        Ice.InitializationData initData = new Ice.InitializationData();
+        initData.properties = Ice.Util.createProperties(argsH);
+        initData.properties.setProperty("Ice.Package.Test", "test.Ice.udp");
+        initData.properties.setProperty("Ice.Warn.Connections", "0");
+        initData.properties.setProperty("Ice.UDP.RcvSize", "16384");
+        initData.properties.setProperty("Ice.UDP.SndSize", "16384");
+        return initData;
+    }
 
-        try
-        {
-            Ice.StringSeqHolder argHolder = new Ice.StringSeqHolder(args);
-            Ice.InitializationData initData = new Ice.InitializationData();
-            initData.properties = Ice.Util.createProperties(argHolder);
-        
-            initData.properties.setProperty("Ice.Warn.Connections", "0");
-            initData.properties.setProperty("Ice.UDP.SndSize", "16384");
-
-            communicator = Ice.Util.initialize(argHolder, initData);
-            status = run(args, communicator);
-        }
-        catch(Exception ex)
-        {
-            ex.printStackTrace();
-            status = 1;
-        }
-
-        if(communicator != null)
-        {
-            try
-            {
-                communicator.destroy();
-            }
-            catch(Ice.LocalException ex)
-            {
-                ex.printStackTrace();
-                status = 1;
-            }
-        }
+    public static void main(String[] args)
+    {
+        Client c = new Client();
+        int status = c.main("Client", args);
 
         System.gc();
         System.exit(status);

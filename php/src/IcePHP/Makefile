@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -15,15 +15,19 @@ SONAME          = $(LIBNAME)
 TARGETS		= $(libdir)/$(LIBNAME)
 
 OBJS		= Communicator.o \
+		  Connection.o \
+		  Endpoint.o \
 		  Init.o \
-		  Marshal.o \
-		  Profile.o \
+		  Logger.o \
+		  Operation.o \
+		  Properties.o \
 		  Proxy.o \
+		  Types.o \
 		  Util.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
-include $(top_srcdir)/config/Make.rules
+include $(top_srcdir)/config/Make.rules.php
 
 CPPFLAGS	:= -I. $(CPPFLAGS) $(ICE_FLAGS) $(PHP_FLAGS)
 
@@ -35,5 +39,11 @@ $(libdir)/$(LIBNAME): $(OBJS)
 
 install:: all
 	$(call installphplib,$(libdir)/$(LIBNAME),$(install_libdir))
+
+depend:: $(SRCS)
+	-rm -f .depend .depend.mak
+	if test -n "$(SRCS)" ; then \
+	    $(CXX) -DMAKEDEPEND -M $(CXXFLAGS) $(CPPFLAGS) $(SRCS) | $(ice_dir)/config/makedepend.py; \
+	fi
 
 include .depend

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,7 +9,8 @@
 
 #include <IceUtil/Options.h>
 #include <IceUtil/CtrlCHandler.h>
-#include <IceUtil/StaticMutex.h>
+#include <IceUtil/Mutex.h>
+#include <IceUtil/MutexPtrLock.h>
 #include <Slice/Preprocessor.h>
 #include <Slice/FileTracker.h>
 #include <Slice/Util.h>
@@ -18,22 +19,45 @@
 using namespace std;
 using namespace Slice;
 
-static IceUtil::StaticMutex _mutex = ICE_STATIC_MUTEX_INITIALIZER;
-static bool _interrupted = false;
+namespace
+{
+
+IceUtil::Mutex* mutex = 0;
+bool interrupted = false;
+
+class Init
+{
+public:
+
+    Init()
+    {
+        mutex = new IceUtil::Mutex;
+    }
+
+    ~Init()
+    {
+        delete mutex;
+        mutex = 0;
+    }
+};
+
+Init init;
+
+}
 
 void
 interruptedCallback(int signal)
 {
-    IceUtil::StaticMutex::Lock lock(_mutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(mutex);
 
-    _interrupted = true;
+    interrupted = true;
 }
 
 void
 usage(const char* n)
 {
-    cerr << "Usage: " << n << " [options] slice-files...\n";
-    cerr <<     
+    getErrorStream() << "Usage: " << n << " [options] slice-files...\n";
+    getErrorStream() <<     
         "Options:\n"
         "-h, --help               Show this message.\n"
         "-v, --version            Display the Ice version.\n"
@@ -55,11 +79,10 @@ usage(const char* n)
         "--checksum               Generate checksums for Slice definitions.\n"
         "--stream                 Generate marshaling support for public stream API.\n"
         ;
-    // Note: --case-sensitive is intentionally not shown here!
 }
 
 int
-main(int argc, char* argv[])
+compile(int argc, char* argv[])
 {
     IceUtilInternal::Options opts;
     opts.addOpt("h", "help");
@@ -80,19 +103,15 @@ main(int argc, char* argv[])
     opts.addOpt("", "ice");
     opts.addOpt("", "checksum");
     opts.addOpt("", "stream");
-    opts.addOpt("", "case-sensitive");
 
     vector<string> args;
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         args = opts.parse(argc, (const char**)argv);
     }
     catch(const IceUtilInternal::BadOptException& e)
     {
-        cerr << argv[0] << ": " << e.reason << endl;
+        getErrorStream() << argv[0] << ": " << e.reason << endl;
         usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -105,7 +124,7 @@ main(int argc, char* argv[])
 
     if(opts.isSet("version"))
     {
-        cerr << ICE_STRING_VERSION << endl;
+        getErrorStream() << ICE_STRING_VERSION << endl;
         return EXIT_SUCCESS;
     }
 
@@ -155,8 +174,6 @@ main(int argc, char* argv[])
 
     bool stream = opts.isSet("stream");
 
-    bool caseSensitive = opts.isSet("case-sensitive");
-
     if(args.empty())
     {
         getErrorStream() << argv[0] << ": error: no input file" << endl;
@@ -173,16 +190,37 @@ main(int argc, char* argv[])
     {
         if(depend)
         {
-            Preprocessor icecpp(argv[0], *i, cppArgs);
-            if(!icecpp.printMakefileDependencies(Preprocessor::CPlusPlus, includePaths, sourceExtension))
+            PreprocessorPtr icecpp = Preprocessor::create(argv[0], *i, cppArgs);
+            FILE* cppHandle = icecpp->preprocess(false);
+
+            if(cppHandle == 0)
+            {
+                return EXIT_FAILURE;
+            }
+            
+            UnitPtr u = Unit::createUnit(false, false, ice);
+            int parseStatus = u->parse(*i, cppHandle, debug);
+            u->destroy();
+
+            if(parseStatus == EXIT_FAILURE)
+            {
+                return EXIT_FAILURE;
+            }
+
+            if(!icecpp->printMakefileDependencies(Preprocessor::CPlusPlus, includePaths, sourceExtension))
+            {
+                return EXIT_FAILURE;
+            }
+
+            if(!icecpp->close())
             {
                 return EXIT_FAILURE;
             }
         }
         else
         {
-            Preprocessor icecpp(argv[0], *i, cppArgs);
-            FILE* cppHandle = icecpp.preprocess(false);
+            PreprocessorPtr icecpp = Preprocessor::create(argv[0], *i, cppArgs);
+            FILE* cppHandle = icecpp->preprocess(false);
 
             if(cppHandle == 0)
             {
@@ -199,17 +237,17 @@ main(int argc, char* argv[])
                         return EXIT_FAILURE;
                     }
                 }
-                if(!icecpp.close())
+                if(!icecpp->close())
                 {
                     return EXIT_FAILURE;
                 }
             }
             else
             {
-                UnitPtr u = Unit::createUnit(false, false, ice, caseSensitive);
+                UnitPtr u = Unit::createUnit(false, false, ice);
                 int parseStatus = u->parse(*i, cppHandle, debug);
             
-                if(!icecpp.close())
+                if(!icecpp->close())
                 {
                     u->destroy();
                     return EXIT_FAILURE;
@@ -223,7 +261,7 @@ main(int argc, char* argv[])
                 {
                     try
                     {
-                        Gen gen(icecpp.getBaseName(), headerExtension, sourceExtension, extraHeaders, include,
+                        Gen gen(icecpp->getBaseName(), headerExtension, sourceExtension, extraHeaders, include,
                                 includePaths, dllExport, output, impl, checksum, stream, ice);
                         gen.generate(u);
                     }
@@ -243,9 +281,9 @@ main(int argc, char* argv[])
         }
 
         {
-            IceUtil::StaticMutex::Lock lock(_mutex);
+            IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(mutex);
 
-            if(_interrupted)
+            if(interrupted)
             {
                 FileTracker::instance()->cleanup();
                 return EXIT_FAILURE;
@@ -254,4 +292,33 @@ main(int argc, char* argv[])
     }
 
     return status;
+}
+
+int
+main(int argc, char* argv[])
+{
+    try
+    {
+        return compile(argc, argv);
+    }
+    catch(const std::exception& ex)
+    {
+        getErrorStream() << argv[0] << ": error:" << ex.what() << endl;
+        return EXIT_FAILURE;
+    }
+    catch(const std::string& msg)
+    {
+        getErrorStream() << argv[0] << ": error:" << msg << endl;
+        return EXIT_FAILURE;
+    }
+    catch(const char* msg)
+    {
+        getErrorStream() << argv[0] << ": error:" << msg << endl;
+        return EXIT_FAILURE;
+    }
+    catch(...)
+    {
+        getErrorStream() << argv[0] << ": error:" << "unknown exception" << endl;
+        return EXIT_FAILURE;
+    }
 }

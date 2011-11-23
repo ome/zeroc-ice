@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -43,6 +43,8 @@ typedef IceUtil::Handle<ClientSessionFactory> ClientSessionFactoryPtr;
 
 class AdminSessionFactory;
 typedef IceUtil::Handle<AdminSessionFactory> AdminSessionFactoryPtr;    
+
+std::string getInstanceName(const Ice::CommunicatorPtr&);
 
 class RegistryI : public Registry
 {
@@ -87,7 +89,6 @@ private:
     Ice::ObjectAdapterPtr setupAdminSessionFactory(const Ice::ObjectAdapterPtr&, const Ice::ObjectPtr&, 
                                                    const LocatorPrx&);
 
-    void setupThreadPool(const Ice::PropertiesPtr&, const std::string&, int, int = 0, bool = false);
     Glacier2::PermissionsVerifierPrx getPermissionsVerifier(const Ice::ObjectAdapterPtr&, const LocatorPrx&,
                                                             const std::string&, const std::string&);
 

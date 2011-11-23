@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,6 +16,8 @@
 #include <Freeze/CatalogIndexList.h>
 #include <IceUtil/UUID.h>
 #include <stdlib.h>
+
+#include <Ice/StringConverter.h>
 
 using namespace std;
 using namespace Ice;
@@ -200,7 +202,10 @@ Freeze::MapHelper::recreate(const Freeze::ConnectionPtr& connection,
                 // Fortunately, DB closes oldDb automatically when it goes out of scope
                 //
                 Db oldDb(connectionI->dbEnv()->getEnv(), 0);
-                oldDb.open(txn, oldDbName.c_str(), 0, DB_BTREE, DB_THREAD, FREEZE_DB_MODE);
+
+
+                oldDb.open(txn, Ice::nativeToUTF8(connectionI->communicator(), oldDbName).c_str(), 0, DB_BTREE,
+                           DB_THREAD, FREEZE_DB_MODE);
                     
                 auto_ptr<MapDb> newDb(new MapDb(connectionI, dbName, key, value, keyCompare, indices, true));
                 
@@ -1598,7 +1603,7 @@ extern "C"
     }
 }
 
-static int 
+static int
 callback(Db* secondary, const Dbt* key, const Dbt* value, Dbt* result)
 {
     void* indexObj = secondary->get_app_private();
@@ -1675,7 +1680,8 @@ Freeze::MapIndexI::MapIndexI(const ConnectionIPtr& connection, MapDb& db,
         out << "Opening index \"" << _dbName << "\"";
     }
 
-    _db->open(txn, _dbName.c_str(), 0, DB_BTREE, flags, FREEZE_DB_MODE);
+    _db->open(txn, Ice::nativeToUTF8(connection->communicator(), _dbName).c_str(), 0, DB_BTREE, flags,
+              FREEZE_DB_MODE);
 
     //
     // To populate empty indices

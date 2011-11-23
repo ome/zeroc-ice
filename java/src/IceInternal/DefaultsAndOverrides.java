@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -51,12 +51,24 @@ public final class DefaultsAndOverrides
             overrideConnectTimeoutValue = -1;
         }
 
+        value = properties.getProperty("Ice.Override.CloseTimeout");
+        if(value.length() > 0)
+        {
+            overrideCloseTimeout = true;
+            overrideCloseTimeoutValue = properties.getPropertyAsInt("Ice.Override.CloseTimeout");
+        }
+        else
+        {
+            overrideCloseTimeout = false;
+            overrideCloseTimeoutValue = -1;
+        }
+
         value = properties.getProperty("Ice.Override.Compress");
         if(value.length() > 0)
         {
             overrideCompress = true;
             boolean b = properties.getPropertyAsInt("Ice.Override.Compress") > 0;
-            if(!BasicStream.compressible() && b)
+            if(b && !BasicStream.compressible())
             {
                 System.err.println("warning: bzip2 support not available, Ice.Override.Compress ignored");
                 b = false;
@@ -65,7 +77,7 @@ public final class DefaultsAndOverrides
         }
         else
         {
-            overrideCompress = !BasicStream.compressible();
+            overrideCompress = false;
             overrideCompressValue = false;
         }
 
@@ -96,7 +108,7 @@ public final class DefaultsAndOverrides
         else
         {
             Ice.EndpointSelectionTypeParseException ex = new Ice.EndpointSelectionTypeParseException();
-            ex.str = value;
+            ex.str = "illegal value `" + value + "'; expected `Random' or `Ordered'";
             throw ex;
         }
 
@@ -116,6 +128,8 @@ public final class DefaultsAndOverrides
     final public int overrideTimeoutValue;
     final public boolean overrideConnectTimeout;
     final public int overrideConnectTimeoutValue;
+    final public boolean overrideCloseTimeout;
+    final public int overrideCloseTimeoutValue;
     final public boolean overrideCompress;
     final public boolean overrideCompressValue;
     final public boolean overrideSecure;

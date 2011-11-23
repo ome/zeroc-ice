@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,7 @@ public class Server
     {
         public override int run(string[] args)
         {
-            communicator().getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010 -t 2000:udp");
+            communicator().getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010:udp");
             Ice.ObjectAdapter adapter = communicator().createObjectAdapter("TestAdapter");
             Ice.ServantLocator locator = new ServantLocatorI();
             adapter.addServantLocator(locator, "");

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -10,20 +10,20 @@
 
 #
 # This script upgrades the IceGrid registry database environment for
-# 3.0.x version of IceGrid to the new format.
+# 3.1.x or 3.2.x version of IceGrid to the new format (>= 3.3).
 #
 # Usage:
 #
 # python upgradeicegrid.py olddbenv newdbenv
 #
-# Where:
+# Where for example:
 #
 # olddbenv is the path of the Ice 3.1.x registry database environment
-# newdbenv is the path of the Ice 3.2 registry database environment
+# newdbenv is the path of new registry database environment
 #
 #
-# NOTE: the 3.1 slice definitions for the IceGrid database are stored
-# in the icegrid-slice.3.1.tar.gz file. These definitions are used by
+# NOTE: the 3.x slice definitions for the IceGrid database are stored
+# in the icegrid-slice.3.x.tar.gz file. These definitions are used by
 # the script to perform the database transformation.
 #
 
@@ -47,8 +47,13 @@ if win32:
 def usage():
     print "Usage: " + sys.argv[0] + " [options] olddbenv newdbenv"
     print
+    print "This script upgrades a 3.1 or 3.2 IceGrid registry database environment"
+    print "to an IceGrid registry 3.3 (or newer) database environment."
+    print
     print "Options:"
-    print "-h    Show this message."
+    print "-h                      Show this message."
+    print "--server-version VER    Specifies an alternate Ice version for your"
+    print "                        IceGrid servers."
     sys.exit(2)
 
 def printOutputFromPipe(pipe):
@@ -140,7 +145,7 @@ def upgrade32(olddbenv, newdbenv, iceServerVersion):
               '<record/></database>' + \
               '<database name="objects" key="::Ice::Identity" value="::IceGrid::ObjectInfo"><record/></database>'
 
-    if iceServerVersion and not iceServerVersion.startswith("3.3"):
+    if iceServerVersion and not iceServerVersion.startswith("3.3") and not iceServerVersion.startswith("3.4"):
         desc = \
              '<transformdb>' + \
              databases + \
@@ -261,4 +266,4 @@ elif dbEnvVersion == "3.2":
     upgrade32(olddbenv, newdbenv, serverVersion)
     print "ok"
 else:
-    error("can't figure out the version of the IceGrid database environment " + olddbenv)
+    error("can't figure out the version of the IceGrid database environment `" + olddbenv + "'")

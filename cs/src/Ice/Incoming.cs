@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@ namespace IceInternal
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Globalization;
 
     public class IncomingBase
     {
@@ -130,7 +131,7 @@ namespace IceInternal
         {
             Debug.Assert(os_ != null);
 
-            using(StringWriter sw = new StringWriter())
+            using(StringWriter sw = new StringWriter(CultureInfo.CurrentCulture))
             {
                 IceUtilInternal.OutputBase output = new IceUtilInternal.OutputBase(sw);
                 output.setUseTab(false);
@@ -336,7 +337,7 @@ namespace IceInternal
                     os_.endWriteEncaps();
                     os_.resize(Protocol.headerSize + 4, false); // Reply status position.
                     os_.writeByte(ReplyStatus.replyUnknownLocalException);
-                    os_.writeString(ex.ice_name());
+                    os_.writeString(ex.ice_name() + "\n" + ex.StackTrace);
                     connection_.sendResponse(os_, compress_);
                 }
                 else
@@ -359,7 +360,7 @@ namespace IceInternal
                     os_.endWriteEncaps();
                     os_.resize(Protocol.headerSize + 4, false); // Reply status position.
                     os_.writeByte(ReplyStatus.replyUnknownUserException);
-                    os_.writeString(ex.ToString());
+                    os_.writeString(ex.ice_name() + "\n" + ex.StackTrace);
                     connection_.sendResponse(os_, compress_);
                 }
                 else

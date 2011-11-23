@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@
 #include <Ice/Properties.h>
 #include <Ice/LoggerUtil.h>
 #include <Ice/Initialize.h>
+#include <Ice/Instance.h>
 #include <Ice/LocalException.h>
 
 using namespace std;
@@ -66,6 +67,20 @@ Ice::PluginManagerI::initializePlugins()
     }
 
     _initialized = true;
+}
+
+StringSeq
+Ice::PluginManagerI::getPlugins()
+{
+    IceUtil::Mutex::Lock sync(*this);
+
+    StringSeq names;
+    map<string, PluginPtr>::iterator r;
+    for(r = _plugins.begin(); r != _plugins.end(); ++r)
+    {
+        names.push_back((*r).first);
+    }
+    return names;
 }
 
 PluginPtr
@@ -277,16 +292,6 @@ Ice::PluginManagerI::loadPlugins(int& argc, char* argv[])
     }
 
     stringSeqToArgs(cmdArgs, argc, argv);
-
-    //
-    // An application can set Ice.InitPlugins=0 if it wants to postpone
-    // initialization until after it has interacted directly with the
-    // plug-ins.
-    //
-    if(properties->getPropertyAsIntWithDefault("Ice.InitPlugins", 1) > 0)
-    {
-        initializePlugins();
-    }
 }
 
 void
@@ -375,3 +380,12 @@ Ice::PluginManagerI::loadPlugin(const string& name, const string& pluginSpec, St
     _libraries->add(library);
 }
 
+void
+IceInternal::loadPlugin(const Ice::CommunicatorPtr& communicator, 
+                        const string& name, 
+                        const string& pluginSpec,
+                        Ice::StringSeq& cmdArgs)
+{
+    PluginManagerIPtr pluginManager = PluginManagerIPtr::dynamicCast(getInstance(communicator)->pluginManager());
+    pluginManager->loadPlugin(name, pluginSpec, cmdArgs);
+}

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,10 +29,10 @@ public:
     virtual void abortBatchRequest();
 
     virtual Ice::ConnectionI* sendRequest(Outgoing*);
-    virtual bool sendAsyncRequest(const OutgoingAsyncPtr&);
+    virtual AsyncStatus sendAsyncRequest(const OutgoingAsyncPtr&);
 
     virtual bool flushBatchRequests(BatchOutgoing*);
-    virtual bool flushAsyncBatchRequests(const BatchOutgoingAsyncPtr&);
+    virtual AsyncStatus flushAsyncBatchRequests(const BatchOutgoingAsyncPtr&);
 
     virtual Ice::ConnectionIPtr getConnection(bool);
 

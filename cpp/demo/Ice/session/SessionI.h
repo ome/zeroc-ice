@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,7 +22,7 @@ public:
 
     virtual Demo::HelloPrx createHello(const Ice::Current&);
     virtual void refresh(const Ice::Current&);
-    virtual std::string getName(const Ice::Current&) const;
+    virtual std::string getName(const Ice::Current&);
     virtual void destroy(const Ice::Current&);
 
     IceUtil::Time timestamp() const;

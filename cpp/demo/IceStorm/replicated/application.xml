@@ -1,7 +1,7 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
@@ -21,7 +21,7 @@
 
        <icebox id="${instance-name}-${index}" exe="icebox" activation="on-demand">
 
-         <service name="IceStorm" entry="IceStormService,33:createIceStorm">
+         <service name="IceStorm" entry="IceStormService,34:createIceStorm">
 
            <dbenv name="${service}"/>
 
@@ -43,6 +43,8 @@
              <property name="${service}.Trace.Subscriber" value="1"/>
              <property name="${service}.Trace.Election" value="1"/>
              <property name="${service}.NodeId" value="${index}"/>
+             <property name="${service}.SQL.DatabaseType" value="QSQLITE"/>
+             <property name="${service}.SQL.DatabaseName" value="db/${instance-name}-${index}.db"/>
            </properties>
 
          </service>
@@ -57,7 +59,7 @@
        <object identity="DemoIceStorm/TopicManager" type="::IceStorm::TopicManager"/>
      </replica-group>
 
-     <node name="localhost">
+     <node name="node1">
        <server-instance template="IceStorm" index="1" instance-name="DemoIceStorm"/>
        <server-instance template="IceStorm" index="2" instance-name="DemoIceStorm"/>
        <server-instance template="IceStorm" index="3" instance-name="DemoIceStorm"/>

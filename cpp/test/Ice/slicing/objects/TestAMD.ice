@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -47,7 +47,7 @@ class SS2
     BSeq s;
 };
 
-struct SS
+struct SS3
 {
     SS1 c1;
     SS2 c2;
@@ -95,7 +95,7 @@ class Forward;          // Forward-declared class defined in another compilation
     B returnTest2(out B p2, out B p1);
     B returnTest3(B p1, B p2);
 
-    SS sequenceTest(SS1 p1, SS2 p2);
+    SS3 sequenceTest(SS1 p1, SS2 p2);
 
     BDict dictionaryTest(BDict bin, out BDict bout);
 
@@ -104,7 +104,7 @@ class Forward;          // Forward-declared class defined in another compilation
     void throwDerivedAsDerived() throws DerivedException;
     void throwUnknownDerivedAsBase() throws BaseException;
 
-    void useForward(out Forward f);     // Use of forward-declared class to verify that code is generated correctly.
+    void useForward(out Forward f); /* Use of forward-declared class to verify that code is generated correctly. */
 
     void shutdown();
 };

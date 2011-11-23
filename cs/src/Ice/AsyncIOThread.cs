@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,10 +22,20 @@ namespace IceInternal
             _instance = instance;
 
             _thread = new HelperThread(this);
-            _thread.Start();
+            if(instance.initializationData().properties.getProperty("Ice.ThreadPriority").Length > 0)
+            {
+                ThreadPriority priority = IceInternal.Util.stringToThreadPriority(
+                                           instance.initializationData().properties.getProperty("Ice.ThreadPriority"));
+                _thread.Start(priority);
+            }
+            else
+            {
+                _thread.Start(ThreadPriority.Normal);
+            }
+
         }
 
-        public void queue(AsyncCallback callback)
+        public void queue(ThreadPoolWorkItem callback)
         {
             lock(this)
             {
@@ -55,7 +65,7 @@ namespace IceInternal
 
         public void run()
         {
-            LinkedList<AsyncCallback> queue = new LinkedList<AsyncCallback>();
+            LinkedList<ThreadPoolWorkItem> queue = new LinkedList<ThreadPoolWorkItem>();
             while(true)
             {
                 lock(this)
@@ -70,16 +80,16 @@ namespace IceInternal
                         Monitor.Wait(this);
                     }
 
-                    LinkedList<AsyncCallback> tmp = queue;
+                    LinkedList<ThreadPoolWorkItem> tmp = queue;
                     queue = _queue;
                     _queue = tmp;
                 }
 
-                foreach(AsyncCallback cb in queue)
+                foreach(ThreadPoolWorkItem cb in queue)
                 {
                     try
                     {
-                        cb(null);
+                        cb();
                     }
                     catch(Ice.LocalException ex)
                     {
@@ -98,7 +108,7 @@ namespace IceInternal
 
         private Instance _instance;
         private bool _destroyed;
-        private LinkedList<AsyncCallback> _queue = new LinkedList<AsyncCallback>();
+        private LinkedList<ThreadPoolWorkItem> _queue = new LinkedList<ThreadPoolWorkItem>();
 
         private sealed class HelperThread
         {
@@ -118,11 +128,12 @@ namespace IceInternal
                 _thread.Join();
             }
 
-            public void Start()
+            public void Start(ThreadPriority priority)
             {
                 _thread = new Thread(new ThreadStart(Run));
                 _thread.IsBackground = true;
                 _thread.Name = _name;
+                _thread.Priority = priority;
                 _thread.Start();
             }
 

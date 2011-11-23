@@ -1,7 +1,7 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
@@ -12,25 +12,17 @@
 <project name="test" default="all" basedir=".">
 
     <target name="all">
-        <ant dir="Slice"/>
-        <ant dir="IceUtil"/>
         <ant dir="Ice"/>
         <ant dir="Freeze"/>
-        <ant dir="IceBox"/>
-        <ant dir="Glacier2"/>
         <ant dir="IceGrid"/>
-        <ant dir="IceSSL"/>
+        <ant dir="Slice"/>
     </target>
 
     <target name="clean">
-        <ant dir="Slice" target="clean"/>
-        <ant dir="IceUtil" target="clean"/>
         <ant dir="Ice" target="clean"/>
         <ant dir="Freeze" target="clean"/>
-        <ant dir="IceBox" target="clean"/>
-        <ant dir="Glacier2" target="clean"/>
         <ant dir="IceGrid" target="clean"/>
-        <ant dir="IceSSL" target="clean"/>
+        <ant dir="Slice" target="clean"/>
     </target>
 
 </project>

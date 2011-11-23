@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,8 +11,6 @@
 #define TOPIC_MANAGER_I_H
 
 #include <IceStorm/IceStorm.h>
-#include <IceStorm/LLUMap.h>
-#include <IceStorm/SubscriberMap.h>
 
 #include <IceStorm/Replica.h>
 #include <IceStorm/Election.h>
@@ -27,6 +25,9 @@ namespace IceStorm
 //
 class Instance;
 typedef IceUtil::Handle<Instance> InstancePtr;
+
+class DatabaseCache;
+typedef IceUtil::Handle<DatabaseCache> DatabaseCachePtr;
 
 class TopicImpl;
 typedef IceUtil::Handle<TopicImpl> TopicImplPtr;
@@ -76,11 +77,7 @@ private:
                           const IceStorm::SubscriberRecordSeq& = IceStorm::SubscriberRecordSeq());
 
     const InstancePtr _instance;
-
-    // The connection and freeze maps.
-    const Freeze::ConnectionPtr _connection;
-    LLUMap _llumap;
-    SubscriberMap _subscriberMap;
+    const DatabaseCachePtr _databaseCache;
 
     std::map<std::string, TopicImplPtr> _topics;
 

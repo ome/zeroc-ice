@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,6 +14,8 @@
 #include <Freeze/Catalog.h>
 #include <Freeze/TransactionI.h>
 #include <Freeze/IndexI.h>
+
+#include <Ice/StringConverter.h>
 
 using namespace std;
 using namespace Ice;
@@ -120,7 +122,14 @@ Freeze::ObjectStoreBase::ObjectStoreBase(const string& facet, const string& face
             flags |= DB_CREATE;
         }
 
-        _db->open(txn, evictor->filename().c_str(), _dbName.c_str(), DB_BTREE, flags, FREEZE_DB_MODE);
+        //
+        // We keep _dbName as a native string here, while it might have
+        // been better to convert it to UTF-8, changing this isn't
+        // possible without potentially breaking backward compatibility
+        // with deployed databases.
+        //
+        _db->open(txn, Ice::nativeToUTF8(evictor->communicator(), evictor->filename()).c_str(), _dbName.c_str(),
+                  DB_BTREE, flags, FREEZE_DB_MODE);
 
         for(size_t i = 0; i < _indices.size(); ++i)
         {

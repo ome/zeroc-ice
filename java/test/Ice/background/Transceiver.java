@@ -1,11 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+package test.Ice.background;
 
 final class Transceiver implements IceInternal.Transceiver
 {
@@ -15,24 +17,24 @@ final class Transceiver implements IceInternal.Transceiver
         return _transceiver.fd();
     }
 
-    public IceInternal.SocketStatus
+    public int
     initialize()
     {
-        IceInternal.SocketStatus status = _configuration.initializeSocketStatus();
-        if(status == IceInternal.SocketStatus.NeedConnect || status == IceInternal.SocketStatus.NeedWrite)
+        int status = _configuration.initializeSocketStatus();
+        if(status == IceInternal.SocketOperation.Connect || status == IceInternal.SocketOperation.Write)
         {
             if(!_initialized)
             {
                 status = _transceiver.initialize();
-                if(status != IceInternal.SocketStatus.Finished)
+                if(status != IceInternal.SocketOperation.None)
                 {
                     return status;
                 }
                 _initialized = true;
             }
-            return IceInternal.SocketStatus.NeedWrite;
+            return IceInternal.SocketOperation.Write;
         }
-        else if(status == IceInternal.SocketStatus.NeedRead)
+        else if(status == IceInternal.SocketOperation.Read)
         {
             return status;
         }
@@ -41,13 +43,13 @@ final class Transceiver implements IceInternal.Transceiver
         if(!_initialized)
         {
             status = _transceiver.initialize();
-            if(status != IceInternal.SocketStatus.Finished)
+            if(status != IceInternal.SocketOperation.None)
             {
                 return status;
             }
             _initialized = true;
         }
-        return IceInternal.SocketStatus.Finished;
+        return IceInternal.SocketOperation.None;
     }
 
     public void
@@ -66,7 +68,7 @@ final class Transceiver implements IceInternal.Transceiver
 
         if(!_configuration.writeReady())
         {
-                return false;
+            return false;
         }
         _configuration.checkWriteException();
         return _transceiver.write(buf);
@@ -103,6 +105,12 @@ final class Transceiver implements IceInternal.Transceiver
         return _transceiver.toString();
     }
 
+    public Ice.ConnectionInfo
+    getInfo()
+    {
+        return _transceiver.getInfo();
+    }
+
     public void
     checkSendSize(IceInternal.Buffer buf, int messageSizeMax)
     {
@@ -112,10 +120,10 @@ final class Transceiver implements IceInternal.Transceiver
     //
     // Only for use by Connector, Acceptor
     //
-    Transceiver(IceInternal.Transceiver transceiver)
+    Transceiver(Configuration configuration, IceInternal.Transceiver transceiver)
     {
         _transceiver = transceiver;
-        _configuration = Configuration.getInstance();
+        _configuration = configuration;
     }
 
     protected synchronized void

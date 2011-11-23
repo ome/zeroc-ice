@@ -1,35 +1,42 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-public class Collocated
+package test.Ice.adapterDeactivation;
+
+public class Collocated extends test.Util.Application
 {
-    static class TestServer extends Ice.Application
+    public int
+    run(String[] args)
     {
-        public int
-        run(String[] args)
-        {
-            communicator().getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000");
-            Ice.ObjectAdapter adapter = communicator().createObjectAdapter("TestAdapter");
-            Ice.ServantLocator locator = new ServantLocatorI();
-            adapter.addServantLocator(locator, "");
+        Ice.ObjectAdapter adapter = communicator().createObjectAdapter("TestAdapter");
+        Ice.ServantLocator locator = new ServantLocatorI();
+        adapter.addServantLocator(locator, "");
 
-            AllTests.allTests(communicator());
+        AllTests.allTests(communicator(), getWriter());
 
-            adapter.waitForDeactivate();
-            return 0;
-        }
+        adapter.waitForDeactivate();
+        return 0;
+    }
+
+    protected Ice.InitializationData getInitData(Ice.StringSeqHolder argsH)
+    {
+        Ice.InitializationData initData = new Ice.InitializationData();
+        initData.properties = Ice.Util.createProperties(argsH);
+        initData.properties.setProperty("Ice.Package.Test", "test.Ice.adapterDeactivation");
+        initData.properties.setProperty("TestAdapter.Endpoints", "default -p 12010");
+        return initData;
     }
 
     public static void
     main(String[] args)
     {
-        TestServer app = new TestServer();
+        Collocated app = new Collocated();
         int result = app.main("Collocated", args);
         System.exit(result);
     }

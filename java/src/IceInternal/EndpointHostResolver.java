@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,22 +14,34 @@ public class EndpointHostResolver
     EndpointHostResolver(Instance instance)
     {
         _instance = instance;
-
-        _thread = new HelperThread();
-        _thread.start();
+        try
+        {
+            _thread = new HelperThread();
+            if(_instance.initializationData().properties.getProperty("Ice.ThreadPriority").length() > 0)
+            {
+                _thread.setPriority(Util.getThreadPriorityProperty(_instance.initializationData().properties, "Ice"));
+            }
+            _thread.start();
+        }
+        catch(RuntimeException ex)
+        {
+            String s = "cannot create thread for endpoint host resolver thread:\n" + Ex.toString(ex);
+            _instance.initializationData().logger.error(s);
+            throw ex;
+        }
     }
 
     synchronized public void
     resolve(String host, int port, EndpointI endpoint, EndpointI_connectors callback)
     {
         //
-        // TODO: Optimize to avoid the lookup if the given host is a textual IPv4 or IPv6 
+        // TODO: Optimize to avoid the lookup if the given host is a textual IPv4 or IPv6
         // address. This requires implementing parsing of IPv4/IPv6 addresses (Java does
         // not provide such methods).
         //
 
         assert(!_destroyed);
-        
+
         ResolveEntry entry = new ResolveEntry();
         entry.host = host;
         entry.port = port;
@@ -39,7 +51,7 @@ public class EndpointHostResolver
         notify();
     }
 
-    synchronized public void 
+    synchronized public void
     destroy()
     {
         assert(!_destroyed);
@@ -101,15 +113,14 @@ public class EndpointHostResolver
             }
         }
 
-        java.util.Iterator<ResolveEntry> p = _queue.iterator();
-        while(p.hasNext())
+        for(ResolveEntry p : _queue)
         {
-            p.next().callback.exception(new Ice.CommunicatorDestroyedException());
+            p.callback.exception(new Ice.CommunicatorDestroyedException());
         }
         _queue.clear();
     }
-    
-    class ResolveEntry
+
+    static class ResolveEntry
     {
         String host;
         int port;
@@ -119,7 +130,7 @@ public class EndpointHostResolver
 
     private final Instance _instance;
     private boolean _destroyed;
-    private java.util.LinkedList<ResolveEntry> _queue = new java.util.LinkedList<ResolveEntry>(); 
+    private java.util.LinkedList<ResolveEntry> _queue = new java.util.LinkedList<ResolveEntry>();
 
     private final class HelperThread extends Thread
     {
@@ -136,37 +147,14 @@ public class EndpointHostResolver
         public void
         run()
         {
-            if(_instance.initializationData().threadHook != null)
-            {
-                _instance.initializationData().threadHook.start();
-            }
-
             try
             {
                 EndpointHostResolver.this.run();
             }
-            catch(Ice.LocalException ex)
-            {
-                java.io.StringWriter sw = new java.io.StringWriter();
-                java.io.PrintWriter pw = new java.io.PrintWriter(sw);
-                ex.printStackTrace(pw);
-                pw.flush();
-                String s = "exception in endpoint host resolver thread " + getName() + ":\n" + sw.toString();
-                _instance.initializationData().logger.error(s);
-            }
             catch(java.lang.Exception ex)
             {
-                java.io.StringWriter sw = new java.io.StringWriter();
-                java.io.PrintWriter pw = new java.io.PrintWriter(sw);
-                ex.printStackTrace(pw);
-                pw.flush();
-                String s = "unknown exception in endpoint host resolver thread " + getName() + ":\n" + sw.toString();
+                String s = "exception in endpoint host resolver thread " + getName() + ":\n" + Ex.toString(ex);
                 _instance.initializationData().logger.error(s);
-            }
-
-            if(_instance.initializationData().threadHook != null)
-            {
-                _instance.initializationData().threadHook.stop();
             }
         }
     }

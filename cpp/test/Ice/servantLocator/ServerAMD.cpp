@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -47,6 +47,27 @@ protected:
     }
 };
 
+class TestActivationI : public Test::TestActivation
+{
+public:
+
+    void activateServantLocator(bool activate, const Ice::Current& current)
+    {
+        if(activate)
+        {
+            current.adapter->addServantLocator(new ServantLocatorAMDI(""), "");
+            current.adapter->addServantLocator(new ServantLocatorAMDI("category"), "category");
+        }
+        else
+        {
+            ServantLocatorPtr locator = current.adapter->removeServantLocator("");
+            locator->deactivate("");
+            locator = current.adapter->removeServantLocator("category");
+            locator->deactivate("category");
+        }
+    }
+};
+
 class TestServer : public Application
 {
 public:
@@ -64,7 +85,7 @@ main(int argc, char* argv[])
 int
 TestServer::run(int argc, char* argv[])
 {
-    communicator()->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000:udp");
+    communicator()->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12010:udp");
     communicator()->getProperties()->setProperty("Ice.Warn.Dispatch", "0");
 
     Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("TestAdapter");
@@ -72,6 +93,7 @@ TestServer::run(int argc, char* argv[])
     adapter->addServantLocator(new ServantLocatorAMDI(""), "");
     adapter->addServantLocator(new ServantLocatorAMDI("category"), "category");
     adapter->add(new TestAMDI, communicator()->stringToIdentity("asm"));
+    adapter->add(new TestActivationI, communicator()->stringToIdentity("test/activation"));
     adapter->activate();
     adapter->waitForDeactivate();
     return EXIT_SUCCESS;

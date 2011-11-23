@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -74,51 +74,73 @@ refdir = $(bindir)
 refdir = $(ice_dir)\bin
 !endif
 
+!if "$(VERSION_PATCH)" > "0" && "$(VERSION_PATCH)" < "51"
+    generate_policies   = yes
+!endif
+
 MCS			= csc -nologo
 
 MCSFLAGS = -warnaserror -d:MAKEFILE_BUILD
 !if "$(DEBUG)" == "yes"
-MCSFLAGS 		= $(MCSFLAGS) -debug -define:DEBUG
+!if "$(OPTIMIZE)" == "yes"
+MCSFLAGS 		= $(MCSFLAGS) -debug:pdbonly
+!else
+MCSFLAGS 		= $(MCSFLAGS) -debug
+!endif
+MCSFLAGS 		= $(MCSFLAGS) -define:DEBUG
 !endif
 
 !if "$(OPTIMIZE)" == "yes"
 MCSFLAGS 		= $(MCSFLAGS) -optimize+
 !endif
 
+# Define for SupressMessage to work
+#MCSFLAGS		= $(MCSFLAGS) -define:CODE_ANALYSIS
+
 !if "$(ice_src_dist)" != ""
 !if "$(ice_cpp_dir)" == "$(ice_dir)\cpp"
-SLICE2CS		= "$(ice_cpp_dir)\bin\slice2cs.exe"
-!else
-SLICE2CS		= "$(ice_cpp_dir)\bin$(x64suffix)\slice2cs.exe"
+SLICE2CS		= $(ice_cpp_dir)\bin\slice2cs.exe
+SLICEPARSERLIB		= $(ice_cpp_dir)\lib\slice.lib
+!if !exist ("$(SLICEPARSERLIB)")
+SLICEPARSERLIB		= $(ice_cpp_dir)\lib\sliced.lib
 !endif
 !else
-SLICE2CS		= "$(ice_dir)\bin$(x64suffix)\slice2cs.exe"
+SLICE2CS		= $(ice_cpp_dir)\bin$(x64suffix)\slice2cs.exe
+SLICEPARSERLIB		= $(ice_cpp_dir)\lib$(x64suffix)\slice.lib
+!if !exist ("$(SLICEPARSERLIB)")
+SLICEPARSERLIB		= $(ice_cpp_dir)\lib$(x64suffix)\sliced.lib
+!endif
+!endif
+!else
+SLICE2CS		= $(ice_dir)\bin$(x64suffix)\slice2cs.exe
+SLICEPARSERLIB		= $(ice_dir)\lib$(x64suffix)\slice.lib
+!if !exist ("$(SLICEPARSERLIB)")
+SLICEPARSERLIB		= $(ice_dir)\lib$(x64suffix)\sliced.lib
+!endif
 !endif
 
-EVERYTHING		= all clean install config
+EVERYTHING		= all clean install
 
 .SUFFIXES:
 .SUFFIXES:		.cs .ice
 
 .ice.cs:
-	$(SLICE2CS) $(SLICE2CSFLAGS) $<
+	"$(SLICE2CS)" $(SLICE2CSFLAGS) $<
 
-{$(SDIR)\}.ice{$(GDIR)}.cs:
-	$(SLICE2CS) --output-dir $(GDIR) $(SLICE2CSFLAGS) $<
+{$(SDIR)}.ice{$(GDIR)}.cs:
+	"$(SLICE2CS)" --output-dir $(GDIR) $(SLICE2CSFLAGS) $<
 
-all:: $(TARGETS) $(TARGETS_CONFIG)
+all:: $(TARGETS)
 
 AL      = al
 POLICY  = policy.$(SHORT_VERSION).$(PKG)
 
-!if "$(POLICY_TARGET)" != ""
+!if "$(generate_policies)" == "yes" && "$(POLICY_TARGET)" != ""
 all:: $(bindir)/$(POLICY_TARGET)
 !endif
 
 clean::
-	del /q $(TARGETS) $(TARGETS_CONFIG) *.pdb
-
-config:: $(TARGETS_CONFIG)
+	del /q $(TARGETS) *.pdb
 
 !if "$(GEN_SRCS)" != ""
 clean::
@@ -141,7 +163,7 @@ clean::
 	del /q $(SAMD_GEN_SRCS)
 !endif
 
-!if "$(POLICY_TARGET)" != ""
+!if "$(generate_policies)" == "yes" && "$(POLICY_TARGET)" != ""
 
 $(bindir)/$(POLICY_TARGET):
 !if "$(PUBLIC_KEY_TOKEN)" == ""
@@ -187,73 +209,3 @@ clean::
 !endif
 
 install::
-
-
-!if "$(TARGETS_CONFIG)" != ""
-
-!if "$(PUBLIC_KEY_TOKEN)" == ""
-
-!if "$(ice_src_dist)" != ""
-$(TARGETS_CONFIG):
-	@sn -q -p $(KEYFILE) tmp.pub && \
-	sn -q -t tmp.pub > tmp.publicKeyToken && \
-	set /P TMP_TOKEN= < tmp.publicKeyToken && \
-        cmd /c "set PUBLIC_KEY_TOKEN=%TMP_TOKEN:~-16% && \
-	del /q tmp.pub tmp.publicKeyToken && \
-	nmake /nologo /f Makefile.mak config"
-!else
-$(TARGETS_CONFIG):
-	@sn -q -T $(ice_dir)\bin\Ice.dll > tmp.publicKeyToken && \
-	set /P TMP_TOKEN= < tmp.publicKeyToken && \
-        cmd /c "set PUBLIC_KEY_TOKEN=%TMP_TOKEN:~-16% && \
-	del /q tmp.publicKeyToken && \
-	nmake /nologo /f Makefile.mak config"
-!endif
-
-!else
-
-publicKeyToken = $(PUBLIC_KEY_TOKEN: =)
-$(TARGETS_CONFIG):
-        @echo "Generating" <<$@ "..."
-<?xml version="1.0"?>
-  <configuration>
-    <runtime>
-      <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
-        <dependentAssembly>
-          <assemblyIdentity name="Glacier2" culture="neutral" publicKeyToken="$(publicKeyToken)"/>
-          <codeBase version="$(INTVERSION).0" href="$(refdir)\Glacier2.dll"/>
-        </dependentAssembly>
-        <dependentAssembly>
-          <assemblyIdentity name="Ice" culture="neutral" publicKeyToken="$(publicKeyToken)"/>
-          <codeBase version="$(INTVERSION).0" href="$(refdir)\Ice.dll"/>
-        </dependentAssembly>
-        <dependentAssembly>
-          <assemblyIdentity name="IcePatch2" culture="neutral" publicKeyToken="$(publicKeyToken)"/>
-          <codeBase version="$(INTVERSION).0" href="$(refdir)\IcePatch2.dll"/>
-        </dependentAssembly>
-        <dependentAssembly>
-          <assemblyIdentity name="IceStorm" culture="neutral" publicKeyToken="$(publicKeyToken)"/>
-          <codeBase version="$(INTVERSION).0" href="$(refdir)\IceStorm.dll"/>
-        </dependentAssembly>
-        <dependentAssembly>
-          <assemblyIdentity name="IceBox" culture="neutral" publicKeyToken="$(publicKeyToken)"/>
-          <codeBase version="$(INTVERSION).0" href="$(refdir)\IceBox.dll"/>
-        </dependentAssembly>
-        <dependentAssembly>
-          <assemblyIdentity name="IceGrid" culture="neutral" publicKeyToken="$(publicKeyToken)"/>
-          <codeBase version="$(INTVERSION).0" href="$(refdir)\IceGrid.dll"/>
-        </dependentAssembly>
-        <dependentAssembly>
-          <assemblyIdentity name="IceSSL" culture="neutral" publicKeyToken="$(publicKeyToken)"/>
-          <codeBase version="$(INTVERSION).0" href="$(refdir)\IceSSL.dll"/>
-        </dependentAssembly>
-	<qualifyAssembly partialName="IceSSL" fullName="IceSSL, Version=$(INTVERSION).0, Culture=neutral, PublicKeyToken=$(publicKeyToken)"/>
-    </assemblyBinding>
-  </runtime>
-</configuration>
-<<KEEP
-
-!endif
-
-!endif
-

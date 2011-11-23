@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,9 +10,9 @@
 namespace IceInternal
 {
 
-    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
-    using IceUtilInternal;
+    using System.Globalization;
 
     sealed class TraceUtil
     {
@@ -23,7 +23,7 @@ namespace IceInternal
                 int p = str.pos();
                 str.pos(0);
 
-                using(System.IO.StringWriter s = new System.IO.StringWriter())
+                using(System.IO.StringWriter s = new System.IO.StringWriter(CultureInfo.CurrentCulture))
                 {
                     byte type = printMessage(s, str);
 
@@ -40,7 +40,7 @@ namespace IceInternal
                 int p = str.pos();
                 str.pos(0);
 
-                using(System.IO.StringWriter s = new System.IO.StringWriter())
+                using(System.IO.StringWriter s = new System.IO.StringWriter(CultureInfo.CurrentCulture))
                 {
                     byte type = printMessage(s, str);
 
@@ -57,7 +57,7 @@ namespace IceInternal
                 int p = str.pos();
                 str.pos(0);
 
-                using(System.IO.StringWriter s = new System.IO.StringWriter())
+                using(System.IO.StringWriter s = new System.IO.StringWriter(CultureInfo.CurrentCulture))
                 {
                     s.Write(heading);
                     printMessage(s, str);
@@ -68,7 +68,7 @@ namespace IceInternal
             }
         }
 
-        private static Set slicingIds;
+        private static HashSet<string> slicingIds = new HashSet<string>();
 
         internal static void traceSlicing(string kind, string typeId, string slicingCat, Ice.Logger logger)
         {
@@ -76,7 +76,7 @@ namespace IceInternal
             {
                 if(slicingIds.Add(typeId))
                 {
-                    using(System.IO.StringWriter s = new System.IO.StringWriter())
+                    using(System.IO.StringWriter s = new System.IO.StringWriter(CultureInfo.CurrentCulture))
                     {
                         s.Write("unknown " + kind + " type `" + typeId + "'");
                         logger.trace(slicingCat, s.ToString());
@@ -464,7 +464,7 @@ namespace IceInternal
                 int p = str.pos();
                 str.pos(0);
 
-                using(System.IO.StringWriter s = new System.IO.StringWriter())
+                using(System.IO.StringWriter s = new System.IO.StringWriter(CultureInfo.CurrentCulture))
                 {
                     s.Write(heading);
                     printHeader(s, str);
@@ -492,11 +492,6 @@ namespace IceInternal
             default:
                 return "unknown";
             }
-        }
-
-        static TraceUtil()
-        {
-            slicingIds = new Set();
         }
     }
 

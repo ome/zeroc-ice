@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,7 +33,7 @@ struct Statistics
 
     /**
      *
-     * The time the object was last saved, in milliseconds relative to [creationTime].
+     * The time the object was last saved, in milliseconds relative to <tt>creationTime</tt>.
      *
      **/
     long lastSaveTime;
@@ -48,7 +48,7 @@ struct Statistics
 
 /**
  *
- * The evictor uses a number of maps with [Ice::Identity] keys and [ObjectRecord] values as its
+ * The evictor uses a number of maps with {@link Ice.Identity} keys and {@link ObjectRecord} values as its
  * persistent storage.
  *
  **/

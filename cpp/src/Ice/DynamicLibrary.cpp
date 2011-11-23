@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <Ice/DynamicLibrary.h>
+#include <IceUtil/StringUtil.h>
 
 #ifndef _WIN32
 #   include <dlfcn.h>
@@ -89,10 +90,26 @@ IceInternal::DynamicLibrary::loadEntryPoint(const string& entryPoint, bool useIc
     string lib;
 
 #ifdef _WIN32
-    lib = libName + version;
+    lib = libName;
+
+#   ifdef COMPSUFFIX
+    //
+    // If using unique dll names we need to add compiler suffix
+    // to IceSSL so that we do not have to use compiler suffix
+    // in the configuration.
+    //
+    if(IceUtilInternal::toLower(libName) == "icessl")
+    {
+        lib += COMPSUFFIX;
+    }
+#   endif
+
+    lib += version;
+
 #   ifdef _DEBUG
     lib += 'd';
 #   endif
+
     lib += ".dll";
 #elif defined(__APPLE__)
     lib = "lib" + libName;

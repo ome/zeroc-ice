@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,18 +27,14 @@ public:
     {
     }
 
-    bool check()
+    void check()
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
         while(!_called)
         {
-            if(!timedWait(IceUtil::Time::seconds(5)))
-            {
-                return false;
-            }
+            wait();
         }
         _called = false;
-        return true;
     }
 
 protected:
@@ -56,46 +52,44 @@ private:
     bool _called;
 };
 
-class AMIRegular : public Test::AMI_Retry_op, public CallbackBase
+class CallbackSuccess : public IceUtil::Shared, public CallbackBase
 {
 public:
 
-    virtual void ice_response()
+    void response()
     {
         called();
     }
 
-    virtual void ice_exception(const ::Ice::Exception&)
+    void exception(const ::Ice::Exception&)
     {
         test(false);
     }
 };
+typedef IceUtil::Handle<CallbackSuccess> CallbackSuccessPtr;
 
-typedef IceUtil::Handle<AMIRegular> AMIRegularPtr;
-
-class AMIException : public Test::AMI_Retry_op, public CallbackBase
+class CallbackFail : public IceUtil::Shared, public CallbackBase
 {
 public:
 
-    virtual void ice_response()
+    void response()
     {
         test(false);
     }
 
-    virtual void ice_exception(const ::Ice::Exception& ex)
+    void exception(const ::Ice::Exception& ex)
     {
         test(dynamic_cast<const Ice::ConnectionLostException*>(&ex));
         called();
     }
 };
-
-typedef IceUtil::Handle<AMIException> AMIExceptionPtr;
+typedef IceUtil::Handle<CallbackFail> CallbackFailPtr;
 
 RetryPrx
 allTests(const Ice::CommunicatorPtr& communicator)
 {
     cout << "testing stringToProxy... " << flush;
-    string ref = "retry:default -p 12010 -t 10000";
+    string ref = "retry:default -p 12010";
     Ice::ObjectPrx base1 = communicator->stringToProxy(ref);
     test(base1);
     Ice::ObjectPrx base2 = communicator->stringToProxy(ref);
@@ -130,22 +124,22 @@ allTests(const Ice::CommunicatorPtr& communicator)
     retry1->op(false);
     cout << "ok" << endl;
 
-    AMIRegularPtr cb1 = new AMIRegular;
-    AMIExceptionPtr cb2 = new AMIException;
+    CallbackSuccessPtr cb1 = new CallbackSuccess();
+    CallbackFailPtr cb2 = new CallbackFail();
 
     cout << "calling regular AMI operation with first proxy... " << flush;
-    retry1->op_async(cb1, false);
-    test(cb1->check());
+    retry1->begin_op(false, newCallback_Retry_op(cb1, &CallbackSuccess::response, &CallbackSuccess::exception));
+    cb1->check();
     cout << "ok" << endl;
 
     cout << "calling AMI operation to kill connection with second proxy... " << flush;
-    retry2->op_async(cb2, true);
-    test(cb2->check());
+    retry2->begin_op(true, newCallback_Retry_op(cb2, &CallbackFail::response, &CallbackFail::exception));
+    cb2->check();
     cout << "ok" << endl;
 
     cout << "calling regular AMI operation with first proxy again... " << flush;
-    retry1->op_async(cb1, false);
-    test(cb1->check());
+    retry1->begin_op(false, newCallback_Retry_op(cb1, &CallbackSuccess::response, &CallbackSuccess::exception));
+    cb1->check();
     cout << "ok" << endl;
 
     return retry1;

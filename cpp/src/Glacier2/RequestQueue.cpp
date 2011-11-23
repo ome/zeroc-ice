@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <Glacier2/RequestQueue.h>
+#include <Glacier2/Instance.h>
 #include <Glacier2/SessionRouterI.h>
 #include <set>
 
@@ -19,30 +20,19 @@ namespace
 {
 
 //
-// AMI callback class for twoway requests
+// AMI base callback class for twoway/oneway requests
 //
-class AMI_Array_Object_ice_invokeI : public AMI_Array_Object_ice_invoke
+class IceInvokeI : public AMI_Array_Object_ice_invoke
 {
 public:
     
-    AMI_Array_Object_ice_invokeI(const AMD_Array_Object_ice_invokePtr& amdCB,
-                                 const InstancePtr& instance,
-                                 const ConnectionPtr& connection) :
+    IceInvokeI(const AMD_Object_ice_invokePtr& amdCB, const InstancePtr& instance, const ConnectionPtr& connection) :
         _amdCB(amdCB),
         _instance(instance),
         _connection(connection)
     {
     }
     
-    virtual void
-    ice_response(bool ok, const pair<const Byte*, const Byte*>& outParams)
-    {
-        if(_amdCB)
-        {
-            _amdCB->ice_response(ok, outParams);
-        }
-    }
-
     virtual void
     ice_exception(const Exception& ex)
     {
@@ -71,18 +61,56 @@ public:
         }
     }
 
-private:
+protected:
 
-    const AMD_Array_Object_ice_invokePtr _amdCB;
+    const AMD_Object_ice_invokePtr _amdCB;
     const InstancePtr _instance;
     const ConnectionPtr _connection;
+};
+
+class TwowayIceInvokeI : public IceInvokeI
+{
+public:
+    
+    TwowayIceInvokeI(const AMD_Object_ice_invokePtr& amdCB, const InstancePtr& instance, const ConnectionPtr& con) :
+        IceInvokeI(amdCB, instance, con)
+    {
+    }
+
+    virtual void
+    ice_response(bool ok, const pair<const Byte*, const Byte*>& outParams)
+    {
+        _amdCB->ice_response(ok, outParams);
+    }
+};
+
+class OnewayIceInvokeI : public IceInvokeI, public Ice::AMISentCallback
+{
+public:
+    
+    OnewayIceInvokeI(const AMD_Object_ice_invokePtr& amdCB, const InstancePtr& instance, const ConnectionPtr& con) :
+        IceInvokeI(amdCB, instance, con)
+    {
+    }
+
+    virtual void
+    ice_response(bool ok, const pair<const Byte*, const Byte*>& outParams)
+    {
+        assert(false);
+    }
+
+    virtual void
+    ice_sent()
+    {
+        _amdCB->ice_response(true, pair<const Byte*, const Byte*>(0, 0));
+    }
 };
 
 }
 
 Glacier2::Request::Request(const ObjectPrx& proxy, const std::pair<const Byte*, const Byte*>& inParams,
                            const Current& current, bool forwardContext, const Ice::Context& sslContext,
-                           const AMD_Array_Object_ice_invokePtr& amdCB) :
+                           const AMD_Object_ice_invokePtr& amdCB) :
     _proxy(proxy),
     _inParams(inParams.first, inParams.second),
     _current(current),
@@ -91,10 +119,9 @@ Glacier2::Request::Request(const ObjectPrx& proxy, const std::pair<const Byte*, 
     _amdCB(amdCB)
 {
     //
-    // If this is not a twoway call, we can finish the AMD call right
-    // away.
+    // If this is a batch call, we can finish the AMD call right away.
     //
-    if(!_proxy->ice_isTwoway())
+    if(_proxy->ice_isBatchOneway() || _proxy->ice_isBatchDatagram())
     {
         _amdCB->ice_response(true, pair<const Byte*, const Byte*>(0, 0));
     }
@@ -155,36 +182,41 @@ Glacier2::Request::invoke(const InstancePtr& instance, const Ice::ConnectionPtr&
         AMI_Array_Object_ice_invokePtr amiCB;
         if(_proxy->ice_isTwoway())
         {
-            amiCB = new AMI_Array_Object_ice_invokeI(_amdCB, instance, connection);
+            amiCB = new TwowayIceInvokeI(_amdCB, instance, connection);
         }
         else
         {
-            amiCB = new AMI_Array_Object_ice_invokeI(0, instance, connection);
+            amiCB = new OnewayIceInvokeI(_amdCB, instance, connection);
         }
         
+        bool sent;
         if(_forwardContext)
         { 
             if(_sslContext.size() > 0)
             {
                 Ice::Context ctx = _current.ctx;
                 ctx.insert(_sslContext.begin(), _sslContext.end());
-                _proxy->ice_invoke_async(amiCB, _current.operation, _current.mode, inPair, ctx);
+                sent = _proxy->ice_invoke_async(amiCB, _current.operation, _current.mode, inPair, ctx);
             }
             else
             {
-                _proxy->ice_invoke_async(amiCB, _current.operation, _current.mode, inPair, _current.ctx);
+                sent = _proxy->ice_invoke_async(amiCB, _current.operation, _current.mode, inPair, _current.ctx);
             }
         }
         else
         {
             if(_sslContext.size() > 0)
             {
-                _proxy->ice_invoke_async(amiCB, _current.operation, _current.mode, inPair, _sslContext);
+                sent = _proxy->ice_invoke_async(amiCB, _current.operation, _current.mode, inPair, _sslContext);
             }
             else
             {
-                _proxy->ice_invoke_async(amiCB, _current.operation, _current.mode, inPair);
+                sent = _proxy->ice_invoke_async(amiCB, _current.operation, _current.mode, inPair);
             }
+        }
+        if(sent && !_proxy->ice_isTwoway())
+        {
+            _amdCB->ice_response(true, pair<const Byte*, const Byte*>(0, 0));
         }
         return false; // Not a batch invocation.
     }
@@ -283,6 +315,7 @@ Glacier2::RequestQueue::flushRequests(set<Ice::ObjectPrx>& batchProxies)
 }
 
 Glacier2::RequestQueueThread::RequestQueueThread(const IceUtil::Time& sleepTime) :
+    IceUtil::Thread("Glacier2 request queue thread"),
     _sleepTime(sleepTime),
     _destroy(false),
     _sleep(false)

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,14 +20,14 @@ using namespace Glacier2;
 
 Glacier2::RouterI::RouterI(const InstancePtr& instance, const ConnectionPtr& connection, const string& userId, 
                            const SessionPrx& session, const Identity& controlId, const FilterManagerPtr& filters,
-                           const Ice::Context& sslContext) :
+                           const Ice::Context& context) :
     _instance(instance),
-    _clientBlobject(new ClientBlobject(_instance, filters, sslContext)),
+    _clientBlobject(new ClientBlobject(_instance, filters, context)),
     _connection(connection),
     _userId(userId),
     _session(session),
     _controlId(controlId),
-    _sslContext(sslContext),
+    _context(context),
     _timestamp(IceUtil::Time::now(IceUtil::Time::Monotonic))
 {
     //
@@ -67,8 +67,6 @@ Glacier2::RouterI::~RouterI()
 void
 Glacier2::RouterI::destroy(const AMI_Session_destroyPtr& amiCB)
 {
-    _connection->close(true);
-
     if(_session)
     {
         if(_instance->serverObjectAdapter())
@@ -91,9 +89,9 @@ Glacier2::RouterI::destroy(const AMI_Session_destroyPtr& amiCB)
             }
         }
 
-        if(_sslContext.size() > 0)
+        if(_context.size() > 0)
         {
-            _session->destroy_async(amiCB, _sslContext);
+            _session->destroy_async(amiCB, _context);
         }
         else
         {
@@ -127,10 +125,7 @@ Glacier2::RouterI::addProxy(const ObjectPrx& proxy, const Current& current)
 ObjectProxySeq
 Glacier2::RouterI::addProxies(const ObjectProxySeq& proxies, const Current& current)
 {
-    IceUtil::Mutex::Lock lock(*this);
-
-    _timestamp = IceUtil::Time::now(IceUtil::Time::Monotonic);
-
+    updateTimestamp();
     return _clientBlobject->add(proxies, current);
 }
 
@@ -156,6 +151,12 @@ Glacier2::RouterI::createSessionFromSecureConnection_async(const AMD_Router_crea
 }
 
 void
+Glacier2::RouterI::refreshSession(const Current&)
+{
+    assert(false); // Must not be called in this router implementation.
+}
+
+void
 Glacier2::RouterI::destroySession(const Current&)
 {
     assert(false); // Must not be called in this router implementation.
@@ -171,10 +172,7 @@ Glacier2::RouterI::getSessionTimeout(const Current&) const
 ClientBlobjectPtr
 Glacier2::RouterI::getClientBlobject() const
 {
-    IceUtil::Mutex::Lock lock(*this);
-
-    _timestamp = IceUtil::Time::now(IceUtil::Time::Monotonic);
-
+    updateTimestamp();
     return _clientBlobject;
 }
 
@@ -198,8 +196,7 @@ Glacier2::RouterI::getSession() const
 IceUtil::Time
 Glacier2::RouterI::getTimestamp() const
 {
-    IceUtil::Mutex::TryLock lock(*this);
-
+    IceUtil::Mutex::TryLock lock(_timestampMutex);
     if(lock.acquired())
     {
         return _timestamp;
@@ -208,6 +205,13 @@ Glacier2::RouterI::getTimestamp() const
     {
         return IceUtil::Time::now(IceUtil::Time::Monotonic);
     }
+}
+
+void
+Glacier2::RouterI::updateTimestamp() const
+{
+    IceUtil::Mutex::Lock lock(_timestampMutex);
+    _timestamp = IceUtil::Time::now(IceUtil::Time::Monotonic);
 }
 
 string

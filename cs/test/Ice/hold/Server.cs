@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,7 +21,7 @@ public class Server
 {
     private static int run(string[] args, Ice.Communicator communicator)
     {
-         communicator.getProperties().setProperty("TestAdapter1.Endpoints", "default -p 12010 -t 10000:udp");
+        communicator.getProperties().setProperty("TestAdapter1.Endpoints", "default -p 12010:udp");
         communicator.getProperties().setProperty("TestAdapter1.ThreadPool.Size", "5");
         communicator.getProperties().setProperty("TestAdapter1.ThreadPool.SizeMax", "5");
         communicator.getProperties().setProperty("TestAdapter1.ThreadPool.SizeWarn", "0");
@@ -29,7 +29,7 @@ public class Server
         Ice.ObjectAdapter adapter1 = communicator.createObjectAdapter("TestAdapter1");
         adapter1.add(new HoldI(adapter1), communicator.stringToIdentity("hold"));
 
-        communicator.getProperties().setProperty("TestAdapter2.Endpoints", "default -p 12011 -t 10000:udp");
+        communicator.getProperties().setProperty("TestAdapter2.Endpoints", "default -p 12011:udp");
         communicator.getProperties().setProperty("TestAdapter2.ThreadPool.Size", "5");
         communicator.getProperties().setProperty("TestAdapter2.ThreadPool.SizeMax", "5");
         communicator.getProperties().setProperty("TestAdapter2.ThreadPool.SizeWarn", "0");
@@ -75,7 +75,7 @@ public class Server
                 status = 1;
             }
         }
-        
+
         if(status != 0)
         {
             System.Environment.Exit(status);

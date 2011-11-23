@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,9 +14,11 @@
 #include <IceUtil/Monitor.h>
 #include <IceUtil/Mutex.h>
 #include <IceUtil/ArgVector.h>
+#include <IceUtil/FileUtil.h>
 #include <Ice/Service.h>
 #include <Ice/LoggerI.h>
 #include <Ice/Initialize.h>
+#include <Ice/StringConverter.h>
 #include <Ice/Communicator.h>
 #include <Ice/LocalException.h>
 #include <Ice/Properties.h>
@@ -30,7 +32,6 @@
 #   include <sys/types.h>
 #   include <sys/stat.h>
 #   include <csignal>
-#   include <fstream>
 #endif
 
 using namespace std;
@@ -112,6 +113,7 @@ private:
     public:
 
         StatusThread(ServiceStatusManager* manager) :
+            IceUtil::Thread("Ice service status manager thread"),
             _manager(manager)
         {
         }
@@ -135,9 +137,68 @@ private:
 
 static ServiceStatusManager* serviceStatusManager;
 
-static IceUtil::StaticMutex outputMutex = ICE_STATIC_MUTEX_INITIALIZER;
+//
+// Interface implemented by SMEventLoggerI and called from
+// SMEventLoggerIWrapper.
+//
+class SMEventLogger : public IceUtil::Shared
+{
+public:
+    virtual void print(const string&, const string&) = 0;
+    virtual void trace(const string&, const string&, const string&) = 0;
+    virtual void warning(const string&, const string&) = 0;
+    virtual void error(const string&, const string&) = 0;
+};
+typedef IceUtil::Handle<SMEventLogger> SMEventLoggerPtr;
 
-class SMEventLoggerI : public Ice::Logger
+class SMEventLoggerIWrapper : public Ice::Logger
+{
+public:
+    
+    SMEventLoggerIWrapper(const SMEventLoggerPtr& logger, const string& prefix) :
+        _logger(logger),
+        _prefix(prefix)
+    {
+        assert(_logger);
+    }
+    
+    virtual void
+    print(const string& message)
+    {
+        _logger->print(_prefix, message);
+    }
+
+    void
+    trace(const string& category, const string& message)
+    {
+        _logger->trace(_prefix, category, message);
+    }
+
+    virtual void
+    warning(const string& message)
+    {
+        _logger->warning(_prefix, message);
+    }
+
+    virtual void
+    error(const string& message)
+    {
+        _logger->error(_prefix, message);
+    }
+    
+    virtual Ice::LoggerPtr
+    cloneWithPrefix(const string& prefix)
+    {
+        return new SMEventLoggerIWrapper(_logger, prefix);
+    }
+    
+private:
+    
+    SMEventLoggerPtr _logger;
+    string _prefix;
+};
+
+class SMEventLoggerI : public Ice::Logger, public SMEventLogger
 {
 public:
 
@@ -226,6 +287,19 @@ public:
     }
 
     virtual void
+    print(const string& prefix, const string& message)
+    {
+        string s;
+        if(!prefix.empty())
+        {
+            s = prefix;
+            s.append(": ");
+        }
+        s.append(message);
+        print(s);
+    }
+    
+    virtual void
     print(const string& message)
     {
         const char* str[1];
@@ -237,7 +311,20 @@ public:
         ReportEvent(_source, EVENTLOG_INFORMATION_TYPE, 0, EVENT_LOGGER_MSG, 0, 1, 0, str, 0);
     }
 
-    void
+    virtual void
+    trace(const string& prefix, const string& category, const string& message)
+    {
+        string s;
+        if(!category.empty())
+        {
+            s = category;
+            s.append(": ");
+        }
+        s.append(message);
+        trace(prefix, s);
+    }
+    
+    virtual void
     trace(const string& category, const string& message)
     {
         string s;
@@ -258,6 +345,19 @@ public:
     }
 
     virtual void
+    warning(const string& prefix, const string& message)
+    {
+        string s;
+        if(!prefix.empty())
+        {
+            s = prefix;
+            s.append(": ");
+        }
+        s.append(message);
+        warning(s);
+    }
+    
+    virtual void
     warning(const string& message)
     {
         const char* str[1];
@@ -270,6 +370,19 @@ public:
     }
 
     virtual void
+    error(const string& prefix, const string& message)
+    {
+        string s;
+        if(!prefix.empty())
+        {
+            s = prefix;
+            s.append(": ");
+        }
+        s.append(message);
+        error(s);
+    }
+
+    virtual void
     error(const string& message)
     {
         const char* str[1];
@@ -279,6 +392,12 @@ public:
         // anything we can do about it.
         //
         ReportEvent(_source, EVENTLOG_ERROR_TYPE, 0, EVENT_LOGGER_MSG, 0, 1, 0, str, 0);
+    }
+    
+    virtual Ice::LoggerPtr
+    cloneWithPrefix(const string& prefix)
+    {
+        return new SMEventLoggerIWrapper(this, prefix);
     }
 
     static void
@@ -382,7 +501,11 @@ Ice::Service::interrupt()
 int
 Ice::Service::main(int& argc, char* argv[], const InitializationData& initializationData)
 {
-    _name = argv[0];
+    _name = "";
+    if(argc > 0)
+    {
+        _name = argv[0];
+    }
 
     //
     // We parse the properties here to extract Ice.ProgramName and
@@ -391,9 +514,6 @@ Ice::Service::main(int& argc, char* argv[], const InitializationData& initializa
     InitializationData initData = initializationData;
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         initData.properties = createProperties(argc, argv, initData.properties, initData.stringConverter);
     }
     catch(const Ice::Exception& ex)
@@ -432,7 +552,7 @@ Ice::Service::main(int& argc, char* argv[], const InitializationData& initializa
             if(LoggerIPtr::dynamicCast(_logger))
             {
                 string eventLogSource = initData.properties->getPropertyWithDefault("Ice.EventLog.Source", name);
-                _logger = new SMEventLoggerI(eventLogSource);
+                _logger = new SMEventLoggerIWrapper(new SMEventLoggerI(eventLogSource), "");
                 setProcessLogger(_logger);
             }
 
@@ -656,7 +776,11 @@ Ice::Service::main(int& argc, char* argv[], const InitializationData& initializa
             }
             else
             {
-                cerr << argv[0] << ": --pidfile must be followed by an argument" << endl;
+		if(argv[0])
+		{
+		    cerr << argv[0] << ": ";
+		}
+                cerr << "--pidfile must be followed by an argument" << endl;
                 return EXIT_FAILURE;
             }
 
@@ -674,13 +798,21 @@ Ice::Service::main(int& argc, char* argv[], const InitializationData& initializa
 
     if(!closeFiles && !daemonize)
     {
-        cerr << argv[0] << ": --noclose must be used with --daemon" << endl;
+	if(argv[0])
+        {
+	    cerr << argv[0] << ": ";
+	}
+        cerr << "--noclose must be used with --daemon" << endl;
         return EXIT_FAILURE;
     }
 
     if(pidFile.size() > 0 && !daemonize)
     {
-        cerr << argv[0] << ": --pidfile <file> must be used with --daemon" << endl;
+	if(argv[0])
+        {
+	    cerr << argv[0] << ": ";
+	}
+        cerr << "--pidfile <file> must be used with --daemon" << endl;
         return EXIT_FAILURE;
     }
 
@@ -700,13 +832,39 @@ Ice::Service::main(int& argc, char* argv[], const InitializationData& initializa
         _logger = getProcessLogger();
         if(LoggerIPtr::dynamicCast(_logger))
         {
-            _logger = new LoggerI(initData.properties->getProperty("Ice.ProgramName"));
+            _logger = new LoggerI(initData.properties->getProperty("Ice.ProgramName"), "");
             setProcessLogger(_logger);
         }
     }
 
     return run(argc, argv, initData);
 }
+
+int 
+Ice::Service::main(int argc, char* const argv[], const InitializationData& initializationData)
+{
+    IceUtilInternal::ArgVector av(argc, argv);
+    return main(av.argc, av.argv, initializationData);
+}
+
+#ifdef _WIN32
+
+int
+Ice::Service::main(int& argc, wchar_t* argv[], const InitializationData& initializationData)
+{
+#ifdef __BCPLUSPLUS__ // COMPILER FIX
+    //
+    // BCC doesn't see the main overload if we don't create the temp args object here.
+    //
+    Ice::StringSeq args = Ice::argsToStringSeq(argc, argv, initializationData.stringConverter);
+    return main(args, initializationData);
+#else
+    return main(Ice::argsToStringSeq(argc, argv, initializationData.stringConverter), initializationData);
+#endif
+
+}
+
+#endif
 
 int
 Ice::Service::main(StringSeq& args, const InitializationData& initData)
@@ -799,7 +957,7 @@ Ice::Service::run(int& argc, char* argv[], const InitializationData& initData)
         //
         // Start the service.
         //
-        if(start(argc, argv))
+        if(start(argc, argv, status))
         {
             //
             // Wait for service shutdown.
@@ -838,12 +996,15 @@ Ice::Service::run(int& argc, char* argv[], const InitializationData& initData)
         error("service caught unhandled C++ exception");
     }
 
-    try
+    if(_communicator)
     {
-        _communicator->destroy();
-    }
-    catch(...)
-    {
+        try
+        {
+            _communicator->destroy();
+        }
+        catch(...)
+        {
+        }
     }
 
     return status;
@@ -1227,7 +1388,10 @@ Ice::Service::syserror(const string& msg)
     }
     else
     {
-        cerr << _name << ": ";
+	if(!_name.empty())
+	{
+	    cerr << _name << ": ";
+	}
         if(!msg.empty())
         {
             cerr << msg << endl;
@@ -1248,7 +1412,11 @@ Ice::Service::error(const string& msg)
     }
     else
     {
-        cerr << _name << ": error: " << msg << endl;
+	if(!_name.empty())
+	{
+	    cerr << _name << ": ";
+	}
+	cerr << "error: " << msg << endl;
     }
 }
 
@@ -1261,7 +1429,11 @@ Ice::Service::warning(const string& msg)
     }
     else
     {
-        cerr << _name << ": warning: " << msg << endl;
+	if(!_name.empty())
+	{
+	    cerr << _name << ": ";
+	}
+        cerr << "warning: " << msg << endl;
     }
 }
 
@@ -1566,7 +1738,8 @@ Ice::Service::serviceMain(int argc, char* argv[])
     DWORD status = EXIT_FAILURE;
     try
     {
-        if(start(argc, args))
+        int tmpStatus = EXIT_FAILURE;
+        if(start(argc, args, tmpStatus))
         {
             trace("Service started successfully.");
 
@@ -1589,6 +1762,10 @@ Ice::Service::serviceMain(int argc, char* argv[])
                 status = EXIT_SUCCESS;
             }
         }
+        else
+        {
+            status = tmpStatus;
+        }
     }
     catch(const IceUtil::Exception& ex)
     {
@@ -1605,6 +1782,7 @@ Ice::Service::serviceMain(int argc, char* argv[])
 
     try
     {
+        assert(_communicator);
         _communicator->destroy();
     }
     catch(...)
@@ -1749,7 +1927,11 @@ Ice::Service::runDaemon(int argc, char* argv[], const InitializationData& initDa
     pid_t pid = fork();
     if(pid < 0)
     {
-        cerr << argv[0] << ": " << strerror(errno) << endl;
+	if(argv[0])
+	{
+	    cerr << argv[0] << ": ";
+	}
+	cerr << strerror(errno) << endl;
         return EXIT_FAILURE;
     }
 
@@ -1778,7 +1960,11 @@ Ice::Service::runDaemon(int argc, char* argv[], const InitializationData& initDa
                     continue;
                 }
 
-                cerr << argv[0] << ": " << strerror(errno) << endl;
+		if(argv[0])
+		{
+		    cerr << argv[0] << ": ";
+		}
+                cerr << strerror(errno) << endl;
                 _exit(EXIT_FAILURE);
             }
             break;
@@ -1801,14 +1987,21 @@ Ice::Service::runDaemon(int argc, char* argv[], const InitializationData& initDa
                         continue;
                     }
 
-                    cerr << argv[0] << ": I/O error while reading error message from child:\n"
-                         << strerror(errno) << endl;
+		    if(argv[0])
+		    {
+			cerr << ": ";
+		    }
+                    cerr << "I/O error while reading error message from child:\n" << strerror(errno) << endl;
                     _exit(EXIT_FAILURE);
                 }
                 pos += n;
                 break;
             }
-            cerr << argv[0] << ": failure occurred in daemon";
+	    if(argv[0])
+	    {
+		cerr << argv[0] << ": ";
+	    }
+            cerr << "failure occurred in daemon";
             if(strlen(msg) > 0)
             {
                 cerr << ':' << endl << msg;
@@ -1834,7 +2027,7 @@ Ice::Service::runDaemon(int argc, char* argv[], const InitializationData& initDa
         if(setsid() == -1)
         {
             SyscallException ex(__FILE__, __LINE__);
-            ex.error = getSystemErrno();
+            ex.error = IceInternal::getSystemErrno();
             throw ex;
         }
 
@@ -1851,7 +2044,7 @@ Ice::Service::runDaemon(int argc, char* argv[], const InitializationData& initDa
         if(pid < 0)
         {
             SyscallException ex(__FILE__, __LINE__);
-            ex.error = getSystemErrno();
+            ex.error = IceInternal::getSystemErrno();
             throw ex;
         }
         if(pid != 0)
@@ -1867,7 +2060,7 @@ Ice::Service::runDaemon(int argc, char* argv[], const InitializationData& initDa
             if(chdir("/") != 0)
             {
                 SyscallException ex(__FILE__, __LINE__);
-                ex.error = getSystemErrno();
+                ex.error = IceInternal::getSystemErrno();
                 throw ex;
             }
         }
@@ -1885,7 +2078,7 @@ Ice::Service::runDaemon(int argc, char* argv[], const InitializationData& initDa
             if(fdMax <= 0)
             {
                 SyscallException ex(__FILE__, __LINE__);
-                ex.error = getSystemErrno();
+                ex.error = IceInternal::getSystemErrno();
                 throw ex;
             }
 
@@ -1963,7 +2156,7 @@ Ice::Service::runDaemon(int argc, char* argv[], const InitializationData& initDa
         //
         if(_pidFile.size() > 0)
         {
-            ofstream of(_pidFile.c_str());
+            IceUtilInternal::ofstream of(Ice::nativeToUTF8(_communicator, _pidFile));
             of << getpid() << endl;
 
             if(!of)
@@ -1980,7 +2173,7 @@ Ice::Service::runDaemon(int argc, char* argv[], const InitializationData& initDa
         //
         // Start the service.
         //
-        if(start(argc, argv))
+        if(start(argc, argv, status))
         {
             //
             // Notify the parent that the child is ready.
@@ -2068,12 +2261,15 @@ Ice::Service::runDaemon(int argc, char* argv[], const InitializationData& initDa
         close(fds[1]);
     }
 
-    try
+    if(_communicator)
     {
-        _communicator->destroy();
-    }
-    catch(...)
-    {
+        try
+        {
+            _communicator->destroy();
+        }
+        catch(...)
+        {
+        }
     }
 
     return status;

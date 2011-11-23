@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,18 +27,14 @@ public:
     {
     }
 
-    bool check()
+    void check()
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
         while(!_called)
         {
-            if(!timedWait(IceUtil::Time::seconds(5)))
-            {
-                return false;
-            }
+            wait();
         }
         _called = false;
-        return true;
     }
 
 protected:
@@ -56,76 +52,37 @@ private:
     bool _called;
 };
 
-class AMISendData : public Test::AMI_Timeout_sendData, public CallbackBase
+class Callback : public IceUtil::Shared, public CallbackBase
 {
 public:
 
-    virtual void ice_response()
+    void response()
     {
         called();
     }
 
-    virtual void ice_exception(const ::Ice::Exception&)
-    {
-        test(false);
-    }
-};
-typedef IceUtil::Handle<AMISendData> AMISendDataPtr;
-
-class AMISendDataEx : public Test::AMI_Timeout_sendData, public CallbackBase
-{
-public:
-
-    virtual void ice_response()
+    void exception(const ::Ice::Exception&)
     {
         test(false);
     }
 
-    virtual void ice_exception(const ::Ice::Exception& ex)
+    void responseEx()
+    {
+        test(false);
+    }
+
+    void exceptionEx(const ::Ice::Exception& ex)
     {
         test(dynamic_cast<const Ice::TimeoutException*>(&ex));
         called();
     }
 };
-typedef IceUtil::Handle<AMISendDataEx> AMISendDataExPtr;
-
-class AMISleep : public Test::AMI_Timeout_sleep, public CallbackBase
-{
-public:
-
-    virtual void ice_response()
-    {
-        called();
-    }
-
-    virtual void ice_exception(const ::Ice::Exception&)
-    {
-        test(false);
-    }
-};
-typedef IceUtil::Handle<AMISleep> AMISleepPtr;
-
-class AMISleepEx : public Test::AMI_Timeout_sleep, public CallbackBase
-{
-public:
-
-    virtual void ice_response()
-    {
-        test(false);
-    }
-
-    virtual void ice_exception(const ::Ice::Exception& ex)
-    {
-        test(dynamic_cast<const Ice::TimeoutException*>(&ex));
-        called();
-    }
-};
-typedef IceUtil::Handle<AMISleepEx> AMISleepExPtr;
+typedef IceUtil::Handle<Callback> CallbackPtr;
 
 TimeoutPrx
 allTests(const Ice::CommunicatorPtr& communicator)
 {
-    string sref = "timeout:default -p 12010 -t 10000";
+    string sref = "timeout:default -p 12010";
     Ice::ObjectPrx obj = communicator->stringToProxy(sref);
     test(obj);
 
@@ -245,9 +202,9 @@ allTests(const Ice::CommunicatorPtr& communicator)
         // Expect TimeoutException.
         //
         TimeoutPrx to = TimeoutPrx::uncheckedCast(obj->ice_timeout(500));
-        AMISleepExPtr cb = new AMISleepEx;
-        to->sleep_async(cb, 2000);
-        test(cb->check());
+        CallbackPtr cb = new Callback();
+        to->begin_sleep(2000, newCallback_Timeout_sleep(cb, &Callback::responseEx, &Callback::exceptionEx));
+        cb->check();
     }
     {
         //
@@ -255,9 +212,9 @@ allTests(const Ice::CommunicatorPtr& communicator)
         //
         timeout->op(); // Ensure adapter is active.
         TimeoutPrx to = TimeoutPrx::uncheckedCast(obj->ice_timeout(1000));
-        AMISleepPtr cb = new AMISleep;
-        to->sleep_async(cb, 500);
-        test(cb->check());
+        CallbackPtr cb = new Callback();
+        to->begin_sleep(500, newCallback_Timeout_sleep(cb, &Callback::response, &Callback::exception));
+        cb->check();
     }
     cout << "ok" << endl;
 
@@ -269,9 +226,9 @@ allTests(const Ice::CommunicatorPtr& communicator)
         TimeoutPrx to = TimeoutPrx::uncheckedCast(obj->ice_timeout(500));
         to->holdAdapter(2000);
         ByteSeq seq(100000);
-        AMISendDataExPtr cb = new AMISendDataEx;
-        to->sendData_async(cb, seq);
-        test(cb->check());
+        CallbackPtr cb = new Callback();
+        to->begin_sendData(seq, newCallback_Timeout_sendData(cb, &Callback::responseEx, &Callback::exceptionEx));
+        cb->check();
     }
     {
         //
@@ -281,9 +238,37 @@ allTests(const Ice::CommunicatorPtr& communicator)
         TimeoutPrx to = TimeoutPrx::uncheckedCast(obj->ice_timeout(1000));
         to->holdAdapter(500);
         ByteSeq seq(100000);
-        AMISendDataPtr cb = new AMISendData;
-        to->sendData_async(cb, seq);
-        test(cb->check());
+        CallbackPtr cb = new Callback();
+        to->begin_sendData(seq, newCallback_Timeout_sendData(cb, &Callback::response, &Callback::exception));
+        cb->check();
+    }
+    cout << "ok" << endl;
+
+    cout << "testing close timeout... " << flush;
+    {
+        TimeoutPrx to = TimeoutPrx::checkedCast(obj->ice_timeout(250));
+        Ice::ConnectionPtr connection = to->ice_getConnection();
+        timeout->holdAdapter(750);
+        connection->close(false);
+        try
+        {
+            connection->getInfo(); // getInfo() doesn't throw in the closing state.
+        }
+        catch(const Ice::LocalException&)
+        {
+            test(false);
+        }
+        IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(500));
+        try
+        {
+            connection->getInfo();
+            test(false);
+        }
+        catch(const Ice::CloseConnectionException&)
+        {
+            // Expected.
+        }
+        timeout->op(); // Ensure adapter is active.
     }
     cout << "ok" << endl;
 
@@ -363,7 +348,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
         to->op(); // Force connection.
         try
         {
-            to->sleep(1500);
+            to->sleep(2000);
             test(false);
         }
         catch(const Ice::TimeoutException&)
@@ -371,6 +356,20 @@ allTests(const Ice::CommunicatorPtr& communicator)
             // Expected.
         }
         comm->destroy();
+    }
+    {
+        //
+        // Test Ice.Override.CloseTimeout.
+        //
+        Ice::InitializationData initData;
+        initData.properties = communicator->getProperties()->clone();
+        initData.properties->setProperty("Ice.Override.CloseTimeout", "200");
+        Ice::CommunicatorPtr comm = Ice::initialize(initData);
+        Ice::ConnectionPtr connection = comm->stringToProxy(sref)->ice_getConnection();
+        timeout->holdAdapter(750);
+        IceUtil::Time now = IceUtil::Time::now();
+        comm->destroy();
+        test(IceUtil::Time::now() - now < IceUtil::Time::milliSeconds(500));
     }
     cout << "ok" << endl;
 

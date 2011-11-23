@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -74,9 +74,9 @@ BackgroundControllerI::resumeAdapter(const Ice::Current&)
 }
     
 void
-BackgroundControllerI::initializeSocketStatus(int status, const Ice::Current&)
+BackgroundControllerI::initializeSocketOperation(int status, const Ice::Current&)
 {
-    _configuration->initializeSocketStatus(static_cast<IceInternal::SocketStatus>(status));
+    _configuration->initializeSocketOperation(static_cast<IceInternal::SocketOperation>(status));
 }
 
 void

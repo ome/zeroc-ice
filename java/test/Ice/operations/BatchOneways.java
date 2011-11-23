@@ -1,11 +1,18 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+package test.Ice.operations;
+
+import java.io.PrintWriter;
+
+import test.Ice.operations.Test.MyClassPrx;
+import test.Ice.operations.Test.MyClassPrxHelper;
 
 class BatchOneways
 {
@@ -19,7 +26,7 @@ class BatchOneways
     }
 
     static void
-    batchOneways(Test.MyClassPrx p)
+    batchOneways(MyClassPrx p, PrintWriter out)
     {
         final byte[] bs1 = new byte[10  * 1024];
         final byte[] bs2 = new byte[99  * 1024];
@@ -52,7 +59,7 @@ class BatchOneways
         {
         }
 
-        Test.MyClassPrx batch = Test.MyClassPrxHelper.uncheckedCast(p.ice_batchOneway());
+        MyClassPrx batch = MyClassPrxHelper.uncheckedCast(p.ice_batchOneway());
 
         for(int i = 0 ; i < 30 ; ++i)
         {
@@ -67,5 +74,38 @@ class BatchOneways
         }
 
         batch.ice_getConnection().flushBatchRequests();
+
+        MyClassPrx batch2 = MyClassPrxHelper.uncheckedCast(p.ice_batchOneway());
+
+        batch.ice_ping();
+        batch2.ice_ping();
+        batch.ice_flushBatchRequests();
+        batch.ice_getConnection().close(false);
+        batch.ice_ping();
+        batch2.ice_ping();
+
+        batch.ice_getConnection();
+        batch2.ice_getConnection();
+
+        batch.ice_ping();
+        batch.ice_getConnection().close(false);
+        try
+        {
+            batch.ice_ping();
+            test(false);
+        }
+        catch(Ice.CloseConnectionException ex)
+        {
+        }
+        try
+        {
+            batch2.ice_ping();
+            test(false);
+        }
+        catch(Ice.CloseConnectionException ex)
+        {
+        }
+        batch.ice_ping();
+        batch2.ice_ping();
     }
 }

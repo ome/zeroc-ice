@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,8 +23,6 @@ public final class ObjectAdapterI implements ObjectAdapter
     public synchronized Communicator
     getCommunicator()
     {
-        checkForDeactivation();
-
         return _communicator;
     }
 
@@ -40,19 +38,23 @@ public final class ObjectAdapterI implements ObjectAdapter
             checkForDeactivation();
 
             //
+            // If some threads are waiting on waitForHold(), we set this
+            // flag to ensure the threads will start again the wait for
+            // all the incoming connection factories.
+            //
+            _waitForHoldRetry = _waitForHold > 0;
+
+            //
             // If the one off initializations of the adapter are already
             // done, we just need to activate the incoming connection
             // factories and we're done.
             //
             if(_activateOneOffDone)
             {
-                final int sz = _incomingConnectionFactories.size();
-                for(int i = 0; i < sz; ++i)
+                for(IceInternal.IncomingConnectionFactory factory : _incomingConnectionFactories)
                 {
-                    IceInternal.IncomingConnectionFactory factory =
-                        (IceInternal.IncomingConnectionFactory)_incomingConnectionFactories.get(i);
                     factory.activate();
-                }               
+                }
                 return;
             }
 
@@ -113,14 +115,11 @@ public final class ObjectAdapterI implements ObjectAdapter
 
             _activateOneOffDone = true;
 
-            final int sz = _incomingConnectionFactories.size();
-            for(int i = 0; i < sz; ++i)
+            for(IceInternal.IncomingConnectionFactory factory : _incomingConnectionFactories)
             {
-                IceInternal.IncomingConnectionFactory factory =
-                    (IceInternal.IncomingConnectionFactory)_incomingConnectionFactories.get(i);
                 factory.activate();
             }
-        }       
+        }
     }
 
     public synchronized void
@@ -128,28 +127,70 @@ public final class ObjectAdapterI implements ObjectAdapter
     {
         checkForDeactivation();
 
-        final int sz = _incomingConnectionFactories.size();
-        for(int i = 0; i < sz; ++i)
+        for(IceInternal.IncomingConnectionFactory factory : _incomingConnectionFactories)
         {
-            IceInternal.IncomingConnectionFactory factory =
-                (IceInternal.IncomingConnectionFactory)_incomingConnectionFactories.get(i);
             factory.hold();
         }
     }
 
-    public synchronized void
+    public void
     waitForHold()
     {
-        checkForDeactivation();
-
-        final int sz = _incomingConnectionFactories.size();
-        for(int i = 0; i < sz; ++i)
+        while(true)
         {
-            IceInternal.IncomingConnectionFactory factory =
-                (IceInternal.IncomingConnectionFactory)_incomingConnectionFactories.get(i);
-            factory.waitUntilHolding();
+            java.util.List<IceInternal.IncomingConnectionFactory> incomingConnectionFactories;
+            synchronized(this)
+            {
+                checkForDeactivation();
+            
+                incomingConnectionFactories =
+                    new java.util.ArrayList<IceInternal.IncomingConnectionFactory>(_incomingConnectionFactories);
+
+                ++_waitForHold;
+            }
+
+            for(IceInternal.IncomingConnectionFactory factory : incomingConnectionFactories)
+            {
+                factory.waitUntilHolding();
+            }
+
+            synchronized(this)
+            {
+                if(--_waitForHold == 0)
+                {
+                    notifyAll();
+                }
+                
+                //
+                // If we don't need to retry, we're done. Otherwise, we wait until 
+                // all the waiters finish waiting on the connections and we try 
+                // again waiting on all the conncetions. This is necessary in the 
+                // case activate() is called by another thread while waitForHold()
+                // waits on the some connection, if we didn't retry, waitForHold() 
+                // could return only after waiting on a subset of the connections.
+                //
+                if(!_waitForHoldRetry)
+                {
+                    return;
+                }
+                else
+                {
+                    while(_waitForHold > 0)
+                    {
+                        checkForDeactivation();
+                        try
+                        {
+                            wait();
+                        }
+                        catch(java.lang.InterruptedException ex)
+                        {
+                        }
+                    }
+                    _waitForHoldRetry = false;
+                }
+            }
         }
-    } 
+    }
 
     public void
     deactivate()
@@ -170,7 +211,7 @@ public final class ObjectAdapterI implements ObjectAdapter
 
             //
             //
-            // Wait for activation to complete. This is necessary to not 
+            // Wait for activation to complete. This is necessary to not
             // get out of order locator updates.
             //
             while(_waitForActivate)
@@ -224,10 +265,8 @@ public final class ObjectAdapterI implements ObjectAdapter
         // Connection::destroy() might block when sending a CloseConnection
         // message.
         //
-        final int sz = incomingConnectionFactories.size();
-        for(int i = 0; i < sz; ++i)
+        for(IceInternal.IncomingConnectionFactory factory : incomingConnectionFactories)
         {
-            IceInternal.IncomingConnectionFactory factory = incomingConnectionFactories.get(i);
             factory.destroy();
         }
 
@@ -267,18 +306,17 @@ public final class ObjectAdapterI implements ObjectAdapter
                 }
             }
 
-            incomingConnectionFactories = 
-                (IceInternal.IncomingConnectionFactory[])_incomingConnectionFactories.toArray(
-                    new IceInternal.IncomingConnectionFactory[0]);
+            incomingConnectionFactories =
+                _incomingConnectionFactories.toArray(new IceInternal.IncomingConnectionFactory[0]);
         }
 
         //
         // Now we wait for until all incoming connection factories are
         // finished.
         //
-        for(int i = 0; i < incomingConnectionFactories.length; ++i)
+        for(IceInternal.IncomingConnectionFactory f : incomingConnectionFactories)
         {
-            incomingConnectionFactories[i].waitUntilFinished();
+            f.waitUntilFinished();
         }
     }
 
@@ -351,21 +389,13 @@ public final class ObjectAdapterI implements ObjectAdapter
             _destroyed = true;
             notifyAll();
 
-            //
-            // We're done, now we can throw away all incoming connection
-            // factories.
-            //
-            // For compatibility with C#, we set _incomingConnectionFactories
-            // to null so that the finalizer does not invoke methods on objects.
-            //
-            _incomingConnectionFactories = null;
+            _incomingConnectionFactories.clear();
 
             //
             // Remove object references (some of them cyclic).
             //
             _instance = null;
             _threadPool = null;
-            _communicator = null;
             _routerEndpoints = null;
             _routerInfo = null;
             _publishedEndpoints = null;
@@ -378,7 +408,7 @@ public final class ObjectAdapterI implements ObjectAdapter
 
         if(objectAdapterFactory != null)
         {
-            objectAdapterFactory.removeObjectAdapter(_name);
+            objectAdapterFactory.removeObjectAdapter(this);
         }
     }
 
@@ -418,9 +448,17 @@ public final class ObjectAdapterI implements ObjectAdapter
     {
         Identity ident = new Identity();
         ident.category = "";
-        ident.name = Util.generateUUID();
+        ident.name = java.util.UUID.randomUUID().toString();
 
         return addFacet(object, ident, facet);
+    }
+
+    public synchronized void
+    addDefaultServant(Ice.Object servant, String category)
+    {
+        checkForDeactivation();
+
+        _servantManager.addDefaultServant(servant, category);
     }
 
     public Ice.Object
@@ -438,13 +476,21 @@ public final class ObjectAdapterI implements ObjectAdapter
         return _servantManager.removeServant(ident, facet);
     }
 
-    public synchronized java.util.Map
+    public synchronized java.util.Map<String, Ice.Object>
     removeAllFacets(Identity ident)
     {
         checkForDeactivation();
         checkIdentity(ident);
 
         return _servantManager.removeAllFacets(ident);
+    }
+
+    public synchronized Ice.Object
+    removeDefaultServant(String category)
+    {
+        checkForDeactivation();
+
+        return _servantManager.removeDefaultServant(category);
     }
 
     public Ice.Object
@@ -462,7 +508,7 @@ public final class ObjectAdapterI implements ObjectAdapter
         return _servantManager.findServant(ident, facet);
     }
 
-    public synchronized java.util.Map
+    public synchronized java.util.Map<String, Ice.Object>
     findAllFacets(Identity ident)
     {
         checkForDeactivation();
@@ -480,12 +526,28 @@ public final class ObjectAdapterI implements ObjectAdapter
         return findFacet(ref.getIdentity(), ref.getFacet());
     }
 
+    public synchronized Ice.Object
+    findDefaultServant(String category)
+    {
+        checkForDeactivation();
+
+        return _servantManager.findDefaultServant(category);
+    }
+
     public synchronized void
     addServantLocator(ServantLocator locator, String prefix)
     {
         checkForDeactivation();
 
         _servantManager.addServantLocator(locator, prefix);
+    }
+
+    public synchronized ServantLocator
+    removeServantLocator(String prefix)
+    {
+        checkForDeactivation();
+
+        return _servantManager.removeServantLocator(prefix);
     }
 
     public synchronized ServantLocator
@@ -572,11 +634,28 @@ public final class ObjectAdapterI implements ObjectAdapter
         }
     }
 
+    public synchronized Endpoint[]
+    getEndpoints()
+    {
+        java.util.List<Endpoint> endpoints = new java.util.ArrayList<Endpoint>();
+        for(IceInternal.IncomingConnectionFactory factory : _incomingConnectionFactories)
+        {
+            endpoints.add(factory.endpoint());
+        }
+        return endpoints.toArray(new Endpoint[0]);
+    }
+
+    public synchronized Endpoint[]
+    getPublishedEndpoints()
+    {
+        return _publishedEndpoints.toArray(new Endpoint[0]);
+    }
+
     public boolean
     isLocal(ObjectPrx proxy)
     {
         //
-        // NOTE: it's important that isLocal() doesn't perform any blocking operations as 
+        // NOTE: it's important that isLocal() doesn't perform any blocking operations as
         // it can be called for AMI invocations if the proxy has no delegate set yet.
         //
 
@@ -610,26 +689,22 @@ public final class ObjectAdapterI implements ObjectAdapter
                 // endpoints used by this object adapter's incoming connection
                 // factories are considered local.
                 //
-                for(int i = 0; i < endpoints.length; ++i)
+                for(IceInternal.EndpointI endpoint : endpoints)
                 {
-                    java.util.Iterator<IceInternal.EndpointI> p = _publishedEndpoints.iterator();
-                    while(p.hasNext())
+                    for(IceInternal.EndpointI p : _publishedEndpoints)
                     {
-                        if(endpoints[i].equivalent(p.next()))
+                        if(endpoint.equivalent(p))
                         {
                             return true;
                         }
                     }
-                    java.util.Iterator<IceInternal.IncomingConnectionFactory> q =
-                        _incomingConnectionFactories.iterator();
-                    while(q.hasNext())
+                    for(IceInternal.IncomingConnectionFactory p : _incomingConnectionFactories)
                     {
-                        if(endpoints[i].equivalent(q.next().endpoint()))
+                        if(endpoint.equivalent(p.endpoint()))
                         {
                             return true;
                         }
                     }
-
                 }
 
                 //
@@ -639,12 +714,11 @@ public final class ObjectAdapterI implements ObjectAdapter
                 //
                 if(_routerInfo != null && _routerInfo.getRouter().equals(proxy.ice_getRouter()))
                 {
-                    for(int i = 0; i < endpoints.length; ++i)
+                    for(IceInternal.EndpointI endpoint : endpoints)
                     {
-                        java.util.Iterator<IceInternal.EndpointI> p = _routerEndpoints.iterator();
-                        while(p.hasNext())
+                        for(IceInternal.EndpointI p : _routerEndpoints)
                         {
-                            if(endpoints[i].equivalent(p.next()))
+                            if(endpoint.equivalent(p))
                             {
                                 return true;
                             }
@@ -658,17 +732,16 @@ public final class ObjectAdapterI implements ObjectAdapter
     }
 
     public void
-    flushBatchRequests()
+    flushAsyncBatchRequests(IceInternal.CommunicatorBatchOutgoingAsync outAsync)
     {
         java.util.List<IceInternal.IncomingConnectionFactory> f;
         synchronized(this)
         {
             f = new java.util.ArrayList<IceInternal.IncomingConnectionFactory>(_incomingConnectionFactories);
         }
-        java.util.Iterator<IceInternal.IncomingConnectionFactory> i = f.iterator();
-        while(i.hasNext())
+        for(IceInternal.IncomingConnectionFactory p : f)
         {
-            i.next().flushBatchRequests();
+            p.flushAsyncBatchRequests(outAsync);
         }
     }
 
@@ -718,30 +791,51 @@ public final class ObjectAdapterI implements ObjectAdapter
 
     public IceInternal.ServantManager
     getServantManager()
-    {   
+    {
         //
         // No mutex lock necessary, _servantManager is immutable.
         //
         return _servantManager;
     }
 
+    public int
+    getACM()
+    {
+        // Not check for deactivation here!
+
+        assert(_instance != null); // Must not be called after destroy().
+
+        if(_hasAcmTimeout)
+        {
+            return _acmTimeout;
+        }
+        else
+        {
+            return _instance.serverACM();
+        }
+    }
+
     //
     // Only for use by IceInternal.ObjectAdapterFactory
     //
     public
-    ObjectAdapterI(IceInternal.Instance instance, Communicator communicator, 
-                   IceInternal.ObjectAdapterFactory objectAdapterFactory, String name, String endpointInfo,
+    ObjectAdapterI(IceInternal.Instance instance, Communicator communicator,
+                   IceInternal.ObjectAdapterFactory objectAdapterFactory, String name,
                    RouterPrx router, boolean noConfig)
     {
         _deactivated = false;
         _instance = instance;
         _communicator = communicator;
         _objectAdapterFactory = objectAdapterFactory;
+        _hasAcmTimeout = false;
+        _acmTimeout = 0;
         _servantManager = new IceInternal.ServantManager(instance, name);
         _activateOneOffDone = false;
         _name = name;
         _directCount = 0;
         _waitForActivate = false;
+        _waitForHold = 0;
+        _waitForHoldRetry = false;
         _destroying = false;
         _destroyed = false;
         _noConfig = noConfig;
@@ -763,19 +857,21 @@ public final class ObjectAdapterI implements ObjectAdapter
         //
         if(unknownProps.size() != 0 && properties.getPropertyAsIntWithDefault("Ice.Warn.UnknownProperties", 1) > 0)
         {
-            String message = "found unknown properties for object adapter `" + _name + "':";
-            java.util.Iterator<String> p = unknownProps.iterator();
-            while(p.hasNext())
+            StringBuffer message = new StringBuffer("found unknown properties for object adapter `");
+	    message.append(_name);
+	    message.append("':");
+            for(String p : unknownProps)
             {
-                message += "\n    " + p.next();
+		message.append("\n    ");
+		message.append(p);
             }
-            _instance.initializationData().logger.warning(message);
+            _instance.initializationData().logger.warning(message.toString());
         }
 
         //
         // Make sure named adapter has some configuration.
         //
-        if(endpointInfo.length() == 0 && router == null && noProps)
+        if(router == null && noProps)
         {
             //
             // These need to be set to prevent finalizer from complaining.
@@ -783,7 +879,6 @@ public final class ObjectAdapterI implements ObjectAdapter
             _deactivated = true;
             _destroyed = true;
             _instance = null;
-            _communicator = null;
             _incomingConnectionFactories = null;
 
             InitializationException ex = new InitializationException();
@@ -823,6 +918,13 @@ public final class ObjectAdapterI implements ObjectAdapter
                 _threadPool = new IceInternal.ThreadPool(_instance, _name + ".ThreadPool", 0);
             }
 
+            _hasAcmTimeout = properties.getProperty(_name + ".ACM").length() > 0;
+            if(_hasAcmTimeout)
+            {
+                _acmTimeout = properties.getPropertyAsInt(_name + ".ACM");
+                _instance.connectionMonitor().checkIntervalForACM(_acmTimeout);
+            }
+
             if(router == null)
             {
                 router = RouterPrxHelper.uncheckedCast(_instance.proxyFactory().propertyToProxy(name + ".Router"));
@@ -837,7 +939,7 @@ public final class ObjectAdapterI implements ObjectAdapter
                     //
                     if(_routerInfo.getAdapter() != null)
                     {
-                        throw new AlreadyRegisteredException("object adapter with router", 
+                        throw new AlreadyRegisteredException("object adapter with router",
                                                              _instance.identityToString(router.ice_getIdentity()));
                     }
 
@@ -846,9 +948,9 @@ public final class ObjectAdapterI implements ObjectAdapter
                     // adapter.
                     //
                     IceInternal.EndpointI[] endpoints = _routerInfo.getServerEndpoints();
-                    for(int i = 0; i < endpoints.length; ++i)
+                    for(IceInternal.EndpointI endpoint : endpoints)
                     {
-                        _routerEndpoints.add(endpoints[i]);
+                        _routerEndpoints.add(endpoint);
                     }
                     java.util.Collections.sort(_routerEndpoints); // Must be sorted.
 
@@ -881,7 +983,7 @@ public final class ObjectAdapterI implements ObjectAdapter
                     // Also modify all existing outgoing connections to the
                     // router's client proxy to use this object adapter for
                     // callbacks.
-                    //      
+                    //
                     _instance.outgoingConnectionFactory().setRouterInfo(_routerInfo);
                 }
             }
@@ -891,19 +993,11 @@ public final class ObjectAdapterI implements ObjectAdapter
                 // Parse the endpoints, but don't store them in the adapter. The connection
                 // factory might change it, for example, to fill in the real port number.
                 //
-                java.util.List<IceInternal.EndpointI> endpoints;
-                if(endpointInfo.length() == 0)
+                java.util.List<IceInternal.EndpointI> endpoints =
+                    parseEndpoints(properties.getProperty(_name + ".Endpoints"), true);
+                for(IceInternal.EndpointI endp : endpoints)
                 {
-                    endpoints = parseEndpoints(properties.getProperty(_name + ".Endpoints"), true);
-                }
-                else
-                {
-                    endpoints = parseEndpoints(endpointInfo, true);
-                }
-                for(int i = 0; i < endpoints.size(); ++i)
-                {
-                    IceInternal.EndpointI endp = endpoints.get(i);
-                    IceInternal.IncomingConnectionFactory factory = 
+                    IceInternal.IncomingConnectionFactory factory =
                         new IceInternal.IncomingConnectionFactory(instance, endp, this, _name);
                     _incomingConnectionFactories.add(factory);
                 }
@@ -946,7 +1040,7 @@ public final class ObjectAdapterI implements ObjectAdapter
     {
         if(!_deactivated)
         {
-            _instance.initializationData().logger.warning("object adapter `" + getName() + 
+            _instance.initializationData().logger.warning("object adapter `" + getName() +
                                                           "' has not been deactivated");
         }
         else if(!_destroyed)
@@ -957,8 +1051,7 @@ public final class ObjectAdapterI implements ObjectAdapter
         {
             IceUtilInternal.Assert.FinalizerAssert(_threadPool == null);
             //IceUtilInternal.Assert.FinalizerAssert(_servantManager == null); // Not cleared, it needs to be immutable.
-            IceUtilInternal.Assert.FinalizerAssert(_communicator == null);
-            IceUtilInternal.Assert.FinalizerAssert(_incomingConnectionFactories == null);
+            //IceUtilInternal.Assert.FinalizerAssert(_incomingConnectionFactories.isEmpty());
             IceUtilInternal.Assert.FinalizerAssert(_directCount == 0);
             IceUtilInternal.Assert.FinalizerAssert(!_waitForActivate);
         }
@@ -974,7 +1067,7 @@ public final class ObjectAdapterI implements ObjectAdapter
             return newDirectProxy(ident, facet);
         }
         else if(_replicaGroupId.length() == 0)
-        {           
+        {
             return newIndirectProxy(ident, facet, _id);
         }
         else
@@ -1118,7 +1211,7 @@ public final class ObjectAdapterI implements ObjectAdapter
             if(endp == null)
             {
                 Ice.EndpointParseException e = new Ice.EndpointParseException();
-                e.str = s;
+                e.str = "invalid object adapter endpoint `" + s + "'";
                 throw e;
             }
             endpoints.add(endp);
@@ -1138,32 +1231,37 @@ public final class ObjectAdapterI implements ObjectAdapter
         //
         String endpts = _instance.initializationData().properties.getProperty(_name + ".PublishedEndpoints");
         java.util.List<IceInternal.EndpointI> endpoints = parseEndpoints(endpts, false);
-        if(!endpoints.isEmpty())
+        if(endpoints.isEmpty())
         {
-            return endpoints;
+            //
+            // If the PublishedEndpoints property isn't set, we compute the published enpdoints
+            // from the OA endpoints, expanding any endpoints that may be listening on INADDR_ANY
+            // to include actual addresses in the published endpoints.
+            //
+            for(IceInternal.IncomingConnectionFactory factory : _incomingConnectionFactories)
+            {
+                endpoints.addAll(factory.endpoint().expand());
+            }
         }
 
-        //
-        // If the PublishedEndpoints property isn't set, we compute the published enpdoints
-        // from the OA endpoints.
-        //
-        for(int i = 0; i < _incomingConnectionFactories.size(); ++i)
+        if(_instance.traceLevels().network >= 1)
         {
-            IceInternal.IncomingConnectionFactory factory = _incomingConnectionFactories.get(i);
-            endpoints.add(factory.endpoint());
+            StringBuffer s = new StringBuffer("published endpoints for object adapter `");
+	    s.append(_name);
+	    s.append("':\n");
+            boolean first = true;
+            for(IceInternal.EndpointI endpoint : endpoints)
+            {
+                if(!first)
+                {
+		    s.append(":");
+                }
+                s.append(endpoint.toString());
+                first = false;
+            }
+            _instance.initializationData().logger.trace(_instance.traceLevels().networkCat, s.toString());
         }
-
-        //
-        // Expand any endpoints that may be listening on INADDR_ANY to
-        // include actual addresses in the published endpoints.
-        //
-        java.util.List<IceInternal.EndpointI> expandedEndpoints = new java.util.ArrayList<IceInternal.EndpointI>();
-        java.util.Iterator<IceInternal.EndpointI> p = endpoints.iterator();
-        while(p.hasNext())
-        {
-            expandedEndpoints.addAll(p.next().expand());
-        }
-        return expandedEndpoints;
+        return endpoints;
     }
 
     private void
@@ -1175,7 +1273,7 @@ public final class ObjectAdapterI implements ObjectAdapter
         }
 
         //
-        // Call on the locator registry outside the synchronization to 
+        // Call on the locator registry outside the synchronization to
         // blocking other threads that need to lock this OA.
         //
         LocatorRegistryPrx locatorRegistry = locatorInfo != null ? locatorInfo.getLocatorRegistry() : null;
@@ -1317,7 +1415,7 @@ public final class ObjectAdapterI implements ObjectAdapter
 
             try
             {
-                locatorRegistry.setServerProcessProxy(serverId, 
+                locatorRegistry.setServerProcessProxy(serverId,
                                         ProcessPrxHelper.uncheckedCast(createDirectProxy(_processId)));
             }
             catch(ServerNotFoundException ex)
@@ -1360,17 +1458,29 @@ public final class ObjectAdapterI implements ObjectAdapter
                 _instance.initializationData().logger.trace(_instance.traceLevels().locationCat, s.toString());
             }
         }
-    }    
+    }
 
-    static private String[] _suffixes = 
+    static private String[] _suffixes =
     {
+        "ACM",
         "AdapterId",
         "Endpoints",
         "Locator",
+        "Locator.EndpointSelection",
+        "Locator.ConnectionCached",
+        "Locator.PreferSecure",
+        "Locator.CollocationOptimized",
+        "Locator.Router",
         "PublishedEndpoints",
         "RegisterProcess",
         "ReplicaGroupId",
         "Router",
+        "Router.EndpointSelection",
+        "Router.ConnectionCached",
+        "Router.PreferSecure",
+        "Router.CollocationOptimized",
+        "Router.Locator",
+        "Router.LocatorCacheTimeout",
         "ProxyOptions",
         "ThreadPool.Size",
         "ThreadPool.SizeMax",
@@ -1398,15 +1508,12 @@ public final class ObjectAdapterI implements ObjectAdapter
 
         boolean noProps = true;
         java.util.Map<String, String> props = _instance.initializationData().properties.getPropertiesForPrefix(prefix);
-        java.util.Iterator<String> p = props.keySet().iterator();
-        while(p.hasNext())
+        for(String prop : props.keySet())
         {
-            String prop = p.next();
-
             boolean valid = false;
-            for(int i = 0; i < _suffixes.length; ++i)
+            for(String suffix : _suffixes)
             {
-                if(prop.equals(prefix + _suffixes[i]))
+                if(prop.equals(prefix + suffix))
                 {
                     noProps = false;
                     valid = true;
@@ -1428,6 +1535,8 @@ public final class ObjectAdapterI implements ObjectAdapter
     private Communicator _communicator;
     private IceInternal.ObjectAdapterFactory _objectAdapterFactory;
     private IceInternal.ThreadPool _threadPool;
+    private boolean _hasAcmTimeout;
+    private int _acmTimeout;
     private IceInternal.ServantManager _servantManager;
     private boolean _activateOneOffDone;
     final private String _name;
@@ -1443,6 +1552,8 @@ public final class ObjectAdapterI implements ObjectAdapter
     private IceInternal.LocatorInfo _locatorInfo;
     private int _directCount;
     private boolean _waitForActivate;
+    private int _waitForHold;
+    private boolean _waitForHoldRetry;
     private boolean _destroying;
     private boolean _destroyed;
     private boolean _noConfig;

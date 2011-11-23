@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,6 +26,13 @@
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
+
+namespace IceUtilInternal
+{
+
+extern bool ICE_DECLSPEC_IMPORT printStackTraces;
+
+}
 
 IceInternal::IncomingBase::IncomingBase(Instance* instance, ConnectionI* connection, 
                                         const ObjectAdapterPtr& adapter,
@@ -75,9 +82,12 @@ IceInternal::IncomingBase::adopt(IncomingBase& other)
 void
 IceInternal::IncomingBase::__warning(const Exception& ex) const
 {
-    ostringstream str;
-    str << ex;
-    __warning(str.str());
+    Warning out(_os.instance()->initializationData().logger);
+
+    out << "dispatch exception: " << ex;
+    out << "\nidentity: " << _os.instance()->identityToString(_current.id);
+    out << "\nfacet: " << IceUtilInternal::escapeString(_current.facet, "");
+    out << "\noperation: " << _current.operation;
 }
 
 void
@@ -235,6 +245,12 @@ IceInternal::IncomingBase::__handleException(const std::exception& exc)
                 _os.write(replyUnknownLocalException);
                 ostringstream str;
                 str << *le;
+#ifdef __GNUC__
+                if(IceUtilInternal::printStackTraces)
+                {
+                    str <<  '\n' << ex->ice_stackTrace();
+                }
+#endif
                 _os.write(str.str(), false);
             }
             else if(const UserException* ue = dynamic_cast<const UserException*>(&exc))
@@ -242,6 +258,12 @@ IceInternal::IncomingBase::__handleException(const std::exception& exc)
                 _os.write(replyUnknownUserException);
                 ostringstream str;
                 str << *ue;
+#ifdef __GNUC__
+                if(IceUtilInternal::printStackTraces)
+                {
+                    str <<  '\n' << ex->ice_stackTrace();
+                }
+#endif
                 _os.write(str.str(), false);
             }
             else

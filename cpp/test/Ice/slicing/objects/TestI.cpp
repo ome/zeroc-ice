@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,8 +13,7 @@
 
 using namespace Test;
 
-TestI::TestI(const Ice::ObjectAdapterPtr& adapter) :
-    _adapter(adapter)
+TestI::TestI()
 {
 }
 
@@ -230,10 +229,10 @@ TestI::returnTest3(const BPtr& p1, const BPtr& p2, const ::Ice::Current&)
     return p1;
 }
 
-SS
+SS3
 TestI::sequenceTest(const SS1Ptr& p1, const SS2Ptr& p2, const ::Ice::Current&)
 {
-    SS ss;
+    SS3 ss;
     ss.c1 = p1;
     ss.c2 = p2;
     return ss;
@@ -339,7 +338,7 @@ TestI::useForward(ForwardPtr& f, const ::Ice::Current&)
 }
 
 void
-TestI::shutdown(const ::Ice::Current&)
+TestI::shutdown(const ::Ice::Current& current)
 {
-    _adapter->getCommunicator()->shutdown();
+    current.adapter->getCommunicator()->shutdown();
 }

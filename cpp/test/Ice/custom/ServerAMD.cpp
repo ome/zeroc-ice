@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -40,7 +40,7 @@ main(int argc, char** argv)
         Ice::InitializationData initData;
         initData.properties = Ice::createProperties(argc, argv);
         
-        initData.properties->setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000");
+        initData.properties->setProperty("TestAdapter.Endpoints", "default -p 12010");
         initData.stringConverter = new Test::StringConverterI();
         initData.wstringConverter = new Test::WstringConverterI();
         communicator = Ice::initialize(argc, argv, initData);

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,10 +12,9 @@ using Test;
 
 public class ServerManagerI : ServerManagerDisp_
 {
-    internal ServerManagerI(Ice.ObjectAdapter adapter, ServerLocatorRegistry registry,
+    internal ServerManagerI(ServerLocatorRegistry registry,
         Ice.InitializationData initData)
     {
-        _adapter = adapter;
         _registry = registry;
         _communicators = new ArrayList();
         _initData = initData;
@@ -54,7 +53,7 @@ public class ServerManagerI : ServerManagerDisp_
         Ice.ObjectAdapter adapter = serverCommunicator.createObjectAdapter("TestAdapter");
         Ice.ObjectAdapter adapter2 = serverCommunicator.createObjectAdapter("TestAdapter2");
         
-        Ice.ObjectPrx locator = serverCommunicator.stringToProxy("locator:default -p 12010 -t 30000");
+        Ice.ObjectPrx locator = serverCommunicator.stringToProxy("locator:default -p 12010");
         adapter.setLocator(Ice.LocatorPrxHelper.uncheckedCast(locator));
         adapter2.setLocator(Ice.LocatorPrxHelper.uncheckedCast(locator));
         
@@ -74,10 +73,9 @@ public class ServerManagerI : ServerManagerDisp_
             c.destroy();
         }
         _communicators.Clear();
-        _adapter.getCommunicator().shutdown();
+        current.adapter.getCommunicator().shutdown();
     }
-    
-    private Ice.ObjectAdapter _adapter;
+
     private ServerLocatorRegistry _registry;
     private ArrayList _communicators;
     private Ice.InitializationData _initData;

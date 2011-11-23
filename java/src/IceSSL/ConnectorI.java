@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -61,7 +61,7 @@ final class ConnectorI implements IceInternal.Connector
     public short
     type()
     {
-        return EndpointI.TYPE;
+        return EndpointType.value;
     }
 
     public String
@@ -79,11 +79,11 @@ final class ConnectorI implements IceInternal.Connector
     //
     // Only for use by EndpointI.
     //
-    ConnectorI(Instance instance, java.net.InetSocketAddress addr, int timeout, String connectionId)
+    ConnectorI(Instance instance, String host, java.net.InetSocketAddress addr, int timeout, String connectionId)
     {
         _instance = instance;
         _logger = instance.communicator().getLogger();
-        _host = addr.getHostName();
+        _host = host;
         _addr = addr;
         _timeout = timeout;
         _connectionId = connectionId;
@@ -110,7 +110,7 @@ final class ConnectorI implements IceInternal.Connector
 
         if(this == p)
         {
-            return false;
+            return true;
         }
 
         if(_timeout != p._timeout)

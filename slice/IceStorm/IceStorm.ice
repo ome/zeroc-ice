@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,7 +13,6 @@
 [["cpp:header-ext:h"]]
 
 #include <Ice/SliceChecksumDict.ice>
-#include <Ice/Identity.ice>
 
 /**
  *
@@ -59,7 +58,7 @@ struct LinkInfo
 
 /**
  *
- * A sequence of [LinkInfo] objects.
+ * A sequence of {@link LinkInfo} objects.
  *
  **/
 sequence<LinkInfo> LinkInfoSeq;
@@ -68,7 +67,7 @@ sequence<LinkInfo> LinkInfoSeq;
  *
  * This dictionary represents quality of service parameters.
  *
- * @see Topic::subscribe
+ * @see Topic#subscribe
  *
  */
 dictionary<string, string> QoS;
@@ -147,7 +146,7 @@ interface Topic
      *
      * @return The name of the topic.
      *
-     * @see TopicManager::create
+     * @see TopicManager#create
      *
      **/
     ["nonmutating", "cpp:const"] idempotent string getName();
@@ -155,7 +154,7 @@ interface Topic
     /**
      *
      * Get a proxy to a publisher object for this topic. To publish
-     * data to a topic, the publisher calls [getPublisher] and then
+     * data to a topic, the publisher calls {@link #getPublisher} and then
      * casts to the topic type. An unchecked cast must be used on this
      * proxy. If a replicated IceStorm deployment is used this call
      * may return a replicated proxy.
@@ -169,7 +168,7 @@ interface Topic
      *
      * Get a non-replicated proxy to a publisher object for this
      * topic. To publish data to a topic, the publisher calls
-     * [getPublisher] and then casts to the topic type. An unchecked
+     * {@link #getPublisher} and then casts to the topic type. An unchecked
      * cast must be used on this proxy.
      *
      * @return A proxy to publish data on this topic.
@@ -186,14 +185,14 @@ interface Topic
      *
      * <p class="Deprecated">This operation is deprecated as of version 3.2.
      *
-     * @param qos The quality of service parameters for this
+     * @param theQoS The quality of service parameters for this
      * subscription.
      *
      * @param subscriber The subscriber's proxy.
      *
      * @return The per-subscriber publisher object.
      *
-     * @see unsubscribe
+     * @see #unsubscribe
      *
      **/
     ["deprecate:subscribe is deprecated, use subscribeAndGetPublisher instead"]
@@ -204,7 +203,7 @@ interface Topic
      * Subscribe with the given <tt>qos</tt> to this topic.  A
      * per-subscriber publisher object is returned.
      *
-     * @param qos The quality of service parameters for this
+     * @param theQoS The quality of service parameters for this
      * subscription.
      *
      * @param subscriber The subscriber's proxy.
@@ -217,7 +216,7 @@ interface Topic
      * @throws BadQoS Raised if the requested quality of service
      * is unavailable or invalid.
      *
-     * @see unsubscribe
+     * @see #unsubscribe
      *
      **/
     Object* subscribeAndGetPublisher(QoS theQoS, Object* subscriber)
@@ -229,7 +228,7 @@ interface Topic
      *
      * @param subscriber The proxy of an existing subscriber.
      *
-     * @see subscribe
+     * @see #subscribe
      *
      **/
     idempotent void unsubscribe(Object* subscriber);
@@ -253,7 +252,7 @@ interface Topic
      *
      * Destroy the link from this topic to the given topic <tt>linkTo</tt>.
      *
-     * @param link The topic to destroy the link to.
+     * @param linkTo The topic to destroy the link to.
      *
      * @throws NoSuchLink Raised if a link to the topic does not exist.
      *
@@ -328,7 +327,7 @@ interface TopicManager
     /**
      *
      * Create a new topic. The topic name must be unique, otherwise
-     * [TopicExists] is raised.
+     * {@link TopicExists} is raised.
      *
      * @param name The name of the topic.
      *

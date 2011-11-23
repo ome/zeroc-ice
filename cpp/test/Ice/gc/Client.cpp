@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,7 +8,8 @@
 // **********************************************************************
 
 #include <IceUtil/Thread.h>
-#include <IceUtil/StaticMutex.h>
+#include <IceUtil/Mutex.h>
+#include <IceUtil/MutexPtrLock.h>
 #include <Ice/Ice.h>
 #include <TestCommon.h>
 #include <Test.h>
@@ -17,27 +18,50 @@
 using namespace std;
 using namespace Test;
 
-static int num = 0;
-static ::IceUtil::StaticMutex numMutex = ICE_STATIC_MUTEX_INITIALIZER;
+namespace
+{
+
+int num = 0;
+::IceUtil::Mutex* numMutex = 0;
+
+class Init
+{
+public:
+
+    Init()
+    {
+        numMutex = new IceUtil::Mutex;
+    }
+
+    ~Init()
+    {
+        delete numMutex;
+        numMutex = 0;
+    }
+};
+
+Init init;
+
+}
 
 static void
 incNum()
 {
-    ::IceUtil::StaticMutex::Lock lock(numMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(numMutex);
     ++num;
 }
 
 static void
 decNum()
 {
-    ::IceUtil::StaticMutex::Lock lock(numMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(numMutex);
     --num;
 }
 
 static int
 getNum()
 {
-    ::IceUtil::StaticMutex::Lock lock(numMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(numMutex);
     return num;
 }
 
@@ -614,10 +638,6 @@ MyApplication::run(int argc, char* argv[])
 
     cout << "ok" << endl;
     
-#if defined(_AIX)
-    cout << "The following test may take a long time (like one full minute); please be patient." << endl;
-#endif   
-
     cout << "testing for race conditions... " << flush;
     string seedfile = argv[1];
     ofstream file(seedfile.c_str());

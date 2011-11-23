@@ -1,21 +1,26 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-public final class CAI extends Test.MA.CA
+package test.Ice.inheritance;
+
+import test.Ice.inheritance.Test.MA.CA;
+import test.Ice.inheritance.Test.MA.CAPrx;
+
+public final class CAI extends CA
 {
     public
     CAI()
     {
     }
 
-    public Test.MA.CAPrx
-    caop(Test.MA.CAPrx p, Ice.Current current)
+    public CAPrx
+    caop(CAPrx p, Ice.Current current)
     {
         return p;
     }

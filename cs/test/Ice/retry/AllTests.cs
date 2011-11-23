@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -28,22 +28,16 @@ public class AllTests
             _called = false;
         }
 
-        public bool check()
+        public void check()
         {
             lock(this)
             {
                 while(!_called)
                 {
-                    Monitor.Wait(this, TimeSpan.FromMilliseconds(5000));
-
-                    if(!_called)
-                    {
-                        return false; // Must be timeout.
-                    }
+                    Monitor.Wait(this);
                 }
 
                 _called = false;
-                return true;
             }
         }
 
@@ -60,42 +54,42 @@ public class AllTests
         private bool _called;
     }
 
-    private class AMIRegular : Test.AMI_Retry_op
+    private class AMIRegular
     {
-        public override void ice_response()
+        public void response()
         {
             callback.called();
         }
 
-        public override void ice_exception(Ice.Exception ex)
+        public void exception(Ice.Exception ex)
         {
             test(false);
         }
 
-        public bool check()
+        public void check()
         {
-            return callback.check();
+            callback.check();
         }
 
         private Callback callback = new Callback();
     }
 
-    private class AMIException : Test.AMI_Retry_op
+    private class AMIException
     {
-        public override void ice_response()
+        public void response()
         {
             test(false);
         }
 
-        public override void ice_exception(Ice.Exception ex)
+        public void exception(Ice.Exception ex)
         {
             test(ex is Ice.ConnectionLostException);
             callback.called();
         }
 
-        public bool check()
+        public void check()
         {
-            return callback.check();
+            callback.check();
         }
 
         private Callback callback = new Callback();
@@ -105,7 +99,7 @@ public class AllTests
     {
         Console.Out.Write("testing stringToProxy... ");
         Console.Out.Flush();
-        string rf = "retry:default -p 12010 -t 10000";
+        string rf = "retry:default -p 12010";
         Ice.ObjectPrx base1 = communicator.stringToProxy(rf);
         test(base1 != null);
         Ice.ObjectPrx base2 = communicator.stringToProxy(rf);
@@ -148,18 +142,18 @@ public class AllTests
         AMIException cb2 = new AMIException();
 
         Console.Out.Write("calling regular AMI operation with first proxy... ");
-        retry1.op_async(cb1, false);
-        test(cb1.check());
+        retry1.begin_op(false).whenCompleted(cb1.response, cb1.exception);
+        cb1.check();
         Console.Out.WriteLine("ok");
 
         Console.Out.Write("calling AMI operation to kill connection with second proxy... ");
-        retry2.op_async(cb2, true);
-        test(cb2.check());
+        retry2.begin_op(true).whenCompleted(cb2.response, cb2.exception);
+        cb2.check();
         Console.Out.WriteLine("ok");
 
         Console.Out.Write("calling regular AMI operation with first proxy again... ");
-        retry1.op_async(cb1, false);
-        test(cb1.check());
+        retry1.begin_op(false).whenCompleted(cb1.response, cb1.exception);
+        cb1.check();
         Console.Out.WriteLine("ok");
 
         return retry1;

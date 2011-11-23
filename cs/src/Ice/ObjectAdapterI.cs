@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@ namespace Ice
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Text;
 
     public sealed class ObjectAdapterI : ObjectAdapter
     {
@@ -26,12 +27,7 @@ namespace Ice
 
         public Communicator getCommunicator()
         {
-            lock(this)
-            {
-                checkForDeactivation();
-                
-                return _communicator;
-            }
+            return _communicator;
         }
 
         public void activate()
@@ -44,6 +40,13 @@ namespace Ice
             {
                 checkForDeactivation();
                 
+                //
+                // If some threads are waiting on waitForHold(), we set this
+                // flag to ensure the threads will start again the wait for
+                // all the incoming connection factories.
+                //
+                _waitForHoldRetry = _waitForHold > 0;
+
                 //
                 // If the one off initializations of the adapter are already
                 // done, we just need to activate the incoming connection
@@ -81,7 +84,7 @@ namespace Ice
                 dummy.name = "dummy";
                 updateLocatorRegistry(locatorInfo, createDirectProxy(dummy), registerProcess);
             }
-            catch(Ice.LocalException ex)
+            catch(Ice.LocalException)
             {
                 //
                 // If we couldn't update the locator registry, we let the
@@ -94,7 +97,7 @@ namespace Ice
                     _waitForActivate = false;
                     System.Threading.Monitor.PulseAll(this);
                 }
-                throw ex;
+                throw;
             }
                 
             if(printAdapterReady)
@@ -127,10 +130,8 @@ namespace Ice
             {
                 checkForDeactivation();
                 
-                int sz = _incomingConnectionFactories.Count;
-                for(int i = 0; i < sz; ++i)
+                foreach(IceInternal.IncomingConnectionFactory factory in _incomingConnectionFactories)
                 {
-                    IceInternal.IncomingConnectionFactory factory = _incomingConnectionFactories[i];
                     factory.hold();
                 }
             }
@@ -138,15 +139,52 @@ namespace Ice
         
         public void waitForHold()
         {
-            lock(this)
+            while(true)
             {
-                checkForDeactivation();
-                
-                int sz = _incomingConnectionFactories.Count;
-                for(int i = 0; i < sz; ++i)
+                List<IceInternal.IncomingConnectionFactory> incomingConnectionFactories;
+                lock(this)
                 {
-                    IceInternal.IncomingConnectionFactory factory = _incomingConnectionFactories[i];
+                    checkForDeactivation();
+                    
+                    incomingConnectionFactories =
+                        new List<IceInternal.IncomingConnectionFactory>(_incomingConnectionFactories);
+                    
+                    ++_waitForHold;
+                }
+
+                foreach(IceInternal.IncomingConnectionFactory factory in incomingConnectionFactories)
+                {
                     factory.waitUntilHolding();
+                }
+                
+                lock(this)
+                {
+                    if(--_waitForHold == 0)
+                    {
+                        System.Threading.Monitor.PulseAll(this);
+                    }
+            
+                    //
+                    // If we don't need to retry, we're done. Otherwise, we wait until 
+                    // all the waiters finish waiting on the connections and we try 
+                    // again waiting on all the conncetions. This is necessary in the 
+                    // case activate() is called by another thread while waitForHold()
+                    // waits on the some connection, if we didn't retry, waitForHold() 
+                    // could return only after waiting on a subset of the connections.
+                    //
+                    if(!_waitForHoldRetry)
+                    {
+                        return;
+                    }
+                    else 
+                    {
+                        while(_waitForHold > 0)
+                        {
+                            checkForDeactivation();
+                            System.Threading.Monitor.Wait(this);
+                        }
+                        _waitForHoldRetry = false;
+                    }
                 }
             }
         }
@@ -197,7 +235,6 @@ namespace Ice
                 locatorInfo = _locatorInfo;
 
                 _deactivated = true;
-                
                 System.Threading.Monitor.PulseAll(this);
             }
 
@@ -218,10 +255,8 @@ namespace Ice
             // Connection::destroy() might block when sending a CloseConnection
             // message.
             //
-            int sz = incomingConnectionFactories.Count;
-            for(int i = 0; i < sz; ++i)
+            foreach(IceInternal.IncomingConnectionFactory factory in incomingConnectionFactories)
             {
-                IceInternal.IncomingConnectionFactory factory = incomingConnectionFactories[i];
                 factory.destroy();
             }
 
@@ -260,9 +295,9 @@ namespace Ice
             // Now we wait for until all incoming connection factories are
             // finished.
             //
-            for(int i = 0; i < incomingConnectionFactories.Length; ++i)
+            foreach(IceInternal.IncomingConnectionFactory factory in incomingConnectionFactories)
             {
-                incomingConnectionFactories[i].waitUntilFinished();
+                factory.waitUntilFinished();
             }
         }
 
@@ -334,17 +369,13 @@ namespace Ice
                 // We're done, now we can throw away all incoming connection
                 // factories.
                 //
-                // We set _incomingConnectionFactories to null because the finalizer
-                // must not invoke methods on objects.
-                //
-                _incomingConnectionFactories = null;
+                _incomingConnectionFactories.Clear();
                 
                 //
                 // Remove object references (some of them cyclic).
                 //
                 instance_ = null;
                 _threadPool = null;
-                _communicator = null;
                 _routerEndpoints = null;
                 _routerInfo = null;
                 _publishedEndpoints = null;
@@ -357,7 +388,7 @@ namespace Ice
 
             if(objectAdapterFactory != null)
             {
-                objectAdapterFactory.removeObjectAdapter(_name);
+                objectAdapterFactory.removeObjectAdapter(this);
             }
         }
 
@@ -396,9 +427,19 @@ namespace Ice
         {
             Identity ident = new Identity();
             ident.category = "";
-            ident.name = Util.generateUUID();
+            ident.name = Guid.NewGuid().ToString();
             
             return addFacet(obj, ident, facet);
+        }
+
+        public void addDefaultServant(Ice.Object servant, string category)
+        {
+            lock(this)
+            {
+                checkForDeactivation();
+
+                _servantManager.addDefaultServant(servant, category);
+            }
         }
         
         public Ice.Object remove(Identity ident)
@@ -425,6 +466,16 @@ namespace Ice
                 checkIdentity(ident);
 
                 return _servantManager.removeAllFacets(ident);
+            }
+        }
+
+        public Ice.Object removeDefaultServant(string category)
+        {
+            lock(this)
+            {
+                checkForDeactivation();
+
+                return _servantManager.removeDefaultServant(category);
             }
         }
 
@@ -466,6 +517,16 @@ namespace Ice
             }
         }
         
+        public Ice.Object findDefaultServant(string category)
+        {
+            lock(this)
+            {
+                checkForDeactivation();
+
+                return _servantManager.findDefaultServant(category);
+            }
+        }
+
         public void addServantLocator(ServantLocator locator, string prefix)
         {
             lock(this)
@@ -473,6 +534,16 @@ namespace Ice
                 checkForDeactivation();
                 
                 _servantManager.addServantLocator(locator, prefix);
+            }
+        }
+
+        public ServantLocator removeServantLocator(string prefix)
+        {
+            lock(this)
+            {
+                checkForDeactivation();
+                
+                return _servantManager.removeServantLocator(prefix);
             }
         }
         
@@ -556,7 +627,7 @@ namespace Ice
                 dummy.name = "dummy";
                 updateLocatorRegistry(locatorInfo, createDirectProxy(dummy), registerProcess);
             }
-            catch(Ice.LocalException ex)
+            catch(Ice.LocalException)
             {
                 lock(this)
                 {
@@ -564,8 +635,29 @@ namespace Ice
                     // Restore the old published endpoints.
                     //
                     _publishedEndpoints = oldPublishedEndpoints;
-                    throw ex;
+                    throw;
                 }
+            }
+        }
+
+        public Endpoint[] getEndpoints()
+        {
+            lock(this)
+            {
+                List<Endpoint> endpoints = new List<Endpoint>();
+                foreach(IceInternal.IncomingConnectionFactory factory in _incomingConnectionFactories)
+                {
+                    endpoints.Add(factory.endpoint());
+                }
+                return endpoints.ToArray();
+            }
+        }
+
+        public Endpoint[] getPublishedEndpoints()
+        {
+            lock(this)
+            {
+                return _publishedEndpoints.ToArray();
             }
         }
 
@@ -647,8 +739,8 @@ namespace Ice
                 }
             }
         }
-        
-        public void flushBatchRequests()
+
+        public void flushAsyncBatchRequests(IceInternal.CommunicatorBatchOutgoingAsync outAsync)
         {
             List<IceInternal.IncomingConnectionFactory> f;
             lock(this)
@@ -658,7 +750,7 @@ namespace Ice
 
             foreach(IceInternal.IncomingConnectionFactory factory in f)
             {
-                factory.flushBatchRequests();
+                factory.flushAsyncBatchRequests(outAsync);
             }
         }
 
@@ -718,17 +810,36 @@ namespace Ice
             return _servantManager;
         }
 
+        public int getACM()
+        {
+            // Not check for deactivation here!
+            
+            Debug.Assert(instance_ != null); // Must not be called after destroy().
+            
+            if(_hasAcmTimeout)
+            {
+                return _acmTimeout;
+            }
+            else
+            {
+                return instance_.serverACM();
+            }
+            
+        }
+
         //
         // Only for use by IceInternal.ObjectAdapterFactory
         //
         public ObjectAdapterI(IceInternal.Instance instance, Communicator communicator,
                               IceInternal.ObjectAdapterFactory objectAdapterFactory, string name, 
-                              string endpointInfo, RouterPrx router, bool noConfig)
+                              RouterPrx router, bool noConfig)
         {
             _deactivated = false;
             instance_ = instance;
             _communicator = communicator;
             _objectAdapterFactory = objectAdapterFactory;
+            _hasAcmTimeout = false;
+            _acmTimeout = 0;
             _servantManager = new IceInternal.ServantManager(instance, name);
             _activateOneOffDone = false;
             _name = name;
@@ -738,6 +849,8 @@ namespace Ice
             _routerInfo = null;
             _directCount = 0;
             _waitForActivate = false;
+            _waitForHold = 0;
+            _waitForHoldRetry = false;
             _noConfig = noConfig;
             _processId = null;
             
@@ -758,25 +871,27 @@ namespace Ice
             //
             if(unknownProps.Count != 0 && properties.getPropertyAsIntWithDefault("Ice.Warn.UnknownProperties", 1) > 0)
             {
-                string message = "found unknown properties for object adapter `" + _name + "':";
+                StringBuilder message = new StringBuilder("found unknown properties for object adapter `");
+		message.Append(_name);
+		message.Append("':");
                 foreach(string s in unknownProps)
                 {
-                    message += "\n    " + s;
+                    message.Append("\n    ");
+		    message.Append(s);
                 }
-                instance_.initializationData().logger.warning(message);
+                instance_.initializationData().logger.warning(message.ToString());
             }
 
             //
             // Make sure named adapter has configuration.
             //
-            if(endpointInfo.Length == 0 && router == null && noProps)
+            if(router == null && noProps)
             {
                 //
                 // These need to be set to prevent warnings/asserts in the destructor.
                 //
                 _deactivated = true;
                 instance_ = null;
-                _communicator = null;
                 _incomingConnectionFactories = null;
 
                 InitializationException ex = new InitializationException();
@@ -810,6 +925,13 @@ namespace Ice
                 if(threadPoolSize > 0 || threadPoolSizeMax > 0)
                 {
                     _threadPool = new IceInternal.ThreadPool(instance_, _name + ".ThreadPool", 0);
+                }
+
+                _hasAcmTimeout = properties.getProperty(_name + ".ACM").Length > 0;
+                if(_hasAcmTimeout)
+                {
+                    _acmTimeout = properties.getPropertyAsInt(_name + ".ACM");
+                    instance_.connectionMonitor().checkIntervalForACM(_acmTimeout);
                 }
 
                 if(router == null)
@@ -882,15 +1004,8 @@ namespace Ice
                     // Parse the endpoints, but don't store them in the adapter. The connection
                     // factory might change it, for example, to fill in the real port number.
                     //
-                    List<IceInternal.EndpointI> endpoints;
-                    if(endpointInfo.Length == 0)
-                    {
-                        endpoints = parseEndpoints(properties.getProperty(_name + ".Endpoints"), true);
-                    }
-                    else
-                    {
-                        endpoints = parseEndpoints(endpointInfo, true);
-                    }
+                    List<IceInternal.EndpointI> endpoints = 
+                        parseEndpoints(properties.getProperty(_name + ".Endpoints"), true);
                     foreach(IceInternal.EndpointI endp in endpoints)
                     {
                         IceInternal.IncomingConnectionFactory factory =
@@ -1113,7 +1228,7 @@ namespace Ice
                 if(endp == null)
                 {
                     if(IceInternal.AssemblyUtil.runtime_ == IceInternal.AssemblyUtil.Runtime.Mono &&
-                       s.StartsWith("ssl"))
+                       s.StartsWith("ssl", StringComparison.Ordinal))
                     {
                         instance_.initializationData().logger.warning(
                             "SSL endpoint `" + s + "' ignored: IceSSL is not supported with Mono");
@@ -1121,7 +1236,7 @@ namespace Ice
                         continue;
                     }
                     Ice.EndpointParseException e2 = new Ice.EndpointParseException();
-                    e2.str = s;
+                    e2.str = "invalid object adapter endpoint `" + s + "'";
                     throw e2;
                 }
                 endpoints.Add(endp);
@@ -1140,30 +1255,37 @@ namespace Ice
             //
             string endpts = instance_.initializationData().properties.getProperty(_name + ".PublishedEndpoints");
             List<IceInternal.EndpointI> endpoints = parseEndpoints(endpts, false);
-            if(endpoints.Count > 0)
+            if(endpoints.Count == 0)
             {
-                return endpoints;
+                //
+                // If the PublishedEndpoints property isn't set, we compute the published enpdoints
+                // from the OA endpoints, expanding any endpoints that may be listening on INADDR_ANY
+                // to include actual addresses in the published endpoints.
+                //
+                foreach(IceInternal.IncomingConnectionFactory factory in _incomingConnectionFactories)
+                {
+                    endpoints.AddRange(factory.endpoint().expand());
+                }
             }
 
-            //
-            // If the PublishedEndpoints property isn't set, we compute the published enpdoints
-            // from the OA endpoints.
-            //
-            foreach(IceInternal.IncomingConnectionFactory factory in _incomingConnectionFactories)
+            if(instance_.traceLevels().network >= 1)
             {
-                endpoints.Add(factory.endpoint());
-            }
-
-            //
-            // Expand any endpoints that may be listening on INADDR_ANY to
-            // include actual addresses in the published endpoints.
-            //
-            List<IceInternal.EndpointI> expandedEndpoints = new List<IceInternal.EndpointI>();
-            foreach(IceInternal.EndpointI endp in endpoints)
-            {
-                expandedEndpoints.AddRange(endp.expand());
-            }
-            return expandedEndpoints;
+                 StringBuilder s = new StringBuilder("published endpoints for object adapter `");
+		 s.Append(_name);
+		 s.Append("':\n");
+                 bool first = true;
+                 foreach(IceInternal.EndpointI endpoint in endpoints)
+                 {
+                     if(!first)
+                     {
+                         s.Append(":");
+                     }
+                     s.Append(endpoint.ToString());
+                     first = false;
+                 }
+                 instance_.initializationData().logger.trace(instance_.traceLevels().networkCat, s.ToString());
+             }
+             return endpoints;
         }
 
         private void updateLocatorRegistry(IceInternal.LocatorInfo locatorInfo, ObjectPrx proxy, bool registerProcess)
@@ -1257,7 +1379,7 @@ namespace Ice
 
                     ObjectAdapterIdInUseException ex1 = new ObjectAdapterIdInUseException();
                     ex1.id = _id;
-                    throw ex1;
+                    throw;
                 }
                 catch(LocalException e)
                 {
@@ -1268,7 +1390,7 @@ namespace Ice
                         s.Append(e.ToString());
                         instance_.initializationData().logger.trace(instance_.traceLevels().locationCat, s.ToString());
                     }
-                    throw e; // TODO: Shall we raise a special exception instead of a non obvious local exception?
+                    throw; // TODO: Shall we raise a special exception instead of a non obvious local exception?
                 }
 
                 if(instance_.traceLevels().location >= 1)
@@ -1331,7 +1453,7 @@ namespace Ice
                         s.Append("couldn't register server `" + serverId + "' with the locator registry:\n" + ex);
                         instance_.initializationData().logger.trace(instance_.traceLevels().locationCat, s.ToString());
                     }
-                    throw ex; // TODO: Shall we raise a special exception instead of a non obvious local exception?
+                    throw; // TODO: Shall we raise a special exception instead of a non obvious local exception?
                 }
             
                 if(instance_.traceLevels().location >= 1)
@@ -1345,13 +1467,25 @@ namespace Ice
 
         static private readonly string[] _suffixes = 
         {
+            "ACM",
             "AdapterId",
             "Endpoints",
             "Locator",
+            "Locator.EndpointSelection",
+            "Locator.ConnectionCached",
+            "Locator.PreferSecure",
+            "Locator.CollocationOptimized",
+            "Locator.Router",
             "PublishedEndpoints",
             "RegisterProcess",
             "ReplicaGroupId",
             "Router",
+            "Router.EndpointSelection",
+            "Router.ConnectionCached",
+            "Router.PreferSecure",
+            "Router.CollocationOptimized",
+            "Router.Locator",
+            "Router.LocatorCacheTimeout",
             "ProxyOptions",
             "ThreadPool.Size",
             "ThreadPool.SizeMax",
@@ -1369,7 +1503,7 @@ namespace Ice
             String prefix = _name + ".";
             for(int i = 0; IceInternal.PropertyNames.clPropNames[i] != null; ++i)
             {
-                if(prefix.StartsWith(IceInternal.PropertyNames.clPropNames[i] + "."))
+                if(prefix.StartsWith(IceInternal.PropertyNames.clPropNames[i] + ".", StringComparison.Ordinal))
                 {
                     addUnknown = false;
                     break;
@@ -1406,6 +1540,8 @@ namespace Ice
         private Communicator _communicator;
         private IceInternal.ObjectAdapterFactory _objectAdapterFactory;
         private IceInternal.ThreadPool _threadPool;
+        private bool _hasAcmTimeout;
+        private int _acmTimeout;
         private IceInternal.ServantManager _servantManager;
         private bool _activateOneOffDone;
         private readonly string _name;
@@ -1419,6 +1555,8 @@ namespace Ice
         private IceInternal.LocatorInfo _locatorInfo;
         private int _directCount;
         private bool _waitForActivate;
+        private int _waitForHold;
+        private bool _waitForHoldRetry;
         private bool _destroying;
         private bool _destroyed;
         private bool _noConfig;

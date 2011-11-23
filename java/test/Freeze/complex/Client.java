@@ -1,11 +1,14 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+package test.Freeze.complex;
+import test.Freeze.complex.Complex.*;
 
 import Freeze.*;
 
@@ -26,29 +29,29 @@ public class Client
     validate(String dbName)
         throws DatabaseException
     {
-        Complex.ComplexDict m = new Complex.ComplexDict(_connection, dbName, true);
+        ComplexDict m = new ComplexDict(_connection, dbName, true);
 
         try
         {
             Parser parser = new Parser();
-        
+
             System.out.print("testing database expressions... ");
-            java.util.Iterator p = m.entrySet().iterator();
+            java.util.Iterator<java.util.Map.Entry<Key, Node>> p = m.entrySet().iterator();
             while(p.hasNext())
             {
-                java.util.Map.Entry e = (java.util.Map.Entry)p.next();
+                java.util.Map.Entry<Key, Node> e = p.next();
 
-                Complex.Key key = (Complex.Key)e.getKey();
+                Key key = e.getKey();
 
                 //
                 // Verify the stored record is correct.
                 //
-                test(key.result == ((Complex.Node)e.getValue()).calc());
-            
+                test(key.result == e.getValue().calc());
+
                 //
                 // Verify that the expression & result again.
                 //
-                Complex.Node root = parser.parse(key.expression);
+                Node root = parser.parse(key.expression);
                 test(root.calc(null) == key.result);
             }
             System.out.println("ok");
@@ -58,17 +61,17 @@ public class Client
             e.printStackTrace();
             test(false);
         }
-        
+
         m.close();
 
         return 0;
     }
-    
+
     private int
     populate(String dbName)
         throws DatabaseException
     {
-        String[] expressions = 
+        String[] expressions =
         {
             "2",
             "10",
@@ -76,20 +79,20 @@ public class Client
             "5*(2+3)",
             "10+(10+(20+(8*(2*(3*2+4+5+6)))))"
         };
-        
-        Complex.ComplexDict m = new Complex.ComplexDict(_connection, dbName, true);
+
+        ComplexDict m = new ComplexDict(_connection, dbName, true);
 
         try
         {
             Parser parser = new Parser();
-        
+
             System.out.print("populating the database... ");
-            for(int i = 0 ; i < expressions.length; ++i)
+            for(String expr : expressions)
             {
-                Complex.Node root = parser.parse(expressions[i]);
+                Node root = parser.parse(expr);
                 assert(root != null);
-                Complex.Key k = new Complex.Key();
-                k.expression = expressions[i];
+                Key k = new Key();
+                k.expression = expr;
                 k.result = root.calc(null);
                 m.put(k, root);
             }
@@ -100,11 +103,11 @@ public class Client
             e.printStackTrace();
             test(false);
         }
-        
+
         m.close();
         return 0;
     }
-    
+
     static void
     usage(String name)
     {
@@ -120,11 +123,11 @@ public class Client
         //
         // Register a factory for the node types.
         //
-        Ice.ObjectFactory factory = new Complex.ObjectFactoryI();
+        Ice.ObjectFactory factory = new ObjectFactoryI();
         _communicator.addObjectFactory(factory, "::Complex::NumberNode");
         _communicator.addObjectFactory(factory, "::Complex::AddNode");
         _communicator.addObjectFactory(factory, "::Complex::MultiplyNode");
-        
+
         if(args.length != 0 && args[0].equals("populate"))
         {
             return populate(dbName);
@@ -134,16 +137,15 @@ public class Client
             return validate(dbName);
         }
         usage(progName);
-        
+
         return 0;
     }
-    
+
     private void
     close()
     {
         _connection.close();
     }
-
 
     private
     Client(Ice.Communicator communicator, String envName)
@@ -151,7 +153,6 @@ public class Client
         _communicator = communicator;
         _connection = Freeze.Util.createConnection(communicator, envName);
     }
-
 
     static public void
     main(String[] args)
@@ -175,7 +176,7 @@ public class Client
                         usage(progName);
                         System.exit(1);
                     }
-                    
+
                     envName = args[i+1];
                     envName += "/";
                     envName += "db";
@@ -237,5 +238,4 @@ public class Client
 
     private Ice.Communicator _communicator;
     private Freeze.Connection _connection;
-
 }

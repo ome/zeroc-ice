@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -68,11 +68,9 @@ public class WorkQueue extends Thread
         //
         // Throw exception for any outstanding requests.
         //
-        java.util.Iterator<CallbackEntry> p = _callbacks.iterator();
-        while(p.hasNext())
+        for(CallbackEntry p : _callbacks)
         {
-            CallbackEntry entry = p.next();
-            entry.cb.ice_exception(new RequestCanceledException());
+            p.cb.ice_exception(new RequestCanceledException());
         }
     }
 

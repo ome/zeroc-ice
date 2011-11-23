@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,16 +23,21 @@ namespace IceUtilInternal
 ICE_UTIL_API std::string escapeString(const std::string&, const std::string&);
 
 //
-// Remove escape sequences added by escapeString.
+// Remove escape sequences added by escapeString. Throws IllegalArgumentException
+// for an invalid input string.
 //
-ICE_UTIL_API bool unescapeString(const std::string&, std::string::size_type, std::string::size_type, std::string&);
-
+ICE_UTIL_API std::string unescapeString(const std::string&, std::string::size_type, std::string::size_type);
 
 //
 // Split a string using the given delimiters. Considers single and double quotes;
 // returns false for unbalanced quote, true otherwise.
 //
 ICE_UTIL_API bool splitString(const std::string&, const std::string&, std::vector<std::string>&);
+
+//
+// Join a list of strings using the given delimiter. 
+//
+ICE_UTIL_API std::string joinString(const std::vector<std::string>&, const std::string&);
 
 //
 // Trim white space
@@ -67,10 +72,14 @@ ICE_UTIL_API std::string errorToString(int);
 #endif
 
 //
-// Functions to convert to to all lower/upper case
+// Functions to convert to lower/upper case. These functions accept
+// UTF8 string/characters but ignore non ASCII characters. Unlike, the
+// C methods, these methods are not local dependent.
 //
 ICE_UTIL_API std::string toLower(const std::string&);
 ICE_UTIL_API std::string toUpper(const std::string&);
+ICE_UTIL_API bool isAlpha(char);
+ICE_UTIL_API bool isDigit(char);
 
 //
 // Remove all whitespace from a string

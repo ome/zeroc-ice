@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -55,7 +55,7 @@ namespace IceSSL
                 //
                 // Nonblocking connect is handled by the transceiver.
                 //
-                return new TransceiverI(_instance, fd, _addr, false, _host, null);
+                return new TransceiverI(_instance, fd, _addr, _host, false, null);
             }
             catch(Ice.LocalException ex)
             {
@@ -76,10 +76,10 @@ namespace IceSSL
         //
         // Only for use by EndpointI.
         //
-        internal ConnectorI(Instance instance, IPEndPoint addr, int timeout, string connectionId)
+        internal ConnectorI(Instance instance, string host, IPEndPoint addr, int timeout, string connectionId)
         {
             _instance = instance;
-            _host = addr.Address.ToString();
+            _host = host;
             _logger = instance.communicator().getLogger();
             _addr = addr;
             _timeout = timeout;
@@ -132,8 +132,8 @@ namespace IceSSL
         }
 
         private Instance _instance;
-        private string _host;
         private Ice.Logger _logger;
+        private string _host;
         private IPEndPoint _addr;
         private int _timeout;
         private string _connectionId;

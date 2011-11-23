@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,7 +22,7 @@ IceUtil::Shared* IceInternal::upCast(ObjectAdapterFactory* p) { return p; }
 void
 IceInternal::ObjectAdapterFactory::shutdown()
 {
-    map<string, ObjectAdapterIPtr> adapters;
+    list<ObjectAdapterIPtr> adapters;
 
     {
         IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
@@ -48,14 +48,13 @@ IceInternal::ObjectAdapterFactory::shutdown()
     // Deactivate outside the thread synchronization, to avoid
     // deadlocks.
     //
-    for_each(adapters.begin(), adapters.end(),
-             IceUtil::secondVoidMemFun<const string, ObjectAdapterI>(&ObjectAdapter::deactivate));
+    for_each(adapters.begin(), adapters.end(), IceUtil::voidMemFun(&ObjectAdapter::deactivate));
 }
 
 void
 IceInternal::ObjectAdapterFactory::waitForShutdown()
 {
-    map<string, ObjectAdapterIPtr> adapters;
+    list<ObjectAdapterIPtr> adapters;
 
     {
         IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
@@ -68,33 +67,13 @@ IceInternal::ObjectAdapterFactory::waitForShutdown()
             wait();
         }
 
-        //
-        // If some other thread is currently shutting down, we wait
-        // until this thread is finished.
-        //
-        while(_waitForShutdown)
-        {
-            wait();
-        }
-        _waitForShutdown = true;
         adapters = _adapters;
     }
 
     //
     // Now we wait for deactivation of each object adapter.
     //
-    for_each(adapters.begin(), adapters.end(),
-             IceUtil::secondVoidMemFun<const string, ObjectAdapterI>(&ObjectAdapter::waitForDeactivate));
-    
-    {
-        IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-
-        //
-        // Signal that waiting is complete.
-        //
-        _waitForShutdown = false;
-        notifyAll();
-    }
+    for_each(adapters.begin(), adapters.end(), IceUtil::voidMemFun(&ObjectAdapter::waitForDeactivate));
 }
 
 bool
@@ -113,23 +92,26 @@ IceInternal::ObjectAdapterFactory::destroy()
     //
     waitForShutdown();
 
-    map<string, ObjectAdapterIPtr> adapters;
+    list<ObjectAdapterIPtr> adapters;
 
     {
         IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-        adapters.swap(_adapters);
+        adapters = _adapters;
     }
 
     //
     // Now we destroy each object adapter.
     //
-    for_each(adapters.begin(), adapters.end(),
-             IceUtil::secondVoidMemFun<const string, ObjectAdapterI>(&ObjectAdapter::destroy));
+    for_each(adapters.begin(), adapters.end(), IceUtil::voidMemFun(&ObjectAdapter::destroy));
+
+    {
+        IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+        _adapters.clear();
+    }
 }
 
 ObjectAdapterPtr
-IceInternal::ObjectAdapterFactory::createObjectAdapter(const string& name, const string& endpoints, 
-                                                       const RouterPrx& router)
+IceInternal::ObjectAdapterFactory::createObjectAdapter(const string& name, const RouterPrx& router)
 {
     IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
 
@@ -138,38 +120,32 @@ IceInternal::ObjectAdapterFactory::createObjectAdapter(const string& name, const
         throw ObjectAdapterDeactivatedException(__FILE__, __LINE__);
     }
 
-    map<string, ObjectAdapterIPtr>::iterator p = _adapters.find(name);
-    if(p != _adapters.end())
-    {
-        throw AlreadyRegisteredException(__FILE__, __LINE__, "object adapter", name);
-    }
-
-    if(name.empty() && (!endpoints.empty() || router != 0))
-    {
-        InitializationException ex(__FILE__, __LINE__);
-        ex.reason = "Cannot configure endpoints or router with nameless object adapter";
-        throw ex;
-    }
-
     ObjectAdapterIPtr adapter;
     if(name.empty())
     {
         string uuid = IceUtil::generateUUID();
-        adapter = new ObjectAdapterI(_instance, _communicator, this, uuid, "", 0, true);
-        _adapters.insert(make_pair(uuid, adapter));
+        adapter = new ObjectAdapterI(_instance, _communicator, this, uuid, true);
+        adapter->initialize(0);
     }
     else
     {
-        adapter = new ObjectAdapterI(_instance, _communicator, this, name, endpoints, router, false);
-        _adapters.insert(make_pair(name, adapter));
+        if(_adapterNamesInUse.find(name) != _adapterNamesInUse.end())
+        {
+            throw AlreadyRegisteredException(__FILE__, __LINE__, "object adapter", name);
+        }
+        adapter = new ObjectAdapterI(_instance, _communicator, this, name, false);
+        adapter->initialize(router);
+        _adapterNamesInUse.insert(name);
     }
+
+    _adapters.push_back(adapter);
     return adapter;
 }
 
 ObjectAdapterPtr
 IceInternal::ObjectAdapterFactory::findObjectAdapter(const ObjectPrx& proxy)
 {
-    map<string, ObjectAdapterIPtr> adapters;
+    list<ObjectAdapterIPtr> adapters;
     {
         IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
 
@@ -181,13 +157,13 @@ IceInternal::ObjectAdapterFactory::findObjectAdapter(const ObjectPrx& proxy)
         adapters = _adapters;
     }
 
-    for(map<string, ObjectAdapterIPtr>::iterator p = adapters.begin(); p != adapters.end(); ++p)
+    for(list<ObjectAdapterIPtr>::iterator p = adapters.begin(); p != adapters.end(); ++p)
     {
         try
         {
-            if(p->second->isLocal(proxy))
+            if((*p)->isLocal(proxy))
             {
-                return p->second;
+                return *p;
             }
         }
         catch(const ObjectAdapterDeactivatedException&)
@@ -200,7 +176,7 @@ IceInternal::ObjectAdapterFactory::findObjectAdapter(const ObjectPrx& proxy)
 }
 
 void
-IceInternal::ObjectAdapterFactory::removeObjectAdapter(const string& name)
+IceInternal::ObjectAdapterFactory::removeObjectAdapter(const ObjectAdapterPtr& adapter)
 {
     IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
 
@@ -209,41 +185,37 @@ IceInternal::ObjectAdapterFactory::removeObjectAdapter(const string& name)
         return;
     }
 
-    _adapters.erase(name);
-}
-
-namespace IceInternal {
-
-struct FlushAdapter
-{
-    void operator() (ObjectAdapterIPtr p)
+    for(list<ObjectAdapterIPtr>::iterator p = _adapters.begin(); p != _adapters.end(); ++p)
     {
-        p->flushBatchRequests();
+        if(*p == adapter)
+        {
+            _adapters.erase(p);
+            break;
+        }
     }
-};
-
+    _adapterNamesInUse.erase(adapter->getName());
 }
 
 void
-IceInternal::ObjectAdapterFactory::flushBatchRequests() const
+IceInternal::ObjectAdapterFactory::flushAsyncBatchRequests(const CommunicatorBatchOutgoingAsyncPtr& outAsync) const
 {
-    list<ObjectAdapterIPtr> a;
+    list<ObjectAdapterIPtr> adapters;
     {
         IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
 
-        for(map<string, ObjectAdapterIPtr>::const_iterator p = _adapters.begin(); p != _adapters.end(); ++p)
-        {
-            a.push_back(p->second);
-        }
+        adapters = _adapters;
     }
-    for_each(a.begin(), a.end(), FlushAdapter());
+
+    for(list<ObjectAdapterIPtr>::const_iterator p = adapters.begin(); p != adapters.end(); ++p)
+    {
+        (*p)->flushAsyncBatchRequests(outAsync);
+    }
 }
 
 IceInternal::ObjectAdapterFactory::ObjectAdapterFactory(const InstancePtr& instance,
                                                         const CommunicatorPtr& communicator) :
     _instance(instance),
-    _communicator(communicator),
-    _waitForShutdown(false)
+    _communicator(communicator)
 {
 }
 
@@ -252,5 +224,4 @@ IceInternal::ObjectAdapterFactory::~ObjectAdapterFactory()
     assert(!_instance);
     assert(!_communicator);
     assert(_adapters.empty());
-    assert(!_waitForShutdown);
 }

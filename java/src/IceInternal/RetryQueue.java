@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,10 +27,8 @@ public class RetryQueue
     synchronized public void
     destroy()
     {
-        java.util.Iterator<RetryTask> p = _requests.iterator();
-        while(p.hasNext())
+        for(RetryTask task : _requests)
         {
-            RetryTask task = p.next();
             _instance.timer().cancel(task);
             task.destroy();
         }
@@ -45,5 +43,4 @@ public class RetryQueue
 
     final private Instance _instance;
     final private java.util.HashSet<RetryTask> _requests = new java.util.HashSet<RetryTask>();
-};
-
+}

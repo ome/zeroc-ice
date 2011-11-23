@@ -17,12 +17,12 @@
 
 -dontskipnonpubliclibraryclasses
 -dontusemixedcaseclassnames
--dontwarn
 
 # We could reduce the size of the JAR file significantly if we
 # enable obfuscation but it would make things like stack traces
 # much harder to read.
 -dontobfuscate
+-dontoptimize
 
 -keepclassmembers class * implements java.io.Serializable {
     static final long serialVersionUID;
@@ -40,7 +40,6 @@
 # More keeps to suppress Notes
 
 -keep interface Ice.Communicator
--keep class IceInternal.SelectorHandler
 
 -keep public class Ice.DispatchStatus {
     int __value;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -62,7 +62,7 @@ namespace IceInternal
                 if(s.Length == 0)
                 {
                     Ice.EndpointParseException e = new Ice.EndpointParseException();
-                    e.str = str;
+                    e.str = "value has no non-whitespace characters";
                     throw e;
                 }
                 
@@ -93,7 +93,7 @@ namespace IceInternal
                         Buffer buf = bs.getBuffer();
                         buf.b.position(0);
                         short type = bs.readShort();
-                        EndpointI ue = new IceInternal.UnknownEndpointI(type, bs);
+                        EndpointI ue = new IceInternal.OpaqueEndpointI(type, bs);
                         System.Console.Error.WriteLine("Normal: " + e);
                         System.Console.Error.WriteLine("Opaque: " + ue);
                         return e;
@@ -107,7 +107,7 @@ namespace IceInternal
                 //
                 if(protocol.Equals("opaque"))
                 {
-                    EndpointI ue = new UnknownEndpointI(s.Substring(m.Index + m.Length));
+                    EndpointI ue = new OpaqueEndpointI(s.Substring(m.Index + m.Length));
                     for(int i = 0; i < _factories.Count; i++)
                     {
                         EndpointFactory f = (EndpointFactory)_factories[i];
@@ -147,7 +147,7 @@ namespace IceInternal
                     }
                 }
                 
-                return new UnknownEndpointI(type, s);
+                return new OpaqueEndpointI(type, s);
             }
         }
         

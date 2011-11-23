@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -30,9 +30,9 @@ $(CLIENT): $(OBJS)
 	@if exist $@.manifest echo ^ ^ ^ Embedding manifest using $(MT) && \
 	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
-BenchTypes.h BenchTypes.cpp: Test.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
+BenchTypes.h BenchTypes.cpp: Test.ice "$(SLICE2FREEZE)" "$(SLICEPARSERLIB)"
 	del /q BenchTypes.h BenchTypes.cpp
-	$(SLICE2FREEZE) -I$(slicedir) --dict Demo::IntIntMap,int,int --dict Demo::Struct1Struct2Map,Demo::Struct1,Demo::Struct2 \
+	"$(SLICE2FREEZE)" -I"$(slicedir)" --dict Demo::IntIntMap,int,int --dict Demo::Struct1Struct2Map,Demo::Struct1,Demo::Struct2 \
 	--dict Demo::Struct1Class1Map,Demo::Struct1,Demo::Class1 \
 	--dict Demo::Struct1ObjectMap,Demo::Struct1,Object \
         --dict Demo::IndexedIntIntMap,int,int --dict-index Demo::IndexedIntIntMap \
@@ -46,6 +46,7 @@ BenchTypes.h BenchTypes.cpp: Test.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
 clean::
 	-del /q BenchTypes.h BenchTypes.cpp
 	-del /q Test.cpp Test.h
+	-if exist db\__Freeze rmdir /q /s db\__Freeze
 	-for %f in (db\*) do if not %f == db\.gitignore del /q %f
 
-!include .depend
+!include .depend.mak

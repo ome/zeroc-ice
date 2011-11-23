@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,8 @@
 
 #include <IceUtil/UUID.h>
 
-#include <IceSSL/Plugin.h>
+#include <IceSSL/IceSSL.h>
+#include <Ice/Connection.h>
 #include <Ice/Network.h>
 
 using namespace std;
@@ -140,7 +141,7 @@ public:
 
     UserPasswordCreateSession(const AMD_Router_createSessionPtr& amdCB, const string& user, const string& password, 
                               const Ice::Current& current, const SessionRouterIPtr& sessionRouter) :
-        CreateSession(sessionRouter, user, current, Ice::Context()),
+        CreateSession(sessionRouter, user, current),
         _amdCB(amdCB), 
         _password(password)
     {
@@ -193,8 +194,10 @@ public:
     {
         assert(_sessionRouter->_verifier);
 
+        Ice::Context ctx = _current.ctx;
+        ctx.insert(_context.begin(), _context.end());
         AMI_PermissionsVerifier_checkPermissionsPtr cb = new CheckPermissionsCB(this, _sessionRouter->_sessionManager);
-        _sessionRouter->_verifier->checkPermissions_async(cb, _user, _password, _current.ctx);
+        _sessionRouter->_verifier->checkPermissions_async(cb, _user, _password, ctx);
     }
 
     virtual void
@@ -203,7 +206,9 @@ public:
         try
         {
             string reason;
-            if(_sessionRouter->_verifier->checkPermissions(_user, _password, reason, _current.ctx))
+            Ice::Context ctx = _current.ctx;
+            ctx.insert(_context.begin(), _context.end());
+            if(_sessionRouter->_verifier->checkPermissions(_user, _password, reason, ctx))
             {
                 authorized(_sessionRouter->_sessionManager);
             }
@@ -263,7 +268,9 @@ public:
     virtual void
     createSession()
     {
-        _sessionRouter->_sessionManager->create_async(new CreateCB(this), _user, _control, _current.ctx);
+        Ice::Context ctx = _current.ctx;
+        ctx.insert(_context.begin(), _context.end());
+        _sessionRouter->_sessionManager->create_async(new CreateCB(this), _user, _control, ctx);
     }
     
     virtual void
@@ -289,9 +296,8 @@ class SSLCreateSession : public CreateSession
 public:
 
     SSLCreateSession(const AMD_Router_createSessionFromSecureConnectionPtr& amdCB, const string& user, 
-                     const SSLInfo& sslInfo, const Ice::Current& current, const SessionRouterIPtr& sessionRouter,
-                     const Ice::Context& sslContext) :
-        CreateSession(sessionRouter, user, current, sslContext),
+                     const SSLInfo& sslInfo, const Ice::Current& current, const SessionRouterIPtr& sessionRouter) :
+        CreateSession(sessionRouter, user, current),
         _amdCB(amdCB), 
         _sslInfo(sslInfo)
     {
@@ -345,8 +351,11 @@ public:
     {
         assert(_sessionRouter->_sslVerifier);
 
+        Ice::Context ctx = _current.ctx;
+        ctx.insert(_context.begin(), _context.end());
+
         AMI_SSLPermissionsVerifier_authorizePtr cb = new AuthorizeCB(this, _sessionRouter->_sslSessionManager);
-        _sessionRouter->_sslVerifier->authorize_async(cb, _sslInfo, _current.ctx);
+        _sessionRouter->_sslVerifier->authorize_async(cb, _sslInfo, ctx);
     }
 
     virtual void
@@ -355,7 +364,9 @@ public:
         try
         {
             string reason;
-            if(_sessionRouter->_sslVerifier->authorize(_sslInfo, reason, _current.ctx))
+            Ice::Context ctx = _current.ctx;
+            ctx.insert(_context.begin(), _context.end());
+            if(_sessionRouter->_sslVerifier->authorize(_sslInfo, reason, ctx))
             {
                 authorized(_sessionRouter->_sslSessionManager);
             }
@@ -415,7 +426,9 @@ public:
     virtual void
     createSession()
     {
-        _sessionRouter->_sslSessionManager->create_async(new CreateCB(this), _sslInfo, _control, _current.ctx);
+        Ice::Context ctx = _current.ctx;
+        ctx.insert(_context.begin(), _context.end());
+        _sessionRouter->_sslSessionManager->create_async(new CreateCB(this), _sslInfo, _control, ctx);
     }
     
     virtual void
@@ -473,13 +486,40 @@ private:
 using namespace Glacier2;
 
 Glacier2::CreateSession::CreateSession(const SessionRouterIPtr& sessionRouter, const string& user, 
-                                       const Ice::Current& current, const Ice::Context& sslContext) :
+                                       const Ice::Current& current) :
     _instance(sessionRouter->_instance),
     _sessionRouter(sessionRouter),
     _user(user),
-    _current(current),
-    _sslContext(sslContext)
+    _current(current)
 {
+    if(_instance->properties()->getPropertyAsInt("Glacier2.AddConnectionContext") > 0)
+    {
+        _context["_con.type"] = current.con->type();
+        {
+            Ice::IPConnectionInfoPtr info = Ice::IPConnectionInfoPtr::dynamicCast(current.con->getInfo());
+            if(info)
+            {
+                ostringstream os;
+                os << info->remotePort;
+                _context["_con.remotePort"] = os.str();
+                _context["_con.remoteAddress"] = info->remoteAddress;
+                os.str("");
+                os << info->localPort;
+                _context["_con.localPort"] = os.str();
+                _context["_con.localAddress"] = info->localAddress;            }
+        }
+        {
+            IceSSL::ConnectionInfoPtr info = IceSSL::ConnectionInfoPtr::dynamicCast(current.con->getInfo());
+            if(info)
+            {
+                _context["_con.cipher"] = info->cipher;
+                if(info->certs.size() > 0)
+                {
+                    _context["_con.peerCert"] = info->certs[0];
+                }
+            }
+        }
+    }
 }
 
 void
@@ -556,7 +596,38 @@ Glacier2::CreateSession::sessionCreated(const SessionPrx& session)
         {
             ident = _control->ice_getIdentity();
         }
-        router = new RouterI(_instance, _current.con, _user, session, ident, _filterManager, _sslContext);
+
+        if(_instance->properties()->getPropertyAsInt("Glacier2.AddConnectionContext") == 1 ||
+           _instance->properties()->getPropertyAsInt("Glacier2.AddSSLContext") > 0)
+        {
+            //
+            // DEPRECATED: Glacier2.AddSSLContext.
+            //
+            IceSSL::ConnectionInfoPtr info = IceSSL::ConnectionInfoPtr::dynamicCast(_current.con->getInfo());
+            if(info && _instance->properties()->getPropertyAsInt("Glacier2.AddSSLContext") > 0)
+            {
+                _context["SSL.Active"] = "1";
+                _context["SSL.Cipher"] = info->cipher;
+                ostringstream os;
+                os << info->remotePort;
+                _context["SSL.Remote.Port"] = os.str();
+                _context["SSL.Remote.Host"] = info->remoteAddress;
+                os.str("");
+                os << info->localPort;
+                _context["SSL.Local.Port"] = os.str();
+                _context["SSL.Local.Host"] = info->localAddress;
+                if(info->certs.size() > 0)
+                {
+                    _context["SSL.PeerCert"] = info->certs[0];
+                }
+            }
+
+            router = new RouterI(_instance, _current.con, _user, session, ident, _filterManager, _context);
+        }
+        else
+        {
+            router = new RouterI(_instance, _current.con, _user, session, ident, _filterManager, Ice::Context());
+        }
     }
     catch(const Ice::Exception& ex)
     {
@@ -601,8 +672,14 @@ Glacier2::CreateSession::unexpectedCreateSessionException(const Ice::Exception& 
 void
 Glacier2::CreateSession::exception(const Ice::Exception& ex)
 {
-    _sessionRouter->finishCreateSession(_current.con, 0);
-
+    try
+    {    
+        _sessionRouter->finishCreateSession(_current.con, 0);
+    }
+    catch(const Ice::Exception&)
+    {
+    }
+        
     finished(ex);
 
     if(_control)
@@ -638,8 +715,10 @@ Glacier2::SessionRouterI::SessionRouterI(const InstancePtr& instance,
     _sessionThread(_sessionTimeout > IceUtil::Time() ? new SessionThread(this, _sessionTimeout) : 0),
     _routersByConnectionHint(_routersByConnection.end()),
     _routersByCategoryHint(_routersByCategory.end()),
+    _sessionPingCallback(newCallback_Object_ice_ping(this, &SessionRouterI::sessionPingException)),
     _destroy(false)
 {
+
     //
     // This session router is used directly as servant for the main
     // Glacier2 router Ice object.
@@ -725,6 +804,8 @@ Glacier2::SessionRouterI::destroy()
         
         sessionThread = _sessionThread;
         _sessionThread = 0;
+
+        _sessionPingCallback = 0; // Break cyclic reference count.
     }
 
     //
@@ -776,7 +857,14 @@ string
 Glacier2::SessionRouterI::getCategoryForClient(const Ice::Current& current) const
 {
     // Forward to the per-client router.
-    return getRouter(current.con, current.id)->getServerProxy(current)->ice_getIdentity().category;
+    if(_instance->serverObjectAdapter())
+    {
+        return getRouter(current.con, current.id)->getServerProxy(current)->ice_getIdentity().category;
+    }
+    else
+    {
+        return "";
+    }
 }
 
 void
@@ -805,72 +893,41 @@ Glacier2::SessionRouterI::createSessionFromSecureConnection_async(
 
     string userDN;
     SSLInfo sslinfo;
-    Ice::Context sslCtx;
 
     //
     // Populate the SSL context information.
     //
     try
     {
-        IceSSL::ConnectionInfo info = IceSSL::getConnectionInfo(current.con);
-        if(info.remoteAddr.ss_family == AF_UNSPEC)
+        IceSSL::ConnectionInfoPtr info = IceSSL::ConnectionInfoPtr::dynamicCast(current.con->getInfo());
+        if(!info)
         {
-            //
-            // The remote address may not be available on Windows XP SP2 when using IPv6.
-            //
-            sslinfo.remotePort = 0;
-            sslinfo.remoteHost = "";
+            amdCB->ice_exception(PermissionDeniedException("not ssl connection"));
+            return;
         }
-        else
+        sslinfo.remotePort = info->remotePort;
+        sslinfo.remoteHost = info->remoteAddress;
+        sslinfo.localPort = info->localPort;
+        sslinfo.localHost = info->localAddress;
+        sslinfo.cipher = info->cipher;
+        sslinfo.certs = info->certs;
+        if(info->certs.size() > 0)
         {
-            sslinfo.remotePort = IceInternal::getPort(info.remoteAddr);
-            sslinfo.remoteHost = IceInternal::inetAddrToString(info.remoteAddr);
+            userDN = IceSSL::Certificate::decode(info->certs[0])->getSubjectDN();
         }
-        sslinfo.localPort = IceInternal::getPort(info.localAddr);
-        sslinfo.localHost = IceInternal::inetAddrToString(info.localAddr);
-
-        sslinfo.cipher = info.cipher;
-
-        if(info.certs.size() > 0)
-        {
-            sslinfo.certs.resize(info.certs.size());
-            for(unsigned int i = 0; i < info.certs.size(); ++i)
-            {
-                sslinfo.certs[i] = info.certs[i]->encode();
-            }
-            userDN = info.certs[0]->getSubjectDN();
-        }
-
-        if(_instance->properties()->getPropertyAsInt("Glacier2.AddSSLContext") > 0)
-        {
-            sslCtx["SSL.Active"] = "1";
-            sslCtx["SSL.Cipher"] = sslinfo.cipher;
-            ostringstream os;
-            os << sslinfo.remotePort;
-            sslCtx["SSL.Remote.Port"] = os.str();
-            sslCtx["SSL.Remote.Host"] = sslinfo.remoteHost;
-            os.str("");
-            os << sslinfo.localPort;
-            sslCtx["SSL.Local.Port"] = os.str();
-            sslCtx["SSL.Local.Host"] = sslinfo.localHost;
-            if(info.certs.size() > 0)
-            {
-                sslCtx["SSL.PeerCert"] = info.certs[0]->encode();
-            }
-        }
-    }
-    catch(const IceSSL::ConnectionInvalidException&)
-    {
-        amdCB->ice_exception(PermissionDeniedException("not ssl connection"));
-        return;
     }
     catch(const IceSSL::CertificateEncodingException&)
     {
         amdCB->ice_exception(PermissionDeniedException("certificate encoding exception"));
         return;
     }
+    catch(const Ice::LocalException&)
+    {
+        amdCB->ice_exception(PermissionDeniedException("connection exception"));
+        return;
+    }
 
-    CreateSessionPtr session = new SSLCreateSession(amdCB, userDN, sslinfo, current, this, sslCtx);
+    CreateSessionPtr session = new SSLCreateSession(amdCB, userDN, sslinfo, current, this);
     session->create();
 }
 
@@ -878,6 +935,27 @@ void
 Glacier2::SessionRouterI::destroySession(const Current& current)
 {
     destroySession(current.con);
+}
+
+void
+Glacier2::SessionRouterI::refreshSession(const Ice::Current& current)
+{
+    RouterIPtr router = getRouter(current.con, current.id, false);
+    if(!router)
+    {
+        throw SessionNotExistException();
+    }
+    router->updateTimestamp();
+
+    //
+    // Ping the session to ensure it does not timeout.
+    //
+    assert(_sessionPingCallback);
+    Glacier2::SessionPrx session = router->getSession();
+    if(session)
+    {
+        session->begin_ice_ping(_sessionPingCallback, current.con);
+    }
 }
 
 void
@@ -890,7 +968,6 @@ Glacier2::SessionRouterI::destroySession(const ConnectionPtr& connection)
         
         if(_destroy)
         {
-            connection->close(true);
             throw ObjectNotExistException(__FILE__, __LINE__);
         }
         
@@ -907,8 +984,7 @@ Glacier2::SessionRouterI::destroySession(const ConnectionPtr& connection)
         
         if(p == _routersByConnection.end())
         {
-            SessionNotExistException exc;
-            throw exc;
+            throw SessionNotExistException();
         }
         
         router = p->second;
@@ -945,13 +1021,12 @@ Glacier2::SessionRouterI::getSessionTimeout(const Ice::Current&) const
 }
 
 RouterIPtr
-Glacier2::SessionRouterI::getRouter(const ConnectionPtr& connection, const Ice::Identity& id) const
+Glacier2::SessionRouterI::getRouter(const ConnectionPtr& connection, const Ice::Identity& id, bool close) const
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock lock(*this);
 
     if(_destroy)
     {
-        connection->close(true);
         throw ObjectNotExistException(__FILE__, __LINE__);
     }
 
@@ -969,7 +1044,7 @@ Glacier2::SessionRouterI::getRouter(const ConnectionPtr& connection, const Ice::
         _routersByConnectionHint = p;
         return p->second;
     }
-    else
+    else if(close)
     {
         if(_rejectTraceLevel >= 1)
         {
@@ -980,6 +1055,7 @@ Glacier2::SessionRouterI::getRouter(const ConnectionPtr& connection, const Ice::
         connection->close(true);
         throw ObjectNotExistException(__FILE__, __LINE__);
     }
+    return 0;
 }
 
 RouterIPtr
@@ -1071,6 +1147,12 @@ Glacier2::SessionRouterI::expireSessions()
     }
 }
 
+void
+Glacier2::SessionRouterI::sessionPingException(const Ice::Exception&, const Ice::ConnectionPtr& con)
+{
+    destroySession(con);
+}
+
 bool
 Glacier2::SessionRouterI::startCreateSession(const CreateSessionPtr& cb, const ConnectionPtr& connection)
 {
@@ -1078,8 +1160,9 @@ Glacier2::SessionRouterI::startCreateSession(const CreateSessionPtr& cb, const C
         
     if(_destroy)
     {
-        connection->close(true);
-        throw ObjectNotExistException(__FILE__, __LINE__);
+        CannotCreateSessionException exc;
+        exc.reason = "router is shutting down";
+        throw exc;
     }
 
     //
@@ -1147,8 +1230,10 @@ Glacier2::SessionRouterI::finishCreateSession(const ConnectionPtr& connection, c
     if(_destroy)
     {
         router->destroy(new DestroyCB(0, 0));
-        connection->close(true);
-        throw ObjectNotExistException(__FILE__, __LINE__);
+
+        CannotCreateSessionException exc;
+        exc.reason = "router is shutting down";
+        throw exc;
     }
     
     _routersByConnectionHint = _routersByConnection.insert(
@@ -1173,6 +1258,7 @@ Glacier2::SessionRouterI::finishCreateSession(const ConnectionPtr& connection, c
 
 Glacier2::SessionRouterI::SessionThread::SessionThread(const SessionRouterIPtr& sessionRouter,
                                                        const IceUtil::Time& sessionTimeout) :
+    IceUtil::Thread("Glacier2 session thread"),
     _sessionRouter(sessionRouter),
     _sessionTimeout(sessionTimeout)
 {

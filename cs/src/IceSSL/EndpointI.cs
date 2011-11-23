@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,14 +9,14 @@
 
 namespace IceSSL
 {
+    using System;
     using System.Diagnostics;
     using System.Collections.Generic;
     using System.Net;
-
+    using System.Globalization;
+	
     sealed class EndpointI : IceInternal.EndpointI
     {
-        internal const short TYPE = 2;
-
         internal EndpointI(Instance instance, string ho, int po, int ti, string conId, bool co)
         {
             _instance = instance;
@@ -52,7 +52,7 @@ namespace IceSSL
                 if(option.Length != 2 || option[0] != '-')
                 {
                     Ice.EndpointParseException e = new Ice.EndpointParseException();
-                    e.str = "ssl " + str;
+                    e.str = "expected an endpoint option but found `" + option + "' in endpoint `ssl " + str + "'";
                     throw e;
                 }
 
@@ -73,7 +73,7 @@ namespace IceSSL
                         if(argument == null)
                         {
                             Ice.EndpointParseException e = new Ice.EndpointParseException();
-                            e.str = "ssl " + str;
+                            e.str = "no argument provided for -h option in endpoint `ssl " + str + "'";
                             throw e;
                         }
 
@@ -86,25 +86,25 @@ namespace IceSSL
                         if(argument == null)
                         {
                             Ice.EndpointParseException e = new Ice.EndpointParseException();
-                            e.str = "ssl " + str;
+                            e.str = "no argument provided for -p option in endpoint `ssl " + str + "'";
                             throw e;
                         }
 
                         try
                         {
-                            _port = System.Int32.Parse(argument);
+                            _port = System.Int32.Parse(argument, CultureInfo.InvariantCulture);
                         }
                         catch(System.FormatException ex)
                         {
                             Ice.EndpointParseException e = new Ice.EndpointParseException(ex);
-                            e.str = "ssl " + str;
+                            e.str = "invalid port value `" + argument + "' in endpoint `ssl " + str + "'";
                             throw e;
                         }
 
                         if(_port < 0 || _port > 65535)
                         {
                             Ice.EndpointParseException e = new Ice.EndpointParseException();
-                            e.str = "ssl " + str;
+                            e.str = "port value `" + argument + "' out of range in endpoint `ssl " + str + "'";
                             throw e;
                         }
 
@@ -116,18 +116,18 @@ namespace IceSSL
                         if(argument == null)
                         {
                             Ice.EndpointParseException e = new Ice.EndpointParseException();
-                            e.str = "ssl " + str;
+                            e.str = "no argument provided for -t option in endpoint `ssl " + str + "'";
                             throw e;
                         }
 
                         try
                         {
-                            _timeout = System.Int32.Parse(argument);
+                            _timeout = System.Int32.Parse(argument, CultureInfo.InvariantCulture);
                         }
                         catch(System.FormatException ex)
                         {
                             Ice.EndpointParseException e = new Ice.EndpointParseException(ex);
-                            e.str = "ssl " + str;
+                            e.str = "invalid timeout value `" + argument + "' in endpoint `ssl " + str + "'";
                             throw e;
                         }
 
@@ -139,7 +139,8 @@ namespace IceSSL
                         if(argument != null)
                         {
                             Ice.EndpointParseException e = new Ice.EndpointParseException();
-                            e.str = "ssl " + str;
+                            e.str = "unexpected argument `" + argument + "' provided for -z option in `ssl " + str +
+                                    "'";
                             throw e;
                         }
 
@@ -150,7 +151,7 @@ namespace IceSSL
                     default:
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "ssl " + str;
+                        e.str = "unknown option `" + option + "' in `ssl " + str + "'";
                         throw e;
                     }
                 }
@@ -168,7 +169,7 @@ namespace IceSSL
                 }
                 else
                 {
-                    throw new Ice.EndpointParseException("ssl " + str);
+                    throw new Ice.EndpointParseException("`-h *' not valid for proxy endpoint `ssl " + str + "'");
                 }
             }
 
@@ -197,7 +198,7 @@ namespace IceSSL
         //
         public override void streamWrite(IceInternal.BasicStream s)
         {
-            s.writeShort(TYPE);
+            s.writeShort(EndpointType.value);
             s.startWriteEncaps();
             s.writeString(_host);
             s.writeInt(_port);
@@ -245,13 +246,43 @@ namespace IceSSL
             }
             return s;
         }
+        
+        private sealed class InfoI : IceSSL.EndpointInfo
+        {
+            public InfoI(int to, bool comp, string host, int port) : base(to, comp, host, port)
+            {
+            }
+
+            override public short type()
+            {
+                return EndpointType.value;
+            }
+            
+            override public bool datagram()
+            {
+                return false;
+            }
+                
+            override public bool secure()
+            {
+                return true;
+            }
+        };
+
+        //
+        // Return the endpoint information.
+        //
+        public override Ice.EndpointInfo getInfo()
+        {
+            return new InfoI(_timeout, _compress, _host, _port);
+        }
 
         //
         // Return the endpoint type.
         //
         public override short type()
         {
-            return TYPE;
+            return EndpointType.value;
         }
 
         //
@@ -338,14 +369,6 @@ namespace IceSSL
         }
 
         //
-        // Return true if the endpoint type is unknown.
-        //
-        public override bool unknown()
-        {
-            return false;
-        }
-
-        //
         // Return a server side transceiver for this endpoint, or null if a
         // transceiver can only be created by an acceptor. In case a
         // transceiver is created, this operation also returns a new
@@ -393,7 +416,8 @@ namespace IceSSL
         public override List<IceInternal.EndpointI> expand()
         {
             List<IceInternal.EndpointI> endps = new List<IceInternal.EndpointI>();
-            List<string> hosts = IceInternal.Network.getHostsForEndpointExpand(_host, _instance.protocolSupport());
+            List<string> hosts = 
+                IceInternal.Network.getHostsForEndpointExpand(_host, _instance.protocolSupport(), false);
             if(hosts == null || hosts.Count == 0)
             {
                 endps.Add(this);
@@ -430,7 +454,7 @@ namespace IceSSL
             List<IceInternal.Connector> connectors = new List<IceInternal.Connector>();
             foreach(IPEndPoint addr in addresses)
             {
-                connectors.Add(new ConnectorI(_instance, addr, _timeout, _connectionId));
+                connectors.Add(new ConnectorI(_instance, _host, addr, _timeout, _connectionId));
             }
             return connectors;
         }
@@ -494,7 +518,7 @@ namespace IceSSL
 
             if(!_connectionId.Equals(p._connectionId))
             {
-                return _connectionId.CompareTo(p._connectionId);
+                return string.Compare(_connectionId, p._connectionId, StringComparison.Ordinal);
             }
 
             if(!_compress && p._compress)
@@ -506,7 +530,7 @@ namespace IceSSL
                 return 1;
             }
 
-            return _host.CompareTo(p._host);
+            return string.Compare(_host, p._host, StringComparison.Ordinal);
         }
 
         private void calcHashValue()
@@ -536,7 +560,7 @@ namespace IceSSL
 
         public short type()
         {
-            return EndpointI.TYPE;
+            return EndpointType.value;
         }
 
         public string protocol()

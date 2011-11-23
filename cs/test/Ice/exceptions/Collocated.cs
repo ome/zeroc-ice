@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,9 +22,9 @@ public class Collocated
     private static int
     run(string[] args, Ice.Communicator communicator)
     {
-        communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010 -t 2000");
+        communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010");
         Ice.ObjectAdapter adapter = communicator.createObjectAdapter("TestAdapter");
-        Ice.Object obj = new ThrowerI(adapter);
+        Ice.Object obj = new ThrowerI();
         adapter.add(obj, communicator.stringToIdentity("thrower"));
         AllTests.allTests(communicator, true);
         return 0;

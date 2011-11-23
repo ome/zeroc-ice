@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,11 @@
 #include <Freeze/Catalog.h>
 #include <Freeze/CatalogIndexList.h>
 
+#include <IceUtil/MutexPtrLock.h>
+#include <IceUtil/MutexPtrTryLock.h>
 #include <IceUtil/IceUtil.h>
+
+#include <Ice/StringConverter.h>
 
 #include <cstdlib>
 #include <memory>
@@ -84,8 +88,39 @@ dbErrCallback(const char* prefix, char* msg)
     out << "DbEnv \"" << env->getEnvName() << "\": " << msg;
 }
 
-StaticMutex _mapMutex = ICE_STATIC_MUTEX_INITIALIZER;
-StaticMutex _refCountMutex = ICE_STATIC_MUTEX_INITIALIZER;  
+#ifndef __BCPLUSPLUS__ // COMPILERFIX
+namespace
+{
+#endif
+
+Mutex* mapMutex = 0;
+Mutex* refCountMutex = 0;
+
+class Init
+{
+public:
+
+    Init()
+    {
+        mapMutex = new IceUtil::Mutex;
+        refCountMutex = new IceUtil::Mutex;
+    }
+
+    ~Init()
+    {
+        delete mapMutex;
+        mapMutex = 0;
+
+        delete refCountMutex;
+        refCountMutex = 0;
+    }
+};
+
+Init init;
+
+#ifndef __BCPLUSPLUS__ // COMPILERFIX
+}
+#endif
 
 typedef map<MapKey, Freeze::SharedDbEnv*> SharedDbEnvMap;
 SharedDbEnvMap* sharedDbEnvMap;
@@ -95,7 +130,7 @@ SharedDbEnvMap* sharedDbEnvMap;
 Freeze::SharedDbEnvPtr 
 Freeze::SharedDbEnv::get(const CommunicatorPtr& communicator, const string& envName, DbEnv* env)
 {
-    StaticMutex::Lock lock(_mapMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(mapMutex);
 
     if(sharedDbEnvMap == 0)
     {
@@ -231,13 +266,13 @@ Freeze::SharedDbEnv::removeSharedMapDb(const string& dbName)
 
 void Freeze::SharedDbEnv::__incRef()
 {
-    IceUtil::StaticMutex::Lock lock(_refCountMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(refCountMutex);
     _refCount++;
 }
 
 void Freeze::SharedDbEnv::__decRef()
 {
-    IceUtil::StaticMutex::Lock lock(_refCountMutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(refCountMutex);
     if(--_refCount == 0)
     {
         MapKey key;
@@ -245,7 +280,7 @@ void Freeze::SharedDbEnv::__decRef()
         key.communicator = _communicator;
 
 
-        IceUtil::StaticMutex::TryLock mapLock(_mapMutex);
+        IceUtilInternal::MutexPtrTryLock<IceUtil::Mutex> mapLock(mapMutex);
         if(!mapLock.acquired())
         {
             //
@@ -447,6 +482,21 @@ Freeze::SharedDbEnv::SharedDbEnv(const std::string& envName,
     }
 #endif
 
+    string propertyPrefix = string("Freeze.DbEnv.") + envName;
+    string dbHome = properties->getPropertyWithDefault(propertyPrefix + ".DbHome", envName);
+    
+    //
+    // File lock to prevent multiple process open the same db env. We create the lock
+    // file in a sub-directory to ensure db_hotbackup won't try to copy the file when
+    // backing up the environment (this would fail on Windows where copying a locked
+    // file isn't possible).
+    //
+    if(!::IceUtilInternal::directoryExists(dbHome + "/__Freeze"))
+    {
+        ::IceUtilInternal::mkdir(dbHome + "/__Freeze", 0777);
+    }
+    _fileLock = new ::IceUtilInternal::FileLock(dbHome + "/__Freeze/lock");
+
     _trace = properties->getPropertyAsInt("Freeze.Trace.DbEnv");
 
     try
@@ -462,11 +512,8 @@ Freeze::SharedDbEnv::SharedDbEnv(const std::string& envName,
                 out << "opening database environment \"" << envName << "\"";
             }
             
-            string propertyPrefix = string("Freeze.DbEnv.") + envName;
-            
-         
             _env->set_errpfx(reinterpret_cast<char*>(this));
-                
+            
             _env->set_errcall(dbErrCallback);
                 
 #ifdef _WIN32
@@ -517,11 +564,8 @@ Freeze::SharedDbEnv::SharedDbEnv(const std::string& envName,
             // Threading
             // 
             flags |= DB_THREAD;
-            
-            string dbHome = properties->getPropertyWithDefault(
-                propertyPrefix + ".DbHome", envName);
-            
-            _env->open(dbHome.c_str(), flags, FREEZE_DB_MODE);
+
+            _env->open(Ice::nativeToUTF8(_communicator, dbHome).c_str(), flags, FREEZE_DB_MODE);
        
             //
             // Default checkpoint period is every 120 seconds
@@ -620,6 +664,7 @@ Freeze::SharedDbEnv::cleanup()
 
 
 Freeze::CheckpointThread::CheckpointThread(SharedDbEnv& dbEnv, const Time& checkpointPeriod, Int kbyte, Int trace) : 
+    Thread("Freeze checkpoint thread"),
     _dbEnv(dbEnv), 
     _done(false), 
     _checkpointPeriod(checkpointPeriod), 

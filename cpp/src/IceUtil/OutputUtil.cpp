@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <IceUtil/OutputUtil.h>
+#include <IceUtil/FileUtil.h>
 #include <cstring>
 
 using namespace std;
@@ -90,6 +91,11 @@ IceUtilInternal::OutputBase::~OutputBase()
 void
 IceUtilInternal::OutputBase::open(const char* s)
 {
+    //
+    // Remove any existing file first. This prevents file name
+    // mismatches on case-insensitive OSs.
+    //
+    IceUtilInternal::unlink(s);
     _fout.open(s);
 }
 

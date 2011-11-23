@@ -1,18 +1,20 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#define TRACE
+
 namespace Ice
 {
-
+    using System.Diagnostics;
     using System.Globalization;
-
-    public sealed class LoggerI :  Logger
+	
+    public abstract class LoggerI : Logger
     {
         public LoggerI(string prefix)
         {
@@ -24,76 +26,129 @@ namespace Ice
             _date = "d";
             _time = "HH:mm:ss:fff";
         }
-        
-        public void print(string message)
+
+        public void print( string message)
         {
             lock(_globalMutex)
             {
-                System.Console.Error.WriteLine(message);
+                write(message);
             }
         }
 
         public void trace(string category, string message)
         {
-            System.Text.StringBuilder s = new System.Text.StringBuilder("[ ");
-            s.Append(System.DateTime.Now.ToString(_date));
+            System.Text.StringBuilder s = new System.Text.StringBuilder("-- ");
+            s.Append(System.DateTime.Now.ToString(_date, CultureInfo.CurrentCulture));
             s.Append(' ');
-            s.Append(System.DateTime.Now.ToString(_time));
+            s.Append(System.DateTime.Now.ToString(_time, CultureInfo.CurrentCulture));
             s.Append(' ');
             s.Append(_prefix);
             s.Append(category);
             s.Append(": ");
             s.Append(message);
-            s.Append(" ]");
-            s.Replace("\n", "\n  ");
+            s.Replace("\n", "\n   ");
 
             lock(_globalMutex)
             {
-                System.Console.Error.WriteLine(s.ToString());
+                write(s.ToString());
             }
         }
         
         public void warning(string message)
         {
-            System.Text.StringBuilder s = new System.Text.StringBuilder();
-            s.Append(System.DateTime.Now.ToString(_date));
+            System.Text.StringBuilder s = new System.Text.StringBuilder("-! ");
+            s.Append(System.DateTime.Now.ToString(_date, CultureInfo.CurrentCulture));
             s.Append(' ');
-            s.Append(System.DateTime.Now.ToString(_time));
+            s.Append(System.DateTime.Now.ToString(_time, CultureInfo.CurrentCulture));
             s.Append(' ');
             s.Append(_prefix);
             s.Append("warning: ");
             s.Append(message);
+            s.Replace("\n", "\n   ");
 
             lock(_globalMutex)
             {
-                System.Console.Error.WriteLine(s.ToString());
+                write(s.ToString());
             }
         }
         
         public void error(string message)
         {
-            System.Text.StringBuilder s = new System.Text.StringBuilder();
-            s.Append(System.DateTime.Now.ToString(_date));
+            System.Text.StringBuilder s = new System.Text.StringBuilder("!! ");
+            s.Append(System.DateTime.Now.ToString(_date, CultureInfo.CurrentCulture));
             s.Append(' ');
-            s.Append(System.DateTime.Now.ToString(_time));
+            s.Append(System.DateTime.Now.ToString(_time, CultureInfo.CurrentCulture));
             s.Append(' ');
             s.Append(_prefix);
             s.Append("error: ");
             s.Append(message);
+            s.Replace("\n", "\n   ");
 
             lock(_globalMutex)
             {
-                System.Console.Error.WriteLine(s.ToString());
+                write(s.ToString());
             }
         }
-        
+
+        public abstract Logger cloneWithPrefix(string prefix);
+
+        protected abstract void write(string message);
+
         internal string _prefix = "";
-        internal static object _globalMutex;
         internal string _date = null;
         internal string _time = null;
-        static LoggerI()
+
+        internal static object _globalMutex = new object();
+    }
+
+    public sealed class ConsoleLoggerI : LoggerI
+    {
+        public ConsoleLoggerI(string prefix)
+            : base(prefix)
         {
-            _globalMutex = new object();
         }
+
+        public override Logger cloneWithPrefix(string prefix)
+        {
+            return new ConsoleLoggerI(prefix);
+        }
+
+        protected override void write(string message)
+        {
+            System.Console.Error.WriteLine(message);
+        }
+    }
+
+    public sealed class TraceLoggerI : LoggerI
+    {
+        public TraceLoggerI(string prefix, string file, bool console)
+            : base(prefix)
+        {
+            if(file.Length != 0)
+            {
+                _file = file;
+                Trace.Listeners.Add(new TextWriterTraceListener(file));
+            }
+            _console = console;
+            if(console && !Trace.Listeners.Contains(_consoleListener))
+            {
+                Trace.Listeners.Add(_consoleListener);
+            }
+        }
+
+        public override Logger cloneWithPrefix(string prefix)
+        {
+            return new TraceLoggerI(prefix, _file, _console);
+        }
+
+        protected override void write(string message)
+        {
+            Trace.WriteLine(message);
+            Trace.Flush();
+        }
+
+        private string _file = "";
+        private bool _console = false;
+        internal static ConsoleTraceListener _consoleListener = new ConsoleTraceListener(true);
     }
 }

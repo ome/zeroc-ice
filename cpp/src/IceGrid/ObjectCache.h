@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -77,7 +77,7 @@ private:
     const Ice::CommunicatorPtr _communicator;
     std::map<std::string, TypeEntry> _types;
 
-    static std::pointer_to_unary_function<int, int> _rand;
+    static std::pointer_to_unary_function<int, unsigned int> _rand;
 };
 
 };

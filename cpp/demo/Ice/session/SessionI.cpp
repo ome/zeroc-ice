@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -28,7 +28,7 @@ public:
     }
 
     void
-    sayHello(const Ice::Current&) const
+    sayHello(const Ice::Current&)
     {
         cout << "Hello object #" << _id << " for session `" << _name << "' says:\n"
              << "Hello " << _name << "!" << endl;
@@ -76,7 +76,7 @@ SessionI::refresh(const Ice::Current& c)
 }
 
 string
-SessionI::getName(const Ice::Current&) const
+SessionI::getName(const Ice::Current&)
 {
     Lock sync(*this);
     if(_destroy)

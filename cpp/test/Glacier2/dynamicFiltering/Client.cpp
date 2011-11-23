@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -138,16 +138,7 @@ SessionControlClient::run(int argc, char* argv[])
     //
     // Cleanup.
     //
-    try
-    {
-        router->destroySession();
-    }
-    catch(const ConnectionLostException&)
-    {
-    }
-    catch(const CloseConnectionException&)
-    {
-    }
+    router->destroySession();
 
     cout << "testing shutdown... " << flush;
 
@@ -169,7 +160,7 @@ SessionControlClient::run(int argc, char* argv[])
     // Shut down the router.
     //
     communicator()->setDefaultRouter(0);
-    ObjectPrx processBase = communicator()->stringToProxy("Glacier2/admin -f Process:tcp -p 12348 -t 10000");
+    ObjectPrx processBase = communicator()->stringToProxy("Glacier2/admin -f Process:tcp -p 12348");
     Ice::ProcessPrx process = Ice::ProcessPrx::checkedCast(processBase);
     test(process);
     process->shutdown();

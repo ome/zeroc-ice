@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -47,6 +47,13 @@ MyDerivedClassI::shutdown_async(const Test::AMD_MyClass_shutdownPtr& cb, const I
     }
 
     current.adapter->getCommunicator()->shutdown();
+    cb->ice_response();
+}
+
+void
+MyDerivedClassI::delay_async(const Test::AMD_MyClass_delayPtr& cb, Ice::Int ms, const Ice::Current& current)
+{
+    IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(ms));
     cb->ice_response();
 }
 
@@ -356,6 +363,18 @@ MyDerivedClassI::opStringMyEnumD_async(const Test::AMD_MyClass_opStringMyEnumDPt
 {
     Test::StringMyEnumD p3 = p1;
     Test::StringMyEnumD r = p1;
+    std::set_union(p1.begin(), p1.end(), p2.begin(), p2.end(), std::inserter(r, r.end()));
+    cb->ice_response(r, p3);
+}
+
+void
+MyDerivedClassI::opMyEnumStringD_async(const Test::AMD_MyClass_opMyEnumStringDPtr& cb,
+                                       const Test::MyEnumStringD& p1,
+                                       const Test::MyEnumStringD& p2,
+                                       const Ice::Current&)
+{
+    Test::MyEnumStringD p3 = p1;
+    Test::MyEnumStringD r = p1;
     std::set_union(p1.begin(), p1.end(), p2.begin(), p2.end(), std::inserter(r, r.end()));
     cb->ice_response(r, p3);
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -26,12 +26,8 @@ class CallbackBase:
         self._cond.acquire()
         try:
             while not self._called:
-                self._cond.wait(5.0)
-            if self._called:
-                self._called = False
-                return True
-            else:
-                return False
+                self._cond.wait()
+            self._called = False
         finally:
             self._cond.release()
 
@@ -41,11 +37,11 @@ class CallbackBase:
         self._cond.notify()
         self._cond.release()
 
-class AMI_Test_baseAsBaseI(CallbackBase):
-    def ice_response(self):
+class Callback(CallbackBase):
+    def response(self):
         test(False)
 
-    def ice_exception(self, exc):
+    def exception_baseAsBase(self, exc):
         try:
             raise exc
         except Test.Base, b:
@@ -55,11 +51,7 @@ class AMI_Test_baseAsBaseI(CallbackBase):
             test(False)
         self.called()
 
-class AMI_Test_unknownDerivedAsBaseI(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, exc):
+    def exception_unknownDerivedAsBase(self, exc):
         try:
             raise exc
         except Test.Base, b:
@@ -69,11 +61,7 @@ class AMI_Test_unknownDerivedAsBaseI(CallbackBase):
             test(False)
         self.called()
 
-class AMI_Test_knownDerivedAsBaseI(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, exc):
+    def exception_knownDerivedAsBase(self, exc):
         try:
             raise exc
         except Test.KnownDerived, k:
@@ -84,11 +72,7 @@ class AMI_Test_knownDerivedAsBaseI(CallbackBase):
             test(False)
         self.called()
 
-class AMI_Test_knownDerivedAsKnownDerivedI(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, exc):
+    def exception_knownDerivedAsKnownDerived(self, exc):
         try:
             raise exc
         except Test.KnownDerived, k:
@@ -99,11 +83,7 @@ class AMI_Test_knownDerivedAsKnownDerivedI(CallbackBase):
             test(False)
         self.called()
 
-class AMI_Test_unknownIntermediateAsBaseI(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, exc):
+    def exception_unknownIntermediateAsBase(self, exc):
         try:
             raise exc
         except Test.Base, b:
@@ -113,11 +93,7 @@ class AMI_Test_unknownIntermediateAsBaseI(CallbackBase):
             test(False)
         self.called()
 
-class AMI_Test_knownIntermediateAsBaseI(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, exc):
+    def exception_knownIntermediateAsBase(self, exc):
         try:
             raise exc
         except Test.KnownIntermediate, ki:
@@ -128,11 +104,7 @@ class AMI_Test_knownIntermediateAsBaseI(CallbackBase):
             test(False)
         self.called()
 
-class AMI_Test_knownMostDerivedAsBaseI(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, exc):
+    def exception_knownMostDerivedAsBase(self, exc):
         try:
             raise exc
         except Test.KnownMostDerived, kmd:
@@ -144,11 +116,7 @@ class AMI_Test_knownMostDerivedAsBaseI(CallbackBase):
             test(False)
         self.called()
 
-class AMI_Test_knownIntermediateAsKnownIntermediateI(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, exc):
+    def exception_knownIntermediateAsKnownIntermediate(self, exc):
         try:
             raise exc
         except Test.KnownIntermediate, ki:
@@ -159,11 +127,7 @@ class AMI_Test_knownIntermediateAsKnownIntermediateI(CallbackBase):
             test(False)
         self.called()
 
-class AMI_Test_knownMostDerivedAsKnownMostDerivedI(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, exc):
+    def exception_knownMostDerivedAsKnownMostDerived(self, exc):
         try:
             raise exc
         except Test.KnownMostDerived, kmd:
@@ -175,11 +139,7 @@ class AMI_Test_knownMostDerivedAsKnownMostDerivedI(CallbackBase):
             test(False)
         self.called()
 
-class AMI_Test_knownMostDerivedAsKnownIntermediateI(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, exc):
+    def exception_knownMostDerivedAsKnownIntermediate(self, exc):
         try:
             raise exc
         except Test.KnownMostDerived, kmd:
@@ -191,11 +151,7 @@ class AMI_Test_knownMostDerivedAsKnownIntermediateI(CallbackBase):
             test(False)
         self.called()
 
-class AMI_Test_unknownMostDerived1AsBaseI(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, exc):
+    def exception_unknownMostDerived1AsBase(self, exc):
         try:
             raise exc
         except Test.KnownIntermediate, ki:
@@ -206,11 +162,7 @@ class AMI_Test_unknownMostDerived1AsBaseI(CallbackBase):
             test(False)
         self.called()
 
-class AMI_Test_unknownMostDerived1AsKnownIntermediateI(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, exc):
+    def exception_unknownMostDerived1AsKnownIntermediate(self, exc):
         try:
             raise exc
         except Test.KnownIntermediate, ki:
@@ -221,11 +173,7 @@ class AMI_Test_unknownMostDerived1AsKnownIntermediateI(CallbackBase):
             test(False)
         self.called()
 
-class AMI_Test_unknownMostDerived2AsBaseI(CallbackBase):
-    def ice_response(self):
-        test(False)
-
-    def ice_exception(self, exc):
+    def exception_unknownMostDerived2AsBase(self, exc):
         try:
             raise exc
         except Test.Base, b:
@@ -251,9 +199,9 @@ def allTests(communicator):
     print "ok"
 
     print "base (AMI)... ",
-    cb = AMI_Test_baseAsBaseI()
-    t.baseAsBase_async(cb)
-    test(cb.check())
+    cb = Callback()
+    t.begin_baseAsBase(cb.response, cb.exception_baseAsBase)
+    cb.check()
     print "ok"
 
     print "slicing of unknown derived... ",
@@ -268,9 +216,9 @@ def allTests(communicator):
     print "ok"
 
     print "slicing of unknown derived (AMI)... ",
-    cb = AMI_Test_unknownDerivedAsBaseI()
-    t.unknownDerivedAsBase_async(cb)
-    test(cb.check())
+    cb = Callback()
+    t.begin_unknownDerivedAsBase(cb.response, cb.exception_unknownDerivedAsBase)
+    cb.check()
     print "ok"
 
     print "non-slicing of known derived as base... ",
@@ -286,9 +234,9 @@ def allTests(communicator):
     print "ok"
 
     print "non-slicing of known derived as base (AMI)... ",
-    cb = AMI_Test_knownDerivedAsBaseI()
-    t.knownDerivedAsBase_async(cb)
-    test(cb.check())
+    cb = Callback()
+    t.begin_knownDerivedAsBase(cb.response, cb.exception_knownDerivedAsBase)
+    cb.check()
     print "ok"
 
     print "non-slicing of known derived as derived... ",
@@ -304,9 +252,9 @@ def allTests(communicator):
     print "ok"
 
     print "non-slicing of known derived as derived (AMI)... ",
-    cb = AMI_Test_knownDerivedAsKnownDerivedI()
-    t.knownDerivedAsKnownDerived_async(cb)
-    test(cb.check())
+    cb = Callback()
+    t.begin_knownDerivedAsKnownDerived(cb.response, cb.exception_knownDerivedAsKnownDerived)
+    cb.check()
     print "ok"
 
     print "slicing of unknown intermediate as base... ",
@@ -321,9 +269,9 @@ def allTests(communicator):
     print "ok"
 
     print "slicing of unknown intermediate as base (AMI)... ",
-    cb = AMI_Test_unknownIntermediateAsBaseI()
-    t.unknownIntermediateAsBase_async(cb)
-    test(cb.check())
+    cb = Callback()
+    t.begin_unknownIntermediateAsBase(cb.response, cb.exception_unknownIntermediateAsBase)
+    cb.check()
     print "ok"
 
     print "slicing of known intermediate as base... ",
@@ -339,9 +287,9 @@ def allTests(communicator):
     print "ok"
 
     print "slicing of known intermediate as base (AMI)... ",
-    cb = AMI_Test_knownIntermediateAsBaseI()
-    t.knownIntermediateAsBase_async(cb)
-    test(cb.check())
+    cb = Callback()
+    t.begin_knownIntermediateAsBase(cb.response, cb.exception_knownIntermediateAsBase)
+    cb.check()
     print "ok"
 
     print "slicing of known most derived as base... ",
@@ -358,9 +306,9 @@ def allTests(communicator):
     print "ok"
 
     print "slicing of known most derived as base (AMI)... ",
-    cb = AMI_Test_knownMostDerivedAsBaseI()
-    t.knownMostDerivedAsBase_async(cb)
-    test(cb.check())
+    cb = Callback()
+    t.begin_knownMostDerivedAsBase(cb.response, cb.exception_knownMostDerivedAsBase)
+    cb.check()
     print "ok"
 
     print "non-slicing of known intermediate as intermediate... ",
@@ -376,9 +324,9 @@ def allTests(communicator):
     print "ok"
 
     print "non-slicing of known intermediate as intermediate (AMI)... ",
-    cb = AMI_Test_knownIntermediateAsKnownIntermediateI()
-    t.knownIntermediateAsKnownIntermediate_async(cb)
-    test(cb.check())
+    cb = Callback()
+    t.begin_knownIntermediateAsKnownIntermediate(cb.response, cb.exception_knownIntermediateAsKnownIntermediate)
+    cb.check()
     print "ok"
 
     print "non-slicing of known most derived exception as intermediate... ",
@@ -395,9 +343,9 @@ def allTests(communicator):
     print "ok"
 
     print "non-slicing of known most derived as intermediate (AMI)... ",
-    cb = AMI_Test_knownMostDerivedAsKnownIntermediateI()
-    t.knownMostDerivedAsKnownIntermediate_async(cb)
-    test(cb.check())
+    cb = Callback()
+    t.begin_knownMostDerivedAsKnownIntermediate(cb.response, cb.exception_knownMostDerivedAsKnownIntermediate)
+    cb.check()
     print "ok"
 
     print "non-slicing of known most derived as most derived... ",
@@ -414,9 +362,9 @@ def allTests(communicator):
     print "ok"
 
     print "non-slicing of known most derived as most derived (AMI)... ",
-    cb = AMI_Test_knownMostDerivedAsKnownMostDerivedI()
-    t.knownMostDerivedAsKnownMostDerived_async(cb)
-    test(cb.check())
+    cb = Callback()
+    t.begin_knownMostDerivedAsKnownMostDerived(cb.response, cb.exception_knownMostDerivedAsKnownMostDerived)
+    cb.check()
     print "ok"
 
     print "slicing of unknown most derived, known intermediate as base... ",
@@ -432,9 +380,9 @@ def allTests(communicator):
     print "ok"
 
     print "slicing of unknown most derived, known intermediate as base (AMI)... ",
-    cb = AMI_Test_unknownMostDerived1AsBaseI()
-    t.unknownMostDerived1AsBase_async(cb)
-    test(cb.check())
+    cb = Callback()
+    t.begin_unknownMostDerived1AsBase(cb.response, cb.exception_unknownMostDerived1AsBase)
+    cb.check()
     print "ok"
 
     print "slicing of unknown most derived, known intermediate as intermediate... ",
@@ -450,9 +398,9 @@ def allTests(communicator):
     print "ok"
 
     print "slicing of unknown most derived, known intermediate as intermediate (AMI)... ",
-    cb = AMI_Test_unknownMostDerived1AsKnownIntermediateI()
-    t.unknownMostDerived1AsKnownIntermediate_async(cb)
-    test(cb.check())
+    cb = Callback()
+    t.begin_unknownMostDerived1AsKnownIntermediate(cb.response, cb.exception_unknownMostDerived1AsKnownIntermediate)
+    cb.check()
     print "ok"
 
     print "slicing of unknown most derived, unknown intermediate as base... ",
@@ -467,9 +415,9 @@ def allTests(communicator):
     print "ok"
 
     print "slicing of unknown most derived, unknown intermediate as base (AMI)... ",
-    cb = AMI_Test_unknownMostDerived2AsBaseI()
-    t.unknownMostDerived2AsBase_async(cb)
-    test(cb.check())
+    cb = Callback()
+    t.begin_unknownMostDerived2AsBase(cb.response, cb.exception_unknownMostDerived2AsBase)
+    cb.check()
     print "ok"
 
     return t

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,7 +12,7 @@
 
 #include <IceUtil/Config.h>
 
-namespace IceUtilInternal
+namespace IceUtil
 {
 
 template<typename T>
@@ -23,6 +23,12 @@ public:
     explicit ScopedArray(T* ptr = 0) :
         _ptr(ptr)
     {
+    }
+
+    ScopedArray(const ScopedArray& other)
+    {
+        _ptr = other._ptr;
+        const_cast<ScopedArray&>(other)._ptr = 0;
     }
 
     ~ScopedArray()

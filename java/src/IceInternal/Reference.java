@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -60,15 +60,6 @@ public abstract class Reference implements Cloneable
         return _context;
     }
 
-    public final Reference
-    defaultContext()
-    {
-        Reference r = _instance.referenceFactory().copy(this);
-        r._context = _instance.getDefaultContext();
-        return r;
-
-    }
-
     public final Ice.Communicator 
     getCommunicator()
     {
@@ -84,6 +75,7 @@ public abstract class Reference implements Cloneable
     public abstract boolean getPreferSecure();
     public abstract Ice.EndpointSelectionType getEndpointSelection();
     public abstract int getLocatorCacheTimeout();
+    public abstract String getConnectionId();
 
     //
     // The change* methods (here and in derived classes) create
@@ -265,7 +257,7 @@ public abstract class Reference implements Cloneable
         // the identity string in quotes.
         //
         String id = _instance.identityToString(_identity);
-        if(IceUtilInternal.StringUtil.findFirstOf(id, " \t\n\r:@") != -1)
+        if(IceUtilInternal.StringUtil.findFirstOf(id, " :@") != -1)
         {
             s.append('"');
             s.append(id);
@@ -285,7 +277,7 @@ public abstract class Reference implements Cloneable
             //
             s.append(" -f ");
             String fs = IceUtilInternal.StringUtil.escapeString(_facet, "");
-            if(IceUtilInternal.StringUtil.findFirstOf(fs, " \t\n\r:@") != -1)
+            if(IceUtilInternal.StringUtil.findFirstOf(fs, " :@") != -1)
             {
                 s.append('"');
                 s.append(fs);
@@ -339,6 +331,11 @@ public abstract class Reference implements Cloneable
 
         // Derived class writes the remainder of the string.
     }
+
+    //
+    // Convert the reference to its property form.
+    //
+    public abstract java.util.Map<String, String> toProperty(String prefix);
 
     public abstract Ice.ConnectionI getConnection(Ice.BooleanHolder comp);
     public abstract void getConnection(GetConnectionCallback callback);
@@ -424,7 +421,6 @@ public abstract class Reference implements Cloneable
     Reference(Instance instance,
               Ice.Communicator communicator,
               Ice.Identity identity,
-              java.util.Map<String, String> context,
               String facet,
               int mode,
               boolean secure)
@@ -441,7 +437,7 @@ public abstract class Reference implements Cloneable
         _mode = mode;
         _secure = secure;
         _identity = identity;
-        _context = context == null ? _emptyContext : context;
+        _context = _emptyContext;
         _facet = facet;
         _hashInitialized = false;
         _overrideCompress = false;

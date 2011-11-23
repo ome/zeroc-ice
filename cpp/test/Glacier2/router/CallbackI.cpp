@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,135 +15,98 @@ using namespace std;
 using namespace Ice;
 using namespace Test;
 
-class AMI_CallbackReceiver_callbackI : public AMI_CallbackReceiver_callback
+class Cookie : public Ice::LocalObject
+{
+};
+typedef IceUtil::Handle<Cookie> CookiePtr;
+
+template<class T>
+class CookieT : public Cookie
 {
 public:
 
-    AMI_CallbackReceiver_callbackI(const AMD_Callback_initiateCallbackPtr cb) :
-        _cb(cb)
+    CookieT(const T& v) : cb(v)
     {
     }
 
-    virtual void
-    ice_response()
-    {
-        _cb->ice_response();
-    }
-
-    virtual void
-    ice_exception(const Exception& e)
-    {
-        _cb->ice_exception(e);
-    }
-
-private:
-
-    const AMD_Callback_initiateCallbackPtr _cb;
+    T cb;
 };
 
-class AMI_CallbackReceiver_callbackExI : public AMI_CallbackReceiver_callbackEx
+template<typename T> CookiePtr newCookie(const T& cb)
+{
+    return new CookieT<T>(cb);
+}
+
+template<typename T> const T& getCookie(const CookiePtr& cookie)
+{
+    return dynamic_cast<CookieT<T>* >(cookie.get())->cb;
+}
+
+class AsyncCB : public IceUtil::Shared
 {
 public:
 
-    AMI_CallbackReceiver_callbackExI(const AMD_Callback_initiateCallbackExPtr cb) :
-        _cb(cb)
+    void
+    responseCallback(const CookiePtr& cookie)
     {
+        getCookie<AMD_Callback_initiateCallbackPtr>(cookie)->ice_response();
     }
 
-    virtual void
-    ice_response()
+    void
+    exceptionCallback(const Ice::Exception& ex, const CookiePtr& cookie)
     {
-        _cb->ice_response();
+        getCookie<AMD_Callback_initiateCallbackPtr>(cookie)->ice_exception(ex);
     }
 
-    virtual void
-    ice_exception(const Exception& e)
+    void
+    responseCallbackEx(const CookiePtr& cookie)
     {
-        _cb->ice_exception(e);
+        getCookie<AMD_Callback_initiateCallbackExPtr>(cookie)->ice_response();
     }
 
-private:
+    void
+    exceptionCallbackEx(const Ice::Exception& ex, const CookiePtr& cookie)
+    {
+        getCookie<AMD_Callback_initiateCallbackExPtr>(cookie)->ice_exception(ex);
+    }
 
-    const AMD_Callback_initiateCallbackExPtr _cb;
+    void
+    responseConcurrentCallback(Int number, const CookiePtr& cookie)
+    {
+        getCookie<AMD_Callback_initiateConcurrentCallbackPtr>(cookie)->ice_response(number);
+    }
+
+    void
+    exceptionConcurrentCallback(const Ice::Exception& ex, const CookiePtr& cookie)
+    {
+        getCookie<AMD_Callback_initiateConcurrentCallbackPtr>(cookie)->ice_exception(ex);
+    }
+
+    void
+    responseWaitCallback(const CookiePtr& cookie)
+    {
+        getCookie<AMD_Callback_initiateWaitCallbackPtr>(cookie)->ice_response();
+    }
+
+    void
+    exceptionWaitCallback(const Ice::Exception& ex, const CookiePtr& cookie)
+    {
+        getCookie<AMD_Callback_initiateWaitCallbackPtr>(cookie)->ice_exception(ex);
+    }
+
+    void
+    responseCallbackWithPayload(const CookiePtr& cookie)
+    {
+        getCookie<AMD_Callback_initiateCallbackWithPayloadPtr>(cookie)->ice_response();
+    }
+
+    void
+    exceptionCallbackWithPayload(const Ice::Exception& ex, const CookiePtr& cookie)
+    {
+        getCookie<AMD_Callback_initiateCallbackWithPayloadPtr>(cookie)->ice_exception(ex);
+    }
 };
-
-class AMI_CallbackReceiver_concurrentCallbackI : public AMI_CallbackReceiver_concurrentCallback
-{
-public:
-
-    AMI_CallbackReceiver_concurrentCallbackI(const AMD_Callback_initiateConcurrentCallbackPtr cb) :
-        _cb(cb)
-    {
-    }
-
-    virtual void
-    ice_response(Int number)
-    {
-        _cb->ice_response(number);
-    }
-
-    virtual void
-    ice_exception(const Exception& e)
-    {
-        _cb->ice_exception(e);
-    }
-
-private:
-
-    const AMD_Callback_initiateConcurrentCallbackPtr _cb;
-};
-
-class AMI_CallbackReceiver_waitCallbackI : public AMI_CallbackReceiver_waitCallback
-{
-public:
-
-    AMI_CallbackReceiver_waitCallbackI(const AMD_Callback_initiateWaitCallbackPtr cb) :
-        _cb(cb)
-    {
-    }
-
-    virtual void
-    ice_response()
-    {
-        _cb->ice_response();
-    }
-
-    virtual void
-    ice_exception(const Exception& e)
-    {
-        _cb->ice_exception(e);
-    }
-
-private:
-
-    const AMD_Callback_initiateWaitCallbackPtr _cb;
-};
-
-class AMI_CallbackReceiver_callbackWithPayloadI : public AMI_CallbackReceiver_callbackWithPayload
-{
-public:
-
-    AMI_CallbackReceiver_callbackWithPayloadI(const AMD_Callback_initiateCallbackWithPayloadPtr cb) :
-        _cb(cb)
-    {
-    }
-
-    virtual void
-    ice_response()
-    {
-        _cb->ice_response();
-    }
-
-    virtual void
-    ice_exception(const Exception& e)
-    {
-        _cb->ice_exception(e);
-    }
-
-private:
-
-    const AMD_Callback_initiateCallbackWithPayloadPtr _cb;
-};
+typedef IceUtil::Handle<AsyncCB> AsyncCBPtr;
 
 CallbackReceiverI::CallbackReceiverI() :
     _callback(false),
@@ -200,7 +163,7 @@ CallbackReceiverI::waitCallback(const Current&)
         Lock sync(*this);
         while(!_finishWaitCallback)
         {
-            test(timedWait(IceUtil::Time::milliSeconds(10000)));
+            wait();
         }
         _finishWaitCallback = false;
     }
@@ -215,54 +178,42 @@ CallbackReceiverI::callbackWithPayload(const Ice::ByteSeq&, const Current&)
     notifyAll();
 }
 
-bool
+void
 CallbackReceiverI::callbackOK()
 {
     Lock sync(*this);
 
     while(!_callback)
     {
-        if(!timedWait(IceUtil::Time::milliSeconds(10000)))
-        {
-            return false;
-        }
+        wait();
     }
 
     _callback = false;
-    return true;
 }
 
-bool
+void
 CallbackReceiverI::waitCallbackOK()
 {
     Lock sync(*this);
     while(!_waitCallback)
     {
-        if(!timedWait(IceUtil::Time::milliSeconds(10000)))
-        {
-            return false;
-        }
+        wait();
     }
 
     _waitCallback = false;
-    return true;
 }
 
-bool
+void
 CallbackReceiverI::callbackWithPayloadOK()
 {
     Lock sync(*this);
 
     while(!_callbackWithPayload)
     {
-        if(!timedWait(IceUtil::Time::milliSeconds(10000)))
-        {
-            return false;
-        }
+        wait();
     }
 
     _callbackWithPayload = false;
-    return true;
 }
 
 void
@@ -273,17 +224,14 @@ CallbackReceiverI::notifyWaitCallback()
     notifyAll();
 };
 
-bool
+void
 CallbackReceiverI::answerConcurrentCallbacks(unsigned int num)
 {
     Lock sync(*this);
 
     while(_callbacks.size() != num)
     {
-        if(!timedWait(IceUtil::Time::milliSeconds(10000)))
-        {
-            return false;
-        }
+        wait();
     }
 
     for(vector<pair<AMD_CallbackReceiver_concurrentCallbackPtr, Int> >::const_iterator p = _callbacks.begin();
@@ -293,7 +241,6 @@ CallbackReceiverI::answerConcurrentCallbacks(unsigned int num)
         p->first->ice_response(p->second);
     }
     _callbacks.clear();
-    return true;
 }
 
 CallbackI::CallbackI()
@@ -306,7 +253,10 @@ CallbackI::initiateCallback_async(const AMD_Callback_initiateCallbackPtr& cb,
 {
     if(proxy->ice_isTwoway())
     {
-        proxy->callback_async(new AMI_CallbackReceiver_callbackI(cb), current.ctx);
+        AsyncCBPtr acb = new AsyncCB();
+        proxy->begin_callback(current.ctx, 
+            newCallback_CallbackReceiver_callback(acb, &AsyncCB::responseCallback, &AsyncCB::exceptionCallback), 
+            newCookie(cb));
     }
     else
     {
@@ -321,7 +271,10 @@ CallbackI::initiateCallbackEx_async(const AMD_Callback_initiateCallbackExPtr& cb
 {
     if(proxy->ice_isTwoway())
     {
-        proxy->callbackEx_async(new AMI_CallbackReceiver_callbackExI(cb), current.ctx);
+        AsyncCBPtr acb = new AsyncCB();
+        proxy->begin_callbackEx(current.ctx, 
+            newCallback_CallbackReceiver_callbackEx(acb, &AsyncCB::responseCallbackEx, &AsyncCB::exceptionCallbackEx), 
+            newCookie(cb));
     }
     else
     {
@@ -334,9 +287,13 @@ void
 CallbackI::initiateConcurrentCallback_async(const AMD_Callback_initiateConcurrentCallbackPtr& cb,
                                             Int number,
                                             const CallbackReceiverPrx& proxy,
-                                        const Current& current)
+                                            const Current& current)
 {
-    proxy->concurrentCallback_async(new AMI_CallbackReceiver_concurrentCallbackI(cb), number, current.ctx);
+    AsyncCBPtr acb = new AsyncCB();
+    proxy->begin_concurrentCallback(number, current.ctx, 
+        newCallback_CallbackReceiver_concurrentCallback(acb, &AsyncCB::responseConcurrentCallback,
+                                                        &AsyncCB::exceptionConcurrentCallback), 
+        newCookie(cb));
 }
 
 void
@@ -344,7 +301,10 @@ CallbackI::initiateWaitCallback_async(const AMD_Callback_initiateWaitCallbackPtr
                                       const CallbackReceiverPrx& proxy, 
                                       const Current& current)
 {
-    proxy->waitCallback_async(new AMI_CallbackReceiver_waitCallbackI(cb));
+    AsyncCBPtr acb = new AsyncCB();
+    proxy->begin_waitCallback(current.ctx, 
+        newCallback_CallbackReceiver_waitCallback(acb, &AsyncCB::responseWaitCallback, &AsyncCB::exceptionWaitCallback),
+        newCookie(cb));
 }
 
 void
@@ -353,7 +313,11 @@ CallbackI::initiateCallbackWithPayload_async(const AMD_Callback_initiateCallback
                                              const Current& current)
 {
     Ice::ByteSeq seq(1000 * 1024, 0);
-    proxy->callbackWithPayload_async(new AMI_CallbackReceiver_callbackWithPayloadI(cb), seq);
+    AsyncCBPtr acb = new AsyncCB();
+    proxy->begin_callbackWithPayload(seq, current.ctx, 
+        newCallback_CallbackReceiver_callbackWithPayload(acb, &AsyncCB::responseCallbackWithPayload, 
+                                                         &AsyncCB::exceptionCallbackWithPayload),
+        newCookie(cb));
 }
 
 void

@@ -2,7 +2,7 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -62,26 +62,42 @@ fractional_constant	(\+|-)?(([[:digit:]]*\.[[:digit:]]+)|([[:digit:]]+\.))
 exponent_part		(e|E)(\+|-)?[[:digit:]]+
 floating_literal	(({fractional_constant}{exponent_part}?)|((\+|-)?[[:digit:]]+{exponent_part}))[fF]?
 
+%s BOMSCAN
+%s MAINSCAN
+
 %%
 
 ^"#"[[:blank:]]*[[:digit:]]+[[:blank:]]*$ {
-    unit->scanPosition(yytext);
+    if(unit->scanPosition(yytext))
+    {
+        BEGIN(BOMSCAN);
+    }
 }
 
 ^"#"[[:blank:]]*[[:digit:]]+[[:blank:]]+"\""[^\"]*"\"".*$ {
-    unit->scanPosition(yytext);
+    if(unit->scanPosition(yytext))
+    {
+        BEGIN(BOMSCAN);
+    }
 }
 
 ^"#"[[:blank:]]*"line"[[:blank:]]+[[:digit:]]+[[:blank:]]*$ {
-    unit->scanPosition(yytext);
+    if(unit->scanPosition(yytext))
+    {
+        BEGIN(BOMSCAN);
+    }
 }
 
 ^"#"[[:blank:]]*"line"[[:blank:]]+[[:digit:]]+[[:blank:]]+"\""[^\"]*"\"".*$ {
-    unit->scanPosition(yytext);
+    if(unit->scanPosition(yytext))
+    {
+        BEGIN(BOMSCAN);
+    }
 }
 
 "//" {
     // C++-style comment
+    BEGIN(MAINSCAN);
     int c;
     do
     {
@@ -96,6 +112,7 @@ floating_literal	(({fractional_constant}{exponent_part}?)|((\+|-)?[[:digit:]]+{e
 
 "/*" {
     // C-style comment
+    BEGIN(MAINSCAN);
     string comment = yytext + 2;
     while(true)
     {
@@ -135,26 +152,32 @@ floating_literal	(({fractional_constant}{exponent_part}?)|((\+|-)?[[:digit:]]+{e
 }
 
 "::" {
+    BEGIN(MAINSCAN);
     return ICE_SCOPE_DELIMITER;
 }
 
 "[" {
+    BEGIN(MAINSCAN);
     return ICE_METADATA_OPEN;
 }
 
 "]" {
+    BEGIN(MAINSCAN);
     return ICE_METADATA_CLOSE;
 }
 
 "[[" {
+    BEGIN(MAINSCAN);
     return ICE_GLOBAL_METADATA_OPEN;
 }
 
 "]]" {
+    BEGIN(MAINSCAN);
     return ICE_GLOBAL_METADATA_CLOSE;
 }
 
 {identifier}[[:space:]]*"(" {
+    BEGIN(MAINSCAN);
     StringTokPtr ident = new StringTok;
     ident->v = *yytext == '\\' ? yytext + 1 : yytext;
     ident->v.erase(ident->v.find_first_of(" \t\v\n\r\f("));
@@ -168,6 +191,7 @@ floating_literal	(({fractional_constant}{exponent_part}?)|((\+|-)?[[:digit:]]+{e
 }
 
 {identifier} {
+    BEGIN(MAINSCAN);
     StringTokPtr ident = new StringTok;
     ident->v = *yytext == '\\' ? yytext + 1 : yytext;
     *yylvalp = ident;
@@ -176,6 +200,7 @@ floating_literal	(({fractional_constant}{exponent_part}?)|((\+|-)?[[:digit:]]+{e
 }
 
 \" {
+    BEGIN(MAINSCAN);
     StringTokPtr str = new StringTok;
     str->literal = "\"";
     while(true)
@@ -336,6 +361,7 @@ floating_literal	(({fractional_constant}{exponent_part}?)|((\+|-)?[[:digit:]]+{e
 }
 
 {integer_constant} {
+    BEGIN(MAINSCAN);
     IntegerTokPtr itp = new IntegerTok;
     itp->literal = string(yytext);
     *yylvalp = itp;
@@ -351,6 +377,7 @@ floating_literal	(({fractional_constant}{exponent_part}?)|((\+|-)?[[:digit:]]+{e
 }
 
 {floating_literal} {
+    BEGIN(MAINSCAN);
     errno = 0;
     FloatingTokPtr ftp = new FloatingTok;
     *yylvalp = ftp;
@@ -380,15 +407,26 @@ floating_literal	(({fractional_constant}{exponent_part}?)|((\+|-)?[[:digit:]]+{e
 }
 
 [[:space:]] {
-    // Igore white-space
+    // Ignore white-space
     
+    if(unit->currentLine() != 0)
+    {
+        BEGIN(MAINSCAN);
+    }
     if(yytext[0] == '\n')
     {
 	unit->nextLine();
     }
 }
 
+<BOMSCAN>^"\357\273\277" {
+    // Ignore UTF-8 BOM, rule only active when parsing start of file.
+    
+    BEGIN(MAINSCAN);
+}
+
 . {
+    BEGIN(MAINSCAN);
     if(yytext[0] < 32 || yytext[0] > 126)
     {
 	stringstream s;
@@ -441,7 +479,6 @@ initScanner()
     keywordMap["const"] = ICE_CONST;
     keywordMap["false"] = ICE_FALSE;
     keywordMap["true"] = ICE_TRUE;
-    keywordMap["nonmutating"] = ICE_NONMUTATING;
     keywordMap["idempotent"] = ICE_IDEMPOTENT;
 }
 

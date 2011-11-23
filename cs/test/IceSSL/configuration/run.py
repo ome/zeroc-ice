@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -24,4 +24,5 @@ from scripts import *
 # The drive letter needs to be removed on Windows or loading the SSL
 # plug-in will not work.
 #
-TestUtil.clientServerTest(additionalClientOptions=os.path.splitdrive(os.getcwd())[1])
+TestUtil.clientServerTest(additionalClientOptions = '"%s"' % os.path.splitdrive(os.getcwd())[1])
+

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -63,22 +63,17 @@ public sealed class CallbackReceiverI : CallbackReceiverDisp_
         throw ex;
     }
 
-    public bool
+    public void
     callbackOK()
     {
         lock(this)
         {
             while(!_callback)
             {
-                System.Threading.Monitor.Wait(this, 5000);
-                if(!_callback)
-                {
-                    return false;
-                }
+                System.Threading.Monitor.Wait(this);
             }
             
             _callback = false;
-            return true;
         }
     }
 

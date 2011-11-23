@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,7 +9,10 @@
 
 #include <IceUtil/StringUtil.h>
 #include <IceUtil/Random.h>
-#include <Freeze/Freeze.h>
+#include <IceUtil/Functional.h>
+#include <Ice/LoggerUtil.h>
+#include <Ice/Communicator.h>
+#include <Ice/ObjectAdapter.h>
 #include <IceGrid/Database.h>
 #include <IceGrid/TraceLevels.h>
 #include <IceGrid/Util.h>
@@ -18,6 +21,7 @@
 #include <IceGrid/ReplicaSessionI.h>
 #include <IceGrid/Session.h>
 #include <IceGrid/Topics.h>
+#include <IceGrid/DB.h>
 
 #include <algorithm>
 #include <functional>
@@ -26,12 +30,9 @@
 using namespace std;
 using namespace IceGrid;
 
-const string Database::_applicationDbName = "applications";
-const string Database::_adapterDbName = "adapters";
-const string Database::_objectDbName = "objects";
-const string Database::_internalObjectDbName = "internal-objects";
+using namespace IceDB;
 
-namespace IceGrid
+namespace
 {
 
 struct ObjectLoadCI : binary_function<pair<Ice::ObjectPrx, float>&, pair<Ice::ObjectPrx, float>&, bool>
@@ -66,6 +67,17 @@ isServerUpdated(const ServerInfo& lhs, const ServerInfo& rhs)
     }
 }
 
+void
+halt(const Ice::CommunicatorPtr& com, const DatabaseException& ex)
+{
+    {
+        Ice::Error error(com->getLogger());
+        error << "fatal exception: " << ex << "\n*** Aborting application ***";
+    }
+
+    abort();
+}
+
 }
 
 Database::Database(const Ice::ObjectAdapterPtr& registryAdapter,
@@ -73,11 +85,11 @@ Database::Database(const Ice::ObjectAdapterPtr& registryAdapter,
                    const string& instanceName,
                    const TraceLevelsPtr& traceLevels,
                    const RegistryInfo& info,
+                   const DatabasePluginPtr& plugin,
                    bool readonly) :
     _communicator(registryAdapter->getCommunicator()),
     _internalAdapter(registryAdapter),
     _topicManager(topicManager),
-    _envName("Registry"),
     _instanceName(instanceName),
     _traceLevels(traceLevels),  
     _master(info.name == "Master"),
@@ -88,16 +100,17 @@ Database::Database(const Ice::ObjectAdapterPtr& registryAdapter,
     _objectCache(_communicator),
     _allocatableObjectCache(_communicator),
     _serverCache(_communicator, _instanceName, _nodeCache, _adapterCache, _objectCache, _allocatableObjectCache),
-    _connection(Freeze::createConnection(registryAdapter->getCommunicator(), _envName)),
-    _applications(_connection, _applicationDbName),
-    _adapters(_connection, _adapterDbName),
-    _objects(_connection, _objectDbName),
-    _internalObjects(_connection, _internalObjectDbName),
+    _databaseCache(plugin->getDatabaseCache()),
+    _databasePlugin(plugin),
     _lock(0), 
     _applicationSerial(0)
 {
     ServerEntrySeq entries;
-    for(StringApplicationInfoDict::iterator p = _applications.begin(); p != _applications.end(); ++p)
+
+    DatabaseConnectionPtr connection = _databaseCache->getConnection();
+    ApplicationsWrapperPtr applicationsWrapper = _databaseCache->getApplications(connection);
+    map<string, ApplicationInfo> applications = applicationsWrapper->getMap();
+    for(map<string, ApplicationInfo>::iterator p = applications.begin(); p != applications.end(); ++p)
     {
         try
         {
@@ -119,15 +132,25 @@ Database::Database(const Ice::ObjectAdapterPtr& registryAdapter,
 
     _nodeObserverTopic = new NodeObserverTopic(_topicManager, _internalAdapter);
     _registryObserverTopic = new RegistryObserverTopic(_topicManager);
-    _applicationObserverTopic = new ApplicationObserverTopic(_topicManager, _applications);
-    _adapterObserverTopic = new AdapterObserverTopic(_topicManager, _adapters);
-    _objectObserverTopic = new ObjectObserverTopic(_topicManager, _objects);
+    _applicationObserverTopic = new ApplicationObserverTopic(_topicManager, applications);
+
+    AdaptersWrapperPtr adaptersWrapper = _databaseCache->getAdapters(connection);
+    _adapterObserverTopic = new AdapterObserverTopic(_topicManager, adaptersWrapper->getMap());
+    
+    ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+    _objectObserverTopic = new ObjectObserverTopic(_topicManager, objectsWrapper->getMap());
 
     _registryObserverTopic->registryUp(info);
 }
 
 Database::~Database()
 {
+    //
+    // Release first the cache and then the plugin. This must be done in this order
+    // to make sure the plugin is destroyed after the database cache.
+    //
+    _databaseCache = 0;
+    _databasePlugin = 0;
 }
 
 std::string
@@ -207,23 +230,50 @@ Database::unlock(AdminSessionI* session)
 }
 
 void
-Database::syncApplications(const ApplicationInfoSeq& applications)
+Database::syncApplications(const ApplicationInfoSeq& newApplications)
 {
     int serial = 0; // Initialize to prevent warning.
     {
         Lock sync(*this);
-    
-        Freeze::TransactionHolder txHolder(_connection);
+
+        map<string, ApplicationInfo> oldApplications;
+        for(;;)
+        {
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            try
+            {
+                TransactionHolder txHolder(connection);
+                ApplicationsWrapperPtr applicationsWrapper = _databaseCache->getApplications(connection);
+                oldApplications = applicationsWrapper->getMap();
+                applicationsWrapper->clear();
+                for(ApplicationInfoSeq::const_iterator p = newApplications.begin(); p != newApplications.end(); ++p)
+                {
+                    applicationsWrapper->put(p->descriptor.name, *p);
+                }
+                txHolder.commit();
+                break;
+            }
+            catch(const DeadlockException&)
+            {
+                continue;
+            }
+            catch(const DatabaseException& ex)
+            {
+                halt(_communicator, ex);
+            }
+        }
+                
         ServerEntrySeq entries;
         set<string> names;
-        for(ApplicationInfoSeq::const_iterator p = applications.begin(); p != applications.end(); ++p)
+
+        for(ApplicationInfoSeq::const_iterator p = newApplications.begin(); p != newApplications.end(); ++p)
         {
             try
             {
-                StringApplicationInfoDict::const_iterator s = _applications.find(p->descriptor.name);
-                if(s != _applications.end())
+                map<string, ApplicationInfo>::const_iterator q = oldApplications.find(p->descriptor.name);
+                if(q != oldApplications.end())
                 {
-                    ApplicationHelper previous(_communicator, s->second.descriptor);
+                    ApplicationHelper previous(_communicator, q->second.descriptor);
                     ApplicationHelper helper(_communicator, p->descriptor);
                     reload(previous, helper, entries, p->uuid, p->revision);
                 }
@@ -237,28 +287,19 @@ Database::syncApplications(const ApplicationInfoSeq& applications)
                 Ice::Warning warn(_traceLevels->logger);
                 warn << "invalid application `" << p->descriptor.name << "':\n" << ex.reason;
             }
-            _applications.put(StringApplicationInfoDict::value_type(p->descriptor.name, *p));
             names.insert(p->descriptor.name);
         }
 
-        StringApplicationInfoDict::iterator s = _applications.begin();
-        while(s != _applications.end())
+        for(map<string, ApplicationInfo>::iterator s = oldApplications.begin(); s != oldApplications.end(); ++s)
         {
             if(names.find(s->first) == names.end())
             {
                 unload(ApplicationHelper(_communicator, s->second.descriptor), entries);
-                _applications.erase(s++);
-            }
-            else
-            {
-                ++s;
             }
         }
-        ++_applicationSerial;
-    
-        serial = _applicationObserverTopic->applicationInit(_applicationSerial, applications);
 
-        txHolder.commit();
+        ++_applicationSerial;    
+        serial = _applicationObserverTopic->applicationInit(_applicationSerial, newApplications);
     }
     _applicationObserverTopic->waitForSyncedSubscribers(serial);
 }
@@ -269,14 +310,31 @@ Database::syncAdapters(const AdapterInfoSeq& adapters)
     int serial;
     {
         Lock sync(*this);
-        Freeze::TransactionHolder txHolder(_connection);
-        _adapters.clear();
-        for(AdapterInfoSeq::const_iterator r = adapters.begin(); r != adapters.end(); ++r)
+        for(;;)
         {
-            _adapters.put(StringAdapterInfoDict::value_type(r->id, *r));
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            try
+            {
+                TransactionHolder txHolder(connection);
+                AdaptersWrapperPtr adaptersWrapper = _databaseCache->getAdapters(connection);
+                adaptersWrapper->clear();
+                for(AdapterInfoSeq::const_iterator r = adapters.begin(); r != adapters.end(); ++r)
+                {
+                    adaptersWrapper->put(r->id, *r);
+                }
+                txHolder.commit();
+                break;
+            }
+            catch(const DeadlockException&)
+            {
+                continue;
+            }
+            catch(const DatabaseException& ex)
+            {
+                halt(_communicator, ex);
+            }
         }
         serial = _adapterObserverTopic->adapterInit(adapters);
-        txHolder.commit();
     }
     _adapterObserverTopic->waitForSyncedSubscribers(serial);
 }
@@ -287,14 +345,31 @@ Database::syncObjects(const ObjectInfoSeq& objects)
     int serial;
     {
         Lock sync(*this);
-        Freeze::TransactionHolder txHolder(_connection);
-        _objects.clear();
-        for(ObjectInfoSeq::const_iterator q = objects.begin(); q != objects.end(); ++q)
+        for(;;)
         {
-            _objects.put(IdentityObjectInfoDict::value_type(q->proxy->ice_getIdentity(), *q));
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            try
+            {
+                TransactionHolder txHolder(connection);
+                ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+                objectsWrapper->clear();
+                for(ObjectInfoSeq::const_iterator q = objects.begin(); q != objects.end(); ++q)
+                {
+                    objectsWrapper->put(q->proxy->ice_getIdentity(), *q);
+                }
+                txHolder.commit();
+                break;
+            }
+            catch(const DeadlockException&)
+            {
+                continue;
+            }
+            catch(const DatabaseException& ex)
+            {
+                halt(_communicator, ex);
+            }
         }
         serial = _objectObserverTopic->objectInit(objects);
-        txHolder.commit();
     }
     _objectObserverTopic->waitForSyncedSubscribers(serial);
 }
@@ -303,31 +378,51 @@ void
 Database::addApplication(const ApplicationInfo& info, AdminSessionI* session)
 {
     ServerEntrySeq entries;
+    try
     {
         Lock sync(*this);
         checkSessionLock(session);
 
-        while(_updating.find(info.descriptor.name) != _updating.end())
+        waitForUpdate(info.descriptor.name);
+
+        DatabaseConnectionPtr connection = _databaseCache->getConnection();
+        try
         {
-            wait();
+            ApplicationsWrapperPtr applicationsWrapper = _databaseCache->getApplications(connection);
+            applicationsWrapper->find(info.descriptor.name);
+            throw DeploymentException("application `" + info.descriptor.name + "' already exists");
+        }
+        catch(const NotFoundException&)
+        {
         }
 
-        if(_applications.find(info.descriptor.name) != _applications.end())
-        {
-            throw DeploymentException("application `" + info.descriptor.name + "' already exists");
-        }       
-
         ApplicationHelper helper(_communicator, info.descriptor, true);
-        checkForAddition(helper);
+        checkForAddition(helper, connection);
+        saveApplication(info, connection);
         load(helper, entries, info.uuid, info.revision);
-        startUpdating(info.descriptor.name);
+        startUpdating(info.descriptor.name, info.uuid, info.revision);
+    }
+    catch(const DatabaseException& ex)
+    {
+        halt(_communicator, ex);
     }
 
     if(_master)
     {
+        for_each(entries.begin(), entries.end(), IceUtil::voidMemFun(&ServerEntry::sync));
         try
         {
-            for_each(entries.begin(), entries.end(), IceUtil::voidMemFun(&ServerEntry::syncAndWait));
+            for(ServerEntrySeq::const_iterator p = entries.begin(); p != entries.end(); ++p)
+            {
+                try
+                {
+                    (*p)->waitForSync();
+                }
+                catch(const NodeUnreachableException&)
+                {
+                    // Ignore.
+                }
+            }
         }
         catch(const DeploymentException& ex)
         {
@@ -336,11 +431,16 @@ Database::addApplication(const ApplicationInfo& info, AdminSessionI* session)
                 Lock sync(*this);
                 entries.clear();
                 unload(ApplicationHelper(_communicator, info.descriptor), entries);
+                removeApplication(info.descriptor.name, _databaseCache->getConnection());
             }
             catch(const DeploymentException& ex)
             {
                 Ice::Error err(_traceLevels->logger);
                 err << "failed to rollback previous application `" << info.descriptor.name << "':\n" << ex.reason;
+            }
+            catch(const DatabaseException& ex)
+            {
+                halt(_communicator, ex);
             }
             finishUpdating(info.descriptor.name);
             throw ex;
@@ -350,9 +450,7 @@ Database::addApplication(const ApplicationInfo& info, AdminSessionI* session)
     int serial;
     {
         Lock sync(*this);
-        ++_applicationSerial;   
-        _applications.put(StringApplicationInfoDict::value_type(info.descriptor.name, info));
-
+        ++_applicationSerial;
         serial = _applicationObserverTopic->applicationAdded(_applicationSerial, info);
     
         if(_traceLevels->application > 0)
@@ -374,21 +472,23 @@ Database::updateApplication(const ApplicationUpdateInfo& updt, AdminSessionI* se
     ApplicationInfo oldApp;
     ApplicationDescriptor newDesc;
     ApplicationUpdateInfo update = updt;
+    try
     {
         Lock sync(*this);       
         checkSessionLock(session);
 
-        while(_updating.find(update.descriptor.name) != _updating.end())
-        {
-            wait();
-        }
+        waitForUpdate(update.descriptor.name);
 
-        StringApplicationInfoDict::const_iterator p = _applications.find(update.descriptor.name);
-        if(p == _applications.end())
+        DatabaseConnectionPtr connection = _databaseCache->getConnection();
+        ApplicationsWrapperPtr applicationsWrapper = _databaseCache->getApplications(connection);
+        try
+        {
+            oldApp = applicationsWrapper->find(update.descriptor.name);
+        }
+        catch(const NotFoundException&)
         {
             throw ApplicationNotExistException(update.descriptor.name);
         }
-        oldApp = p->second;
 
         if(update.revision < 0)
         {
@@ -397,13 +497,24 @@ Database::updateApplication(const ApplicationUpdateInfo& updt, AdminSessionI* se
 
         ApplicationHelper previous(_communicator, oldApp.descriptor);
         ApplicationHelper helper(_communicator, previous.update(update.descriptor), true);
-
-        checkForUpdate(previous, helper);
-        reload(previous, helper, entries, oldApp.uuid, oldApp.revision + 1);
-
         newDesc = helper.getDefinition();
 
-        startUpdating(update.descriptor.name);
+        checkForUpdate(previous, helper, connection);
+
+        ApplicationInfo info = oldApp;
+        info.updateTime = update.updateTime;
+        info.updateUser = update.updateUser;
+        info.revision = update.revision;
+        info.descriptor = newDesc;
+        saveApplication(info, connection);
+
+        reload(previous, helper, entries, oldApp.uuid, oldApp.revision + 1);
+
+        startUpdating(update.descriptor.name, oldApp.uuid, oldApp.revision + 1);
+    }
+    catch(const DatabaseException& ex)
+    {
+        halt(_communicator, ex);
     }
 
     finishApplicationUpdate(entries, update, oldApp, newDesc, session);
@@ -415,21 +526,23 @@ Database::syncApplicationDescriptor(const ApplicationDescriptor& newDesc, AdminS
     ServerEntrySeq entries;
     ApplicationUpdateInfo update;
     ApplicationInfo oldApp;
+    try
     {
         Lock sync(*this);
         checkSessionLock(session);
 
-        while(_updating.find(newDesc.name) != _updating.end())
-        {
-            wait();
-        }
+        waitForUpdate(newDesc.name);
 
-        StringApplicationInfoDict::const_iterator p = _applications.find(newDesc.name);
-        if(p == _applications.end())
+        DatabaseConnectionPtr connection = _databaseCache->getConnection();
+        ApplicationsWrapperPtr applicationsWrapper = _databaseCache->getApplications(connection);
+        try
+        {
+            oldApp = applicationsWrapper->find(newDesc.name);
+        }
+        catch(const NotFoundException&)
         {
             throw ApplicationNotExistException(newDesc.name);
         }
-        oldApp = p->second;
 
         ApplicationHelper previous(_communicator, oldApp.descriptor);
         ApplicationHelper helper(_communicator, newDesc, true);
@@ -439,10 +552,22 @@ Database::syncApplicationDescriptor(const ApplicationDescriptor& newDesc, AdminS
         update.revision = oldApp.revision + 1;
         update.descriptor = helper.diff(previous);
         
-        checkForUpdate(previous, helper);       
+        checkForUpdate(previous, helper, connection);
+
+        ApplicationInfo info = oldApp;
+        info.updateTime = update.updateTime;
+        info.updateUser = update.updateUser;
+        info.revision = update.revision;
+        info.descriptor = newDesc;
+        saveApplication(info, connection);
+
         reload(previous, helper, entries, oldApp.uuid, oldApp.revision + 1);
 
-        startUpdating(update.descriptor.name);
+        startUpdating(update.descriptor.name, oldApp.uuid, oldApp.revision + 1);
+    }
+    catch(const DatabaseException& ex)
+    {
+        halt(_communicator, ex);
     }
 
     finishApplicationUpdate(entries, update, oldApp, newDesc, session);
@@ -458,36 +583,50 @@ Database::instantiateServer(const string& application,
     ApplicationUpdateInfo update;
     ApplicationInfo oldApp;
     ApplicationDescriptor newDesc;
+
+    try
     {
         Lock sync(*this);       
         checkSessionLock(session);
 
-        while(_updating.find(application) != _updating.end())
-        {
-            wait();
-        }
+        waitForUpdate(application);
 
-        StringApplicationInfoDict::const_iterator p = _applications.find(application);
-        if(p == _applications.end())
+        DatabaseConnectionPtr connection = _databaseCache->getConnection();
+        ApplicationsWrapperPtr applicationsWrapper = _databaseCache->getApplications(connection);
+        try
+        {
+            oldApp = applicationsWrapper->find(application);
+        }
+        catch(const NotFoundException&)
         {
             throw ApplicationNotExistException(application);
         }
-        oldApp = p->second;
 
         ApplicationHelper previous(_communicator, oldApp.descriptor);
         ApplicationHelper helper(_communicator, previous.instantiateServer(node, instance), true);
+        newDesc = helper.getDefinition();
 
         update.updateTime = IceUtil::Time::now().toMilliSeconds();
         update.updateUser = _lockUserId;
         update.revision = oldApp.revision + 1;
         update.descriptor = helper.diff(previous);
 
-        checkForUpdate(previous, helper);       
+        checkForUpdate(previous, helper, connection);
+
+        ApplicationInfo info = oldApp;
+        info.updateTime = update.updateTime;
+        info.updateUser = update.updateUser;
+        info.revision = update.revision;
+        info.descriptor = newDesc;
+        saveApplication(info, connection);
+
         reload(previous, helper, entries, oldApp.uuid, oldApp.revision + 1);
 
-        newDesc = helper.getDefinition();
-
-        startUpdating(update.descriptor.name);
+        startUpdating(update.descriptor.name, oldApp.uuid, oldApp.revision + 1);
+    }
+    catch(const DatabaseException& ex)
+    {
+        halt(_communicator, ex);
     }
 
     finishApplicationUpdate(entries, update, oldApp, newDesc, session);
@@ -498,17 +637,22 @@ Database::removeApplication(const string& name, AdminSessionI* session)
 {
     ServerEntrySeq entries;
     int serial;
+
+    try
     {
         Lock sync(*this);
         checkSessionLock(session);
 
-        while(_updating.find(name) != _updating.end())
-        {
-            wait();
-        }
+        waitForUpdate(name);
 
-        StringApplicationInfoDict::iterator p = _applications.find(name);
-        if(p == _applications.end())
+        DatabaseConnectionPtr connection = _databaseCache->getConnection();
+        ApplicationInfo appInfo;
+        try
+        {
+            ApplicationsWrapperPtr applicationsWrapper = _databaseCache->getApplications(connection);
+            appInfo = applicationsWrapper->find(name);
+        }
+        catch(const NotFoundException&)
         {
             throw ApplicationNotExistException(name);
         }
@@ -516,9 +660,10 @@ Database::removeApplication(const string& name, AdminSessionI* session)
         bool init = false;
         try
         {
-            ApplicationHelper helper(_communicator, p->second.descriptor);
+            ApplicationHelper helper(_communicator, appInfo.descriptor);
             init = true;
             checkForRemove(helper);
+            removeApplication(name, connection);
             unload(helper, entries);
         }
         catch(const DeploymentException&)
@@ -533,22 +678,25 @@ Database::removeApplication(const string& name, AdminSessionI* session)
             // it's invalid, it's most likely not loaded either. So we
             // ignore the error and erase the descriptor.
             //
+            removeApplication(name, connection);
         }
         
-        startUpdating(name);
+        startUpdating(name, appInfo.uuid, appInfo.revision);
+    }
+    catch(const DatabaseException& ex)
+    {
+        halt(_communicator, ex);
     }
 
     if(_master)
     {
         for_each(entries.begin(), entries.end(), IceUtil::voidMemFun(&ServerEntry::sync));
-        for_each(entries.begin(), entries.end(), IceUtil::voidMemFun(&ServerEntry::waitNoThrow));
+        for_each(entries.begin(), entries.end(), IceUtil::voidMemFun(&ServerEntry::waitForSyncNoThrow));
     }
 
     {
         Lock sync(*this);
-        _applications.erase(name);
         ++_applicationSerial;
-
         serial = _applicationObserverTopic->applicationRemoved(_applicationSerial, name);
 
         if(_traceLevels->application > 0)
@@ -566,36 +714,37 @@ Database::removeApplication(const string& name, AdminSessionI* session)
 ApplicationInfo
 Database::getApplicationInfo(const std::string& name)
 {
-    Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
-    StringApplicationInfoDict descriptors(connection, _applicationDbName); 
-    
-    StringApplicationInfoDict::const_iterator p = descriptors.find(name);
-    if(p == descriptors.end())
+    DatabaseConnectionPtr connection = _databaseCache->newConnection();
+    try
+    {
+        ApplicationsWrapperPtr applicationsWrapper = _databaseCache->getApplications(connection);
+        return applicationsWrapper->find(name);
+    }
+    catch(const NotFoundException&)
     {
         throw ApplicationNotExistException(name);
     }
-
-    return p->second;
 }
 
 Ice::StringSeq
 Database::getAllApplications(const string& expression)
 {
-    Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
-    StringApplicationInfoDict descriptors(connection, _applicationDbName);
-    return getMatchingKeys<StringApplicationInfoDict>(descriptors, expression);
+    DatabaseConnectionPtr connection = _databaseCache->newConnection();
+    ApplicationsWrapperPtr applicationsWrapper = _databaseCache->getApplications(connection);
+    return getMatchingKeys<map<string, ApplicationInfo> >(applicationsWrapper->getMap(), expression);
 }
 
 void
 Database::waitForApplicationUpdate(const AMD_NodeSession_waitForApplicationUpdatePtr& cb,
-                                   const string& application, 
+                                   const string& uuid, 
                                    int revision)
 {
     Lock sync(*this);
-    map<string, vector<AMD_NodeSession_waitForApplicationUpdatePtr> >::iterator p = _updating.find(application);
-    if(p != _updating.end())
+
+    vector<UpdateInfo>::iterator p = find(_updating.begin(), _updating.end(), make_pair(uuid, revision));
+    if(p != _updating.end() && !p->updated)
     {
-        p->second.push_back(cb);
+        p->cbs.push_back(cb);
     }
     else
     {
@@ -662,34 +811,47 @@ Database::setAdapterDirectProxy(const string& adapterId, const string& replicaGr
             throw AdapterExistsException(adapterId);
         }
 
-        StringAdapterInfoDict::iterator p = _adapters.find(adapterId);
         AdapterInfo info;
+        info.id = adapterId;
+        info.proxy = proxy;
+        info.replicaGroupId = replicaGroupId;
+
         bool updated = false;
-        if(proxy)
+        for(;;)
         {
-            if(p != _adapters.end())
+            try
             {
-                info = p->second;
-                info.proxy = proxy;
-                info.replicaGroupId = replicaGroupId;
-                p.set(info);
-                updated = true;
+                DatabaseConnectionPtr connection = _databaseCache->getConnection();
+                TransactionHolder txHolder(connection);
+                AdaptersWrapperPtr adaptersWrapper = _databaseCache->getAdapters(connection);
+                try
+                {
+                    adaptersWrapper->find(adapterId);
+                    updated = true;
+                }
+                catch(const NotFoundException&)
+                {
+                }
+
+                if(proxy)
+                {
+                    adaptersWrapper->put(adapterId, info);
+                }
+                else
+                {
+                    adaptersWrapper->erase(adapterId);
+                }
+                txHolder.commit();
+                break;
             }
-            else
+            catch(const DeadlockException&)
             {
-                info.id = adapterId;
-                info.proxy = proxy;
-                info.replicaGroupId = replicaGroupId;
-                _adapters.put(StringAdapterInfoDict::value_type(adapterId, info));
-            }   
-        }
-        else
-        {
-            if(p == _adapters.end())
-            {
-                return;
+                continue;
             }
-            _adapters.erase(p);
+            catch(const DatabaseException& ex)
+            {
+                halt(_communicator, ex);
+            }
         }
 
         if(_traceLevels->adapter > 0)
@@ -724,18 +886,21 @@ Database::setAdapterDirectProxy(const string& adapterId, const string& replicaGr
 Ice::ObjectPrx
 Database::getAdapterDirectProxy(const string& id)
 {
-    Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
-    StringAdapterInfoDict adapters(connection, _adapterDbName); 
-    StringAdapterInfoDict::const_iterator p = adapters.find(id);
-    if(p != adapters.end())
+    DatabaseConnectionPtr connection = _databaseCache->newConnection();
+    AdaptersWrapperPtr adaptersWrapper = _databaseCache->getAdapters(connection);
+    try
     {
-        return p->second.proxy;
+        return adaptersWrapper->find(id).proxy;
+    }
+    catch(const NotFoundException&)
+    {
     }
 
     Ice::EndpointSeq endpoints;
-    for(p = adapters.findByReplicaGroupId(id, true); p != adapters.end(); ++p)
+    vector<AdapterInfo> infos = adaptersWrapper->findByReplicaGroupId(id);
+    for(unsigned int i = 0; i < infos.size(); ++i)
     {
-        Ice::EndpointSeq edpts = p->second.proxy->ice_getEndpoints();
+        Ice::EndpointSeq edpts = infos[i].proxy->ice_getEndpoints();
         endpoints.insert(endpoints.end(), edpts.begin(), edpts.end());
     }
     if(!endpoints.empty())
@@ -761,32 +926,44 @@ Database::removeAdapter(const string& adapterId)
             throw ex;
         }
         
-        Freeze::TransactionHolder txHolder(_connection); // Required because of the iterator
-        
-        StringAdapterInfoDict::iterator p = _adapters.find(adapterId);
         AdapterInfoSeq infos;
-        if(p != _adapters.end())
+        for(;;)
         {
-            _adapters.erase(p);
-        }
-        else
-        {
-            p = _adapters.findByReplicaGroupId(adapterId, true);
-            if(p == _adapters.end())
+            try
             {
-                throw AdapterNotExistException(adapterId);
+                DatabaseConnectionPtr connection = _databaseCache->getConnection();
+                TransactionHolder txHolder(connection);
+                AdaptersWrapperPtr adaptersWrapper = _databaseCache->getAdapters(connection);
+                try
+                {
+                    adaptersWrapper->find(adapterId);
+                    adaptersWrapper->erase(adapterId);
+                }
+                catch(const NotFoundException&)
+                {
+                    infos = adaptersWrapper->findByReplicaGroupId(adapterId);
+                    if(infos.empty())
+                    {
+                        throw AdapterNotExistException(adapterId);
+                    }
+                    for(AdapterInfoSeq::iterator p = infos.begin(); p != infos.end(); ++p)
+                    {
+                        p->replicaGroupId.clear();
+                        adaptersWrapper->put(p->id, *p);
+                    }
+                }
+                txHolder.commit();
+                break;
             }
-            
-            while(p != _adapters.end())
+            catch(const DeadlockException&)
             {
-                AdapterInfo info = p->second;
-                info.replicaGroupId = "";
-                infos.push_back(info);
-                _adapters.put(StringAdapterInfoDict::value_type(p->first, info));
-                ++p;
+                continue;
+            }
+            catch(const DatabaseException& ex)
+            {
+                halt(_communicator, ex);
             }
         }
-        
         if(_traceLevels->adapter > 0)
         {
             Ice::Trace out(_traceLevels->logger, _traceLevels->adapterCat);
@@ -804,8 +981,6 @@ Database::removeAdapter(const string& adapterId)
                 serial = _adapterObserverTopic->adapterUpdated(*p);
             }
         }
-        
-        txHolder.commit();
     }
     _adapterObserverTopic->waitForSyncedSubscribers(serial);
 }
@@ -813,7 +988,7 @@ Database::removeAdapter(const string& adapterId)
 AdapterPrx
 Database::getAdapterProxy(const string& adapterId, const string& replicaGroupId, bool upToDate)
 {
-    Lock sync(*this); // make sure this isn't call during an update.
+    Lock sync(*this); // Make sure this isn't call during an update.
     return _adapterCache.get(adapterId)->getProxy(replicaGroupId, upToDate);
 }
 
@@ -827,6 +1002,15 @@ Database::getLocatorAdapterInfo(const string& id,
 {
     Lock sync(*this); // Make sure this isn't call during an update.
     _adapterCache.get(id)->getLocatorAdapterInfo(adpts, count, replicaGroup, roundRobin, excludes);
+}
+
+bool
+Database::addAdapterSyncCallback(const string& id, 
+                                 const SynchronizationCallbackPtr& callback,
+                                 const std::set<std::string>& excludes)
+{
+    Lock sync(*this); // Make sure this isn't call during an update.
+    return _adapterCache.get(id)->addSyncCallback(callback, excludes);
 }
 
 AdapterInfoSeq
@@ -850,35 +1034,27 @@ Database::getAdapterInfo(const string& id)
     // Otherwise, we check the adapter endpoint table -- if there's an
     // entry the adapter is managed by the registry itself.
     //
-    Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
-    StringAdapterInfoDict adapters(connection, _adapterDbName); 
-    StringAdapterInfoDict::const_iterator p = adapters.find(id);
-    if(p != adapters.end())
+    DatabaseConnectionPtr connection = _databaseCache->getConnection();
+    AdaptersWrapperPtr adaptersWrapper = _databaseCache->getAdapters(connection);
+    AdapterInfoSeq infos;
+    try
     {
-        AdapterInfoSeq infos;
-        infos.push_back(p->second);
-        return infos;
+        infos.push_back(adaptersWrapper->find(id));
     }
-
-    //
-    // If it's not a regular object adapter, perhaps it's a replica
-    // group...
-    //
-    p = adapters.findByReplicaGroupId(id, true);
-    if(p != adapters.end())
+    catch(const NotFoundException&)
     {
-        AdapterInfoSeq infos;
-        while(p != adapters.end())
+        //
+        // If it's not a regular object adapter, perhaps it's a replica
+        // group...
+        //
+        infos = adaptersWrapper->findByReplicaGroupId(id);
+        if(infos.size() == 0)
         {
-            infos.push_back(p->second);
-            ++p;
+            throw AdapterNotExistException(id);
         }
-        return infos;
     }
-
-    throw AdapterNotExistException(id);
+    return infos;
 }
-
 
 Ice::StringSeq
 Database::getAllAdapters(const string& expression)
@@ -888,7 +1064,11 @@ Database::getAllAdapters(const string& expression)
     vector<string> ids = _adapterCache.getAll(expression);
     result.swap(ids);
     set<string> groups;
-    for(StringAdapterInfoDict::const_iterator p = _adapters.begin(); p != _adapters.end(); ++p)
+
+    DatabaseConnectionPtr connection = _databaseCache->getConnection();
+    AdaptersWrapperPtr adaptersWrapper = _databaseCache->getAdapters(connection);
+    map<string, AdapterInfo> adapters = adaptersWrapper->getMap();
+    for(map<string, AdapterInfo>::const_iterator p = adapters.begin(); p != adapters.end(); ++p)
     {
         if(expression.empty() || IceUtilInternal::match(p->first, expression, true))
         {
@@ -924,11 +1104,34 @@ Database::addObject(const ObjectInfo& info)
             throw ObjectExistsException(id);
         }
         
-        if(_objects.find(id) != _objects.end())
+        for(;;)
         {
-            throw ObjectExistsException(id);
+            try
+            {
+                DatabaseConnectionPtr connection = _databaseCache->getConnection();
+                TransactionHolder txHolder(connection);
+                ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+                try
+                {
+                    objectsWrapper->find(id);
+                    throw ObjectExistsException(id);
+                }
+                catch(const NotFoundException&)
+                {
+                }
+                objectsWrapper->put(id, info);
+                txHolder.commit();
+                break;
+            }
+            catch(const DeadlockException&)
+            {
+                continue;
+            }
+            catch(const DatabaseException& ex)
+            {
+                halt(_communicator, ex);
+            }
         }
-        _objects.put(IdentityObjectInfoDict::value_type(id, info));
         
         serial = _objectObserverTopic->objectAdded(info);
 
@@ -954,8 +1157,35 @@ Database::addOrUpdateObject(const ObjectInfo& info)
             throw ObjectExistsException(id);
         }
         
-        bool update = _objects.find(id) != _objects.end();
-        _objects.put(IdentityObjectInfoDict::value_type(id, info));
+        bool update = false;
+        for(;;)
+        {
+            try
+            {
+                DatabaseConnectionPtr connection = _databaseCache->getConnection();
+                TransactionHolder txHolder(connection);
+                ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+                try
+                {
+                    objectsWrapper->find(id);
+                    update = true;
+                }
+                catch(const NotFoundException&)
+                {
+                }
+                objectsWrapper->put(id, info);
+                txHolder.commit();
+                break;
+            }
+            catch(const DeadlockException&)
+            {
+                continue;
+            }
+            catch(const DatabaseException& ex)
+            {
+                halt(_communicator, ex);
+            }
+        }
         
         if(update)
         {
@@ -991,15 +1221,38 @@ Database::removeObject(const Ice::Identity& id)
             throw ex;
         }
         
-        IdentityObjectInfoDict::iterator p = _objects.find(id);
-        if(p == _objects.end())
+        for(;;)
         {
-            ObjectNotRegisteredException ex;
-            ex.id = id;
-            throw ex;
+            try
+            {
+                DatabaseConnectionPtr connection = _databaseCache->getConnection();
+                TransactionHolder txHolder(connection);
+                ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+                try
+                {
+                    objectsWrapper->find(id);
+                }
+                catch(const NotFoundException&)
+                {
+                    ObjectNotRegisteredException ex;
+                    ex.id = id;
+                    throw ex;
+                }
+                
+                objectsWrapper->erase(id);
+                txHolder.commit();
+                break;
+            }
+            catch(const DeadlockException&)
+            {
+                continue;
+            }
+            catch(const DatabaseException& ex)
+            {
+                halt(_communicator, ex);
+            }
         }
-        _objects.erase(p);
-        
+
         serial = _objectObserverTopic->objectRemoved(id);
         
         if(_traceLevels->object > 0)
@@ -1029,18 +1282,39 @@ Database::updateObject(const Ice::ObjectPrx& proxy)
             throw ex;
         }
     
-        IdentityObjectInfoDict::iterator p = _objects.find(id);
-        if(p == _objects.end())
-        {
-            ObjectNotRegisteredException ex;
-            ex.id = id;
-            throw ex;
-        }
-        
         ObjectInfo info;
-        info = p->second;
-        info.proxy = proxy;
-        p.set(info);
+        for(;;)
+        {
+            try
+            {
+                DatabaseConnectionPtr connection = _databaseCache->getConnection();
+                TransactionHolder txHolder(connection);
+                ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);                
+                try
+                {
+                    info = objectsWrapper->find(id);
+                }
+                catch(const NotFoundException&)
+                {
+                    ObjectNotRegisteredException ex;
+                    ex.id = id;
+                    throw ex;
+                }
+                
+                info.proxy = proxy;
+                objectsWrapper->put(id, info);
+                txHolder.commit();
+                break;
+            }
+            catch(const DeadlockException&)
+            {
+                continue;
+            }
+            catch(const DatabaseException& ex)
+            {
+                halt(_communicator, ex);
+            }
+        }
     
         serial = _objectObserverTopic->objectUpdated(info);
         
@@ -1057,13 +1331,31 @@ int
 Database::addOrUpdateObjectsInDatabase(const ObjectInfoSeq& objects)
 {
     Lock sync(*this);
-    Freeze::TransactionHolder txHolder(_connection);
-    for(ObjectInfoSeq::const_iterator p = objects.begin(); p != objects.end(); ++p)
+
+    for(;;)
     {
-        _objects.put(IdentityObjectInfoDict::value_type(p->proxy->ice_getIdentity(), *p));
+        try
+        {
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            TransactionHolder txHolder(connection);
+            ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+            for(ObjectInfoSeq::const_iterator p = objects.begin(); p != objects.end(); ++p)
+            {
+                objectsWrapper->put(p->proxy->ice_getIdentity(), *p);
+            }
+            txHolder.commit();
+            break;
+        }
+        catch(const DeadlockException&)
+        {
+            continue;
+        }
+        catch(const DatabaseException& ex)
+        {
+            halt(_communicator, ex);
+        }
     }
     int serial = _objectObserverTopic->objectsAddedOrUpdated(objects);
-    txHolder.commit();
     return serial;
 }
 
@@ -1071,13 +1363,31 @@ void
 Database::removeObjectsInDatabase(const ObjectInfoSeq& objects)
 {
     Lock sync(*this);
-    Freeze::TransactionHolder txHolder(_connection);
-    for(ObjectInfoSeq::const_iterator p = objects.begin(); p != objects.end(); ++p)
+
+    for(;;)
     {
-        _objects.erase(p->proxy->ice_getIdentity());
+        try
+        {
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            TransactionHolder txHolder(connection);
+            ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+            for(ObjectInfoSeq::const_iterator p = objects.begin(); p != objects.end(); ++p)
+            {
+                objectsWrapper->erase(p->proxy->ice_getIdentity());
+            }
+            txHolder.commit();
+            break;
+        }
+        catch(const DeadlockException&)
+        {
+            continue;
+        }
+        catch(const DatabaseException& ex)
+        {
+            halt(_communicator, ex);
+        }
     }
     _objectObserverTopic->objectsRemoved(objects);
-    txHolder.commit();
 }
 
 Ice::ObjectPrx
@@ -1094,16 +1404,18 @@ Database::getObjectProxy(const Ice::Identity& id)
     {
     }
 
-    Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
-    IdentityObjectInfoDict objects(connection, _objectDbName);
-    IdentityObjectInfoDict::const_iterator p = objects.find(id);
-    if(p == objects.end())
+    DatabaseConnectionPtr connection = _databaseCache->newConnection();
+    try
+    {
+        ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+        return objectsWrapper->find(id).proxy;
+    }
+    catch(const NotFoundException&)
     {
         ObjectNotRegisteredException ex;
         ex.id = id;
         throw ex;
     }
-    return p->second.proxy;
 }
 
 Ice::ObjectPrx
@@ -1153,11 +1465,13 @@ Ice::ObjectProxySeq
 Database::getObjectsByType(const string& type)
 {
     Ice::ObjectProxySeq proxies = _objectCache.getObjectsByType(type);
-    Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
-    IdentityObjectInfoDict objects(connection, _objectDbName);    
-    for(IdentityObjectInfoDict::const_iterator p = objects.findByType(type); p != objects.end(); ++p)
+
+    DatabaseConnectionPtr connection = _databaseCache->newConnection();
+    ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+    vector<ObjectInfo> infos = objectsWrapper->findByType(type);
+    for(unsigned int i = 0; i < infos.size(); ++i)
     {
-        proxies.push_back(p->second.proxy);
+        proxies.push_back(infos[i].proxy);
     }
     return proxies;
 }
@@ -1174,23 +1488,27 @@ Database::getObjectInfo(const Ice::Identity& id)
     {
     }
 
-    Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
-    IdentityObjectInfoDict objects(connection, _objectDbName);
-    IdentityObjectInfoDict::const_iterator p = objects.find(id);
-    if(p == objects.end())
+    DatabaseConnectionPtr connection = _databaseCache->newConnection();
+    ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+    try
+    {
+        return objectsWrapper->find(id);
+    }
+    catch(const NotFoundException&)
     {
         throw ObjectNotRegisteredException(id);
     }
-    return p->second;
 }
 
 ObjectInfoSeq
 Database::getAllObjectInfos(const string& expression)
 {
     ObjectInfoSeq infos = _objectCache.getAll(expression);
-    Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
-    IdentityObjectInfoDict objects(connection, _objectDbName); 
-    for(IdentityObjectInfoDict::const_iterator p = objects.begin(); p != objects.end(); ++p)
+
+    DatabaseConnectionPtr connection = _databaseCache->newConnection();
+    ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+    map<Ice::Identity, ObjectInfo> objects = objectsWrapper->getMap();
+    for(map<Ice::Identity, ObjectInfo>::const_iterator p = objects.begin(); p != objects.end(); ++p)
     {
         if(expression.empty() || IceUtilInternal::match(_communicator->identityToString(p->first), expression, true))
         {
@@ -1204,11 +1522,13 @@ ObjectInfoSeq
 Database::getObjectInfosByType(const string& type)
 {
     ObjectInfoSeq infos = _objectCache.getAllByType(type);
-    Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
-    IdentityObjectInfoDict objects(connection, _objectDbName);    
-    for(IdentityObjectInfoDict::const_iterator p = objects.findByType(type); p != objects.end(); ++p)
+
+    DatabaseConnectionPtr connection = _databaseCache->newConnection();
+    ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+    ObjectInfoSeq dbInfos = objectsWrapper->findByType(type);
+    for(unsigned int i = 0; i < dbInfos.size(); ++i)
     {
-        infos.push_back(p->second);
+        infos.push_back(dbInfos[i]);
     }
     return infos;
 }
@@ -1218,42 +1538,94 @@ Database::addInternalObject(const ObjectInfo& info, bool replace)
 {
     Lock sync(*this);   
     const Ice::Identity id = info.proxy->ice_getIdentity();
-    if(!replace && _internalObjects.find(id) != _internalObjects.end())
+
+    for(;;)
     {
-        throw ObjectExistsException(id);
+        try
+        {
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            TransactionHolder txHolder(connection);
+            ObjectsWrapperPtr internalObjectsWrapper = _databaseCache->getInternalObjects(connection);
+            if(!replace)
+            {
+                try
+                {
+                    internalObjectsWrapper->find(id);
+                    throw ObjectExistsException(id);
+                }
+                catch(const NotFoundException&)
+                {
+                }
+            }
+            internalObjectsWrapper->put(id, info);
+            txHolder.commit();
+            break;
+        }
+        catch(const DeadlockException&)
+        {
+            continue;
+        }
+        catch(const DatabaseException& ex)
+        {
+            halt(_communicator, ex);
+        }            
     }
-    _internalObjects.put(IdentityObjectInfoDict::value_type(id, info));
 }
 
 void
 Database::removeInternalObject(const Ice::Identity& id)
 {
     Lock sync(*this);
-    IdentityObjectInfoDict::iterator p = _internalObjects.find(id);
-    if(p == _internalObjects.end())
+
+    for(;;)
     {
-        ObjectNotRegisteredException ex;
-        ex.id = id;
-        throw ex;
+        try
+        {
+            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            TransactionHolder txHolder(connection);
+            ObjectsWrapperPtr internalObjectsWrapper = _databaseCache->getInternalObjects(connection);
+            try
+            {
+                internalObjectsWrapper->find(id);
+            }
+            catch(const NotFoundException&)
+            {
+                ObjectNotRegisteredException ex;
+                ex.id = id;
+                throw ex;
+            }
+            internalObjectsWrapper->erase(id);
+            txHolder.commit();
+            break;
+        }
+        catch(const DeadlockException&)
+        {
+            continue;
+        }
+        catch(const DatabaseException& ex)
+        {
+            halt(_communicator, ex);
+        }
     }
-    _internalObjects.erase(p);
 }
 
 Ice::ObjectProxySeq
 Database::getInternalObjectsByType(const string& type)
 {
-    Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
-    IdentityObjectInfoDict internalObjects(connection, _internalObjectDbName);    
     Ice::ObjectProxySeq proxies;
-    for(IdentityObjectInfoDict::const_iterator p = internalObjects.findByType(type); p != internalObjects.end(); ++p)
+
+    DatabaseConnectionPtr connection = _databaseCache->newConnection();
+    ObjectsWrapperPtr internalObjectsWrapper = _databaseCache->getInternalObjects(connection);
+    vector<ObjectInfo> infos = internalObjectsWrapper->findByType(type);
+    for(unsigned int i = 0; i < infos.size(); ++i)
     {
-        proxies.push_back(p->second.proxy);
+        proxies.push_back(infos[i].proxy);
     }
     return proxies;
 }
 
 void
-Database::checkForAddition(const ApplicationHelper& app)
+Database::checkForAddition(const ApplicationHelper& app, const DatabaseConnectionPtr& connection)
 {
     set<string> serverIds;
     set<string> adapterIds;
@@ -1262,8 +1634,22 @@ Database::checkForAddition(const ApplicationHelper& app)
     app.getIds(serverIds, adapterIds, objectIds);
 
     for_each(serverIds.begin(), serverIds.end(), objFunc(*this, &Database::checkServerForAddition));
-    for_each(adapterIds.begin(), adapterIds.end(), objFunc(*this, &Database::checkAdapterForAddition));
-    for_each(objectIds.begin(), objectIds.end(), objFunc(*this, &Database::checkObjectForAddition)); 
+    if(!adapterIds.empty())
+    {
+        AdaptersWrapperPtr adaptersWrapper = _databaseCache->getAdapters(connection);
+        for(set<string>::const_iterator p = adapterIds.begin(); p != adapterIds.end(); ++p)
+        {
+            checkAdapterForAddition(*p, adaptersWrapper);
+        }
+    }
+    if(!objectIds.empty())
+    {
+        ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+        for(set<Ice::Identity>::const_iterator p = objectIds.begin(); p != objectIds.end(); ++p)
+        {
+            checkObjectForAddition(*p, objectsWrapper);
+        }
+    }
 
     set<string> repGrps;
     set<string> adptRepGrps;
@@ -1272,7 +1658,9 @@ Database::checkForAddition(const ApplicationHelper& app)
 }
      
 void
-Database::checkForUpdate(const ApplicationHelper& origApp, const ApplicationHelper& newApp)
+Database::checkForUpdate(const ApplicationHelper& origApp, 
+                         const ApplicationHelper& newApp, 
+                         const DatabaseConnectionPtr& connection)
 {
     set<string> oldSvrs, newSvrs;
     set<string> oldAdpts, newAdpts;
@@ -1287,11 +1675,25 @@ Database::checkForUpdate(const ApplicationHelper& origApp, const ApplicationHelp
 
     Ice::StringSeq addedAdpts;
     set_difference(newAdpts.begin(), newAdpts.end(), oldAdpts.begin(), oldAdpts.end(), back_inserter(addedAdpts));
-    for_each(addedAdpts.begin(), addedAdpts.end(), objFunc(*this, &Database::checkAdapterForAddition));
+    if(!addedAdpts.empty())
+    {
+        AdaptersWrapperPtr adaptersWrapper = _databaseCache->getAdapters(connection);
+        for(Ice::StringSeq::const_iterator p = addedAdpts.begin(); p != addedAdpts.end(); ++p)
+        {
+            checkAdapterForAddition(*p, adaptersWrapper);
+        }
+    }
 
     vector<Ice::Identity> addedObjs;
     set_difference(newObjs.begin(), newObjs.end(), oldObjs.begin(), oldObjs.end(), back_inserter(addedObjs));
-    for_each(addedObjs.begin(), addedObjs.end(), objFunc(*this, &Database::checkObjectForAddition));
+    if(!addedObjs.empty())
+    {
+        ObjectsWrapperPtr objectsWrapper = _databaseCache->getObjects(connection);
+        for(vector<Ice::Identity>::const_iterator p = addedObjs.begin(); p != addedObjs.end(); ++p)
+        {
+            checkObjectForAddition(*p, objectsWrapper);
+        }
+    }
 
     set<string> oldRepGrps, newRepGrps;
     set<string> oldAdptRepGrps, newAdptRepGrps;
@@ -1339,11 +1741,30 @@ Database::checkServerForAddition(const string& id)
 }
 
 void
-Database::checkAdapterForAddition(const string& id)
+Database::checkAdapterForAddition(const string& id, const AdaptersWrapperPtr& adaptersWrapper)
 {
-    if(_adapterCache.has(id) ||
-       _adapters.find(id) != _adapters.end() || 
-       _adapters.findByReplicaGroupId(id) != _adapters.end())
+    bool found = false;
+    if(_adapterCache.has(id))
+    {
+        found = true;
+    }
+    else
+    {
+        try
+        {
+            adaptersWrapper->find(id);
+            found = true;
+        }
+        catch(const NotFoundException&)
+        {
+            if(adaptersWrapper->findByReplicaGroupId(id).size() != 0)
+            {
+                found = true;
+            }
+        }
+    }
+
+    if(found)
     {
         DeploymentException ex;
         ex.reason = "adapter `" + id + "' is already registered"; 
@@ -1352,11 +1773,26 @@ Database::checkAdapterForAddition(const string& id)
 }
 
 void
-Database::checkObjectForAddition(const Ice::Identity& objectId)
+Database::checkObjectForAddition(const Ice::Identity& objectId, const ObjectsWrapperPtr& objectsWrapper)
 {
-    if(_objectCache.has(objectId) ||
-       _allocatableObjectCache.has(objectId) ||
-       _objects.find(objectId) != _objects.end())
+    bool found = false;
+    if(_objectCache.has(objectId) || _allocatableObjectCache.has(objectId))
+    {
+        found = true;
+    }
+    else
+    {
+        try
+        {
+            objectsWrapper->find(objectId);
+            found = true;
+        }
+        catch(const NotFoundException&)
+        {
+        }
+    }
+
+    if(found)
     {
         DeploymentException ex;
         ex.reason = "object `" + _communicator->identityToString(objectId) + "' is already registered"; 
@@ -1597,21 +2033,96 @@ Database::reload(const ApplicationHelper& oldApp,
 }
 
 void
+Database::saveApplication(const ApplicationInfo& info, const DatabaseConnectionPtr& connection)
+{
+    for(;;)
+    {
+        try
+        {
+            ApplicationsWrapperPtr applicationsWrapper = _databaseCache->getApplications(connection);
+            TransactionHolder txHolder(connection);
+            applicationsWrapper->put(info.descriptor.name, info);
+            txHolder.commit();
+            break;
+        }
+        catch(const DeadlockException&)
+        {
+            continue;
+        }
+        catch(const DatabaseException& ex)
+        {
+            halt(_communicator, ex);
+        }
+    }    
+}
+
+void
+Database::removeApplication(const string& name, const DatabaseConnectionPtr& connection)
+{
+    for(;;)
+    {
+        try
+        {
+            ApplicationsWrapperPtr applicationsWrapper = _databaseCache->getApplications(connection);
+            TransactionHolder txHolder(connection);
+            applicationsWrapper->erase(name);
+            txHolder.commit();
+            break;
+        }
+        catch(const DeadlockException&)
+        {
+            continue;
+        }
+        catch(const DatabaseException& ex)
+        {
+            halt(_communicator, ex);
+        }
+    }    
+}
+
+void
 Database::finishApplicationUpdate(ServerEntrySeq& entries, 
                                   const ApplicationUpdateInfo& update,
                                   const ApplicationInfo& oldApp, 
                                   const ApplicationDescriptor& newDesc,
                                   AdminSessionI* session)
 {
+    for_each(entries.begin(), entries.end(), IceUtil::voidMemFun(&ServerEntry::sync));
+
+    int serial;
+    {
+        Lock sync(*this);
+        ++_applicationSerial;
+        serial = _applicationObserverTopic->applicationUpdated(_applicationSerial, update);
+    }
+    _applicationObserverTopic->waitForSyncedSubscribers(serial);
+
+    //
+    // Mark the application as updated. All the replicas received the update so it's now safe
+    // for the nodes to start the servers.
+    //
+    {
+        Lock sync(*this);
+        vector<UpdateInfo>::iterator p = find(_updating.begin(), _updating.end(), update.descriptor.name);
+        assert(p != _updating.end());
+        p->markUpdated();
+    }
+
     if(_master)
     {
-        //
-        // Load the servers on the nodes. If a server couldn't be
-        // deployed we unload the application and throw.
-        //
         try
         {
-            for_each(entries.begin(), entries.end(), IceUtil::voidMemFun(&ServerEntry::syncAndWait));
+            for(ServerEntrySeq::const_iterator p = entries.begin(); p != entries.end(); ++p)
+            {
+                try
+                {
+                    (*p)->waitForSync();
+                }
+                catch(const NodeUnreachableException&)
+                {
+                    // Ignore.
+                }
+            }
         }
         catch(const DeploymentException& ex)
         {
@@ -1621,78 +2132,66 @@ Database::finishApplicationUpdate(ServerEntrySeq& entries,
                 entries.clear();
                 ApplicationHelper previous(_communicator, newDesc);
                 ApplicationHelper helper(_communicator, oldApp.descriptor);
-                reload(previous, helper, entries, oldApp.uuid, oldApp.revision);
+
+                ApplicationInfo info = oldApp;
+                info.revision = update.revision + 1;
+                saveApplication(info, _databaseCache->getConnection());
+                reload(previous, helper, entries, info.uuid, info.revision);
+
+                newUpdate.updateTime = IceUtil::Time::now().toMilliSeconds();
+                newUpdate.updateUser = _lockUserId;
+                newUpdate.revision = info.revision;
+                newUpdate.descriptor = helper.diff(previous);
+                
+                vector<UpdateInfo>::iterator p = find(_updating.begin(), _updating.end(), update.descriptor.name);
+                assert(p != _updating.end());
+                p->unmarkUpdated();
             }
 
-            try
+            for_each(entries.begin(), entries.end(), IceUtil::voidMemFun(&ServerEntry::sync));
+            for_each(entries.begin(), entries.end(), IceUtil::voidMemFun(&ServerEntry::waitForSyncNoThrow));
+
+            int serial;
             {
-                for_each(entries.begin(), entries.end(), IceUtil::voidMemFun(&ServerEntry::syncAndWait));
+                Lock sync(*this);
+                ++_applicationSerial;
+                serial = _applicationObserverTopic->applicationUpdated(_applicationSerial, newUpdate);
             }
-            catch(const DeploymentException& ex)
-            {
-                Ice::Error err(_traceLevels->logger);
-                err << "failed to rollback previous application `" << oldApp.descriptor.name << "':\n" << ex.reason;
-            }
+            _applicationObserverTopic->waitForSyncedSubscribers(serial);
 
             finishUpdating(newDesc.name);
             throw ex;
         }
     }
-    else
-    {
-        for_each(entries.begin(), entries.end(), IceUtil::voidMemFun(&ServerEntry::sync));
-    }
-
-    //
-    // Save the application descriptor.
-    //
-    int serial;
-    {
-        Lock sync(*this);
-        
-        ApplicationInfo info = oldApp;
-        info.updateTime = update.updateTime;
-        info.updateUser = update.updateUser;
-        info.revision = update.revision;
-        info.descriptor = newDesc;
-        
-        _applications.put(StringApplicationInfoDict::value_type(update.descriptor.name, info));
-        ++_applicationSerial;
-    
-        if(_traceLevels->application > 0)
-        {
-            Ice::Trace out(_traceLevels->logger, _traceLevels->applicationCat);
-            out << "updated application `" << update.descriptor.name << "'";
-        }
-        
-        serial = _applicationObserverTopic->applicationUpdated(_applicationSerial, update);
-    }
-
-    _applicationObserverTopic->waitForSyncedSubscribers(serial);
 
     finishUpdating(update.descriptor.name);
 }
 
 void
-Database::startUpdating(const string& name)
+Database::waitForUpdate(const string& name)
+{
+    while(find(_updating.begin(), _updating.end(), name) != _updating.end())
+    {
+        wait();
+    }
+}
+
+void
+Database::startUpdating(const string& name, const string& uuid, int revision)
 {
     // Must be called within the synchronization.
-    _updating.insert(make_pair(name, vector<AMD_NodeSession_waitForApplicationUpdatePtr>()));
+    assert(find(_updating.begin(), _updating.end(), name) == _updating.end());
+    _updating.push_back(UpdateInfo(name, uuid, revision));
 }
 
 void
 Database::finishUpdating(const string& name)
 {
     Lock sync(*this);
-    
-    map<string, vector<AMD_NodeSession_waitForApplicationUpdatePtr> >::iterator p = _updating.find(name);
-    assert(p != _updating.end());
-    for(vector<AMD_NodeSession_waitForApplicationUpdatePtr>::const_iterator q = p->second.begin(); 
-        q != p->second.end(); ++q)
-    {
-        (*q)->ice_response();
-    }
-    _updating.erase(p);
 
+    vector<UpdateInfo>::iterator p = find(_updating.begin(), _updating.end(), name);
+    assert(p != _updating.end());
+    p->markUpdated();
+    _updating.erase(p);
     notifyAll();
 }

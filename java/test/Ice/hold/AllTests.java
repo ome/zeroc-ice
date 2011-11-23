@@ -1,13 +1,20 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-import Test.*;
+package test.Ice.hold;
+
+import java.io.PrintStream;
+import java.io.PrintWriter;
+
+import test.Ice.hold.Test.HoldPrx;
+import test.Ice.hold.Test.HoldPrxHelper;
+import test.Ice.hold.Test.Callback_Hold_set;
 
 public class AllTests
 {
@@ -42,7 +49,7 @@ public class AllTests
         private boolean _value;
     };
 
-    static class AMICheckSetValue extends AMI_Hold_set implements Ice.AMISentCallback
+    static class AMICheckSetValue extends Callback_Hold_set
     {
         public
         AMICheckSetValue(Condition condition, int expected)
@@ -51,8 +58,9 @@ public class AllTests
             _expected = expected;
         }
 
+        @Override
         public void
-        ice_response(int value)
+        response(int value)
         {
             if(value != _expected)
             {
@@ -60,13 +68,14 @@ public class AllTests
             }
         }
 
+        @Override
         public void
-        ice_exception(Ice.LocalException ex)
+        exception(Ice.LocalException ex)
         {
         }
 
         synchronized public void
-        ice_sent()
+        sent(boolean sync)
         {
             _sent = true;
             notify();
@@ -93,20 +102,20 @@ public class AllTests
     };
 
     public static void
-    allTests(Ice.Communicator communicator)
+    allTests(Ice.Communicator communicator, PrintWriter out)
     {
-        System.out.print("testing stringToProxy... ");
-        System.out.flush();
-        String ref = "hold:default -p 12010 -t 30000";
+        out.print("testing stringToProxy... ");
+        out.flush();
+        String ref = "hold:default -p 12010";
         Ice.ObjectPrx base = communicator.stringToProxy(ref);
         test(base != null);
-        String refSerialized = "hold:default -p 12011 -t 30000";
+        String refSerialized = "hold:default -p 12011";
         Ice.ObjectPrx baseSerialized = communicator.stringToProxy(refSerialized);
         test(baseSerialized != null);
-        System.out.println("ok");
+        out.println("ok");
         
-        System.out.print("testing checked cast... ");
-        System.out.flush();
+        out.print("testing checked cast... ");
+        out.flush();
         HoldPrx hold = HoldPrxHelper.checkedCast(base);
         HoldPrx holdOneway = HoldPrxHelper.uncheckedCast(base.ice_oneway());
         test(hold != null);
@@ -115,10 +124,10 @@ public class AllTests
         HoldPrx holdSerializedOneway = HoldPrxHelper.uncheckedCast(baseSerialized.ice_oneway());
         test(holdSerialized != null);
         test(holdSerialized.equals(baseSerialized));
-        System.out.println("ok");
+        out.println("ok");
         
-        System.out.print("changing state between active and hold rapidly... ");
-        System.out.flush();
+        out.print("changing state between active and hold rapidly... ");
+        out.flush();
         for(int i = 0; i < 100; ++i)
         {
             hold.putOnHold(0);
@@ -135,10 +144,10 @@ public class AllTests
         {
             holdSerializedOneway.putOnHold(0);
         }
-        System.out.println("ok");
+        out.println("ok");
         
-        System.out.print("testing without serialize mode... ");
-        System.out.flush();
+        out.print("testing without serialize mode... ");
+        out.flush();
         java.util.Random random = new java.util.Random();
         {
             Condition cond = new Condition(true);
@@ -147,17 +156,11 @@ public class AllTests
             while(cond.value())
             {
                 cb = new AMICheckSetValue(cond, value);
-                if(hold.set_async(cb, ++value, random.nextInt(5)))
-                {
-                    cb = null;
-                }
+                hold.begin_set(++value, random.nextInt(5), cb);
                 if(value % 100 == 0)
                 {
-                    if(cb != null)
-                    {
-                        cb.waitForSent();
-                        cb = null;
-                    }
+                    cb.waitForSent();
+                    cb = null;
                 }
             }
             if(cb != null)
@@ -166,10 +169,10 @@ public class AllTests
                 cb = null;
             }
         }
-        System.out.println("ok");
+        out.println("ok");
 
-        System.out.print("testing with serialize mode... ");
-        System.out.flush();
+        out.print("testing with serialize mode... ");
+        out.flush();
         {
             Condition cond = new Condition(true);
             int value = 0;
@@ -177,17 +180,11 @@ public class AllTests
             while(value < 3000 && cond.value())
             {
                 cb = new AMICheckSetValue(cond, value);
-                if(holdSerialized.set_async(cb, ++value, 0))
-                {
-                    cb = null;
-                }
+                holdSerialized.begin_set(++value, 0, cb);
                 if(value % 100 == 0)
                 {
-                    if(cb != null)
-                    {
-                        cb.waitForSent();
-                        cb = null;
-                    }
+                    cb.waitForSent();
+                    cb = null;
                 }
             }
             if(cb != null)
@@ -207,12 +204,31 @@ public class AllTests
                 }
             }
         }
-        System.out.println("ok");
+        out.println("ok");
 
-        System.out.print("changing state to hold and shutting down server... ");
-        System.out.flush();
+        out.print("testing waitForHold... ");
+        out.flush();
+        {
+            hold.waitForHold();
+            hold.waitForHold();
+            for(int i = 0; i < 1000; ++i)
+            {
+                holdOneway.ice_ping();
+                if((i % 20) == 0)
+                {
+                    hold.putOnHold(0);
+                }
+            }
+            hold.putOnHold(-1);
+            hold.ice_ping();
+            hold.putOnHold(-1);
+            hold.ice_ping();            
+        }
+        out.println("ok");
+
+        out.print("changing state to hold and shutting down server... ");
+        out.flush();
         hold.shutdown();
-        System.out.println("ok");
+        out.println("ok");
     }
 }
-        

@@ -1,13 +1,17 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-import Test.*;
+package test.Ice.servantLocator;
+
+import test.Ice.servantLocator.Test.TestImpossibleException;
+import test.Ice.servantLocator.Test.TestIntfUserException;
+import test.Ice.servantLocator.Test._TestIntfDisp;
 
 public final class TestI extends _TestIntfDisp
 {
@@ -79,6 +83,6 @@ public final class TestI extends _TestIntfDisp
     public void
     shutdown(Ice.Current current)
     {
-        current.adapter.deactivate();
+        current.adapter.getCommunicator().shutdown();
     }
 }

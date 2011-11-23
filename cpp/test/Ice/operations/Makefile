@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -22,12 +22,14 @@ COBJS		= Test.o \
 		  Twoways.o \
 		  Oneways.o \
 		  TwowaysAMI.o \
+		  TwowaysNewAMI.o \
 		  OnewaysAMI.o \
+		  OnewaysNewAMI.o \
 		  BatchOneways.o
 
 SOBJS		= Test.o \
 		  TestI.o \
-		  Server.o
+		  Server.o \
 
 SAMDOBJS	= TestAMD.o \
 		  TestAMDI.o \
@@ -40,7 +42,9 @@ COLOBJS		= Test.o \
 		  Twoways.o \
 		  Oneways.o \
 		  TwowaysAMI.o \
+		  TwowaysNewAMI.o \
 		  OnewaysAMI.o \
+		  OnewaysNewAMI.o \
 		  BatchOneways.o
 
 SRCS		= $(COBJS:.o=.cpp) \

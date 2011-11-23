@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -26,11 +26,7 @@ CPPFLAGS	= -I. $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
 PDBFLAGS        = /pdb:$(NAME:.exe=.pdb)
 !endif
 
-!if "$(BCPLUSPLUS)" == "yes"
-RES_FILE        = ,, Slice2Html.res
-!else
 RES_FILE        = Slice2Html.res
-!endif
 
 $(NAME): $(OBJS) Slice2Html.res
 	$(LINK) $(LD_EXEFLAGS) $(PDBFLAGS) $(OBJS) $(SETARGV) $(PREOUT)$@ $(PRELIBS)slice$(LIBSUFFIX).lib \
@@ -43,19 +39,14 @@ clean::
 	del /q Slice2Html.res
 
 install:: all
-	copy $(NAME) $(install_bindir)
+	copy $(NAME) "$(install_bindir)"
 
 
-!if "$(BCPLUSPLUS)" == "yes" && "$(OPTIMIZE)" != "yes"
-
-install:: all
-	copy $(NAME:.exe=.tds) $(install_bindir)
-
-!elseif "$(GENERATE_PDB)" == "yes"
+!if "$(GENERATE_PDB)" == "yes"
 
 install:: all
-	copy $(NAME:.exe=.pdb) $(install_bindir)
+	copy $(NAME:.exe=.pdb) "$(install_bindir)"
 
 !endif
 
-!include .depend
+!include .depend.mak

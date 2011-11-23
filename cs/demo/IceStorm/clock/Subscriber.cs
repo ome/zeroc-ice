@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -168,7 +168,7 @@ public class Subscriber
             Ice.Identity subId = new Ice.Identity(id, "");
             if(subId.name == null)
             {
-                subId.name = Ice.Util.generateUUID();
+                subId.name = Guid.NewGuid().ToString();
             }
             Ice.ObjectPrx subscriber = adapter.add(new ClockI(), subId);
             

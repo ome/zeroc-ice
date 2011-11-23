@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -43,6 +43,7 @@ FilesystemI::NodeI::id() const
 FilesystemI::NodeI::NodeI(const string& name, const DirectoryIPtr& parent)
     : _name(name), _parent(parent), _destroyed(false)
 {
+    //
     // Create an identity. The root directory has the fixed identity "RootDir".
     //
     if(parent != 0)

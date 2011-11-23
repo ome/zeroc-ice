@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -62,6 +62,10 @@ module Ice
     class Exception < ::StandardError
         def ice_name
             to_s
+        end
+
+        def inspect
+            return ::Ice::__stringifyException(self)
         end
     end
 
@@ -129,13 +133,14 @@ end
 #
 require 'Ice/BuiltinSequences.rb'
 require 'Ice/Current.rb'
-require 'Ice/Endpoint.rb'
+require 'Ice/EndpointTypes.rb'
 require 'Ice/LocalException.rb'
 require 'Ice/Locator.rb'
 require 'Ice/Logger.rb'
 require 'Ice/ObjectFactory.rb'
 require 'Ice/Process.rb'
 require 'Ice/Router.rb'
+require 'Ice/Endpoint.rb'
 
 module Ice
     #
@@ -257,7 +262,7 @@ module Ice
         
         def main(args, configFile=nil, initData=nil)
             if @@_communicator
-                print $0 + ": only one instance of the Application class can be used"
+                Ice::getProcessLogger().error($0 + ": only one instance of the Application class can be used")
                 return false
             end
             if @@_signalPolicy == HandleSignals
@@ -277,6 +282,8 @@ module Ice
                     initData.properties = Ice::createProperties
                     initData.properties.load(configFile)
                 end
+                initData.properties = Ice::createProperties(args, initData.properties)
+
                 @@_application = self
                 @@_communicator = Ice::initialize(args, initData)
                 @@_destroyed = false
@@ -295,8 +302,7 @@ module Ice
 
                 status = run(args)
             rescue => ex
-                puts $!.inspect
-                puts ex.backtrace.join("\n")
+                Ice::getProcessLogger().error($!.inspect + "\n" + ex.backtrace.join("\n"))
                 status = 1
             end
 
@@ -330,8 +336,7 @@ module Ice
                 begin
                     @@_communicator.destroy()
                 rescue => ex
-                    puts $!
-                    puts ex.backtrace.join("\n")
+                    Ice::getProcessLogger().error($!.inspect + "\n" + ex.backtrace.join("\n"))
                     status = 1
                 end
 
@@ -367,7 +372,7 @@ module Ice
                     @@_ctrlCHandler.setCallback(@@_destroyOnInterruptCallbackProc)
                 }
             else
-                puts @@_appName + ": warning: interrupt method called on Application configured to not handle interrupts."
+                Ice::getProcessLogger().error(@@_appName + ": warning: interrupt method called on Application configured to not handle interrupts.")
             end
         end
 
@@ -385,7 +390,7 @@ module Ice
                     @@_ctrlCHandler.setCallback(nil)
                 }
             else
-                puts @@_appName + ": warning: interrupt method called on Application configured to not handle interrupts."
+                Ice::getProcessLogger().error(@@_appName + ": warning: interrupt method called on Application configured to not handle interrupts.")
             end
         end
 
@@ -399,7 +404,7 @@ module Ice
                     @@_ctrlCHandler.setCallback(@@_callbackOnInterruptCallbackProc)
                 }
             else
-                puts @@_appName + ": warning: interrupt method called on Application configured to not handle interrupts."
+                Ice::getProcessLogger().error(@@_appName + ": warning: interrupt method called on Application configured to not handle interrupts.")
             end
         end
 
@@ -414,7 +419,7 @@ module Ice
                     # else, we were already holding signals
                 }
             else
-                puts @@_appName + ": warning: interrupt method called on Application configured to not handle interrupts."
+                Ice::getProcessLogger().error(@@_appName + ": warning: interrupt method called on Application configured to not handle interrupts.")
             end
         end
 
@@ -435,7 +440,7 @@ module Ice
                     # Else nothing to release.
                 }
             else
-                puts @@_appName + ": warning: interrupt method called on Application configured to not handle interrupts."
+                Ice::getProcessLogger().error(@@_appName + ": warning: interrupt method called on Application configured to not handle interrupts.")
             end
         end
 
@@ -477,9 +482,7 @@ module Ice
             begin
                 @@_communicator.destroy()
             rescue => ex
-                puts $!
-                puts @@_appName + " (while destroying in response to signal " + sig + "):"
-                puts ex.backtrace.join("\n")
+                Ice::getProcessLogger().error($!.inspect + "\n" + @@_appName + " (while destroying in response to signal " + sig + "):\n" + ex.backtrace.join("\n"))
             end
             @@_mutex.synchronize {
                 @@_callbackInProcess = false
@@ -504,9 +507,7 @@ module Ice
             begin
                 @@_application.interruptCallback(sig)
             rescue => ex
-                puts $!
-                puts @@_appName + " (while interrupting in response to signal " + sig + "):"
-                puts ex.backtrace.join("\n")
+                Ice::getProcessLogger().error($!.inspect + "\n" + @@_appName + " (while interrupting in response to signal " + sig + "):\n" + ex.backtrace.join("\n"))
             end
             @@_mutex.synchronize {
                 @@_callbackInProcess = false
@@ -558,7 +559,7 @@ module Ice
 
     def Ice.proxyIdentityAndFacetCompare(lhs, rhs)
         n = proxyIdentityCompare(lhs, rhs)
-        if n == 0
+        if n == 0 && lhs && rhs
             n = lhs.ice_getFacet() <=> rhs.ice_getFacet()
         end
         return n

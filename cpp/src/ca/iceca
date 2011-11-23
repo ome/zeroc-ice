@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -34,8 +34,15 @@ os.putenv("ICE_CA_HOME", home)
 
 opensslCmd = "openssl"
 if sys.platform == "win32" or sys.platform[:6] == "cygwin":
+
+    # Add the directory containing this script to the PATH, this is
+    # also where the openssl.exe is located.
     if os.path.exists(os.path.join(os.path.dirname(sys.argv[0]), "openssl.exe")):
-        opensslCmd = os.path.join(os.path.dirname(sys.argv[0]), "openssl.exe")
+        os.environ["PATH"] = os.path.dirname(sys.argv[0]) + os.pathsep + os.getenv("PATH", "")
+
+    # Setup RANDFILE to avoid errors on Vista about openssl not being
+    # able to write 'Random State'
+    os.environ["RANDFILE"] = os.path.join(os.getenv("ICE_CA_HOME"), "randfile")
 
 caroot = os.path.join(home, "ca")
 cadb = os.path.join(caroot, "db")
@@ -109,7 +116,7 @@ if sys.argv[script] == "import":
         # script ../lib). For development purposes we also check ".".
         #
         checkLocations = [".", os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), "..", "lib")),
-                          "/usr/share/Ice-3.3.1"]
+                          "/usr/share/Ice-3.4.0"]
         for bindir in checkLocations:
             bindir = os.path.normpath(bindir)
             if os.path.exists(os.path.join(bindir, "ImportKey.class")):
@@ -170,12 +177,11 @@ if sys.argv[script] == "import":
 
 	if len(keyPass) > 0:
 	    cmd = opensslCmd + " pkcs12 -in " + cert + " -inkey " + key + " -export -out " + pkcs12cert + " -name " + \
-	    	alias + " -passin file:" + keypassfile1 + " -passout file:" + keypassfile2 + " -certfile " + \
-		os.path.join(home, "ca_cert.pem")
+	    	alias + " -passin file:" + keypassfile1 + " -passout file:" + keypassfile2 + ' -certfile "' + \
+		os.path.join(home, "ca_cert.pem") + '"'
 	else:
 	    cmd = opensslCmd + " pkcs12 -in " + cert + " -inkey " + key + " -export -out " + pkcs12cert + " -name " + \
-	    	alias + " -passout file:" + keypassfile1 + " -certfile " + os.path.join(home, "ca_cert.pem")
-
+	    	alias + " -passout file:" + keypassfile1 + ' -certfile "' + os.path.join(home, "ca_cert.pem") + '"'
 	print "converting to pkcs12 format... ",
         sys.stdout.flush()
 	if verbose: print cmd
@@ -250,7 +256,6 @@ if sys.argv[script] == "import":
 	else:
 	    cmd = opensslCmd + " pkcs12 -in " + cert + " -inkey " + key + " -export -out " + pkcs12cert + \
                 " -passout pass:"
-
 	print "converting to pkcs12 format...",
         sys.stdout.flush()
 	if verbose: print cmd
@@ -280,7 +285,7 @@ if sys.argv[script] == "init":
 	usage()
 
     print "This script will initialize your organization's Certificate Authority (CA)."
-    print "The CA database will be created in " + caroot
+    print 'The CA database will be created in "%s"' % caroot
 
     nopassphrase = False
     for o, a in opts:
@@ -361,7 +366,7 @@ if sys.argv[script] == "init":
 "ca.cnf":"\
 # **********************************************************************\n\
 #\n\
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.\n\
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.\n\
 #\n\
 # This copy of Ice is licensed to you under the terms described in the\n\
 # ICE_LICENSE file included in this distribution.\n\
@@ -403,7 +408,7 @@ authorityKeyIdentifier = keyid:always,issuer:always\n\
 "sign.cnf":"\
 # **********************************************************************\n\
 #\n\
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.\n\
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.\n\
 #\n\
 # This copy of Ice is licensed to you under the terms described in the\n\
 # ICE_LICENSE file included in this distribution.\n\
@@ -444,7 +449,7 @@ authorityKeyIdentifier = keyid:always,issuer:always\n\
 "req.cnf":"\
 # **********************************************************************\n\
 #\n\
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.\n\
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.\n\
 #\n\
 # This copy of Ice is licensed to you under the terms described in the\n\
 # ICE_LICENSE file included in this distribution.\n\
@@ -518,9 +523,8 @@ keyUsage = nonRepudiation, digitalSignature, keyEncipherment\n\
 
     print "ok"
 
-    cmd = opensslCmd + " req -config " + cacnfname + " -x509 -days 1825 -newkey rsa:2048 -out " + \
-	    os.path.join(cadb, "ca_cert.pem") + " -outform PEM"
-
+    cmd = opensslCmd + ' req -config "' + cacnfname + '" -x509 -days 1825 -newkey rsa:2048 -out "' + \
+	    os.path.join(cadb, "ca_cert.pem") + '" -outform PEM'
     if nopassphrase:
 	cmd += " -nodes"
 
@@ -604,7 +608,7 @@ if sys.argv[script] == "request":
 	os.write(temp, "emailAddress=" + email + "\n")
     os.close(temp)
 
-    cmd = opensslCmd + " req -config " + tempname + ' -new -keyout "' + keyfile + '" -out "' + reqfile + '"'
+    cmd = opensslCmd + ' req -config "' + tempname + '" -new -keyout "' + keyfile + '" -out "' + reqfile + '"'
     if nopassphrase:
 	cmd += " -nodes"
 
@@ -621,7 +625,7 @@ if sys.argv[script] == "request":
     print
     print "The certificate request must be signed by the CA. Send the certificate"
     print "request file to the CA at the following email address:"
-    cmd = opensslCmd + " x509 -in " + os.path.join(home, "ca_cert.pem") + " -email -noout"
+    cmd = opensslCmd + ' x509 -in "' + os.path.join(home, "ca_cert.pem") + '" -email -noout'
     if verbose: print cmd
     os.system(cmd)
 
@@ -676,7 +680,7 @@ if sys.argv[script] == "sign":
 	os.write(temp, "\n[certificate_extensions]\nsubjectAltName=" + subjectAltName + "\n")
     os.close(temp)
 
-    cmd = opensslCmd + " ca -config " + tempname + " -in " + infile + " -out " + outfile
+    cmd = opensslCmd + ' ca -config "' + tempname + '" -in "' + infile + '" -out "' + outfile + '"'
     if verbose: print cmd
     status = os.system(cmd)
     if not keep: os.remove(tempname)

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -87,6 +87,7 @@ public:
     virtual std::string getName(const Ice::Current& = Ice::Current()) const;
     virtual std::string getHostname(const Ice::Current& = Ice::Current()) const;
     virtual LoadInfo getLoad(const Ice::Current& = Ice::Current()) const;
+    virtual int getProcessorSocketCount(const Ice::Current&) const;
     virtual void shutdown(const Ice::Current&) const;
 
     virtual Ice::Long getOffsetFromEnd(const std::string&, int, const Ice::Current&) const;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,7 @@
 #include <Ice/CommunicatorI.h>
 #include <Ice/Instance.h>
 #include <Ice/Properties.h>
+#include <Ice/ConnectionFactory.h>
 #include <Ice/ReferenceFactory.h>
 #include <Ice/ProxyFactory.h>
 #include <Ice/ObjectFactoryManager.h>
@@ -20,6 +21,10 @@
 #include <Ice/DefaultsAndOverrides.h>
 #include <Ice/TraceLevels.h>
 #include <Ice/GC.h>
+#include <Ice/Router.h>
+#include <IceUtil/Mutex.h>
+#include <IceUtil/MutexPtrLock.h>
+#include <IceUtil/UUID.h>
 
 using namespace std;
 using namespace Ice;
@@ -31,6 +36,9 @@ namespace IceInternal
 IceUtil::Handle<IceInternal::GC> theCollector = 0;
 
 }
+
+namespace
+{
 
 struct GarbageCollectorStats
 {
@@ -44,14 +52,34 @@ struct GarbageCollectorStats
     IceUtil::Time time;
 };
 
-static int communicatorCount = 0;
-static IceUtil::StaticMutex gcMutex = ICE_STATIC_MUTEX_INITIALIZER;
-static GarbageCollectorStats gcStats;
-static int gcTraceLevel;
-static string gcTraceCat;
-static int gcInterval;
+int communicatorCount = 0;
+IceUtil::Mutex* gcMutex = 0;
+GarbageCollectorStats gcStats;
+int gcTraceLevel;
+string gcTraceCat;
+int gcInterval;
+bool gcHasPriority;
+int gcThreadPriority;
 
-static void
+class Init
+{
+public:
+
+    Init()
+    {
+        gcMutex = new IceUtil::Mutex;
+    }
+
+    ~Init()
+    {
+        delete gcMutex;
+        gcMutex = 0;
+    }
+};
+
+Init init;
+
+void
 printGCStats(const IceInternal::GCStats& stats)
 {
     if(gcTraceLevel)
@@ -68,12 +96,14 @@ printGCStats(const IceInternal::GCStats& stats)
     }
 }
 
+}
+
 void
 Ice::CommunicatorI::destroy()
 {
     if(_instance && _instance->destroy())
     {
-        IceUtil::StaticMutex::Lock sync(gcMutex);
+        IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(gcMutex);
 
         //
         // Wait for the collector thread to stop if this is the last communicator
@@ -143,6 +173,12 @@ Ice::CommunicatorI::propertyToProxy(const string& p) const
     return _instance->proxyFactory()->propertyToProxy(p);
 }
 
+PropertyDict
+Ice::CommunicatorI::proxyToProperty(const ObjectPrx& proxy, const string& property) const
+{
+    return _instance->proxyFactory()->proxyToProperty(proxy, property);
+}
+
 Identity
 Ice::CommunicatorI::stringToIdentity(const string& s) const
 {
@@ -158,19 +194,38 @@ Ice::CommunicatorI::identityToString(const Identity& ident) const
 ObjectAdapterPtr
 Ice::CommunicatorI::createObjectAdapter(const string& name)
 {
-    return _instance->objectAdapterFactory()->createObjectAdapter(name, "", 0);
+    return _instance->objectAdapterFactory()->createObjectAdapter(name, 0);
 }
 
 ObjectAdapterPtr
 Ice::CommunicatorI::createObjectAdapterWithEndpoints(const string& name, const string& endpoints)
 {
-    return _instance->objectAdapterFactory()->createObjectAdapter(name, endpoints, 0);
+    string oaName = name;
+    if(oaName.empty())
+    {
+        oaName = IceUtil::generateUUID();
+    }
+
+    getProperties()->setProperty(oaName + ".Endpoints", endpoints);
+    return _instance->objectAdapterFactory()->createObjectAdapter(oaName, 0);
 }
 
 ObjectAdapterPtr
 Ice::CommunicatorI::createObjectAdapterWithRouter(const string& name, const RouterPrx& router)
 {
-    return _instance->objectAdapterFactory()->createObjectAdapter(name, "", router);
+    string oaName = name;
+    if(oaName.empty())
+    {
+        oaName = IceUtil::generateUUID();
+    }
+
+    PropertyDict properties = proxyToProperty(router, oaName + ".Router");
+    for(PropertyDict::const_iterator p = properties.begin(); p != properties.end(); ++p)
+    {
+        getProperties()->setProperty(p->first, p->second);
+    }
+
+    return _instance->objectAdapterFactory()->createObjectAdapter(oaName, router);
 }
 
 void
@@ -227,24 +282,11 @@ Ice::CommunicatorI::setDefaultLocator(const LocatorPrx& locator)
     _instance->setDefaultLocator(locator);
 }
 
-Ice::Context
-Ice::CommunicatorI::getDefaultContext() const
-{
-    return _instance->getDefaultContext()->getValue();
-}
-
-void
-Ice::CommunicatorI::setDefaultContext(const Context& ctx)
-{
-    _instance->setDefaultContext(ctx);
-}
-
 Ice::ImplicitContextPtr
 Ice::CommunicatorI::getImplicitContext() const
 {
     return _instance->getImplicitContext();
 }
-
 
 PluginManagerPtr
 Ice::CommunicatorI::getPluginManager() const
@@ -255,7 +297,62 @@ Ice::CommunicatorI::getPluginManager() const
 void
 Ice::CommunicatorI::flushBatchRequests()
 {
-    _instance->flushBatchRequests();
+    AsyncResultPtr r = begin_flushBatchRequests();
+    end_flushBatchRequests(r);
+}
+
+AsyncResultPtr
+Ice::CommunicatorI::begin_flushBatchRequests()
+{
+    return begin_flushBatchRequestsInternal(::IceInternal::__dummyCallback, 0);
+}
+
+AsyncResultPtr
+Ice::CommunicatorI::begin_flushBatchRequests(const CallbackPtr& cb, const LocalObjectPtr& cookie)
+{
+    return begin_flushBatchRequestsInternal(cb, cookie);
+}
+
+AsyncResultPtr
+Ice::CommunicatorI::begin_flushBatchRequests(const Callback_Communicator_flushBatchRequestsPtr& cb,
+                                             const LocalObjectPtr& cookie)
+{
+    return begin_flushBatchRequestsInternal(cb, cookie);
+}
+
+static const ::std::string __flushBatchRequests_name = "flushBatchRequests";
+
+AsyncResultPtr
+Ice::CommunicatorI::begin_flushBatchRequestsInternal(const IceInternal::CallbackBasePtr& cb,
+                                                     const LocalObjectPtr& cookie)
+{
+    OutgoingConnectionFactoryPtr connectionFactory = _instance->outgoingConnectionFactory();
+    ObjectAdapterFactoryPtr adapterFactory = _instance->objectAdapterFactory();
+
+    //
+    // This callback object receives the results of all invocations
+    // of Connection::begin_flushBatchRequests.
+    //
+    CommunicatorBatchOutgoingAsyncPtr result =
+        new CommunicatorBatchOutgoingAsync(this, _instance, __flushBatchRequests_name, cb, cookie);
+
+    connectionFactory->flushAsyncBatchRequests(result);
+    adapterFactory->flushAsyncBatchRequests(result);
+
+    //
+    // Inform the callback that we have finished initiating all of the
+    // flush requests.
+    //
+    result->ready();
+
+    return result;
+}
+
+void
+Ice::CommunicatorI::end_flushBatchRequests(const AsyncResultPtr& r)
+{
+    AsyncResult::__check(r, this, __flushBatchRequests_name);
+    r->__wait();
 }
 
 ObjectPrx
@@ -297,13 +394,15 @@ Ice::CommunicatorI::CommunicatorI(const InitializationData& initData)
         // collector can continue to log messages even if the first communicator that
         // is created isn't the last communicator to be destroyed.
         //
-        IceUtil::StaticMutex::Lock sync(gcMutex);
+        IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(gcMutex);
         static bool gcOnce = true;
         if(gcOnce)
         {
             gcTraceLevel = _instance->traceLevels()->gc;
             gcTraceCat = _instance->traceLevels()->gcCat;
             gcInterval = _instance->initializationData().properties->getPropertyAsInt("Ice.GC.Interval");
+            gcHasPriority = _instance->initializationData().properties->getProperty("Ice.ThreadPriority") != "";
+            gcThreadPriority = _instance->initializationData().properties->getPropertyAsInt("Ice.ThreadPriority");
             gcOnce = false;
         }
         if(++communicatorCount == 1)
@@ -311,7 +410,14 @@ Ice::CommunicatorI::CommunicatorI(const InitializationData& initData)
             IceUtil::Handle<IceInternal::GC> collector  = new IceInternal::GC(gcInterval, printGCStats);
             if(gcInterval > 0)
             {
-                collector->start();
+                if(gcHasPriority)
+                {
+                    collector->start(0, gcThreadPriority);
+                }
+                else
+                {
+                    collector->start();
+                }
             }
 
             //

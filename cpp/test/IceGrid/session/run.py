@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -48,6 +48,7 @@ IceGridAdmin.registryOptions += \
 
 IceGridAdmin.iceGridTest("application.xml",
     '--IceBinDir="%s" --TestDir="%s"' % (TestUtil.getCppBinDir(), os.getcwd()),
-    '\\"properties-override=%s\\"' % TestUtil.getCommandLine("", TestUtil.DriverConfig("server")).replace("--", ""))
+    'properties-override=\'%s\'' % IceGridAdmin.iceGridNodePropertiesOverride())
 
 verifierProc.waitTestSuccess()
+

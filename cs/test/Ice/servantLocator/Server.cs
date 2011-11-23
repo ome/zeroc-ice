@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,14 +23,14 @@ public class Server
     {
         public override int run(string[] args)
         {
-            communicator().getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010 -t 2000");
+            communicator().getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010");
             communicator().getProperties().setProperty("Ice.Warn.Dispatch", "0");
 
             Ice.ObjectAdapter adapter = communicator().createObjectAdapter("TestAdapter");
             adapter.addServantLocator(new ServantLocatorI("category"), "category");
             adapter.addServantLocator(new ServantLocatorI(""), "");
             adapter.add(new TestI(), communicator().stringToIdentity("asm"));
-
+            adapter.add(new TestActivationI(), communicator().stringToIdentity("test/activation"));
             adapter.activate();
             adapter.waitForDeactivate();
             return 0;

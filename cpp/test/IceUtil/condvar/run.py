@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -22,13 +22,12 @@ from scripts import *
 
 workqueue = os.path.join(os.getcwd(), "workqueue")
 
-client = TestUtil.spawnClient(workqueue, startReader = True)
-client.waitTestSuccess()
+TestUtil.simpleTest(workqueue)
 
 match = os.path.join(os.getcwd(), "match")
 
-client = TestUtil.spawnClient(match, startReader = True)
-client.waitTestSuccess()
+TestUtil.simpleTest(match)
 
-client = TestUtil.spawnClient(match + " -b", startReader = True)
-client.waitTestSuccess()
+# Don't use simpleTest(match + " -b") this will confuse
+# appverifier about the name of target exe
+TestUtil.simpleTest(match, " -b")

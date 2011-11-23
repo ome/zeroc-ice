@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -31,7 +31,7 @@ def deactivate(com, adapters)
 end
 
 def allTests(communicator)
-    ref = "communicator:default -p 12010 -t 10000"
+    ref = "communicator:default -p 12010"
     com = Test::RemoteCommunicatorPrx::uncheckedCast(communicator.stringToProxy(ref))
 
     print "testing binding with single endpoint... "

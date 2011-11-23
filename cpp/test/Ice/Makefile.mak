@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -12,8 +12,9 @@ top_srcdir	= ..\..
 !include $(top_srcdir)\config\Make.rules.mak
 
 SUBDIRS		= proxy \
-                  operations \
+		  operations \
 		  exceptions \
+		  info \
 		  inheritance \
 		  facets \
 		  objects \
@@ -23,17 +24,27 @@ SUBDIRS		= proxy \
 		  slicing \
 		  gc \
 		  checksum \
-		  stream \
+		  dispatcher \
 		  hold \
-		  custom \
 		  binding \
 		  retry \
 		  timeout \
 		  servantLocator \
-                  interceptor \
-                  stringConverter \
+		  interceptor \
+		  stringConverter \
 		  background \
-		  udp
+		  udp \
+		  defaultServant \
+		  defaultValue \
+		  threadPoolPriority \
+		  stream \
+
+!if "$(CPP_COMPILER)" != "VC60"
+SUBDIRS		= $(SUBDIRS) \
+		  ami \
+		  custom \
+		  invoke
+!endif
 
 $(EVERYTHING)::
 	@for %i in ( $(SUBDIRS) ) do \

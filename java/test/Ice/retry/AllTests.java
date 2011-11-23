@@ -1,11 +1,19 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+package test.Ice.retry;
+
+import java.io.PrintWriter;
+
+import test.Ice.retry.Test.Callback_Retry_op;
+import test.Ice.retry.Test.RetryPrx;
+import test.Ice.retry.Test.RetryPrxHelper;
 
 public class AllTests
 {
@@ -25,28 +33,21 @@ public class AllTests
             _called = false;
         }
 
-        public synchronized boolean
+        public synchronized void
         check()
         {
             while(!_called)
             {
                 try
                 {
-                    wait(5000);
+                    wait();
                 }
                 catch(InterruptedException ex)
                 {
-                    continue;
-                }
-
-                if(!_called)
-                {
-                    return false; // Must be timeout.
                 }
             }
 
             _called = false;
-            return true;
         }
 
         public synchronized void
@@ -60,59 +61,63 @@ public class AllTests
         private boolean _called;
     }
 
-    private static class AMIRegular extends Test.AMI_Retry_op
+    private static class AMIRegular extends Callback_Retry_op
     {
+        @Override
         public void
-        ice_response()
+        response()
         {
             callback.called();
         }
 
+        @Override
         public void
-        ice_exception(Ice.LocalException ex)
+        exception(Ice.LocalException ex)
         {
             test(false);
         }
 
-        public boolean
+        public void
         check()
         {
-            return callback.check();
+            callback.check();
         }
 
         private Callback callback = new Callback();
     }
 
-    private static class AMIException extends Test.AMI_Retry_op
+    private static class AMIException extends Callback_Retry_op
     {
+        @Override
         public void
-        ice_response()
+        response()
         {
             test(false);
         }
 
+        @Override
         public void
-        ice_exception(Ice.LocalException ex)
+        exception(Ice.LocalException ex)
         {
             test(ex instanceof Ice.ConnectionLostException);
             callback.called();
         }
 
-        public boolean
+        public void
         check()
         {
-            return callback.check();
+            callback.check();
         }
 
         private Callback callback = new Callback();
     }
 
-    public static Test.RetryPrx
-    allTests(Ice.Communicator communicator, java.io.PrintStream out)
+    public static RetryPrx
+    allTests(Ice.Communicator communicator, PrintWriter out)
     {
         out.print("testing stringToProxy... ");
         out.flush();
-        String ref = "retry:default -p 12010 -t 10000";
+        String ref = "retry:default -p 12010";
         Ice.ObjectPrx base1 = communicator.stringToProxy(ref);
         test(base1 != null);
         Ice.ObjectPrx base2 = communicator.stringToProxy(ref);
@@ -121,10 +126,10 @@ public class AllTests
 
         out.print("testing checked cast... ");
         out.flush();
-        Test.RetryPrx retry1 = Test.RetryPrxHelper.checkedCast(base1);
+        RetryPrx retry1 = RetryPrxHelper.checkedCast(base1);
         test(retry1 != null);
         test(retry1.equals(base1));
-        Test.RetryPrx retry2 = Test.RetryPrxHelper.checkedCast(base2);
+        RetryPrx retry2 = RetryPrxHelper.checkedCast(base2);
         test(retry2 != null);
         test(retry2.equals(base2));
         out.println("ok");
@@ -155,18 +160,18 @@ public class AllTests
         AMIException cb2 = new AMIException();
 
         out.print("calling regular AMI operation with first proxy... ");
-        retry1.op_async(cb1, false);
-        test(cb1.check());
+        retry1.begin_op(false, cb1);
+        cb1.check();
         out.println("ok");
 
         out.print("calling AMI operation to kill connection with second proxy... ");
-        retry2.op_async(cb2, true);
-        test(cb2.check());
+        retry2.begin_op(true, cb2);
+        cb2.check();
         out.println("ok");
 
         out.print("calling regular AMI operation with first proxy again... ");
-        retry1.op_async(cb1, false);
-        test(cb1.check());
+        retry1.begin_op(false, cb1);
+        cb1.check();
         out.println("ok");
 
         return retry1;

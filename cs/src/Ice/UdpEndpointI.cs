@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,11 +14,11 @@ namespace IceInternal
     using System.Collections;
     using System.Collections.Generic;
     using System.Net;
+    using System;
+    using System.Globalization;
 
     sealed class UdpEndpointI : EndpointI
     {
-        internal const short TYPE = 3;
-        
         public UdpEndpointI(Instance instance, string ho, int po, string mif, int mttl, byte pma, byte pmi, byte ema,
                             byte emi, bool conn, string conId, bool co)
         {
@@ -72,7 +72,7 @@ namespace IceInternal
                 if(option[0] != '-')
                 {
                     Ice.EndpointParseException e = new Ice.EndpointParseException();
-                    e.str = "udp " + str;
+                    e.str = "expected an endpoint option but found `" + option + "' in endpoint `udp " + str + "'";
                     throw e;
                 }
 
@@ -87,7 +87,7 @@ namespace IceInternal
                         if(end == -1)
                         {
                             Ice.EndpointParseException e = new Ice.EndpointParseException();
-                            e.str = "udp " + str;
+                            e.str = "mismatched quotes around `" + argument + "' in endpoint `udp " + str + "'";
                             throw e;
                         }
                         else
@@ -115,7 +115,7 @@ namespace IceInternal
                     if(argument == null)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "no argument provided for -v option in endpoint `udp " + str + "'";
                         throw e;
                     }
                     
@@ -123,7 +123,7 @@ namespace IceInternal
                     if(pos == -1)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "malformed protocol version `" + argument + "' in endpoint `udp " + str + "'";
                         throw e;
                     }
                     
@@ -133,20 +133,20 @@ namespace IceInternal
                     int minVersion;
                     try
                     {
-                        majVersion = System.Int32.Parse(majStr);
-                        minVersion = System.Int32.Parse(minStr);
+                        majVersion = System.Int32.Parse(majStr, CultureInfo.InvariantCulture);
+                        minVersion = System.Int32.Parse(minStr, CultureInfo.InvariantCulture);
                     }
                     catch(System.FormatException ex)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException(ex);
-                        e.str = "udp " + str;
+                        e.str = "invalid protocol version `" + argument + "' in endpoint `udp " + str + "'";
                         throw e;
                     }
                     
                     if(majVersion < 1 || majVersion > 255 || minVersion < 0 || minVersion > 255)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "range error in protocol version `" + argument + "' in endpoint `udp " + str + "'";
                         throw e;
                     }
                     
@@ -168,7 +168,7 @@ namespace IceInternal
                     if(argument == null)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "no argument provided for -e option in endpoint `udp " + str + "'";
                         throw e;
                     }
                 
@@ -176,7 +176,7 @@ namespace IceInternal
                     if(pos == -1)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "malformed encoding version `" + argument + "' in endpoint `udp " + str + "'";
                         throw e;
                     }
                     
@@ -186,20 +186,20 @@ namespace IceInternal
                     int minVersion;
                     try
                     {
-                        majVersion = System.Int32.Parse(majStr);
-                        minVersion = System.Int32.Parse(minStr);
+                        majVersion = System.Int32.Parse(majStr, CultureInfo.InvariantCulture);
+                        minVersion = System.Int32.Parse(minStr, CultureInfo.InvariantCulture);
                     }
                     catch(System.FormatException ex)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException(ex);
-                        e.str = "udp " + str;
+                        e.str = "invalid encoding version `" + argument + "' in endpoint `udp " + str + "'";
                         throw e;
                     }
                     
                     if(majVersion < 1 || majVersion > 255 || minVersion < 0 || minVersion > 255)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "range error in encoding version `" + argument + "' in endpoint `udp " + str + "'";
                         throw e;
                     }
                     
@@ -221,7 +221,7 @@ namespace IceInternal
                     if(argument == null)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "no argument provided for -h option in endpoint `udp " + str + "'";
                         throw e;
                     }
                     
@@ -232,25 +232,25 @@ namespace IceInternal
                     if(argument == null)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "no argument provided for -p option in endpoint `udp " + str + "'";
                         throw e;
                     }
                     
                     try
                     {
-                        _port = System.Int32.Parse(argument);
+                        _port = System.Int32.Parse(argument, CultureInfo.InvariantCulture);
                     }
                     catch(System.FormatException ex)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException(ex);
-                        e.str = "udp " + str;
+                        e.str = "invalid port value `" + argument + "' in endpoint `udp " + str + "'";
                         throw e;
                     }
 
                     if(_port < 0 || _port > 65535)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "port value `" + argument + "' out of range in endpoint `udp " + str + "'";
                         throw e;
                     }
                 }
@@ -259,7 +259,7 @@ namespace IceInternal
                     if(argument != null)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "unexpected argument `" + argument + "' provided for -c option in `udp " + str + "'";
                         throw e;
                     }
                     
@@ -270,7 +270,7 @@ namespace IceInternal
                     if(argument != null)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "unexpected argument `" + argument + "' provided for -z option in `udp " + str + "'";
                         throw e;
                     }
                     
@@ -281,7 +281,7 @@ namespace IceInternal
                     if(argument == null)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "no argument provided for --interface option in endpoint `udp " + str + "'";
                         throw e;
                     }
                     
@@ -292,32 +292,32 @@ namespace IceInternal
                     if(argument == null)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "no argument provided for --ttl option in endpoint `udp " + str + "'";
                         throw e;
                     }
                     
                     try
                     {
-                        _mcastTtl = System.Int32.Parse(argument);
+                        _mcastTtl = System.Int32.Parse(argument, CultureInfo.InvariantCulture);
                     }
                     catch(System.FormatException ex)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException(ex);
-                        e.str = "udp " + str;
+                        e.str = "invalid TTL value `" + argument + "' in endpoint `udp " + str + "'";
                         throw e;
                     }
 
                     if(_mcastTtl < 0)
                     {
                         Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "udp " + str;
+                        e.str = "TTL value `" + argument + "' out of range in endpoint `udp " + str + "'";
                         throw e;
                     }
                 }
                 else
                 {
                     Ice.EndpointParseException e = new Ice.EndpointParseException();
-                    e.str = "udp " + str;
+                    e.str = "unknown option `" + option + "' in `udp " + str + "'";
                     throw e;
                 }
             }
@@ -334,7 +334,7 @@ namespace IceInternal
                 }
                 else
                 {
-                    throw new Ice.EndpointParseException("udp " + str);
+                    throw new Ice.EndpointParseException("`-h *' not valid for proxy endpoint `udp " + str + "'");
                 }        
             }
 
@@ -387,7 +387,7 @@ namespace IceInternal
         //
         public override void streamWrite(BasicStream s)
         {
-            s.writeShort(TYPE);
+            s.writeShort(Ice.UDPEndpointType.value);
             s.startWriteEncaps();
             s.writeString(_host);
             s.writeInt(_port);
@@ -467,12 +467,46 @@ namespace IceInternal
             return s;
         }
         
+        private sealed class InfoI : Ice.UDPEndpointInfo
+        {
+            public InfoI(bool comp, string host, int port, byte protocolMajor, byte protocolMinor, 
+                         byte encodingMajor, byte encodingMinor, string mcastInterface, int mcastTtl) :
+                base(-1, comp, host, port, protocolMajor, protocolMinor, encodingMajor, encodingMinor, mcastInterface,
+                    mcastTtl)
+            {
+            }
+
+            override public short type()
+            {
+                return Ice.UDPEndpointType.value;
+            }
+                
+            override public bool datagram()
+            {
+                return true;
+            }
+                
+            override public bool secure()
+            {
+                return false;
+            }
+        };
+
+        //
+        // Return the endpoint information.
+        //
+        public override Ice.EndpointInfo getInfo()
+        {
+            return new InfoI(_compress, _host, _port, _protocolMajor, _protocolMinor, _encodingMajor, 
+                             _encodingMinor, _mcastInterface, _mcastTtl);
+        }
+
         //
         // Return the endpoint type
         //
         public override short type()
         {
-            return TYPE;
+            return Ice.UDPEndpointType.value;
         }
         
         //
@@ -554,15 +588,7 @@ namespace IceInternal
         {
             return false;
         }
-        
-        //
-        // Return true if the endpoint type is unknown.
-        //
-        public override bool unknown()
-        {
-            return false;
-        }
-        
+
         //
         // Return a server side transceiver for this endpoint, or null if a
         // transceiver can only be created by an acceptor. In case a
@@ -614,7 +640,7 @@ namespace IceInternal
         expand()
         {
             List<EndpointI> endps = new List<EndpointI>();
-            List<string> hosts = IceInternal.Network.getHostsForEndpointExpand(_host, instance_.protocolSupport());
+            List<string> hosts = Network.getHostsForEndpointExpand(_host, instance_.protocolSupport(), false);
             if(hosts == null || hosts.Count == 0)
             {
                 endps.Add(this);
@@ -718,7 +744,7 @@ namespace IceInternal
             
             if(!_connectionId.Equals(p._connectionId))
             {
-                return _connectionId.CompareTo(p._connectionId);
+                return string.Compare(_connectionId, p._connectionId, StringComparison.Ordinal);
             }
 
             if(!_compress && p._compress)
@@ -766,7 +792,7 @@ namespace IceInternal
                 return 1;
             }
 
-            int rc = _mcastInterface.CompareTo(p._mcastInterface);
+            int rc = string.Compare(_mcastInterface, p._mcastInterface, StringComparison.Ordinal);
             if(rc != 0)
             {
                 return rc;
@@ -781,7 +807,7 @@ namespace IceInternal
                 return 1;
             }
 
-            return _host.CompareTo(p._host);
+            return string.Compare(_host, p._host, StringComparison.Ordinal);
         }
         
         private void calcHashValue()
@@ -819,7 +845,7 @@ namespace IceInternal
         
         public short type()
         {
-            return UdpEndpointI.TYPE;
+            return Ice.UDPEndpointType.value;
         }
         
         public string protocol()

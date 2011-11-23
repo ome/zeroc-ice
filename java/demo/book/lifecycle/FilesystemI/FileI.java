@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -76,7 +76,7 @@ public class FileI extends _FileDisp implements NodeI
         _parent = parent;
         _destroyed = false;
         _id = new Identity();
-        _id.name = Util.generateUUID();
+        _id.name = java.util.UUID.randomUUID().toString();
     }
 
     private String _name;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,8 +22,21 @@ public class Client
 {
     private static int run(string[] args, Ice.Communicator communicator)
     {
-        TestIntfPrx obj = AllTests.allTests(communicator);
-        obj.shutdown();
+        AllTests.allTests(communicator);
+
+        int num;
+        try 
+        {
+            num = args.Length == 1 ? System.Int32.Parse(args[0]) : 0;
+        }
+        catch(System.FormatException)
+        {
+            num = 0;
+        }
+        for(int i = 0; i < num; ++i)
+        {
+            TestIntfPrxHelper.uncheckedCast(communicator.stringToProxy("control:tcp -p " + (12010 + i))).shutdown();
+        }
         return 0;
     }
 

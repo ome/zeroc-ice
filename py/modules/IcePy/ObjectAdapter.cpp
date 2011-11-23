@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@
 #include <ObjectAdapter.h>
 #include <Communicator.h>
 #include <Current.h>
+#include <Endpoint.h>
 #include <Operation.h>
 #include <Proxy.h>
 #include <Types.h>
@@ -99,6 +100,8 @@ IcePy::ServantLocatorWrapper::ServantLocatorWrapper(PyObject* locator) :
 
 IcePy::ServantLocatorWrapper::~ServantLocatorWrapper()
 {
+    AdoptThread adoptThread; // Ensure the current thread is able to call into Python.
+    Py_DECREF(_locator);
 }
 
 Ice::ObjectPtr
@@ -240,8 +243,6 @@ IcePy::ServantLocatorWrapper::deactivate(const string& category)
 
         ex.raise();
     }
-
-    Py_DECREF(_locator);
 }
 
 PyObject*
@@ -641,7 +642,7 @@ adapterAdd(ObjectAdapterObject* self, PyObject* args)
         return 0;
     }
 
-    ServantWrapperPtr wrapper= createServantWrapper(servant);
+    ServantWrapperPtr wrapper = createServantWrapper(servant);
     if(PyErr_Occurred())
     {
         return 0;
@@ -684,7 +685,7 @@ adapterAddFacet(ObjectAdapterObject* self, PyObject* args)
         return 0;
     }
 
-    ServantWrapperPtr wrapper= createServantWrapper(servant);
+    ServantWrapperPtr wrapper = createServantWrapper(servant);
     if(PyErr_Occurred())
     {
         return 0;
@@ -724,7 +725,7 @@ adapterAddWithUUID(ObjectAdapterObject* self, PyObject* args)
         return 0;
     }
 
-    ServantWrapperPtr wrapper= createServantWrapper(servant);
+    ServantWrapperPtr wrapper = createServantWrapper(servant);
     if(PyErr_Occurred())
     {
         return 0;
@@ -759,7 +760,7 @@ adapterAddFacetWithUUID(ObjectAdapterObject* self, PyObject* args)
         return 0;
     }
 
-    ServantWrapperPtr wrapper= createServantWrapper(servant);
+    ServantWrapperPtr wrapper = createServantWrapper(servant);
     if(PyErr_Occurred())
     {
         return 0;
@@ -784,6 +785,47 @@ adapterAddFacetWithUUID(ObjectAdapterObject* self, PyObject* args)
     }
 
     return createProxy(proxy, (*self->adapter)->getCommunicator());
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+adapterAddDefaultServant(ObjectAdapterObject* self, PyObject* args)
+{
+    PyObject* objectType = lookupType("Ice.Object");
+    PyObject* servant;
+    PyObject* categoryObj;
+    if(!PyArg_ParseTuple(args, STRCAST("O!O"), objectType, &servant, &categoryObj))
+    {
+        return 0;
+    }
+
+    ServantWrapperPtr wrapper = createServantWrapper(servant);
+    if(PyErr_Occurred())
+    {
+        return 0;
+    }
+
+    string category;
+    if(!getStringArg(categoryObj, "category", category))
+    {
+        return 0;
+    }
+
+    assert(self->adapter);
+    try
+    {
+       (*self->adapter)->addDefaultServant(wrapper, category);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 #ifdef WIN32
@@ -926,6 +968,47 @@ adapterRemoveAllFacets(ObjectAdapterObject* self, PyObject* args)
     }
 
     return result.release();
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+adapterRemoveDefaultServant(ObjectAdapterObject* self, PyObject* args)
+{
+    PyObject* categoryObj;
+    if(!PyArg_ParseTuple(args, STRCAST("O"), &categoryObj))
+    {
+        return 0;
+    }
+
+    string category;
+    if(!getStringArg(categoryObj, "category", category))
+    {
+        return 0;
+    }
+
+    assert(self->adapter);
+    Ice::ObjectPtr obj;
+    try
+    {
+        obj = (*self->adapter)->removeDefaultServant(category);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+
+    if(!obj)
+    {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    ServantWrapperPtr wrapper = ServantWrapperPtr::dynamicCast(obj);
+    assert(wrapper);
+    return wrapper->getObject();
 }
 
 #ifdef WIN32
@@ -1076,9 +1159,12 @@ extern "C"
 static PyObject*
 adapterFindByProxy(ObjectAdapterObject* self, PyObject* args)
 {
-    PyObject* proxyType = lookupType("Ice.ObjectPrx");
+    //
+    // We don't want to accept None here, so we can specify ProxyType and force
+    // the caller to supply a proxy object.
+    //
     PyObject* proxy;
-    if(!PyArg_ParseTuple(args, STRCAST("O!"), proxyType, &proxy))
+    if(!PyArg_ParseTuple(args, STRCAST("O!"), &ProxyType, &proxy))
     {
         return 0;
     }
@@ -1090,6 +1176,47 @@ adapterFindByProxy(ObjectAdapterObject* self, PyObject* args)
     try
     {
         obj = (*self->adapter)->findByProxy(prx);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+
+    if(!obj)
+    {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    ServantWrapperPtr wrapper = ServantWrapperPtr::dynamicCast(obj);
+    assert(wrapper);
+    return wrapper->getObject();
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+adapterFindDefaultServant(ObjectAdapterObject* self, PyObject* args)
+{
+    PyObject* categoryObj;
+    if(!PyArg_ParseTuple(args, STRCAST("O"), &categoryObj))
+    {
+        return 0;
+    }
+
+    string category;
+    if(!getStringArg(categoryObj, "category", category))
+    {
+        return 0;
+    }
+
+    assert(self->adapter);
+    Ice::ObjectPtr obj;
+    try
+    {
+        obj = (*self->adapter)->findDefaultServant(category);
     }
     catch(const Ice::Exception& ex)
     {
@@ -1129,7 +1256,6 @@ adapterAddServantLocator(ObjectAdapterObject* self, PyObject* args)
     {
         return 0;
     }
-
     assert(self->adapter);
     try
     {
@@ -1143,6 +1269,47 @@ adapterAddServantLocator(ObjectAdapterObject* self, PyObject* args)
 
     Py_INCREF(Py_None);
     return Py_None;
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+adapterRemoveServantLocator(ObjectAdapterObject* self, PyObject* args)
+{
+    PyObject* categoryObj;
+    if(!PyArg_ParseTuple(args, STRCAST("O"), &categoryObj))
+    {
+        return 0;
+    }
+
+    string category;
+    if(!getStringArg(categoryObj, "category", category))
+    {
+        return 0;
+    }
+
+    assert(self->adapter);
+    Ice::ServantLocatorPtr locator;
+    try
+    {
+        locator = (*self->adapter)->removeServantLocator(category);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+
+    if(!locator)
+    {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    ServantLocatorWrapperPtr wrapper = ServantLocatorWrapperPtr::dynamicCast(locator);
+    assert(wrapper);
+    return wrapper->getObject();
 }
 
 #ifdef WIN32
@@ -1294,14 +1461,19 @@ extern "C"
 static PyObject*
 adapterSetLocator(ObjectAdapterObject* self, PyObject* args)
 {
-    PyObject* proxyType = lookupType("Ice.LocatorPrx");
-    PyObject* proxy;
-    if(!PyArg_ParseTuple(args, STRCAST("O!"), proxyType, &proxy))
+    PyObject* p;
+    if(!PyArg_ParseTuple(args, STRCAST("O"), &p))
     {
         return 0;
     }
 
-    Ice::LocatorPrx locator = Ice::LocatorPrx::uncheckedCast(getProxy(proxy));
+    Ice::ObjectPrx proxy;
+    if(!getProxyArg(p, "setLocator", "loc", proxy, "Ice.LocatorPrx"))
+    {
+        return 0;
+    }
+
+    Ice::LocatorPrx locator = Ice::LocatorPrx::uncheckedCast(proxy);
 
     assert(self->adapter);
     try
@@ -1341,6 +1513,76 @@ adapterRefreshPublishedEndpoints(ObjectAdapterObject* self)
     return Py_None;
 }
 
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+adapterGetEndpoints(ObjectAdapterObject* self)
+{
+    assert(self->adapter);
+
+    Ice::EndpointSeq endpoints;
+    try
+    {
+        endpoints = (*self->adapter)->getEndpoints();
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    } 
+
+    int count = static_cast<int>(endpoints.size());
+    PyObjectHandle result = PyTuple_New(count);
+    int i = 0;
+    for(Ice::EndpointSeq::const_iterator p = endpoints.begin(); p != endpoints.end(); ++p, ++i)
+    {
+        PyObjectHandle endp = createEndpoint(*p);
+        if(!endp.get())
+        {
+            return 0;
+        }
+        PyTuple_SET_ITEM(result.get(), i, endp.release()); // PyTuple_SET_ITEM steals a reference.
+    }
+
+    return result.release();
+}
+
+#ifdef WIN32
+extern "C"
+#endif 
+static PyObject*
+adapterGetPublishedEndpoints(ObjectAdapterObject* self)
+{
+    assert(self->adapter);
+        
+    Ice::EndpointSeq endpoints;
+    try
+    { 
+        endpoints = (*self->adapter)->getPublishedEndpoints();
+    } 
+    catch(const Ice::Exception& ex)
+    { 
+        setPythonException(ex);
+        return 0;
+    }
+
+    int count = static_cast<int>(endpoints.size());
+    PyObjectHandle result = PyTuple_New(count);
+    int i = 0;
+    for(Ice::EndpointSeq::const_iterator p = endpoints.begin(); p != endpoints.end(); ++p, ++i)
+    {
+        PyObjectHandle endp = createEndpoint(*p);
+        if(!endp.get())
+        {
+            return 0;
+        }
+        PyTuple_SET_ITEM(result.get(), i, endp.release()); // PyTuple_SET_ITEM steals a reference.
+    }
+
+    return result.release();
+}
+
 static PyMethodDef AdapterMethods[] =
 {
     { STRCAST("getName"), reinterpret_cast<PyCFunction>(adapterGetName), METH_NOARGS,
@@ -1369,12 +1611,16 @@ static PyMethodDef AdapterMethods[] =
         PyDoc_STR(STRCAST("addWithUUID(servant) -> Ice.ObjectPrx")) },
     { STRCAST("addFacetWithUUID"), reinterpret_cast<PyCFunction>(adapterAddFacetWithUUID), METH_VARARGS,
         PyDoc_STR(STRCAST("addFacetWithUUID(servant, facet) -> Ice.ObjectPrx")) },
+    { STRCAST("addDefaultServant"), reinterpret_cast<PyCFunction>(adapterAddDefaultServant), METH_VARARGS,
+        PyDoc_STR(STRCAST("addDefaultServant(servant, category) -> None")) },
     { STRCAST("remove"), reinterpret_cast<PyCFunction>(adapterRemove), METH_VARARGS,
         PyDoc_STR(STRCAST("remove(identity) -> Ice.Object")) },
     { STRCAST("removeFacet"), reinterpret_cast<PyCFunction>(adapterRemoveFacet), METH_VARARGS,
         PyDoc_STR(STRCAST("removeFacet(identity, facet) -> Ice.Object")) },
     { STRCAST("removeAllFacets"), reinterpret_cast<PyCFunction>(adapterRemoveAllFacets), METH_VARARGS,
         PyDoc_STR(STRCAST("removeAllFacets(identity) -> dictionary")) },
+    { STRCAST("removeDefaultServant"), reinterpret_cast<PyCFunction>(adapterRemoveDefaultServant), METH_VARARGS,
+        PyDoc_STR(STRCAST("removeDefaultServant(category) -> Ice.Object")) },
     { STRCAST("find"), reinterpret_cast<PyCFunction>(adapterFind), METH_VARARGS,
         PyDoc_STR(STRCAST("find(identity) -> Ice.Object")) },
     { STRCAST("findFacet"), reinterpret_cast<PyCFunction>(adapterFindFacet), METH_VARARGS,
@@ -1383,8 +1629,12 @@ static PyMethodDef AdapterMethods[] =
         PyDoc_STR(STRCAST("findAllFacets(identity) -> dictionary")) },
     { STRCAST("findByProxy"), reinterpret_cast<PyCFunction>(adapterFindByProxy), METH_VARARGS,
         PyDoc_STR(STRCAST("findByProxy(Ice.ObjectPrx) -> Ice.Object")) },
+    { STRCAST("findDefaultServant"), reinterpret_cast<PyCFunction>(adapterFindDefaultServant), METH_VARARGS,
+        PyDoc_STR(STRCAST("findDefaultServant(category) -> Ice.Object")) },
     { STRCAST("addServantLocator"), reinterpret_cast<PyCFunction>(adapterAddServantLocator), METH_VARARGS,
         PyDoc_STR(STRCAST("addServantLocator(Ice.ServantLocator, category) -> None")) },
+    { STRCAST("removeServantLocator"), reinterpret_cast<PyCFunction>(adapterRemoveServantLocator), METH_VARARGS,
+        PyDoc_STR(STRCAST("removeServantLocator(category) -> Ice.ServantLocator")) },
     { STRCAST("findServantLocator"), reinterpret_cast<PyCFunction>(adapterFindServantLocator), METH_VARARGS,
         PyDoc_STR(STRCAST("findServantLocator(category) -> Ice.ServantLocator")) },
     { STRCAST("createProxy"), reinterpret_cast<PyCFunction>(adapterCreateProxy), METH_VARARGS,
@@ -1397,6 +1647,10 @@ static PyMethodDef AdapterMethods[] =
         PyDoc_STR(STRCAST("setLocator(proxy) -> None")) },
     { STRCAST("refreshPublishedEndpoints"), reinterpret_cast<PyCFunction>(adapterRefreshPublishedEndpoints), METH_NOARGS,
         PyDoc_STR(STRCAST("refreshPublishedEndpoints() -> None")) },
+    { STRCAST("getEndpoints"), reinterpret_cast<PyCFunction>(adapterGetEndpoints), METH_NOARGS,
+        PyDoc_STR(STRCAST("getEndpoints() -> None")) },
+    { STRCAST("getPublishedEndpoints"), reinterpret_cast<PyCFunction>(adapterGetPublishedEndpoints), METH_NOARGS,
+        PyDoc_STR(STRCAST("getPublishedEndpoints() -> None")) },
     { 0, 0 } /* sentinel */
 };
 

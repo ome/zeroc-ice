@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -313,9 +313,6 @@ Test::ServantI::addFacet(const string& name, const string& data, const Current& 
 
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         _evictor->addFacet(facet, current.id, name);
     }
     catch(const Ice::AlreadyRegisteredException&)
@@ -329,9 +326,6 @@ Test::ServantI::removeFacet(const string& name, const Current& current) const
 {
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         _evictor->removeFacet(current.id, name);
     }
     catch(const Ice::NotRegisteredException&)
@@ -523,13 +517,11 @@ private:
 };
 
 
-Test::RemoteEvictorI::RemoteEvictorI(const ObjectAdapterPtr& adapter, const string& envName,
+Test::RemoteEvictorI::RemoteEvictorI(const CommunicatorPtr& communicator, const string& envName,
                                      const string& category, bool transactional) :
-    _adapter(adapter),
     _envName(envName),
     _category(category)
 {
-    CommunicatorPtr communicator = adapter->getCommunicator();
     _evictorAdapter = communicator->createObjectAdapterWithEndpoints(IceUtil::generateUUID(), "default");
  
     Initializer* initializer = new Initializer;
@@ -564,9 +556,6 @@ Test::RemoteEvictorI::createServant(const string& id, Int value, const Current&)
     ServantPtr servant = new ServantI(this, _evictor, value);
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         return ServantPrx::uncheckedCast(_evictor->add(servant, ident));
     }
     catch(const Ice::AlreadyRegisteredException&)
@@ -604,7 +593,7 @@ void
 Test::RemoteEvictorI::deactivate(const Current& current)
 {
     _evictorAdapter->destroy();
-    _adapter->remove(_adapter->getCommunicator()->stringToIdentity(_category));
+    current.adapter->remove(current.adapter->getCommunicator()->stringToIdentity(_category));
 }
 
 
@@ -623,9 +612,7 @@ Test::RemoteEvictorI::destroyAllServants(const string& facetName, const Current&
     }
 }
 
-Test::RemoteEvictorFactoryI::RemoteEvictorFactoryI(const ObjectAdapterPtr& adapter,
-                                                   const std::string& envName) :
-    _adapter(adapter),
+Test::RemoteEvictorFactoryI::RemoteEvictorFactoryI(const std::string& envName) :
     _envName(envName)
 {
 }
@@ -633,13 +620,14 @@ Test::RemoteEvictorFactoryI::RemoteEvictorFactoryI(const ObjectAdapterPtr& adapt
 ::Test::RemoteEvictorPrx
 Test::RemoteEvictorFactoryI::createEvictor(const string& name, bool transactional, const Current& current)
 {
-    RemoteEvictorIPtr remoteEvictor = new RemoteEvictorI(_adapter, _envName, name, transactional);  
-    return RemoteEvictorPrx::uncheckedCast(_adapter->add(remoteEvictor, 
-                                                         _adapter->getCommunicator()->stringToIdentity(name)));
+    RemoteEvictorIPtr remoteEvictor = 
+        new RemoteEvictorI(current.adapter->getCommunicator(), _envName, name, transactional);  
+    return RemoteEvictorPrx::uncheckedCast(
+        current.adapter->add(remoteEvictor, current.adapter->getCommunicator()->stringToIdentity(name)));
 }
 
 void
-Test::RemoteEvictorFactoryI::shutdown(const Current&)
+Test::RemoteEvictorFactoryI::shutdown(const Current& current)
 {
-    _adapter->getCommunicator()->shutdown();
+    current.adapter->getCommunicator()->shutdown();
 }

@@ -1,11 +1,12 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
 package IceGridGUI.Application;
 
 import javax.swing.DefaultComboBoxModel;
@@ -23,8 +24,7 @@ class ServerInstancePropertySetEditor extends PropertySetEditor
         super("Service Name");
         _id.setToolTipText("The name of the service");
 
-        JTextField idTextField = (JTextField)
-            _id.getEditor().getEditorComponent();
+        JTextField idTextField = (JTextField)_id.getEditor().getEditorComponent();
         idTextField.getDocument().addDocumentListener(_updateListener);
     }
 
@@ -54,7 +54,7 @@ class ServerInstancePropertySetEditor extends PropertySetEditor
     protected void showId(String unsubstitutedId, Utils.Resolver resolver)
     {
         ServerInstance s = (ServerInstance)_target.getParent();
-        
+
         _id.setEnabled(true);
         _id.setEditable(true);
         _id.setModel(new DefaultComboBoxModel(s.getServiceNames()));

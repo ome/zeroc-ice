@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -32,7 +32,7 @@ $(top_srcdir)\lib\ImportKey.class: ImportKey.class
 install::
 	@for %i in ( $(CA_FILES) ) do \
 	    @echo "Installing %i" && \
-	    copy %i $(prefix)\bin
+	    copy %i "$(prefix)\bin"
 	@for %i in ( $(CLASS_FILES) ) do \
 	    @echo "Installing %i" && \
-	    copy %i $(prefix)\lib
+	    copy %i "$(prefix)\lib"

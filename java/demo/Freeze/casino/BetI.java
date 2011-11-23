@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -92,13 +92,13 @@ class BetI extends CasinoStore.PersistentBet
     {
     }
 
-    BetI(int amount, long closeTime, CasinoStore.PersistentBankPrx bank, 
-         Freeze.TransactionalEvictor evictor, int bankEdge)
+    BetI(int amount, long closeTime, CasinoStore.PersistentBankPrx bank, Freeze.TransactionalEvictor evictor,
+         int bankEdge)
     {
         this.amount = amount;
         this.closeTime = closeTime;
         init(evictor, bankEdge);
-        potentialWinners = new java.util.Vector();
+        potentialWinners = new java.util.Vector<CasinoStore.WinnerPrx>();
         potentialWinners.add(bank);
     }
 

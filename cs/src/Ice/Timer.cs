@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,9 +12,10 @@
 // the C++ & Java timers and it's not clear what is the cost of
 // scheduling and cancelling timers.
 //
-
+    
 namespace IceInternal
 {
+    using System;
     using System.Diagnostics;
     using System.Threading;
     using System.Collections.Generic;
@@ -124,19 +125,33 @@ namespace IceInternal
         //
         // Only for use by Instance.
         //
+        internal Timer(IceInternal.Instance instance, ThreadPriority priority)
+        {
+            init(instance, priority, true);
+        }
+
         internal Timer(IceInternal.Instance instance)
         {
+            init(instance, ThreadPriority.Normal, false);
+        }
+
+        internal void init(IceInternal.Instance instance, ThreadPriority priority, bool hasPriority)
+        {
             _instance = instance;
-            
+
             string threadName = _instance.initializationData().properties.getProperty("Ice.ProgramName");
             if(threadName.Length > 0)
             {
                 threadName += "-";
             }
-            
+
             _thread = new Thread(new ThreadStart(Run));
             _thread.IsBackground = true;
             _thread.Name = threadName + "Ice.Timer";
+            if(hasPriority)
+            {
+                _thread.Priority = priority;
+            }
             _thread.Start();
         }
 
@@ -271,6 +286,32 @@ namespace IceInternal
             
                 return 0;
             }
+
+	    public override bool Equals(object o)
+	    {
+		Token t = null;
+
+		try
+		{
+		    t = (Token)o;
+		}
+		catch(InvalidCastException)
+		{
+		    return false;
+		}
+
+	        if(this == t)
+		{
+		    return true;
+		}
+
+		return CompareTo(t) == 0;
+	    }
+
+	    public override int GetHashCode()
+	    {
+	        return id ^ (int)scheduledTime;
+	    }
 
             public long scheduledTime;
             public int id; // Since we can't compare references, we need to use another id.

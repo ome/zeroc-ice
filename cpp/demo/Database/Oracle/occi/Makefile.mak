@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -48,11 +48,12 @@ SPDBFLAGS        = /pdb:$(SERVER:.exe=.pdb)
 #
 # OCCI first
 #
-!if "$(CPP_COMPILER)" == "VC80" || "$(CPP_COMPILER)" == "VC80_EXPRESS"
+!if "$(CPP_COMPILER)" == "VC90" || "$(CPP_COMPILER)" == "VC90_EXPRESS"
+
 #
-# oraocci10$(LIBSUFFIX).lib with Oracle 10
+# OCCI libraries default location, adjust to match your setup.
 #
-ORACLE_LIBS     = -LIBPATH:"$(ORACLE_HOME)\oci\lib\msvc\vc8" oraocci11$(LIBSUFFIX).lib
+ORACLE_LIBS     = -LIBPATH:"$(ORACLE_HOME)\oci\lib\msvc\vc9" oraocci11$(LIBSUFFIX).lib
 !else
 !error "$(CPP_COMPILER) is not supported by this demo"
 !endif
@@ -81,4 +82,4 @@ clean::
 	del /q HR.cpp HR.h
 	del /q DbTypes.h DbTypes.cpp DbTypesMap.h DbTypesMap.cpp DbTypesOut.typ
 
-!include .depend
+!include .depend.mak

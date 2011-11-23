@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,6 +8,8 @@
 // **********************************************************************
 
 using System.Diagnostics;
+using System.Collections.Generic;
+using System.Globalization;
 
 namespace IceInternal
 {
@@ -37,6 +39,20 @@ namespace IceInternal
             string proxy = instance_.initializationData().properties.getProperty(prefix);
             Reference r = instance_.referenceFactory().create(proxy, prefix);
             return referenceToProxy(r);
+        }
+
+        public Dictionary<string, string>
+        proxyToProperty(Ice.ObjectPrx proxy, string prefix)
+        {
+            if(proxy != null)
+            {
+                Ice.ObjectPrxHelperBase h = (Ice.ObjectPrxHelperBase) proxy;
+                return h.reference__().toProperty(prefix);
+            }
+            else
+            {
+                return new Dictionary<string, string>();
+            }
         }
         
         public Ice.ObjectPrx streamToProxy(BasicStream s)
@@ -80,7 +96,7 @@ namespace IceInternal
             }
         }
         
-        public void checkRetryAfterException(Ice.LocalException ex, Reference @ref, OutgoingAsync outAsync, ref int cnt)
+        public int checkRetryAfterException(Ice.LocalException ex, Reference @ref, bool sleep, ref int cnt)
         {
             TraceLevels traceLevels = instance_.traceLevels();
             Ice.Logger logger = instance_.initializationData().logger;
@@ -95,10 +111,9 @@ namespace IceInternal
                 throw ex;
             }
 
-            if(ex is Ice.ObjectNotExistException)
+            Ice.ObjectNotExistException one = ex as Ice.ObjectNotExistException;
+            if(one != null)
             {
-                Ice.ObjectNotExistException one = (Ice.ObjectNotExistException)ex;
-                
                 if(@ref.getRouterInfo() != null && one.operation.Equals("ice_add_proxy"))
                 {
                     //
@@ -114,11 +129,7 @@ namespace IceInternal
                         string s = "retrying operation call to add proxy to router\n" + ex;
                         logger.trace(traceLevels.retryCat, s);
                     }
-                    if(outAsync != null)
-                    {
-                        outAsync.send__();
-                    }
-                    return; // We must always retry, so we don't look at the retry count.
+                    return 0; // We must always retry, so we don't look at the retry count.
                 }
                 else if(@ref.isIndirect())
                 {
@@ -178,7 +189,16 @@ namespace IceInternal
             ++cnt;
             Debug.Assert(cnt > 0);
 
-            if(cnt > _retryIntervals.Length)
+            int interval;
+            if(cnt == (_retryIntervals.Length + 1) && ex is Ice.CloseConnectionException)
+            {
+                //
+                // A close connection exception is always retried at least once, even if the retry
+                // limit is reached.
+                //
+                interval = 0;
+            }
+            else if(cnt > _retryIntervals.Length)
             {
                 if(traceLevels.retry >= 1)
                 {
@@ -187,8 +207,10 @@ namespace IceInternal
                 }
                 throw ex;
             }
-
-            int interval = _retryIntervals[cnt - 1];
+            else
+            {
+                interval = _retryIntervals[cnt - 1];
+            }
 
             if(traceLevels.retry >= 1)
             {
@@ -201,17 +223,14 @@ namespace IceInternal
                 logger.trace(traceLevels.retryCat, s);
             }
 
-            if(outAsync != null)
-            {
-                outAsync.retry__(interval);
-            }
-            else if(interval > 0)
+            if(sleep && interval > 0)
             {
                 //
                 // Sleep before retrying.
                 //
                 System.Threading.Thread.Sleep(interval);
             }
+            return interval;
         }
 
         //
@@ -233,7 +252,7 @@ namespace IceInternal
                     
                     try
                     {
-                        v = System.Int32.Parse(arr[i]);
+                        v = System.Int32.Parse(arr[i], CultureInfo.InvariantCulture);
                     }
                     catch(System.FormatException)
                     {

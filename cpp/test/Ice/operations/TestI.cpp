@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,6 +20,12 @@ void
 MyDerivedClassI::shutdown(const Ice::Current& current)
 {
     current.adapter->getCommunicator()->shutdown();
+}
+
+void
+MyDerivedClassI::delay(Ice::Int ms, const Ice::Current& current)
+{
+    IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(ms));
 }
 
 void
@@ -332,6 +338,18 @@ MyDerivedClassI::opStringMyEnumD(const Test::StringMyEnumD& p1,
 {
     p3 = p1;
     Test::StringMyEnumD r = p1;
+    std::set_union(p1.begin(), p1.end(), p2.begin(), p2.end(), std::inserter(r, r.end()));
+    return r;
+}
+
+Test::MyEnumStringD
+MyDerivedClassI::opMyEnumStringD(const Test::MyEnumStringD& p1,
+                                 const Test::MyEnumStringD& p2,
+                                 Test::MyEnumStringD& p3,
+                                 const Ice::Current&)
+{
+    p3 = p1;
+    Test::MyEnumStringD r = p1;
     std::set_union(p1.begin(), p1.end(), p2.begin(), p2.end(), std::inserter(r, r.end()));
     return r;
 }

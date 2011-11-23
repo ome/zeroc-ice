@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -75,6 +75,7 @@ public:
     virtual NodeInfo getNodeInfo(const std::string&, const Ice::Current&) const;
     virtual bool pingNode(const std::string&, const Ice::Current&) const;
     virtual LoadInfo getNodeLoad(const std::string&, const Ice::Current&) const;
+    virtual int getNodeProcessorSocketCount(const std::string&, const Ice::Current&) const;
     virtual void shutdownNode(const std::string&, const Ice::Current&);
     virtual std::string getNodeHostname(const std::string&, const Ice::Current&) const;
     virtual Ice::StringSeq getAllNodeNames(const ::Ice::Current&) const;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -58,23 +58,18 @@ public:
     virtual const Current& getCurrent() = 0;
 };
 
-//
-// We should not need virtual inheritance here since Object is the only class
-// that derives from GCShared. However, Visual C++ seems to generate bad code
-// without 'virtual'. This needs to be investigated further.
-//
-#ifdef _MSC_VER
-class ICE_API Object : public virtual IceInternal::GCShared
-#else
-class ICE_API Object : public IceInternal::GCShared
-#endif
+class ICE_API Object : virtual public IceUtil::Shared
 {
 public:
 
     virtual bool operator==(const Object&) const;
     virtual bool operator<(const Object&) const;
 
-    virtual Int ice_hash() const;
+    virtual Int ice_getHash() const;
+    ICE_DEPRECATED_API ::Ice::Int ice_hash() const
+    {
+        return ice_getHash();
+    }
 
     virtual bool ice_isA(const std::string&, const Current& = Current()) const;
     DispatchStatus ___ice_isA(IceInternal::Incoming&, const Current&);
@@ -109,8 +104,14 @@ public:
     virtual void __write(const OutputStreamPtr&) const;
     virtual void __read(const InputStreamPtr&, bool);
 
-    virtual void __gcReachable(IceInternal::GCCountMap&) const {}
-    virtual void __gcClear() {}
+    // Virtual methods to support garbage collection of Slice class instances. These
+    // methods are overriden by Slice classes which can have cycles.
+    virtual void __addObject(IceInternal::GCCountMap&) {}
+    virtual bool __usesClasses() { return false; }
+    void __decRefUnsafe()
+    {
+        --_ref;
+    }
 
 protected:
 
@@ -142,7 +143,6 @@ class ICE_API BlobjectAsync : virtual public Object
 {
 public:
 
-    // Returns true if ok, false if user exception.
     virtual void ice_invoke_async(const AMD_Object_ice_invokePtr&, const std::vector<Byte>&, const Current&) = 0;
     virtual DispatchStatus __dispatch(IceInternal::Incoming&, const Current&);
 };
@@ -151,8 +151,7 @@ class ICE_API BlobjectArrayAsync : virtual public Object
 {
 public:
 
-    // Returns true if ok, false if user exception.
-    virtual void ice_invoke_async(const AMD_Array_Object_ice_invokePtr&, const std::pair<const Byte*, const Byte*>&,
+    virtual void ice_invoke_async(const AMD_Object_ice_invokePtr&, const std::pair<const Byte*, const Byte*>&,
                                   const Current&) = 0;
     virtual DispatchStatus __dispatch(IceInternal::Incoming&, const Current&);
 };

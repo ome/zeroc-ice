@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -235,11 +235,7 @@ public final class Timer extends Thread
                     {
                         if(_instance != null)
                         {
-                            java.io.StringWriter sw = new java.io.StringWriter();
-                            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
-                            ex.printStackTrace(pw);
-                            pw.flush();
-                            String s = "unexpected exception from task run method in timer thread:\n" + sw.toString();
+                            String s = "unexpected exception from task run method in timer thread:\n" + Ex.toString(ex);
                             _instance.initializationData().logger.error(s);
                         }
                     }
@@ -285,6 +281,26 @@ public final class Timer extends Thread
 
             return 0;
         }
+
+	public boolean
+	equals(Object obj)
+	{
+	    if(this == obj)
+	    {
+	        return true;
+	    }
+	    if(obj instanceof Token)
+	    {
+		return compareTo((Token)obj) == 0;
+	    }
+	    return false;
+	}
+
+	public int
+	hashCode()
+	{
+	     return id ^ (int)scheduledTime;
+	}
 
         long scheduledTime;
         int id; // Since we can't compare references, we need to use another id.

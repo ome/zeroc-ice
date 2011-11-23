@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,7 +19,7 @@ class DispatchInterceptorI extends Ice.DispatchInterceptor
         SQLRequestContext context = new SQLRequestContext();
         try
         {
-            Ice.DispatchStatus status = _servant.ice_dispatch(request, null);
+            Ice.DispatchStatus status = _servant.ice_dispatch(request);
 
             // An exception causes the current transaction to rollback.
             context.destroyFromDispatch(status == Ice.DispatchStatus.DispatchOK);

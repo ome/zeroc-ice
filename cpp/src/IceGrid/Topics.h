@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,9 +14,6 @@
 #include <IceStorm/IceStorm.h>
 #include <IceGrid/Internal.h>
 #include <IceGrid/Observer.h>
-#include <IceGrid/StringApplicationInfoDict.h>
-#include <IceGrid/StringAdapterInfoDict.h>
-#include <IceGrid/IdentityObjectInfoDict.h>
 #include <set>
 
 namespace IceGrid
@@ -104,7 +101,7 @@ class ApplicationObserverTopic : public ObserverTopic
 {
 public:
 
-    ApplicationObserverTopic(const IceStorm::TopicManagerPrx&, const StringApplicationInfoDict&);
+    ApplicationObserverTopic(const IceStorm::TopicManagerPrx&, const std::map<std::string, ApplicationInfo>&);
 
     int applicationInit(int, const ApplicationInfoSeq&);
     int applicationAdded(int, const ApplicationInfo&);
@@ -124,7 +121,7 @@ class AdapterObserverTopic : public ObserverTopic
 {
 public:
 
-    AdapterObserverTopic(const IceStorm::TopicManagerPrx&, const StringAdapterInfoDict&);
+    AdapterObserverTopic(const IceStorm::TopicManagerPrx&, const std::map<std::string, AdapterInfo>&);
 
     int adapterInit(const AdapterInfoSeq&);
     int adapterAdded(const AdapterInfo&);
@@ -144,7 +141,7 @@ class ObjectObserverTopic : public ObserverTopic
 {
 public:
 
-    ObjectObserverTopic(const IceStorm::TopicManagerPrx&, const IdentityObjectInfoDict&);
+    ObjectObserverTopic(const IceStorm::TopicManagerPrx&, const std::map<Ice::Identity, ObjectInfo>&);
 
     int objectInit(const ObjectInfoSeq&);
     int objectAdded(const ObjectInfo&);

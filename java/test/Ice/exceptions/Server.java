@@ -1,67 +1,45 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-public class Server
+package test.Ice.exceptions;
+
+public class Server extends test.Util.Application
 {
-    private static int
-    run(String[] args, Ice.Communicator communicator)
+    public int run(String[] args)
     {
-        Ice.Properties properties = communicator.getProperties();
-        // We don't need to disable warnings, because we have a dummy logger.
-        //properties.setProperty("Ice.Warn.Dispatch", "0");
-        properties.setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000:udp");
+        Ice.Communicator communicator = communicator();
         Ice.ObjectAdapter adapter = communicator.createObjectAdapter("TestAdapter");
-        Ice.Object object = new ThrowerI(adapter);
+        Ice.Object object = new ThrowerI();
         adapter.add(object, communicator.stringToIdentity("thrower"));
         adapter.activate();
-        communicator.waitForShutdown();
-        return 0;
+        return WAIT;
     }
 
-    public static void
-    main(String[] args)
+    protected Ice.InitializationData getInitData(Ice.StringSeqHolder argsH)
     {
-        int status = 0;
-        Ice.Communicator communicator = null;
+        Ice.InitializationData initData = new Ice.InitializationData();
+        initData.properties = Ice.Util.createProperties(argsH);
+        initData.logger = new DummyLogger();
 
-        try
-        {
-            //
-            // For this test, we need a dummy logger, otherwise the
-            // assertion test will print an error message.
-            //
-            Ice.InitializationData initData = new Ice.InitializationData();
-            initData.logger = new DummyLogger();
+        initData.properties.setProperty("Ice.Package.Test", "test.Ice.exceptions");
+        initData.properties.setProperty("TestAdapter.Endpoints", "default -p 12010:udp");
+        // We don't need to disable warnings, because we have a dummy logger.
+        // properties.setProperty("Ice.Warn.Dispatch", "0");
 
-            communicator = Ice.Util.initialize(args, initData);
-            status = run(args, communicator);
-        }
-        catch(Exception ex)
-        {
-            ex.printStackTrace();
-            status = 1;
-        }
+        return initData;
+    }
 
-        if(communicator != null)
-        {
-            try
-            {
-                communicator.destroy();
-            }
-            catch(Ice.LocalException ex)
-            {
-                ex.printStackTrace();
-                status = 1;
-            }
-        }
-
+    public static void main(String[] args)
+    {
+        Server app = new Server();
+        int result = app.main("Server", args);
         System.gc();
-        System.exit(status);
+        System.exit(result);
     }
 }

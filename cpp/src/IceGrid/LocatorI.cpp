@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -423,17 +423,19 @@ private:
     std::auto_ptr<Ice::Exception> _exception;
 };
 
-class RoundRobinRequest : public LocatorI::Request, public IceUtil::Mutex
+class RoundRobinRequest : public LocatorI::Request, SynchronizationCallback, public IceUtil::Mutex
 {
 public:
 
     RoundRobinRequest(const Ice::AMD_Locator_findAdapterByIdPtr& amdCB, 
                       const LocatorIPtr& locator,
+                      const DatabasePtr database,
                       const string& id,
                       const LocatorAdapterInfoSeq& adapters,
                       int count) :
         _amdCB(amdCB),
         _locator(locator),
+        _database(database),
         _id(id),
         _adapters(adapters),
         _traceLevels(locator->getTraceLevels()),
@@ -534,6 +536,53 @@ public:
         }
     }
 
+    void
+    synchronized()
+    {
+        LocatorAdapterInfo adapter;
+        {
+            Lock sync(*this);
+            assert(_adapters.empty());
+            adapter = nextAdapter();
+        }
+
+        if(adapter.proxy && _locator->getDirectProxy(adapter, this))
+        {
+            activating(adapter.id);
+        }
+    }
+
+    void
+    synchronized(const Ice::Exception& ex)
+    {
+        LocatorAdapterInfo adapter;
+        {
+            Lock sync(*this);
+            assert(_adapters.empty());
+
+            if(_activatingOrFailed.size() > _failed.size())
+            {
+                _waitForActivation = true;
+                adapter = nextAdapter();
+            }
+            else
+            {
+                if(_traceLevels->locator > 0)
+                {
+                    Ice::Trace out(_traceLevels->logger, _traceLevels->locatorCat);
+                    out << "couldn't resolve replica group `" << _id << "' endpoints:\n" << toString(ex);
+                }
+                _amdCB->ice_response(0);
+                return;
+            }
+        }
+
+        if(adapter.proxy && _locator->getDirectProxy(adapter, this))
+        {
+            activating(adapter.id);
+        }
+    }
+
 private:
     
     LocatorAdapterInfo
@@ -541,39 +590,61 @@ private:
     {
         bool replicaGroup;
         bool roundRobin;
-
+        
         _adapters.clear();
-
+        
         try
         {
-            if(!_waitForActivation)
+            while(true)
             {
-                _locator->getAdapterInfo(_id, _adapters, _count, replicaGroup, roundRobin, _activatingOrFailed);
-            }
-
-            if(_waitForActivation || (_adapters.empty() && _activatingOrFailed.size() > _failed.size()))
-            {
-                //
-                // If there are no more adapters to try and some servers were being activated, we 
-                // try again but this time we wait for the server activation.
-                //
-                _locator->getAdapterInfo(_id, _adapters, _count, replicaGroup, roundRobin, _failed);
-                _waitForActivation = true;
+                try
+                {
+                    if(!_waitForActivation)
+                    {
+                        _database->getLocatorAdapterInfo(_id, _adapters, _count, replicaGroup, roundRobin, 
+                                                         _activatingOrFailed);
+                    }
+                    
+                    if(_waitForActivation || (_adapters.empty() && _activatingOrFailed.size() > _failed.size()))
+                    {
+                        //
+                        // If there are no more adapters to try and some servers were being activated, we 
+                        // try again but this time we wait for the server activation.
+                        //
+                        _database->getLocatorAdapterInfo(_id, _adapters, _count, replicaGroup, roundRobin, _failed);
+                        _waitForActivation = true;
+                    }
+                    break;
+                }
+                catch(const SynchronizationException&)
+                {
+                    assert(_adapters.empty());
+                    bool callback;
+                    if(!_waitForActivation)
+                    {
+                        callback = _database->addAdapterSyncCallback(_id, this, _activatingOrFailed);
+                    }
+                    else 
+                    {
+                        callback = _database->addAdapterSyncCallback(_id, this, _failed);
+                    }
+                    if(callback)
+                    {
+                        return LocatorAdapterInfo();
+                    }
+                }
             }
 
             if(!roundRobin)
             {
-                LocatorI::RequestPtr request;
-                if(replicaGroup)
+                try
                 {
-                    request = new ReplicaGroupRequest(_amdCB, _locator, _id, _adapters, _count, 0);
+                    _locator->findAdapterById_async(_amdCB, _id, Ice::Current()); 
                 }
-                else
+                catch(const Ice::Exception& ex)
                 {
-                    assert(!_adapters.empty());
-                    request = new AdapterRequest(_amdCB, _locator, _adapters[0]);
+                    _amdCB->ice_exception(ex);
                 }
-                request->execute();
                 _adapters.clear();
                 return LocatorAdapterInfo();
             }
@@ -615,6 +686,7 @@ private:
 
     const Ice::AMD_Locator_findAdapterByIdPtr _amdCB;
     const LocatorIPtr _locator;
+    const DatabasePtr _database;
     const std::string _id;
     LocatorAdapterInfoSeq _adapters;
     const TraceLevelsPtr _traceLevels;
@@ -623,6 +695,58 @@ private:
     set<string> _failed;
     set<string> _activatingOrFailed;
     std::auto_ptr<Ice::Exception> _exception;
+};
+
+class FindAdapterByIdCallback : public SynchronizationCallback
+{
+public:
+                
+    FindAdapterByIdCallback(const LocatorIPtr& locator, 
+                            const Ice::AMD_Locator_findAdapterByIdPtr& cb, 
+                            const string& id) : _locator(locator), _cb(cb), _id(id)
+    {
+    }
+
+    virtual void 
+    synchronized()
+    {
+        try
+        {
+            _locator->findAdapterById_async(_cb, _id, Ice::Current());
+        }
+        catch(const Ice::Exception& ex)
+        {
+            _cb->ice_exception(ex);
+        }
+    }
+
+    virtual void 
+    synchronized(const Ice::Exception& ex)
+    {
+        try
+        {
+            ex.ice_throw();
+        }
+        catch(const AdapterNotExistException&)
+        {
+        }
+        catch(const Ice::Exception& ex)
+        {
+            const TraceLevelsPtr traceLevels = _locator->getTraceLevels();
+            if(traceLevels->locator > 0)
+            {
+                Ice::Trace out(traceLevels->logger, traceLevels->locatorCat);
+                out << "couldn't resolve adapter `" << _id << "' endpoints:\n" << toString(ex);
+            }
+        }
+        _cb->ice_response(0);
+    }
+
+private:
+    
+    const LocatorIPtr _locator;
+    const Ice::AMD_Locator_findAdapterByIdPtr _cb;
+    const string _id;
 };
 
 };
@@ -653,9 +777,6 @@ LocatorI::findObjectById_async(const Ice::AMD_Locator_findObjectByIdPtr& cb,
     Ice::ObjectPrx proxy;
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         proxy = _database->getObjectProxy(id);
     }
     catch(const ObjectNotRegisteredException&)
@@ -704,11 +825,26 @@ LocatorI::findAdapterById_async(const Ice::AMD_Locator_findAdapterByIdPtr& cb,
         int count;
         LocatorAdapterInfoSeq adapters;
         bool roundRobin;
-        _database->getLocatorAdapterInfo(id, adapters, count, replicaGroup, roundRobin);
+        while(true)
+        {
+            try
+            {
+                _database->getLocatorAdapterInfo(id, adapters, count, replicaGroup, roundRobin);
+                break;
+            }
+            catch(const SynchronizationException&)
+            {
+                if(_database->addAdapterSyncCallback(id, new FindAdapterByIdCallback(self, cb, id)))
+                {
+                    return;
+                }
+            }
+        }
+
         RequestPtr request;
         if(roundRobin)
         {
-            request = new RoundRobinRequest(cb, self, id, adapters, count);
+            request = new RoundRobinRequest(cb, self, _database, id, adapters, count);
         }
         else if(replicaGroup)
         {
@@ -746,9 +882,6 @@ LocatorI::findAdapterById_async(const Ice::AMD_Locator_findAdapterByIdPtr& cb,
 
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         cb->ice_response(_database->getAdapterDirectProxy(id));
     }
     catch(const AdapterNotExistException&)
@@ -889,15 +1022,4 @@ LocatorI::getDirectProxyException(const LocatorAdapterInfo& adapter, const Ice::
             (*q)->exception(adapter.id, ex);
         }
     }
-}
-
-void
-LocatorI::getAdapterInfo(const string& id, 
-                         LocatorAdapterInfoSeq& adapters, 
-                         int& count, 
-                         bool& replicaGroup,
-                         bool& roundRobin, 
-                         const set<string>& excludes)
-{
-    _database->getLocatorAdapterInfo(id, adapters, count, replicaGroup, roundRobin, excludes);
 }

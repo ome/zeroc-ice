@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -20,7 +20,11 @@ if len(path) == 0:
 sys.path.append(os.path.join(path[0]))
 from scripts import *
 
-transformdb = os.path.join(TestUtil.getCppBinDir(), "transformdb")
+
+transformdb = '%s' % os.path.join(TestUtil.getCppBinDir(), "transformdb") 
+
+if TestUtil.appverifier:
+    TestUtil.setAppVerifierSettings([transformdb])
 
 dbdir = os.path.join(os.getcwd(), "db")
 TestUtil.cleanDbDir(dbdir)
@@ -63,13 +67,15 @@ for oldfile in files:
     else:
         value = "int"
 
-    command = transformdb + " --old " + os.path.join(os.getcwd(), "fail", oldfile) + " --new " + \
-        os.path.join(os.getcwd(), "fail", newfile) + " -o tmp.xml --key string --value " + value
+    command = '"' + transformdb + '" --old "' + os.path.join(os.getcwd(), "fail", oldfile) + '" --new "' + \
+        os.path.join(os.getcwd(), "fail", newfile) + '" -o tmp.xml --key string --value ' + value
 
     if TestUtil.debug:
         print command
 
-    stdin, stdout, stderr = os.popen3(command)
+    p = TestUtil.runCommand(command)
+    (stdin, stdout, stderr) = (p.stdin, p.stdout, p.stderr)
+
     lines1 = stderr.readlines()
     lines2 = open(os.path.join(os.getcwd(), "fail", oldfile.replace("_old.ice", ".err")), "r").readlines()
     if len(lines1) != len(lines2):
@@ -92,7 +98,7 @@ print "ok"
 print "creating test database...",
 sys.stdout.flush()
 
-makedb = os.path.join(os.getcwd(), "makedb") + " " + os.getcwd()
+makedb = '"%s" "%s"'% (os.path.join(os.getcwd(), "makedb"), os.getcwd())
 proc = TestUtil.spawn(makedb)
 proc.waitTestSuccess()
 print "ok"
@@ -105,35 +111,32 @@ checkxml = os.path.join(os.getcwd(), "check.xml")
 print "initializing test database...",
 sys.stdout.flush()
 
-command = transformdb + " --old " + testold + " --new " + testold + " -f " + initxml + " " + dbdir + \
-    " default.db " + init_dbdir
-if TestUtil.debug:
-    print "(" + command + ")",
-if os.system(command) != 0:
-    sys.exit(1)
+command = '"' + transformdb + '" --old "' + testold + '" --new "' + testold + '" -f "' + initxml + '" "' + dbdir + \
+    '" default.db "' + init_dbdir + '" '
+
+TestUtil.spawn(command).waitTestSuccess()
 
 print "ok"
 
 print "executing default transformations...",
 sys.stdout.flush()
 
-command = transformdb + " --old " + testold + " --new " + testnew + " --key int --value ::Test::S " + init_dbdir + \
-    " default.db " + check_dbdir
-if TestUtil.debug:
-    print "(" + command + ")",
-stdin, stdout, stderr = os.popen3(command)
-stderr.readlines()
+command = '"' + transformdb + '" --old "' + testold + '" --new "' + testnew + '" --key int --value ::Test::S "' + init_dbdir + \
+    '" default.db "' + check_dbdir + '" '
+
+TestUtil.spawn(command).waitTestSuccess()
 
 print "ok"
 
 print "validating database...",
 sys.stdout.flush()
 
-command = transformdb + " --old " + testnew + " --new " + testnew + " -f " + checkxml + " " + check_dbdir + \
-    " default.db " + tmp_dbdir
-if TestUtil.debug:
-    print "(" + command + ")",
-if os.system(command) != 0:
-    sys.exit(1)
+command = '"' + transformdb + '" --old "' + testnew + '" --new "' + testnew + '" -f "' + checkxml + '" "' + check_dbdir + \
+    '" default.db "' + tmp_dbdir + '" '
+
+TestUtil.spawn(command).waitTestSuccess()
 
 print "ok"
+
+if TestUtil.appverifier:
+    TestUtil.appVerifierAfterTestEnd([transformdb])

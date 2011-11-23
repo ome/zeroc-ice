@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -10,7 +10,7 @@
 top_srcdir	= ..\..
 
 LIBNAME		= $(top_srcdir)\lib\slice$(LIBSUFFIX).lib
-DLLNAME		= $(top_srcdir)\bin\slice$(SOVERSION)$(LIBSUFFIX).dll
+DLLNAME		= $(top_srcdir)\bin\slice$(COMPSUFFIX)$(SOVERSION)$(LIBSUFFIX).dll
 
 TARGETS		= $(LIBNAME) $(DLLNAME)
 
@@ -25,6 +25,7 @@ OBJS		= Scanner.obj \
 		  PythonUtil.obj \
 		  DotNetNames.obj \
 		  RubyUtil.obj \
+		  PHPUtil.obj \
 		  Util.obj \
 		  FileTracker.obj \
 		  MD5.obj \
@@ -58,7 +59,8 @@ $(LIBNAME): $(OBJS)
 $(LIBNAME): $(DLLNAME)
 
 $(DLLNAME): $(OBJS) Slice.res
-	$(LINK) $(LD_DLLFLAGS) $(PDBFLAGS) $(OBJS) $(PREOUT)$@ $(PRELIBS)$(BASELIBS) $(MCPP_LIBS) $(RES_FILE)
+	$(LINK) $(BASE):0x21000000 $(LD_DLLFLAGS) $(PDBFLAGS) $(OBJS) $(PREOUT)$@ $(PRELIBS)$(BASELIBS) $(MCPP_LIBS) \
+	    $(RES_FILE)
 	move $(DLLNAME:.dll=.lib) $(LIBNAME)
 	@if exist $@.manifest echo ^ ^ ^ Embedding manifest using $(MT) && \
 	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#2 && del /q $@.manifest
@@ -84,20 +86,20 @@ clean::
 	-del /q Slice.res
 
 install:: all
-	copy $(LIBNAME) $(install_libdir)
-	copy $(DLLNAME) $(install_bindir)
+	copy $(LIBNAME) "$(install_libdir)"
+	copy $(DLLNAME) "$(install_bindir)"
 
 
 !if "$(BCPLUSPLUS)" == "yes" && "$(OPTIMIZE)" != "yes"
 
 install:: all
-	copy $(DLLNAME:.dll=.tds) $(install_bindir)
+	copy $(DLLNAME:.dll=.tds) "$(install_bindir)"
 
 !elseif "$(GENERATE_PDB)" == "yes"
 
 install:: all
-	copy $(DLLNAME:.dll=.pdb) $(install_bindir)
+	copy $(DLLNAME:.dll=.pdb) "$(install_bindir)"
 
 !endif
 
-!include .depend
+!include .depend.mak

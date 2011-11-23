@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -19,9 +19,6 @@ def test(b):
         raise RuntimeError('test assertion failed')
 
 class CustomI(Test.Custom):
-    def __init__(self, adapter):
-        self._adapter = adapter
-
     def opByteString1(self, b1, current=None):
         test(isinstance(b1, str))
         return (b1, b1)
@@ -75,12 +72,12 @@ class CustomI(Test.Custom):
         test(isinstance(val.s4, list))
 
     def shutdown(self, current=None):
-        self._adapter.getCommunicator().shutdown()
+        current.adapter.getCommunicator().shutdown()
 
 def run(args, communicator):
-    communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010 -t 10000")
+    communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010")
     adapter = communicator.createObjectAdapter("TestAdapter")
-    object = CustomI(adapter)
+    object = CustomI()
     adapter.add(object, communicator.stringToIdentity("test"))
     adapter.activate()
     communicator.waitForShutdown()

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -55,6 +55,19 @@ IceInternal::ProxyFactory::propertyToProxy(const string& prefix) const
     return referenceToProxy(ref);
 }
 
+PropertyDict
+IceInternal::ProxyFactory::proxyToProperty(const ObjectPrx& proxy, const string& prefix) const
+{
+    if(proxy)
+    {
+        return proxy->__reference()->toProperty(prefix);
+    }
+    else
+    {
+        return PropertyDict();
+    }
+}
+
 ObjectPrx
 IceInternal::ProxyFactory::streamToProxy(BasicStream* s) const
 {
@@ -95,10 +108,10 @@ IceInternal::ProxyFactory::referenceToProxy(const ReferencePtr& ref) const
     }
 }
 
-void
+int
 IceInternal::ProxyFactory::checkRetryAfterException(const LocalException& ex, 
                                                     const ReferencePtr& ref, 
-                                                    OutgoingAsync* out,
+                                                    bool sleep,
                                                     int& cnt) const
 {
     TraceLevelsPtr traceLevels = _instance->traceLevels();
@@ -134,11 +147,7 @@ IceInternal::ProxyFactory::checkRetryAfterException(const LocalException& ex,
                 out << "retrying operation call to add proxy to router\n" << ex;
             }
 
-            if(out)
-            {
-                out->__send();
-            }
-            return; // We must always retry, so we don't look at the retry count.
+            return 0; // We must always retry, so we don't look at the retry count.
         }
         else if(ref->isIndirect())
         {
@@ -203,8 +212,18 @@ IceInternal::ProxyFactory::checkRetryAfterException(const LocalException& ex,
 
     ++cnt;
     assert(cnt > 0);
-    
-    if(cnt > static_cast<int>(_retryIntervals.size()))
+
+    int interval;
+    if(cnt == static_cast<int>(_retryIntervals.size() + 1) && 
+       dynamic_cast<const CloseConnectionException*>(&ex))
+    {
+        //
+        // A close connection exception is always retried at least once, even if the retry
+        // limit is reached.
+        //
+        interval = 0;
+    } 
+    else if(cnt > static_cast<int>(_retryIntervals.size()))
     {
         if(traceLevels->retry >= 1)
         {
@@ -213,8 +232,10 @@ IceInternal::ProxyFactory::checkRetryAfterException(const LocalException& ex,
         }
         ex.ice_throw();
     }
-
-    int interval = _retryIntervals[cnt - 1];
+    else
+    {
+        interval = _retryIntervals[cnt - 1];
+    }
 
     if(traceLevels->retry >= 1)
     {
@@ -227,17 +248,14 @@ IceInternal::ProxyFactory::checkRetryAfterException(const LocalException& ex,
         out << " because of exception\n" << ex;
     }
 
-    if(out)
-    {
-        out->__retry(interval);
-    }
-    else if(interval > 0)
+    if(sleep && interval > 0)
     {
         //
         // Sleep before retrying.
         //
         IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(interval));
     }
+    return interval;
 }
 
 IceInternal::ProxyFactory::ProxyFactory(const InstancePtr& instance) :

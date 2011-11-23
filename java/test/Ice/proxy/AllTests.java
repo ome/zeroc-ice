@@ -1,11 +1,19 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+package test.Ice.proxy;
+import java.io.PrintWriter;
+
+import test.Ice.proxy.Test.MyClassPrx;
+import test.Ice.proxy.Test.MyClassPrxHelper;
+import test.Ice.proxy.Test.MyDerivedClassPrx;
+import test.Ice.proxy.Test.MyDerivedClassPrxHelper;
 
 public class AllTests
 {
@@ -18,12 +26,12 @@ public class AllTests
         }
     }
 
-    public static Test.MyClassPrx
-    allTests(Ice.Communicator communicator)
+    public static MyClassPrx
+    allTests(Ice.Communicator communicator, PrintWriter out)
     {
-        System.out.print("testing stringToProxy... ");
-        System.out.flush();
-        String ref = "test:default -p 12010 -t 10000";
+        out.print("testing stringToProxy... ");
+        out.flush();
+        String ref = "test:default -p 12010";
         Ice.ObjectPrx base = communicator.stringToProxy(ref);
         test(base != null);
 
@@ -91,12 +99,34 @@ public class AllTests
         test(b1.ice_getIdentity().name.equals("test\1114test"));
 
         b1 = communicator.stringToProxy("test\\b\\f\\n\\r\\t\\'\\\"\\\\test");
-        test(b1.ice_getIdentity().name.equals("test\b\f\n\r\t\'\"\\test") && b1.ice_getIdentity().category.length() == 0);
+        test(b1.ice_getIdentity().name.equals("test\b\f\n\r\t\'\"\\test") &&
+             b1.ice_getIdentity().category.length() == 0);
 
         b1 = communicator.stringToProxy("category/test");
         test(b1.ice_getIdentity().name.equals("test") && b1.ice_getIdentity().category.equals("category") &&
              b1.ice_getAdapterId().length() == 0);
-             
+
+        b1 = communicator.stringToProxy("");
+        test(b1 == null);
+        b1 = communicator.stringToProxy("\"\"");
+        test(b1 == null);
+        try
+        {
+            b1 = communicator.stringToProxy("\"\" test"); // Invalid trailing characters.
+            test(false);
+        }
+        catch(Ice.ProxyParseException ex)
+        {
+        }
+        try
+        {
+            b1 = communicator.stringToProxy("test:"); // Missing endpoint.
+            test(false);
+        }
+        catch(Ice.EndpointParseException ex)
+        {
+        }
+
         b1 = communicator.stringToProxy("test@adapter");
         test(b1.ice_getIdentity().name.equals("test") && b1.ice_getIdentity().category.length() == 0 &&
              b1.ice_getAdapterId().equals("adapter"));
@@ -221,13 +251,13 @@ public class AllTests
         catch(Ice.EndpointParseException ex)
         {
         }
-        System.out.println("ok");
+        out.println("ok");
 
-        System.out.print("testing propertyToProxy... ");
-        System.out.flush();
+        out.print("testing propertyToProxy... ");
+        out.flush();
         Ice.Properties prop = communicator.getProperties();
         String propertyPrefix = "Foo.Proxy";
-        prop.setProperty(propertyPrefix, "test:default -p 12010 -t 10000");
+        prop.setProperty(propertyPrefix, "test:default -p 12010");
         b1 = communicator.propertyToProxy(propertyPrefix);
         test(b1.ice_getIdentity().name.equals("test") && b1.ice_getIdentity().category.length() == 0 &&
              b1.ice_getAdapterId().length() == 0 && b1.ice_getFacet().length() == 0);
@@ -271,7 +301,7 @@ public class AllTests
         //test(b1.ice_getLocatorCacheTimeout() == 60);
         //prop.setProperty("Ice.Default.LocatorCacheTimeout", "");
 
-        prop.setProperty(propertyPrefix, "test:default -p 12010 -t 10000");
+        prop.setProperty(propertyPrefix, "test:default -p 12010");
 
         property = propertyPrefix + ".Router";
         test(b1.ice_getRouter() == null);
@@ -311,15 +341,68 @@ public class AllTests
         test(!b1.ice_isCollocationOptimized());
         prop.setProperty(property, "");
 
-        System.out.println("ok");
+        out.println("ok");
 
-        System.out.print("testing ice_getCommunicator... ");
-        System.out.flush();
+        out.print("testing proxyToProperty... ");
+        out.flush();
+
+        b1 = communicator.stringToProxy("test");
+        b1 = b1.ice_collocationOptimized(true);
+        b1 = b1.ice_connectionCached(true);
+        b1 = b1.ice_preferSecure(false);
+        b1 = b1.ice_endpointSelection(Ice.EndpointSelectionType.Ordered);
+        b1 = b1.ice_locatorCacheTimeout(100);
+
+        Ice.ObjectPrx router = communicator.stringToProxy("router");
+        router = router.ice_collocationOptimized(false);
+        router = router.ice_connectionCached(true);
+        router = router.ice_preferSecure(true);
+        router = router.ice_endpointSelection(Ice.EndpointSelectionType.Random);
+        router = router.ice_locatorCacheTimeout(200);
+
+        Ice.ObjectPrx locator = communicator.stringToProxy("locator");
+        locator = locator.ice_collocationOptimized(true);
+        locator = locator.ice_connectionCached(false);
+        locator = locator.ice_preferSecure(true);
+        locator = locator.ice_endpointSelection(Ice.EndpointSelectionType.Random);
+        locator = locator.ice_locatorCacheTimeout(300);
+
+        locator = locator.ice_router(Ice.RouterPrxHelper.uncheckedCast(router));
+        b1 = b1.ice_locator(Ice.LocatorPrxHelper.uncheckedCast(locator));
+
+        java.util.Map<String, String> proxyProps = communicator.proxyToProperty(b1, "Test");
+        test(proxyProps.size() == 18);
+
+        test(proxyProps.get("Test").equals("test -t"));
+        test(proxyProps.get("Test.CollocationOptimized").equals("1"));
+        test(proxyProps.get("Test.ConnectionCached").equals("1"));
+        test(proxyProps.get("Test.PreferSecure").equals("0"));
+        test(proxyProps.get("Test.EndpointSelection").equals("Ordered"));
+        test(proxyProps.get("Test.LocatorCacheTimeout").equals("100"));
+
+        test(proxyProps.get("Test.Locator").equals("locator -t"));
+        test(proxyProps.get("Test.Locator.CollocationOptimized").equals("1"));
+        test(proxyProps.get("Test.Locator.ConnectionCached").equals("0"));
+        test(proxyProps.get("Test.Locator.PreferSecure").equals("1"));
+        test(proxyProps.get("Test.Locator.EndpointSelection").equals("Random"));
+        test(proxyProps.get("Test.Locator.LocatorCacheTimeout").equals("300"));
+
+        test(proxyProps.get("Test.Locator.Router").equals("router -t"));
+        test(proxyProps.get("Test.Locator.Router.CollocationOptimized").equals("0"));
+        test(proxyProps.get("Test.Locator.Router.ConnectionCached").equals("1"));
+        test(proxyProps.get("Test.Locator.Router.PreferSecure").equals("1"));
+        test(proxyProps.get("Test.Locator.Router.EndpointSelection").equals("Random"));
+        test(proxyProps.get("Test.Locator.Router.LocatorCacheTimeout").equals("200"));
+
+        out.println("ok");
+
+        out.print("testing ice_getCommunicator... ");
+        out.flush();
         test(base.ice_getCommunicator() == communicator);
-        System.out.println("ok");
+        out.println("ok");
 
-        System.out.print("testing proxy methods... ");
-        System.out.flush();
+        out.print("testing proxy methods... ");
+        out.flush();
         test(communicator.identityToString(
                  base.ice_identity(communicator.stringToIdentity("other")).ice_getIdentity()).equals("other"));
         test(base.ice_facet("facet").ice_getFacet().equals("facet"));
@@ -335,10 +418,10 @@ public class AllTests
         test(!base.ice_collocationOptimized(false).ice_isCollocationOptimized());
         test(base.ice_preferSecure(true).ice_isPreferSecure());
         test(!base.ice_preferSecure(false).ice_isPreferSecure());
-        System.out.println("ok");
+        out.println("ok");
 
-        System.out.print("testing proxy comparison... ");
-        System.out.flush();
+        out.print("testing proxy comparison... ");
+        out.flush();
 
         test(communicator.stringToProxy("foo").equals(communicator.stringToProxy("foo")));
         test(!communicator.stringToProxy("foo").equals(communicator.stringToProxy("foo2")));
@@ -367,6 +450,10 @@ public class AllTests
 
         test(compObj.ice_connectionId("id2").equals(compObj.ice_connectionId("id2")));
         test(!compObj.ice_connectionId("id1").equals(compObj.ice_connectionId("id2")));
+
+        test(compObj.ice_connectionId("id1").ice_getConnectionId().equals("id1"));
+        test(compObj.ice_connectionId("id2").ice_getConnectionId().equals("id2"));
+
 
         test(compObj.ice_compress(true).equals(compObj.ice_compress(true)));
         test(!compObj.ice_compress(false).equals(compObj.ice_compress(true)));
@@ -418,24 +505,29 @@ public class AllTests
         compObj2 = communicator.stringToProxy("foo@MyAdapter1");
         test(!compObj1.equals(compObj2));
 
+        Ice.Endpoint[] endpts1 = communicator.stringToProxy("foo:tcp -h 127.0.0.1 -p 10000").ice_getEndpoints();
+        Ice.Endpoint[] endpts2 = communicator.stringToProxy("foo:tcp -h 127.0.0.1 -p 10001").ice_getEndpoints();
+        test(!endpts1[0].equals(endpts2[0]));
+        test(endpts1[0].equals(communicator.stringToProxy("foo:tcp -h 127.0.0.1 -p 10000").ice_getEndpoints()[0]));
+
         //
         // TODO: Ideally we should also test comparison of fixed proxies.
         //
-        System.out.println("ok");
+        out.println("ok");
 
-        System.out.print("testing checked cast... ");
-        System.out.flush();
-        Test.MyClassPrx cl = Test.MyClassPrxHelper.checkedCast(base);
+        out.print("testing checked cast... ");
+        out.flush();
+        MyClassPrx cl = MyClassPrxHelper.checkedCast(base);
         test(cl != null);
-        Test.MyDerivedClassPrx derived = Test.MyDerivedClassPrxHelper.checkedCast(cl);
+        MyDerivedClassPrx derived = MyDerivedClassPrxHelper.checkedCast(cl);
         test(derived != null);
         test(cl.equals(base));
         test(derived.equals(base));
         test(cl.equals(derived));
-        System.out.println("ok");
+        out.println("ok");
 
-        System.out.print("testing checked cast with context... ");
-        System.out.flush();
+        out.print("testing checked cast with context... ");
+        out.flush();
 
         java.util.Map<String, String> c = cl.getContext();
         test(c == null || c.size() == 0);
@@ -443,13 +535,13 @@ public class AllTests
         c = new java.util.HashMap<String, String>();
         c.put("one", "hello");
         c.put("two", "world");
-        cl = Test.MyClassPrxHelper.checkedCast(base, c);
+        cl = MyClassPrxHelper.checkedCast(base, c);
         java.util.Map<String, String> c2 = cl.getContext();
         test(c.equals(c2));
-        System.out.println("ok");
+        out.println("ok");
 
-        System.out.print("testing opaque endpoints... ");
-        System.out.flush();
+        out.print("testing opaque endpoints... ");
+        out.flush();
 
         try
         {
@@ -567,7 +659,7 @@ public class AllTests
             Ice.ObjectPrx p1 = communicator.stringToProxy("test:opaque -t 1 -v CTEyNy4wLjAuMeouAAAQJwAAAA==");
             String pstr = communicator.proxyToString(p1);
             test(pstr.equals("test -t:tcp -h 127.0.0.1 -p 12010 -t 10000"));
-        
+
             // Working?
             boolean ssl = communicator.getProperties().getProperty("Ice.Default.Protocol").equals("ssl");
             if(!ssl)
@@ -597,7 +689,7 @@ public class AllTests
 
             //
             // Try to invoke on the SSL endpoint to verify that we get a
-            // NoEndpointException (or ConnectionRefusedException when
+            // NoEndpointException (or ConnectFailedException when
             // running with SSL).
             //
             try
@@ -609,7 +701,7 @@ public class AllTests
             {
                 test(!ssl);
             }
-            catch(Ice.ConnectionRefusedException ex)
+            catch(Ice.ConnectFailedException ex)
             {
                 test(ssl);
             }
@@ -632,7 +724,7 @@ public class AllTests
             }
 
         }
-        System.out.println("ok");
+        out.println("ok");
 
         return cl;
     }

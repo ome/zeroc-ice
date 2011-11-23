@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,13 +17,21 @@ class Transceiver : public IceInternal::Transceiver
 {
 public:
     
-    virtual SOCKET fd();
+    virtual IceInternal::NativeInfoPtr getNativeInfo();
+
     virtual void close();
     virtual bool write(IceInternal::Buffer&);
     virtual bool read(IceInternal::Buffer&);
+#ifdef ICE_USE_IOCP
+    virtual bool startWrite(IceInternal::Buffer&);
+    virtual void finishWrite(IceInternal::Buffer&);
+    virtual void startRead(IceInternal::Buffer&);
+    virtual void finishRead(IceInternal::Buffer&);
+#endif
     virtual std::string type() const;
     virtual std::string toString() const;
-    virtual IceInternal::SocketStatus initialize();
+    virtual Ice::ConnectionInfoPtr getInfo() const;
+    virtual IceInternal::SocketOperation initialize();
     virtual void checkSendSize(const IceInternal::Buffer&, size_t);
 
 private:

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,12 +9,13 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace IceUtilInternal
 {
     public sealed class Options
     {
-        public sealed class BadQuote : System.ApplicationException
+        public sealed class BadQuote : System.Exception
         {
             public BadQuote(string message) : base(message)
             {
@@ -316,11 +317,11 @@ namespace IceUtilInternal
                                     case 'c':
                                     {
                                         c = l[++i]; 
-                                        if((char.ToUpper(c) >= 'A' && char.ToUpper(c) <= 'Z') || 
+                                        if((char.ToUpper(c, CultureInfo.InvariantCulture) >= 'A' && char.ToUpper(c, CultureInfo.InvariantCulture) <= 'Z') || 
                                            c == '@' || 
                                            (c >= '[' && c <= '_'))
                                         {
-                                            arg += (char)(char.ToUpper(c) - '@');
+                                            arg += (char)(char.ToUpper(c, CultureInfo.InvariantCulture) - '@');
                                         }
                                         else
                                         {

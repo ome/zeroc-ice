@@ -1,13 +1,17 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-public class ServerLocator extends Test._TestLocatorDisp
+package test.Ice.location;
+
+import test.Ice.location.Test._TestLocatorDisp;
+
+public class ServerLocator extends _TestLocatorDisp
 {
     public
     ServerLocator(ServerLocatorRegistry registry, Ice.LocatorRegistryPrx registryPrx)

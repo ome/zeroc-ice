@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,18 +23,17 @@ public class Client
     {
         public override int run(String[] args)
         {
+            //
             // Terminate cleanly on receipt of a signal.
             //
             shutdownOnInterrupt();
 
+            //
             // Create a proxy for the root directory
             //
             Ice.ObjectPrx @base = communicator().stringToProxy("RootDir:default -p 10000");
-            if(@base == null)
-            {
-                throw new Error("Could not create proxy");
-            }
 
+            //
             // Down-cast the proxy to a Directory proxy.
             //
             DirectoryPrx rootDir = DirectoryPrxHelper.checkedCast(@base);

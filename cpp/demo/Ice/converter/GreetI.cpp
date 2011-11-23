@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -32,7 +32,7 @@ string decodeString(const string& str)
 }
 
 string
-GreetI::exchangeGreeting(const std::string& msg, const Ice::Current&) const
+GreetI::exchangeGreeting(const std::string& msg, const Ice::Current&)
 {
     cout << "Received (UTF-8): \"" << decodeString(msg) << '\"' << endl;
     return "Bonne journ\303\251e";

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,6 +21,11 @@
 #include <IceUtil/ThreadException.h>
 #include <climits>
 #include <exception>
+
+#ifndef _WIN32
+    #include <sys/time.h>
+    #include <sys/resource.h>
+#endif
 
 using namespace std;
 
@@ -112,6 +117,15 @@ IceUtil::Thread::Thread() :
 {
 }
 
+IceUtil::Thread::Thread(const string& name) :
+    _name(name),
+    _started(false),
+    _running(false),
+    _handle(0),
+    _id(0)
+{
+}
+
 IceUtil::Thread::~Thread()
 {
 }
@@ -151,6 +165,10 @@ WINAPI startHook(void* arg)
     }
     catch(...)
     {
+        if(!thread->name().empty())
+        {
+            cerr << thread->name() << " terminating" << endl;
+        }
 #if defined(_MSC_VER) && (_MSC_VER < 1300)
         terminate();
 #else
@@ -167,6 +185,12 @@ WINAPI startHook(void* arg)
 
 IceUtil::ThreadControl
 IceUtil::Thread::start(size_t stackSize)
+{
+    return start(stackSize, THREAD_PRIORITY_NORMAL);
+}
+
+IceUtil::ThreadControl
+IceUtil::Thread::start(size_t stackSize, int priority)
 {
     //
     // Keep this alive for the duration of start
@@ -192,12 +216,11 @@ IceUtil::Thread::start(size_t stackSize)
     __incRef();
     
     unsigned int id;
-    
     _handle = 
-       reinterpret_cast<HANDLE>(
-          _beginthreadex(0, 
-                         static_cast<unsigned int>(stackSize), 
-                         startHook, this, 0, &id));
+        reinterpret_cast<HANDLE>(
+            _beginthreadex(0, 
+                            static_cast<unsigned int>(stackSize), 
+                            startHook, this, CREATE_SUSPENDED, &id));
     _id = id;
 
     if(_handle == 0)
@@ -205,10 +228,19 @@ IceUtil::Thread::start(size_t stackSize)
         __decRef();
         throw ThreadSyscallException(__FILE__, __LINE__, GetLastError());
     }
+    if(SetThreadPriority(_handle, priority) == 0)
+    {
+        throw ThreadSyscallException(__FILE__, __LINE__, GetLastError());
+    }
+    if(ResumeThread(_handle) == -1)
+    {
+        __decRef();
+        throw ThreadSyscallException(__FILE__, __LINE__, GetLastError());
+    }
 
     _started = true;
     _running = true;
-                        
+    
     return ThreadControl(_handle, _id);
 }
 
@@ -253,6 +285,12 @@ IceUtil::Thread::_done()
 {
     IceUtil::Mutex::Lock lock(_stateMutex);
     _running = false;
+}
+
+const string&
+IceUtil::Thread::name() const
+{
+    return _name;
 }
 
 #else
@@ -315,7 +353,7 @@ IceUtil::ThreadControl::detach()
 IceUtil::ThreadControl::ID
 IceUtil::ThreadControl::id() const
 {
-    return _thread;;
+    return _thread;
 }
 
 void
@@ -335,6 +373,13 @@ IceUtil::ThreadControl::yield()
 }
 
 IceUtil::Thread::Thread() :
+    _started(false),
+    _running(false)
+{
+}
+
+IceUtil::Thread::Thread(const string& name) :
+    _name(name),
     _started(false),
     _running(false)
 {
@@ -369,6 +414,10 @@ startHook(void* arg)
     }
     catch(...)
     {
+        if(!thread->name().empty())
+        {
+            cerr << thread->name() << " terminating" << endl;
+        }
         std::terminate();
     }
 
@@ -378,8 +427,20 @@ startHook(void* arg)
 }
 }
 
+
 IceUtil::ThreadControl
 IceUtil::Thread::start(size_t stackSize)
+{
+    return start(stackSize, false, 0);
+}
+
+IceUtil::ThreadControl
+IceUtil::Thread::start(size_t stackSize, int priority)
+{
+    return start(stackSize, true, priority);
+}
+IceUtil::ThreadControl
+IceUtil::Thread::start(size_t stackSize, bool realtimeScheduling, int priority)
 {
     //
     // Keep this alive for the duration of start
@@ -404,15 +465,16 @@ IceUtil::Thread::start(size_t stackSize)
     //
     __incRef();
 
+    pthread_attr_t attr;
+    int rc = pthread_attr_init(&attr);
+    if(rc != 0)
+    {
+        __decRef();
+        pthread_attr_destroy(&attr);
+        throw ThreadSyscallException(__FILE__, __LINE__, rc);
+    }
     if(stackSize > 0)
     {
-        pthread_attr_t attr;
-        int rc = pthread_attr_init(&attr);
-        if(rc != 0)
-        {
-            __decRef();
-            throw ThreadSyscallException(__FILE__, __LINE__, rc);
-        }
         if(stackSize < PTHREAD_STACK_MIN)
         {
             stackSize = PTHREAD_STACK_MIN;
@@ -427,28 +489,40 @@ IceUtil::Thread::start(size_t stackSize)
         if(rc != 0)
         {
             __decRef();
-            throw ThreadSyscallException(__FILE__, __LINE__, rc);
-        }
-        rc = pthread_create(&_thread, &attr, startHook, this);
-        if(rc != 0)
-        {
-            __decRef();
+            pthread_attr_destroy(&attr);
             throw ThreadSyscallException(__FILE__, __LINE__, rc);
         }
     }
-    else
+
+    if(realtimeScheduling)
     {
-        int rc = pthread_create(&_thread, 0, startHook, this);
+        rc = pthread_attr_setschedpolicy(&attr, SCHED_RR);
         if(rc != 0)
         {
             __decRef();
             throw ThreadSyscallException(__FILE__, __LINE__, rc);
         }
+        sched_param param;
+        param.sched_priority = priority;
+        rc = pthread_attr_setschedparam(&attr, &param);
+        if(rc != 0)
+        {
+            __decRef();
+            pthread_attr_destroy(&attr);
+            throw ThreadSyscallException(__FILE__, __LINE__, rc);
+        }
+        pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+    }
+    rc = pthread_create(&_thread, &attr, startHook, this);
+    pthread_attr_destroy(&attr);
+    if(rc != 0)
+    {
+        __decRef();
+        throw ThreadSyscallException(__FILE__, __LINE__, rc);
     }
 
     _started = true;
     _running = true;
-
     return ThreadControl(_thread);
 }
 
@@ -493,6 +567,12 @@ IceUtil::Thread::_done()
 {
     IceUtil::Mutex::Lock lock(_stateMutex);
     _running = false;
+}
+
+const string&
+IceUtil::Thread::name() const
+{
+    return _name;
 }
 
 #endif

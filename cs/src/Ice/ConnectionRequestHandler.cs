@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -41,9 +41,9 @@ namespace IceInternal
             }
         }
 
-        public bool sendAsyncRequest(OutgoingAsync @out)
+        public bool sendAsyncRequest(OutgoingAsync @out, out Ice.AsyncCallback sentCallback)
         {
-            return _connection.sendAsyncRequest(@out, _compress, _response);
+            return _connection.sendAsyncRequest(@out, _compress, _response, out sentCallback);
         }
 
         public bool flushBatchRequests(BatchOutgoing @out)
@@ -51,9 +51,9 @@ namespace IceInternal
             return _connection.flushBatchRequests(@out);
         }
 
-        public bool flushAsyncBatchRequests(BatchOutgoingAsync @out)
+        public bool flushAsyncBatchRequests(BatchOutgoingAsync @out, out Ice.AsyncCallback sentCallback)
         {
-            return _connection.flushAsyncBatchRequests(@out);
+            return _connection.flushAsyncBatchRequests(@out, out sentCallback);
         }
 
         public Outgoing getOutgoing(string operation, Ice.OperationMode mode, Dictionary<string, string> context)

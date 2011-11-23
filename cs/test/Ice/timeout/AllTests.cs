@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,29 +21,23 @@ public class AllTests
         }
     }
 
-    private class Callback
+    private class CallbackBase
     {
-        internal Callback()
+        internal CallbackBase()
         {
             _called = false;
         }
 
-        public bool check()
+        public void check()
         {
             lock(this)
             {
                 while(!_called)
                 {
-                    Monitor.Wait(this, 5000);
-
-                    if(!_called)
-                    {
-                        return false; // Must be timeout.
-                    }
+                    Monitor.Wait(this);
                 }
 
                 _called = false;
-                return true;
             }
         }
 
@@ -60,91 +54,40 @@ public class AllTests
         private bool _called;
     }
 
-    private class AMISendData : Test.AMI_Timeout_sendData
+    private class Callback
     {
-        public override void ice_response()
+        public void response()
         {
             callback.called();
         }
 
-        public override void ice_exception(Ice.Exception ex)
+        public void exception(Ice.Exception ex)
         {
             test(false);
         }
 
-        public bool check()
-        {
-            return callback.check();
-        }
-
-        private Callback callback = new Callback();
-    }
-
-    private class AMISendDataEx : Test.AMI_Timeout_sendData
-    {
-        public override void ice_response()
+        public void responseEx()
         {
             test(false);
         }
 
-        public override void ice_exception(Ice.Exception ex)
+        public void exceptionEx(Ice.Exception ex)
         {
             test(ex is Ice.TimeoutException);
             callback.called();
         }
 
-        public bool check()
+        public void check()
         {
-            return callback.check();
+            callback.check();
         }
 
-        private Callback callback = new Callback();
-    }
-
-    private class AMISleep : Test.AMI_Timeout_sleep
-    {
-        public override void ice_response()
-        {
-            callback.called();
-        }
-
-        public override void ice_exception(Ice.Exception ex)
-        {
-            test(false);
-        }
-
-        public bool check()
-        {
-            return callback.check();
-        }
-
-        private Callback callback = new Callback();
-    }
-
-    private class AMISleepEx : Test.AMI_Timeout_sleep
-    {
-        public override void ice_response()
-        {
-            test(false);
-        }
-
-        public override void ice_exception(Ice.Exception ex)
-        {
-            test(ex is Ice.TimeoutException);
-            callback.called();
-        }
-
-        public bool check()
-        {
-            return callback.check();
-        }
-
-        private Callback callback = new Callback();
+        private CallbackBase callback = new CallbackBase();
     }
 
     public static Test.TimeoutPrx allTests(Ice.Communicator communicator)
     {
-        string sref = "timeout:default -p 12010 -t 10000";
+        string sref = "timeout:default -p 12010";
         Ice.ObjectPrx obj = communicator.stringToProxy(sref);
         test(obj != null);
 
@@ -268,9 +211,9 @@ public class AllTests
             // Expect TimeoutException.
             //
             Test.TimeoutPrx to = Test.TimeoutPrxHelper.uncheckedCast(obj.ice_timeout(500));
-            AMISleepEx cb = new AMISleepEx();
-            to.sleep_async(cb, 2000);
-            test(cb.check());
+            Callback cb = new Callback();
+            to.begin_sleep(2000).whenCompleted(cb.responseEx, cb.exceptionEx);
+            cb.check();
         }
         {
             //
@@ -278,9 +221,9 @@ public class AllTests
             //
             timeout.op(); // Ensure adapter is active.
             Test.TimeoutPrx to = Test.TimeoutPrxHelper.uncheckedCast(obj.ice_timeout(1000));
-            AMISleep cb = new AMISleep();
-            to.sleep_async(cb, 500);
-            test(cb.check());
+            Callback cb = new Callback();
+            to.begin_sleep(500).whenCompleted(cb.response, cb.exception);
+            cb.check();
         }
         Console.Out.WriteLine("ok");
 
@@ -293,9 +236,9 @@ public class AllTests
             Test.TimeoutPrx to = Test.TimeoutPrxHelper.uncheckedCast(obj.ice_timeout(500));
             to.holdAdapter(2000);
             byte[] seq = new byte[100000];
-            AMISendDataEx cb = new AMISendDataEx();
-            to.sendData_async(cb, seq);
-            test(cb.check());
+            Callback cb = new Callback();
+            to.begin_sendData(seq).whenCompleted(cb.responseEx, cb.exceptionEx);
+            cb.check();
         }
         {
             //
@@ -305,9 +248,38 @@ public class AllTests
             Test.TimeoutPrx to = Test.TimeoutPrxHelper.uncheckedCast(obj.ice_timeout(1000));
             to.holdAdapter(500);
             byte[] seq = new byte[100000];
-            AMISendData cb = new AMISendData();
-            to.sendData_async(cb, seq);
-            test(cb.check());
+            Callback cb = new Callback();
+            to.begin_sendData(seq).whenCompleted(cb.response, cb.exception);
+            cb.check();
+        }
+        Console.Out.WriteLine("ok");
+
+        Console.Out.Write("testing close timeout... ");
+        Console.Out.Flush();
+        {
+            Test.TimeoutPrx to = Test.TimeoutPrxHelper.checkedCast(obj.ice_timeout(250));
+            Ice.Connection connection = to.ice_getConnection();
+            timeout.holdAdapter(750);
+            connection.close(false);
+            try
+            {
+                connection.getInfo(); // getInfo() doesn't throw in the closing state.
+            }
+            catch(Ice.LocalException)
+            {
+                test(false);
+            }
+            Thread.Sleep(500);
+            try
+            {
+                connection.getInfo();
+                test(false);
+            }
+            catch(Ice.CloseConnectionException)
+            {
+                // Expected.
+            }
+            timeout.op(); // Ensure adapter is active.
         }
         Console.Out.WriteLine("ok");
 
@@ -390,7 +362,7 @@ public class AllTests
             to.op(); // Force connection.
             try
             {
-                to.sleep(1500);
+                to.sleep(2000);
                 test(false);
             }
             catch(Ice.TimeoutException)
@@ -398,6 +370,21 @@ public class AllTests
                 // Expected.
             }
             comm.destroy();
+        }
+        {
+            //
+            // Test Ice.Override.CloseTimeout.
+            //
+            Ice.InitializationData initData = new Ice.InitializationData();
+            initData.properties = communicator.getProperties().ice_clone_();
+            initData.properties.setProperty("Ice.Override.CloseTimeout", "200");
+            Ice.Communicator comm = Ice.Util.initialize(initData);
+            comm.stringToProxy(sref).ice_getConnection();
+            timeout.holdAdapter(750);
+            Stopwatch stopwatch = new Stopwatch();
+            long now = stopwatch.ElapsedMilliseconds;
+            comm.destroy();
+            test(stopwatch.ElapsedMilliseconds - now < 500);
         }
         Console.Out.WriteLine("ok");
 

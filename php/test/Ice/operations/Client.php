@@ -1,7 +1,7 @@
 <?
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,10 @@ if(!extension_loaded("ice"))
     echo "\nerror: Ice extension is not loaded.\n\n";
     exit(1);
 }
-Ice_loadProfileWithArgs($argv);
+
+$NS = function_exists("Ice\\initialize");
+require ($NS ? 'Ice_ns.php' : 'Ice.php');
+require 'Test.php';
 
 function test($b)
 {
@@ -28,7 +31,11 @@ function test($b)
 
 function twoways($communicator, $p)
 {
-    global $ICE;
+    global $NS;
+
+    $enum1 = $NS ? constant("Test\\MyEnum::enum1") : constant("Test_MyEnum::enum1");
+    $enum2 = $NS ? constant("Test\\MyEnum::enum2") : constant("Test_MyEnum::enum2");
+    $enum3 = $NS ? constant("Test\\MyEnum::enum3") : constant("Test_MyEnum::enum3");
 
     {
         $p->opVoid();
@@ -95,17 +102,19 @@ function twoways($communicator, $p)
     }
 
     {
-        $r = $p->opMyEnum(Test_MyEnum::enum2, $e);
-        test($e == Test_MyEnum::enum2);
-        test($r == Test_MyEnum::enum3);
+        $r = $p->opMyEnum($enum2, $e);
+        test($e == $enum2);
+        test($r == $enum3);
     }
 
     {
         $r = $p->opMyClass($p, $c1, $c2);
-        // TODO: Identity tests
-        test($c1->ice_getIdentity() == $ICE->stringToIdentity("test"));
-        test($c2->ice_getIdentity() == $ICE->stringToIdentity("noSuchIdentity"));
-        test($r->ice_getIdentity() == $ICE->stringToIdentity("test"));
+        test(Ice_proxyIdentityAndFacetEqual($c1, $p));
+        test(!Ice_proxyIdentityAndFacetEqual($c2, $p));
+        test(Ice_proxyIdentityAndFacetEqual($r, $p));
+        test($c1->ice_getIdentity() == $communicator->stringToIdentity("test"));
+        test($c2->ice_getIdentity() == $communicator->stringToIdentity("noSuchIdentity"));
+        test($r->ice_getIdentity() == $communicator->stringToIdentity("test"));
         $r->opVoid();
         $c1->opVoid();
         try
@@ -113,8 +122,13 @@ function twoways($communicator, $p)
             $c2->opVoid();
             test(false);
         }
-        catch(Ice_LocalException $ex)
+        catch(Exception $ex)
         {
+            $le = $NS ? "Ice\\LocalException" : "Ice_LocalException";
+            if(!($ex instanceof $le))
+            {
+                throw $ex;
+            }
         }
 
         $r = $p->opMyClass(null, $c1, $c2);
@@ -124,23 +138,23 @@ function twoways($communicator, $p)
     }
 
     {
-        $si1 = new Test_Structure;
+        $si1 = $NS ? eval("return new Test\\Structure;") : eval("return new Test_Structure;");
         $si1->p = $p;
-        $si1->e = Test_MyEnum::enum3;
-        $si1->s = new Test_AnotherStruct;
+        $si1->e = $enum3;
+        $si1->s = $NS ? eval("return new Test\\AnotherStruct;") : eval("return new Test_AnotherStruct;");
         $si1->s->s = "abc";
-        $si2 = new Test_Structure;
+        $si2 = $NS ? eval("return new Test\\Structure;") : eval("return new Test_Structure;");
         $si2->p = null;
-        $si2->e = Test_MyEnum::enum2;
-        $si2->s = new Test_AnotherStruct;
+        $si2->e = $enum2;
+        $si2->s = $NS ? eval("return new Test\\AnotherStruct;") : eval("return new Test_AnotherStruct;");
         $si2->s->s = "def";
 
         $rso = $p->opStruct($si1, $si2, $so);
         test($rso->p == null);
-        test($rso->e == Test_MyEnum::enum2);
+        test($rso->e == $enum2);
         test($rso->s->s == "def");
         test($so->p == $p);
-        test($so->e == Test_MyEnum::enum3);
+        test($so->e == $enum3);
         test($so->s->s == "a new string");
         $so->p->opVoid();
     }
@@ -385,17 +399,29 @@ function twoways($communicator, $p)
     }
 
     {
-        $di1 = array("abc" => Test_MyEnum::enum1, "" => Test_MyEnum::enum2);
-        $di2 = array("abc" => Test_MyEnum::enum1, "qwerty" => Test_MyEnum::enum3, "Hello!!" => Test_MyEnum::enum2);
+        $di1 = array("abc" => $enum1, "" => $enum2);
+        $di2 = array("abc" => $enum1, "qwerty" => $enum3, "Hello!!" => $enum2);
         $ro = $p->opStringMyEnumD($di1, $di2, $_do);
         test(count($_do) == 2);
         test($_do["abc"] == $di1["abc"]);
         test($_do[""] == $di1[""]);
         test(count($ro) == 4);
-        test($ro["abc"] == Test_MyEnum::enum1);
-        test($ro["qwerty"] == Test_MyEnum::enum3);
-        test($ro[""] == Test_MyEnum::enum2);
-        test($ro["Hello!!"] == Test_MyEnum::enum2);
+        test($ro["abc"] == $enum1);
+        test($ro["qwerty"] == $enum3);
+        test($ro[""] == $enum2);
+        test($ro["Hello!!"] == $enum2);
+    }
+
+    {
+        $di1 = array($enum1 => "abc");
+        $di2 = array($enum2 => "Hello!!", $enum3 => "qwerty");
+        $ro = $p->opMyEnumStringD($di1, $di2, $_do);
+        test(count($_do) == 1);
+        test($_do[$enum1] == $di1[$enum1]);
+        test(count($ro) == 3);
+        test($ro[$enum1] == "abc");
+        test($ro[$enum2] == "Hello!!");
+        test($ro[$enum3] == "qwerty");
     }
 
     {
@@ -417,26 +443,26 @@ function twoways($communicator, $p)
     }
 }
 
-function allTests()
+function allTests($communicator)
 {
-    global $ICE;
-
-    $ref = "test:default -p 12010 -t 2000";
-    $base = $ICE->stringToProxy($ref);
+    $ref = "test:default -p 12010";
+    $base = $communicator->stringToProxy($ref);
     $cl = $base->ice_checkedCast("::Test::MyClass");
     $derived = $cl->ice_checkedCast("::Test::MyDerivedClass");
 
     echo "testing twoway operations... ";
     flush();
-    twoways($ICE, $cl);
-    twoways($ICE, $derived);
+    twoways($communicator, $cl);
+    twoways($communicator, $derived);
     $derived->opDerived();
     echo "ok\n";
 
     return $cl;
 }
 
-$myClass = allTests();
+$communicator = Ice_initialize(&$argv);
+
+$myClass = allTests($communicator);
 
 echo "testing server shutdown... ";
 flush();
@@ -446,10 +472,17 @@ try
     $myClass->opVoid();
     test(false);
 }
-catch(Ice_LocalException $ex)
+catch(Exception $ex)
 {
+    $le = $NS ? "Ice\\LocalException" : "Ice_LocalException";
+    if(!($ex instanceof $le))
+    {
+        throw $ex;
+    }
     echo "ok\n";
 }
+
+$communicator->destroy();
 
 exit();
 ?>

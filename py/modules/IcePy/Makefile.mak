@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -16,7 +16,10 @@ TARGETS		= $(LIBNAME) $(DLLNAME)
 
 OBJS		= Communicator.obj \
 		  Connection.obj \
+		  ConnectionInfo.obj \
 		  Current.obj \
+		  Endpoint.obj \
+		  EndpointInfo.obj \
 		  ImplicitContext.obj \
 		  Init.obj \
 		  Logger.obj \
@@ -40,15 +43,19 @@ LINKWITH        = $(ICE_LIBS) $(PYTHON_LIBS) $(CXXLIBS)
 
 $(LIBNAME): $(DLLNAME)
 
-$(DLLNAME): $(OBJS)
+$(DLLNAME): $(OBJS) IcePy.res
 	$(LINK) $(PYTHON_LDFLAGS) $(ICE_LDFLAGS) $(LD_DLLFLAGS) $(PDBFLAGS) $(OBJS) \
-		$(PREOUT)$@ $(PRELIBS)$(LINKWITH)
+		$(PREOUT)$@ $(PRELIBS)$(LINKWITH) IcePy.res
 	move $(@:.pyd=.lib) $(LIBNAME)
 	@if exist $@.manifest echo ^ ^ ^ Embedding manifest using $(MT) && \
 	   $(MT) -nologo -manifest $@.manifest -outputresource:$@;#2 && del /q $@.manifest
 	@if exist $(@:.pyd=.exp) del /q $(@:.pyd=.exp)
 
-install:: all
-	copy $(DLLNAME) $(install_libdir)
 
-!include .depend
+clean::
+	-del /q IcePy.res
+
+install:: all
+	copy $(DLLNAME) "$(install_libdir)"
+
+!include .depend.mak

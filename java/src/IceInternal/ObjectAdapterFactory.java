@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,7 +14,7 @@ public final class ObjectAdapterFactory
     public void
     shutdown()
     {
-        java.util.Map<String, Ice.ObjectAdapterI> adapters;
+        java.util.List<Ice.ObjectAdapterI> adapters;
         synchronized(this)
         {
             //
@@ -29,7 +29,7 @@ public final class ObjectAdapterFactory
             _instance = null;
             _communicator = null;
 
-            adapters = _adapters;
+            adapters = new java.util.LinkedList<Ice.ObjectAdapterI>(_adapters);
         
             notifyAll();
         }
@@ -38,21 +38,16 @@ public final class ObjectAdapterFactory
         // Deactivate outside the thread synchronization, to avoid
         // deadlocks.
         //
-        if(adapters != null)
+        for(Ice.ObjectAdapterI adapter : adapters)
         {
-            java.util.Iterator<Ice.ObjectAdapterI> i = adapters.values().iterator();
-            while(i.hasNext())
-            {
-                Ice.ObjectAdapter adapter = i.next();
-                adapter.deactivate();
-            }
+            adapter.deactivate();
         }
     }
 
     public void
     waitForShutdown()
     {
-        java.util.Map<String, Ice.ObjectAdapterI> adapters;
+        java.util.List<Ice.ObjectAdapterI> adapters;
         synchronized(this)
         {
             //
@@ -68,45 +63,16 @@ public final class ObjectAdapterFactory
                 {
                 }
             }
-            
-            //
-            // If some other thread is currently shutting down, we wait
-            // until this thread is finished.
-            //
-            while(_waitForShutdown)
-            {
-                try
-                {
-                    wait();
-                }
-                catch(InterruptedException ex)
-                {
-                }
-            }
-            _waitForShutdown = true;
-            adapters = _adapters;
+
+            adapters = new java.util.LinkedList<Ice.ObjectAdapterI>(_adapters);
         }
         
         //
         // Now we wait for deactivation of each object adapter.
         //
-        if(adapters != null)
+        for(Ice.ObjectAdapterI adapter : adapters)
         {
-            java.util.Iterator<Ice.ObjectAdapterI> i = adapters.values().iterator();
-            while(i.hasNext())
-            {
-                Ice.ObjectAdapter adapter = i.next();
-                adapter.waitForDeactivate();
-            }
-        }
-
-        synchronized(this)
-        {
-            //
-            // Signal that waiting is complete.
-            //
-            _waitForShutdown = false;
-            notifyAll();
+            adapter.waitForDeactivate();
         }
     }
 
@@ -124,65 +90,47 @@ public final class ObjectAdapterFactory
         //
         waitForShutdown();
 
-        java.util.Map<String, Ice.ObjectAdapterI> adapters;
+        java.util.List<Ice.ObjectAdapterI> adapters;
         synchronized(this)
         {
-            adapters = _adapters;
-
-            //
-            // For consistency with C#, we set _adapters to null
-            // so that our finalizer does not try to invoke any
-            // methods on member objects.
-            //
-            _adapters = null;
+            adapters = new java.util.LinkedList<Ice.ObjectAdapterI>(_adapters);
         }
 
-        //
-        // Now we destroy each object adapter.
-        //
-        if(adapters != null)
+        for(Ice.ObjectAdapterI adapter : adapters)
         {
-            java.util.Iterator<Ice.ObjectAdapterI> i = adapters.values().iterator();
-            while(i.hasNext())
-            {
-                Ice.ObjectAdapter adapter = i.next();
-                adapter.destroy();
-            }
+            adapter.destroy();
+        }
+
+        synchronized(this)
+        {
+            _adapters.clear();
         }
     }
     
     public synchronized Ice.ObjectAdapter
-    createObjectAdapter(String name, String endpoints, Ice.RouterPrx router)
+    createObjectAdapter(String name, Ice.RouterPrx router)
     {
         if(_instance == null)
         {
             throw new Ice.ObjectAdapterDeactivatedException();
         }
 
-        Ice.ObjectAdapterI adapter = _adapters.get(name);
-        if(adapter != null)
-        {
-            throw new Ice.AlreadyRegisteredException("object adapter", name);
-        }
-
-        if(name.length() == 0 && (endpoints.length() != 0 || router != null))
-        {
-            Ice.InitializationException ex = new Ice.InitializationException();
-            ex.reason = "Cannot configure endpoints or router with nameless object adapter";
-            throw ex;
-        }
-
+        Ice.ObjectAdapterI adapter = null;
         if(name.length() == 0)
         {
-            String uuid = Ice.Util.generateUUID();
-            adapter = new Ice.ObjectAdapterI(_instance, _communicator, this, uuid, "", null, true);
-            _adapters.put(uuid, adapter);
+            String uuid = java.util.UUID.randomUUID().toString();
+            adapter = new Ice.ObjectAdapterI(_instance, _communicator, this, uuid, null, true);
         }
         else
         {
-            adapter = new Ice.ObjectAdapterI(_instance, _communicator, this, name, endpoints, router, false);
-            _adapters.put(name, adapter);
+            if(_adapterNamesInUse.contains(name))
+            {
+                throw new Ice.AlreadyRegisteredException("object adapter", name);
+            }
+            adapter = new Ice.ObjectAdapterI(_instance, _communicator, this, name, router, false);
+            _adapterNamesInUse.add(name);
         }
+        _adapters.add(adapter);
         return adapter;
     }
 
@@ -197,15 +145,13 @@ public final class ObjectAdapterFactory
                 return null;
             }
 
-            adapters = new java.util.ArrayList<Ice.ObjectAdapterI>(_adapters.values());
+            adapters = new java.util.LinkedList<Ice.ObjectAdapterI>(_adapters);
         }
 
-        java.util.Iterator<Ice.ObjectAdapterI> p = adapters.iterator();
-        while(p.hasNext())
+        for(Ice.ObjectAdapterI adapter : adapters)
         {
             try
             {
-                Ice.ObjectAdapterI adapter = p.next();
                 if(adapter.isLocal(proxy))
                 {
                     return adapter;
@@ -221,34 +167,29 @@ public final class ObjectAdapterFactory
     }
 
     public synchronized void
-    removeObjectAdapter(String name)
+    removeObjectAdapter(Ice.ObjectAdapter adapter)
     {
         if(_instance == null)
         {
             return;
         }
 
-        _adapters.remove(name);
+        _adapters.remove(adapter);
+        _adapterNamesInUse.remove(adapter.getName());
     }
 
     public void
-    flushBatchRequests()
+    flushAsyncBatchRequests(CommunicatorBatchOutgoingAsync outAsync)
     {
         java.util.List<Ice.ObjectAdapterI> adapters;
         synchronized(this)
         {
-            if(_adapters == null)
-            {
-                return;
-            }
-
-            adapters = new java.util.ArrayList<Ice.ObjectAdapterI>(_adapters.values());
+            adapters = new java.util.LinkedList<Ice.ObjectAdapterI>(_adapters);
         }
 
-        java.util.Iterator<Ice.ObjectAdapterI> p = adapters.iterator();
-        while(p.hasNext())
+        for(Ice.ObjectAdapterI adapter : adapters)
         {
-            p.next().flushBatchRequests();
+            adapter.flushAsyncBatchRequests(outAsync);
         }
     }
 
@@ -259,7 +200,6 @@ public final class ObjectAdapterFactory
     {
         _instance = instance;
         _communicator = communicator;
-        _waitForShutdown = false;
     }
 
     protected synchronized void
@@ -268,14 +208,13 @@ public final class ObjectAdapterFactory
     {
         IceUtilInternal.Assert.FinalizerAssert(_instance == null);
         IceUtilInternal.Assert.FinalizerAssert(_communicator == null);
-        IceUtilInternal.Assert.FinalizerAssert(_adapters == null);
-        IceUtilInternal.Assert.FinalizerAssert(!_waitForShutdown);
+        //IceUtilInternal.Assert.FinalizerAssert(_adapters.isEmpty())
 
         super.finalize();
     }
 
     private Instance _instance;
     private Ice.Communicator _communicator;
-    private java.util.Map<String, Ice.ObjectAdapterI> _adapters = new java.util.HashMap<String, Ice.ObjectAdapterI>();
-    private boolean _waitForShutdown;
+    private java.util.Set<String> _adapterNamesInUse = new java.util.HashSet<String>();
+    private java.util.List<Ice.ObjectAdapterI> _adapters = new java.util.LinkedList<Ice.ObjectAdapterI>();
 }

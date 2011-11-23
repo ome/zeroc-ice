@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -33,11 +33,7 @@ EXTRA_MANIFEST  = security.manifest
 PDBFLAGS       = /pdb:$(TOOL:.exe=.pdb)
 !endif
 
-!if "$(BCPLUSPLUS)" == "yes"
-RES_FILE        = ,, IceServiceInstall.res
-!else
 RES_FILE        = IceServiceInstall.res
-!endif
 
 $(TOOL): $(OBJS) IceServiceInstall.res
 	$(LINK) $(LD_EXEFLAGS) $(PDBFLAGS) $(OBJS) $(SETARGV) $(PREOUT)$@ $(PRELIBS)$(LINKWITH) $(RES_FILE)
@@ -49,21 +45,15 @@ clean::
 	del /q IceServiceInstall.res
 
 install:: all
-	copy $(TOOL) $(install_bindir)
+	copy $(TOOL) "$(install_bindir)"
 
-
-!if "$(BCPLUSPLUS)" == "yes" && "$(OPTIMIZE)" != "yes"
-
-install:: all
-	copy $(TOOL:.exe=.tds) $(install_bindir)
-
-!elseif "$(GENERATE_PDB)" == "yes"
+!if "$(GENERATE_PDB)" == "yes"
 
 install:: all
-	copy $(TOOL:.exe=.pdb) $(install_bindir)
+	copy $(TOOL:.exe=.pdb) "$(install_bindir)"
 
 !endif
 
 
-!include .depend
+!include .depend.mak
 

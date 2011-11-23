@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -45,6 +45,8 @@ std::string getProperty(const PropertyDescriptorSeq&, const std::string&, const 
 bool hasProperty(const PropertyDescriptorSeq&, const std::string&);
 PropertyDescriptor createProperty(const std::string&, const std::string& = std::string());
 std::string escapeProperty(const std::string&);
+
+void setupThreadPool(const Ice::PropertiesPtr&, const std::string&, int, int = 0, bool = false);
 
 int getMMVersion(const std::string&);
 

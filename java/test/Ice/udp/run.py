@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -27,14 +27,15 @@ num = 5
 serverProc = []
 for i in range(0, num):
     print "starting server #%d..." % (i + 1),
-    serverProc.append(TestUtil.startServer("Server", "%d" % (i + 1) , adapter="McastTestAdapter"))
+    serverProc.append(TestUtil.startServer("test.Ice.udp.Server", "%d" % i , adapter="McastTestAdapter"))
     print "ok"
 
 print "starting client...",
-clientProc = TestUtil.startClient("Client", startReader = False)
+clientProc = TestUtil.startClient("test.Ice.udp.Client", "%d" % num, startReader=False)
 print "ok"
 clientProc.startReader()
 
 clientProc.waitTestSuccess()
 for p in serverProc:
     p.waitTestSuccess()
+

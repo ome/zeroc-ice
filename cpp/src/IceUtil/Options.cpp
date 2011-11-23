@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <IceUtil/Options.h>
+#include <IceUtil/StringUtil.h>
 #include <iostream>
 #include <set>
 
@@ -436,7 +437,7 @@ IceUtilInternal::Options::split(const string& line)
                             case '6':
                             case '7':
                             {
-                                static string octalDigits = "01234567";
+                                static const string octalDigits = "01234567";
                                 unsigned short us = 0;
                                 string::size_type j;
                                 for(j = i;
@@ -492,7 +493,7 @@ IceUtilInternal::Options::split(const string& line)
                             case 'c':
                             {
                                 c = l[++i];
-                                if(isalpha(static_cast<unsigned char>(c)) || c == '@' || (c >= '[' && c <= '_'))
+                                if(IceUtilInternal::isAlpha(c) || c == '@' || (c >= '[' && c <= '_'))
                                 {
                                     arg.push_back(static_cast<char>(toupper(static_cast<unsigned char>(c)) - '@'));
                                 }

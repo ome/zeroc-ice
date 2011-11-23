@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,13 +16,17 @@
 // Most CPUs support only one endianness, with the notable exceptions
 // of Itanium (IA64) and MIPS.
 //
+#ifdef __GLIBC__
+# include <endian.h>
+#endif
+
 #if defined(__i386)     || defined(_M_IX86) || defined(__x86_64)  || \
     defined(_M_X64)     || defined(_M_IA64) || defined(__alpha__) || \
-    defined(__MIPSEL__)
+    defined(__MIPSEL__) || (defined(__BYTE_ORDER) && (__BYTE_ORDER == __LITTLE_ENDIAN))
 #   define ICE_LITTLE_ENDIAN
 #elif defined(__sparc) || defined(__sparc__) || defined(__hppa)      || \
       defined(__ppc__) || defined(__powerpc) || defined(_ARCH_COM) || \
-      defined(__MIPSEB__)
+      defined(__MIPSEB__) || (defined(__BYTE_ORDER) && (__BYTE_ORDER == __BIG_ENDIAN))
 #   define ICE_BIG_ENDIAN
 #else
 #   error "Unknown architecture"
@@ -214,8 +218,8 @@ typedef long long Int64;
 //
 // The Ice version.
 //
-#define ICE_STRING_VERSION "3.3.1" // "A.B.C", with A=major, B=minor, C=patch
-#define ICE_INT_VERSION 30301      // AABBCC, with AA=major, BB=minor, CC=patch
+#define ICE_STRING_VERSION "3.4.0" // "A.B.C", with A=major, B=minor, C=patch
+#define ICE_INT_VERSION 30400      // AABBCC, with AA=major, BB=minor, CC=patch
 
 #if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
 //
@@ -236,5 +240,11 @@ public:
 
 }
 #endif
+
+
+//
+// The default Mutex protocol
+//
+#define ICE_DEFAULT_MUTEX_PROTOCOL PrioNone
 
 #endif

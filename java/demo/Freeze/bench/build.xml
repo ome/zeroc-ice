@@ -1,7 +1,7 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
@@ -21,14 +21,12 @@
         <!-- Create the output directory for generated code -->
         <mkdir dir="${generated.dir}"/>
         <slice2java outputdir="${generated.dir}">
-	    <meta value="${java2metadata}"/>
             <includepath>
                 <pathelement path="${slice.dir}" />
             </includepath>
             <fileset dir="." includes="Test.ice"/>
         </slice2java>
         <slice2freezej outputdir="${generated.dir}">
-	    <meta value="${java2metadata}"/>
             <includepath>
                 <pathelement path="${slice.dir}" />
             </includepath>
@@ -37,7 +35,6 @@
             <dictindex name="Demo.IndexedIntIntMap"/>
         </slice2freezej>
         <slice2freezej outputdir="${generated.dir}">
-	    <meta value="${java2metadata}"/>
             <includepath>
                 <pathelement path="${slice.dir}" />
             </includepath>
@@ -55,17 +52,12 @@
 
     <target name="compile" depends="generate">
         <mkdir dir="${class.dir}"/>
-        <javac srcdir="${generated.dir}" destdir="${class.dir}"
-	    debug="${debug}">
+	<javac srcdir=".:${generated.dir}" destdir="${class.dir}" debug="${debug}">
+            <exclude name="${generated.dir}/**"/>
             <classpath>
                 <path refid="ice.classpath"/>
-                <path refid="db.classpath"/>
+                <path refid="freeze.classpath"/>
             </classpath>
-	    <compilerarg value="${javac.lint}"/>
-        </javac>
-	<javac srcdir="." destdir="${class.dir}"
-            excludes="generated/**" debug="${debug}">
-            <classpath refid="ice.classpath"/>
 	    <compilerarg value="${javac.lint}"/>
         </javac>
     </target>
@@ -75,9 +67,8 @@
     <target name="clean">
         <delete dir="${generated.dir}"/>
         <delete dir="${class.dir}"/>
-	<delete>
-	    <fileset dir="db" includes="log.*"/>
-            <fileset dir="db" includes="IntIntMap.fast,Struct1Object,IntIntMap,Struct1Class1,Struct1Struct2"/>
+        <delete includeEmptyDirs="true">
+	    <fileset dir="db" includes="*" excludes=".gitignore"/>
         </delete>
     </target>
 

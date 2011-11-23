@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,14 +22,19 @@ internal class Acceptor : IceInternal.Acceptor
         _acceptor.listen();
     }
 
-    public IAsyncResult beginAccept(AsyncCallback callback, object state)
+    public bool startAccept(AsyncCallback callback, object state)
     {
-        return _acceptor.beginAccept(callback, state);
+        return _acceptor.startAccept(callback, state);
     }
 
-    public IceInternal.Transceiver endAccept(IAsyncResult result)
+    public void finishAccept()
     {
-        return new Transceiver(_acceptor.endAccept(result));
+        _acceptor.finishAccept();
+    }
+
+    public IceInternal.Transceiver accept()
+    {
+        return new Transceiver(_acceptor.accept());
     }
 
     public override string ToString()

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -43,14 +43,15 @@ ICE_SRCS	= Ice\LocalException.rb \
 		  Ice\Connection.rb \
 		  Ice\ConnectionF.rb \
 		  Ice\SliceChecksumDict.rb \
-		  Ice\Endpoint.rb
+		  Ice\Endpoint.rb \
+		  Ice\EndpointF.rb \
+		  Ice\EndpointTypes.rb
 
 #
 # IMPORTANT: If you add or remove Slice files, you also need to check Glacier2.rb!
 #
 GLACIER2_SRCS	= Glacier2\RouterF.rb \
 		  Glacier2\Router.rb \
-		  Glacier2\SessionF.rb \
 		  Glacier2\Session.rb \
 		  Glacier2\PermissionsVerifierF.rb \
 		  Glacier2\PermissionsVerifier.rb \
@@ -95,25 +96,27 @@ ALL_SRCS	= $(ICE_SRCS) \
 
 MODULES		= Glacier2 Ice IceBox IceGrid IcePatch2 IceStorm
 
-SLICE2RBFLAGS	= -I$(slicedir) --ice
+SLICE2RBFLAGS	= $(SLICE2RBFLAGS) --ice
 
 all:: $(ALL_SRCS)
 
 $(MODULES):
 	-mkdir $@
 
-$(ALL_SRCS): $(MODULES) {$(slicedir)}$*.ice
-	-$(SLICE2RB) $(SLICE2RBFLAGS) --output-dir $(*D) $(slicedir)\$*.ice
+$(ALL_SRCS): $(MODULES) {$(slicedir)}$*.ice "$(SLICE2RB)" "$(SLICEPARSERLIB)"
+	-"$(SLICE2RB)" $(SLICE2RBFLAGS) --output-dir $(*D) $(slicedir)\$*.ice
 
 
-install::
+install:: all
 	@echo "Installing generated code"
-	copy *.rb $(install_rubydir)
+	copy *.rb "$(install_rubydir)"
 	@for %i in ( $(MODULES) ) do \
-	    @if not exist $(install_rubydir)\%i \
-	        mkdir $(install_rubydir)\%i
+	    @if not exist "$(install_rubydir)\%i" \
+	        mkdir "$(install_rubydir)\%i"
 	@for %i in ( $(MODULES) ) do \
-	    copy %i\* $(install_rubydir)\%i
+	    copy %i\* "$(install_rubydir)\%i"
 
 clean::
 	-rmdir /S /Q $(MODULES)
+
+include .depend.mak

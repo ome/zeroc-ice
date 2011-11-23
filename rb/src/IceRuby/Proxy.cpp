@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,8 +9,9 @@
 
 #include <Proxy.h>
 #include <Communicator.h>
+#include <Connection.h>
+#include <Endpoint.h>
 #include <Util.h>
-#include <Ice/Connection.h>
 #include <Ice/Locator.h>
 #include <Ice/Proxy.h>
 #include <Ice/Router.h>
@@ -18,161 +19,7 @@
 using namespace std;
 using namespace IceRuby;
 
-static VALUE _connectionClass;
-static VALUE _endpointClass;
 static VALUE _proxyClass;
-
-// **********************************************************************
-// Connection
-// **********************************************************************
-
-extern "C"
-void
-IceRuby_Connection_free(Ice::ConnectionPtr* p)
-{
-    assert(p);
-    delete p;
-}
-
-static VALUE
-createConnection(const Ice::ConnectionPtr& p)
-{
-    return Data_Wrap_Struct(_connectionClass, 0, IceRuby_Connection_free, new Ice::ConnectionPtr(p));
-}
-
-extern "C"
-VALUE
-IceRuby_Connection_close(VALUE self, VALUE b)
-{
-    ICE_RUBY_TRY
-    {
-        Ice::ConnectionPtr* p = reinterpret_cast<Ice::ConnectionPtr*>(DATA_PTR(self));
-        assert(p);
-
-        (*p)->close(RTEST(b));
-    }
-    ICE_RUBY_CATCH
-    return Qnil;
-}
-
-extern "C"
-VALUE
-IceRuby_Connection_flushBatchRequests(VALUE self)
-{
-    ICE_RUBY_TRY
-    {
-        Ice::ConnectionPtr* p = reinterpret_cast<Ice::ConnectionPtr*>(DATA_PTR(self));
-        assert(p);
-
-        (*p)->flushBatchRequests();
-    }
-    ICE_RUBY_CATCH
-    return Qnil;
-}
-
-extern "C"
-VALUE
-IceRuby_Connection_type(VALUE self)
-{
-    ICE_RUBY_TRY
-    {
-        Ice::ConnectionPtr* p = reinterpret_cast<Ice::ConnectionPtr*>(DATA_PTR(self));
-        assert(p);
-
-        string s = (*p)->type();
-        return createString(s);
-    }
-    ICE_RUBY_CATCH
-    return Qnil;
-}
-
-extern "C"
-VALUE
-IceRuby_Connection_timeout(VALUE self)
-{
-    ICE_RUBY_TRY
-    {
-        Ice::ConnectionPtr* p = reinterpret_cast<Ice::ConnectionPtr*>(DATA_PTR(self));
-        assert(p);
-
-        Ice::Int timeout = (*p)->timeout();
-        return INT2FIX(timeout);
-    }
-    ICE_RUBY_CATCH
-    return Qnil;
-}
-
-extern "C"
-VALUE
-IceRuby_Connection_toString(VALUE self)
-{
-    ICE_RUBY_TRY
-    {
-        Ice::ConnectionPtr* p = reinterpret_cast<Ice::ConnectionPtr*>(DATA_PTR(self));
-        assert(p);
-
-        string s = (*p)->toString();
-        return createString(s);
-    }
-    ICE_RUBY_CATCH
-    return Qnil;
-}
-
-extern "C"
-VALUE
-IceRuby_Connection_equals(VALUE self, VALUE other)
-{
-    ICE_RUBY_TRY
-    {
-        if(NIL_P(other))
-        {
-            return Qfalse;
-        }
-        if(callRuby(rb_obj_is_kind_of, other, _connectionClass) != Qtrue)
-        {
-            throw RubyException(rb_eTypeError, "argument must be a connection");
-        }
-        Ice::ConnectionPtr* p1 = reinterpret_cast<Ice::ConnectionPtr*>(DATA_PTR(self));
-        Ice::ConnectionPtr* p2 = reinterpret_cast<Ice::ConnectionPtr*>(DATA_PTR(other));
-        return *p1 == *p2 ? Qtrue : Qfalse;
-    }
-    ICE_RUBY_CATCH
-    return Qnil;
-}
-
-// **********************************************************************
-// Endpoint
-// **********************************************************************
-
-extern "C"
-void
-IceRuby_Endpoint_free(Ice::EndpointPtr* p)
-{
-    assert(p);
-    delete p;
-}
-
-static VALUE
-createEndpoint(const Ice::EndpointPtr& p)
-{
-    return Data_Wrap_Struct(_endpointClass, 0, IceRuby_Endpoint_free, new Ice::EndpointPtr(p));
-}
-
-extern "C"
-VALUE
-IceRuby_Endpoint_toString(VALUE self)
-{
-    ICE_RUBY_TRY
-    {
-        Ice::EndpointPtr* p = reinterpret_cast<Ice::EndpointPtr*>(DATA_PTR(self));
-        assert(p);
-
-        string s = (*p)->toString();
-        return createString(s);
-    }
-    ICE_RUBY_CATCH
-    return Qnil;
-}
 
 // **********************************************************************
 // ObjectPrx
@@ -224,6 +71,21 @@ checkArgs(const char* name, int numArgs, int argc, VALUE* argv, Ice::Context& ct
 extern "C"
 VALUE
 IceRuby_ObjectPrx_ice_getHash(VALUE self)
+{
+    rb_warning("ice_getHash is deprecated, use hash instead.");
+
+    ICE_RUBY_TRY
+    {
+        Ice::ObjectPrx p = getProxy(self);
+        return INT2FIX(p->ice_getHash());
+    }
+    ICE_RUBY_CATCH
+    return Qnil;
+}
+
+extern "C"
+VALUE
+IceRuby_ObjectPrx_hash(VALUE self)
 {
     ICE_RUBY_TRY
     {
@@ -339,8 +201,7 @@ IceRuby_ObjectPrx_ice_ids(int argc, VALUE* argv, VALUE self)
         long i = 0;
         for(vector<string>::iterator q = ids.begin(); q != ids.end(); ++q, ++i)
         {
-            RARRAY(result)->ptr[i] = createString(*q);
-            RARRAY(result)->len++; // Increment len for each new element to prevent premature GC.
+            RARRAY_PTR(result)[i] = createString(*q);
         }
 
         return result;
@@ -501,11 +362,10 @@ IceRuby_ObjectPrx_ice_getEndpoints(VALUE self)
 
         Ice::EndpointSeq seq = p->ice_getEndpoints();
         volatile VALUE result = createArray(seq.size());
-        Ice::EndpointSeq::size_type i = 0;
+        long i = 0;
         for(Ice::EndpointSeq::iterator q = seq.begin(); q != seq.end(); ++q, ++i)
         {
-            RARRAY(result)->ptr[i] = createEndpoint(seq[i]);
-            RARRAY(result)->len++; // Increment len for each new element to prevent premature GC.
+            RARRAY_PTR(result)[i] = createEndpoint(*q);
         }
         return result;
     }
@@ -534,13 +394,13 @@ IceRuby_ObjectPrx_ice_endpoints(VALUE self, VALUE seq)
             {
                 throw RubyException(rb_eTypeError, "unable to convert value to an array of endpoints");
             }
-            for(long i = 0; i < RARRAY(arr)->len; ++i)
+            for(long i = 0; i < RARRAY_LEN(arr); ++i)
             {
-                if(callRuby(rb_obj_is_instance_of, RARRAY(arr)->ptr[i], _endpointClass) == Qfalse)
+                if(!checkEndpoint(RARRAY_PTR(arr)[i]))
                 {
                     throw RubyException(rb_eTypeError, "array element is not an Ice::Endpoint");
                 }
-                Ice::EndpointPtr* e = reinterpret_cast<Ice::EndpointPtr*>(DATA_PTR(RARRAY(arr)->ptr[i]));
+                Ice::EndpointPtr* e = reinterpret_cast<Ice::EndpointPtr*>(DATA_PTR(RARRAY_PTR(arr)[i]));
                 assert(e);
                 endpoints.push_back(*e);
             }
@@ -560,6 +420,20 @@ IceRuby_ObjectPrx_ice_getLocatorCacheTimeout(VALUE self)
         Ice::ObjectPrx p = getProxy(self);
         Ice::Int t = p->ice_getLocatorCacheTimeout();
         return INT2FIX(t);
+    }
+    ICE_RUBY_CATCH
+    return Qnil;
+}
+
+extern "C"
+VALUE
+IceRuby_ObjectPrx_ice_getConnectionId(VALUE self)
+{
+    ICE_RUBY_TRY
+    {
+        Ice::ObjectPrx p = getProxy(self);
+        string connectionId = p->ice_getConnectionId();
+        return createString(connectionId);
     }
     ICE_RUBY_CATCH
     return Qnil;
@@ -1271,36 +1145,6 @@ void
 IceRuby::initProxy(VALUE iceModule)
 {
     //
-    // Connection.
-    //
-    _connectionClass = rb_define_class_under(iceModule, "ConnectionI", rb_cObject);
-
-    //
-    // Instance methods.
-    //
-    rb_define_method(_connectionClass, "close", CAST_METHOD(IceRuby_Connection_close), 1);
-    rb_define_method(_connectionClass, "flushBatchRequests", CAST_METHOD(IceRuby_Connection_flushBatchRequests), 0);
-    rb_define_method(_connectionClass, "type", CAST_METHOD(IceRuby_Connection_type), 0);
-    rb_define_method(_connectionClass, "timeout", CAST_METHOD(IceRuby_Connection_timeout), 0);
-    rb_define_method(_connectionClass, "toString", CAST_METHOD(IceRuby_Connection_toString), 0);
-    rb_define_method(_connectionClass, "to_s", CAST_METHOD(IceRuby_Connection_toString), 0);
-    rb_define_method(_connectionClass, "inspect", CAST_METHOD(IceRuby_Connection_toString), 0);
-    rb_define_method(_connectionClass, "==", CAST_METHOD(IceRuby_Connection_equals), 1);
-    rb_define_method(_connectionClass, "eql?", CAST_METHOD(IceRuby_Connection_equals), 1);
-
-    //
-    // Endpoint.
-    //
-    _endpointClass = rb_define_class_under(iceModule, "EndpointI", rb_cObject);
-
-    //
-    // Instance methods.
-    //
-    rb_define_method(_endpointClass, "toString", CAST_METHOD(IceRuby_Endpoint_toString), 0);
-    rb_define_method(_endpointClass, "to_s", CAST_METHOD(IceRuby_Endpoint_toString), 0);
-    rb_define_method(_endpointClass, "inspect", CAST_METHOD(IceRuby_Endpoint_toString), 0);
-
-    //
     // ObjectPrx.
     //
     _proxyClass = rb_define_class_under(iceModule, "ObjectPrx", rb_cObject);
@@ -1327,6 +1171,7 @@ IceRuby::initProxy(VALUE iceModule)
     rb_define_method(_proxyClass, "ice_endpoints", CAST_METHOD(IceRuby_ObjectPrx_ice_endpoints), 1);
     rb_define_method(_proxyClass, "ice_getLocatorCacheTimeout",
                      CAST_METHOD(IceRuby_ObjectPrx_ice_getLocatorCacheTimeout), 0);
+    rb_define_method(_proxyClass, "ice_getConnectionId", CAST_METHOD(IceRuby_ObjectPrx_ice_getConnectionId), 0);
     rb_define_method(_proxyClass, "ice_locatorCacheTimeout", CAST_METHOD(IceRuby_ObjectPrx_ice_locatorCacheTimeout), 1);
     rb_define_method(_proxyClass, "ice_isConnectionCached", CAST_METHOD(IceRuby_ObjectPrx_ice_isConnectionCached), 0);
     rb_define_method(_proxyClass, "ice_connectionCached", CAST_METHOD(IceRuby_ObjectPrx_ice_connectionCached), 1);
@@ -1357,7 +1202,7 @@ IceRuby::initProxy(VALUE iceModule)
     rb_define_method(_proxyClass, "ice_getConnection", CAST_METHOD(IceRuby_ObjectPrx_ice_getConnection), 0);
     rb_define_method(_proxyClass, "ice_getCachedConnection", CAST_METHOD(IceRuby_ObjectPrx_ice_getCachedConnection), 0);
 
-    rb_define_method(_proxyClass, "hash", CAST_METHOD(IceRuby_ObjectPrx_ice_getHash), 0);
+    rb_define_method(_proxyClass, "hash", CAST_METHOD(IceRuby_ObjectPrx_hash), 0);
     rb_define_method(_proxyClass, "to_s", CAST_METHOD(IceRuby_ObjectPrx_ice_toString), 0);
     rb_define_method(_proxyClass, "inspect", CAST_METHOD(IceRuby_ObjectPrx_ice_toString), 0);
     rb_define_method(_proxyClass, "<=>", CAST_METHOD(IceRuby_ObjectPrx_cmp), 1);

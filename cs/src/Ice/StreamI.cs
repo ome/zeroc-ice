@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,7 @@ namespace Ice
         {
             _communicator = communicator;
 
-            _is = new IceInternal.BasicStream(Util.getInstance(communicator));
+            _is = new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator));
             _is.closure(this);
             _is.resize(data.Length, true);
             IceInternal.Buffer buf = _is.getBuffer();
@@ -124,6 +124,11 @@ namespace Ice
             return _is.readSize();
         }
 
+        public int readAndCheckSeqSize(int minSize)
+        {
+            return _is.readAndCheckSeqSize(minSize);
+        }
+
         public ObjectPrx readProxy()
         {
             return _is.readProxy();
@@ -204,6 +209,12 @@ namespace Ice
             _is.readPendingObjects();
         }
 
+        public void rewind()
+        {
+            _is.clear();
+            _is.getBuffer().b.position(0);
+        }
+
         public void destroy()
         {
             if(_is != null)
@@ -219,7 +230,7 @@ namespace Ice
     public class OutputStreamI : OutputStream
     {
         public OutputStreamI(Communicator communicator) :
-            this(communicator, new IceInternal.BasicStream(Util.getInstance(communicator)))
+            this(communicator, new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator)))
         {
         }
 
@@ -324,7 +335,7 @@ namespace Ice
         {
             if(sz < 0)
             {
-                throw new NegativeSizeException();
+                throw new MarshalException();
             }
 
             _os.writeSize(sz);
@@ -387,6 +398,22 @@ namespace Ice
             buf.b.get(result);
 
             return result;
+        }
+
+        public void reset(bool clearBuffer)
+        {
+            _os.clear();
+
+            IceInternal.Buffer buf = _os.getBuffer();
+            if(clearBuffer)
+            {
+                buf.clear();
+            }
+            else
+            {
+                buf.reset();
+            }
+            buf.b.position(0);
         }
 
         public void destroy()

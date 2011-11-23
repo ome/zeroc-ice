@@ -1,11 +1,14 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+package test.IceSSL.configuration;
+import test.IceSSL.configuration.Test.*;
 
 public class CertificateVerifierI implements IceSSL.CertificateVerifier
 {
@@ -16,21 +19,19 @@ public class CertificateVerifierI implements IceSSL.CertificateVerifier
     }
 
     public boolean
-    verify(IceSSL.ConnectionInfo info)
+    verify(IceSSL.NativeConnectionInfo info)
     {
-        if(info.certs != null)
+        if(info.nativeCerts != null)
         {
             try
             {
                 java.util.Collection<java.util.List<?> > subjectAltNames =
-                    ((java.security.cert.X509Certificate)info.certs[0]).getSubjectAlternativeNames();
+                    ((java.security.cert.X509Certificate)info.nativeCerts[0]).getSubjectAlternativeNames();
                 test(subjectAltNames != null);
                 java.util.List<String> ipAddresses = new java.util.ArrayList<String>();
                 java.util.List<String> dnsNames = new java.util.ArrayList<String>();
-                java.util.Iterator<java.util.List<?> > i = subjectAltNames.iterator();
-                while(i.hasNext())
+                for(java.util.List<?> l : subjectAltNames)
                 {
-                    java.util.List<?> l = i.next();
                     test(!l.isEmpty());
                     Integer n = (Integer)l.get(0);
                     if(n.intValue() == 7)
@@ -52,7 +53,7 @@ public class CertificateVerifierI implements IceSSL.CertificateVerifier
             }
         }
 
-        _hadCert = info.certs != null;
+        _hadCert = info.nativeCerts != null;
         _invoked = true;
         return _returnValue;
     }

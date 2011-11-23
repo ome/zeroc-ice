@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -104,7 +104,7 @@ class Forward;          // Forward-declared class defined in another compilation
     void throwDerivedAsDerived() throws DerivedException;
     void throwUnknownDerivedAsBase() throws BaseException;
 
-    void useForward(out Forward f);     // Use of forward-declared class to verify that code is generated correctly.
+    void useForward(out Forward f); /* Use of forward-declared class to verify that code is generated correctly. */
 
     void shutdown();
 };

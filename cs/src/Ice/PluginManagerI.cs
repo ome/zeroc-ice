@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,8 +14,20 @@ namespace Ice
     using System.Collections.Generic;
     using System.Diagnostics;
 
+    /// <summary>
+    /// Applications implement this interface to provide a plug-in factory
+    /// to the Ice run time.
+    /// </summary>
     public interface PluginFactory
     {
+        /// <summary>
+        /// Called by the Ice run time to create a new plug-in.
+        /// </summary>
+        ///
+        /// <param name="communicator">The communicator that is in the process of being initialized.</param>
+        /// <param name="name">The name of the plug-in.</param>
+        /// <param name="args">The arguments that are specified in the plug-ins configuration.</param>
+        /// <returns>The plug-in that was created by this method.</returns>
         Plugin create(Communicator communicator, string name, string[] args);
     }
 
@@ -66,6 +78,19 @@ namespace Ice
             }
 
             _initialized = true;
+        }
+
+        public string[] getPlugins()
+        {
+            lock(this)
+            {
+                ArrayList names = new ArrayList();
+                foreach(DictionaryEntry entry in _plugins)
+                {
+                    names.Add(entry.Key);
+                }
+                return (string[])names.ToArray(typeof(string));
+            }
         }
 
         public Plugin getPlugin(string name)
@@ -266,16 +291,6 @@ namespace Ice
                     loadPlugin(name, val, ref cmdArgs);
                 }
             }
-
-            //      
-            // An application can set Ice.InitPlugins=0 if it wants to postpone
-            // initialization until after it has interacted directly with the
-            // plug-ins.
-            //      
-            if(properties.getPropertyAsIntWithDefault("Ice.InitPlugins", 1) > 0)
-            {           
-                initializePlugins();
-            }
         }
         
         private void loadPlugin(string name, string pluginSpec, ref string[] cmdArgs)
@@ -341,6 +356,16 @@ namespace Ice
             //
             string err = "unable to load plug-in '" + entryPoint + "': ";
             int sepPos = entryPoint.IndexOf(':');
+            if(sepPos != -1)
+            {
+                if(entryPoint.Length > 3 &&
+                   sepPos == 1 &&
+                   System.Char.IsLetter(entryPoint[0]) &&
+                   (entryPoint[2] == '\\' || entryPoint[2] == '/'))
+                {
+                    sepPos = entryPoint.IndexOf(':', 3);
+                }
+            }
             if (sepPos == -1)
             {
                 PluginInitializationException e = new PluginInitializationException();
@@ -352,13 +377,26 @@ namespace Ice
             string assemblyName = entryPoint.Substring(0, sepPos);
             try
             {
-                if (System.IO.File.Exists(assemblyName))
-                {
-                    pluginAssembly = System.Reflection.Assembly.LoadFrom(assemblyName);
-                }
-                else
+                //
+                // First try to load the assemby using Assembly.Load which will succeed
+                // if full name is configured or partial name has been qualified in config.
+                // If that fails, try Assembly.LoadFrom() which will succeed if a file name
+                // is configured or partial name is configured and DEVPATH is used.
+                //
+                try
                 {
                     pluginAssembly = System.Reflection.Assembly.Load(assemblyName);
+                }
+                catch(System.Exception ex)
+                {
+                    try
+                    {
+                        pluginAssembly = System.Reflection.Assembly.LoadFrom(assemblyName);
+                    }
+                    catch(System.Exception)
+                    {
+                         throw ex;
+                    }
                 }
             }
             catch(System.Exception ex)

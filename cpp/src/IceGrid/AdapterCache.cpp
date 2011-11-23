@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -65,6 +65,113 @@ struct TransformToReplica : public unary_function<const pair<string, ServerAdapt
         return value.second;
     }
 };
+
+class ReplicaGroupSyncCallback : public SynchronizationCallback, public IceUtil::Mutex
+{
+public:
+
+    ReplicaGroupSyncCallback(const SynchronizationCallbackPtr& callback, int count, int nReplicas) : 
+        _callback(callback), 
+        _responseCalled(false), 
+        _synchronizeCount(count),
+        _synchronizedCount(0), 
+        _nReplicas(nReplicas > count ? count : nReplicas)
+    {
+    }
+
+    bool 
+    response()
+    {
+        Lock sync(*this);
+        _responseCalled = true;
+        if(_synchronizedCount >= _nReplicas)
+        {
+            _callback = 0;
+            return false;
+        }
+        else if(_synchronizeCount == 0)
+        {
+            if(_synchronizedCount == 0 && _exception.get())
+            {
+                _exception->ice_throw();
+            }
+            _callback = 0;
+            return false;
+        }
+        return true;
+    }
+
+    void 
+    synchronized()
+    {
+        SynchronizationCallbackPtr callback;
+        {
+            Lock sync(*this);
+            ++_synchronizedCount;
+            --_synchronizeCount;
+
+            if(!_responseCalled)
+            {
+                return;
+            }
+
+            if(_synchronizedCount < _nReplicas && _synchronizeCount > 0)
+            {
+                return;
+            }
+
+            callback = _callback;
+            _callback = 0;
+        }
+
+        if(callback)
+        {
+            callback->synchronized();
+        }
+    }
+
+    void
+    synchronized(const Ice::Exception& ex)
+    {
+        SynchronizationCallbackPtr callback;
+        {
+            Lock sync(*this);
+            if(!_exception.get())
+            {
+                _exception.reset(ex.ice_clone());
+            }
+            
+            --_synchronizeCount;
+            if(!_responseCalled)
+            {
+                return;
+            }
+
+            if(_synchronizeCount > 0)
+            {
+                return;
+            }
+
+            callback = _callback;
+            _callback = 0;
+        }
+
+        if(callback)
+        {
+            callback->synchronized(ex);
+        }
+    }
+
+private:
+
+    SynchronizationCallbackPtr _callback;
+    bool _responseCalled;
+    int _synchronizeCount;
+    int _synchronizedCount;
+    int _nReplicas;
+    std::auto_ptr<Ice::Exception> _exception;
+};
+typedef IceUtil::Handle<ReplicaGroupSyncCallback> ReplicaGroupSyncCallbackPtr;
 
 }
 
@@ -229,6 +336,19 @@ ServerAdapterEntry::ServerAdapterEntry(AdapterCache& cache,
 {
 }
 
+bool
+ServerAdapterEntry::addSyncCallback(const SynchronizationCallbackPtr& callback, const set<string>&)
+{
+    try
+    {
+        return _server->addSyncCallback(callback);
+    }
+    catch(const ServerNotExistException&)
+    {
+        throw AdapterNotExistException(_id);
+    }
+}
+
 void
 ServerAdapterEntry::getLocatorAdapterInfo(LocatorAdapterInfoSeq& adapters, int& nReplicas, bool& replicaGroup, 
                                           bool& roundRobin, const set<string>&)
@@ -276,10 +396,10 @@ ServerAdapterEntry::getAdapterInfo() const
     info.replicaGroupId = _replicaGroupId;
     try
     {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-        IceUtil::DummyBCC dummy;
-#endif
         info.proxy = _server->getAdapter(_id, true)->getDirectProxy();
+    }
+    catch(const SynchronizationException&)
+    {
     }
     catch(const Ice::Exception&)
     {
@@ -320,6 +440,58 @@ ReplicaGroupEntry::ReplicaGroupEntry(AdapterCache& cache,
     _lastReplica(0)
 {
     update(policy);
+}
+
+bool
+ReplicaGroupEntry::addSyncCallback(const SynchronizationCallbackPtr& callback, const set<string>& excludes)
+{
+    vector<ServerAdapterEntryPtr> replicas;
+    int nReplicas;
+    int roundRobin = false;
+    {
+        Lock sync(*this);
+        nReplicas = _loadBalancingNReplicas > 0 ? _loadBalancingNReplicas : static_cast<int>(_replicas.size());
+        roundRobin = RoundRobinLoadBalancingPolicyPtr::dynamicCast(_loadBalancing);
+        if(!roundRobin)
+        {
+            replicas = _replicas;
+        }
+        else
+        {
+            for(vector<ServerAdapterEntryPtr>::const_iterator p = _replicas.begin(); p != _replicas.end(); ++p)
+            {
+                if(excludes.find((*p)->getId()) == excludes.end())
+                {
+                    replicas.push_back(*p);
+                }
+            }
+        }
+
+        if(replicas.empty())
+        {
+            return false;
+        }
+    }
+
+    ReplicaGroupSyncCallbackPtr cb = new ReplicaGroupSyncCallback(callback, 
+                                                                  static_cast<int>(replicas.size()), 
+                                                                  nReplicas);
+    set<string> emptyExcludes;
+    for(vector<ServerAdapterEntryPtr>::const_iterator p = replicas.begin(); p != replicas.end(); ++p)
+    {
+        try
+        {
+            if(!(*p)->addSyncCallback(cb, emptyExcludes))
+            {
+                cb->synchronized();
+            }
+        }
+        catch(const Ice::Exception& ex)
+        {
+            cb->synchronized(ex);
+        }
+    }
+    return cb->response();
 }
 
 void
@@ -449,6 +621,8 @@ ReplicaGroupEntry::getLocatorAdapterInfo(LocatorAdapterInfoSeq& adapters, int& n
     // might not exist anymore at this time or the node might not be
     // reachable.
     //
+    bool synchronizing = false;
+    set<string> emptyExcludes;
     for(vector<ServerAdapterEntryPtr>::const_iterator p = replicas.begin(); p != replicas.end(); ++p)
     {
         if(!roundRobin || excludes.find((*p)->getId()) == excludes.end())
@@ -458,7 +632,7 @@ ReplicaGroupEntry::getLocatorAdapterInfo(LocatorAdapterInfoSeq& adapters, int& n
                 int dummy;
                 bool dummy2;
                 bool dummy3;
-                (*p)->getLocatorAdapterInfo(adapters, dummy, dummy2, dummy3, set<string>());
+                (*p)->getLocatorAdapterInfo(adapters, dummy, dummy2, dummy3, emptyExcludes);
             }
             catch(const AdapterNotExistException&)
             {
@@ -469,7 +643,16 @@ ReplicaGroupEntry::getLocatorAdapterInfo(LocatorAdapterInfoSeq& adapters, int& n
             catch(const DeploymentException&)
             {
             }
+            catch(const SynchronizationException&)
+            {
+                synchronizing = true;
+            }
         }
+    }
+
+    if(adapters.empty() && synchronizing)
+    {
+        throw SynchronizationException(__FILE__, __LINE__);
     }
 }
 

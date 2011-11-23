@@ -1,22 +1,26 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-import Test.*;
+package test.Ice.location;
+
+import test.Ice.location.Test._ServerManagerDisp;
+
 
 public class ServerManagerI extends _ServerManagerDisp
 {
-    ServerManagerI(Ice.ObjectAdapter adapter, ServerLocatorRegistry registry, Ice.InitializationData initData)
+    ServerManagerI(ServerLocatorRegistry registry, Ice.InitializationData initData, test.Util.Application app)
     {
-        _adapter = adapter;
         _registry = registry;
         _communicators = new java.util.ArrayList<Ice.Communicator>();
+        
+        _app = app;
         _initData = initData;
         
         _initData.properties.setProperty("TestAdapter.AdapterId", "TestAdapter");
@@ -27,10 +31,8 @@ public class ServerManagerI extends _ServerManagerDisp
     public void
     startServer(Ice.Current current)
     {
-        java.util.Iterator<Ice.Communicator> i = _communicators.iterator();
-        while(i.hasNext())
+        for(Ice.Communicator c : _communicators)
         {
-            Ice.Communicator c = i.next();
             c.waitForShutdown();
             c.destroy();
         }
@@ -44,7 +46,7 @@ public class ServerManagerI extends _ServerManagerDisp
         // its endpoints with the locator and create references containing
         // the adapter id instead of the endpoints.
         //
-        Ice.Communicator serverCommunicator = Ice.Util.initialize(_initData);
+        Ice.Communicator serverCommunicator = _app.initialize(_initData);
         _communicators.add(serverCommunicator);
 
         //
@@ -57,7 +59,7 @@ public class ServerManagerI extends _ServerManagerDisp
         Ice.ObjectAdapter adapter = serverCommunicator.createObjectAdapter("TestAdapter");
         Ice.ObjectAdapter adapter2 = serverCommunicator.createObjectAdapter("TestAdapter2");
 
-        Ice.ObjectPrx locator = serverCommunicator.stringToProxy("locator:default -p 12010 -t 30000");
+        Ice.ObjectPrx locator = serverCommunicator.stringToProxy("locator:default -p 12010");
         adapter.setLocator(Ice.LocatorPrxHelper.uncheckedCast(locator));
         adapter2.setLocator(Ice.LocatorPrxHelper.uncheckedCast(locator));
 
@@ -73,17 +75,16 @@ public class ServerManagerI extends _ServerManagerDisp
     public void
     shutdown(Ice.Current current)
     {
-        java.util.Iterator<Ice.Communicator> i = _communicators.iterator();
-        while(i.hasNext())
+        for(Ice.Communicator c : _communicators)
         {
-            i.next().destroy();
+            c.destroy();
         }
-        _adapter.getCommunicator().shutdown();
+        current.adapter.getCommunicator().shutdown();
     }
 
-    private Ice.ObjectAdapter _adapter;
     private ServerLocatorRegistry _registry;
     private java.util.List<Ice.Communicator> _communicators;
     private Ice.InitializationData _initData;
+    private test.Util.Application _app;
     private int _nextPort = 12011;
 }

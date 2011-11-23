@@ -1,7 +1,7 @@
 <?
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,10 @@ if(!extension_loaded("ice"))
     echo "\nerror: Ice extension is not loaded.\n\n";
     exit(1);
 }
-Ice_loadProfileWithArgs($argv);
+
+$NS = function_exists("Ice\\initialize");
+require ($NS ? 'Ice_ns.php' : 'Ice.php');
+require 'Test.php';
 
 function test($b)
 {
@@ -51,12 +54,15 @@ function deactivate($com, $adapters)
     }
 }
 
-function allTests()
+function allTests($communicator)
 {
-    global $ICE;
+    global $NS;
 
-    $ref = "communicator:default -p 12010 -t 10000";
-    $com = $ICE->stringToProxy($ref)->ice_uncheckedCast("::Test::RemoteCommunicator");
+    $random = $NS ? constant("Ice\\EndpointSelectionType::Random") : constant("Ice_EndpointSelectionType::Random");
+    $ordered = $NS ? constant("Ice\\EndpointSelectionType::Ordered") : constant("Ice_EndpointSelectionType::Ordered");
+
+    $ref = "communicator:default -p 12010";
+    $com = $communicator->stringToProxy($ref)->ice_uncheckedCast("::Test::RemoteCommunicator");
 
     echo "testing binding with single endpoint... ";
     flush();
@@ -81,8 +87,13 @@ function allTests()
             $test3->ice_ping();
             test(false);
         }
-        catch(Ice_LocalException $ex) // Expecting ConnectionRefusedException
+        catch(Exception $ex)
         {
+            $cre = $NS ? "Ice\\ConnectionRefusedException" : "Ice_ConnectionRefusedException";
+            if(!($ex instanceof $cre))
+            {
+                throw $ex;
+            }
         }
     }
     echo "ok" . "\n";
@@ -191,7 +202,7 @@ function allTests()
         $adapters[] = $com->createObjectAdapter("Adapter23", "default");
 
         $test = createTestIntfPrx($adapters);
-        test($test->ice_getEndpointSelection() == Ice_EndpointSelectionType::Random);
+        test($test->ice_getEndpointSelection() == $random);
 
         $names = array("Adapter21", "Adapter22", "Adapter23");
         while(count($names) > 0)
@@ -204,8 +215,8 @@ function allTests()
             $test->ice_getConnection()->close(false);
         }
 
-        $test = $test->ice_endpointSelection(Ice_EndpointSelectionType::Random)->ice_uncheckedCast("::Test::TestIntf");
-        test($test->ice_getEndpointSelection() == Ice_EndpointSelectionType::Random);
+        $test = $test->ice_endpointSelection($random)->ice_uncheckedCast("::Test::TestIntf");
+        test($test->ice_getEndpointSelection() == $random);
 
         $names = array("Adapter21", "Adapter22", "Adapter23");
         while(count($names) > 0)
@@ -231,8 +242,8 @@ function allTests()
         $adapters[] = $com->createObjectAdapter("Adapter33", "default");
 
         $test = createTestIntfPrx($adapters);
-        $test = $test->ice_endpointSelection(Ice_EndpointSelectionType::Ordered)->ice_uncheckedCast("::Test::TestIntf");
-        test($test->ice_getEndpointSelection() == Ice_EndpointSelectionType::Ordered);
+        $test = $test->ice_endpointSelection($ordered)->ice_uncheckedCast("::Test::TestIntf");
+        test($test->ice_getEndpointSelection() == $ordered);
         $nRetry = 5;
 
         //
@@ -253,8 +264,13 @@ function allTests()
         {
             $test->getAdapterName();
         }
-        catch(Ice_LocalException $ex) // Expecting ConnectionRefusedException
+        catch(Exception $ex)
         {
+            $cre = $NS ? "Ice\\ConnectionRefusedException" : "Ice_ConnectionRefusedException";
+            if(!($ex instanceof $cre))
+            {
+                throw $ex;
+            }
         }
 
         $endpoints = $test->ice_getEndpoints();
@@ -302,8 +318,13 @@ function allTests()
             test($test3->ice_getConnection() == $test1->ice_getConnection());
             test(false);
         }
-        catch(Ice_LocalException $ex) // Expecting ConnectionRefusedException
+        catch(Exception $ex)
         {
+            $cre = $NS ? "Ice\\ConnectionRefusedException" : "Ice_ConnectionRefusedException";
+            if(!($ex instanceof $cre))
+            {
+                throw $ex;
+            }
         }
     }
     echo "ok" . "\n";
@@ -358,8 +379,8 @@ function allTests()
         $adapters[] = $com->createObjectAdapter("Adapter63", "default");
 
         $test = createTestIntfPrx($adapters);
-        $test = $test->ice_endpointSelection(Ice_EndpointSelectionType::Ordered)->ice_uncheckedCast("::Test::TestIntf");
-        test($test->ice_getEndpointSelection() == Ice_EndpointSelectionType::Ordered);
+        $test = $test->ice_endpointSelection($ordered)->ice_uncheckedCast("::Test::TestIntf");
+        test($test->ice_getEndpointSelection() == $ordered);
         $test = $test->ice_connectionCached(false)->ice_uncheckedCast("::Test::TestIntf");
         test(!$test->ice_isConnectionCached());
         $nRetry = 5;
@@ -382,8 +403,13 @@ function allTests()
         {
             $test->getAdapterName();
         }
-        catch(Ice_LocalException $ex) // Expecting ConnectionRefusedException
+        catch(Exception $ex)
         {
+            $cre = $NS ? "Ice\\ConnectionRefusedException" : "Ice_ConnectionRefusedException";
+            if(!($ex instanceof $cre))
+            {
+                throw $ex;
+            }
         }
 
         $endpoints = $test->ice_getEndpoints();
@@ -424,13 +450,18 @@ function allTests()
         {
             $testUDP->getAdapterName();
         }
-        catch(Ice_TwowayOnlyException $ex)
+        catch(Exception $ex)
         {
+            $cre = $NS ? "Ice\\TwowayOnlyException" : "Ice_TwowayOnlyException";
+            if(!($ex instanceof $cre))
+            {
+                throw $ex;
+            }
         }
     }
     echo "ok" . "\n";
 
-    if(strlen($ICE->getProperty("Ice.Plugin.IceSSL")) > 0)
+    if(strlen($communicator->getProperties()->getProperty("Ice.Plugin.IceSSL")) > 0)
     {
         echo "testing unsecure vs. secure endpoints... ";
         flush();
@@ -477,8 +508,13 @@ function allTests()
                 $testSecure->ice_ping();
                 test(false);
             }
-            catch(Ice_LocalException $ex) // Expecting ConnectionRefusedException
+            catch(Exception $ex)
             {
+                $cre = $NS ? "Ice\\ConnectionRefusedException" : "Ice_ConnectionRefusedException";
+                if(!($ex instanceof $cre))
+                {
+                    throw $ex;
+                }
             }
 
             deactivate($com, $adapters);
@@ -489,6 +525,8 @@ function allTests()
     $com->shutdown();
 }
 
-allTests();
+$communicator = Ice_initialize(&$argv);
+allTests($communicator);
+$communicator->destroy();
 exit();
 ?>

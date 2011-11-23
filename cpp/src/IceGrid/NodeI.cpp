@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,9 +8,9 @@
 // **********************************************************************
 
 #include <IceUtil/Timer.h>
+#include <IceUtil/FileUtil.h>
 #include <Ice/Ice.h>
 #include <IcePatch2/Util.h>
-#include <IcePatch2/OS.h>
 #include <IcePatch2/ClientUtil.h>
 #include <IceGrid/NodeI.h>
 #include <IceGrid/Activator.h>
@@ -363,63 +363,23 @@ NodeI::NodeI(const Ice::ObjectAdapterPtr& adapter,
     //
     // Parse the properties override property.
     //
-    string overrides = props->getProperty("IceGrid.Node.PropertiesOverride");
+    vector<string> overrides = props->getPropertyAsList("IceGrid.Node.PropertiesOverride");
     if(!overrides.empty())
     {
-        string::size_type end = 0;
-        while(end != string::npos)
+        for(vector<string>::iterator p = overrides.begin(); p != overrides.end(); ++p)
         {
-            const string delim = " \t\r\n";
+            if(p->find("--") != 0)
+            {
+                *p = "--" + *p;
+            }
+        }
 
-            string::size_type beg = overrides.find_first_not_of(delim, end);
-            if(beg == string::npos)
-            {
-                break;
-            }
-         
-            end = overrides.find_first_of(delim, beg);
-            string arg;
-            if(end == string::npos)
-            {
-                arg = overrides.substr(beg);
-            }
-            else
-            {
-                arg = overrides.substr(beg, end - beg); 
-            }
-
-            if(arg.find("--") == 0)
-            {
-                arg = arg.substr(2);
-            }
-
-            //
-            // Extract the key/value
-            //
-            string::size_type argEnd = arg.find_first_of(delim + "=");
-            if(argEnd == string::npos)
-            {
-                continue;
-            }
-        
-            string key = arg.substr(0, argEnd);
-        
-            argEnd = arg.find('=', argEnd);
-            if(argEnd == string::npos)
-            {
-                return;
-            }
-            ++argEnd;
-        
-            string value;
-            string::size_type argBeg = arg.find_first_not_of(delim, argEnd);
-            if(argBeg != string::npos)
-            {
-                argEnd = arg.length();
-                value = arg.substr(argBeg, argEnd - argBeg);
-            }
-    
-            _propertiesOverride.push_back(createProperty(key, value));
+        Ice::PropertiesPtr p = Ice::createProperties();
+        p->parseCommandLineOptions("", overrides);
+        Ice::PropertyDict propDict = p->getPropertiesForPrefix("");
+        for(Ice::PropertyDict::const_iterator q = propDict.begin(); q != propDict.end(); ++q)
+        {
+            _propertiesOverride.push_back(createProperty(q->first, q->second));
         }
     }
 }
@@ -548,9 +508,6 @@ NodeI::destroyServer_async(const AMD_Node_destroyServerPtr& amdCB,
         //
         try
         {
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-            IceUtil::DummyBCC dummy;
-#endif
             command = server->destroy(amdCB, uuid, revision, replicaName);
         }
         catch(const Ice::ObjectNotExistException&)
@@ -814,6 +771,12 @@ LoadInfo
 NodeI::getLoad(const Ice::Current&) const
 {
     return _platform.getLoadInfo();
+}
+
+int
+NodeI::getProcessorSocketCount(const Ice::Current&) const
+{
+    return _platform.getProcessorSocketCount();
 }
 
 void
@@ -1153,8 +1116,7 @@ NodeI::removeServer(const ServerIPtr& server, const std::string& application)
             _serversByApplication.erase(p);
             
             string appDir = _dataDir + "/distrib/" + application;
-            OS::structstat buf;
-            if(OS::osstat(appDir, &buf) != -1 && S_ISDIR(buf.st_mode))
+            if(IceUtilInternal::directoryExists(appDir))
             {
                 try
                 {
@@ -1300,7 +1262,6 @@ NodeI::canRemoveServerDirectory(const string& name)
     Ice::StringSeq c = readDirectory(_serversDir + "/" + name);
     set<string> contents(c.begin(), c.end());
     contents.erase("dbs");
-    contents.erase("dbs");
     contents.erase("config");
     contents.erase("distrib");
     contents.erase("revision");
@@ -1326,6 +1287,7 @@ NodeI::canRemoveServerDirectory(const string& name)
         {
             Ice::StringSeq files = readDirectory(_serversDir + "/" + name + "/dbs/" + *p);
             files.erase(remove(files.begin(), files.end(), "DB_CONFIG"), files.end());
+            files.erase(remove(files.begin(), files.end(), "__Freeze"), files.end());
             if(!files.empty())
             {
                 return false;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,15 +9,18 @@
 
 package IceSSL;
 
-//
-// An application can customize the certificate verification process
-// by implementing the CertificateVerifier interface.
-//
+/**
+ * An application can customize the certificate verification process
+ * by implementing the CertificateVerifier interface.
+ **/
 public interface CertificateVerifier
 {
-    //
-    // Return false if the connection should be rejected, or true to
-    // allow it.
-    // 
-    boolean verify(ConnectionInfo info);
+    /**
+     * Determines whether a connection should be accepted or rejected.
+     *
+     * @param info The details of the connection.
+     * @return <code>true</code> if the connection should be accepted;
+     * <code>false</code>, otherwise.
+     **/
+    boolean verify(NativeConnectionInfo info);
 }

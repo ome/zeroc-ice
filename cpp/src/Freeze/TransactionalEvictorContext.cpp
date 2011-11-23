@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -273,15 +273,6 @@ Freeze::TransactionalEvictorContext::ServantHolder::ServantHolder() :
 
 Freeze::TransactionalEvictorContext::ServantHolder::~ServantHolder()
 {
-#ifdef __HP_aCC
-//
-// The HP aCC compiler has a tendency to run dtors several times when an exception is raised:
-// a very nasty bug!
-//
-    try
-    {
-#endif
-
     if(_ownBody && _body.ownServant)
     {
         const TransactionalEvictorContextPtr& ctx = *(_body.ctx);
@@ -302,16 +293,6 @@ Freeze::TransactionalEvictorContext::ServantHolder::~ServantHolder()
         }
         ctx->_stack.pop_front();
     }
-#ifdef __HP_aCC
-    _body.rec.servant = 0;
-    }
-    catch(...)
-    {
-	_body.rec.servant = 0;
-	throw;
-    }
-#endif
-
 }
 
 

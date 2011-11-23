@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -44,7 +44,7 @@ RUBY_HOME		= C:\ruby
 !if "$(THIRDPARTY_HOME)" != ""
 STLPORT_HOME            = $(THIRDPARTY_HOME)
 !else
-STLPORT_HOME            = C:\Ice-$(VERSION)-ThirdParty-VC60
+STLPORT_HOME            = C:\Program Files\ZeroC\Ice-$(VERSION)-ThirdParty
 !endif
 !endif
 
@@ -76,10 +76,16 @@ install_libdir		= $(prefix)\ruby
 
 !include $(top_srcdir)\..\cpp\config\Make.rules.msvc
 
+!if "$(CPP_COMPILER)" == "VC60"
+libsuff       	= \vc6
+!else
+libsuff       	= $(x64suffix)
+!endif
+
 !if "$(ice_src_dist)" != ""
 !if "$(STLPORT_HOME)" != ""
 CPPFLAGS        = -I"$(STLPORT_HOME)\include\stlport" $(CPPFLAGS)
-LDFLAGS         = /LIBPATH:"$(STLPORT_HOME)\lib$(x64suffix)" $(LDFLAGS)
+LDFLAGS         = /LIBPATH:"$(STLPORT_HOME)\lib$(libsuff)" $(LDFLAGS)
 !endif
 !else
 !if "$(CPP_COMPILER)" == "VC60"
@@ -89,6 +95,7 @@ CPPFLAGS        = -I"$(ice_dir)\include\stlport" $(CPPFLAGS)
 
 !if "$(OPTIMIZE)" != "yes"
 LIBSUFFIX       = $(LIBSUFFIX)d
+RCFLAGS		= -D_DEBUG
 !endif
 
 ICE_LIBS		= ice$(LIBSUFFIX).lib iceutil$(LIBSUFFIX).lib slice$(LIBSUFFIX).lib
@@ -98,41 +105,69 @@ ICE_CPPFLAGS		= -I"$(ice_cpp_dir)\include"
 !if "$(ice_cpp_dir)" == "$(ice_dir)\cpp"
 ICE_LDFLAGS		= /LIBPATH:"$(ice_cpp_dir)\lib"
 !else
-ICE_LDFLAGS		= /LIBPATH:"$(ice_cpp_dir)\lib$(x64suffix)"
+ICE_LDFLAGS		= /LIBPATH:"$(ice_cpp_dir)\lib$(libsuff)"
 !endif
 !else
 ICE_CPPFLAGS		= -I"$(ice_dir)\include"
-ICE_LDFLAGS		= /LIBPATH:"$(ice_dir)\lib$(x64suffix)"
+ICE_LDFLAGS		= /LIBPATH:"$(ice_dir)\lib$(libsuff)"
 !endif
 
 slicedir                = $(ice_dir)\slice
 
+#
+# Ruby 1.8
+#
 RUBY_CPPFLAGS		= -I"$(RUBY_HOME)\lib\ruby\1.8\i386-mswin32"
 RUBY_LDFLAGS		= /LIBPATH:"$(RUBY_HOME)\lib"
 RUBY_LIBS		= msvcrt-ruby18.lib
 
-ICECPPFLAGS		= -I$(slicedir)
+#
+# Ruby 1.9
+#
+# Without HAVE_VSNPRINTF the Ruby header files declare this function, which causes
+# a compilation error in Util.cpp.
+#
+#RUBY_CPPFLAGS		= -I"$(RUBY_HOME)\include\ruby-1.9.1" -I"$(RUBY_HOME)\include\ruby-1.9.1\i386-mswin32" -DWIN32_LEAN_AND_MEAN -DHAVE_VSNPRINTF
+#RUBY_LDFLAGS		= /LIBPATH:"$(RUBY_HOME)\lib"
+#RUBY_LIBS		= msvcrt-ruby191.lib
+
+ICECPPFLAGS		= -I"$(slicedir)"
 SLICE2RBFLAGS		= $(ICECPPFLAGS)
 
 !if "$(ice_src_dist)" != ""
 !if "$(ice_cpp_dir)" == "$(ice_dir)\cpp"
-SLICE2RB		= "$(ice_cpp_dir)\bin\slice2rb.exe"
-!else
-SLICE2RB		= "$(ice_cpp_dir)\bin$(x64suffix)\slice2rb.exe"
+SLICE2RB                = $(ice_cpp_dir)\bin\slice2rb.exe
+SLICEPARSERLIB          = $(ice_cpp_dir)\lib\slice.lib
+!if !exist ("$(SLICEPARSERLIB)")
+SLICEPARSERLIB          = $(ice_cpp_dir)\lib\sliced.lib
 !endif
 !else
-SLICE2RB		= "$(ice_dir)\bin$(x64suffix)\slice2rb.exe"
+SLICE2RB                = $(ice_cpp_dir)\bin$(x64suffix)\slice2rb.exe
+SLICEPARSERLIB          = $(ice_cpp_dir)\lib$(libsuff)\slice.lib
+!if !exist ("$(SLICEPARSERLIB)")
+SLICEPARSERLIB          = $(ice_cpp_dir)\lib$(libsuff)\sliced.lib
+!endif
+!endif
+!else
+SLICE2RB                = $(ice_dir)\bin$(x64suffix)\slice2rb.exe
+SLICEPARSERLIB          = $(ice_dir)\lib$(libsuff)\slice.lib
+!if !exist ("$(SLICEPARSERLIB)")
+SLICEPARSERLIB          = $(ice_dir)\lib$(libsuff)\sliced.lib
+!endif
 !endif
 
 EVERYTHING		= all clean install
 
 .SUFFIXES:
-.SUFFIXES:		.cpp .obj .rb
+.SUFFIXES:		.cpp .obj .rb .res .rc
 
 all:: $(SRCS)
 
 .cpp.obj::
 	$(CXX) /c $(CPPFLAGS) $(CXXFLAGS) $<
+
+.rc.res:
+	rc $(RCFLAGS) $<
 
 clean::
 	del /q $(TARGETS) core *.obj *.bak

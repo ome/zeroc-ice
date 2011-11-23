@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -55,18 +55,20 @@ $(RECREATE): $(RECREATE_OBJS)
 	@if exist $@.manifest echo ^ ^ ^ Embedding manifest using $(MT) && \
 	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
-Contacts.h Contacts.cpp: ContactData.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
+Contacts.h Contacts.cpp: ContactData.ice "$(SLICE2FREEZE)" "$(SLICEPARSERLIB)"
 	del /q Contacts.h Contacts.cpp
-	$(SLICE2FREEZE) -I$(slicedir) --dict Demo::Contacts,string,Demo::ContactData,sort \
+	"$(SLICE2FREEZE)" -I"$(slicedir)" --dict Demo::Contacts,string,Demo::ContactData,sort \
               --dict-index Demo::Contacts,phoneNumber,sort Contacts ContactData.ice
 
-NewContacts.h NewContacts.cpp: NewContactData.ice $(SLICE2FREEZE) $(SLICEPARSERLIB)
+NewContacts.h NewContacts.cpp: NewContactData.ice "$(SLICE2FREEZE)" "$(SLICEPARSERLIB)"
 	del /q NewContacts.h NewContacts.cpp
-	$(SLICE2FREEZE) -I$(slicedir) --dict Demo::NewContacts,string,Demo::ContactData,sort \
+	"$(SLICE2FREEZE)" -I"$(slicedir)" --dict Demo::NewContacts,string,Demo::ContactData,sort \
               --dict-index Demo::NewContacts,phoneNumber,sort NewContacts NewContactData.ice
 
 cleandb::
+	-if exist db\__Freeze rmdir /q /s db\__Freeze
         -for %f in (db\*) do if not %f == db\.gitignore del /q %f
+	-if exist dbnew\__Freeze rmdir /q /s dbnew\__Freeze
         -for %f in (dbnew\*) do if not %f == dbnew\.gitignore del /q %f
 
 clean:: cleandb
@@ -75,4 +77,4 @@ clean:: cleandb
         -del /q Contacts.h Contacts.cpp
         -del /q NewContacts.h NewContacts.cpp
 
-!include .depend
+!include .depend.mak

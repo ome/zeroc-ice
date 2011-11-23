@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,6 +27,7 @@ public final class Instance
     traceLevels()
     {
         // No mutex lock, immutable.
+        assert(_traceLevels != null);
         return _traceLevels;
     }
 
@@ -34,6 +35,7 @@ public final class Instance
     defaultsAndOverrides()
     {
         // No mutex lock, immutable.
+        assert(_defaultsAndOverrides != null);
         return _defaultsAndOverrides;
     }
 
@@ -45,6 +47,7 @@ public final class Instance
             throw new Ice.CommunicatorDestroyedException();
         }
 
+        assert(_routerManager != null);
         return _routerManager;
     }
 
@@ -56,6 +59,7 @@ public final class Instance
             throw new Ice.CommunicatorDestroyedException();
         }
 
+        assert(_locatorManager != null);
         return _locatorManager;
     }
 
@@ -67,9 +71,10 @@ public final class Instance
             throw new Ice.CommunicatorDestroyedException();
         }
 
+        assert(_referenceFactory != null);
         return _referenceFactory;
     }
-    
+
     public synchronized ProxyFactory
     proxyFactory()
     {
@@ -78,6 +83,7 @@ public final class Instance
             throw new Ice.CommunicatorDestroyedException();
         }
 
+        assert(_proxyFactory != null);
         return _proxyFactory;
     }
 
@@ -89,6 +95,7 @@ public final class Instance
             throw new Ice.CommunicatorDestroyedException();
         }
 
+        assert(_outgoingConnectionFactory != null);
         return _outgoingConnectionFactory;
     }
 
@@ -100,6 +107,7 @@ public final class Instance
             throw new Ice.CommunicatorDestroyedException();
         }
 
+        assert(_connectionMonitor != null);
         return _connectionMonitor;
     }
 
@@ -111,6 +119,7 @@ public final class Instance
             throw new Ice.CommunicatorDestroyedException();
         }
 
+        assert(_servantFactoryManager != null);
         return _servantFactoryManager;
     }
 
@@ -122,6 +131,7 @@ public final class Instance
             throw new Ice.CommunicatorDestroyedException();
         }
 
+        assert(_objectAdapterFactory != null);
         return _objectAdapterFactory;
     }
 
@@ -143,12 +153,8 @@ public final class Instance
         {
             throw new Ice.CommunicatorDestroyedException();
         }
-        
-        if(_clientThreadPool == null) // Lazy initialization.
-        {
-            _clientThreadPool = new ThreadPool(this, "Ice.ThreadPool.Client", 0);
-        }
 
+        assert(_clientThreadPool != null);
         return _clientThreadPool;
     }
 
@@ -159,7 +165,7 @@ public final class Instance
         {
             throw new Ice.CommunicatorDestroyedException();
         }
-        
+
         if(_serverThreadPool == null) // Lazy initialization.
         {
             int timeout = _initData.properties.getPropertyAsInt("Ice.ServerIdleTime");
@@ -169,35 +175,15 @@ public final class Instance
         return _serverThreadPool;
     }
 
-    public synchronized SelectorThread
-    selectorThread()
-    {
-        if(_state == StateDestroyed)
-        {
-            throw new Ice.CommunicatorDestroyedException();
-        }        
-
-        if(_selectorThread == null) // Lazy initialization.
-        {
-            _selectorThread = new SelectorThread(this);
-        }
-
-        return _selectorThread;
-    }
-
     public synchronized EndpointHostResolver
     endpointHostResolver()
     {
         if(_state == StateDestroyed)
         {
             throw new Ice.CommunicatorDestroyedException();
-        }        
-
-        if(_endpointHostResolver == null) // Lazy initialization.
-        {
-            _endpointHostResolver = new EndpointHostResolver(this);
         }
 
+        assert(_endpointHostResolver != null);
         return _endpointHostResolver;
     }
 
@@ -207,8 +193,9 @@ public final class Instance
         if(_state == StateDestroyed)
         {
             throw new Ice.CommunicatorDestroyedException();
-        }        
+        }
 
+        assert(_retryQueue != null);
         return _retryQueue;
     }
 
@@ -218,13 +205,9 @@ public final class Instance
         if(_state == StateDestroyed)
         {
             throw new Ice.CommunicatorDestroyedException();
-        }        
-
-        if(_timer == null) // Lazy initialization.
-        {
-            _timer = new Timer(this);
         }
 
+        assert(_timer != null);
         return _timer;
     }
 
@@ -236,6 +219,7 @@ public final class Instance
             throw new Ice.CommunicatorDestroyedException();
         }
 
+        assert(_endpointFactoryManager != null);
         return _endpointFactoryManager;
     }
 
@@ -247,6 +231,7 @@ public final class Instance
             throw new Ice.CommunicatorDestroyedException();
         }
 
+        assert(_pluginManager != null);
         return _pluginManager;
     }
 
@@ -255,6 +240,13 @@ public final class Instance
     {
         // No mutex lock, immutable.
         return _messageSizeMax;
+    }
+
+    public int
+    cacheMessageBuffers()
+    {
+        // No mutex lock, immutable.
+        return _cacheMessageBuffers;
     }
 
     public int
@@ -271,60 +263,10 @@ public final class Instance
         return _serverACM;
     }
 
-    public synchronized void
-    setDefaultContext(java.util.Map<String, String> ctx)
-    {
-        if(_state == StateDestroyed)
-        {
-            throw new Ice.CommunicatorDestroyedException();
-        }
-
-        if(ctx == null || ctx.isEmpty())
-        {
-            _defaultContext = _emptyContext;
-        }
-        else
-        {
-            _defaultContext = new java.util.HashMap<String, String>(ctx);
-        }
-    }
-
-    public synchronized java.util.Map<String, String>
-    getDefaultContext()
-    {
-        if(_state == StateDestroyed)
-        {
-            throw new Ice.CommunicatorDestroyedException();
-        }
-
-        return new java.util.HashMap<String, String>(_defaultContext);
-    }
-
     public Ice.ImplicitContextI
     getImplicitContext()
     {
         return _implicitContext;
-    }
-
-    public void
-    flushBatchRequests()
-    {
-        OutgoingConnectionFactory connectionFactory;
-        ObjectAdapterFactory adapterFactory;
-
-        synchronized(this)
-        {
-            if(_state == StateDestroyed)
-            {
-                throw new Ice.CommunicatorDestroyedException();
-            }
-            
-            connectionFactory = _outgoingConnectionFactory;
-            adapterFactory = _objectAdapterFactory;
-        }
-
-        connectionFactory.flushBatchRequests();
-        adapterFactory.flushBatchRequests();
     }
 
     public Ice.Identity
@@ -339,8 +281,7 @@ public final class Instance
         return Ice.Util.identityToString(ident);
     }
 
-    
-    public Ice.ObjectPrx 
+    public Ice.ObjectPrx
     getAdmin()
     {
         Ice.ObjectAdapter adapter = null;
@@ -355,7 +296,7 @@ public final class Instance
             }
 
             final String adminOA = "Ice.Admin";
-            
+
             if(_adminAdapter != null)
             {
                 return _adminAdapter.createProxy(_adminIdentity);
@@ -370,14 +311,14 @@ public final class Instance
                 String instanceName = _initData.properties.getProperty("Ice.Admin.InstanceName");
 
                 defaultLocator = _referenceFactory.getDefaultLocator();
-                
+
                 if((defaultLocator != null && serverId.length() > 0) || instanceName.length() > 0)
                 {
                     if(_adminIdentity == null)
                     {
                         if(instanceName.length() == 0)
                         {
-                            instanceName = Ice.Util.generateUUID();
+                            instanceName = java.util.UUID.randomUUID().toString();
                         }
                         _adminIdentity = new Ice.Identity("admin", instanceName);
                         //
@@ -388,28 +329,25 @@ public final class Instance
                     //
                     // Create OA
                     //
-                    _adminAdapter = _objectAdapterFactory.createObjectAdapter(adminOA, "", null);
+                    _adminAdapter = _objectAdapterFactory.createObjectAdapter(adminOA, null);
 
                     //
                     // Add all facets to OA
                     //
                     java.util.Map<String, Ice.Object> filteredFacets = new java.util.HashMap<String, Ice.Object>();
-                    java.util.Iterator<java.util.Map.Entry<String, Ice.Object> > p = _adminFacets.entrySet().iterator();
-                    while(p.hasNext())
+                    for(java.util.Map.Entry<String, Ice.Object> p : _adminFacets.entrySet())
                     {
-                        java.util.Map.Entry<String, Ice.Object> entry = p.next();
-
-                        if(_adminFacetFilter.isEmpty() || _adminFacetFilter.contains(entry.getKey()))
+                        if(_adminFacetFilter.isEmpty() || _adminFacetFilter.contains(p.getKey()))
                         {
-                            _adminAdapter.addFacet(entry.getValue(), _adminIdentity, entry.getKey());
+                            _adminAdapter.addFacet(p.getValue(), _adminIdentity, p.getKey());
                         }
                         else
                         {
-                            filteredFacets.put(entry.getKey(), entry.getValue());
+                            filteredFacets.put(p.getKey(), p.getValue());
                         }
                     }
                     _adminFacets = filteredFacets;
-                    
+
                     adapter = _adminAdapter;
                 }
             }
@@ -442,13 +380,13 @@ public final class Instance
 
             Ice.ObjectPrx admin = adapter.createProxy(_adminIdentity);
             if(defaultLocator != null && serverId.length() > 0)
-            {    
+            {
                 Ice.ProcessPrx process = Ice.ProcessPrxHelper.uncheckedCast(admin.ice_facet("Process"));
-                
+
                 try
                 {
                     //
-                    // Note that as soon as the process proxy is registered, the communicator might be 
+                    // Note that as soon as the process proxy is registered, the communicator might be
                     // shutdown by a remote client and admin facets might start receiving calls.
                     //
                     defaultLocator.getRegistry().setServerProcessProxy(serverId, process);
@@ -493,15 +431,15 @@ public final class Instance
             return admin;
         }
     }
-    
-    public synchronized void 
+
+    public synchronized void
     addAdminFacet(Ice.Object servant, String facet)
     {
         if(_state == StateDestroyed)
         {
             throw new Ice.CommunicatorDestroyedException();
         }
-        
+
         if(_adminAdapter == null || (!_adminFacetFilter.isEmpty() && !_adminFacetFilter.contains(facet)))
         {
             if(_adminFacets.get(facet) != null)
@@ -516,14 +454,14 @@ public final class Instance
         }
     }
 
-    public synchronized Ice.Object 
+    public synchronized Ice.Object
     removeAdminFacet(String facet)
     {
         if(_state == StateDestroyed)
         {
             throw new Ice.CommunicatorDestroyedException();
         }
-        
+
         Ice.Object result = null;
         if(_adminAdapter == null || (!_adminFacetFilter.isEmpty() && !_adminFacetFilter.contains(facet)))
         {
@@ -548,7 +486,7 @@ public final class Instance
         {
             throw new Ice.CommunicatorDestroyedException();
         }
-        
+
         _referenceFactory = _referenceFactory.setDefaultLocator(locator);
     }
 
@@ -559,17 +497,32 @@ public final class Instance
         {
             throw new Ice.CommunicatorDestroyedException();
         }
-        
+
         _referenceFactory = _referenceFactory.setDefaultRouter(router);
     }
 
     public void
     setLogger(Ice.Logger logger)
     {
-        // 
+        //
         // No locking, as it can only be called during plug-in loading
         //
         _initData.logger = logger;
+    }
+
+    public void
+    setThreadHook(Ice.ThreadNotification threadHook)
+    {
+        // 
+        // No locking, as it can only be called during plug-in loading
+        //
+        _initData.threadHook = threadHook;
+    }
+
+    public Class<?>
+    findClass(String className)
+    {
+        return Util.findClass(className, _initData.classLoader);
     }
 
     //
@@ -594,9 +547,9 @@ public final class Instance
                 {
                     String stdOut = _initData.properties.getProperty("Ice.StdOut");
                     String stdErr = _initData.properties.getProperty("Ice.StdErr");
-                    
+
                     java.io.PrintStream outStream = null;
-                    
+
                     if(stdOut.length() > 0)
                     {
                         //
@@ -604,7 +557,7 @@ public final class Instance
                         // to the new file
                         //
                         System.out.close();
-                        
+
                         try
                         {
                             outStream = new java.io.PrintStream(new java.io.FileOutputStream(stdOut, true));
@@ -625,10 +578,10 @@ public final class Instance
                         // close for consistency with stdout
                         //
                         System.err.close();
-                        
+
                         if(stdErr.equals(stdOut))
                         {
-                            System.setErr(outStream); 
+                            System.setErr(outStream);
                         }
                         else
                         {
@@ -652,9 +605,19 @@ public final class Instance
 
             if(_initData.logger == null)
             {
+                String logfile = _initData.properties.getProperty("Ice.LogFile");
                 if(_initData.properties.getPropertyAsInt("Ice.UseSyslog") > 0)
                 {
-                    _initData.logger = new Ice.SysLoggerI(_initData.properties.getProperty("Ice.ProgramName"));
+                    if(logfile.length() != 0)
+                    {
+                        throw new Ice.InitializationException("Both syslog and file logger cannot be enabled.");
+                    }
+                    _initData.logger = new Ice.SysLoggerI(_initData.properties.getProperty("Ice.ProgramName"),
+                                _initData.properties.getPropertyWithDefault("Ice.SyslogFacility", "LOG_USER"));
+                }
+                else if(logfile.length() != 0)
+                {
+                    _initData.logger = new Ice.LoggerI(_initData.properties.getProperty("Ice.ProgramName"), logfile);
                 }
                 else
                 {
@@ -684,6 +647,8 @@ public final class Instance
                     _messageSizeMax = num * 1024; // Property is in kilobytes, _messageSizeMax in bytes
                 }
             }
+
+            _cacheMessageBuffers = _initData.properties.getPropertyAsIntWithDefault("Ice.CacheMessageBuffers", 2);
 
             //
             // Client ACM enabled by default. Server ACM disabled by default.
@@ -726,9 +691,7 @@ public final class Instance
             _endpointFactoryManager.add(udpEndpointFactory);
 
             _pluginManager = new Ice.PluginManagerI(communicator);
-           
-            _defaultContext = _emptyContext;
-          
+
             _outgoingConnectionFactory = new OutgoingConnectionFactory(this);
 
             _servantFactoryManager = new ObjectFactoryManager();
@@ -770,7 +733,6 @@ public final class Instance
         IceUtilInternal.Assert.FinalizerAssert(_objectAdapterFactory == null);
         IceUtilInternal.Assert.FinalizerAssert(_clientThreadPool == null);
         IceUtilInternal.Assert.FinalizerAssert(_serverThreadPool == null);
-        IceUtilInternal.Assert.FinalizerAssert(_selectorThread == null);
         IceUtilInternal.Assert.FinalizerAssert(_endpointHostResolver == null);
         IceUtilInternal.Assert.FinalizerAssert(_timer == null);
         IceUtilInternal.Assert.FinalizerAssert(_routerManager == null);
@@ -788,8 +750,40 @@ public final class Instance
         //
         // Load plug-ins.
         //
+        assert(_serverThreadPool == null);
         Ice.PluginManagerI pluginManagerImpl = (Ice.PluginManagerI)_pluginManager;
         pluginManagerImpl.loadPlugins(args);
+
+        //
+        // Create threads.
+        //
+        try
+        {
+            _timer = new Timer(this);
+            if(initializationData().properties.getProperty("Ice.ThreadPriority").length() > 0)
+            {
+                _timer.setPriority(Util.getThreadPriorityProperty(initializationData().properties, "Ice"));
+            }
+        }
+        catch(RuntimeException ex)
+        {
+            String s = "cannot create thread for timer:\n" + Ex.toString(ex);
+            _initData.logger.error(s);
+            throw ex;
+        }
+
+        try
+        {
+            _endpointHostResolver = new EndpointHostResolver(this);
+        }
+        catch(RuntimeException ex)
+        {
+            String s = "cannot create thread for endpoint host resolver:\n" + Ex.toString(ex);
+            _initData.logger.error(s);
+            throw ex;
+        }
+
+        _clientThreadPool = new ThreadPool(this, "Ice.ThreadPool.Client", 0);
 
         //
         // Get default router and locator proxies. Don't move this
@@ -809,48 +803,32 @@ public final class Instance
         }
 
         //
-        // Start connection monitor if necessary. Set the check interval to
-        // 1/10 of the ACM timeout with a minmal value of 1 second and a
-        // maximum value of 5 minutes.
+        // Create the connection monitor and ensure the interval for
+        // monitoring connections is appropriate for client & server
+        // ACM.
         //
-        int interval = 0;
-        if(_clientACM > 0 && _serverACM > 0)
+        int interval = _initData.properties.getPropertyAsInt("Ice.MonitorConnections");
+        _connectionMonitor = new ConnectionMonitor(this, interval);
+        _connectionMonitor.checkIntervalForACM(_clientACM);
+        _connectionMonitor.checkIntervalForACM(_serverACM);
+
+        //
+        // Server thread pool initialization is lazy in serverThreadPool().
+        //
+
+        //
+        // An application can set Ice.InitPlugins=0 if it wants to postpone
+        // initialization until after it has interacted directly with the
+        // plug-ins.
+        //
+        if(_initData.properties.getPropertyAsIntWithDefault("Ice.InitPlugins", 1) > 0)
         {
-            if(_clientACM < _serverACM)
-            {
-                interval = _clientACM;
-            }
-            else
-            {
-                interval = _serverACM;
-            }
-        }
-        else if(_clientACM > 0)
-        {
-            interval = _clientACM;
-        }
-        else if(_serverACM > 0)
-        {
-            interval = _serverACM;
-        }
-        if(interval > 0)
-        {
-            interval = java.lang.Math.min(300, java.lang.Math.max(5, (int)interval / 10));
-        }
-        interval = _initData.properties.getPropertyAsIntWithDefault("Ice.MonitorConnections", interval);
-        if(interval > 0)
-        {
-            _connectionMonitor = new ConnectionMonitor(this, interval);
+            pluginManagerImpl.initializePlugins();
         }
 
         //
-        // Thread pool initialization is now lazy initialization in
-        // clientThreadPool() and serverThreadPool().
-        //
-        
-        //
         // This must be done last as this call creates the Ice.Admin object adapter
-        // and eventually registers a process proxy with the Ice locator (allowing 
+        // and eventually registers a process proxy with the Ice locator (allowing
         // remote clients to invoke on Ice.Admin facets as soon as it's registered).
         //
         if(_initData.properties.getPropertyAsIntWithDefault("Ice.Admin.DelayCreation", 0) <= 0)
@@ -875,7 +853,7 @@ public final class Instance
             {
                 return;
             }
-            
+
             //
             // We cannot set state to StateDestroyed otherwise instance
             // methods called during the destroy process (such as
@@ -899,7 +877,7 @@ public final class Instance
         {
             _objectAdapterFactory.destroy();
         }
-        
+
         if(_outgoingConnectionFactory != null)
         {
             _outgoingConnectionFactory.waitUntilFinished();
@@ -909,10 +887,9 @@ public final class Instance
         {
             _retryQueue.destroy();
         }
-        
+
         ThreadPool serverThreadPool = null;
         ThreadPool clientThreadPool = null;
-        SelectorThread selectorThread = null;
         EndpointHostResolver endpointHostResolver = null;
 
         synchronized(this)
@@ -931,7 +908,7 @@ public final class Instance
             {
                 _serverThreadPool.destroy();
                 serverThreadPool = _serverThreadPool;
-                _serverThreadPool = null;       
+                _serverThreadPool = null;
             }
 
             if(_clientThreadPool != null)
@@ -939,13 +916,6 @@ public final class Instance
                 _clientThreadPool.destroy();
                 clientThreadPool = _clientThreadPool;
                 _clientThreadPool = null;
-            }
-
-            if(_selectorThread != null)
-            {
-                _selectorThread.destroy();
-                selectorThread = _selectorThread;
-                _selectorThread = null;
             }
 
             if(_endpointHostResolver != null)
@@ -972,7 +942,7 @@ public final class Instance
                 _referenceFactory.destroy();
                 _referenceFactory = null;
             }
-            
+
             // _proxyFactory.destroy(); // No destroy function defined.
             _proxyFactory = null;
 
@@ -999,7 +969,7 @@ public final class Instance
                 _pluginManager.destroy();
                 _pluginManager = null;
             }
-            
+
             _adminAdapter = null;
             _adminFacets.clear();
 
@@ -1017,10 +987,6 @@ public final class Instance
         {
             serverThreadPool.joinWithAllThreads();
         }
-        if(selectorThread != null)
-        {
-            selectorThread.joinWithThread();
-        }
         if(endpointHostResolver != null)
         {
             endpointHostResolver.joinWithThread();
@@ -1031,13 +997,13 @@ public final class Instance
             java.util.List<String> unusedProperties = ((Ice.PropertiesI)_initData.properties).getUnusedProperties();
             if(unusedProperties.size() != 0)
             {
-                String message = "The following properties were set but never read:";
-                java.util.Iterator<String> p = unusedProperties.iterator();
-                while(p.hasNext())
+                StringBuffer message = new StringBuffer("The following properties were set but never read:");
+                for(String p : unusedProperties)
                 {
-                    message += "\n    " + p.next();
+		    message.append("\n    ");
+		    message.append(p);
                 }
-                _initData.logger.warning(message);
+                _initData.logger.warning(message.toString());
             }
         }
     }
@@ -1047,23 +1013,25 @@ public final class Instance
     {
         final String prefix = "Ice.Package.";
         java.util.Map<String, String> map = _initData.properties.getPropertiesForPrefix(prefix);
-        java.util.Iterator<java.util.Map.Entry<String, String> > p = map.entrySet().iterator();
-        while(p.hasNext())
+        for(java.util.Map.Entry<String, String> p : map.entrySet())
         {
-            java.util.Map.Entry<String, String> e = p.next();
-            String key = e.getKey();
-            String pkg = e.getValue();
+            String key = p.getKey();
+            String pkg = p.getValue();
             if(key.length() == prefix.length())
             {
                 _initData.logger.warning("ignoring invalid property: " + key + "=" + pkg);
             }
             String module = key.substring(prefix.length());
             String className = pkg + "." + module + "._Marker";
+            Class<?> cls = null;
             try
             {
-                Class.forName(className);
+                cls = findClass(className);
             }
             catch(java.lang.Exception ex)
+            {
+            }
+            if(cls == null)
             {
                 _initData.logger.warning("unable to validate package: " + key + "=" + pkg);
             }
@@ -1079,6 +1047,7 @@ public final class Instance
     private final TraceLevels _traceLevels; // Immutable, not reset by destroy().
     private final DefaultsAndOverrides _defaultsAndOverrides; // Immutable, not reset by destroy().
     private final int _messageSizeMax; // Immutable, not reset by destroy().
+    private final int _cacheMessageBuffers; // Immutable, not reset by destroy().
     private final int _clientACM; // Immutable, not reset by destroy().
     private final int _serverACM; // Immutable, not reset by destroy().
     private final Ice.ImplicitContextI _implicitContext;
@@ -1093,20 +1062,16 @@ public final class Instance
     private int _protocolSupport;
     private ThreadPool _clientThreadPool;
     private ThreadPool _serverThreadPool;
-    private SelectorThread _selectorThread;
     private EndpointHostResolver _endpointHostResolver;
     private RetryQueue _retryQueue;
     private Timer _timer;
     private EndpointFactoryManager _endpointFactoryManager;
     private Ice.PluginManager _pluginManager;
-    private java.util.Map<String, String> _defaultContext;
 
     private Ice.ObjectAdapter _adminAdapter;
     private java.util.Map<String, Ice.Object> _adminFacets = new java.util.HashMap<String, Ice.Object>();
     private java.util.Set<String> _adminFacetFilter = new java.util.HashSet<String>();
     private Ice.Identity _adminIdentity;
-
-    private static java.util.Map<String, String> _emptyContext = new java.util.HashMap<String, String>();
 
     private static boolean _oneOffDone = false;
 }

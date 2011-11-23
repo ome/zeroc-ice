@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,6 +19,7 @@
 #include <Ice/LoggerF.h>
 #include <Ice/StatsF.h>
 #include <Ice/Transceiver.h>
+#include <Ice/Protocol.h>
 #include <IceUtil/Mutex.h>
 
 #ifndef _WIN32
@@ -32,17 +33,36 @@ class UdpEndpoint;
 
 class SUdpTransceiver;
 
-class UdpTransceiver : public Transceiver
+class UdpTransceiver : public Transceiver, public NativeInfo
 {
+    enum State
+    {
+        StateNeedConnect,
+        StateConnectPending,
+        StateConnected,
+        StateNotConnected
+    };
+
 public:
 
-    virtual SOCKET fd();
+    virtual NativeInfoPtr getNativeInfo();
+#ifdef ICE_USE_IOCP
+    virtual AsyncInfo* getAsyncInfo(SocketOperation);
+#endif
+
+    virtual SocketOperation initialize();
     virtual void close();
     virtual bool write(Buffer&);
     virtual bool read(Buffer&);
+#ifdef ICE_USE_IOCP
+    virtual bool startWrite(Buffer&);
+    virtual void finishWrite(Buffer&);
+    virtual void startRead(Buffer&);
+    virtual void finishRead(Buffer&);
+#endif
     virtual std::string type() const;
     virtual std::string toString() const;
-    virtual SocketStatus initialize();
+    virtual Ice::ConnectionInfoPtr getInfo() const;
     virtual void checkSendSize(const Buffer&, size_t);
 
     int effectivePort() const;
@@ -62,18 +82,22 @@ private:
     const Ice::LoggerPtr _logger;
     const Ice::StatsPtr _stats;
     const bool _incoming;
-
-    SOCKET _fd;
-    struct sockaddr_storage _addr;
+    const struct sockaddr_storage _addr;
     struct sockaddr_storage _mcastAddr;
-    bool _connect;
+    struct sockaddr_storage _peerAddr;
+    
+    State _state;
     int _rcvSize;
     int _sndSize;
-    const bool _warn;
     static const int _udpOverhead;
     static const int _maxPacketSize;
-    bool _shutdownReadWrite;
-    IceUtil::Mutex _shutdownReadWriteMutex;
+
+#ifdef ICE_USE_IOCP
+    AsyncInfo _read;
+    AsyncInfo _write;
+    struct sockaddr_storage _readAddr;
+    socklen_t _readAddrLen;
+#endif
 };
 
 }

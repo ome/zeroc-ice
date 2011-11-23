@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,20 +11,28 @@ using System.Globalization;
 
 namespace Ice
 {
-
-    //
-    // These classes are custom hash code providers and comparers, so proxies can be
-    // inserted into hashed or ordered collections using just the identity, or
-    // the identity and the facet name as the hash key.
-    //
-
+    /// <summary>
+    /// This class allows a proxy to be used as the key for a hashed collection.
+    /// The GetHashCode, Equals, and Compare methods are based on the object identity
+    /// of the proxy.
+    /// </summary>
     public class ProxyIdentityKey : System.Collections.IEqualityComparer, System.Collections.IComparer
     {
+        /// <summary>
+        /// Computes a hash value based on the object identity of the proxy.
+        /// </summary>
+        /// <param name="obj">The proxy whose hash value to compute.</param>
+        /// <returns>The hash value for the proxy based on the identity.</returns>
         public int GetHashCode(object obj)
         {
             return ((Ice.ObjectPrx)obj).ice_getIdentity().GetHashCode();
         }
 
+        /// Compares two proxies for equality.
+        /// <param name="obj1">A proxy to compare.</param>
+        /// <param name="obj2">A proxy to compare.</param>
+        /// <returns>True if the passed proxies have the same object
+        /// identity; false, otherwise.</returns>
         public new bool Equals(object obj1, object obj2)
         {
             try
@@ -37,22 +45,40 @@ namespace Ice
             }
         }
 
+        /// Compares two proxies using the object identity for comparison.
+        /// <param name="obj1">A proxy to compare.</param>
+        /// <param name="obj2">A proxy to compare.</param>
+        /// <returns>&lt; 0 if obj1 is less than obj2; &gt; 0 if obj1 is greater than obj2;
+        /// 0, otherwise.</returns>
         public int Compare(object obj1, object obj2)
         {
-            if(obj1 != null && !(obj1 is Ice.ObjectPrx))
+            Ice.ObjectPrx proxy1 = obj1 as Ice.ObjectPrx;
+            if(obj1 != null && proxy1 == null)
             {
-                throw new System.ArgumentException("Argument must be derived from Ice.ObjectPrx", "o1");
+                throw new System.ArgumentException("Argument must be derived from Ice.ObjectPrx", "obj1");
             }
-            if(obj2 != null && !(obj2 is Ice.ObjectPrx))
+
+            Ice.ObjectPrx proxy2 = obj2 as Ice.ObjectPrx;
+            if(obj2 != null && proxy2 == null)
             {
-                throw new System.ArgumentException("Argument must be derived from Ice.ObjectPrx", "o2");
+                throw new System.ArgumentException("Argument must be derived from Ice.ObjectPrx", "obj2");
             }
-            return Ice.Util.proxyIdentityCompare((Ice.ObjectPrx)obj1, (Ice.ObjectPrx)obj2);
+            return Ice.Util.proxyIdentityCompare(proxy1, proxy2);
         }
     }
 
+    /// <summary>
+    /// This class allows a proxy to be used as the key for a hashed collection.
+    /// The GetHashCode, Equals, and Compare methods are based on the object identity and
+    /// the facet of the proxy.
+    /// </summary>
     public class ProxyIdentityFacetKey : System.Collections.IEqualityComparer, System.Collections.IComparer
     {
+        /// <summary>
+        /// Computes a hash value based on the object identity and facet of the proxy.
+        /// </summary>
+        /// <param name="obj">The proxy whose hash value to compute.</param>
+        /// <returns>The hash value for the proxy based on the identity and facet.</returns>
         public int GetHashCode(object obj)
         {
             Ice.ObjectPrx o = (Ice.ObjectPrx)obj;
@@ -61,6 +87,11 @@ namespace Ice
             return 5 * identity.GetHashCode() + facet.GetHashCode();
         }
 
+        /// Compares two proxies for equality.
+        /// <param name="obj1">A proxy to compare.</param>
+        /// <param name="obj2">A proxy to compare.</param>
+        /// <returns>True if the passed proxies have the same object
+        /// identity and facet; false, otherwise.</returns>
         public new bool Equals(object obj1, object obj2)
         {
             try
@@ -73,17 +104,25 @@ namespace Ice
             }
         }
 
+        /// Compares two proxies using the object identity and facet for comparison.
+        /// <param name="obj1">A proxy to compare.</param>
+        /// <param name="obj2">A proxy to compare.</param>
+        /// <returns>&lt; 0 if obj1 is less than obj2; &gt; 0 if obj1 is greater than obj2;
+        /// 0, otherwise.</returns>
         public int Compare(object obj1, object obj2)
         {
-            if(obj1 != null && !(obj1 is Ice.ObjectPrx))
+            Ice.ObjectPrx proxy1 = obj1 as Ice.ObjectPrx;
+            if(obj1 != null && proxy1 == null)
             {
-                throw new System.ArgumentException("Argument must be derived from Ice.ObjectPrx", "o1");
+                throw new System.ArgumentException("Argument must be derived from Ice.ObjectPrx", "obj1");
             }
-            if(obj2 != null && !(obj2 is Ice.ObjectPrx))
+
+            Ice.ObjectPrx proxy2 = obj2 as Ice.ObjectPrx;
+            if(obj2 != null && proxy2 == null)
             {
-                throw new System.ArgumentException("Argument must be derived from Ice.ObjectPrx", "o2");
+                throw new System.ArgumentException("Argument must be derived from Ice.ObjectPrx", "obj2");
             }
-            return Ice.Util.proxyIdentityAndFacetCompare((Ice.ObjectPrx)obj1, (Ice.ObjectPrx)obj2);
+            return Ice.Util.proxyIdentityAndFacetCompare(proxy1, proxy2);
         }
     }
 

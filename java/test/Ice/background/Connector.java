@@ -1,11 +1,12 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+package test.Ice.background;
 
 final class Connector implements IceInternal.Connector
 {
@@ -13,7 +14,7 @@ final class Connector implements IceInternal.Connector
     connect()
     {
         _configuration.checkConnectException();
-        return new Transceiver(_connector.connect());
+        return new Transceiver(_configuration, _connector.connect());
     }
 
     public short
@@ -37,9 +38,9 @@ final class Connector implements IceInternal.Connector
     //
     // Only for use by Endpoint
     //
-    Connector(IceInternal.Connector connector)
+    Connector(Configuration configuration, IceInternal.Connector connector)
     {
-        _configuration = Configuration.getInstance();
+        _configuration = configuration;
         _connector = connector;
     }
 

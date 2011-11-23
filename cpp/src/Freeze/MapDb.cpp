@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,8 @@
 #include <Freeze/Catalog.h>
 #include <Freeze/CatalogIndexList.h>
 #include <algorithm>
+
+#include <Ice/StringConverter.h>
 
 using namespace std;
 using namespace Ice;
@@ -179,7 +181,8 @@ Freeze::MapDb::MapDb(const ConnectionIPtr& connection,
             {
                 flags |= DB_CREATE;
             }
-            open(txn, _dbName.c_str(), 0, DB_BTREE, flags, FREEZE_DB_MODE);
+
+            open(txn, Ice::nativeToUTF8(_communicator, _dbName).c_str(), 0, DB_BTREE, flags, FREEZE_DB_MODE);
             
             
             StringSeq oldIndices;
@@ -420,7 +423,8 @@ Freeze::MapDb::MapDb(const Ice::CommunicatorPtr& communicator, const string& dbN
         }
 
         u_int32_t flags = DB_THREAD | DB_CREATE | DB_AUTO_COMMIT;
-        open(0, _dbName.c_str(), 0, DB_BTREE, flags, FREEZE_DB_MODE);
+
+        open(0, Ice::nativeToUTF8(_communicator, _dbName).c_str(), 0, DB_BTREE, flags, FREEZE_DB_MODE);
     }
     catch(const ::DbException& dx)
     {

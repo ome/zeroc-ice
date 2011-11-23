@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,19 +31,9 @@ IceInternal::TcpConnector::connect()
 
     try
     {
-        SOCKET fd = createSocket(false, _addr.ss_family);
-        setBlock(fd, false);
-        setTcpBufSize(fd, _instance->initializationData().properties, _logger);
-        bool connected = doConnect(fd, _addr);
-        if(connected)
-        {
-            if(_traceLevels->network >= 1)
-            {
-                Trace out(_logger, _traceLevels->networkCat);
-                out << "tcp connection established\n" << fdToString(fd);
-            }
-        }
-        return new TcpTransceiver(_instance, fd, connected);
+        TransceiverPtr transceiver = new TcpTransceiver(_instance, createSocket(false, _addr.ss_family), false);
+        dynamic_cast<TcpTransceiver*>(transceiver.get())->connect(_addr);
+        return transceiver;
     }
     catch(const Ice::LocalException& ex)
     {
@@ -59,7 +49,7 @@ IceInternal::TcpConnector::connect()
 Short
 IceInternal::TcpConnector::type() const
 {
-    return TcpEndpointType;
+    return TCPEndpointType;
 }
 
 string

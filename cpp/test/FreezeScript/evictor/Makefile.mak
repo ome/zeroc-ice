@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -37,8 +37,9 @@ clean::
 	del /q TestOld.cpp TestOld.h
 
 clean::
-	del /q db\*.db db\log.* db\__catalog
+	if exist db\__Freeze rmdir /s /q db\__Freeze
+	del /q db\*.db db\log.* db\__catalog db\__catalogIndexList
 	if exist db_check rmdir /s /q db_check
 	if exist db_tmp rmdir /s /q db_tmp
 
-!include .depend
+!include .depend.mak

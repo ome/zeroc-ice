@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,29 +22,23 @@ public class AllTests
         }
     }
 
-    private class Callback
+    private class CallbackBase
     {
-        public Callback()
+        public CallbackBase()
         {
             _called = false;
         }
 
-        public bool check()
+        public void check()
         {
             lock(this)
             {
                 while(!_called)
                 {
-                    Monitor.Wait(this, TimeSpan.FromMilliseconds(30000));
-
-                    if(!_called)
-                    {
-                        return false; // Must be timeout.
-                    }
+                    Monitor.Wait(this);
                 }
                 
                 _called = false;
-                return true;
             }
         }
         
@@ -61,62 +55,30 @@ public class AllTests
         private bool _called;
     }
 
-    private class AMI_Test_pidI : AMI_TestIntf_pid
+    private class Callback
     {
-        public override void ice_response(int pid)
+        public void response()
+        {
+            test(false);
+        }
+
+        public void exception(Ice.Exception ex)
+        {
+            test(false);
+        }
+
+        public void opPidI(int pid)
         {
             _pid = pid;
             callback.called();
         }
-        
-        public override void ice_exception(Ice.Exception ex)
-        {
-            test(false);
-        }
-        
-        public int pid()
-        {
-            return _pid;
-        }
-        
-        public bool check()
-        {
-            return callback.check();
-        }
 
-        private int _pid;
-        
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_shutdownI : AMI_TestIntf_shutdown
-    {
-        public override void ice_response()
+        public void opShutdownI()
         {
             callback.called();
         }
         
-        public override void ice_exception(Ice.Exception ex)
-        {
-            test(false);
-        }
-        
-        public bool check()
-        {
-            return callback.check();
-        }
-
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_abortI : AMI_TestIntf_abort
-    {
-        public override void ice_response()
-        {
-            test(false);
-        }
-        
-        public override void ice_exception(Ice.Exception ex)
+        public void exceptAbortI(Ice.Exception ex)
         {
             try
             {
@@ -137,33 +99,20 @@ public class AllTests
             }
             callback.called();
         }
-        
-        public bool check()
+
+        public int pid()
         {
-            return callback.check();
+            return _pid;
+        }
+        
+        public void check()
+        {
+            callback.check();
         }
 
-        private Callback callback = new Callback();
-    }
-    
-    private class AMI_Test_idempotentAbortI : AMI_TestIntf_idempotentAbort
-    {
-        public override void ice_response()
-        {
-            test(false);
-        }
+        private int _pid;
         
-        public override void ice_exception(Ice.Exception ex)
-        {
-            @delegate.ice_exception(ex);
-        }
-        
-        public bool check()
-        {
-            return @delegate.check();
-        }
-
-        private AMI_Test_abortI @delegate = new AMI_Test_abortI();
+        private CallbackBase callback = new CallbackBase();
     }
     
     public static void allTests(Ice.Communicator communicator, System.Collections.ArrayList ports)
@@ -173,7 +122,7 @@ public class AllTests
         string refString = "test";
         for(int i = 0; i < ports.Count; i++)
         {
-            refString += ":default -t 60000 -p " + ports[i];
+            refString += ":default -p " + ports[i];
         }
         Ice.ObjectPrx basePrx = communicator.stringToProxy(refString);
         test(basePrx != null);
@@ -218,9 +167,9 @@ public class AllTests
             {
                 Console.Out.Write("testing server #" + i + " with AMI... ");
                 Console.Out.Flush();
-                AMI_Test_pidI cb = new AMI_Test_pidI();
-                obj.pid_async(cb);
-                test(cb.check());
+                Callback cb = new Callback();
+                obj.begin_pid().whenCompleted(cb.opPidI, cb.exception);
+                cb.check();
                 int pid = cb.pid();
                 test(pid != oldPid);
                 Console.Out.WriteLine("ok");
@@ -239,9 +188,9 @@ public class AllTests
                 else
                 {
                     Console.Out.Write("shutting down server #" + i + " with AMI... ");
-                    AMI_Test_shutdownI cb = new AMI_Test_shutdownI();
-                    obj.shutdown_async(cb);
-                    test(cb.check());
+                    Callback cb = new Callback();
+                    obj.begin_shutdown().whenCompleted(cb.opShutdownI, cb.exception);
+                    cb.check();
                     Console.Out.WriteLine("ok");
                 }
             }
@@ -273,9 +222,9 @@ public class AllTests
                 {
                     Console.Out.Write("aborting server #" + i + " with AMI... ");
                     Console.Out.Flush();
-                    AMI_Test_abortI cb = new AMI_Test_abortI();
-                    obj.abort_async(cb);
-                    test(cb.check());
+                    Callback cb = new Callback();
+                    obj.begin_abort().whenCompleted(cb.response, cb.exceptAbortI);
+                    cb.check();
                     Console.Out.WriteLine("ok");
                 }
             }
@@ -307,9 +256,9 @@ public class AllTests
                 {
                     Console.Out.Write("aborting server #" + i + " and #" + (i + 1) + " with idempotent AMI call... ");
                     Console.Out.Flush();
-                    AMI_Test_idempotentAbortI cb = new AMI_Test_idempotentAbortI();
-                    obj.idempotentAbort_async(cb);
-                    test(cb.check());
+                    Callback cb = new Callback();
+                    obj.begin_idempotentAbort().whenCompleted(cb.response, cb.exceptAbortI);
+                    cb.check();
                     Console.Out.WriteLine("ok");
                 }
                 ++i;

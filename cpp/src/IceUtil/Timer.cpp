@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,10 +13,21 @@
 using namespace std;
 using namespace IceUtil;
 
-Timer::Timer() : _destroyed(false)
+Timer::Timer() :
+    Thread("IceUtil timer thread"),
+    _destroyed(false)
 {
     __setNoDelete(true);
     start();
+    __setNoDelete(false);
+}
+
+Timer::Timer(int priority) :
+    Thread("IceUtil timer thread"),
+    _destroyed(false)
+{
+    __setNoDelete(true);
+    start(0, priority);
     __setNoDelete(false);
 }
 
@@ -182,6 +193,14 @@ Timer::run()
             {
                 token.task->runTimerTask();
             }
+            catch(const IceUtil::Exception& e)
+            {
+                cerr << "IceUtil::Timer::run(): uncaught exception:\n" << e.what();
+#ifdef __GNUC__
+                cerr << "\n" << e.ice_stackTrace();
+#endif
+                cerr << endl;
+            } 
             catch(const std::exception& e)
             {
                 cerr << "IceUtil::Timer::run(): uncaught exception:\n" << e.what() << endl;

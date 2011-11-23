@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,9 +31,9 @@ public final class Assert
                 // Skip the first frame, which represents this method.
                 //
                 System.err.println("Assertion failure:");
-                for(int i = 1; i < trace.length; ++i)
+                for(StackTraceElement e : trace)
                 {
-                    System.err.println("\tat " + trace[i]);
+                    System.err.println("\tat " + e);
                 }
             }
             else

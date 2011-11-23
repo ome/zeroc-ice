@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -88,6 +88,10 @@ static const char* _commandsHelp[][3] = {
 },
 { "node", "load",
 "node load NAME            Print the load of the node NAME.\n" 
+},
+{ "node", "processors",
+"node processors [NAME]    Print the number of processor socket of the\n"
+"                          node NAME or all the nodes if NAME is omitted.\n" 
 },
 { "node", "show",
 "node show [OPTIONS] NAME [stderr | stdout]\n"
@@ -812,6 +816,75 @@ Parser::printLoadNode(const list<string>& args)
     {
         LoadInfo load = _admin->getNodeLoad(args.front());
         cout << "load average (1/5/15): " << load.avg1 << " / " << load.avg5 << " / " << load.avg15 << endl;
+    }
+    catch(const Ice::Exception& ex)
+    {
+        exception(ex);
+    }
+}
+
+void
+Parser::printNodeProcessors(const list<string>& args)
+{
+    if(args.size() > 1)
+    {
+        invalidCommand("node processors", "requires no more than one argument");
+        return;
+    }
+
+    try
+    {
+        if(args.size() == 1)
+        {
+            try
+            {
+                cout << _admin->getNodeProcessorSocketCount(args.front()) << endl;
+            }
+            catch(const Ice::OperationNotExistException&)
+            {
+                cout << "not supported" << endl;
+            }
+        }
+        else
+        {
+            Ice::StringSeq names = _admin->getAllNodeNames();
+            map<string, pair< vector<string>, int> > processorSocketCounts;
+            for(Ice::StringSeq::const_iterator p = names.begin(); p != names.end(); p++)
+            {
+                try
+                {
+                    NodeInfo info = _admin->getNodeInfo(*p);
+                    processorSocketCounts[info.hostname].first.push_back(*p);
+                    try
+                    {
+                        processorSocketCounts[info.hostname].second = _admin->getNodeProcessorSocketCount(*p);
+                    }
+                    catch(const Ice::OperationNotExistException&)
+                    {
+                        // Not supported.
+                        processorSocketCounts[info.hostname].second = 0;
+                    }
+                }
+                catch(const NodeNotExistException&)
+                {
+                }
+                catch(const NodeUnreachableException&)
+                {
+                }
+            }
+
+            cout.flags(ios::left);
+            cout << setw(20) << "Hostname" << setw(20) << "| # of sockets" << setw(39) << "| Nodes" << endl;
+            cout << setw(79) << "=====================================================================" << endl;
+            for(map<string, pair< vector<string>, int> >::const_iterator q = processorSocketCounts.begin();
+                q != processorSocketCounts.end(); ++q)
+            {
+                cout << setw(20) << setiosflags(ios::left) <<q->first;
+                cout << "| " << setw(18) << setiosflags(ios::left) << q->second.second;
+                cout << "| " << setw(37) << setiosflags(ios::left) << toString(q->second.first);
+                cout << endl;
+            }
+        }
     }
     catch(const Ice::Exception& ex)
     {
@@ -1990,7 +2063,7 @@ Parser::showFile(const string& reader, const list<string>& origArgs)
 void
 Parser::showBanner()
 {
-    cout << "Ice " << ICE_STRING_VERSION << "  Copyright 2003-2009 ZeroC, Inc." << endl;
+    cout << "Ice " << ICE_STRING_VERSION << "  Copyright 2003-2010 ZeroC, Inc." << endl;
 }
 
 void

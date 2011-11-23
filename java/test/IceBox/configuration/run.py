@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -20,7 +20,8 @@ if len(path) == 0:
 sys.path.append(os.path.join(path[0]))
 from scripts import *
 
-TestUtil.clientServerTest(additionalServerOptions="--Ice.Config=%s" % os.path.join(os.getcwd(), "config.icebox"),
+TestUtil.clientServerTest(additionalServerOptions='--Ice.Config="%s"' % os.path.join(os.getcwd(), "config.icebox"),
 	server=TestUtil.getIceBox())
-TestUtil.clientServerTest(additionalServerOptions="--Ice.Config=%s" % os.path.join(os.getcwd(), "config.icebox2"),
+TestUtil.clientServerTest(additionalServerOptions='--Ice.Config="%s"' % os.path.join(os.getcwd(), "config.icebox2"),
 	server=TestUtil.getIceBox())
+

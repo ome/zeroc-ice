@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,14 +13,13 @@ using Test;
 
 public sealed class TestI : TestIntfDisp_
 {
-    public TestI(Ice.ObjectAdapter adapter)
+    public TestI()
     {
-        _adapter = adapter;
     }
     
     public override void shutdown(Ice.Current current)
     {
-        _adapter.getCommunicator().shutdown();
+        current.adapter.getCommunicator().shutdown();
     }
     
     public override Ice.Object SBaseAsObject(Ice.Current current)
@@ -315,6 +314,4 @@ public sealed class TestI : TestIntfDisp_
         f.h = new Hidden();
         f.h.f = f;
     }
-    
-    private Ice.ObjectAdapter _adapter;
 }

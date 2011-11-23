@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,7 +31,7 @@ public class Client
             {
                 Console.Out.Write("testing stringToProxy for router... ");
                 Console.Out.Flush();
-                routerBase = communicator().stringToProxy("Glacier2/router:default -p 12347 -t 30000");
+                routerBase = communicator().stringToProxy("Glacier2/router:default -p 12347");
                 Console.Out.WriteLine("ok");
             }
             
@@ -65,7 +65,7 @@ public class Client
             {
                 Console.Out.Write("testing stringToProxy for server object... ");
                 Console.Out.Flush();
-                @base = communicator().stringToProxy("c1/callback:tcp -p 12010 -t 10000");
+                @base = communicator().stringToProxy("c1/callback:tcp -p 12010");
                 Console.Out.WriteLine("ok");
             }
                 
@@ -223,7 +223,7 @@ public class Client
                 Dictionary<string, string> context = new Dictionary<string, string>();
                 context["_fwd"] =  "o";
                 oneway.initiateCallback(onewayR, context);
-                test(callbackReceiverImpl.callbackOK());
+                callbackReceiverImpl.callbackOK();
                 Console.Out.WriteLine("ok");
             }
 
@@ -233,7 +233,7 @@ public class Client
                 Dictionary<string, string> context = new Dictionary<string, string>();
                 context["_fwd"] = "t";
                 twoway.initiateCallback(twowayR, context);
-                test(callbackReceiverImpl.callbackOK());
+                callbackReceiverImpl.callbackOK();
                 Console.Out.WriteLine("ok");
             }
 
@@ -252,7 +252,7 @@ public class Client
                     test(ex.someValue == 3.14);
                     test(ex.someString.Equals("3.14"));
                 }
-                test(callbackReceiverImpl.callbackOK());
+                callbackReceiverImpl.callbackOK();
                 Console.Out.WriteLine("ok");
             }
 
@@ -280,7 +280,7 @@ public class Client
                 CallbackPrx otherCategoryTwoway = CallbackPrxHelper.uncheckedCast(
                     twoway.ice_identity(communicator().stringToIdentity("c2/callback")));
                 otherCategoryTwoway.initiateCallback(twowayR, context);
-                test(callbackReceiverImpl.callbackOK());
+                callbackReceiverImpl.callbackOK();
                 Console.Out.WriteLine("ok");
             }
             
@@ -310,7 +310,7 @@ public class Client
                 CallbackPrx otherCategoryTwoway = CallbackPrxHelper.uncheckedCast(
                     twoway.ice_identity(communicator().stringToIdentity("_userid/callback")));
                 otherCategoryTwoway.initiateCallback(twowayR, context);
-                test(callbackReceiverImpl.callbackOK());
+                callbackReceiverImpl.callbackOK();
                 Console.Out.WriteLine("ok");
             }
             
@@ -342,10 +342,6 @@ public class Client
                 try
                 {
                     router.destroySession();
-                    test(false);
-                }
-                catch(Ice.ConnectionLostException)
-                {
                 }
                 catch(Ice.LocalException)
                 {
@@ -386,7 +382,7 @@ public class Client
                 
                 {
                     Console.Out.Write("testing stringToProxy for admin object... ");
-                    processBase = communicator().stringToProxy("Glacier2/admin -f Process:tcp -h 127.0.0.1 -p 12348 -t 10000");
+                    processBase = communicator().stringToProxy("Glacier2/admin -f Process:tcp -h 127.0.0.1 -p 12348");
                     Console.Out.WriteLine("ok");
                 }
                 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,9 +17,16 @@ using namespace Test;
 int
 run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 {
-    TestIntfPrx allTests(const Ice::CommunicatorPtr&);
-    TestIntfPrx obj = allTests(communicator);
-    obj->shutdown();
+    void allTests(const Ice::CommunicatorPtr&);
+    allTests(communicator);
+
+    int num = argc == 2 ? atoi(argv[1]) : 0;
+    for(int i = 0; i < num; i++)
+    {
+        ostringstream os;
+        os << "control:tcp -p " << (12010 + i);
+        TestIntfPrx::uncheckedCast(communicator->stringToProxy(os.str()))->shutdown();
+    }
     return EXIT_SUCCESS;
 }
 
@@ -35,6 +42,7 @@ main(int argc, char* argv[])
         initData.properties = Ice::createProperties(argc, argv);
 
         initData.properties->setProperty("Ice.Warn.Connections", "0");
+        initData.properties->setProperty("Ice.UDP.RcvSize", "16384");
         initData.properties->setProperty("Ice.UDP.SndSize", "16384");
 
         communicator = Ice::initialize(argc, argv, initData);

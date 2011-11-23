@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,7 +17,7 @@ sequence<byte> ByteSeq;
 
 interface Timeout
 {
-    ["ami"] void op();
+    void op();
     ["ami"] void sendData(ByteSeq seq);
     ["ami"] void sleep(int to);
 

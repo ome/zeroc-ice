@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,6 +38,20 @@ public final class ProxyFactory
         String proxy = _instance.initializationData().properties.getProperty(prefix);
         Reference ref = _instance.referenceFactory().create(proxy, prefix);
         return referenceToProxy(ref);
+    }
+
+    public java.util.Map<String, String>
+    proxyToProperty(Ice.ObjectPrx proxy, String prefix)
+    {
+        if(proxy != null)
+        {
+            Ice.ObjectPrxHelperBase h = (Ice.ObjectPrxHelperBase)proxy;
+            return h.__reference().toProperty(prefix);
+        }
+        else
+        {
+            return new java.util.HashMap<String, String>();
+        }
     }
 
     public Ice.ObjectPrx
@@ -85,7 +99,7 @@ public final class ProxyFactory
     }
 
     public int
-    checkRetryAfterException(Ice.LocalException ex, Reference ref, final OutgoingAsync out, int cnt)
+    checkRetryAfterException(Ice.LocalException ex, Reference ref, Ice.IntHolder sleepInterval, int cnt)
     {
         TraceLevels traceLevels = _instance.traceLevels();
         Ice.Logger logger = _instance.initializationData().logger;
@@ -121,9 +135,9 @@ public final class ProxyFactory
                     logger.trace(traceLevels.retryCat, s);
                 }
 
-                if(out != null)
+                if(sleepInterval != null)
                 {
-                    out.__retry(cnt, 0);
+                    sleepInterval.value = 0;
                 }
                 return cnt; // We must always retry, so we don't look at the retry count.
             }
@@ -189,7 +203,16 @@ public final class ProxyFactory
         ++cnt;
         assert(cnt > 0);
 
-        if(cnt > _retryIntervals.length)
+        int interval;
+        if(cnt == (_retryIntervals.length + 1) && ex instanceof Ice.CloseConnectionException)
+        {
+            //
+            // A close connection exception is always retried at least once, even if the retry
+            // limit is reached.
+            //
+            interval = 0;
+        }
+        else if(cnt > _retryIntervals.length)
         {
             if(traceLevels.retry >= 1)
             {
@@ -198,8 +221,10 @@ public final class ProxyFactory
             }
             throw ex;
         }
-
-        int interval = _retryIntervals[cnt - 1];
+        else
+        {
+            interval = _retryIntervals[cnt - 1];
+        }
 
         if(traceLevels.retry >= 1)
         {
@@ -212,9 +237,9 @@ public final class ProxyFactory
             logger.trace(traceLevels.retryCat, s);
         }
 
-        if(out != null)
+        if(sleepInterval != null)
         {
-            out.__retry(cnt, interval);
+            sleepInterval.value = interval;
         }
         else if(interval > 0)
         {

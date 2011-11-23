@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,9 +16,14 @@ class Acceptor : public IceInternal::Acceptor
 {
 public:
 
-    virtual SOCKET fd();
+    virtual IceInternal::NativeInfoPtr getNativeInfo();
+
     virtual void close();
     virtual void listen();
+#ifdef ICE_USE_IOCP
+    virtual void startAccept();
+    virtual void finishAccept();
+#endif
     virtual IceInternal::TransceiverPtr accept();
     virtual std::string toString() const;
 

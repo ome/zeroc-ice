@@ -1,16 +1,19 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Globalization;
+using Microsoft.Win32;
 
 namespace Ice
 {
@@ -83,7 +86,7 @@ namespace Ice
                     pv.used = true;
                     try
                     {
-                        return System.Int32.Parse(pv.val);
+                        return System.Int32.Parse(pv.val, CultureInfo.InvariantCulture);
                     }
                     catch(System.FormatException)
                     {
@@ -118,7 +121,7 @@ namespace Ice
                 {
                     pv.used = true;
 
-                    string[] result = splitString(pv.val, ", \t\r\n");
+                    string[] result = IceUtilInternal.StringUtil.splitString(pv.val, ", \t\r\n");
                     if(result == null)
                     {
                         Ice.Util.getProcessLogger().warning("mismatched quotes in property " + key 
@@ -142,7 +145,7 @@ namespace Ice
 
                 foreach(string s in _properties.Keys)
                 {
-                    if(prefix.Length == 0 || s.StartsWith(prefix))
+                    if(prefix.Length == 0 || s.StartsWith(prefix, StringComparison.Ordinal))
                     {
                         PropertyValue pv = (PropertyValue)_properties[s];
                         pv.used = true;
@@ -260,7 +263,7 @@ namespace Ice
             for(int i = 0; i < options.Length; i++)
             {
                 string opt = options[i];
-                if(opt.StartsWith(pfx))
+                if(opt.StartsWith(pfx, StringComparison.Ordinal))
                 {
                     if(opt.IndexOf('=') == -1)
                     {
@@ -294,18 +297,41 @@ namespace Ice
         
         public void load(string file)
         {
-            try
+            if(IceInternal.AssemblyUtil.platform_ == IceInternal.AssemblyUtil.Platform.Windows &&
+               (file.StartsWith("HKLM\\", StringComparison.Ordinal)))
             {
-                using(System.IO.StreamReader sr = new System.IO.StreamReader(file))
+                RegistryKey iceKey = Registry.LocalMachine.OpenSubKey(file.Substring(5));
+                if(iceKey == null)
                 {
-                    parse(sr);
+                    Ice.InitializationException ex = new Ice.InitializationException();
+                    ex.reason = "Could not open Windows registry key `" + file + "'";
+                    throw ex;
+                }
+
+                foreach(string propKey in iceKey.GetValueNames())
+                {
+                    RegistryValueKind kind = iceKey.GetValueKind(propKey);
+                    if(kind == RegistryValueKind.String || kind == RegistryValueKind.ExpandString)
+                    {
+                        setProperty(propKey, iceKey.GetValue(propKey).ToString());
+                    }
                 }
             }
-            catch(System.IO.IOException ex)
+            else
             {
-                Ice.FileException fe = new Ice.FileException(ex);
-                fe.path = file;
-                throw fe;
+                try
+                {
+                    using(System.IO.StreamReader sr = new System.IO.StreamReader(file))
+                    {
+                        parse(sr);
+                    }
+                }
+                catch(System.IO.IOException ex)
+                {
+                    Ice.FileException fe = new Ice.FileException(ex);
+                    fe.path = file;
+                    throw fe;
+                }
             }
         }
         
@@ -372,7 +398,7 @@ namespace Ice
 
             for(int i = 0; i < args.Length; i++)
             {
-                if(args[i].StartsWith("--Ice.Config"))
+                if(args[i].StartsWith("--Ice.Config", StringComparison.Ordinal))
                 {
                     string line = args[i];
                     if(line.IndexOf('=') == -1)
@@ -620,66 +646,7 @@ namespace Ice
             }
             
             _properties["Ice.Config"] = new PropertyValue(val, true);
-        }
-        
-        //
-        // Split string helper; returns null for unmatched quotes
-        //
-        private string[] splitString(string str, string delim)
-        {
-            ArrayList l = new ArrayList();
-            char[] arr = new char[str.Length];
-            int pos = 0;
-
-            while(pos < str.Length)
-            {
-                int n = 0;
-                char quoteChar = '\0';
-                if(str[pos] == '"' || str[pos] == '\'')
-                {
-                    quoteChar = str[pos];
-                    ++pos;
-                }
-                while(pos < str.Length)
-                {
-                    if(quoteChar != '\0' && str[pos] == '\\' && pos + 1 < str.Length && str[pos + 1] == quoteChar)
-                    {
-                        ++pos;
-                    }
-                    else if(quoteChar != '\0' && str[pos] == quoteChar)
-                    {
-                        ++pos;
-                        quoteChar = '\0';
-                        break;
-                    }
-                    else if(delim.IndexOf(str[pos]) != -1)
-                    {
-                        if(quoteChar == '\0')
-                        {
-                            ++pos;
-                            break;
-                        }
-                    }
-                
-                    if(pos < str.Length)
-                    {
-                        arr[n++] = str[pos++];
-                    }
-                }
-                if(quoteChar != '\0')
-                {
-                    return null; // Unmatched quote.
-                }
-                if(n > 0)
-                {
-                    l.Add(new string(arr, 0, n));
-                }
-            }
-
-            return (string[])l.ToArray(typeof(string));
-        }
-
-        
+        }        
 
         private Hashtable _properties;
     }

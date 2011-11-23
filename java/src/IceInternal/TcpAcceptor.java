@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,8 +38,18 @@ class TcpAcceptor implements Acceptor
 
         if(_traceLevels.network >= 1)
         {
-            String s = "accepting tcp connections at " + toString();
-            _logger.trace(_traceLevels.networkCat, s);
+            StringBuffer s = new StringBuffer("accepting tcp connections at ");
+	    s.append(toString());
+
+            java.util.List<String> interfaces = 
+                Network.getHostsForEndpointExpand(_addr.getAddress().getHostAddress(), _instance.protocolSupport(),
+                                                  true);
+            if(!interfaces.isEmpty())
+            {
+                s.append("\nlocal interfaces: ");
+                s.append(IceUtilInternal.StringUtil.joinString(interfaces, ", "));
+            }
+            _logger.trace(_traceLevels.networkCat, s.toString());
         }
     }
 

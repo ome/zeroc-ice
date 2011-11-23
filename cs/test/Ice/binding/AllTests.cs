@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using Test;
@@ -23,9 +24,9 @@ public class AllTests
         }
     }
 
-    private class GetAdapterNameCB : AMI_TestIntf_getAdapterName
+    private class GetAdapterNameCB 
     {
-        public override void ice_response(string name)
+        public void response(string name)
         {
             lock(this)
             {
@@ -34,7 +35,7 @@ public class AllTests
             }
         }
         
-        public override void ice_exception(Ice.Exception ex)
+        public void exception(Ice.Exception ex)
         {
             test(false);
         }
@@ -54,21 +55,10 @@ public class AllTests
         private string _name = null;
     };
 
-    private class NoOpGetAdapterNameCB : AMI_TestIntf_getAdapterName
-    {
-        public override void ice_response(string name)
-        {
-        }
-        
-        public override void ice_exception(Ice.Exception ex)
-        {
-        }
-    };
-
     private static string getAdapterNameWithAMI(TestIntfPrx test)
     {
         GetAdapterNameCB cb = new GetAdapterNameCB();
-        test.getAdapterName_async(cb);
+        test.begin_getAdapterName().whenCompleted(cb.response, cb.exception);
         return cb.getResult();
     }
 
@@ -120,7 +110,7 @@ public class AllTests
 
     public static void allTests(Ice.Communicator communicator)
     {
-        string @ref = "communicator:default -p 12010 -t 10000";
+        string @ref = "communicator:default -p 12010";
         RemoteCommunicatorPrx com = RemoteCommunicatorPrxHelper.uncheckedCast(communicator.stringToProxy(@ref));
 
         System.Random rand = new System.Random(unchecked((int)System.DateTime.Now.Ticks));
@@ -166,7 +156,7 @@ public class AllTests
             // Ensure that when a connection is opened it's reused for new
             // proxies and that all endpoints are eventually tried.
             //
-            IceUtilInternal.Set names = new IceUtilInternal.Set();
+            HashSet<string> names = new HashSet<string>();
             names.Add("Adapter11");
             names.Add("Adapter12");
             names.Add("Adapter13");
@@ -306,7 +296,7 @@ public class AllTests
             
                 for(i = 0; i < proxies.Length; i++)
                 {
-                    proxies[i].getAdapterName_async(new NoOpGetAdapterNameCB());
+                    proxies[i].begin_getAdapterName();
                 }
                 for(i = 0; i < proxies.Length; i++)
                 {
@@ -359,7 +349,7 @@ public class AllTests
             // Ensure that when a connection is opened it's reused for new
             // proxies and that all endpoints are eventually tried.
             //
-            IceUtilInternal.Set names = new IceUtilInternal.Set();
+            HashSet<string> names = new HashSet<string>();
             names.Add("AdapterAMI11");
             names.Add("AdapterAMI12");
             names.Add("AdapterAMI13");
@@ -450,7 +440,7 @@ public class AllTests
             TestIntfPrx obj = createTestIntfPrx(adapters);
             test(obj.ice_getEndpointSelection() == Ice.EndpointSelectionType.Random);
 
-            IceUtilInternal.Set names = new IceUtilInternal.Set();
+            HashSet<string> names = new HashSet<string>();
             names.Add("Adapter21");
             names.Add("Adapter22");
             names.Add("Adapter23");
@@ -574,7 +564,7 @@ public class AllTests
             TestIntfPrx obj = TestIntfPrxHelper.uncheckedCast(createTestIntfPrx(adapters).ice_connectionCached(false));
             test(!obj.ice_isConnectionCached());
 
-            IceUtilInternal.Set names = new IceUtilInternal.Set();
+            HashSet<string> names = new HashSet<string>();
             names.Add("Adapter51");
             names.Add("Adapter52");
             names.Add("Adapter53");
@@ -612,7 +602,7 @@ public class AllTests
             TestIntfPrx obj = TestIntfPrxHelper.uncheckedCast(createTestIntfPrx(adapters).ice_connectionCached(false));
             test(!obj.ice_isConnectionCached());
 
-            IceUtilInternal.Set names = new IceUtilInternal.Set();
+            HashSet<string> names = new HashSet<string>();
             names.Add("AdapterAMI51");
             names.Add("AdapterAMI52");
             names.Add("AdapterAMI53");

@@ -47,6 +47,10 @@ Demos in this directory:
   A demo to illustrate how nested callbacks work, and how the size of
   the thread pool affects the maximum nesting depth.
 
+- plugin
+
+  A demo to illustrate how to write and use Ice plugins.
+
 - serialize
 
   This demo illistrates how to transfer serializable .NET objects 
@@ -68,3 +72,8 @@ Demos in this directory:
 
   This demo shows how to use classes, class factories, and the
   difference between local and remote invocations of class operations.
+
+- wpf
+
+  A Windows Presentation Foundation (WPF) application that shows
+  how to use Asynchronous Method Invocation (AMI) in a graphical client.

@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
-import sys, os, TestUtil
+import sys, os, TestUtil, shlex
 from threading import Thread
 
 #
@@ -21,7 +21,7 @@ iceGridPort = 12010;
 
 nodeOptions = r' --Ice.Warn.Connections=0' + \
               r' --IceGrid.Node.Endpoints=default' + \
-              r' --IceGrid.Node.WaitTime=30' + \
+              r' --IceGrid.Node.WaitTime=240' + \
               r' --Ice.ProgramName=icegridnode' + \
               r' --IceGrid.Node.Trace.Replica=0' + \
               r' --IceGrid.Node.Trace.Activator=0' + \
@@ -54,8 +54,8 @@ registryOptions = r' --Ice.Warn.Connections=0' + \
                   r' --Ice.ThreadPool.Client.SizeWarn=0' + \
                   r' --IceGrid.Registry.Client.ThreadPool.SizeWarn=0' + \
                   r' --Ice.ServerIdleTime=0' + \
-                  r' --IceGrid.Registry.DefaultTemplates=' + \
-                  os.path.abspath(os.path.join(TestUtil.toplevel, "cpp", "config", "templates.xml"))
+                  r' --IceGrid.Registry.DefaultTemplates="' + \
+                  os.path.abspath(os.path.join(TestUtil.toplevel, "cpp", "config", "templates.xml") + '"')
 
 def getDefaultLocatorProperty():
 
@@ -70,7 +70,11 @@ def getDefaultLocatorProperty():
 
 def startIceGridRegistry(testdir, dynamicRegistration = False):
 
-    iceGrid = os.path.join(TestUtil.getCppBinDir(), "icegridregistry")
+    iceGrid = ""
+    if TestUtil.isBCC2010() or TestUtil.isVC6():
+        iceGrid = os.path.join(TestUtil.getServiceDir(), "icegridregistry")
+    else:
+        iceGrid = os.path.join(TestUtil.getCppBinDir(), "icegridregistry")
 
     command = ' --nowarn ' + registryOptions
     if dynamicRegistration:
@@ -92,10 +96,10 @@ def startIceGridRegistry(testdir, dynamicRegistration = False):
             cleanDbDir(dataDir)
 
         print "starting icegrid " + name + "...",
-        cmd = command + \
+        cmd = command + ' ' + TestUtil.getQtSqlOptions('IceGrid') + \
               r' --Ice.ProgramName=' + name + \
-              r' --IceGrid.Registry.Client.Endpoints="default -p ' + str(iceGridPort + i) + ' -t 30000" ' + \
-              r' --IceGrid.Registry.Data=' + dataDir
+              r' --IceGrid.Registry.Client.Endpoints="default -p ' + str(iceGridPort + i) + '" ' + \
+              r' --IceGrid.Registry.Data="' + dataDir + '" '
 
         if i > 0:
             cmd += r' --IceGrid.Registry.ReplicaName=' + name + ' ' + getDefaultLocatorProperty()
@@ -125,9 +129,33 @@ def shutdownIceGridRegistry(procs):
     for p in procs:
         p.waitTestSuccess()
 
+def iceGridNodePropertiesOverride():
+   
+    #
+    # Create property overrides from command line options.
+    #
+    overrideOptions = ''
+    for opt in shlex.split(TestUtil.getCommandLineProperties("", TestUtil.DriverConfig("server"))):
+       index = opt.find("=")
+       if index == -1:
+          overrideOptions += ("%s=1 ") % opt
+       else:          
+          key = opt[0:index]
+          value = opt[index + 1:]
+          if(value.find(' ') == -1):
+             overrideOptions += ("%s=%s ") % (key, value)
+          else:
+             overrideOptions += ("%s=\\\"%s\\\" ") % (key, value)
+
+    return overrideOptions
+
 def startIceGridNode(testdir):
 
-    iceGrid = os.path.join(TestUtil.getCppBinDir(), "icegridnode")
+    iceGrid = ""
+    if TestUtil.isBCC2010() or TestUtil.isVC6():
+        iceGrid = os.path.join(TestUtil.getServiceDir(), "icegridnode")
+    else:
+        iceGrid = os.path.join(TestUtil.getCppBinDir(), "icegridnode")
 
     dataDir = os.path.join(testdir, "db", "node")
     if not os.path.exists(dataDir):
@@ -135,20 +163,12 @@ def startIceGridNode(testdir):
     else:
         cleanDbDir(dataDir)
 
-    #
-    # Create property overrides from command line options.
-    #
-    overrideOptions = '"'
-    for opt in TestUtil.getCommandLine("", TestUtil.DriverConfig("server")).split():
-        opt = opt.replace("--", "")
-        if opt.find("=") == -1:
-            opt += "=1"
-        overrideOptions += opt + " "
+    overrideOptions = '" ' + iceGridNodePropertiesOverride()
     overrideOptions += ' Ice.ServerIdleTime=0 Ice.PrintProcessId=0 Ice.PrintAdapterReady=0"'
 
     print "starting icegrid node...",
     command = r' --nowarn ' + nodeOptions + getDefaultLocatorProperty() + \
-              r' --IceGrid.Node.Data=' + dataDir + \
+              r' --IceGrid.Node.Data="' + dataDir + '"' \
               r' --IceGrid.Node.Name=localnode' + \
               r' --IceGrid.Node.PropertiesOverride=' + overrideOptions
 
@@ -162,7 +182,7 @@ def startIceGridNode(testdir):
 
 def iceGridAdmin(cmd, ignoreFailure = False):
 
-    iceGridAdmin = os.path.join(TestUtil.getCppBinDir(), "icegridadmin")
+    iceGridAdmin = TestUtil.getIceGridAdmin()
 
     user = r"admin1"
     if cmd == "registry shutdown":
@@ -170,10 +190,17 @@ def iceGridAdmin(cmd, ignoreFailure = False):
     command = getDefaultLocatorProperty() + r" --IceGridAdmin.Username=" + user + " --IceGridAdmin.Password=test1 " + \
               r' -e "' + cmd + '"'
 
+    if TestUtil.appverifier:
+        TestUtil.setAppVerifierSettings([TestUtil.getIceGridAdmin()])
+
     driverConfig = TestUtil.DriverConfig("client")
     driverConfig.lang = "cpp"
     proc = TestUtil.startClient(iceGridAdmin, command, driverConfig)
     status = proc.wait()
+
+    if TestUtil.appverifier:
+        TestUtil.appVerifierAfterTestEnd([TestUtil.getIceGridAdmin()])
+
     if not ignoreFailure and status:
         print proc.buf
         sys.exit(1)
@@ -204,13 +231,18 @@ def iceGridTest(application, additionalOptions = "", applicationOptions = ""):
 
     clientOptions = ' ' + getDefaultLocatorProperty() + ' ' + additionalOptions
 
+    targets = []
+    if TestUtil.appverifier:
+        targets = [client, TestUtil.getIceGridNode(), TestUtil.getIceGridRegistry()]
+        TestUtil.setAppVerifierSettings(targets)
+
     registryProcs = startIceGridRegistry(testdir)
     iceGridNodeProc = startIceGridNode(testdir)
     
     if application != "":
         print "adding application...",
-        iceGridAdmin('application add -n ' + os.path.join(testdir, application) + ' ' + \
-                     '"test.dir=' + testdir + '" "ice.bindir=' + TestUtil.getCppBinDir() + '" ' + applicationOptions)
+        iceGridAdmin("application add -n '" + os.path.join(testdir, application) + "' " + \
+                     "test.dir='" + testdir + "' ice.bindir='" + TestUtil.getCppBinDir() + "' " + applicationOptions)
         print "ok"
 
     print "starting client...",
@@ -231,6 +263,9 @@ def iceGridTest(application, additionalOptions = "", applicationOptions = ""):
     shutdownIceGridRegistry(registryProcs)
     iceGridNodeProc.waitTestSuccess()
 
+    if TestUtil.appverifier:
+        TestUtil.appVerifierAfterTestEnd(targets)
+
 def iceGridClientServerTest(additionalClientOptions, additionalServerOptions):
 
     testdir = os.getcwd()
@@ -242,6 +277,11 @@ def iceGridClientServerTest(additionalClientOptions, additionalServerOptions):
 
     if TestUtil.getDefaultMapping() == "java":
         os.environ['CLASSPATH'] = os.path.join(os.getcwd(), "classes") + os.pathsep + os.environ.get("CLASSPATH", "")
+
+    targets = []
+    if TestUtil.appverifier:
+        targets = [client, server, TestUtil.getIceGridRegistry()]
+        TestUtil.setAppVerifierSettings(targets)
 
     clientOptions = getDefaultLocatorProperty() + ' ' + additionalClientOptions
     serverOptions = getDefaultLocatorProperty() + ' ' + additionalServerOptions
@@ -260,6 +300,9 @@ def iceGridClientServerTest(additionalClientOptions, additionalServerOptions):
     serverProc.waitTestSuccess()
 
     shutdownIceGridRegistry(registryProcs)
+
+    if TestUtil.appverifier:
+        TestUtil.appVerifierAfterTestEnd(targets)
 
 def cleanDbDir(path):
     for filename in [ os.path.join(path, f) for f in os.listdir(path) if f != ".gitignore"]:

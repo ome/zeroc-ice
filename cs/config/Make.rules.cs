@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2009 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2010 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -98,7 +98,7 @@ GACUTIL			= gacutil
 
 # MDB files are generated only for debug builds. For debug, with a GAC
 # install gacutil installs the .mdb into the GAC.
-installmdb    =
+installmdb    = /bin/true
 
 ifeq ($(GACINSTALL),yes)
     ifeq ($(GAC_ROOT),)
@@ -116,9 +116,18 @@ else
     			  chmod a+rx $(install_bindir)/$(notdir $(1).dll); \
     			  chmod a+r $(install_bindir)/$(notdir $(1))
     ifeq ($(DEBUG),yes)
-        installmdb          = $(INSTALL_LIBRARY) $(1) $(install_bindir); \
-    			      chmod a+rx $(install_bindir)/$(notdir $(1))
+        installmdb      = $(INSTALL_LIBRARY) $(1) $(install_bindir); \
+                          chmod a+rx $(install_bindir)/$(notdir $(1))
     endif
+endif
+
+#
+# Do not generate policy files for beta (x.y.51) or minor (x.y.0) releases.
+#
+generate_policies = $(shell test $(VERSION_PATCH) -gt 0 -a $(VERSION_PATCH) -lt 51 && echo "yes")
+
+ifneq ($(generate_policies),yes)
+    installpolicy = /bin/true
 endif
 
 MCS			= gmcs
@@ -134,16 +143,21 @@ endif
 
 ifdef ice_src_dist
     ifeq ($(ice_cpp_dir), $(ice_dir)/cpp)
-        SLICE2CS = $(ice_cpp_dir)/bin/slice2cs
+        SLICE2CS 	= $(ice_cpp_dir)/bin/slice2cs
+        SLICEPARSERLIB 	= $(ice_cpp_dir)/lib/$(call mklibfilename,Slice,$(VERSION))
     else
-        SLICE2CS = $(ice_cpp_dir)/$(binsubdir)/slice2cs
+        SLICE2CS 	= $(ice_cpp_dir)/$(binsubdir)/slice2cs
+        SLICEPARSERLIB 	= $(ice_cpp_dir)/$(libsubdir)/$(call mklibfilename,Slice,$(VERSION))
     endif
 else
-    SLICE2CS = $(ice_dir)/$(binsubdir)/slice2cs
+    SLICE2CS 		= $(ice_dir)/$(binsubdir)/slice2cs
+    SLICEPARSERLIB 	= $(ice_dir)/$(libsubdir)/$(call mklibfilename,Slice,$(VERSION))
 endif
 
 AL              = al
 POLICY          = policy.$(SHORT_VERSION).$(PKG)
+
+ifeq ($(generate_policies),yes)
 
 ifneq ($(PUBLIC_KEY_TOKEN),)
     publicKeyToken = $(PUBLIC_KEY_TOKEN)
@@ -184,6 +198,7 @@ clean::
 
 endif
 
+endif
 
 GEN_SRCS = $(subst .ice,.cs,$(addprefix $(GDIR)/,$(notdir $(SLICE_SRCS))))
 CGEN_SRCS = $(subst .ice,.cs,$(addprefix $(GDIR)/,$(notdir $(SLICE_C_SRCS))))
@@ -205,26 +220,32 @@ $(GDIR)/%.cs: $(SDIR)/%.ice
 
 all:: $(TARGETS)
 
-ifneq ($(POLICY_TARGET),)
+ifeq ($(generate_policies),yes)
+    ifneq ($(POLICY_TARGET),)
 all:: $(bindir)/$(POLICY_TARGET)
+    endif
+endif
+
+ifneq ($(TARGETS_CONFIG),)
+all:: $(TARGETS_CONFIG)
 endif
 
 depend:: $(SLICE_SRCS) $(SLICE_C_SRCS) $(SLICE_S_SRCS) $(SLICE_AMD_SRCS) $(SLICE_SAMD_SRCS)
-	-rm -f .depend
+	-rm -f .depend .depend.mak
 	if test -n "$(SLICE_SRCS)" ; then \
-	    $(SLICE2CS) --depend $(SLICE2CSFLAGS) $(SLICE_SRCS) | $(ice_dir)/config/makedepend.py >> .depend; \
+	    $(SLICE2CS) --depend $(SLICE2CSFLAGS) $(SLICE_SRCS) | $(ice_dir)/config/makedepend.py; \
 	fi
 	if test -n "$(SLICE_C_SRCS)" ; then \
-	    $(SLICE2CS) --depend $(SLICE2CSFLAGS) $(SLICE_C_SRCS) | $(ice_dir)/config/makedepend.py >> .depend; \
+	    $(SLICE2CS) --depend $(SLICE2CSFLAGS) $(SLICE_C_SRCS) | $(ice_dir)/config/makedepend.py; \
 	fi
 	if test -n "$(SLICE_S_SRCS)" ; then \
-	    $(SLICE2CS) --depend $(SLICE2CSFLAGS) $(SLICE_S_SRCS) | $(ice_dir)/config/makedepend.py >> .depend; \
+	    $(SLICE2CS) --depend $(SLICE2CSFLAGS) $(SLICE_S_SRCS) | $(ice_dir)/config/makedepend.py; \
 	fi
 	if test -n "$(SLICE_AMD_SRCS)" ; then \
-	    $(SLICE2CS) --depend $(SLICE2CSFLAGS) $(SLICE_AMD_SRCS) | $(ice_dir)/config/makedepend.py >> .depend; \
+	    $(SLICE2CS) --depend $(SLICE2CSFLAGS) $(SLICE_AMD_SRCS) | $(ice_dir)/config/makedepend.py; \
 	fi
 	if test -n "$(SLICE_SAMD_SRCS)" ; then \
-	    $(SLICE2CS) --depend $(SLICE2CSFLAGS) $(SLICE_SAMD_SRCS) | $(ice_dir)/config/makedepend.py >> .depend; \
+	    $(SLICE2CS) --depend $(SLICE2CSFLAGS) $(SLICE_SAMD_SRCS) | $(ice_dir)/config/makedepend.py; \
 	fi
 
 clean::
@@ -249,6 +270,11 @@ endif
 ifneq ($(SLICE_SAMD_SRCS),)
 clean::
 	-rm -f $(SAMD_GEN_SRCS)
+endif
+
+ifneq ($(TARGETS_CONFIG),)
+clean::
+	-rm -f $(TARGETS_CONFIG)
 endif
 
 install::
