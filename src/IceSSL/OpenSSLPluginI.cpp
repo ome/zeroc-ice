@@ -32,7 +32,6 @@
 #include <IceSSL/RSAPrivateKey.h>
 #include <IceSSL/DHParams.h>
 
-#include <openssl/e_os.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
 
@@ -40,9 +39,14 @@
 
 #define OPENSSL_THREAD_DEFINES
 #include <openssl/opensslconf.h>
-#if defined(THREADS)
+#if OPENSSL_VERSION_NUMBER < 0x0090700fL
+#   if !defined(THREADS)
+#      error "Thread support not enabled"
+#   endif
 #else
-#error "Thread support not enabled"
+#   if !defined(OPENSSL_THREADS)
+#      error "Thread support not enabled"
+#   endif
 #endif
 
 using namespace std;
@@ -110,7 +114,6 @@ namespace IceSSL
 extern "C"
 {
     void lockingCallback(int, int, const char*, int);
-
     unsigned long idFunction();
 }
 
@@ -141,25 +144,20 @@ void IceSSL::lockingCallback(int mode, int type, const char *file, int line)
     }
 }
 
-unsigned long IceSSL::idFunction()
+unsigned long
+IceSSL::idFunction()
 {
-    unsigned long threadID = 0;
-
-#ifdef WINDOWS
-    threadID = GetCurrentThreadId();
-#elif _POSIX_THREADS
-    threadID = pthread_self();
+#ifdef _WIN32
+    return static_cast<unsigned long>(GetCurrentThreadId());
 #else
-    #error You must define a method to return the current thread ID.
+    return static_cast<unsigned long>(pthread_self());
 #endif
-
-    return threadID;
 }
 
 IceSSL::SslLockKeeper::SslLockKeeper()
 {
-    CRYPTO_set_id_callback((unsigned long(*)())IceSSL::idFunction);
-    CRYPTO_set_locking_callback((void (*)(int, int, const char*, int))IceSSL::lockingCallback);
+    CRYPTO_set_id_callback(IceSSL::idFunction);
+    CRYPTO_set_locking_callback(IceSSL::lockingCallback);
 }
 
 IceSSL::SslLockKeeper::~SslLockKeeper()
@@ -771,9 +769,11 @@ IceSSL::OpenSSLPluginI::loadRandFiles(const string& names)
 
     strcpy(namesString, names.c_str());
 
-    char seps[5];
-
-    sprintf(seps, "%c", LIST_SEPARATOR_CHAR);
+#ifdef _WIN32
+    const char* seps = ";";
+#else
+    const char* seps = ":";
+#endif
 
     char* token = strtok(namesString, seps);
 

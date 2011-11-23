@@ -17,6 +17,7 @@
 #include <Ice/Application.h>
 #include <IcePack/Registry.h>
 
+#include <Ice/Xerces.h>
 #include <xercesc/util/PlatformUtils.hpp>
 
 using namespace std;
@@ -36,9 +37,9 @@ main(int argc, char* argv[])
 {
     try
     {
-	XMLPlatformUtils::Initialize();
+	ICE_XERCES_NS XMLPlatformUtils::Initialize();
     }
-    catch(const XMLException& e)
+    catch(const ICE_XERCES_NS XMLException& e)
     {
 	cout << e.getMessage() << endl;
 	return EXIT_FAILURE;
@@ -47,7 +48,7 @@ main(int argc, char* argv[])
     RegistryServer app;
     int rc = app.main(argc, argv);
 
-    XMLPlatformUtils::Terminate();
+    ICE_XERCES_NS XMLPlatformUtils::Terminate();
 
     return rc;
 }

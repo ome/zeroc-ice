@@ -42,13 +42,13 @@ IceUtil::Time::now()
 }
 
 Time
-IceUtil::Time::seconds(long t)
+IceUtil::Time::seconds(Int64 t)
 {
     return Time(t * static_cast<Int64>(1000000));
 }
 
 Time
-IceUtil::Time::milliSeconds(long t)
+IceUtil::Time::milliSeconds(Int64 t)
 {
     return Time(t * static_cast<Int64>(1000));
 }

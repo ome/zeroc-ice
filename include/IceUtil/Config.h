@@ -62,11 +62,19 @@
 
 #   define SIZEOF_WCHAR_T 2
 
-#elif defined(__linux__) && defined(i386)
+#elif (defined(__linux__) || defined(__FreeBSD__)) && defined(i386)
 
 #   define ICE_UTIL_API /**/
 #   define HAVE_READLINE
 #   define SIZEOF_WCHAR_T 4
+
+//
+// The ISO C99 standard specifies that in C++ implementations the
+// macros for minimum/maximum integer values should only be defined if
+// explicitly requested with __STDC_LIMIT_MACROS.
+//
+#   define __STDC_LIMIT_MACROS
+#   include <stdint.h>
 
 #else
 
@@ -118,13 +126,31 @@ private:
 // Some definitions for 64-bit integers.
 //
 #if defined(_WIN32)
+
 typedef __int64 Int64;
 const Int64 Int64Min = -9223372036854775808i64;
 const Int64 Int64Max =  9223372036854775807i64;
-#elif defined(__linux__) && defined(i386)
+
+#   define ICE_INT64(x) Int64(x##i64)
+
+#else
+
+#   if defined(INT64_MIN) && defined(INT64_MAX)
+
+typedef int64_t Int64;
+const Int64 Int64Min = INT64_MIN;
+const Int64 Int64Max = INT64_MAX;
+
+#   else
+
 typedef long long Int64;
 const Int64 Int64Min = -0x7fffffffffffffffLL-1LL;
 const Int64 Int64Max = 0x7fffffffffffffffLL;
+
+#   endif
+
+#define ICE_INT64(x) Int64(x##LL)
+
 #endif
 
 }
@@ -132,7 +158,7 @@ const Int64 Int64Max = 0x7fffffffffffffffLL;
 //
 // The Ice version.
 //
-#define ICE_STRING_VERSION "1.0.0" // "A.B.C", with A=major, B=minor, C=patch
-#define ICE_INT_VERSION 10000      // AABBCC, with AA=major, BB=minor, CC=patch
+#define ICE_STRING_VERSION "1.0.1" // "A.B.C", with A=major, B=minor, C=patch
+#define ICE_INT_VERSION 10001      // AABBCC, with AA=major, BB=minor, CC=patch
 
 #endif

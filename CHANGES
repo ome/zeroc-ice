@@ -1,0 +1,38 @@
+Changes since version 1.0.0
+---------------------------
+
+- Added --header-ext and --source-ext command-line options to
+  slice2cpp and slice2freeze. These permit setting header and
+  source file extensions for C++ other than the default `h' and
+  `cpp' file extensions.
+
+- Added the macro ICE_INT64 as a portable wrapper for long long
+  constants.
+
+- Added support for Xerces 2.2.0.
+
+- Added support for OpenSSL 0.97a.
+
+- Added OPENSSL_FLAGS to several Makefiles that were missing it.
+
+- Changed signature of IceUtil::Time::milliSeconds() to
+  IceUtil::Int64, to avoid overflows.
+
+- Renamed Lock and TryLock templates to LockT and TryLockT, to avoid
+  compilation problems with Sun Forte 6.2.
+
+- Fixed a bug with throwing exceptions in AMD calls after invoking
+  ice_response().
+
+- Fixed a bug with throwing exceptions in AMI from within
+  ice_response().
+
+- For posix threads, PTHREAD_MUTEX_RECURSIVE_NP is now only used if
+  __linux__ is defined. Otherwise, PTHREAD_MUTEX_RECURSIVE is used.
+
+- The EPROTO error code is now only used if it is defined (such as
+  on Linux).
+
+- Several other changes that make Ice for C++ more portable.
+
+- Updated SSL test certificates. The old ones have expired.

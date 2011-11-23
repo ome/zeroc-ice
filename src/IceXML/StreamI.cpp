@@ -25,16 +25,14 @@
 //
 // For input streaming
 //
+#include <Ice/Xerces.h>
 #include <xercesc/framework/MemBufInputSource.hpp>
 #include <xercesc/util/PlatformUtils.hpp>
 #include <xercesc/util/XMLString.hpp>
-
 #include <xercesc/dom/DOMException.hpp>
 #include <xercesc/parsers/XercesDOMParser.hpp>
-
 #include <xercesc/dom/DOMNode.hpp>
 #include <xercesc/dom/DOMNamedNodeMap.hpp>
-
 #include <xercesc/sax/ErrorHandler.hpp>
 #include <xercesc/sax/SAXParseException.hpp>
 
@@ -53,7 +51,7 @@ toString(const XMLCh* s)
     //
     if(s)
     {
-        char* t = XMLString::transcode(s);
+        char* t = ICE_XERCES_NS XMLString::transcode(s);
         string r(t);
         delete[] t;
         return r;
@@ -67,7 +65,7 @@ toString(const XMLCh* s)
 //
 // Error handling class for xerces.
 //
-class DOMTreeErrorReporter : public ErrorHandler
+class DOMTreeErrorReporter : public ICE_XERCES_NS ErrorHandler
 {
 public:
 
@@ -78,7 +76,7 @@ public:
     }
 
     virtual void
-    warning(const SAXParseException& ex)
+    warning(const ICE_XERCES_NS SAXParseException& ex)
     {
 	ostringstream os;
 	os << "xerces:  file: \"" << toString(ex.getSystemId())
@@ -89,7 +87,7 @@ public:
     }
     
     virtual void
-    error(const SAXParseException& ex)
+    error(const ICE_XERCES_NS SAXParseException& ex)
     {
 	_sawErrors = true;
 	ostringstream os;
@@ -101,7 +99,7 @@ public:
     }
 
     virtual void
-    fatalError(const SAXParseException& ex)
+    fatalError(const ICE_XERCES_NS SAXParseException& ex)
     {
 	_sawErrors = true;
 	ostringstream os;
@@ -140,9 +138,9 @@ public:
     {
         try
         {
-             XMLPlatformUtils::Initialize();
+             ICE_XERCES_NS XMLPlatformUtils::Initialize();
         }
-        catch(const XMLException& ex)
+        catch(const ICE_XERCES_NS XMLException& ex)
         {
             cerr << "IceXML: xerces initialize failed: " << toString(ex.getMessage()) << endl;
         }
@@ -150,7 +148,7 @@ public:
 
     ~XercesInitializer()
     {
-        XMLPlatformUtils::Terminate();
+        ICE_XERCES_NS XMLPlatformUtils::Terminate();
     }
 };
 
@@ -175,11 +173,11 @@ struct StreamInputImpl
         }
     }
 
-    DOMDocument* document;
+    ICE_XERCES_NS DOMDocument* document;
 
-    DOMNode* current;
+    ICE_XERCES_NS DOMNode* current;
 
-    list<DOMNode*> nodeStack;
+    list<ICE_XERCES_NS DOMNode*> nodeStack;
 
     map<string, ::Ice::ObjectPtr> readObjects;
 };
@@ -225,8 +223,8 @@ IceXML::StreamI::StreamI(const ::Ice::CommunicatorPtr& communicator, std::istrea
     //  discovers errors during the course of parsing the XML
     //  document.
     //
-    XercesDOMParser parser;
-    parser.setValidationScheme(AbstractDOMParser::Val_Auto);
+    ICE_XERCES_NS XercesDOMParser parser;
+    parser.setValidationScheme(ICE_XERCES_NS AbstractDOMParser::Val_Auto);
     if(schema)
     {
 	parser.setDoNamespaces(true);
@@ -245,21 +243,21 @@ IceXML::StreamI::StreamI(const ::Ice::CommunicatorPtr& communicator, std::istrea
     bool errorsOccured = false;
     try
     {
-        MemBufInputSource source((const XMLByte*)_content.data(), _content.size(), "inputsource");
+        ICE_XERCES_NS MemBufInputSource source((const XMLByte*)_content.data(), _content.size(), "inputsource");
         parser.parse(source);
         if(parser.getErrorCount() > 0)
 	{
             errorsOccured = true;
 	}
     }
-    catch(const XMLException& ex)
+    catch(const ICE_XERCES_NS XMLException& ex)
     {
 	ostringstream os;
 	os << "xerces: parsing error: " << toString(ex.getMessage());
 	logger->error(os.str());
         errorsOccured = true;
     }
-    catch(const DOMException& ex)
+    catch(const ICE_XERCES_NS DOMException& ex)
     {
 	ostringstream os;
 	os << "xerces: DOM parsing error: " << toString(ex.msg);
@@ -460,8 +458,8 @@ IceXML::StreamI::readEnum(const string& name, const ::Ice::StringSeq& table)
 {
     startRead(name);
 
-    DOMNode* child = _input->current->getFirstChild();
-    if(child == 0 || child->getNodeType() != DOMNode::TEXT_NODE)
+    ICE_XERCES_NS DOMNode* child = _input->current->getFirstChild();
+    if(child == 0 || child->getNodeType() != ICE_XERCES_NS DOMNode::TEXT_NODE)
     {
 	throw ::Ice::MarshalException(__FILE__, __LINE__);
     }
@@ -508,8 +506,8 @@ IceXML::StreamI::readByte(const string& name)
 {
     startRead(name);
 
-    DOMNode* child = _input->current->getFirstChild();
-    if(child == 0 || child->getNodeType() != DOMNode::TEXT_NODE)
+    ICE_XERCES_NS DOMNode* child = _input->current->getFirstChild();
+    if(child == 0 || child->getNodeType() != ICE_XERCES_NS DOMNode::TEXT_NODE)
     {
 	throw ::Ice::MarshalException(__FILE__, __LINE__);
     }
@@ -614,8 +612,8 @@ IceXML::StreamI::readBool(const string& name)
 {
     startRead(name);
 
-    DOMNode* child = _input->current->getFirstChild();
-    if(child == 0 || child->getNodeType() != DOMNode::TEXT_NODE)
+    ICE_XERCES_NS DOMNode* child = _input->current->getFirstChild();
+    if(child == 0 || child->getNodeType() != ICE_XERCES_NS DOMNode::TEXT_NODE)
     {
 	throw ::Ice::MarshalException(__FILE__, __LINE__);
     }
@@ -675,8 +673,8 @@ IceXML::StreamI::readShort(const string& name)
 {
     startRead(name);
 
-    DOMNode* child = _input->current->getFirstChild();
-    if(child == 0 || child->getNodeType() != DOMNode::TEXT_NODE)
+    ICE_XERCES_NS DOMNode* child = _input->current->getFirstChild();
+    if(child == 0 || child->getNodeType() != ICE_XERCES_NS DOMNode::TEXT_NODE)
     {
 	throw ::Ice::MarshalException(__FILE__, __LINE__);
     }
@@ -741,8 +739,8 @@ IceXML::StreamI::readInt(const string& name)
 {
     startRead(name);
 
-    DOMNode* child = _input->current->getFirstChild();
-    if(child == 0 || child->getNodeType() != DOMNode::TEXT_NODE)
+    ICE_XERCES_NS DOMNode* child = _input->current->getFirstChild();
+    if(child == 0 || child->getNodeType() != ICE_XERCES_NS DOMNode::TEXT_NODE)
     {
 	throw ::Ice::MarshalException(__FILE__, __LINE__);
     }
@@ -802,8 +800,8 @@ IceXML::StreamI::readLong(const string& name)
 {
     startRead(name);
 
-    DOMNode* child = _input->current->getFirstChild();
-    if(child == 0 || child->getNodeType() != DOMNode::TEXT_NODE)
+    ICE_XERCES_NS DOMNode* child = _input->current->getFirstChild();
+    if(child == 0 || child->getNodeType() != ICE_XERCES_NS DOMNode::TEXT_NODE)
     {
 	throw ::Ice::MarshalException(__FILE__, __LINE__);
     }
@@ -863,8 +861,8 @@ IceXML::StreamI::readFloat(const string& name)
 {
     startRead(name);
 
-    DOMNode* child = _input->current->getFirstChild();
-    if(child == 0 || child->getNodeType() != DOMNode::TEXT_NODE)
+    ICE_XERCES_NS DOMNode* child = _input->current->getFirstChild();
+    if(child == 0 || child->getNodeType() != ICE_XERCES_NS DOMNode::TEXT_NODE)
     {
 	throw ::Ice::MarshalException(__FILE__, __LINE__);
     }
@@ -924,8 +922,8 @@ IceXML::StreamI::readDouble(const string& name)
 {
     startRead(name);
 
-    DOMNode* child = _input->current->getFirstChild();
-    if(child == 0 || child->getNodeType() != DOMNode::TEXT_NODE)
+    ICE_XERCES_NS DOMNode* child = _input->current->getFirstChild();
+    if(child == 0 || child->getNodeType() != ICE_XERCES_NS DOMNode::TEXT_NODE)
     {
 	throw ::Ice::MarshalException(__FILE__, __LINE__);
     }
@@ -998,10 +996,10 @@ IceXML::StreamI::readString(const string& name)
 
     startRead(name);
 
-    DOMNode* child = _input->current->getFirstChild();
+    ICE_XERCES_NS DOMNode* child = _input->current->getFirstChild();
     if(child)
     {
-	if(child->getNodeType() != DOMNode::TEXT_NODE)
+	if(child->getNodeType() != ICE_XERCES_NS DOMNode::TEXT_NODE)
 	{
 	    throw ::Ice::MarshalException(__FILE__, __LINE__);
 	}
@@ -1061,11 +1059,11 @@ IceXML::StreamI::readProxy(const string& name)
 {
     startRead(name);
 
-    DOMNode* child = _input->current->getFirstChild();
+    ICE_XERCES_NS DOMNode* child = _input->current->getFirstChild();
     string s;
     if(child)
     {
-	if(child->getNodeType() != DOMNode::TEXT_NODE)
+	if(child->getNodeType() != ICE_XERCES_NS DOMNode::TEXT_NODE)
 	{
 	    throw ::Ice::MarshalException(__FILE__, __LINE__);
 	}
@@ -1152,7 +1150,7 @@ IceXML::StreamI::readObject(const string& name, const string& signatureType, con
 	_input->current = _input->current->getFirstChild();
 	while(_input->current)
 	{
-	    if(_input->current->getNodeType() == DOMNode::ELEMENT_NODE)
+	    if(_input->current->getNodeType() == ICE_XERCES_NS DOMNode::ELEMENT_NODE)
 	    {
 		string dummy;
 		readAttributes(id, type, dummy);
@@ -1252,7 +1250,7 @@ IceXML::StreamI::endWrite()
 void
 IceXML::StreamI::startRead(const ::std::string& element)
 {
-    while(_input->current && _input->current->getNodeType() != DOMNode::ELEMENT_NODE)
+    while(_input->current && _input->current->getNodeType() != ICE_XERCES_NS DOMNode::ELEMENT_NODE)
     {
 	_input->current = _input->current->getNextSibling();
     }
@@ -1374,11 +1372,11 @@ IceXML::StreamI::writeObjectData(const string& name, const string& id, const Ice
 void
 IceXML::StreamI::readAttributes(::std::string& id, ::std::string& type, ::std::string& href)
 {
-    DOMNamedNodeMap* attributes = _input->current->getAttributes();
+    ICE_XERCES_NS DOMNamedNodeMap* attributes = _input->current->getAttributes();
     int attrCount = attributes->getLength();
     for(int i = 0; i < attrCount; i++)
     {
-	DOMNode* attribute = attributes->item(i);
+	ICE_XERCES_NS DOMNode* attribute = attributes->item(i);
 	string name = toString(attribute->getNodeName());
 	if(name == "id")
 	{
@@ -1398,11 +1396,11 @@ IceXML::StreamI::readAttributes(::std::string& id, ::std::string& type, ::std::s
 ::Ice::Int
 IceXML::StreamI::readLength()
 {
-    DOMNamedNodeMap* attributes = _input->current->getAttributes();
+    ICE_XERCES_NS DOMNamedNodeMap* attributes = _input->current->getAttributes();
     int attrCount = attributes->getLength();
     for(int i = 0; i < attrCount; i++)
     {
-	DOMNode* attribute = attributes->item(i);
+	ICE_XERCES_NS DOMNode* attribute = attributes->item(i);
 	string name = toString(attribute->getNodeName());
 	if(name == "length")
 	{

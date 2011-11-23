@@ -56,7 +56,7 @@ prefix			= /opt/Ice-$(VERSION)
 # directory.
 #
 
-#OPENSSL_HOME		?= /opt/openssl
+OPENSSL_HOME		?= /opt/openssl
 
 #
 # If Xerces-C++ is not installed in a standard location where the
@@ -71,7 +71,7 @@ prefix			= /opt/Ice-$(VERSION)
 # ----------------------------------------------------------------------
 
 SHELL			= /bin/sh
-VERSION			= 1.0.0
+VERSION			= 1.0.1
 bindir			= $(top_srcdir)/bin
 libdir			= $(top_srcdir)/lib
 includedir		= $(top_srcdir)/include

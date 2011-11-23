@@ -3780,6 +3780,16 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	}
 	out << sp << nl << "protected final void __response(boolean __ok)";
 	out << sb;
+        for(q = outParams.begin(); q != outParams.end(); ++q)
+        {
+            string typeS = typeToString(q->first, TypeModeIn, classScope);
+            out << nl << typeS << ' ' << fixKwd(q->second) << ';';
+        }
+        if(ret)
+        {
+	    string retS = typeToString(ret, TypeModeIn, classScope);
+            out << nl << retS << " __ret;";
+        }
 	out << nl << "try";
 	out << sb;
 	if(ret || !outParams.empty() || !throws.empty())
@@ -3840,29 +3850,27 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
         out << eb;
         for(q = outParams.begin(); q != outParams.end(); ++q)
         {
-            string typeS = typeToString(q->first, TypeModeIn, classScope);
-            out << nl << typeS << ' ' << fixKwd(q->second) << ';';
             writeMarshalUnmarshalCode(out, classScope, q->first, fixKwd(q->second), false, iter);
         }
         if(ret)
         {
-	    string retS = typeToString(ret, TypeModeIn, classScope);
-            out << nl << retS << " __ret;";
             writeMarshalUnmarshalCode(out, classScope, ret, "__ret", false, iter);
         }
-	out << nl << "ice_response(" << argsAMI << ");";
    	out << eb;
 	out << nl << "catch(Ice.LocalException __ex)";
 	out << sb;
 	out << nl << "ice_exception(__ex);";
+	out << nl << "return;";
 	out << eb;
 	if(!throws.empty())
 	{
 	    out << nl << "catch(Ice.UserException __ex)";
 	    out << sb;
 	    out << nl << "ice_exception(__ex);";
+	    out << nl << "return;";
 	    out << eb;
 	}
+	out << nl << "ice_response(" << argsAMI << ");";
 	out << eb;
 	out << eb << ';';
 
@@ -3928,11 +3936,15 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	    out << sp << nl << "final class " << classNameAMDI << '_' << name
 		<< " extends IceInternal.IncomingAsync implements " << classNameAMD << '_' << name;
 	    out << sb;
+
 	    out << sp << nl << "public" << nl << classNameAMDI << '_' << name << "(IceInternal.Incoming in)";
 	    out << sb;
 	    out << nl << "super(in);";
 	    out << eb;
+
 	    out << sp << nl << "public void" << nl << "ice_response(" << paramsAMD << ")";
+	    out << sb;
+	    out << nl << "if(!_finished)";
 	    out << sb;
 	    if(ret || !outParams.empty())
 	    {
@@ -3957,7 +3969,11 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	    }
 	    out << nl << "__response(true);";
 	    out << eb;
+	    out << eb;
+
 	    out << sp << nl << "public void" << nl << "ice_exception(java.lang.Exception ex)";
+	    out << sb;
+	    out << nl << "if(!_finished)";
 	    out << sb;
 	    if(throws.empty())
 	    {
@@ -3985,6 +4001,8 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 		out << eb;
 	    }
 	    out << eb;
+	    out << eb;
+
 	    out << eb << ';';
 	    
 	    close();

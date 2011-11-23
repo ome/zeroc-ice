@@ -24,6 +24,8 @@
 #include <IcePack/NodeInfo.h>
 #include <IcePack/TraceLevels.h>
 #include <IcePack/Registry.h>
+
+#include <Ice/Xerces.h>
 #include <xercesc/util/PlatformUtils.hpp>
 
 #include <csignal>
@@ -350,9 +352,9 @@ main(int argc, char* argv[])
     //
     try
     {
-	XMLPlatformUtils::Initialize();
+	ICE_XERCES_NS XMLPlatformUtils::Initialize();
     }
-    catch(const XMLException& e)
+    catch(const ICE_XERCES_NS XMLException& e)
     {
 	cout << e.getMessage() << endl;
 	return EXIT_FAILURE;
@@ -542,7 +544,7 @@ main(int argc, char* argv[])
 	communicator = 0;
     }
 
-    XMLPlatformUtils::Terminate();
+    ICE_XERCES_NS XMLPlatformUtils::Terminate();
 
     return status;
 }

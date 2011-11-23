@@ -15,6 +15,7 @@
 #include <Ice/Ice.h>
 #include <IcePack/ServiceBuilder.h>
 #include <IcePack/ServerBuilder.h>
+#include <Ice/Xerces.h>
 
 using namespace std;
 using namespace IcePack;
@@ -28,7 +29,7 @@ public:
 
     ServiceHandler(ServiceBuilder&);
 
-    virtual void startElement(const XMLCh *const name, AttributeList &attrs); 
+    virtual void startElement(const XMLCh *const name, ICE_XERCES_NS AttributeList &attrs); 
 
 private:
 
@@ -44,7 +45,7 @@ IcePack::ServiceHandler::ServiceHandler(ServiceBuilder& builder) :
 }
 
 void 
-IcePack::ServiceHandler::startElement(const XMLCh *const name, AttributeList &attrs)
+IcePack::ServiceHandler::startElement(const XMLCh *const name, ICE_XERCES_NS AttributeList &attrs)
 {
     ComponentHandler::startElement(name, attrs);
 

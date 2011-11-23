@@ -62,15 +62,15 @@ And bzip2 from:
 
 http://sources.redhat.com/bzip2
 
-We are not aware of any download possibilities for e2fsprogs (or the
-UUID routines included in this package). But to our knowledge, every
+We are not aware of any download possibilities for e2fsprogs-devel (or
+the UUID routines included in this RPM). But to our knowledge, every
 Linux distribution includes this, so there should be no problem.
 
 
-Python 2
---------
+Python 2.2
+----------
 
-To run the automated test suite, you will need Python 2. If you have
+To run the automated test suite, you will need Python 2.2. If you have
 no interest in running the test scripts, Python is not required.
 
 

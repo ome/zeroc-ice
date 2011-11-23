@@ -24,9 +24,12 @@ using namespace std;
 using namespace Slice;
 using namespace IceUtil;
 
-Slice::Gen::Gen(const string& name, const string& base,	const string& include, const vector<string>& includePaths,
+Slice::Gen::Gen(const string& name, const string& base,	const string& headerExtension,
+	        const string& sourceExtension, const string& include, const vector<string>& includePaths,
 		const string& dllExport, const string& dir, bool imp) :
     _base(base),
+    _headerExtension(headerExtension),
+    _sourceExtension(sourceExtension),
     _include(include),
     _includePaths(includePaths),
     _dllExport(dllExport),
@@ -48,8 +51,8 @@ Slice::Gen::Gen(const string& name, const string& base,	const string& include, c
 
     if(_impl)
     {
-        string fileImplH = _base + "I.h";
-        string fileImplC = _base + "I.cpp";
+        string fileImplH = _base + "I." + _headerExtension;
+        string fileImplC = _base + "I." + _sourceExtension;
         if(!dir.empty())
         {
             fileImplH = dir + '/' + fileImplH;
@@ -93,8 +96,8 @@ Slice::Gen::Gen(const string& name, const string& base,	const string& include, c
         implH << '\n';
     }
 
-    string fileH = _base + ".h";
-    string fileC = _base + ".cpp";
+    string fileH = _base + "." + _headerExtension;
+    string fileC = _base + "." + _sourceExtension;
     if(!dir.empty())
     {
 	fileH = dir + '/' + fileH;
@@ -165,7 +168,7 @@ Slice::Gen::generate(const UnitPtr& unit)
     {
 	C << _include << '/';
     }
-    C << _base << ".h>";
+    C << _base << "." << _headerExtension << ">";
 
     H << "\n#include <Ice/LocalObjectF.h>";
     H << "\n#include <Ice/ProxyF.h>";
@@ -3388,12 +3391,13 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
 	}
 	C << eb;
 	writeUnmarshalCode(C, outParams, ret);
-	C << nl << "ice_response(" << args << ");";
 	C << eb;
 	C << nl << "catch(const ::Ice::Exception& __ex)";
 	C << sb;
 	C << nl << "ice_exception(__ex);";
+	C << nl << "return;";
 	C << eb;
+	C << nl << "ice_response(" << args << ");";
 	C << eb;
     }
 
@@ -3536,8 +3540,10 @@ Slice::Gen::AsyncImplVisitor::visitOperation(const OperationPtr& p)
 	H.dec();
 	H << nl << "public:";
 	H.inc();
+
 	H << sp;
 	H << nl << classNameAMD << '_' << name << "(::IceInternal::Incoming&);";
+
 	H << sp;
 	H << nl << "virtual void ice_response(" << params << ");";
 	H << nl << "virtual void ice_exception(const ::Ice::Exception&);";
@@ -3552,8 +3558,11 @@ Slice::Gen::AsyncImplVisitor::visitOperation(const OperationPtr& p)
 	C.dec();
 	C << sb;
 	C << eb;
+
 	C << sp << nl << "void" << nl << "::IceAsync" << classScopedAMD << '_' << name << "::ice_response("
 	  << paramsDecl << ')';
+	C << sb;
+	C << nl << "if(!_finished)";
 	C << sb;
 	if(ret || !outParams.empty())
 	{
@@ -3570,8 +3579,12 @@ Slice::Gen::AsyncImplVisitor::visitOperation(const OperationPtr& p)
 	}
 	C << nl << "__response(true);";
 	C << eb;
+	C << eb;
+
 	C << sp << nl << "void" << nl << "::IceAsync" << classScopedAMD << '_' << name
 	  << "::ice_exception(const ::Ice::Exception& ex)";
+	C << sb;
+	C << nl << "if(!_finished)";
 	C << sb;
 	if(throws.empty())
 	{
@@ -3598,15 +3611,24 @@ Slice::Gen::AsyncImplVisitor::visitOperation(const OperationPtr& p)
 	    C << eb;
 	}
 	C << eb;
+	C << eb;
+
 	C << sp << nl << "void" << nl << "::IceAsync" << classScopedAMD << '_' << name
 	  << "::ice_exception(const ::std::exception& ex)";
 	C << sb;
+	C << nl << "if(!_finished)";
+	C << sb;
 	C << nl << "__exception(ex);";
 	C << eb;
+	C << eb;
+
 	C << sp << nl << "void" << nl << "::IceAsync" << classScopedAMD << '_' << name
 	  << "::ice_exception()";
 	C << sb;
+	C << nl << "if(!_finished)";
+	C << sb;
 	C << nl << "__exception();";
+	C << eb;
 	C << eb;
     }
 }

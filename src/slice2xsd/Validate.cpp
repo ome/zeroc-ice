@@ -14,12 +14,11 @@
 
 #include <IceUtil/Config.h>
 
+#include <Ice/Xerces.h>
 #include <xercesc/util/PlatformUtils.hpp>
 #include <xercesc/util/XMLString.hpp>
-
 #include <xercesc/dom/DOMException.hpp>
 #include <xercesc/parsers/XercesDOMParser.hpp>
-
 #include <xercesc/sax/ErrorHandler.hpp>
 #include <xercesc/sax/SAXParseException.hpp>
 
@@ -33,13 +32,13 @@ using namespace std;
 static string
 toString(const XMLCh* s)
 {
-    char* t = XMLString::transcode(s);
+    char* t = ICE_XERCES_NS XMLString::transcode(s);
     string r(t);
     delete[] t;
     return r;
 }
 
-class DOMTreeErrorReporter : public ErrorHandler
+class DOMTreeErrorReporter : public ICE_XERCES_NS ErrorHandler
 {
 public:
     DOMTreeErrorReporter() :
@@ -48,7 +47,7 @@ public:
     }
 
     void
-    warning(const SAXParseException& toCatch)
+    warning(const ICE_XERCES_NS SAXParseException& toCatch)
     {
 	cerr << "Warning at file \"" << toString(toCatch.getSystemId())
 	     << "\", line " << toCatch.getLineNumber()
@@ -57,7 +56,7 @@ public:
     }
     
     void
-    error(const SAXParseException& toCatch)
+    error(const ICE_XERCES_NS SAXParseException& toCatch)
     {
 	_sawErrors = true;
 	cerr << "Error at file \"" << toString(toCatch.getSystemId())
@@ -67,7 +66,7 @@ public:
     }
 
     void
-    fatalError(const SAXParseException& toCatch)
+    fatalError(const ICE_XERCES_NS SAXParseException& toCatch)
     {
 	_sawErrors = true;
 	cerr << "Fatal at file \"" << toString(toCatch.getSystemId())
@@ -104,9 +103,9 @@ main(int argc, char** argv)
     //
     try
     {
-        XMLPlatformUtils::Initialize();
+        ICE_XERCES_NS XMLPlatformUtils::Initialize();
     }
-    catch(const XMLException& toCatch)
+    catch(const ICE_XERCES_NS XMLException& toCatch)
     {
         cerr << "Error during Xerces-c Initialization.\n"
              << "  Exception message:"
@@ -154,8 +153,8 @@ main(int argc, char** argv)
         //  The parser will call back to methods of the ErrorHandler if it
         //  discovers errors during the course of parsing the XML document.
         //
-        XercesDOMParser* parser = new XercesDOMParser;
-        parser->setValidationScheme(XercesDOMParser::Val_Auto);
+        ICE_XERCES_NS XercesDOMParser* parser = new ICE_XERCES_NS XercesDOMParser;
+        parser->setValidationScheme(ICE_XERCES_NS XercesDOMParser::Val_Auto);
         parser->setDoNamespaces(true);
         parser->setDoSchema(true);
         parser->setValidationSchemaFullChecking(true);
@@ -176,12 +175,12 @@ main(int argc, char** argv)
                 errorsOccured = true;
             }
         }
-        catch(const XMLException& e)
+        catch(const ICE_XERCES_NS XMLException& e)
         {
             cerr << "An error occured during parsing\n   Message: " << toString(e.getMessage()) << endl;
             errorsOccured = true;
         }
-        catch(const DOMException& e)
+        catch(const ICE_XERCES_NS DOMException& e)
         {
             cerr << "A DOM error occured during parsing\n   DOMException code: " << e.code << endl;
             errorsOccured = true;
@@ -195,7 +194,7 @@ main(int argc, char** argv)
         delete parser;
     }
 
-    XMLPlatformUtils::Terminate();
+    ICE_XERCES_NS XMLPlatformUtils::Terminate();
 
     return (errorsOccured) ? EXIT_FAILURE : EXIT_SUCCESS;
 }

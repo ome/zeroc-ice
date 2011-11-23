@@ -55,7 +55,7 @@ CPPFLAGS	:= -I. $(DB_FLAGS) $(CPPFLAGS)
 
 $(CLIENT): $(OBJS) $(COBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(COBJS) $(LIBS) -lreadline -lcurses
+	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(COBJS) $(LIBS) -lreadline -lncurses
 
 $(SERVER): $(OBJS) $(SOBJS)
 	rm -f $@
@@ -63,7 +63,7 @@ $(SERVER): $(OBJS) $(SOBJS)
 
 $(COLLOCATED): $(OBJS) $(COLOBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(COLOBJS) -lFreeze -lIceXML $(LIBS) $(DB_LIBS) -lreadline -lcurses
+	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(COLOBJS) -lFreeze -lIceXML $(LIBS) $(DB_LIBS) -lreadline -lncurses
 
 NameIdentitiesDict.h NameIdentitiesDict.cpp: PhoneBook.ice $(SLICE2FREEZE)
 	rm -f NameIdentitiesDict.h NameIdentitiesDict.cpp
