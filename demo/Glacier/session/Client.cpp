@@ -15,6 +15,7 @@
 #include <HelloSession.h>
 
 using namespace std;
+using namespace Demo;
 
 void
 menu()
@@ -42,7 +43,6 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
     //
     const char* glacierStarterEndpointsProperty = "Glacier.Starter.Endpoints";
     string glacierStarterEndpoints = properties->getProperty(glacierStarterEndpointsProperty);
-    assert (!glacierStarterEndpoints.empty());
     Ice::ObjectPrx starterBase = communicator->stringToProxy("Glacier/starter:" + glacierStarterEndpoints);
     Glacier::StarterPrx starter = Glacier::StarterPrx::checkedCast(starterBase);
     if(!starter)
@@ -253,7 +253,7 @@ main(int argc, char* argv[])
 
     try
     {
-	Ice::PropertiesPtr properties = Ice::createProperties(argc, argv);
+	Ice::PropertiesPtr properties = Ice::createProperties();
         properties->load("config");
 	communicator = Ice::initializeWithProperties(argc, argv, properties);
 	status = run(argc, argv, communicator);

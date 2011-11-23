@@ -72,6 +72,45 @@ Package=<4>
 
 ###############################################################################
 
+Project: "Glacier2"=.\src\Glacier2\Glacier2.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "Glacier2Router"=.\src\Glacier2\Glacier2Router.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Glacier2
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "GlacierRouter"=.\src\Glacier\GlacierRouter.dsp - Package Owner=<4>
 
 Package=<5>
@@ -998,6 +1037,54 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name simpleIcePackSvc
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Glacier2
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name glacier2CallbackC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name glacier2CallbackS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Glacier2Router
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name slice2py
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name slice2vb
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name routerC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name routerS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name printerC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name printerS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name simpleFSC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name simpleFSS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name streamC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name invokeC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name invokeS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name glacier2CallbackSS
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -1680,6 +1767,66 @@ Package=<4>
 
 ###############################################################################
 
+Project: "glacier2CallbackC"=.\demo\Glacier2\callback\glacier2CallbackC.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Glacier2
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "glacier2CallbackS"=.\demo\Glacier2\callback\glacier2CallbackS.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "glacier2CallbackSS"=.\demo\Glacier2\callback\glacier2CallbackSS.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Glacier2
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "helloC"=.\demo\Ice\hello\helloC.dsp - Package Owner=<4>
 
 Package=<5>
@@ -1929,6 +2076,42 @@ Package=<4>
 
 ###############################################################################
 
+Project: "invokeC"=.\demo\Ice\invoke\invokeC.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "invokeS"=.\demo\Ice\invoke\invokeS.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "latencyC"=.\demo\Ice\latency\latencyC.dsp - Package Owner=<4>
 
 Package=<5>
@@ -2151,67 +2334,19 @@ Package=<4>
     Project_Dep_Name IcePatch
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name Freeze
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name GlacierRouter
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IceBox
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IceBoxC
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IceBoxS
-    End Project Dependency
-    Begin Project Dependency
     Project_Dep_Name icecpp
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name IcePatchC
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name IcePatchS
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IceStorm
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IceStormC
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IceStormS
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IceXML
-    End Project Dependency
-    Begin Project Dependency
     Project_Dep_Name Slice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IcePack
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IcePackC
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IcePackNode
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IcePackRegistry
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name GlacierStarter
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name slice2cpp
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name slice2freeze
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name TransformDB
+    Project_Dep_Name Glacier2
     End Project Dependency
 }}}
 
@@ -2448,6 +2583,81 @@ Package=<4>
 
 ###############################################################################
 
+Project: "printerC"=.\demo\book\printer\printerC.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "printerS"=.\demo\book\printer\PrinterS.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "routerC"=.\test\Glacier2\router\routerC.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Glacier2
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "routerS"=.\test\Glacier2\router\routerS.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "sessionC"=.\demo\Glacier\session\sessionC.dsp - Package Owner=<4>
 
 Package=<5>
@@ -2509,6 +2719,42 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name IcePack
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "simpleFSC"=.\demo\book\simple_filesystem\simpleFSC.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "simpleFSS"=.\demo\book\simple_filesystem\simpleFSS.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
     End Project Dependency
 }}}
 
@@ -2745,6 +2991,42 @@ Package=<4>
 
 ###############################################################################
 
+Project: "slice2py"=.\src\slice2py\slice2py.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Slice
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "slice2vb"=.\src\slice2vb\slice2vb.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Slice
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "sliceexAMDS"=.\test\Ice\slicing\exceptions\sliceexAMDS.dsp - Package Owner=<4>
 
 Package=<5>
@@ -2901,6 +3183,24 @@ Package=<4>
 
 ###############################################################################
 
+Project: "streamC"=.\test\Ice\stream\streamC.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "thread"=.\test\IceUtil\thread\thread.dsp - Package Owner=<4>
 
 Package=<5>
@@ -2927,6 +3227,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name Ice
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -2941,6 +3244,9 @@ Package=<4>
 {{{
     Begin Project Dependency
     Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
     End Project Dependency
 }}}
 

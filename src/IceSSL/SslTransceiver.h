@@ -10,11 +10,12 @@
 #ifndef ICE_SSL_TRANSCEIVER_H
 #define ICE_SSL_TRANSCEIVER_H
 
+#include <IceUtil/Mutex.h>
+#include <IceUtil/StaticMutex.h>
 #include <Ice/LoggerF.h>
 #include <Ice/StatsF.h>
 #include <Ice/Transceiver.h>
 #include <Ice/Buffer.h>
-#include <IceUtil/Mutex.h>
 #include <IceSSL/SslTransceiverF.h>
 #include <IceSSL/OpenSSLPluginIF.h>
 #include <IceSSL/TraceLevelsF.h>
@@ -129,9 +130,11 @@ public:
 
     virtual SOCKET fd();
     virtual void close();
-    virtual void shutdown();
+    virtual void shutdownWrite();
+    virtual void shutdownReadWrite();
     virtual void write(IceInternal::Buffer&, int) = 0;
     virtual void read(IceInternal::Buffer&, int);
+    virtual std::string type() const;
     virtual std::string toString() const;
 
     void forceHandshake();
@@ -145,7 +148,7 @@ public:
 
 protected:
 
-    virtual int internalShutdown(int timeout = 0);
+    int internalShutdownWrite(int timeout);
 
     int connect();
     int accept();
@@ -167,8 +170,6 @@ protected:
     static void addTransceiver(SSL*, SslTransceiver*);
     static void removeTransceiver(SSL*);
 
-    virtual void showConnectionInfo() = 0;
-
     void showCertificateChain(BIO*);
     void showPeerCertificate(BIO*, const char*);
     void showSharedCiphers(BIO*);
@@ -177,10 +178,12 @@ protected:
     void showHandshakeStats(BIO*);
     void showClientCAList(BIO*, const char*);
 
-    void setLastError(int errorCode) { _lastError = errorCode; };
+    void setLastError(int errorCode) { _lastError = errorCode; }
+
+    virtual void showConnectionInfo() = 0;
 
     static SslTransceiverMap _transceiverMap;
-    static IceUtil::Mutex _transceiverRepositoryMutex;
+    static IceUtil::StaticMutex _transceiverRepositoryMutex;
 
     // Pointer to the OpenSSL Connection structure.
     SSL* _sslConnection;
@@ -205,8 +208,6 @@ protected:
     const TraceLevelsPtr _traceLevels;
     const Ice::LoggerPtr _logger;
     const Ice::StatsPtr _stats;
-    const std::string _name;
-    const std::string _desc;
 
     SOCKET _fd;
     fd_set _rFdSet;

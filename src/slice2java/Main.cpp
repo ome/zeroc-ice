@@ -33,6 +33,7 @@ usage(const char* n)
         "-d, --debug             Print debug messages.\n"
         "--ice                   Permit `Ice' prefix (for building Ice source code only)\n"
         "--checksum CLASS        Generate checksums for Slice definitions into CLASS.\n"
+        "--stream                Generate marshaling support for public stream API.\n"
         ;
     // Note: --case-sensitive is intentionally not shown here!
 }
@@ -51,6 +52,7 @@ main(int argc, char* argv[])
     bool caseSensitive = false;
     bool depend = false;
     string checksumClass;
+    bool stream = false;
 
     int idx = 1;
     while(idx < argc)
@@ -188,6 +190,15 @@ main(int argc, char* argv[])
             }
             argc -= 2;
 	}
+	else if(strcmp(argv[idx], "--stream") == 0)
+	{
+	    stream = true;
+	    for(int i = idx ; i + 1 < argc ; ++i)
+	    {
+		argv[i] = argv[i + 1];
+	    }
+	    --argc;
+	}
         else if(argv[idx][0] == '-')
         {
             cerr << argv[0] << ": unknown option `" << argv[idx] << "'" << endl;
@@ -236,7 +247,7 @@ main(int argc, char* argv[])
 	    }
 
 	    UnitPtr p = Unit::createUnit(false, false, ice, caseSensitive);
-	    int parseStatus = p->parse(cppHandle, debug);
+	    int parseStatus = p->parse(cppHandle, debug, false);
 
 	    if(!icecpp.close())
 	    {
@@ -255,7 +266,7 @@ main(int argc, char* argv[])
 		    p->destroy();
 		    return EXIT_FAILURE;
 		}
-		gen.generate(p);
+		gen.generate(p, stream);
 		if(tie)
 		{
 		    gen.generateTie(p);

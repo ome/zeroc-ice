@@ -20,9 +20,12 @@ OBJS		= Scanner.o \
 		  Parser.o \
 		  CPlusPlusUtil.o \
 		  CsUtil.o \
+		  VbUtil.o \
 		  JavaUtil.o \
 		  Preprocessor.o \
-		  Checksum.o
+		  Checksum.o \
+		  PythonUtil.o \
+		  DotNetNames.o
 
 SRCS		= $(OBJS:.o=.cpp)
 

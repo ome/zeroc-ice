@@ -15,9 +15,9 @@
 using namespace Freeze;
 using namespace Ice;
 using namespace std;
+using namespace Demo;
 
-
-static void
+void
 testFailed(const char* expr, const char* file, unsigned int line)
 {
     std::cout << "failed!" << std::endl;
@@ -42,7 +42,7 @@ public:
 	_start = IceUtil::Time::now();
     }
 
-    double
+    IceUtil::Time
     stop()
     {
 	if(!_stopped)
@@ -51,7 +51,7 @@ public:
 	    _stop = IceUtil::Time::now();
 	}
 
-	return (_stop - _start) * 1000.0;
+	return _stop - _start;
     }
 
 private:
@@ -149,15 +149,336 @@ public:
 
 private:
 
-    void IntIntMapTest();
-    void generatedRead(IntIntMap&, int, const GeneratorPtr&);
-    void Struct1Struct2MapTest();
-    void Struct1Class1MapTest();
+    //
+    // We need to define the template function here because of a VC6 bug :-(.
+    //
+
+    void IntIntMapIndexTest(IntIntMap&) 
+    {}
+    void IntIntMapIndexTest(IndexedIntIntMap&);
+    template<class T> void IntIntMapTest(const string& mapName, T* = 0)
+    {
+	T m(_connection, mapName);	
+	//
+	// Populate the database.
+	//
+	int i;
+	_watch.start();
+	{
+	    TransactionHolder txHolder(_connection);
+	    for(i = 0; i < _repetitions; ++i)
+	    {
+#if defined(_MSC_VER) && (_MSC_VER < 1310)
+		m.put(T::value_type(i, i));
+#else
+		m.put(typename T::value_type(i, i));
+#endif
+	    }
+	    txHolder.commit();
+	}
+	IceUtil::Time total = _watch.stop();
+	IceUtil::Time perRecord = total / _repetitions;
+
+	cout << "\ttime for " << _repetitions << " writes: " << total * 1000 << "ms" << endl;
+	cout << "\ttime per write: " << perRecord * 1000 << "ms" << endl;
+	
+	//
+	// Read each record.
+	//
+	_watch.start();
+	for(i = 0; i < _repetitions; ++i)
+	{
+	    typename T::iterator p = m.find(i);
+	    test(p != m.end());
+	    test(p->second == i);
+	}
+	total = _watch.stop();
+	perRecord = total / _repetitions;
+	
+	cout << "\ttime for " << _repetitions << " reads: " << total * 1000  << "ms" << endl;
+	cout << "\ttime per read: " << perRecord * 1000 << "ms" << endl;
+	
+	//
+	// Optional index sub-test
+	//
+	IntIntMapIndexTest(m);
+	
+	//
+	// Remove each record.
+	//
+	_watch.start();
+	{
+	    TransactionHolder txHolder(_connection);
+	    for(i = 0; i < _repetitions; ++i)
+	    {
+		m.erase(i);
+	    }
+	    txHolder.commit();
+	}
+	total = _watch.stop();
+	perRecord = total / _repetitions;
+	
+	cout << "\ttime for " << _repetitions << " removes: " << total * 1000 << "ms" << endl;
+	cout << "\ttime per remove: " << perRecord * 1000 << "ms" << endl;
+    }
+   
+    
+    void generatedReadWithIndex(IntIntMap&, int, const GeneratorPtr&)
+    {}
+    void generatedReadWithIndex(IndexedIntIntMap&, int, const GeneratorPtr&);
+    template<class T> void generatedRead(T& m, int reads , const GeneratorPtr& gen)
+    {
+	_watch.start();
+	for(int i = 0; i < reads; ++i)
+	{
+	    int key = gen->next();
+	    typename T::iterator p = m.find(key);
+	    test(p != m.end());
+	    test(p->second == key);
+	}
+	IceUtil::Time total = _watch.stop();
+	IceUtil::Time perRecord = total / reads;
+	
+	cout << "\ttime for " << reads << " reads of " << gen->toString() << " records: " << total * 1000 << "ms"
+	     << endl;
+	cout << "\ttime per read: " << perRecord * 1000 << "ms" << endl;
+	
+	generatedReadWithIndex(m, reads, gen);
+    }
+
+    
+    void Struct1Struct2MapIndexTest(Struct1Struct2Map&) 
+    {}
+    void Struct1Struct2MapIndexTest(IndexedStruct1Struct2Map&);
+    template<class T> void Struct1Struct2MapTest(const string& mapName, T* = 0)
+    {
+	T m(_connection, mapName);
+	
+	//
+	// Populate the database.
+	//
+	Struct1 s1;
+	Struct2 s2;
+	int i;
+	_watch.start();
+	{
+	    TransactionHolder txHolder(_connection);
+	    for(i = 0; i < _repetitions; ++i)
+	    {
+		s1.l = i;
+		ostringstream os;
+		os << i;
+		s2.s = os.str();
+		s2.s1 = s1;
+
+#if defined(_MSC_VER) && (_MSC_VER < 1310)
+		m.put(T::value_type(s1, s2));
+#else
+		m.put(typename T::value_type(s1, s2));
+#endif
+	    }
+	    txHolder.commit();
+	}
+	IceUtil::Time total = _watch.stop();
+	IceUtil::Time perRecord = total / _repetitions;
+	
+	cout << "\ttime for " << _repetitions << " writes: " << total * 1000 << "ms" << endl;
+	cout << "\ttime per write: " << perRecord * 1000 << "ms" << endl;
+	
+	//
+	// Read each record.
+	//
+	_watch.start();
+	for(i = 0; i < _repetitions; ++i)
+	{
+	    s1.l = i;
+	    typename T::iterator p = m.find(s1);
+	    test(p != m.end());
+	    ostringstream os;
+	    os << i;
+	    test(p->second.s == os.str());
+	}
+	total = _watch.stop();
+	perRecord = total / _repetitions;
+	
+	cout << "\ttime for " << _repetitions << " reads: " << total * 1000 << "ms" << endl;
+	cout << "\ttime per read: " << perRecord * 1000 << "ms" << endl;
+	
+	//
+	// Optional index test
+	//
+	Struct1Struct2MapIndexTest(m);
+	
+	//
+	// Remove each record.
+	//
+	_watch.start();
+	{
+	    TransactionHolder txHolder(_connection);
+	    for(i = 0; i < _repetitions; ++i)
+	    {
+		s1.l = i;
+		m.erase(s1);
+	    }
+	    txHolder.commit();
+	}
+	total = _watch.stop();
+	perRecord = total / _repetitions;
+	
+	cout << "\ttime for " << _repetitions << " removes: " << total * 1000 << "ms" << endl;
+	cout << "\ttime per remove: " << perRecord * 1000 << "ms" << endl;
+    }
+
+   
+    void Struct1Class1MapIndexTest(Struct1Class1Map&) 
+    {}
+    void Struct1Class1MapIndexTest(IndexedStruct1Class1Map&);
+    template<class T> void Struct1Class1MapTest(const string& mapName, T* = 0)
+    {
+	T m(_connection, mapName);
+	
+	//
+	// Populate the database.
+	//
+	Struct1 s1;
+	Class1Ptr c1 = new Class1();
+	int i;
+	_watch.start();
+	{
+	    TransactionHolder txHolder(_connection);
+	    for(i = 0; i < _repetitions; ++i)
+	    {
+		s1.l = i;
+		ostringstream os;
+		os << i;
+		c1->s = os.str();
+#if defined(_MSC_VER) && (_MSC_VER < 1310)
+		m.put(T::value_type(s1, c1));
+#else
+		m.put(typename T::value_type(s1, c1));
+#endif
+	    }
+	    txHolder.commit();
+	}
+	IceUtil::Time total = _watch.stop();
+	IceUtil::Time perRecord = total / _repetitions;
+	
+	cout << "\ttime for " << _repetitions << " writes: " << total * 1000 << "ms" << endl;
+	cout << "\ttime per write: " << perRecord * 1000 << "ms" << endl;
+	
+	//
+	// Read each record.
+	//
+	_watch.start();
+	for(i = 0; i < _repetitions; ++i)
+	{
+	    s1.l = i;
+	    typename T::iterator p = m.find(s1);
+	    test(p != m.end());
+	    ostringstream os;
+	    os << i;
+	    test(p->second->s == os.str());
+	}
+	total = _watch.stop();
+	perRecord = total / _repetitions;
+	
+	cout << "\ttime for " << _repetitions << " reads: " << total * 1000 << "ms" << endl;
+	cout << "\ttime per read: " << perRecord * 1000 << "ms" << endl;
+	
+	//
+	// Optional index test
+	//
+	
+	Struct1Class1MapIndexTest(m);
+	
+	//
+	// Remove each record.
+	//
+	_watch.start();
+	{
+	    TransactionHolder txHolder(_connection);
+	    for(i = 0; i < _repetitions; ++i)
+	    {
+		s1.l = i;
+		m.erase(s1);
+	    }
+	    txHolder.commit();
+	}
+	total = _watch.stop();
+	perRecord = total / _repetitions;
+	
+	cout << "\ttime for " << _repetitions << " removes: " << total * 1000 << "ms" << endl;
+	cout << "\ttime per remove: " << perRecord * 1000 << "ms" << endl;
+    }
+   
+    void IntIntMapReadIndexTest(IntIntMap&)
+    {}
+    void IntIntMapReadIndexTest(IndexedIntIntMap&);
+    template<class T> void IntIntMapReadTest(const string& mapName, T* = 0)
+    {
+	T m(_connection, mapName);
+	
+	//
+	// Populate the database.
+	//
+	int i;
+	_watch.start();
+	{
+	    TransactionHolder txHolder(_connection);
+	    for(i = 0; i < _repetitions; ++i)
+	    {
+#if defined(_MSC_VER) && (_MSC_VER < 1310)
+		m.put(T::value_type(i, i));
+#else
+		m.put(typename T::value_type(i, i));
+#endif
+	    }
+	    txHolder.commit();
+	}
+	IceUtil::Time total = _watch.stop();
+	IceUtil::Time perRecord = total / _repetitions;
+	
+	cout << "\ttime for " << _repetitions << " writes: " << total * 1000 << "ms" << endl;
+	cout << "\ttime per write: " << perRecord * 1000 << "ms" << endl;
+	
+	//
+	// Do some read tests.
+	//
+	generatedRead(m, _repetitions, new SequentialGenerator(1000, 1000));
+	generatedRead(m, _repetitions, new SequentialGenerator(2000, 2009));
+	generatedRead(m, _repetitions, new SequentialGenerator(3000, 3099));
+	generatedRead(m, _repetitions, new SequentialGenerator(4000, 4999));
+	
+	//
+	// Do a random read test.
+	//
+	generatedRead(m, _repetitions, new RandomGenerator(0, 10000));
+	
+	//
+	// Remove each record.
+	//
+	/*
+	 *      For this test I don't want to remove the records because I
+	 *      want to examine the cache stats for the database.
+	 *
+	 _watch.start();
+	 for(i = 0; i < _repetitions; ++i)
+	 {
+	     m.erase(i);
+	 }
+	 total = _watch.stop();
+	 perRecord = total / _repetitions;
+	 
+	 cout << "\ttime for " << _repetitions << " removes: " << total * 1000 << "ms" << endl;
+	 cout << "\ttime per remove: " << perRecord * 1000 << "ms" << endl;
+	*/
+    }
+
+   
     void Struct1ObjectMapTest();
-    void IntIntMapReadTest();
 
     const string _envName;
-    ConnectionPtr _connection;
+    Freeze::ConnectionPtr _connection;
     StopWatch _watch;
     int _repetitions;
 };
@@ -169,277 +490,102 @@ TestApp::TestApp(const string& envName) :
 }
 
 void
-TestApp::IntIntMapTest()
+TestApp::IntIntMapIndexTest(IndexedIntIntMap& m)
 {
-    IntIntMap m(_connection, "IntIntMap");
-
-    //
-    // Populate the database.
-    //
-    int i;
-    _watch.start();
-    {
-	TransactionHolder txHolder(_connection);
-	for(i = 0; i < _repetitions; ++i)
-	{
-	    m.put(IntIntMap::value_type(i, i));
-	}
-	txHolder.commit();
-    }
-    double total = _watch.stop();
-    double perRecord = total / _repetitions;
-
-    cout << "\ttime for " << _repetitions << " writes: " << total  << "ms" << endl;
-    cout << "\ttime per write: " << perRecord << "ms" << endl;
-
     //
     // Read each record.
     //
     _watch.start();
-    for(i = 0; i < _repetitions; ++i)
+    for(int i = 0; i < _repetitions; ++i)
     {
-	IntIntMap::iterator p = m.find(i);
+	IndexedIntIntMap::iterator p = m.findByValue(i);
 	test(p != m.end());
 	test(p->second == i);
     }
-    total = _watch.stop();
-    perRecord = total / _repetitions;
+    IceUtil::Time total = _watch.stop();
+    IceUtil::Time perRecord = total / _repetitions;
 
-    cout << "\ttime for " << _repetitions << " reads: " << total  << "ms" << endl;
-    cout << "\ttime per read: " << perRecord << "ms" << endl;
-
-    //
-    // Remove each record.
-    //
-    _watch.start();
-    {
-	TransactionHolder txHolder(_connection);
-	for(i = 0; i < _repetitions; ++i)
-	{
-	    m.erase(i);
-	}
-	txHolder.commit();
-    }
-    total = _watch.stop();
-    perRecord = total / _repetitions;
-
-    cout << "\ttime for " << _repetitions << " removes: " << total  << "ms" << endl;
-    cout << "\ttime per remove: " << perRecord << "ms" << endl;
+    cout << "\ttime for " << _repetitions << " reverse (indexed) reads: " << total * 1000 << "ms"
+	 << endl;
+    cout << "\ttime per reverse read: " << perRecord * 1000 << "ms" << endl;
 }
 
 void
-TestApp::generatedRead(IntIntMap& m, int reads , const GeneratorPtr& gen)
+TestApp::generatedReadWithIndex(IndexedIntIntMap& m, int reads, const GeneratorPtr& gen)
 {
     _watch.start();
     for(int i = 0; i < reads; ++i)
     {
-	int key = gen->next();
-	IntIntMap::iterator p = m.find(key);
+	int value = gen->next();
+	IndexedIntIntMap::iterator p = m.findByValue(value);
 	test(p != m.end());
-	test(p->second == key);
+	test(p->second == value);
     }
-    double total = _watch.stop();
-    double perRecord = total / reads;
+    IceUtil::Time total = _watch.stop();
+    IceUtil::Time perRecord = total / reads;
 
-    cout << "\ttime for " << reads << " reads of " << gen->toString() << " records: " << total << "ms" << endl;
-    cout << "\ttime per read: " << perRecord << "ms" << endl;
-    
+    cout << "\ttime for " << reads << " reverse (indexed) reads of " << gen->toString() << " records: "
+	 << total * 1000 << "ms" << endl;
+    cout << "\ttime per reverse read: " << perRecord * 1000 << "ms" << endl;
 }
 
+
 void
-TestApp::IntIntMapReadTest()
+TestApp::Struct1Struct2MapIndexTest(IndexedStruct1Struct2Map& m)
 {
-    IntIntMap m(_connection, "IntIntMap");
-
-    //
-    // Populate the database.
-    //
     int i;
-    _watch.start();
-    {
-	TransactionHolder txHolder(_connection);
-	for(i = 0; i < _repetitions; ++i)
-	{
-	    m.put(IntIntMap::value_type(i, i));
-	}
-	txHolder.commit();
-    }
-    double total = _watch.stop();
-    double perRecord = total / _repetitions;
-
-    cout << "\ttime for " << _repetitions << " writes: " << total  << "ms" << endl;
-    cout << "\ttime per write: " << perRecord << "ms" << endl;
-
-    //
-    // Do some read tests.
-    //
-    generatedRead(m, _repetitions, new SequentialGenerator(1000, 1000));
-    generatedRead(m, _repetitions, new SequentialGenerator(2000, 2009));
-    generatedRead(m, _repetitions, new SequentialGenerator(3000, 3099));
-    generatedRead(m, _repetitions, new SequentialGenerator(4000, 4999));
-    
-    //
-    // Do a random read test.
-    //
-    generatedRead(m, _repetitions, new RandomGenerator(0, 10000));
-
-    //
-    // Remove each record.
-    //
-/*
- *      For this test I don't want to remove the records because I
- *      want to examine the cache stats for the database.
- *
     _watch.start();
     for(i = 0; i < _repetitions; ++i)
     {
-	m.erase(i);
+	ostringstream os;
+	os << i;
+
+	IndexedStruct1Struct2Map::iterator p = m.findByS(os.str());
+	test(p != m.end());
+	test(p->first.l == i);
+	test(p->second.s1.l == i);
     }
-    total = _watch.stop();
-    perRecord = total / _repetitions;
+    
+    for(i = 0; i < _repetitions; ++i)
+    {
+	Struct1 s1;
+	s1.l = i;
+	IndexedStruct1Struct2Map::iterator p = m.findByS1(s1);
+	test(p != m.end());
+	test(p->first.l == i);
+	test(p->second.s1.l == i);
+    }
 
-    cout << "\ttime for " << _repetitions << " removes: " << total  << "ms" << endl;
-    cout << "\ttime per remove: " << perRecord << "ms" << endl;
-*/
+    IceUtil::Time total = _watch.stop();
+    IceUtil::Time perRecord = total / (2 *_repetitions);
 
+    cout << "\ttime for " << 2 *_repetitions << " indexed reads: " << total * 1000 << "ms" << endl;
+    cout << "\ttime per indexed read: " << perRecord * 1000 << "ms" << endl;
 }
 
 void
-TestApp::Struct1Struct2MapTest()
+TestApp::Struct1Class1MapIndexTest(IndexedStruct1Class1Map& m)
 {
-    Struct1Struct2Map m(_connection, "Struct1Struct2");
-
-    //
-    // Populate the database.
-    //
-    Struct1 s1;
-    Struct2 s2;
-    int i;
-    _watch.start();
-    {
-	TransactionHolder txHolder(_connection);
-	for(i = 0; i < _repetitions; ++i)
-	{
-	    s1.l = i;
-	    ostringstream os;
-	    os << i;
-	    s2.s = os.str();
-	    m.put(Struct1Struct2Map::value_type(s1, s2));
-	}
-	txHolder.commit();
-    }
-    double total = _watch.stop();
-    double perRecord = total / _repetitions;
-
-    cout << "\ttime for " << _repetitions << " writes: " << total  << "ms" << endl;
-    cout << "\ttime per write: " << perRecord << "ms" << endl;
-
     //
     // Read each record.
     //
     _watch.start();
-    for(i = 0; i < _repetitions; ++i)
+    for(int i = 0; i < _repetitions; ++i)
     {
-	s1.l = i;
-	Struct1Struct2Map::iterator p = m.find(s1);
-	test(p != m.end());
 	ostringstream os;
 	os << i;
-	test(p->second.s == os.str());
-    }
-    total = _watch.stop();
-    perRecord = total / _repetitions;
 
-    cout << "\ttime for " << _repetitions << " reads: " << total  << "ms" << endl;
-    cout << "\ttime per read: " << perRecord << "ms" << endl;
-
-    //
-    // Remove each record.
-    //
-    _watch.start();
-    {
-	TransactionHolder txHolder(_connection);
-	for(i = 0; i < _repetitions; ++i)
-	{
-	    s1.l = i;
-	    m.erase(s1);
-	}
-	txHolder.commit();
-    }
-    total = _watch.stop();
-    perRecord = total / _repetitions;
-
-    cout << "\ttime for " << _repetitions << " removes: " << total  << "ms" << endl;
-    cout << "\ttime per remove: " << perRecord << "ms" << endl;
-}
-void
-TestApp::Struct1Class1MapTest()
-{
-    Struct1Class1Map m(_connection, "Struct1Class1");
-
-    //
-    // Populate the database.
-    //
-    Struct1 s1;
-    Class1Ptr c1 = new Class1();
-    int i;
-    _watch.start();
-     {
-	TransactionHolder txHolder(_connection);
-	for(i = 0; i < _repetitions; ++i)
-	{
-	    s1.l = i;
-	    ostringstream os;
-	    os << i;
-	    c1->s = os.str();
-	    m.put(Struct1Class1Map::value_type(s1, c1));
-	}
-	txHolder.commit();
-     }
-    double total = _watch.stop();
-    double perRecord = total / _repetitions;
-
-    cout << "\ttime for " << _repetitions << " writes: " << total  << "ms" << endl;
-    cout << "\ttime per write: " << perRecord << "ms" << endl;
-
-    //
-    // Read each record.
-    //
-    _watch.start();
-    for(i = 0; i < _repetitions; ++i)
-    {
-	s1.l = i;
-	Struct1Class1Map::iterator p = m.find(s1);
+	IndexedStruct1Class1Map::iterator p = m.findByS(os.str());
 	test(p != m.end());
-	ostringstream os;
-	os << i;
-	test(p->second->s == os.str());
+	test(p->first.l == i);
     }
-    total = _watch.stop();
-    perRecord = total / _repetitions;
+    IceUtil::Time total = _watch.stop();
+    IceUtil::Time perRecord = total / _repetitions;
 
-    cout << "\ttime for " << _repetitions << " reads: " << total  << "ms" << endl;
-    cout << "\ttime per read: " << perRecord << "ms" << endl;
-
-    //
-    // Remove each record.
-    //
-    _watch.start();
-    {
-	TransactionHolder txHolder(_connection);
-	for(i = 0; i < _repetitions; ++i)
-	{
-	    s1.l = i;
-	    m.erase(s1);
-	}
-	txHolder.commit();
-    }
-    total = _watch.stop();
-    perRecord = total / _repetitions;
-
-    cout << "\ttime for " << _repetitions << " removes: " << total  << "ms" << endl;
-    cout << "\ttime per remove: " << perRecord << "ms" << endl;
+    cout << "\ttime for " << _repetitions << " indexed reads: " << total * 1000 << "ms" << endl;
+    cout << "\ttime per indexed read: " << perRecord * 1000 << "ms" << endl;
 }
+
 
 void
 TestApp::Struct1ObjectMapTest()
@@ -452,6 +598,7 @@ TestApp::Struct1ObjectMapTest()
     Struct1 s1;
     Class1Ptr c1 = new Class1();
     Class2Ptr c2 = new Class2();
+
     c2->rec = c2;
     c2->obj = c1;
     int i;
@@ -477,11 +624,11 @@ TestApp::Struct1ObjectMapTest()
 	}
 	txHolder.commit();
     }
-    double total = _watch.stop();
-    double perRecord = total / _repetitions;
+    IceUtil::Time total = _watch.stop();
+    IceUtil::Time perRecord = total / _repetitions;
 
-    cout << "\ttime for " << _repetitions << " writes: " << total  << "ms" << endl;
-    cout << "\ttime per write: " << perRecord << "ms" << endl;
+    cout << "\ttime for " << _repetitions << " writes: " << total * 1000 << "ms" << endl;
+    cout << "\ttime per write: " << perRecord * 1000 << "ms" << endl;
 
     //
     // Read each record.
@@ -498,6 +645,7 @@ TestApp::Struct1ObjectMapTest()
 	{
 	    Class2Ptr nc2 = Class2Ptr::dynamicCast(o);
 	    test(nc2);
+
 	    test(nc2->rec == nc2);
 	    nc1 = Class1Ptr::dynamicCast(nc2->obj);
 	}
@@ -513,8 +661,8 @@ TestApp::Struct1ObjectMapTest()
     total = _watch.stop();
     perRecord = total / _repetitions;
 
-    cout << "\ttime for " << _repetitions << " reads: " << total  << "ms" << endl;
-    cout << "\ttime per read: " << perRecord << "ms" << endl;
+    cout << "\ttime for " << _repetitions << " reads: " << total * 1000 << "ms" << endl;
+    cout << "\ttime per read: " << perRecord * 1000 << "ms" << endl;
 
     //
     // Remove each record.
@@ -532,9 +680,8 @@ TestApp::Struct1ObjectMapTest()
     total = _watch.stop();
     perRecord = total / _repetitions;
 
-    cout << "\ttime for " << _repetitions << " removes: " << total  << "ms" << endl;
-    cout << "\ttime per remove: " << perRecord << "ms" << endl;
-
+    cout << "\ttime for " << _repetitions << " removes: " << total * 1000 << "ms" << endl;
+    cout << "\ttime per remove: " << perRecord * 1000 << "ms" << endl;
 }
 
 class MyFactory : public Ice::ObjectFactory
@@ -574,23 +721,53 @@ TestApp::run(int argc, char* argv[])
 {
     _connection = createConnection(communicator(), _envName);
 
-    cout <<"IntIntMap" << endl;
-    IntIntMapTest();
+    cout << "IntIntMap" << endl;
+ 
+#if defined(_MSC_VER) && (_MSC_VER < 1310)
+    {
+	IntIntMap* dummy = 0;
+	IntIntMapTest("IntIntMap", dummy);
+    }
+#else
+    IntIntMapTest<IntIntMap>("IntIntMap");
+#endif
     
     cout <<"Struct1Struct2Map" << endl;
-    Struct1Struct2MapTest();
-    
+#if defined(_MSC_VER) && (_MSC_VER < 1310)
+    {
+	Struct1Struct2Map* dummy = 0;
+	Struct1Struct2MapTest("Struct1Struct2Map", dummy);
+    }
+#else
+    Struct1Struct2MapTest<Struct1Struct2Map>("Struct1Struct2Map");
+#endif
+
     cout <<"Struct1Class1Map" << endl;
-    Struct1Class1MapTest();
-    
+#if defined(_MSC_VER) && (_MSC_VER < 1310)
+    {
+	Struct1Class1Map* dummy = 0;
+	Struct1Class1MapTest("Struct1Class1Map", dummy);
+    }
+#else
+    Struct1Class1MapTest<Struct1Class1Map>("Struct1Class1Map");
+#endif
+
     MyFactoryPtr factory = new MyFactory();
     factory->install(communicator());
     
     cout <<"Struct1ObjectMap" << endl;
     Struct1ObjectMapTest();
-    
+
     cout <<"IntIntMap (read test)" << endl;
-    IntIntMapReadTest();
+
+#if defined(_MSC_VER) && (_MSC_VER < 1310)  
+    {
+	IntIntMap* dummy = 0;
+	IntIntMapReadTest("IntIntMap", dummy);
+    }
+#else
+    IntIntMapReadTest<IntIntMap>("IntIntMap");
+#endif
 
     _connection->close();
     

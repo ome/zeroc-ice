@@ -95,6 +95,10 @@ SOURCE=.\AllTests.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\BatchOneways.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Collocated.cpp
 # End Source File
 # Begin Source File
@@ -140,7 +144,7 @@ USERDEP__TEST_="..\..\..\bin\slice2cpp.exe"	"..\..\..\lib\slice.lib"
 InputPath=.\Test.ice
 
 BuildCmds= \
-	..\..\..\bin\slice2cpp.exe Test.ice
+	..\..\..\bin\slice2cpp.exe -I. -I../../../slice Test.ice
 
 "Test.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)

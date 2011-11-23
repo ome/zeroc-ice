@@ -11,6 +11,7 @@
 #include <Throughput.h>
 
 using namespace std;
+using namespace Demo;
 
 void
 menu()
@@ -60,7 +61,7 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 
 	    throughput->ice_ping(); // Initial ping to setup the connection.
 
-	    IceUtil::Time tsec = IceUtil::Time::now();
+	    IceUtil::Time tm = IceUtil::Time::now();
 	    const int repetitions = 100;
 
 	    if(c == 's' || c == 'o' || c == 'r' || c == 'e')
@@ -126,11 +127,10 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 		    }
 		}
 
-		tsec = IceUtil::Time::now() - tsec;
-		double tmsec = tsec * 1000.0L;
-		cout << "time for " << repetitions << " sequences: " << tmsec  << "ms" << endl;
-		cout << "time per sequence: " << tmsec / repetitions << "ms" << endl;
-		double mbit = repetitions * seqSize * 8.0 / tsec / 1000000.0;
+		tm = IceUtil::Time::now() - tm;
+		cout << "time for " << repetitions << " sequences: " << tm * 1000 << "ms" << endl;
+		cout << "time per sequence: " << tm * 1000 / repetitions << "ms" << endl;
+		double mbit = repetitions * seqSize * 8.0 / tm.toMicroSeconds();
 		if(c == 'e')
 		{
 		    mbit *= 2;
@@ -169,7 +169,7 @@ main(int argc, char* argv[])
 
     try
     {
-	Ice::PropertiesPtr properties = Ice::createProperties(argc, argv);
+	Ice::PropertiesPtr properties = Ice::createProperties();
         properties->load("config");
 	communicator = Ice::initializeWithProperties(argc, argv, properties);
 	status = run(argc, argv, communicator);

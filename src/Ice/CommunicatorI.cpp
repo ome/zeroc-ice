@@ -34,13 +34,13 @@ IceUtil::Handle<IceUtil::GC> theCollector = 0;
 struct GarbageCollectorStats
 {
     GarbageCollectorStats() :
-	runs(0), examined(0), collected(0), msec(0.0)
+	runs(0), examined(0), collected(0)
     {
     }
     int runs;
     int examined;
     int collected;
-    double msec;
+    IceUtil::Time time;
 };
 
 static int communicatorCount = 0;
@@ -52,19 +52,19 @@ static LoggerPtr gcLogger;
 static int gcInterval;
 
 static void
-printGCStats(const ::IceUtil::GCStats& stats)
+printGCStats(const IceUtil::GCStats& stats)
 {
     if(gcTraceLevel)
     {
 	if(gcTraceLevel > 1)
 	{
 	    Trace out(gcLogger, gcTraceCat);
-	    out << stats.collected << "/" << stats.examined << ", " << stats.msec << "ms";
+	    out << stats.collected << "/" << stats.examined << ", " << stats.time * 1000 << "ms";
 	}
 	++gcStats.runs;
 	gcStats.examined += stats.examined;
 	gcStats.collected += stats.collected;
-	gcStats.msec += stats.msec;
+	gcStats.time += stats.time;
     }
 }
 
@@ -108,7 +108,7 @@ Ice::CommunicatorI::destroy()
 	    {
 		Trace out(gcLogger, gcTraceCat);
 		out << "totals: " << gcStats.collected << "/" << gcStats.examined << ", "
-		    << gcStats.msec << "ms" << ", " << gcStats.runs << " run";
+		    << gcStats.time * 1000 << "ms" << ", " << gcStats.runs << " run";
 		if(gcStats.runs != 1)
 		{
 		    out << "s";
@@ -169,7 +169,7 @@ Ice::CommunicatorI::waitForShutdown()
 }
 
 ObjectPrx
-Ice::CommunicatorI::stringToProxy(const string& s)
+Ice::CommunicatorI::stringToProxy(const string& s) const
 {
     RecMutex::Lock sync(*this);
     if(_destroyed)
@@ -180,7 +180,7 @@ Ice::CommunicatorI::stringToProxy(const string& s)
 }
 
 string
-Ice::CommunicatorI::proxyToString(const ObjectPrx& proxy)
+Ice::CommunicatorI::proxyToString(const ObjectPrx& proxy) const
 {
     RecMutex::Lock sync(*this);
     if(_destroyed)
@@ -234,7 +234,7 @@ Ice::CommunicatorI::removeObjectFactory(const string& id)
 }
 
 ObjectFactoryPtr
-Ice::CommunicatorI::findObjectFactory(const string& id)
+Ice::CommunicatorI::findObjectFactory(const string& id) const
 {
     RecMutex::Lock sync(*this);
     if(_destroyed)
@@ -245,7 +245,7 @@ Ice::CommunicatorI::findObjectFactory(const string& id)
 }
 
 PropertiesPtr
-Ice::CommunicatorI::getProperties()
+Ice::CommunicatorI::getProperties() const
 {
     RecMutex::Lock sync(*this);
     //
@@ -256,7 +256,7 @@ Ice::CommunicatorI::getProperties()
 }
 
 LoggerPtr
-Ice::CommunicatorI::getLogger()
+Ice::CommunicatorI::getLogger() const
 {
     RecMutex::Lock sync(*this);
     //
@@ -279,7 +279,7 @@ Ice::CommunicatorI::setLogger(const LoggerPtr& logger)
 }
 
 StatsPtr
-Ice::CommunicatorI::getStats()
+Ice::CommunicatorI::getStats() const
 {
     RecMutex::Lock sync(*this);
     if(_destroyed)
@@ -300,6 +300,17 @@ Ice::CommunicatorI::setStats(const StatsPtr& stats)
     _instance->stats(stats);
 }
 
+RouterPrx
+Ice::CommunicatorI::getDefaultRouter() const
+{
+    RecMutex::Lock sync(*this);
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+    return _instance->referenceFactory()->getDefaultRouter();
+}
+
 void
 Ice::CommunicatorI::setDefaultRouter(const RouterPrx& router)
 {
@@ -309,6 +320,17 @@ Ice::CommunicatorI::setDefaultRouter(const RouterPrx& router)
 	throw CommunicatorDestroyedException(__FILE__, __LINE__);
     }
     _instance->referenceFactory()->setDefaultRouter(router);
+}
+
+LocatorPrx
+Ice::CommunicatorI::getDefaultLocator() const
+{
+    RecMutex::Lock sync(*this);
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+    return _instance->referenceFactory()->getDefaultLocator();
 }
 
 void
@@ -323,7 +345,7 @@ Ice::CommunicatorI::setDefaultLocator(const LocatorPrx& locator)
 }
 
 PluginManagerPtr
-Ice::CommunicatorI::getPluginManager()
+Ice::CommunicatorI::getPluginManager() const
 {
     RecMutex::Lock sync(*this);
     if(_destroyed)

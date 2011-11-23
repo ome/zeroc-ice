@@ -28,9 +28,11 @@ public:
 
     virtual SOCKET fd();
     virtual void close();
-    virtual void shutdown();
+    virtual void shutdownWrite();
+    virtual void shutdownReadWrite();
     virtual void write(Buffer&, int);
     virtual void read(Buffer&, int);
+    virtual std::string type() const;
     virtual std::string toString() const;
 
 private:
@@ -43,12 +45,12 @@ private:
     const TraceLevelsPtr _traceLevels;
     const Ice::LoggerPtr _logger;
     const Ice::StatsPtr _stats;
-    const std::string _name;
-    const std::string _desc;
     
     SOCKET _fd;
     fd_set _rFdSet;
     fd_set _wFdSet;
+
+    const std::string _desc;
 };
 
 }

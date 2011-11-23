@@ -26,9 +26,11 @@ class LocalException;
 namespace IceInternal
 {
 
-class EventHandler : public ::IceUtil::Shared
+class EventHandler : virtual public ::IceUtil::Shared
 {
 public:
+
+    InstancePtr instance() const;
     
     //
     // Return true if the handler is for a datagram transport, false otherwise.

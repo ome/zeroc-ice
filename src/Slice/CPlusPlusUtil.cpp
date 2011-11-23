@@ -30,16 +30,25 @@ string
 Slice::changeInclude(const string& orig, const vector<string>& includePaths)
 {
     string file = orig;
-    replace(file.begin(), file.end(), '\\', '/');
+    string::size_type pos;
+
+    //
+    // Our icecpp C++ preprocessor changes "\" into "\\".
+    //
+    while((pos = file.find("\\\\")) != string::npos)
+    {
+	file.erase(pos, 1);
+	file[pos] = '/';
+    }
     
     for(vector<string>::const_iterator p = includePaths.begin(); p != includePaths.end(); ++p)
     {
 	string includePath = *p;
 	replace(includePath.begin(), includePath.end(), '\\', '/');
-	
-	if(orig.compare(0, includePath.length(), *p) == 0)
+
+	if(file.compare(0, includePath.length(), includePath) == 0)
 	{
-	    string s = orig.substr(includePath.length());
+	    string s = file.substr(includePath.length());
 	    if(s.size() < file.size())
 	    {
 		file = s;
@@ -47,8 +56,7 @@ Slice::changeInclude(const string& orig, const vector<string>& includePaths)
 	}
     }
 
-    string::size_type pos = file.rfind('.');
-    if(pos != string::npos)
+    if((pos = file.rfind('.')) != string::npos)
     {
 	file.erase(pos);
     }
@@ -128,13 +136,13 @@ Slice::typeToString(const TypePtr& type)
     ClassDeclPtr cl = ClassDeclPtr::dynamicCast(type);
     if(cl)
     {
-	return fixKwd(cl->scoped()) + "Ptr";
+	return fixKwd(cl->scoped() + "Ptr");
     }
 	    
     ProxyPtr proxy = ProxyPtr::dynamicCast(type);
     if(proxy)
     {
-	return fixKwd(proxy->_class()->scoped()) + "Prx";
+	return fixKwd(proxy->_class()->scoped() + "Prx");
     }
 	    
     ContainedPtr contained = ContainedPtr::dynamicCast(type);
@@ -190,13 +198,13 @@ Slice::inputTypeToString(const TypePtr& type)
     ClassDeclPtr cl = ClassDeclPtr::dynamicCast(type);
     if(cl)
     {
-	return "const " + fixKwd(cl->scoped()) + "Ptr&";
+	return "const " + fixKwd(cl->scoped() + "Ptr") + "&";
     }
 	    
     ProxyPtr proxy = ProxyPtr::dynamicCast(type);
     if(proxy)
     {
-	return "const " + fixKwd(proxy->_class()->scoped()) + "Prx&";
+	return "const " + fixKwd(proxy->_class()->scoped() + "Prx") + "&";
     }
 	    
     EnumPtr en = EnumPtr::dynamicCast(type);
@@ -241,13 +249,13 @@ Slice::outputTypeToString(const TypePtr& type)
     ClassDeclPtr cl = ClassDeclPtr::dynamicCast(type);
     if(cl)
     {
-	return fixKwd(cl->scoped()) + "Ptr&";
+	return fixKwd(cl->scoped() + "Ptr") + "&";
     }
 	    
     ProxyPtr proxy = ProxyPtr::dynamicCast(type);
     if(proxy)
     {
-	return fixKwd(proxy->_class()->scoped()) + "Prx&";
+	return fixKwd(proxy->_class()->scoped() + "Prx") + "&";
     }
 	    
     ContainedPtr contained = ContainedPtr::dynamicCast(type);
@@ -407,7 +415,7 @@ Slice::writeMarshalUnmarshalCode(Output& out, const TypePtr& type, const string&
 	else
 	{
 	    out << nl << stream << deref << "read("
-		<< scope << "__patch__" << fixKwd(cl->name()) << "Ptr, &" << fixedParam << ");";
+		<< scope << "__patch__" << cl->name() << "Ptr, &" << fixedParam << ");";
 	}
 
 	return;
@@ -496,5 +504,396 @@ Slice::writeAllocateCode(Output& out, const list<pair<TypePtr, string> >& params
     for(list<pair<TypePtr, string> >::const_iterator p = ps.begin(); p != ps.end(); ++p)
     {
 	out << nl << typeToString(p->first) << ' ' << fixKwd(p->second) << ';';
+    }
+}
+
+void
+Slice::writeStreamMarshalUnmarshalCode(Output& out, const TypePtr& type, const string& param, bool marshal,
+				       const string& str)
+{
+    string fixedParam = fixKwd(param);
+
+    string stream;
+    if(str.empty())
+    {
+	stream = marshal ? "__out" : "__in";
+    }
+    else
+    {
+	stream = str;
+    }
+
+    BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
+    if(builtin)
+    {
+        switch(builtin->kind())
+        {
+            case Builtin::KindByte:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << "->writeByte(" << fixedParam << ");";
+                }
+                else
+                {
+                    out << nl << fixedParam << " = " << stream << "->readByte();";
+                }
+                break;
+            }
+            case Builtin::KindBool:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << "->writeBool(" << fixedParam << ");";
+                }
+                else
+                {
+                    out << nl << fixedParam << " = " << stream << "->readBool();";
+                }
+                break;
+            }
+            case Builtin::KindShort:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << "->writeShort(" << fixedParam << ");";
+                }
+                else
+                {
+                    out << nl << fixedParam << " = " << stream << "->readShort();";
+                }
+                break;
+            }
+            case Builtin::KindInt:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << "->writeInt(" << fixedParam << ");";
+                }
+                else
+                {
+                    out << nl << fixedParam << " = " << stream << "->readInt();";
+                }
+                break;
+            }
+            case Builtin::KindLong:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << "->writeLong(" << fixedParam << ");";
+                }
+                else
+                {
+                    out << nl << fixedParam << " = " << stream << "->readLong();";
+                }
+                break;
+            }
+            case Builtin::KindFloat:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << "->writeFloat(" << fixedParam << ");";
+                }
+                else
+                {
+                    out << nl << fixedParam << " = " << stream << "->readFloat();";
+                }
+                break;
+            }
+            case Builtin::KindDouble:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << "->writeDouble(" << fixedParam << ");";
+                }
+                else
+                {
+                    out << nl << fixedParam << " = " << stream << "->readDouble();";
+                }
+                break;
+            }
+            case Builtin::KindString:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << "->writeString(" << fixedParam << ");";
+                }
+                else
+                {
+                    out << nl << fixedParam << " = " << stream << "->readString();";
+                }
+                break;
+            }
+            case Builtin::KindObject:
+            {
+                if(marshal)
+                {
+                    out << nl << "::Ice::ice_writeObject(" << stream << ", " << fixedParam << ");";
+                }
+                else
+                {
+                    out << nl << "::Ice::ice_readObject(" << stream << ", " << fixedParam << ");";
+                }
+                break;
+            }
+            case Builtin::KindObjectProxy:
+            {
+                // TODO
+                if(marshal)
+                {
+                    out << nl << stream << "->writeProxy(" << fixedParam << ");";
+                }
+                else
+                {
+                    out << nl << fixedParam << " = " << stream << "->readProxy();";
+                }
+                break;
+            }
+            case Builtin::KindLocalObject:
+            {
+                assert(false);
+                break;
+            }
+        }
+
+        return;
+    }
+    
+    ClassDeclPtr cl = ClassDeclPtr::dynamicCast(type);
+    if(cl)
+    {
+	string scope = fixKwd(cl->scope());
+	if(marshal)
+	{
+            out << nl << scope << "ice_write" << cl->name() << "(" << stream << ", " << fixedParam << ");";
+	}
+	else
+	{
+            out << nl << scope << "ice_read" << cl->name() << "(" << stream << ", " << fixedParam << ");";
+	}
+
+	return;
+    }
+    
+    StructPtr st = StructPtr::dynamicCast(type);
+    if(st)
+    {
+	string scope = fixKwd(st->scope());
+	if(marshal)
+	{
+            out << nl << scope << "ice_write" << st->name() << "(" << stream << ", " << fixedParam << ");";
+	}
+	else
+	{
+            out << nl << scope << "ice_read" << st->name() << "(" << stream << ", " << fixedParam << ");";
+	}
+
+	return;
+    }
+    
+    SequencePtr seq = SequencePtr::dynamicCast(type);
+    if(seq)
+    {
+        builtin = BuiltinPtr::dynamicCast(seq->type());
+        if(!builtin || (builtin->kind() == Builtin::KindObject || builtin->kind() == Builtin::KindObjectProxy))
+        {
+            string scope = fixKwd(seq->scope());
+            if(marshal)
+            {
+                out << nl << scope << "ice_write" << seq->name() << '(' << stream << ", " << fixedParam << ");";
+            }
+            else
+            {
+                out << nl << scope << "ice_read" << seq->name() << '(' << stream << ", " << fixedParam << ");";
+            }
+        }
+        else
+        {
+            switch(builtin->kind())
+            {
+                case Builtin::KindByte:
+                {
+                    if(marshal)
+                    {
+                        out << nl << stream << "->writeByteSeq(" << fixedParam << ");";
+                    }
+                    else
+                    {
+                        out << nl << fixedParam << " = " << stream << "->readByteSeq();";
+                    }
+                    break;
+                }
+                case Builtin::KindBool:
+                {
+                    if(marshal)
+                    {
+                        out << nl << stream << "->writeBoolSeq(" << fixedParam << ");";
+                    }
+                    else
+                    {
+                        out << nl << fixedParam << " = " << stream << "->readBoolSeq();";
+                    }
+                    break;
+                }
+                case Builtin::KindShort:
+                {
+                    if(marshal)
+                    {
+                        out << nl << stream << "->writeShortSeq(" << fixedParam << ");";
+                    }
+                    else
+                    {
+                        out << nl << fixedParam << " = " << stream << "->readShortSeq();";
+                    }
+                    break;
+                }
+                case Builtin::KindInt:
+                {
+                    if(marshal)
+                    {
+                        out << nl << stream << "->writeIntSeq(" << fixedParam << ");";
+                    }
+                    else
+                    {
+                        out << nl << fixedParam << " = " << stream << "->readIntSeq();";
+                    }
+                    break;
+                }
+                case Builtin::KindLong:
+                {
+                    if(marshal)
+                    {
+                        out << nl << stream << "->writeLongSeq(" << fixedParam << ");";
+                    }
+                    else
+                    {
+                        out << nl << fixedParam << " = " << stream << "->readLongSeq();";
+                    }
+                    break;
+                }
+                case Builtin::KindFloat:
+                {
+                    if(marshal)
+                    {
+                        out << nl << stream << "->writeFloatSeq(" << fixedParam << ");";
+                    }
+                    else
+                    {
+                        out << nl << fixedParam << " = " << stream << "->readFloatSeq();";
+                    }
+                    break;
+                }
+                case Builtin::KindDouble:
+                {
+                    if(marshal)
+                    {
+                        out << nl << stream << "->writeDoubleSeq(" << fixedParam << ");";
+                    }
+                    else
+                    {
+                        out << nl << fixedParam << " = " << stream << "->readDoubleSeq();";
+                    }
+                    break;
+                }
+                case Builtin::KindString:
+                {
+                    if(marshal)
+                    {
+                        out << nl << stream << "->writeStringSeq(" << fixedParam << ");";
+                    }
+                    else
+                    {
+                        out << nl << fixedParam << " = " << stream << "->readStringSeq();";
+                    }
+                    break;
+                }
+                case Builtin::KindObject:
+                case Builtin::KindObjectProxy:
+                case Builtin::KindLocalObject:
+                {
+                    assert(false);
+                    break;
+                }
+            }
+        }
+
+	return;
+    }
+
+    DictionaryPtr dict = DictionaryPtr::dynamicCast(type);
+    if(dict)
+    {
+        string scope = fixKwd(dict->scope());
+	if(marshal)
+	{
+            out << nl << scope << "ice_write" << dict->name() << "(" << stream << ", " << fixedParam << ");";
+	}
+	else
+	{
+            out << nl << scope << "ice_read" << dict->name() << "(" << stream << ", " << fixedParam << ");";
+	}
+
+	return;
+    }
+
+    EnumPtr en = EnumPtr::dynamicCast(type);
+    if(en)
+    {
+        string scope = fixKwd(en->scope());
+        if(marshal)
+        {
+            out << nl << scope << "ice_write" << en->name() << "(" << stream << ", " << fixedParam << ");";
+        }
+        else
+        {
+            out << nl << scope << "ice_read" << en->name() << "(" << stream << ", " << fixedParam << ");";
+        }
+
+	return;
+    }
+
+    ProxyPtr prx = ProxyPtr::dynamicCast(type);
+    if(prx)
+    {
+        ClassDeclPtr cls = prx->_class();
+        string scope = fixKwd(cls->scope());
+        if(marshal)
+        {
+            out << nl << scope << "ice_write" << cls->name() << "Prx(" << stream << ", " << fixedParam << ");";
+        }
+        else
+        {
+            out << nl << scope << "ice_read" << cls->name() << "Prx(" << stream << ", " << fixedParam << ");";
+        }
+
+	return;
+    }
+    
+    assert(false);
+}
+
+void
+Slice::writeStreamMarshalCode(Output& out, const list<pair<TypePtr, string> >& params, const TypePtr& ret)
+{
+    for(list<pair<TypePtr, string> >::const_iterator p = params.begin(); p != params.end(); ++p)
+    {
+	writeStreamMarshalUnmarshalCode(out, p->first, p->second, true, "");
+    }
+    if(ret)
+    {
+	writeStreamMarshalUnmarshalCode(out, ret, "__ret", true, "");
+    }
+}
+
+void
+Slice::writeStreamUnmarshalCode(Output& out, const list<pair<TypePtr, string> >& params, const TypePtr& ret)
+{
+    for(list<pair<TypePtr, string> >::const_iterator p = params.begin(); p != params.end(); ++p)
+    {
+	writeStreamMarshalUnmarshalCode(out, p->first, p->second, false, "");
+    }
+    if(ret)
+    {
+	writeStreamMarshalUnmarshalCode(out, ret, "__ret", false, "");
     }
 }

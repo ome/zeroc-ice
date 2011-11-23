@@ -128,7 +128,7 @@ Slice::SyntaxTreeBase::definitionContext() const
 }
 
 void
-Slice::SyntaxTreeBase::visit(ParserVisitor*)
+Slice::SyntaxTreeBase::visit(ParserVisitor*, bool)
 {
 }
 
@@ -333,6 +333,12 @@ Slice::Contained::file() const
 }
 
 string
+Slice::Contained::line() const
+{
+    return _line;
+}
+
+string
 Slice::Contained::comment() const
 {
     return _comment;
@@ -400,6 +406,9 @@ Slice::Contained::Contained(const ContainerPtr& container, const string& name) :
     assert(_unit);
     _unit->addContent(this);
     _file = _unit->currentFile();
+    ostringstream s;
+    s << _unit->currentLine();
+    _line = s.str();
     _comment = _unit->currentComment();
     _includeLevel = _unit->currentIncludeLevel();
 }
@@ -424,6 +433,7 @@ Slice::Container::createModule(const string& name)
     ContainedList matches = _unit->findContents(thisScope() + name);
     matches.sort(); // Modules can occur many times...
     matches.unique(); // ... but we only want one instance of each.
+
     for(ContainedList::const_iterator p = matches.begin(); p != matches.end(); ++p)
     {
 	bool differsOnlyInCase = !_unit->caseSensitive() && matches.front()->name() != name;
@@ -438,20 +448,25 @@ Slice::Container::createModule(const string& name)
 		return 0;
 	    }
 	}
-	else if(differsOnlyInCase)
-	{
-	    string msg = "module `" + name + "' differs only in capitalization from ";
-	    msg += matches.front()->kindOf() + " name `" + matches.front()->name() + "'";
-	    _unit->error(msg);
-	    return 0;
-	}
-	else
+	else if(!differsOnlyInCase)
 	{
 	    string msg = "redefinition of " + matches.front()->kindOf() + " `" + matches.front()->name();
 	    msg += "' as module";
 	    _unit->error(msg);
 	    return 0;
 	}
+	else
+	{
+	    string msg = "module `" + name + "' differs only in capitalization from ";
+	    msg += matches.front()->kindOf() + " name `" + matches.front()->name() + "'";
+	    _unit->error(msg);
+	    return 0;
+	}
+    }
+
+    if(!nameIsLegal(name, "module"))
+    {
+	return 0;
     }
 
     ModulePtr q = new Module(this, name);
@@ -517,7 +532,17 @@ Slice::Container::createClassDef(const string& name, bool intf, const ClassList&
 	return 0;
     }
 
-    ClassDecl::checkBasesAreLegal(name, local, bases, _unit);
+    if(!nameIsLegal(name, intf ? "interface" : "class"))
+    {
+	return 0;
+    }
+
+    if(!checkForGlobalDef(name, intf ? "interface" : "class"))
+    {
+	return 0;
+    }
+
+    ClassDecl::checkBasesAreLegal(name, intf, local, bases, _unit);
  
     ClassDefPtr def = new ClassDef(this, name, intf, bases, local);
     _contents.push_back(def);
@@ -533,14 +558,14 @@ Slice::Container::createClassDef(const string& name, bool intf, const ClassList&
     // definition. This way the code generator can rely on always
     // having a class declaration available for lookup.
     //
-    ClassDeclPtr decl = createClassDecl(name, intf, local);
+    ClassDeclPtr decl = createClassDecl(name, intf, local, true);
     def->_declaration = decl;
 
     return def;
 }
 
 ClassDeclPtr
-Slice::Container::createClassDecl(const string& name, bool intf, bool local)
+Slice::Container::createClassDecl(const string& name, bool intf, bool local, bool implicit)
 {
     checkPrefix(name);
 
@@ -589,6 +614,16 @@ Slice::Container::createClassDecl(const string& name, bool intf, bool local)
 	}
     }
 
+    if(!nameIsLegal(name, intf ? "interface" : "class", implicit))
+    {
+	return 0;
+    }
+
+    if(!checkForGlobalDef(name, intf ? "interface" : "class", implicit))
+    {
+	return 0;
+    }
+
     //
     // Multiple declarations are permissible. But if we do already
     // have a declaration for the class in this container, we don't
@@ -608,6 +643,7 @@ Slice::Container::createClassDecl(const string& name, bool intf, bool local)
 	}
     }
 
+    _unit->currentContainer();
     ClassDeclPtr decl = new ClassDecl(this, name, intf, local);
     _contents.push_back(decl);
 
@@ -649,6 +685,10 @@ Slice::Container::createException(const string& name, const ExceptionPtr& base, 
 	    _unit->error(msg);
 	}
     }
+
+    nameIsLegal(name, "exception"); // Don't return here -- we create the exception anyway
+
+    checkForGlobalDef(name, "exception"); // Don't return here -- we create the exception anyway
 
     //
     // If this definition is non-local, base cannot be local.
@@ -694,6 +734,10 @@ Slice::Container::createStruct(const string& name, bool local)
 	}
     }
 
+    nameIsLegal(name, "structure"); // Don't return here -- we create the struct anyway.
+
+    checkForGlobalDef(name, "structure"); // Don't return here -- we create the struct anyway.
+
     StructPtr p = new Struct(this, name, local);
     _contents.push_back(p);
     return p;
@@ -729,6 +773,10 @@ Slice::Container::createSequence(const string& name, const TypePtr& type, bool l
 	    _unit->error(msg);
 	}
     }
+
+    nameIsLegal(name, "sequence"); // Don't return here -- we create the sequence anyway.
+
+    checkForGlobalDef(name, "sequence"); // Don't return here -- we create the sequence anyway.
 
     //
     // If sequence is non-local, element type cannot be local.
@@ -775,6 +823,10 @@ Slice::Container::createDictionary(const string& name, const TypePtr& keyType, c
 	}
     }
     
+    nameIsLegal(name, "dictionary"); // Don't return here -- we create the dictionary anyway.
+
+    checkForGlobalDef(name, "dictionary"); // Don't return here -- we create the dictionary anyway.
+
     if(!Dictionary::legalKeyType(keyType))
     {
 	_unit->error("dictionary `" + name + "' uses an illegal key type");
@@ -831,6 +883,10 @@ Slice::Container::createEnum(const string& name, bool local)
 	}
     }
 
+    nameIsLegal(name, "enumeration"); // Don't return here -- we create the enumeration anyway.
+
+    checkForGlobalDef(name, "enumeration"); // Don't return here -- we create the enumeration anyway.
+
     EnumPtr p = new Enum(this, name, local);
     _contents.push_back(p);
     return p;
@@ -866,6 +922,8 @@ Slice::Container::createEnumerator(const string& name)
 	    _unit->error(msg);
 	}
     }
+
+    nameIsLegal(name, "enumerator"); // Don't return here -- we create the enumerator anyway.
 
     EnumeratorPtr p = new Enumerator(this, name);
     _contents.push_back(p);
@@ -903,6 +961,10 @@ Slice::Container::createConst(const string name, const TypePtr& constType,
 	    _unit->error(msg);
 	}
     }
+
+    nameIsLegal(name, "constant"); // Don't return here -- we create the constant anyway.
+
+    checkForGlobalDef(name, "constant"); // Don't return here -- we create the constant anyway.
 
     //
     // Check that the constant type is legal.
@@ -1315,6 +1377,90 @@ Slice::Container::hasNonLocalClassDecls() const
 }
 
 bool
+Slice::Container::hasNonLocalClassDefs() const
+{
+    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
+    {
+	ClassDefPtr cl = ClassDefPtr::dynamicCast(*p);
+	if(cl && !cl->isLocal())
+	{
+	    return true;
+	}
+
+	ContainerPtr container = ContainerPtr::dynamicCast(*p);
+	if(container && container->hasNonLocalClassDefs())
+	{
+	    return true;
+	}
+    }
+
+    return false;
+}
+
+bool
+Slice::Container::hasNonLocalSequences() const
+{
+    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
+    {
+	SequencePtr s = SequencePtr::dynamicCast(*p);
+	if(s && !s->isLocal())
+	{
+	    return true;
+	}
+
+	ContainerPtr container = ContainerPtr::dynamicCast(*p);
+	if(container && container->hasNonLocalSequences())
+	{
+	    return true;
+	}
+    }
+
+    return false;
+}
+
+bool
+Slice::Container::hasNonLocalDictionaries() const
+{
+    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
+    {
+	DictionaryPtr d = DictionaryPtr::dynamicCast(*p);
+	if(d && !d->isLocal())
+	{
+	    return true;
+	}
+
+	ContainerPtr container = ContainerPtr::dynamicCast(*p);
+	if(container && container->hasNonLocalDictionaries())
+	{
+	    return true;
+	}
+    }
+
+    return false;
+}
+
+bool
+Slice::Container::hasNonLocalExceptions() const
+{
+    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
+    {
+	ExceptionPtr q = ExceptionPtr::dynamicCast(*p);
+	if(q && !q->isLocal())
+	{
+	    return true;
+	}
+
+	ContainerPtr container = ContainerPtr::dynamicCast(*p);
+	if(container && container->hasNonLocalExceptions())
+	{
+	    return true;
+	}
+    }
+
+    return false;
+}
+
+bool
 Slice::Container::hasClassDecls() const
 {
     for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
@@ -1355,6 +1501,27 @@ Slice::Container::hasClassDefs() const
 }
 
 bool
+Slice::Container::hasAbstractClassDefs() const
+{
+    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
+    {
+	ClassDefPtr cl = ClassDefPtr::dynamicCast(*p);
+	if(cl && cl->isAbstract())
+	{
+	    return true;
+	}
+
+	ContainerPtr container = ContainerPtr::dynamicCast(*p);
+	if(container && container->hasAbstractClassDefs())
+	{
+	    return true;
+	}
+    }
+
+    return false;
+}
+
+bool
 Slice::Container::hasDataOnlyClasses() const
 {
     for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
@@ -1370,27 +1537,6 @@ Slice::Container::hasDataOnlyClasses() const
 
 	ContainerPtr container = ContainerPtr::dynamicCast(*p);
 	if(container && container->hasDataOnlyClasses())
-	{
-	    return true;
-	}
-    }
-
-    return false;
-}
-
-bool
-Slice::Container::hasNonLocalExceptions() const
-{
-    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
-    {
-	ExceptionPtr q = ExceptionPtr::dynamicCast(*p);
-	if(q && !q->isLocal())
-	{
-	    return true;
-	}
-
-	ContainerPtr container = ContainerPtr::dynamicCast(*p);
-	if(container && container->hasNonLocalExceptions())
 	{
 	    return true;
 	}
@@ -1444,6 +1590,39 @@ Slice::Container::hasContentsWithMetaData(const string& meta) const
 	{
 	    return true;
 	}	    
+    }
+
+    return false;
+}
+
+bool
+Slice::Container::hasAsyncOps() const
+{
+    for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
+    {
+	ClassDefPtr cl = ClassDefPtr::dynamicCast(*p);
+	if(cl && !cl->isLocal())
+	{
+	    OperationList ops = cl->operations();
+	    if(!ops.empty() && (cl->hasMetaData("ami") || cl->hasMetaData("amd")))
+	    {
+		return true;
+	    }
+	    for(OperationList::const_iterator i = ops.begin(); i != ops.end(); ++i)
+	    {
+	        OperationPtr op = *i;
+	        if(op->hasMetaData("ami") || op->hasMetaData("amd"))
+		{
+		    return true;
+		}
+	    }
+	}
+
+	ContainerPtr container = ContainerPtr::dynamicCast(*p);
+	if(container && container->hasAsyncOps())
+	{
+	    return true;
+	}
     }
 
     return false;
@@ -1555,13 +1734,13 @@ Slice::Container::sortContents()
 }
 
 void
-Slice::Container::visit(ParserVisitor* visitor)
+Slice::Container::visit(ParserVisitor* visitor, bool all)
 {
     for(ContainedList::const_iterator p = _contents.begin(); p != _contents.end(); ++p)
     {
-	if((*p)->includeLevel() == 0)
+	if(all || (*p)->includeLevel() == 0)
 	{
-	    (*p)->visit(visitor);
+	    (*p)->visit(visitor, all);
 	}
     }
 }
@@ -1667,6 +1846,144 @@ Slice::Container::checkIntroduced(const string& scoped, ContainedPtr namedThing)
 	    _unit->error("`" + firstComponent + "' has changed meaning");
 	    return false;
 	}
+    }
+    return true;
+}
+
+//
+// TODO: remove the suppressWarnings parameter once deprecrecated features are outlawed.
+//
+bool
+Slice::Container::nameIsLegal(const string& newName, const char* newConstruct, bool suppressWarnings)
+{
+    ModulePtr module = ModulePtr::dynamicCast(this);
+
+    //
+    // Check whether the enclosing module has the same name.
+    //
+    if(module)
+    {
+	if(newName == module->name())
+	{
+	    string msg = newConstruct;
+	    msg += " name `" + newName + "' must differ from the name of its immediately enclosing module";
+	    _unit->error(msg);
+	    return false;
+	}
+	if(!_unit->caseSensitive())
+	{
+	    string name = newName;
+	    toLower(name);
+	    string thisName = module->name();
+	    toLower(thisName);
+	    if(name == thisName)
+	    {
+		string msg = newConstruct;
+		msg += " name `" + name + "' cannot differ only in capitalization from its immediately enclosing "
+		       "module name `" + module->name() + "'";
+		_unit->error(msg);
+		return false;
+	    }
+	}
+	module = ModulePtr::dynamicCast(module->container()); // Get enclosing module for test below.
+    }
+
+    //
+    // Check whether any of the enclosing modules have the same name.
+    //
+    // TODO: Remove the test for deprecated features and turn this into a permanent hard error
+    //       once reusing a name for a nested scope is outlawed.
+    //
+    while(module)
+    {
+	if(newName == module->name())
+	{
+	    if(_unit->disallowDeprecatedFeatures())
+	    {
+		string msg = newConstruct;
+		msg += " name `" + newName + "' must differ from the name of enclosing module `" + module->name()
+		       + "' (first defined at " + module->file() + ":" + module->line() + ")";
+		_unit->error(msg);
+		return false;
+	    }
+	    else
+	    {
+		if(!suppressWarnings)
+		{
+		    string msg = newConstruct;
+		    msg += " name `" + newName + "': using the name of an enclosing module for nested types is "
+			   + "deprecated. (Module `" + module->name() + "' was first defined at " + module->file() + ":"
+		           + module->line() + ")";
+		    _unit->warning(msg);
+		    return true;
+		}
+	    }
+	    return true;
+	}
+	if(!_unit->caseSensitive())
+	{
+	    string name = newName;
+	    toLower(name);
+	    string thisName = module->name();
+	    toLower(thisName);
+	    if(name == thisName)
+	    {
+		if(_unit->disallowDeprecatedFeatures())
+		{
+		    string msg = newConstruct;
+		    msg += " name `" + name + "' cannot differ only in capitalization from enclosing module `"
+			   + module->name() + "' (first defined at " + module->file() + ":" + module->line() + ")";
+		    _unit->error(msg);
+		    return false;
+		}
+		else
+		{
+		    if(!suppressWarnings)
+		    {
+			string msg = newConstruct;
+			msg += " name `" + newName + "': using the name of an enclosing module for nested types is "
+			       + "deprecated. (Module `" + module->name() + "' was first defined at "
+			       + module->file() + ":" + module->line() + " and differs only in capitalization.)";
+			_unit->warning(msg);
+			return true;
+		    }
+		}
+	    }
+	}
+	module = ModulePtr::dynamicCast(module->container());
+    }
+
+    return true;
+}
+
+//
+// TODO: remove the suppressWarnings parameter once deprecrecated features are outlawed.
+//
+bool
+Slice::Container::checkForGlobalDef(const string& name, const char* newConstruct, bool suppressWarnings)
+{
+    if(dynamic_cast<Unit*>(this) && strcmp(newConstruct, "module"))
+    {
+	if(_unit->disallowDeprecatedFeatures())
+	{
+	    static const string vowels = "aeiou";
+	    string glottalStop;
+	    if(vowels.find_first_of(newConstruct[0]) != string::npos)
+	    {
+		glottalStop = "n";
+	    }
+	    _unit->error("`" + name + "': a" + glottalStop + " " + newConstruct +
+			 " can be defined only at module scope");
+	    return false;
+	}
+	else
+	{
+	    if(!suppressWarnings)
+	    {
+		_unit->warning("`" + name + "': " + newConstruct + " definitions at global scope are deprecated");
+	    }
+	}
+	return true;
     }
     return true;
 }
@@ -1780,11 +2097,11 @@ Slice::Module::kindOf() const
 }
 
 void
-Slice::Module::visit(ParserVisitor* visitor)
+Slice::Module::visit(ParserVisitor* visitor, bool all)
 {
     if(visitor->visitModuleStart(this))
     {
-	Container::visit(visitor);
+	Container::visit(visitor, all);
 	visitor->visitModuleEnd(this);
     }
 }
@@ -1878,7 +2195,7 @@ Slice::ClassDecl::uses(const ContainedPtr&) const
 bool
 Slice::ClassDecl::usesClasses() const
 {
-    return !_interface;
+    return true;
 }
 
 size_t
@@ -1906,7 +2223,7 @@ Slice::ClassDecl::kindOf() const
 }
 
 void
-Slice::ClassDecl::visit(ParserVisitor* visitor)
+Slice::ClassDecl::visit(ParserVisitor* visitor, bool)
 {
     visitor->visitClassDecl(this);
 }
@@ -1927,21 +2244,21 @@ Slice::ClassDecl::recDependencies(set<ConstructedPtr>& dependencies)
 }
 
 void
-Slice::ClassDecl::checkBasesAreLegal(const string& name, bool local, const ClassList& bases, const UnitPtr& unit)
+Slice::ClassDecl::checkBasesAreLegal(const string& name, bool intf, bool local, const ClassList& bases,
+				     const UnitPtr& unit)
 {
     //
-    // If this definition is non-local, no base can be local.
+    // Local definitions cannot have non-local bases, and vice versa.
     //
-    if(!local)
+    for(ClassList::const_iterator p = bases.begin(); p != bases.end(); ++p)
     {
-	for(ClassList::const_iterator p = bases.begin(); p != bases.end(); ++p)
+	if(local != (*p)->isLocal())
 	{
-	    if((*p)->isLocal())
-	    {
-		string msg = "non-local `" + name + "' cannot have base ";
-		msg += (*p)->kindOf() + " `" + (*p)->name() + "'";
-		unit->error(msg);
-	    }
+	    ostringstream msg;
+	    msg << (local ? "local" : "non-local") << " " << (intf ? "interface" : "class") << " `"
+		<< name << "' cannot have " << ((*p)->isLocal() ? "local" : "non-local") << " base "
+		<< ((*p)->isInterface() ? "interface" : "class") << " `" << (*p)->name() << "'";
+	    unit->error(msg.str());
 	}
     }
 
@@ -1989,6 +2306,7 @@ Slice::ClassDecl::ClassDecl(const ContainerPtr& container, const string& name, b
     Constructed(container, name, local),
     _interface(intf)
 {
+    _unit->currentContainer();
 }
 
 //
@@ -2158,7 +2476,6 @@ Slice::ClassDef::createOperation(const string& name,
 	_unit->error(msg);
 	return 0;
     }
-
 
     //
     // Check whether enclosing interface/class has the same name.
@@ -2597,11 +2914,11 @@ Slice::ClassDef::kindOf() const
 }
 
 void
-Slice::ClassDef::visit(ParserVisitor* visitor)
+Slice::ClassDef::visit(ParserVisitor* visitor, bool all)
 {
     if(visitor->visitClassDefStart(this))
     {
-	Container::visit(visitor);
+	Container::visit(visitor, all);
 	visitor->visitClassDefEnd(this);
     }
 }
@@ -2936,11 +3253,11 @@ Slice::Exception::kindOf() const
 }
 
 void
-Slice::Exception::visit(ParserVisitor* visitor)
+Slice::Exception::visit(ParserVisitor* visitor, bool all)
 {
     if(visitor->visitExceptionStart(this))
     {
-	Container::visit(visitor);
+	Container::visit(visitor, all);
 	visitor->visitExceptionEnd(this);
     }
 }
@@ -3140,11 +3457,11 @@ Slice::Struct::kindOf() const
 }
 
 void
-Slice::Struct::visit(ParserVisitor* visitor)
+Slice::Struct::visit(ParserVisitor* visitor, bool all)
 {
     if(visitor->visitStructStart(this))
     {
-	Container::visit(visitor);
+	Container::visit(visitor, all);
 	visitor->visitStructEnd(this);
     }
 }
@@ -3217,7 +3534,7 @@ Slice::Sequence::kindOf() const
 }
 
 void
-Slice::Sequence::visit(ParserVisitor* visitor)
+Slice::Sequence::visit(ParserVisitor* visitor, bool)
 {
     visitor->visitSequence(this);
 }
@@ -3311,7 +3628,7 @@ Slice::Dictionary::kindOf() const
 }
 
 void
-Slice::Dictionary::visit(ParserVisitor* visitor)
+Slice::Dictionary::visit(ParserVisitor* visitor, bool)
 {
     visitor->visitDictionary(this);
 }
@@ -3487,7 +3804,7 @@ Slice::Enum::kindOf() const
 }
 
 void
-Slice::Enum::visit(ParserVisitor* visitor)
+Slice::Enum::visit(ParserVisitor* visitor, bool)
 {
     visitor->visitEnum(this);
 }
@@ -3576,7 +3893,7 @@ Slice::Const::kindOf() const
 }
 
 void
-Slice::Const::visit(ParserVisitor* visitor)
+Slice::Const::visit(ParserVisitor* visitor, bool)
 {
     visitor->visitConst(this);
 }
@@ -4079,7 +4396,7 @@ Slice::Operation::kindOf() const
 }
 
 void
-Slice::Operation::visit(ParserVisitor* visitor)
+Slice::Operation::visit(ParserVisitor* visitor, bool)
 {
     visitor->visitOperation(this);
 }
@@ -4137,7 +4454,7 @@ Slice::ParamDecl::kindOf() const
 }
 
 void
-Slice::ParamDecl::visit(ParserVisitor* visitor)
+Slice::ParamDecl::visit(ParserVisitor* visitor, bool)
 {
     visitor->visitParamDecl(this);
 }
@@ -4185,7 +4502,7 @@ Slice::DataMember::kindOf() const
 }
 
 void
-Slice::DataMember::visit(ParserVisitor* visitor)
+Slice::DataMember::visit(ParserVisitor* visitor, bool)
 {
     visitor->visitDataMember(this);
 }
@@ -4686,19 +5003,31 @@ Slice::Unit::usesConsts() const
     return false;
 }
 
+bool
+Slice::Unit::disallowDeprecatedFeatures() const
+{
+    return _disallowDeprecatedFeatures;
+}
+
 StringList
 Slice::Unit::includeFiles() const
 {
     return _includeFiles;
 }
 
+//
+// TODO: remove third parameter once global definitions are outlawed.
+//
 int
-Slice::Unit::parse(FILE* file, bool debug)
+Slice::Unit::parse(FILE* file, bool debug, bool disallowDeprecatedFeatures)
 {
     slice_debug = debug ? 1 : 0;
 
     assert(!Slice::unit);
     Slice::unit = this;
+
+    // TODO: remove this once global definitions are outlawed.
+    _disallowDeprecatedFeatures = disallowDeprecatedFeatures;
 
     _currentComment = "";
     _currentLine = 1;
@@ -4745,11 +5074,11 @@ Slice::Unit::destroy()
 }
 
 void
-Slice::Unit::visit(ParserVisitor* visitor)
+Slice::Unit::visit(ParserVisitor* visitor, bool all)
 {
     if(visitor->visitUnitStart(this))
     {
-	Container::visit(visitor);
+	Container::visit(visitor, all);
 	visitor->visitUnitEnd(this);
     }
 }

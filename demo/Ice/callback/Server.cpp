@@ -12,6 +12,7 @@
 
 using namespace std;
 using namespace Ice;
+using namespace Demo;
 
 class CallbackServer : public Application
 {
@@ -24,14 +25,13 @@ int
 main(int argc, char* argv[])
 {
     CallbackServer app;
-    return app.main(argc, argv, "config.server");
+    return app.main(argc, argv, "config");
 }
 
 int
 CallbackServer::run(int argc, char* argv[])
 {
     ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Callback.Server");
-    CallbackPrx self = CallbackPrx::uncheckedCast(adapter->createProxy(Ice::stringToIdentity("callback")));
     adapter->add(new CallbackI, Ice::stringToIdentity("callback"));
     adapter->activate();
     communicator()->waitForShutdown();

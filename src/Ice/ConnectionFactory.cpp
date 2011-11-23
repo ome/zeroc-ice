@@ -8,7 +8,7 @@
 // **********************************************************************
 
 #include <Ice/ConnectionFactory.h>
-#include <Ice/Connection.h>
+#include <Ice/ConnectionI.h>
 #include <Ice/Instance.h>
 #include <Ice/LoggerUtil.h>
 #include <Ice/TraceLevels.h>
@@ -48,12 +48,12 @@ IceInternal::OutgoingConnectionFactory::destroy()
 #ifdef _STLP_BEGIN_NAMESPACE
     // voidbind2nd is an STLport extension for broken compilers in IceUtil/Functional.h
     for_each(_connections.begin(), _connections.end(),
-	     voidbind2nd(Ice::secondVoidMemFun1<EndpointPtr, Connection, Connection::DestructionReason>
-			 (&Connection::destroy), Connection::CommunicatorDestroyed));
+	     voidbind2nd(Ice::secondVoidMemFun1<EndpointPtr, ConnectionI, ConnectionI::DestructionReason>
+			 (&ConnectionI::destroy), ConnectionI::CommunicatorDestroyed));
 #else
     for_each(_connections.begin(), _connections.end(),
-	     bind2nd(Ice::secondVoidMemFun1<const EndpointPtr, Connection, Connection::DestructionReason>
-		     (&Connection::destroy), Connection::CommunicatorDestroyed));
+	     bind2nd(Ice::secondVoidMemFun1<const EndpointPtr, ConnectionI, ConnectionI::DestructionReason>
+		     (&ConnectionI::destroy), ConnectionI::CommunicatorDestroyed));
 #endif
 
     _destroyed = true;
@@ -63,7 +63,7 @@ IceInternal::OutgoingConnectionFactory::destroy()
 void
 IceInternal::OutgoingConnectionFactory::waitUntilFinished()
 {
-    multimap<EndpointPtr, ConnectionPtr> connections;
+    multimap<EndpointPtr, ConnectionIPtr> connections;
 
     {
 	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
@@ -85,15 +85,11 @@ IceInternal::OutgoingConnectionFactory::waitUntilFinished()
 	connections.swap(_connections);
     }
 
-    //
-    // Now we wait until the destruction of each connection has
-    // finished.
-    //
     for_each(connections.begin(), connections.end(),
-	     Ice::secondVoidMemFun<const EndpointPtr, Connection>(&Connection::waitUntilFinished));
+	     Ice::secondVoidMemFun<const EndpointPtr, ConnectionI>(&ConnectionI::waitUntilFinished));
 }
 
-ConnectionPtr
+ConnectionIPtr
 IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts, bool& compress)
 {
     assert(!endpts.empty());
@@ -110,7 +106,7 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	//
 	// Reap connections for which destruction has completed.
 	//
-	std::multimap<EndpointPtr, ConnectionPtr>::iterator p = _connections.begin();
+	std::multimap<EndpointPtr, ConnectionIPtr>::iterator p = _connections.begin();
 	while(p != _connections.end())
 	{
 	    if(p->second->isFinished())
@@ -152,8 +148,8 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	vector<EndpointPtr>::const_iterator r;
 	for(q = endpoints.begin(), r = endpts.begin(); q != endpoints.end(); ++q, ++r)
 	{
-	    pair<multimap<EndpointPtr, ConnectionPtr>::iterator,
-		 multimap<EndpointPtr, ConnectionPtr>::iterator> pr = _connections.equal_range(*q);
+	    pair<multimap<EndpointPtr, ConnectionIPtr>::iterator,
+		 multimap<EndpointPtr, ConnectionIPtr>::iterator> pr = _connections.equal_range(*q);
 	    
 	    while(pr.first != pr.second)
 	    {
@@ -218,8 +214,8 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	{	
 	    for(q = endpoints.begin(), r = endpts.begin(); q != endpoints.end(); ++q, ++r)
 	    {
-		pair<multimap<EndpointPtr, ConnectionPtr>::iterator,
- 		     multimap<EndpointPtr, ConnectionPtr>::iterator> pr = _connections.equal_range(*q);
+		pair<multimap<EndpointPtr, ConnectionIPtr>::iterator,
+ 		     multimap<EndpointPtr, ConnectionIPtr>::iterator> pr = _connections.equal_range(*q);
 		
 		while(pr.first != pr.second)
 		{
@@ -255,7 +251,7 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	_pending.insert(endpoints.begin(), endpoints.end());
     }
 
-    ConnectionPtr connection;
+    ConnectionIPtr connection;
     auto_ptr<LocalException> exception;
     
     vector<EndpointPtr>::const_iterator q;
@@ -288,8 +284,9 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 		transceiver = connector->connect(timeout);
 		assert(transceiver);
 	    }	    
-	    connection = new Connection(_instance, transceiver, endpoint, 0);
+	    connection = new ConnectionI(_instance, transceiver, endpoint, 0);
 	    connection->validate();
+
 	    if(_instance->defaultsAndOverrides()->overrideCompress)
 	    {
 		compress = _instance->defaultsAndOverrides()->overrideCompressValue;
@@ -344,11 +341,11 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	else
 	{
 	    _connections.insert(_connections.end(),
-				pair<const EndpointPtr, ConnectionPtr>(connection->endpoint(), connection));
+				pair<const EndpointPtr, ConnectionIPtr>(connection->endpoint(), connection));
 
 	    if(_destroyed)
 	    {
-		connection->destroy(Connection::CommunicatorDestroyed);
+		connection->destroy(ConnectionI::CommunicatorDestroyed);
 		throw CommunicatorDestroyedException(__FILE__, __LINE__);
 	    }
 	    else
@@ -383,8 +380,9 @@ IceInternal::OutgoingConnectionFactory::setRouter(const RouterPrx& router)
 	//
 	ObjectPrx proxy = routerInfo->getClientProxy();
 	ObjectAdapterPtr adapter = routerInfo->getAdapter();
+	vector<EndpointPtr> endpoints = proxy->__reference()->getEndpoints();
 	vector<EndpointPtr>::const_iterator p;
-	for(p = proxy->__reference()->endpoints.begin(); p != proxy->__reference()->endpoints.end(); ++p)
+	for(p = endpoints.begin(); p != endpoints.end(); ++p)
 	{
 	    EndpointPtr endpoint = *p;
 
@@ -407,8 +405,8 @@ IceInternal::OutgoingConnectionFactory::setRouter(const RouterPrx& router)
 	    //
 	    endpoint = endpoint->compress(false);
 
-	    pair<multimap<EndpointPtr, ConnectionPtr>::iterator,
-		 multimap<EndpointPtr, ConnectionPtr>::iterator> pr = _connections.equal_range(endpoint);
+	    pair<multimap<EndpointPtr, ConnectionIPtr>::iterator,
+		 multimap<EndpointPtr, ConnectionIPtr>::iterator> pr = _connections.equal_range(endpoint);
 	    
 	    while(pr.first != pr.second)
 	    {
@@ -429,7 +427,7 @@ IceInternal::OutgoingConnectionFactory::removeAdapter(const ObjectAdapterPtr& ad
 	throw CommunicatorDestroyedException(__FILE__, __LINE__);
     }
     
-    for(multimap<EndpointPtr, ConnectionPtr>::const_iterator p = _connections.begin(); p != _connections.end(); ++p)
+    for(multimap<EndpointPtr, ConnectionIPtr>::const_iterator p = _connections.begin(); p != _connections.end(); ++p)
     {
 	if(p->second->getAdapter() == adapter)
 	{
@@ -441,12 +439,12 @@ IceInternal::OutgoingConnectionFactory::removeAdapter(const ObjectAdapterPtr& ad
 void
 IceInternal::OutgoingConnectionFactory::flushBatchRequests()
 {
-    list<ConnectionPtr> c;
+    list<ConnectionIPtr> c;
 
     {
 	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 
-	for(std::multimap<EndpointPtr, ConnectionPtr>::const_iterator p = _connections.begin();
+	for(std::multimap<EndpointPtr, ConnectionIPtr>::const_iterator p = _connections.begin();
 	    p != _connections.end();
 	    ++p)
 	{
@@ -454,11 +452,11 @@ IceInternal::OutgoingConnectionFactory::flushBatchRequests()
 	}
     }
 
-    for(list<ConnectionPtr>::const_iterator p = c.begin(); p != c.end(); ++p)
+    for(list<ConnectionIPtr>::const_iterator p = c.begin(); p != c.end(); ++p)
     {
 	try
 	{
-	    (*p)->flushBatchRequest();
+	    (*p)->flushBatchRequests();
 	}
 	catch(const LocalException&)
 	{
@@ -503,7 +501,7 @@ IceInternal::IncomingConnectionFactory::destroy()
 void
 IceInternal::IncomingConnectionFactory::waitUntilHolding() const
 {
-    list<ConnectionPtr> connections;
+    list<ConnectionIPtr> connections;
 
     {
 	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
@@ -527,13 +525,14 @@ IceInternal::IncomingConnectionFactory::waitUntilHolding() const
     //
     // Now we wait until each connection is in holding state.
     //
-    for_each(connections.begin(), connections.end(), Ice::constVoidMemFun(&Connection::waitUntilHolding));
+    for_each(connections.begin(), connections.end(), Ice::constVoidMemFun(&ConnectionI::waitUntilHolding));
 }
 
 void
 IceInternal::IncomingConnectionFactory::waitUntilFinished()
 {
-    list<ConnectionPtr> connections;
+    IceUtil::ThreadPtr threadPerIncomingConnectionFactory;
+    list<ConnectionIPtr> connections;
 
     {
 	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
@@ -546,6 +545,11 @@ IceInternal::IncomingConnectionFactory::waitUntilFinished()
 	    wait();
 	}
 	
+	assert(_state == StateClosed);
+
+	threadPerIncomingConnectionFactory = _threadPerIncomingConnectionFactory;
+	_threadPerIncomingConnectionFactory = 0;
+
 	//
 	// We want to wait until all connections are finished outside the
 	// thread synchronization.
@@ -553,11 +557,13 @@ IceInternal::IncomingConnectionFactory::waitUntilFinished()
 	connections.swap(_connections);
     }
 
-    //
-    // Now we wait until the destruction of each connection has
-    // finished.
-    //
-    for_each(connections.begin(), connections.end(), Ice::voidMemFun(&Connection::waitUntilFinished));
+    if(threadPerIncomingConnectionFactory &&
+       threadPerIncomingConnectionFactory->getThreadControl() != IceUtil::ThreadControl())
+    {
+	threadPerIncomingConnectionFactory->getThreadControl().join();
+    }
+
+    for_each(connections.begin(), connections.end(), Ice::voidMemFun(&ConnectionI::waitUntilFinished));
 }
 
 EndpointPtr
@@ -579,18 +585,18 @@ IceInternal::IncomingConnectionFactory::equivalent(const EndpointPtr& endp) cons
     return endp->equivalent(_acceptor);
 }
 
-list<ConnectionPtr>
+list<ConnectionIPtr>
 IceInternal::IncomingConnectionFactory::connections() const
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 
-    list<ConnectionPtr> result;
+    list<ConnectionIPtr> result;
 
     //
     // Only copy connections which have not been destroyed.
     //
     remove_copy_if(_connections.begin(), _connections.end(), back_inserter(result),
-		   Ice::constMemFun(&Connection::isDestroyed));
+		   Ice::constMemFun(&ConnectionI::isDestroyed));
 
     return result;
 }
@@ -598,20 +604,17 @@ IceInternal::IncomingConnectionFactory::connections() const
 void
 IceInternal::IncomingConnectionFactory::flushBatchRequests()
 {
-    list<ConnectionPtr> c = connections(); // connections() is synchronized, so no need to synchronize here.
+    list<ConnectionIPtr> c = connections(); // connections() is synchronized, so no need to synchronize here.
 
-    for(list<ConnectionPtr>::const_iterator p = c.begin(); p != c.end(); ++p)
+    for(list<ConnectionIPtr>::const_iterator p = c.begin(); p != c.end(); ++p)
     {
-	if((*p)->isValidated())
+	try
 	{
-	    try
-	    {
-		(*p)->flushBatchRequest();
-	    }
-	    catch(const LocalException&)
-	    {
-		// Ignore.
-	    }
+	    (*p)->flushBatchRequests();
+	}
+	catch(const LocalException&)
+	{
+	    // Ignore.
 	}
     }
 }
@@ -619,33 +622,66 @@ IceInternal::IncomingConnectionFactory::flushBatchRequests()
 bool
 IceInternal::IncomingConnectionFactory::datagram() const
 {
+    assert(!_instance->threadPerConnection()); // Only for use with a thread pool.
     return _endpoint->datagram();
 }
 
 bool
 IceInternal::IncomingConnectionFactory::readable() const
 {
+    assert(!_instance->threadPerConnection()); // Only for use with a thread pool.
     return false;
 }
 
 void
 IceInternal::IncomingConnectionFactory::read(BasicStream&)
 {
+    assert(!_instance->threadPerConnection()); // Only for use with a thread pool.
     assert(false); // Must not be called.
 }
+
+class PromoteFollower
+{
+public:
+
+    PromoteFollower(const ThreadPoolPtr& threadPool) :
+	_threadPool(threadPool)
+    {
+    }
+
+    ~PromoteFollower()
+    {
+	_threadPool->promoteFollower();
+    }
+
+private:
+
+    const ThreadPoolPtr _threadPool;
+};
 
 void
 IceInternal::IncomingConnectionFactory::message(BasicStream&, const ThreadPoolPtr& threadPool)
 {
-    ConnectionPtr connection;
+    assert(!_instance->threadPerConnection()); // Only for use with a thread pool.
+
+    ConnectionIPtr connection;
 
     {
 	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 	
+	//
+	// This makes sure that we promote a follower before we leave
+	// the scope of the mutex above, but after we call accept()
+	// (if we call it).
+	//
+	// If _threadPool is null, then this class doesn't do
+	// anything.
+	//
+	PromoteFollower promote(threadPool);
+
 	if(_state != StateActive)
 	{
 	    IceUtil::ThreadControl::yield();
-	    threadPool->promoteFollower();
 	    return;
 	}
 	
@@ -653,7 +689,7 @@ IceInternal::IncomingConnectionFactory::message(BasicStream&, const ThreadPoolPt
 	// Reap connections for which destruction has completed.
 	//
 	_connections.erase(remove_if(_connections.begin(), _connections.end(),
-				     Ice::constMemFun(&Connection::isFinished)),
+				     Ice::constMemFun(&ConnectionI::isFinished)),
 			   _connections.end());
 	
 	//
@@ -666,15 +702,12 @@ IceInternal::IncomingConnectionFactory::message(BasicStream&, const ThreadPoolPt
 	}
 	catch(const SocketException&)
 	{
-	    // TODO: bandaid. Takes care of SSL Handshake problems during
-	    // creation of a Transceiver. Ignore, nothing we can do here.
-	    threadPool->promoteFollower();
+	    // Ignore socket exceptions.
 	    return;
 	}
 	catch(const TimeoutException&)
 	{
 	    // Ignore timeouts.
-	    threadPool->promoteFollower();
 	    return;
 	}
 	catch(const LocalException& ex)
@@ -685,28 +718,18 @@ IceInternal::IncomingConnectionFactory::message(BasicStream&, const ThreadPoolPt
 		Warning out(_instance->logger());
 		out << "connection exception:\n" << ex << '\n' << _acceptor->toString();
 	    }
-	    threadPool->promoteFollower();
 	    return;
 	}
-	catch(...)
-	{
-	    threadPool->promoteFollower();
-	    throw;
-	}
-	
-	//
-	// We must promote a follower after we accepted a new connection.
-	//
-	threadPool->promoteFollower();
-	
+
+	assert(transceiver);
+
 	//
 	// Create a connection object for the connection.
 	//
-	assert(transceiver);
-	connection = new Connection(_instance, transceiver, _endpoint, _adapter);
+	connection = new ConnectionI(_instance, transceiver, _endpoint, _adapter);
 	_connections.push_back(connection);
     }
-    
+
     assert(connection);
 
     //
@@ -720,23 +743,20 @@ IceInternal::IncomingConnectionFactory::message(BasicStream&, const ThreadPoolPt
     catch(const LocalException&)
     {
 	//
-	// Ignore all exceptions while activating or validating the
-	// connection object. Warning or error messages for such
-	// exceptions must be printed directly in the connection
-	// object code.
+	// Ignore all exceptions while validating the
+	// connection. Warning or error messages for such exceptions
+	// are printed directly by the validation code.
 	//
     }
 
-    //
-    // The factory must be active at this point, so we activate the
-    // connection, too.
-    //
     connection->activate();
 }
 
 void
 IceInternal::IncomingConnectionFactory::finished(const ThreadPoolPtr& threadPool)
 {
+    assert(!_instance->threadPerConnection()); // Only for use with a thread pool.
+
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 
     threadPool->promoteFollower();
@@ -798,8 +818,19 @@ IceInternal::IncomingConnectionFactory::IncomingConnectionFactory(const Instance
     const_cast<TransceiverPtr&>(_transceiver) = _endpoint->serverTransceiver(const_cast<EndpointPtr&>(_endpoint));
     if(_transceiver)
     {
-	ConnectionPtr connection = new Connection(_instance, _transceiver, _endpoint, _adapter);
-	connection->validate();
+	ConnectionIPtr connection = new ConnectionI(_instance, _transceiver, _endpoint, _adapter);
+	
+	//
+	// In thread per connection mode, the connection's thread will
+	// take care of connection validation, and we don't want to
+	// block here waiting until validation is complete. Therefore
+	// we don't call validate() in thread per connection mode.
+	//
+	if(!_instance->threadPerConnection())
+	{
+	    connection->validate();
+	}
+
 	_connections.push_back(connection);
     }
     else
@@ -807,14 +838,57 @@ IceInternal::IncomingConnectionFactory::IncomingConnectionFactory(const Instance
 	_acceptor = _endpoint->acceptor(const_cast<EndpointPtr&>(_endpoint));
 	assert(_acceptor);
 	_acceptor->listen();
+
+	if(!_instance->threadPerConnection())
+	{
+	    //
+	    // Only set _threadPool if we really need it, i.e., if we are
+	    // not in thread per connection mode. Thread pools have lazy
+	    // initialization in Instance, and we don't want them to be
+	    // created if they are not needed.
+	    //
+	    const_cast<ThreadPoolPtr&>(_threadPool) = dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool();
+	}
+	else
+	{
+	    //
+	    // If we are in thread per connection mode, we also use
+	    // one thread per incoming connection factory, that
+	    // accepts new connections on this endpoint.
+	    //
+	    __setNoDelete(true);
+	    try
+	    {
+		_threadPerIncomingConnectionFactory = new ThreadPerIncomingConnectionFactory(this);
+		_threadPerIncomingConnectionFactory->start(_instance->threadPerConnectionStackSize());
+	    }
+	    catch(const IceUtil::Exception& ex)
+	    {
+		{
+		    Error out(_instance->logger());
+		    out << "cannot create thread for incoming connection factory:\n" << ex;
+		}
+		
+		_state = StateClosed;
+		_acceptor = 0;
+		_threadPerIncomingConnectionFactory = 0;
+
+		__setNoDelete(false);
+		throw;
+	    }
+	    __setNoDelete(false);
+	}
     }
 }
 
 IceInternal::IncomingConnectionFactory::~IncomingConnectionFactory()
 {
+    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+    
     assert(_state == StateClosed);
     assert(!_acceptor);
     assert(_connections.empty());
+    assert(!_threadPerIncomingConnectionFactory);
 }
 
 void
@@ -833,8 +907,11 @@ IceInternal::IncomingConnectionFactory::setState(State state)
 	    {
 		return;
 	    }
-	    registerWithPool();
-	    for_each(_connections.begin(), _connections.end(), Ice::voidMemFun(&Connection::activate));
+	    if(!_instance->threadPerConnection())
+	    {
+		registerWithPool();
+	    }
+	    for_each(_connections.begin(), _connections.end(), Ice::voidMemFun(&ConnectionI::activate));
 	    break;
 	}
 	
@@ -844,30 +921,44 @@ IceInternal::IncomingConnectionFactory::setState(State state)
 	    {
 		return;
 	    }
-	    unregisterWithPool();
-	    for_each(_connections.begin(), _connections.end(), Ice::voidMemFun(&Connection::hold));
+	    if(!_instance->threadPerConnection())
+	    {
+		unregisterWithPool();
+	    }
+	    for_each(_connections.begin(), _connections.end(), Ice::voidMemFun(&ConnectionI::hold));
 	    break;
 	}
 	
 	case StateClosed:
 	{
-	    //
-	    // If we come from holding state, we first need to
-	    // register again before we unregister.
-	    //
-	    if(_state == StateHolding)
+	    if(_instance->threadPerConnection())
 	    {
-		registerWithPool();
+		//
+		// Connect to our own acceptor, which unblocks our
+		// thread per incoming connection factory stuck in accept().
+		//
+		_acceptor->connectToSelf();
 	    }
-	    unregisterWithPool();
+	    else
+	    {
+		//
+		// If we come from holding state, we first need to
+		// register again before we unregister.
+		//
+		if(_state == StateHolding)
+		{
+		    registerWithPool();
+		}
+		unregisterWithPool();
+	    }
 
 #ifdef _STLP_BEGIN_NAMESPACE
 	    // voidbind2nd is an STLport extension for broken compilers in IceUtil/Functional.h
 	    for_each(_connections.begin(), _connections.end(),
-		     voidbind2nd(Ice::voidMemFun1(&Connection::destroy), Connection::ObjectAdapterDeactivated));
+		     voidbind2nd(Ice::voidMemFun1(&ConnectionI::destroy), ConnectionI::ObjectAdapterDeactivated));
 #else
 	    for_each(_connections.begin(), _connections.end(),
-		     bind2nd(Ice::voidMemFun1(&Connection::destroy), Connection::ObjectAdapterDeactivated));
+		     bind2nd(Ice::voidMemFun1(&ConnectionI::destroy), ConnectionI::ObjectAdapterDeactivated));
 #endif
 	    break;
 	}
@@ -880,9 +971,11 @@ IceInternal::IncomingConnectionFactory::setState(State state)
 void
 IceInternal::IncomingConnectionFactory::registerWithPool()
 {
+    assert(!_instance->threadPerConnection()); // Only for use with a thread pool.
+
     if(_acceptor && !_registeredWithPool)
     {
-	dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool()->_register(_acceptor->fd(), this);
+	_threadPool->_register(_acceptor->fd(), this);
 	_registeredWithPool = true;
     }
 }
@@ -890,9 +983,145 @@ IceInternal::IncomingConnectionFactory::registerWithPool()
 void
 IceInternal::IncomingConnectionFactory::unregisterWithPool()
 {
+    assert(!_instance->threadPerConnection()); // Only for use with a thread pool.
+
     if(_acceptor && _registeredWithPool)
     {
-	dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool()->unregister(_acceptor->fd());
+	_threadPool->unregister(_acceptor->fd());
 	_registeredWithPool = false;
     }
+}
+
+void
+IceInternal::IncomingConnectionFactory::run()
+{
+    assert(_acceptor);
+
+    while(true)
+    {
+	//
+	// We must accept new connections outside the thread
+	// synchronization, because we use blocking accept.
+	//
+	TransceiverPtr transceiver;
+	try
+	{
+	    transceiver = _acceptor->accept(-1);
+	}
+	catch(const SocketException&)
+	{
+	    // Ignore socket exceptions.
+	}
+	catch(const TimeoutException&)
+	{
+	    // Ignore timeouts.
+	}
+	catch(const LocalException& ex)
+	{
+	    // Warn about other Ice local exceptions.
+	    if(_warn)
+	    {
+		Warning out(_instance->logger());
+		out << "connection exception:\n" << ex << '\n' << _acceptor->toString();
+	    }
+	}
+	
+	ConnectionIPtr connection;
+	
+	{
+	    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+	    
+	    while(_state == StateHolding)
+	    {
+		wait();
+	    }
+	    
+	    if(_state == StateClosed)
+	    {
+		if(transceiver)
+		{
+		    try
+		    {
+			transceiver->close();
+		    }
+		    catch(const LocalException&)
+		    {
+			// Here we ignore any exceptions in close().
+		    }
+		}
+		
+		try
+		{
+		    _acceptor->close();
+		}
+		catch(const LocalException& ex)
+		{
+		    _acceptor = 0;
+		    notifyAll();
+		    ex.ice_throw();
+		}
+		
+		_acceptor = 0;
+		notifyAll();
+		return;
+	    }
+	    
+	    assert(_state == StateActive);
+	    
+	    //
+	    // Reap connections for which destruction has completed.
+	    //
+	    _connections.erase(remove_if(_connections.begin(), _connections.end(),
+					 Ice::constMemFun(&ConnectionI::isFinished)),
+			       _connections.end());
+	    
+	    //
+	    // Create a connection object for the connection.
+	    //
+	    assert(transceiver);
+	    connection = new ConnectionI(_instance, transceiver, _endpoint, _adapter);
+	    _connections.push_back(connection);
+	}
+	
+	//
+	// In thread per connection mode, the connection's thread will
+	// take care of connection validation. We don't want to block
+	// this thread waiting until validation is complete, because
+	// in contrast to thread pool mode, it is the only thread that
+	// can accept connections with this factory's
+	// acceptor. Therefore we don't call validate() in thread per
+	// connection mode.
+    }
+}
+
+IceInternal::IncomingConnectionFactory::ThreadPerIncomingConnectionFactory::ThreadPerIncomingConnectionFactory(
+    const IncomingConnectionFactoryPtr& factory) :
+    _factory(factory)
+{
+}
+
+void
+IceInternal::IncomingConnectionFactory::ThreadPerIncomingConnectionFactory::run()
+{
+    try
+    {
+	_factory->run();
+    }
+    catch(const Exception& ex)
+    {	
+	Error out(_factory->_instance->logger());
+	out << "exception in thread per incoming connection factory:\n" << _factory->toString() << ex; 
+    }
+    catch(const std::exception& ex)
+    {
+	Error out(_factory->_instance->logger());
+	out << "std::exception in thread per incoming connection factory:\n" << _factory->toString() << ex.what();
+    }
+    catch(...)
+    {
+	Error out(_factory->_instance->logger());
+	out << "unknown exception in thread per incoming connection factory:\n" << _factory->toString();
+    }
+
+    _factory = 0; // Resolve cyclic dependency.
 }

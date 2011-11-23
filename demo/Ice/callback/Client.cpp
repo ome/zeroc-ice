@@ -12,6 +12,7 @@
 
 using namespace std;
 using namespace Ice;
+using namespace Demo;
 
 class CallbackClient : public Application
 {
@@ -39,7 +40,6 @@ menu()
 	"D: send callback as batch datagram\n"
 	"f: flush all batch requests\n"
 	"S: switch secure mode on/off\n"
-	"v: set/reset override context field\n"
 	"s: shutdown server\n"
 	"x: exit\n"
 	"?: help\n";
@@ -76,13 +76,10 @@ CallbackClient::run(int argc, char* argv[])
     CallbackReceiverPrx twowayR = CallbackReceiverPrx::uncheckedCast(
 	adapter->createProxy(stringToIdentity("callbackReceiver")));
     CallbackReceiverPrx onewayR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_oneway());
-//    CallbackReceiverPrx batchOnewayR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_batchOneway());
     CallbackReceiverPrx datagramR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_datagram());
-//    CallbackReceiverPrx batchDatagramR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_batchDatagram());
 
     bool secure = false;
     string secureStr = "";
-    string overwrite;
 
     menu();
 
@@ -95,29 +92,15 @@ CallbackClient::run(int argc, char* argv[])
 	    cin >> c;
 	    if(c == 't')
 	    {
-		Context context;
-		context["_fwd"] = "t" + secureStr;
-		twoway->initiateCallback(twowayR, context);
+		twoway->initiateCallback(twowayR);
 	    }
 	    else if(c == 'o')
 	    {
-		Context context;
-		context["_fwd"] = "o" + secureStr;
-		if(!overwrite.empty())
-		{
-		    context["ovrd"] = overwrite;
-		}
-		oneway->initiateCallback(onewayR, context);
+		oneway->initiateCallback(onewayR);
 	    }
 	    else if(c == 'O')
 	    {
-		Context context;
-		context["_fwd"] = "O" + secureStr;
-		if(!overwrite.empty())
-		{
-		    context["ovrd"] = overwrite;
-		}
-		batchOneway->initiateCallback(onewayR, context);
+		batchOneway->initiateCallback(onewayR);
 	    }
 	    else if(c == 'd')
 	    {
@@ -127,9 +110,7 @@ CallbackClient::run(int argc, char* argv[])
                 }
                 else
                 {
-                    Context context;
-                    context["_fwd"] = "d";
-                    datagram->initiateCallback(datagramR, context);
+                    datagram->initiateCallback(datagramR);
                 }
 	    }
 	    else if(c == 'D')
@@ -140,13 +121,7 @@ CallbackClient::run(int argc, char* argv[])
                 }
                 else
                 {
-                    Context context;
-                    context["_fwd"] = "D";
-                    if(!overwrite.empty())
-                    {
-                        context["ovrd"] = overwrite;
-                    }
-                    batchDatagram->initiateCallback(datagramR, context);
+                    batchDatagram->initiateCallback(datagramR);
                 }
 	    }
 	    else if(c == 'f')
@@ -166,9 +141,7 @@ CallbackClient::run(int argc, char* argv[])
 
 		twowayR = CallbackReceiverPrx::uncheckedCast(twowayR->ice_secure(secure));
 		onewayR = CallbackReceiverPrx::uncheckedCast(onewayR->ice_secure(secure));
-//		batchOnewayR = CallbackReceiverPrx::uncheckedCast(batchOnewayR->ice_secure(secure));
 		datagramR = CallbackReceiverPrx::uncheckedCast(datagramR->ice_secure(secure));
-//		batchDatagramR = CallbackReceiverPrx::uncheckedCast(batchDatagramR->ice_secure(secure));
 		
 		if(secure)
 		{
@@ -177,19 +150,6 @@ CallbackClient::run(int argc, char* argv[])
 		else
 		{
 		    cout << "secure mode is now off" << endl;
-		}
-	    }
-	    else if(c == 'v')
-	    {
-		if(overwrite.empty())
-                {
-		    overwrite = "some_value";
-		    cout << "overwrite context field is now `" << overwrite << "'" << endl;
-		}
-		else
-		{
-		    overwrite.clear();
-		    cout << "overwrite context field is empty" << endl;
 		}
 	    }
 	    else if(c == 's')

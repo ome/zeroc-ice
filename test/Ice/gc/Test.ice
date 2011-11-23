@@ -10,6 +10,9 @@
 #ifndef TEST_ICE
 #define TEST_ICE
 
+module Test
+{
+
 class C
 {
     C left;
@@ -38,6 +41,17 @@ sequence<S2> S2Seq;
 class C2
 {
     S2Seq theS2Seq;
+};
+
+class Leaf
+{
+    int i;
+};
+
+class Node
+{
+    Leaf l;
+    Node n;
 };
 
 //
@@ -90,6 +104,8 @@ class CTest
     CSeqDict theCSeqDict;
     SDict theSDict;
     CDictDict theCDictDict;
+};
+
 };
 
 #endif

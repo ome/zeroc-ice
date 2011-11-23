@@ -12,6 +12,7 @@
 #include <Hello.h>
 
 using namespace std;
+using namespace Demo;
 
 void
 menu()
@@ -38,7 +39,7 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 
     IcePack::QueryPrx query = IcePack::QueryPrx::checkedCast(communicator->stringToProxy("IcePack/Query"));
 
-    Ice::ObjectPrx base = query->findObjectByType("::Hello");
+    Ice::ObjectPrx base = query->findObjectByType("::Demo::Hello");
     HelloPrx twoway = HelloPrx::checkedCast(base->ice_twoway()->ice_timeout(-1)->ice_secure(false));
     if(!twoway)
     {
@@ -179,7 +180,7 @@ main(int argc, char* argv[])
 
     try
     {
-	Ice::PropertiesPtr properties = Ice::createProperties(argc, argv);
+	Ice::PropertiesPtr properties = Ice::createProperties();
         properties->load("config");
 	communicator = Ice::initializeWithProperties(argc, argv, properties);
 	status = run(argc, argv, communicator);

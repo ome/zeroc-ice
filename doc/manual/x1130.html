@@ -1,0 +1,2566 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Ice::Communicator</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Ice::CollocationOptimizationException"
+HREF="x1122.html"><LINK
+REL="NEXT"
+TITLE="Ice::CommunicatorDestroyedException"
+HREF="x1883.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x1122.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x1883.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR"
+></A
+><TT
+CLASS="LITERAL"
+>Ice::Communicator</TT
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN1133"
+></A
+>Overview</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local interface <TT
+CLASS="CLASSNAME"
+>Communicator</TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>The central object in <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+>. One or more communicators can be
+instantiated for an <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> application. Communicator instantiation
+is language specific, and not specified in Slice code.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1140"
+></A
+>Used By</H3
+><P
+>	    <A
+HREF="x6095.html#FREEZE.CONNECTION.GETCOMMUNICATOR"
+><TT
+CLASS="FUNCTION"
+>::Freeze::Connection::getCommunicator</TT
+></A
+>, <A
+HREF="x3140.html#ICE.OBJECTADAPTER.GETCOMMUNICATOR"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::getCommunicator</TT
+></A
+>, <A
+HREF="x7494.html#ICEBOX.SERVICE.START"
+><TT
+CLASS="FUNCTION"
+>::IceBox::Service::start</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1153"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2846.html"
+><TT
+CLASS="CLASSNAME"
+>Logger</TT
+></A
+>, <A
+HREF="x5527.html"
+><TT
+CLASS="CLASSNAME"
+>Stats</TT
+></A
+>, <A
+HREF="x3140.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectAdapter</TT
+></A
+>, <A
+HREF="x4695.html"
+><TT
+CLASS="CLASSNAME"
+>Properties</TT
+></A
+>, <A
+HREF="x4289.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectFactory</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1172"
+></A
+>Operation Index</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.ADDOBJECTFACTORY"
+><TT
+CLASS="FUNCTION"
+>addObjectFactory</TT
+></A
+></DT
+><DD
+><P
+>Add a servant factory to this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.CREATEOBJECTADAPTER"
+><TT
+CLASS="FUNCTION"
+>createObjectAdapter</TT
+></A
+></DT
+><DD
+><P
+>Create a new object adapter.</P
+></DD
+><DT
+><A
+HREF="x1130.html#OMMUNICATOR.CREATEOBJECTADAPTERWITHENDPOINTS"
+><TT
+CLASS="FUNCTION"
+>createObjectAdapterWithEndpoints</TT
+></A
+></DT
+><DD
+><P
+>Create a new object adapter with endpoints.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.DESTROY"
+><TT
+CLASS="FUNCTION"
+>destroy</TT
+></A
+></DT
+><DD
+><P
+>Destroy the communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.FINDOBJECTFACTORY"
+><TT
+CLASS="FUNCTION"
+>findObjectFactory</TT
+></A
+></DT
+><DD
+><P
+>Find a servant factory registered with this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.FLUSHBATCHREQUESTS"
+><TT
+CLASS="FUNCTION"
+>flushBatchRequests</TT
+></A
+></DT
+><DD
+><P
+>Flush any pending batch requests for this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.GETDEFAULTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>getDefaultLocator</TT
+></A
+></DT
+><DD
+><P
+>Get the default locator this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.GETDEFAULTROUTER"
+><TT
+CLASS="FUNCTION"
+>getDefaultRouter</TT
+></A
+></DT
+><DD
+><P
+>Get the default router this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.GETLOGGER"
+><TT
+CLASS="FUNCTION"
+>getLogger</TT
+></A
+></DT
+><DD
+><P
+>Get the logger for this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.GETPLUGINMANAGER"
+><TT
+CLASS="FUNCTION"
+>getPluginManager</TT
+></A
+></DT
+><DD
+><P
+>Get the plug-in manager for this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.GETPROPERTIES"
+><TT
+CLASS="FUNCTION"
+>getProperties</TT
+></A
+></DT
+><DD
+><P
+>Get the properties for this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.GETSTATS"
+><TT
+CLASS="FUNCTION"
+>getStats</TT
+></A
+></DT
+><DD
+><P
+>Get the statistics callback object for this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.PROXYTOSTRING"
+><TT
+CLASS="FUNCTION"
+>proxyToString</TT
+></A
+></DT
+><DD
+><P
+>Convert a proxy into a string.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.REMOVEOBJECTFACTORY"
+><TT
+CLASS="FUNCTION"
+>removeObjectFactory</TT
+></A
+></DT
+><DD
+><P
+>Remove a servant factory from this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.SETDEFAULTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>setDefaultLocator</TT
+></A
+></DT
+><DD
+><P
+>Set a default <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> locator for this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.SETDEFAULTROUTER"
+><TT
+CLASS="FUNCTION"
+>setDefaultRouter</TT
+></A
+></DT
+><DD
+><P
+>Set a default router for this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.SETLOGGER"
+><TT
+CLASS="FUNCTION"
+>setLogger</TT
+></A
+></DT
+><DD
+><P
+>Set the logger for this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.SETSTATS"
+><TT
+CLASS="FUNCTION"
+>setStats</TT
+></A
+></DT
+><DD
+><P
+>Set the statistics callback object for this communicator.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.SHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>shutdown</TT
+></A
+></DT
+><DD
+><P
+>Shuts down this communicator's server functionality, including
+the deactivation of all object adapters.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.STRINGTOPROXY"
+><TT
+CLASS="FUNCTION"
+>stringToProxy</TT
+></A
+></DT
+><DD
+><P
+>Convert a string into a proxy.</P
+></DD
+><DT
+><A
+HREF="x1130.html#ICE.COMMUNICATOR.WAITFORSHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>waitForShutdown</TT
+></A
+></DT
+><DD
+><P
+>Wait until this communicator's server functionality has shut
+down completely.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.ADDOBJECTFACTORY"
+></A
+><TT
+CLASS="LITERAL"
+>addObjectFactory</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>addObjectFactory</TT
+>(<A
+HREF="x4289.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectFactory</TT
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>factory</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Add a servant factory to this communicator. Installing a
+factory with an id for which a factory is already registered
+throws <A
+HREF="x1032.html"
+><TT
+CLASS="CLASSNAME"
+>AlreadyRegisteredException</TT
+></A
+>.</P
+><P
+>When unmarshaling an Ice object, the Ice run-time reads the
+most-derived type id off the wire and attempts to create an
+instance of the type using a factory. If no instance is created,
+either because no factory was found, or because all factories
+returned nil, the object is sliced to the next most-derived type
+and the process repeats. If no factory is found that can create an
+instance, the Ice run-time will slice the object to the type
+Ice::Object.</P
+><P
+>The following order is used to locate a factory for a type:
+<P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>The Ice run-time looks for a factory registered
+specifically for the type.</P
+></LI
+><LI
+><P
+>If no instance has been created, the Ice run-time looks
+for the default factory, which is registered with an emtpy type id.</P
+></LI
+><LI
+><P
+>If no instance has been created by any of the preceding
+steps, the Ice run-time looks for a factory that may have been
+statically generated by the language mapping for non-abstract classes.</P
+></LI
+></OL
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1325"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>factory</I
+></TT
+></DT
+><DD
+><P
+>			    The factory to add.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+></DT
+><DD
+><P
+>			    The type id for which the factory can create instances, or
+an empty string for the default factory.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1338"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.REMOVEOBJECTFACTORY"
+><TT
+CLASS="FUNCTION"
+>removeObjectFactory</TT
+></A
+>, <A
+HREF="x1130.html#ICE.COMMUNICATOR.FINDOBJECTFACTORY"
+><TT
+CLASS="FUNCTION"
+>findObjectFactory</TT
+></A
+>, <A
+HREF="x4289.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectFactory</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.CREATEOBJECTADAPTER"
+></A
+><TT
+CLASS="LITERAL"
+>createObjectAdapter</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x3140.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectAdapter</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>createObjectAdapter</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>name</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Create a new object adapter. The endpoints for the object
+adapter are taken from the property
+<TT
+CLASS="LITERAL"
+><TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.Endpoints</TT
+>.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1363"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>name</I
+></TT
+></DT
+><DD
+><P
+>			    The object adapter name.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1371"
+></A
+>Return Value</H3
+><P
+>		The new object adapter.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1374"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#OMMUNICATOR.CREATEOBJECTADAPTERWITHENDPOINTS"
+><TT
+CLASS="FUNCTION"
+>createObjectAdapterWithEndpoints</TT
+></A
+>, <A
+HREF="x3140.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectAdapter</TT
+></A
+>, <A
+HREF="x4695.html"
+><TT
+CLASS="CLASSNAME"
+>Properties</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="OMMUNICATOR.CREATEOBJECTADAPTERWITHENDPOINTS"
+></A
+><TT
+CLASS="LITERAL"
+>createObjectAdapterWithEndpoints</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x3140.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectAdapter</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>createObjectAdapterWithEndpoints</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>name</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>endpoints</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Create a new object adapter with endpoints. This method sets
+the property
+<TT
+CLASS="LITERAL"
+><TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+>.Endpoints</TT
+>,
+and then calls <A
+HREF="x1130.html#ICE.COMMUNICATOR.CREATEOBJECTADAPTER"
+><TT
+CLASS="FUNCTION"
+>createObjectAdapter</TT
+></A
+>. It is provided as a
+convenience function.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1403"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>name</I
+></TT
+></DT
+><DD
+><P
+>			    The object adapter name.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>endpoints</I
+></TT
+></DT
+><DD
+><P
+>			    The endpoints for the object adapter.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1416"
+></A
+>Return Value</H3
+><P
+>		The new object adapter.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1419"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.CREATEOBJECTADAPTER"
+><TT
+CLASS="FUNCTION"
+>createObjectAdapter</TT
+></A
+>, <A
+HREF="x3140.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectAdapter</TT
+></A
+>, <A
+HREF="x4695.html"
+><TT
+CLASS="CLASSNAME"
+>Properties</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.DESTROY"
+></A
+><TT
+CLASS="LITERAL"
+>destroy</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>destroy</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Destroy the communicator. This operation calls <A
+HREF="x1130.html#ICE.COMMUNICATOR.SHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>shutdown</TT
+></A
+>
+implicitly.  Calling <A
+HREF="x1130.html#ICE.COMMUNICATOR.DESTROY"
+><TT
+CLASS="FUNCTION"
+>destroy</TT
+></A
+> cleans up memory, and shuts down
+this communicator's client functionality. Subsequent calls to
+<A
+HREF="x1130.html#ICE.COMMUNICATOR.DESTROY"
+><TT
+CLASS="FUNCTION"
+>destroy</TT
+></A
+> are ignored.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1445"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.SHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>shutdown</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.FINDOBJECTFACTORY"
+></A
+><TT
+CLASS="LITERAL"
+>findObjectFactory</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x4289.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectFactory</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>findObjectFactory</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Find a servant factory registered with this communicator.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1462"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+></DT
+><DD
+><P
+>			    The type id for which the factory can create instances,
+or an empty string for the default factory.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1470"
+></A
+>Return Value</H3
+><P
+>		The servant factory, or null if no servant factory was
+found for the given id.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1473"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.ADDOBJECTFACTORY"
+><TT
+CLASS="FUNCTION"
+>addObjectFactory</TT
+></A
+>, <A
+HREF="x1130.html#ICE.COMMUNICATOR.REMOVEOBJECTFACTORY"
+><TT
+CLASS="FUNCTION"
+>removeObjectFactory</TT
+></A
+>, <A
+HREF="x4289.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectFactory</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.FLUSHBATCHREQUESTS"
+></A
+><TT
+CLASS="LITERAL"
+>flushBatchRequests</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>flushBatchRequests</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Flush any pending batch requests for this communicator.
+This causes all batch requests that were sent via proxies
+obtained via this communicator to be sent to the server.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.GETDEFAULTLOCATOR"
+></A
+><TT
+CLASS="LITERAL"
+>getDefaultLocator</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><TT
+CLASS="CLASSNAME"
+>Locator*</TT
+> <TT
+CLASS="FUNCTION"
+>getDefaultLocator</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the default locator this communicator.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1500"
+></A
+>Return Value</H3
+><P
+>		The default locator for this communicator.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1503"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.SETDEFAULTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>setDefaultLocator</TT
+></A
+>, <A
+HREF="x2632.html"
+><TT
+CLASS="CLASSNAME"
+>Locator</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.GETDEFAULTROUTER"
+></A
+><TT
+CLASS="LITERAL"
+>getDefaultRouter</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><TT
+CLASS="CLASSNAME"
+>Router*</TT
+> <TT
+CLASS="FUNCTION"
+>getDefaultRouter</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the default router this communicator.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1520"
+></A
+>Return Value</H3
+><P
+>		The default router for this communicator.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1523"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.SETDEFAULTROUTER"
+><TT
+CLASS="FUNCTION"
+>setDefaultRouter</TT
+></A
+>, <A
+HREF="x5224.html"
+><TT
+CLASS="CLASSNAME"
+>Router</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.GETLOGGER"
+></A
+><TT
+CLASS="LITERAL"
+>getLogger</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x2846.html"
+><TT
+CLASS="CLASSNAME"
+>Logger</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>getLogger</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the logger for this communicator.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1541"
+></A
+>Return Value</H3
+><P
+>		This communicator's logger.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1544"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.SETLOGGER"
+><TT
+CLASS="FUNCTION"
+>setLogger</TT
+></A
+>, <A
+HREF="x2846.html"
+><TT
+CLASS="CLASSNAME"
+>Logger</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.GETPLUGINMANAGER"
+></A
+><TT
+CLASS="LITERAL"
+>getPluginManager</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x4542.html"
+><TT
+CLASS="CLASSNAME"
+>PluginManager</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>getPluginManager</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the plug-in manager for this communicator.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1562"
+></A
+>Return Value</H3
+><P
+>		This communicator's plug-in manager.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1565"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x4542.html"
+><TT
+CLASS="CLASSNAME"
+>PluginManager</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.GETPROPERTIES"
+></A
+><TT
+CLASS="LITERAL"
+>getProperties</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x4695.html"
+><TT
+CLASS="CLASSNAME"
+>Properties</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>getProperties</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the properties for this communicator.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1580"
+></A
+>Return Value</H3
+><P
+>		This communicator's properties.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1583"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x4695.html"
+><TT
+CLASS="CLASSNAME"
+>Properties</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.GETSTATS"
+></A
+><TT
+CLASS="LITERAL"
+>getStats</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><A
+HREF="x5527.html"
+><TT
+CLASS="CLASSNAME"
+>Stats</TT
+></A
+> <TT
+CLASS="FUNCTION"
+>getStats</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Get the statistics callback object for this communicator.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1598"
+></A
+>Return Value</H3
+><P
+>		This communicator's statistics callback object.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1601"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.SETSTATS"
+><TT
+CLASS="FUNCTION"
+>setStats</TT
+></A
+>, <A
+HREF="x5527.html"
+><TT
+CLASS="CLASSNAME"
+>Stats</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.PROXYTOSTRING"
+></A
+><TT
+CLASS="LITERAL"
+>proxyToString</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="FUNCTION"
+>proxyToString</TT
+>(<SPAN
+CLASS="TYPE"
+>Object*</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>obj</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Convert a proxy into a string.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1620"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>obj</I
+></TT
+></DT
+><DD
+><P
+>			    The proxy to convert into a string.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1628"
+></A
+>Return Value</H3
+><P
+>		The "stringified" proxy.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1631"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.STRINGTOPROXY"
+><TT
+CLASS="FUNCTION"
+>stringToProxy</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.REMOVEOBJECTFACTORY"
+></A
+><TT
+CLASS="LITERAL"
+>removeObjectFactory</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>removeObjectFactory</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Remove a servant factory from this communicator. Removing an id
+for which no factory is registered throws <A
+HREF="x3103.html"
+><TT
+CLASS="CLASSNAME"
+>NotRegisteredException</TT
+></A
+>.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1649"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>id</I
+></TT
+></DT
+><DD
+><P
+>			    The type id for which the factory can create instances,
+or an empty string for the default factory.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1657"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.ADDOBJECTFACTORY"
+><TT
+CLASS="FUNCTION"
+>addObjectFactory</TT
+></A
+>, <A
+HREF="x1130.html#ICE.COMMUNICATOR.FINDOBJECTFACTORY"
+><TT
+CLASS="FUNCTION"
+>findObjectFactory</TT
+></A
+>, <A
+HREF="x4289.html"
+><TT
+CLASS="CLASSNAME"
+>ObjectFactory</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.SETDEFAULTLOCATOR"
+></A
+><TT
+CLASS="LITERAL"
+>setDefaultLocator</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>setDefaultLocator</TT
+>(<TT
+CLASS="CLASSNAME"
+>Locator*</TT
+> <TT
+CLASS="PARAMETER"
+><I
+>loc</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Set a default <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> locator for this communicator. All newly
+created proxy and object adapters will use this default
+locator. To disable the default locator, null can be used.
+Note that this operation has no effect on existing proxies or
+object adapters.
+<DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> You can also set a locator for an individual proxy
+by calling the operation <TT
+CLASS="LITERAL"
+>ice_locator</TT
+> on the proxy, or for an
+object adapter by calling the operation <TT
+CLASS="LITERAL"
+>setLocator</TT
+> on the
+object adapter.</P
+></TD
+></TR
+></TABLE
+></DIV
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1684"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>loc</I
+></TT
+></DT
+><DD
+><P
+>			    The default locator to use for this communicator.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1692"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.GETDEFAULTLOCATOR"
+><TT
+CLASS="FUNCTION"
+>getDefaultLocator</TT
+></A
+>, <A
+HREF="x2632.html"
+><TT
+CLASS="CLASSNAME"
+>Locator</TT
+></A
+>, <A
+HREF="x3140.html#ICE.OBJECTADAPTER.SETLOCATOR"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::setLocator</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.SETDEFAULTROUTER"
+></A
+><TT
+CLASS="LITERAL"
+>setDefaultRouter</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>setDefaultRouter</TT
+>(<TT
+CLASS="CLASSNAME"
+>Router*</TT
+> <TT
+CLASS="PARAMETER"
+><I
+>rtr</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Set a default router for this communicator. All newly
+created proxies will use this default router. To disable the
+default router, null can be used. Note that this
+operation has no effect on existing proxies.
+<DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> You can also set a router for an individual proxy
+by calling the operation <TT
+CLASS="LITERAL"
+>ice_router</TT
+> on the proxy.</P
+></TD
+></TR
+></TABLE
+></DIV
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1717"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>rtr</I
+></TT
+></DT
+><DD
+><P
+>			    The default router to use for this communicator.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1725"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.GETDEFAULTROUTER"
+><TT
+CLASS="FUNCTION"
+>getDefaultRouter</TT
+></A
+>, <A
+HREF="x5224.html"
+><TT
+CLASS="CLASSNAME"
+>Router</TT
+></A
+>, <A
+HREF="x3140.html#ICE.OBJECTADAPTER.ADDROUTER"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::addRouter</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.SETLOGGER"
+></A
+><TT
+CLASS="LITERAL"
+>setLogger</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>setLogger</TT
+>(<A
+HREF="x2846.html"
+><TT
+CLASS="CLASSNAME"
+>Logger</TT
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>log</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Set the logger for this communicator.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1748"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>log</I
+></TT
+></DT
+><DD
+><P
+>			    The logger to use for this communicator.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1756"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.GETLOGGER"
+><TT
+CLASS="FUNCTION"
+>getLogger</TT
+></A
+>, <A
+HREF="x2846.html"
+><TT
+CLASS="CLASSNAME"
+>Logger</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.SETSTATS"
+></A
+><TT
+CLASS="LITERAL"
+>setStats</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>setStats</TT
+>(<A
+HREF="x5527.html"
+><TT
+CLASS="CLASSNAME"
+>Stats</TT
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>st</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Set the statistics callback object for this communicator.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1776"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>st</I
+></TT
+></DT
+><DD
+><P
+>			    The statistics callback object to use for this
+communicator.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1784"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.GETSTATS"
+><TT
+CLASS="FUNCTION"
+>getStats</TT
+></A
+>, <A
+HREF="x5527.html"
+><TT
+CLASS="CLASSNAME"
+>Stats</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.SHUTDOWN"
+></A
+><TT
+CLASS="LITERAL"
+>shutdown</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>shutdown</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Shuts down this communicator's server functionality, including
+the deactivation of all object adapters. Subsequent calls to
+<A
+HREF="x1130.html#ICE.COMMUNICATOR.SHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>shutdown</TT
+></A
+> are ignored.
+<DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> After <A
+HREF="x1130.html#ICE.COMMUNICATOR.SHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>shutdown</TT
+></A
+> returns, no new requests are
+processed. However, requests that have been started before
+<A
+HREF="x1130.html#ICE.COMMUNICATOR.SHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>shutdown</TT
+></A
+> was called might still be active. You can use
+<A
+HREF="x1130.html#ICE.COMMUNICATOR.WAITFORSHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>waitForShutdown</TT
+></A
+> to wait for the completion of all
+requests. </P
+></TD
+></TR
+></TABLE
+></DIV
+></P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1811"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.DESTROY"
+><TT
+CLASS="FUNCTION"
+>destroy</TT
+></A
+>, <A
+HREF="x1130.html#ICE.COMMUNICATOR.WAITFORSHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>waitForShutdown</TT
+></A
+>, <A
+HREF="x3140.html#ICE.OBJECTADAPTER.DEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::deactivate</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.STRINGTOPROXY"
+></A
+><TT
+CLASS="LITERAL"
+>stringToProxy</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>Object*</SPAN
+> <TT
+CLASS="FUNCTION"
+>stringToProxy</TT
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>str</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Convert a string into a proxy. For example,
+<TT
+CLASS="LITERAL"
+>MyCategory/MyObject:tcp -h some_host -p
+10000</TT
+> creates a proxy that refers to the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object
+having an identity with a name "MyObject" and a category
+"MyCategory", with the server running on host "some_host", port
+10000. If the string does not parse correctly, the operation
+throws <A
+HREF="x5120.html"
+><TT
+CLASS="CLASSNAME"
+>ProxyParseException</TT
+></A
+>.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1837"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>str</I
+></TT
+></DT
+><DD
+><P
+>			    The string to convert into a proxy.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1845"
+></A
+>Return Value</H3
+><P
+>		The proxy.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1848"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.PROXYTOSTRING"
+><TT
+CLASS="FUNCTION"
+>proxyToString</TT
+></A
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMMUNICATOR.WAITFORSHUTDOWN"
+></A
+><TT
+CLASS="LITERAL"
+>waitForShutdown</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>waitForShutdown</TT
+>();</PRE
+></TD
+></TR
+></TABLE
+><P
+>Wait until this communicator's server functionality has shut
+down completely. Calling <A
+HREF="x1130.html#ICE.COMMUNICATOR.SHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>shutdown</TT
+></A
+> initiates shutdown, and
+<A
+HREF="x1130.html#ICE.COMMUNICATOR.WAITFORSHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>waitForShutdown</TT
+></A
+> only returns when all outstanding requests
+have completed. A typical use of this operation is to call it
+from the main thread, which then waits until some other thread
+calls <A
+HREF="x1130.html#ICE.COMMUNICATOR.SHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>shutdown</TT
+></A
+>. After shutdown is complete, the main thread
+returns and can do some cleanup work before it finally calls
+<A
+HREF="x1130.html#ICE.COMMUNICATOR.DESTROY"
+><TT
+CLASS="FUNCTION"
+>destroy</TT
+></A
+> to also shut down the client functionality, and then
+exits the application.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1870"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x1130.html#ICE.COMMUNICATOR.SHUTDOWN"
+><TT
+CLASS="FUNCTION"
+>shutdown</TT
+></A
+>, <A
+HREF="x1130.html#ICE.COMMUNICATOR.DESTROY"
+><TT
+CLASS="FUNCTION"
+>destroy</TT
+></A
+>, <A
+HREF="x3140.html#ICE.OBJECTADAPTER.WAITFORDEACTIVATE"
+><TT
+CLASS="FUNCTION"
+>ObjectAdapter::waitForDeactivate</TT
+></A
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x1122.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x1883.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::CollocationOptimizationException</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Ice::CommunicatorDestroyedException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

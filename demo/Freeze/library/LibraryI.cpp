@@ -11,6 +11,7 @@
 #include <LibraryI.h>
 
 using namespace std;
+using namespace Demo;
 
 BookI::BookI(const LibraryIPtr& library) :
     _library(library), _destroyed(false)
@@ -51,7 +52,7 @@ BookI::destroy(const Ice::Current&)
     }
 }
 
-::BookDescription
+Demo::BookDescription
 BookI::getBookDescription(const Ice::Current&) const
 {
     IceUtil::RWRecMutex::RLock sync(*this);
@@ -165,8 +166,8 @@ LibraryI::~LibraryI()
 {
 }
 
-::BookPrx
-LibraryI::createBook(const ::BookDescription& description, const Ice::Current& c)
+Demo::BookPrx
+LibraryI::createBook(const Demo::BookDescription& description, const Ice::Current& c)
 {
     IceUtil::RWRecMutex::WLock sync(*this);
 
@@ -227,7 +228,7 @@ LibraryI::createBook(const ::BookDescription& description, const Ice::Current& c
     return book;
 }
 
-::BookPrx
+Demo::BookPrx
 LibraryI::findByIsbn(const string& isbn, const Ice::Current& c) const
 {
     //
@@ -251,7 +252,7 @@ LibraryI::findByIsbn(const string& isbn, const Ice::Current& c) const
     }
 }
 
-::BookPrxSeq
+Demo::BookPrxSeq
 LibraryI::findByAuthors(const string& authors, const Ice::Current& c) const
 {
     IceUtil::RWRecMutex::RLock sync(*this);

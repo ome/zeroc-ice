@@ -16,6 +16,7 @@
 #include <Ice/EndpointFactoryManager.h>
 #include <Ice/RouterInfo.h>
 #include <Ice/LocatorInfo.h>
+#include <Ice/BasicStream.h>
 #include <IceUtil/StringUtil.h>
 
 using namespace std;
@@ -26,16 +27,32 @@ void IceInternal::incRef(::IceInternal::ReferenceFactory* p) { p->__incRef(); }
 void IceInternal::decRef(::IceInternal::ReferenceFactory* p) { p->__decRef(); }
 
 ReferencePtr
+IceInternal::ReferenceFactory::clone(const Reference* r) const
+{
+    Mutex::Lock sync(*this);
+
+    if(!_instance)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
+    const Ice::Identity& ident = r->getIdentity();
+    if(ident.name.empty() && ident.category.empty())
+    {
+        return 0;
+    }
+
+    return r->clone();
+}
+
+ReferencePtr
 IceInternal::ReferenceFactory::create(const Identity& ident,
 				      const Context& context,
 				      const string& facet,
 				      Reference::Mode mode,
 				      bool secure,
-				      const string& adapterId,
 				      const vector<EndpointPtr>& endpoints,
 				      const RouterInfoPtr& routerInfo,
-				      const LocatorInfoPtr& locatorInfo,
-				      const ObjectAdapterPtr& reverseAdapter,
 				      bool collocationOptimization)
 {
     Mutex::Lock sync(*this);
@@ -53,69 +70,65 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
     //
     // Create new reference
     //
-    ReferencePtr ref = new Reference(_instance, ident, context, facet, mode, secure, adapterId,
-				     endpoints, routerInfo, locatorInfo, reverseAdapter, collocationOptimization);
+    return new DirectReference(_instance, ident, context, facet, mode, secure,
+			       endpoints, routerInfo, collocationOptimization);
+}
 
+ReferencePtr
+IceInternal::ReferenceFactory::create(const Identity& ident,
+				      const Context& context,
+				      const string& facet,
+				      Reference::Mode mode,
+				      bool secure,
+				      const string& adapterId,
+				      const RouterInfoPtr& routerInfo,
+				      const LocatorInfoPtr& locatorInfo,
+				      bool collocationOptimization)
+{
+    Mutex::Lock sync(*this);
 
-//
-// This code is currently not used, because the eviction code below is
-// too slow when there are a large number of references. The savings
-// are also rather questionable.
-//
-/*
-    //
-    // If we already have an equivalent reference, use such equivalent
-    // reference. Otherwise add the new reference to the reference
-    // set.
-    //
-    set<ReferencePtr>::iterator p = _references.end();
-    
-    if(_referencesHint != _references.end())
+    if(!_instance)
     {
-	if(*_referencesHint == ref)
-	{
-	    p = _referencesHint;
-	}
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
     }
-    
-    if(p == _references.end())
+
+    if(ident.name.empty() && ident.category.empty())
     {
-	p = _references.find(ref);
-    }
-    
-    if(p == _references.end())
-    {
-	_referencesHint = _references.insert(_referencesHint, ref);
-    }
-    else
-    {
-	_referencesHint = p;
-	ref = *_referencesHint;
+        return 0;
     }
 
     //
-    // At every 10th call, evict references which are not in use anymore.
+    // Create new reference
     //
-    if(++_evict >= 10)
-    {
-	_evict = 0;
-	p = _references.begin();
-	while(p != _references.end())
-	{
-	    if((*p)->__getRef() == 1)
-	    {
-		assert(p != _referencesHint);
-		_references.erase(p++);
-	    }
-	    else
-	    {
-		++p;
-	    }
-	}
-    }
-*/
+    return new IndirectReference(_instance, ident, context, facet, mode, secure,
+				 adapterId, routerInfo, locatorInfo, collocationOptimization);
+}
 
-    return ref;
+ReferencePtr
+IceInternal::ReferenceFactory::create(const Identity& ident,
+				      const Context& context,
+				      const string& facet,
+				      Reference::Mode mode,
+				      bool secure,
+				      bool collocationOptimization,
+				      const vector<Ice::ConnectionIPtr>& fixedConnections)
+{
+    Mutex::Lock sync(*this);
+
+    if(!_instance)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+
+    if(ident.name.empty() && ident.category.empty())
+    {
+        return 0;
+    }
+
+    //
+    // Create new reference
+    //
+    return new FixedReference(_instance, ident, context, facet, mode, secure, fixedConnections);
 }
 
 ReferencePtr
@@ -286,7 +299,7 @@ IceInternal::ReferenceFactory::create(const string& str)
 
 	//
 	// If any new options are added here,
-	// IceInternal::Reference::toString() must be updated as well.
+	// IceInternal::Reference::toString() and its derived classes must be updated as well.
 	//
 	switch(option[1])
 	{
@@ -390,10 +403,19 @@ IceInternal::ReferenceFactory::create(const string& str)
 	}
     }
 
-    vector<EndpointPtr> endpoints;
-    if(beg != string::npos)
+    RouterInfoPtr routerInfo = _instance->routerManager()->get(getDefaultRouter());
+    LocatorInfoPtr locatorInfo = _instance->locatorManager()->get(getDefaultLocator());
+
+    if(beg == string::npos)
     {
-	if(s[beg] == ':')
+	return create(ident, Context(), facet, mode, secure, "", routerInfo, locatorInfo, true);
+    }
+
+    vector<EndpointPtr> endpoints;
+
+    switch(s[beg])
+    {
+	case ':':
 	{
 	    end = beg;
 	    
@@ -411,8 +433,10 @@ IceInternal::ReferenceFactory::create(const string& str)
 		EndpointPtr endp = _instance->endpointFactoryManager()->create(es);
 		endpoints.push_back(endp);
 	    }
+	    return create(ident, Context(), facet, mode, secure, endpoints, routerInfo, true);
+	    break;
 	}
-	else if(s[beg] == '@')
+	case '@':
 	{
 	    beg = s.find_first_not_of(delim, beg + 1);
 	    if(beg == string::npos)
@@ -422,38 +446,42 @@ IceInternal::ReferenceFactory::create(const string& str)
 		throw ex;
 	    }
 
-            end = IceUtil::checkQuote(s, beg);
-            if(end == string::npos)
-            {
+	    end = IceUtil::checkQuote(s, beg);
+	    if(end == string::npos)
+	    {
 		ProxyParseException ex(__FILE__, __LINE__);
 		ex.str = str;
 		throw ex;
-            }
-            else if(end == 0)
-            {
-                end = s.find_first_of(delim, beg);
-                if(end == string::npos)
-                {
-                    end = s.size();
-                }
-            }
-            else
-            {
-                beg++; // Skip leading quote
-            }
+	    }
+	    else if(end == 0)
+	    {
+		end = s.find_first_of(delim, beg);
+		if(end == string::npos)
+		{
+		    end = s.size();
+		}
+	    }
+	    else
+	    {
+		beg++; // Skip leading quote
+	    }
 
-            if(!IceUtil::unescapeString(s, beg, end, adapter) || adapter.size() == 0)
-            {
+	    if(!IceUtil::unescapeString(s, beg, end, adapter) || adapter.size() == 0)
+	    {
 		ProxyParseException ex(__FILE__, __LINE__);
 		ex.str = str;
 		throw ex;
-            }
+	    }
+	    return create(ident, Context(), facet, mode, secure, adapter, routerInfo, locatorInfo, true);
+	    break;
+	}
+	default:
+	{
+	    ProxyParseException ex(__FILE__, __LINE__);
+	    ex.str = str;
+	    throw ex;
 	}
     }
-
-    RouterInfoPtr routerInfo = _instance->routerManager()->get(getDefaultRouter());
-    LocatorInfoPtr locatorInfo = _instance->locatorManager()->get(getDefaultLocator());
-    return create(ident, Context(), facet, mode, secure, adapter, endpoints, routerInfo, locatorInfo, 0, true);
 }
 
 ReferencePtr
@@ -498,6 +526,9 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
     vector<EndpointPtr> endpoints;
     string adapterId;
 
+    RouterInfoPtr routerInfo = _instance->routerManager()->get(getDefaultRouter());
+    LocatorInfoPtr locatorInfo = _instance->locatorManager()->get(getDefaultLocator());
+
     Ice::Int sz;
     s->readSize(sz);
     
@@ -509,15 +540,13 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
 	    EndpointPtr endpoint = _instance->endpointFactoryManager()->read(s);
 	    endpoints.push_back(endpoint);
 	}
+	return create(ident, Context(), facet, mode, secure, endpoints, routerInfo, true);
     }
     else
     {
 	s->read(adapterId);
+	return create(ident, Context(), facet, mode, secure, adapterId, routerInfo, locatorInfo, true);
     }
-
-    RouterInfoPtr routerInfo = _instance->routerManager()->get(getDefaultRouter());
-    LocatorInfoPtr locatorInfo = _instance->locatorManager()->get(getDefaultLocator());
-    return create(ident, Context(), facet, mode, secure, adapterId, endpoints, routerInfo, locatorInfo, 0, true);
 }
 
 void
@@ -549,9 +578,7 @@ IceInternal::ReferenceFactory::getDefaultLocator() const
 }
 
 IceInternal::ReferenceFactory::ReferenceFactory(const InstancePtr& instance) :
-    _instance(instance),
-    _referencesHint(_references.end()),
-    _evict(0)
+    _instance(instance)
 {
 }
 
@@ -568,6 +595,4 @@ IceInternal::ReferenceFactory::destroy()
     _instance = 0;
     _defaultRouter = 0;
     _defaultLocator = 0;
-    _references.clear();
-    _referencesHint = _references.end();
 }

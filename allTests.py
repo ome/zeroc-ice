@@ -69,6 +69,7 @@ tests = [ \
     "Ice/slicing/objects", \
     "Ice/gc", \
     "Ice/checksum", \
+    "Ice/stream", \
     "IceSSL/configuration", \
     "IceSSL/loadPEM", \
     "IceSSL/certificateAndKeyParsing", \
@@ -84,10 +85,11 @@ tests = [ \
     "FreezeScript/evictor", \
     "IcePack/simple", \
     "IcePack/deployer", \
+    "Glacier2/router", \
     ]
 
 #
-# This test is currently disabled on cygwin
+# These tests are currently disabled on cygwin
 #
 if TestUtil.isCygwin() == 0:
     tests += [ \

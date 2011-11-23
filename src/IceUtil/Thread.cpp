@@ -29,11 +29,11 @@ IceUtil::ThreadControl::ThreadControl()
     }
 }
 
-IceUtil::ThreadControl::ThreadControl(const HandleWrapperPtr& handle, unsigned int id)
+IceUtil::ThreadControl::ThreadControl(const HandleWrapperPtr& handle, ThreadId id)
 {
     IceUtil::Mutex::Lock lock(_stateMutex);
     _handle = handle;
-    _id = GetCurrentThreadId();
+    _id = id;
 }
 
 IceUtil::ThreadControl::ThreadControl(const ThreadControl& tc)
@@ -213,7 +213,7 @@ startHook(void* arg)
 #include <process.h>
 
 IceUtil::ThreadControl
-IceUtil::Thread::start()
+IceUtil::Thread::start(size_t stackSize)
 {
     //
     // Keep this alive for the duration of start
@@ -238,7 +238,9 @@ IceUtil::Thread::start()
     //
     __incRef();
     
-    _handle->handle = (HANDLE)_beginthreadex(0, 0, (unsigned int (__stdcall*)(void*))startHook, (LPVOID)this, 0, &_id);
+    _handle->handle = (HANDLE)_beginthreadex(
+	0, stackSize, (unsigned int (__stdcall*)(void*))startHook, (LPVOID)this, 0, &_id);
+
     if(_handle->handle == 0)
     {
 	__decRef();
@@ -317,7 +319,7 @@ IceUtil::Thread::operator<(const Thread& rhs) const
 
 #else
 
-IceUtil::ThreadControl::ThreadControl(pthread_t id)
+IceUtil::ThreadControl::ThreadControl(ThreadId id)
 {
     IceUtil::Mutex::Lock lock(_stateMutex);
     _id = id;
@@ -499,7 +501,7 @@ startHook(void* arg)
 }
 
 IceUtil::ThreadControl
-IceUtil::Thread::start()
+IceUtil::Thread::start(size_t stackSize)
 {
     //
     // Keep this alive for the duration of start
@@ -523,11 +525,37 @@ IceUtil::Thread::start()
     // __decRef().
     //
     __incRef();
-    int rc = pthread_create(&_id, 0, startHook, this);
-    if(rc != 0)
+
+    if(stackSize > 0)
     {
-	__decRef();
-	throw ThreadSyscallException(__FILE__, __LINE__, rc);
+	pthread_attr_t attr;
+	int rc = pthread_attr_init(&attr);
+	if(rc != 0)
+	{
+	    __decRef();
+	    throw ThreadSyscallException(__FILE__, __LINE__, rc);
+	}
+	rc = pthread_attr_setstacksize(&attr, stackSize);
+	if(rc != 0)
+	{
+	    __decRef();
+	    throw ThreadSyscallException(__FILE__, __LINE__, rc);
+	}
+	rc = pthread_create(&_id, &attr, startHook, this);
+	if(rc != 0)
+	{
+	    __decRef();
+	    throw ThreadSyscallException(__FILE__, __LINE__, rc);
+	}
+    }
+    else
+    {
+	int rc = pthread_create(&_id, 0, startHook, this);
+	if(rc != 0)
+	{
+	    __decRef();
+	    throw ThreadSyscallException(__FILE__, __LINE__, rc);
+	}
     }
 
     _started = true;

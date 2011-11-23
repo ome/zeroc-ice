@@ -551,6 +551,19 @@ local exception CloseConnectionException extends ProtocolException
 
 /**
  *
+ * This exception is raised by an operation call if the application
+ * forcefully closes the connection used by this call with
+ * [Connection::close].
+ *
+ * @see Connection::close
+ *
+ **/
+local exception ForcedCloseConnectionException extends ProtocolException
+{
+};
+
+/**
+ *
  * This exception is a specialization of [ProtocolException],
  * indicating that a batch request has been aborted.
  *
@@ -592,20 +605,10 @@ local exception CompressionException extends ProtocolException
 {
     /**
      *
-     * A description of the problem with compress or uncompress.
+     * The reason for the failure.
      *
      **/
     string reason;
-};
-
-/**
- *
- * This exception is a specialization of [ProtocolException] that is
- * raised upon an error during marshaling or unmarshaling data.
- *
- **/
-local exception MarshalException extends ProtocolException
-{
 };
 
 /**
@@ -617,6 +620,22 @@ local exception MarshalException extends ProtocolException
  **/
 local exception DatagramLimitException extends ProtocolException
 {
+};
+
+/**
+ *
+ * This exception is a specialization of [ProtocolException] that is
+ * raised upon an error during marshaling or unmarshaling data.
+ *
+ **/
+local exception MarshalException extends ProtocolException
+{
+    /**
+     *
+     * The reason for the failure.
+     *
+     **/
+    string reason;
 };
 
 /**

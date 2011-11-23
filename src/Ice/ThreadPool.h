@@ -44,6 +44,8 @@ public:
     void unregister(SOCKET);
     void promoteFollower();
     void joinWithAllThreads();
+
+    std::string prefix() const;
     
 private:
 
@@ -87,7 +89,7 @@ private:
     const int _sizeMax; // Maximum number of threads.
     const int _sizeWarn; // If _inUse reaches _sizeWarn, a "low on threads" warning will be printed.
 
-    const int _messageSizeMax;
+    const size_t _stackSize;
 
     std::vector<IceUtil::ThreadControl> _threads; // Control for all threads, running or not.
     int _running; // Number of running threads.

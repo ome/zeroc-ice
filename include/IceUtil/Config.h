@@ -174,27 +174,39 @@ private:
 // Some definitions for 64-bit integers.
 //
 #if defined(_MSC_VER)
+
 typedef __int64 Int64;
 const Int64 Int64Min = -9223372036854775808i64;
 const Int64 Int64Max =  9223372036854775807i64;
 
 #elif defined(__SUNPRO_CC)
-#     if defined(ICE_64)
+
+#   if defined(ICE_64)
 typedef long Int64;
 const Int64 Int64Min = -0x7fffffffffffffffL-1L;
 const Int64 Int64Max = 0x7fffffffffffffffL;
-#     else
+#   else
 typedef long long Int64;
 const Int64 Int64Min = -0x7fffffffffffffffLL-1LL;
 const Int64 Int64Max = 0x7fffffffffffffffLL;
-#     endif
+#   endif
 
 #else
+
+//
 // Assumes ISO C99 types
 //
 typedef int64_t Int64;
+#   ifdef INT64_MIN
 const Int64 Int64Min = INT64_MIN;
+#   else
+const Int64 Int64Min = -0x7fffffffffffffffLL-1LL;
+#   endif
+#   ifdef INT64_MIN
 const Int64 Int64Max = INT64_MAX;
+#   else
+const Int64 Int64Max = 0x7fffffffffffffffLL;
+#   endif
 
 #endif
 
@@ -213,7 +225,7 @@ const Int64 Int64Max = INT64_MAX;
 //
 // The Ice version.
 //
-#define ICE_STRING_VERSION "1.5.1" // "A.B.C", with A=major, B=minor, C=patch
-#define ICE_INT_VERSION 10501      // AABBCC, with AA=major, BB=minor, CC=patch
+#define ICE_STRING_VERSION "2.0.0" // "A.B.C", with A=major, B=minor, C=patch
+#define ICE_INT_VERSION 20000      // AABBCC, with AA=major, BB=minor, CC=patch
 
 #endif

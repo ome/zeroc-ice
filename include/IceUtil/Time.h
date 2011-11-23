@@ -31,69 +31,176 @@ public:
     static Time microSeconds(Int64);
     
     operator timeval() const;
-    operator double() const;
 
     Int64 toSeconds() const;
     Int64 toMilliSeconds() const;
     Int64 toMicroSeconds() const;
 
+    double toSecondsDouble() const;
+    double toMilliSecondsDouble() const;
+    double toMicroSecondsDouble() const;
+
     std::string toString() const;
 
-    Time operator-() const // Inlined for performance reasons.
+    Time operator-() const
     {
 	return Time(-_usec);
     }
 
-    Time operator-(const Time& rhs) const // Inlined for performance reasons.
+    Time operator-(const Time& rhs) const
     {
 	return Time(_usec - rhs._usec);
     }
 
-    Time operator+(const Time& rhs) const // Inlined for performance reasons.
+    Time operator+(const Time& rhs) const
     {
 	return Time(_usec + rhs._usec);
     }
 
-    Time& operator+=(const Time& rhs) // Inlined for performance reasons.
+    Time& operator+=(const Time& rhs)
     {
 	_usec += rhs._usec;
 	return *this;
     }
 
-    Time& operator-=(const Time& rhs) // Inlined for performance reasons.
+    Time& operator-=(const Time& rhs)
     {
 	_usec -= rhs._usec;
 	return *this;
     }
 
-    bool operator<(const Time& rhs) const // Inlined for performance reasons.
+    bool operator<(const Time& rhs) const
     {
 	return _usec < rhs._usec;
     }
 
-    bool operator<=(const Time& rhs) const // Inlined for performance reasons.
+    bool operator<=(const Time& rhs) const
     {
 	return _usec <= rhs._usec;
     }
 
-    bool operator>(const Time& rhs) const // Inlined for performance reasons.
+    bool operator>(const Time& rhs) const
     {
 	return _usec > rhs._usec;
     }
 
-    bool operator>=(const Time& rhs) const // Inlined for performance reasons.
+    bool operator>=(const Time& rhs) const
     {
 	return _usec >= rhs._usec;
     }
 
-    bool operator==(const Time& rhs) const // Inlined for performance reasons.
+    bool operator==(const Time& rhs) const
     {
 	return _usec == rhs._usec;
     }
 
-    bool operator!=(const Time& rhs) const // Inlined for performance reasons.
+    bool operator!=(const Time& rhs) const
     {
 	return _usec != rhs._usec;
+    }
+
+    Time& operator*=(const Time& rhs)
+    {
+	_usec *= rhs._usec;
+	return *this;
+    }
+
+    Time operator*(const Time& rhs) const
+    {
+	Time t;
+	t._usec = _usec * rhs._usec;
+	return t;
+    }
+
+    Time& operator/=(const Time& rhs)
+    {
+	_usec /= rhs._usec;
+	return *this;
+    }
+
+    Time operator/(const Time& rhs) const
+    {
+	Time t;
+	t._usec = _usec / rhs._usec;
+	return t;
+    }
+
+    Time& operator*=(int rhs)
+    {
+	_usec *= rhs;
+	return *this;
+    }
+
+    Time operator*(int rhs) const
+    {
+	Time t;
+	t._usec = _usec * rhs;
+	return t;
+    }
+
+    Time& operator/=(int rhs)
+    {
+	_usec /= rhs;
+	return *this;
+    }
+
+    Time operator/(int rhs) const
+    {
+	Time t;
+	t._usec = _usec / rhs;
+	return t;
+    }
+
+    Time& operator*=(Int64 rhs)
+    {
+	_usec *= rhs;
+	return *this;
+    }
+
+    Time operator*(Int64 rhs) const
+    {
+	Time t;
+	t._usec = _usec * rhs;
+	return t;
+    }
+
+    Time& operator/=(Int64 rhs)
+    {
+	_usec /= rhs;
+	return *this;
+    }
+
+    Time operator/(Int64 rhs) const
+    {
+	Time t;
+	t._usec = _usec / rhs;
+	return t;
+    }
+
+    Time& operator*=(double rhs)
+    {
+	_usec = static_cast<Int64>(static_cast<double>(_usec) * rhs);
+	return *this;
+    }
+
+    Time operator*(double rhs) const
+    {
+	Time t;
+	t._usec = static_cast<Int64>(static_cast<double>(_usec) * rhs);
+	return t;
+    }
+
+    Time& operator/=(double rhs)
+    {
+	_usec = static_cast<Int64>(static_cast<double>(_usec) / rhs);
+	return *this;
+    }
+
+    Time operator/(double rhs) const
+    {
+	Time t;
+	t._usec = static_cast<Int64>(static_cast<double>(_usec) / rhs);
+	return t;
     }
 
 private:
@@ -102,6 +209,8 @@ private:
 
     Int64 _usec;
 };
+
+ICE_UTIL_API std::ostream& operator<<(std::ostream&, const Time&);
 
 } // End namespace IceUtil
 

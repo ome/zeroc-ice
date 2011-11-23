@@ -12,6 +12,7 @@
 
 using namespace std;
 using namespace Ice;
+using namespace Demo;
 
 void
 CallbackReceiverI::callback(const Current&)
@@ -23,12 +24,26 @@ void
 CallbackI::initiateCallback(const CallbackReceiverPrx& proxy, const Current& current)
 {
     cout << "initiating callback" << endl;
-    proxy->callback(current.ctx);
+    try
+    {
+	proxy->callback(current.ctx);
+    }
+    catch(const Exception& ex)
+    {
+	cout << ex << endl;
+    }
 }
 
 void
-CallbackI::shutdown(const Ice::Current& c)
+CallbackI::shutdown(const Current& c)
 {
-    cout << "Shutting down..." << endl;
-    c.adapter->getCommunicator()->shutdown();
+    cout << "shutting down..." << endl;
+    try
+    {
+	c.adapter->getCommunicator()->shutdown();
+    }
+    catch(const Exception& ex)
+    {
+	cout << ex << endl;
+    }
 }

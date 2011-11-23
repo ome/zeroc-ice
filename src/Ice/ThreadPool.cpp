@@ -34,13 +34,19 @@ IceInternal::ThreadPool::ThreadPool(const InstancePtr& instance, const string& p
     _size(0),
     _sizeMax(0),
     _sizeWarn(0),
-    _messageSizeMax(0),
+    _stackSize(0),
     _running(0),
     _inUse(0),
     _load(0),
     _promote(true),
     _warnUdp(_instance->properties()->getPropertyAsInt("Ice.Warn.Datagrams") > 0)
 {
+    //
+    // If we are in thread per connection mode, no thread pool should
+    // ever be created.
+    //
+    assert(!_instance->threadPerConnection());
+
     SOCKET fds[2];
     createPipe(fds);
     _fdIntrRead = fds[0];
@@ -75,7 +81,12 @@ IceInternal::ThreadPool::ThreadPool(const InstancePtr& instance, const string& p
     const_cast<int&>(_sizeMax) = sizeMax;
     const_cast<int&>(_sizeWarn) = sizeWarn;
 
-    const_cast<int&>(_messageSizeMax) = instance->messageSizeMax();
+    int stackSize = _instance->properties()->getPropertyAsInt(_prefix + ".StackSize");
+    if(stackSize < 0)
+    {
+	stackSize = 0;
+    }
+    const_cast<size_t&>(_stackSize) = static_cast<size_t>(stackSize);
 
     __setNoDelete(true);
     try
@@ -83,7 +94,7 @@ IceInternal::ThreadPool::ThreadPool(const InstancePtr& instance, const string& p
 	for(int i = 0 ; i < _size ; ++i)
 	{
 	    IceUtil::ThreadPtr thread = new EventHandlerThread(this);
-	    _threads.push_back(thread->start());
+	    _threads.push_back(thread->start(_stackSize));
 	    ++_running;
 	}
     }
@@ -190,7 +201,7 @@ IceInternal::ThreadPool::promoteFollower()
 		try
 		{
 		    IceUtil::ThreadPtr thread = new EventHandlerThread(this);
-		    _threads.push_back(thread->start());
+		    _threads.push_back(thread->start(_stackSize));
 		    ++_running;
 		}
 		catch(const IceUtil::Exception& ex)
@@ -221,6 +232,12 @@ IceInternal::ThreadPool::joinWithAllThreads()
 #else
     for_each(_threads.begin(), _threads.end(), mem_fun_ref(&IceUtil::ThreadControl::join));
 #endif
+}
+
+string
+IceInternal::ThreadPool::prefix() const
+{
+    return _prefix;
 }
 
 void
@@ -607,7 +624,7 @@ IceInternal::ThreadPool::run()
 		catch(const LocalException& ex)
 		{
 		    Error out(_instance->logger());
-		    out << "exception in `" << _prefix << "' while calling finished():\n"
+		    out << "exception in `" << _prefix << "' while calling message():\n"
 			<< ex << '\n' << handler->toString();
 		}
 		
@@ -750,7 +767,7 @@ IceInternal::ThreadPool::read(const EventHandlerPtr& handler)
     {
 	throw IllegalMessageSizeException(__FILE__, __LINE__);
     }
-    if(size > _messageSizeMax)
+    if(size > static_cast<Int>(_instance->messageSizeMax()))
     {
 	throw MemoryLimitException(__FILE__, __LINE__);
     }

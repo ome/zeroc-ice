@@ -56,6 +56,7 @@ OBJS		= Initialize.o \
 		  RouterInfo.o \
 		  RoutingTable.o \
 		  Connection.o \
+		  ConnectionI.o \
 		  ConnectionFactory.o \
 		  ConnectionMonitor.o \
 		  LocalObject.o \
@@ -89,7 +90,9 @@ OBJS		= Initialize.o \
 		  Process.o \
 		  FacetMap.o \
 		  SliceChecksumDict.o \
-		  SliceChecksums.o
+		  SliceChecksums.o \
+		  Stream.o \
+		  StreamI.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
@@ -120,7 +123,9 @@ SLICE_SRCS	= $(SDIR)/LocalException.ice \
                   $(SDIR)/Process.ice \
                   $(SDIR)/ProcessF.ice \
 		  $(SDIR)/FacetMap.ice \
-		  $(SDIR)/SliceChecksumDict.ice
+		  $(SDIR)/SliceChecksumDict.ice \
+		  $(SDIR)/Connection.ice \
+		  $(SDIR)/ConnectionF.ice
 
 HDIR		= $(includedir)/Ice
 SDIR		= $(slicedir)/Ice

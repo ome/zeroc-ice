@@ -10,9 +10,14 @@
 #ifndef NESTED_ICE
 #define NESTED_ICE
 
-class Nested
+module Demo
+{
+
+interface Nested
 {
     void nestedCall(int level, Nested* proxy);
+};
+
 };
 
 #endif

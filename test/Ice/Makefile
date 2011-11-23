@@ -21,7 +21,8 @@ SUBDIRS		= operations \
 		  adapterDeactivation \
 		  slicing \
 		  gc \
-		  checksum
+		  checksum \
+		  stream
 
 $(EVERYTHING)::
 	@for subdir in $(SUBDIRS); \

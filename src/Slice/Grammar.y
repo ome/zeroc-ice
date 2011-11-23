@@ -88,6 +88,10 @@ slice_error(const char* s)
 %token ICE_FLOATING_POINT_LITERAL
 %token ICE_IDENT_OP
 %token ICE_KEYWORD_OP
+%token ICE_METADATA_OPEN
+%token ICE_METADATA_CLOSE
+%token ICE_GLOBAL_METADATA_OPEN
+%token ICE_GLOBAL_METADATA_CLOSE
 
 %%
 
@@ -103,16 +107,16 @@ start
 // ----------------------------------------------------------------------
 global_meta_data
 // ----------------------------------------------------------------------
-: '[' '[' string_list ']' ']'
+: ICE_GLOBAL_METADATA_OPEN string_list ICE_GLOBAL_METADATA_CLOSE
 {
-    $$ = $3;
+    $$ = $2;
 }
 ;
 
 // ----------------------------------------------------------------------
 meta_data
 // ----------------------------------------------------------------------
-: '[' string_list ']'
+: ICE_METADATA_OPEN string_list ICE_METADATA_CLOSE
 {
     $$ = $2;
 }
@@ -145,10 +149,11 @@ definitions
     unit->setSeenDefinition();
 }
 ';' definitions
-| error ';' definitions
+| error ';'
 {
     yyerrok;
 }
+definitions
 | meta_data definition
 {
     unit->error("`;' missing after definition");
@@ -223,18 +228,28 @@ module_def
     StringTokPtr ident = StringTokPtr::dynamicCast($2);
     ContainerPtr cont = unit->currentContainer();
     ModulePtr module = cont->createModule(ident->v);
-    if(!module)
+    if(module)
     {
-	YYERROR; // Can't continue, jump to next yyerrok
+	cont->checkIntroduced(ident->v, module);
+	unit->pushContainer(module);
+	$$ = module;
     }
-    cont->checkIntroduced(ident->v, module);
-    unit->pushContainer(module);
-    $$ = module;
+    else
+    {
+        $$ = 0;
+    }
 }
 '{' definitions '}'
 {
-    unit->popContainer();
-    $$ = $3;
+    if($3)
+    {
+	unit->popContainer();
+	$$ = $3;
+    }
+    else
+    {
+        $$ = 0;
+    }
 }
 ;
 
@@ -273,17 +288,19 @@ exception_def
     ExceptionPtr base = ExceptionPtr::dynamicCast($3);
     ContainerPtr cont = unit->currentContainer();
     ExceptionPtr ex = cont->createException(ident->v, base, local->v);
-    if(!ex)
+    if(ex)
     {
-	YYERROR; // Can't continue, jump to next yyerrok
+	cont->checkIntroduced(ident->v, ex);
+	unit->pushContainer(ex);
     }
-    cont->checkIntroduced(ident->v, ex);
-    unit->pushContainer(ex);
     $$ = ex;
 }
 '{' exception_exports '}'
 {
-    unit->popContainer();
+    if($4)
+    {
+	unit->popContainer();
+    }
     $$ = $4;
 }
 ;
@@ -382,17 +399,19 @@ struct_def
     StringTokPtr ident = StringTokPtr::dynamicCast($2);
     ContainerPtr cont = unit->currentContainer();
     StructPtr st = cont->createStruct(ident->v, local->v);
-    if(!st)
+    if(st)
     {
-	YYERROR; // Can't continue, jump to next yyerrok
+	cont->checkIntroduced(ident->v, st);
+	unit->pushContainer(st);
     }
-    cont->checkIntroduced(ident->v, st);
-    unit->pushContainer(st);
     $$ = st;
 }
 '{' struct_exports '}'
 {
-    unit->popContainer();
+    if($3)
+    {
+	unit->popContainer();
+    }
     $$ = $3;
 
     //
@@ -480,18 +499,28 @@ class_def
 	bases->v.push_front(base);
     }
     ClassDefPtr cl = cont->createClassDef(ident->v, false, bases->v, local->v);
-    if(!cl)
+    if(cl)
     {
-	YYERROR; // Can't continue, jump to next yyerrok
+	cont->checkIntroduced(ident->v, cl);
+	unit->pushContainer(cl);
+	$$ = cl;
     }
-    cont->checkIntroduced(ident->v, cl);
-    unit->pushContainer(cl);
-    $$ = cl;
+    else
+    {
+        $$ = 0;
+    }
 }
 '{' class_exports '}'
 {
-    unit->popContainer();
-    $$ = $5;
+    if($5)
+    {
+	unit->popContainer();
+	$$ = $5;
+    }
+    else
+    {
+        $$ = 0;
+    }
 }
 ;
 
@@ -664,66 +693,144 @@ operation_preamble
     TypePtr returnType = TypePtr::dynamicCast($1);
     string name = StringTokPtr::dynamicCast($2)->v;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
-    assert(cl);
-    OperationPtr op = cl->createOperation(name, returnType);
-    cl->checkIntroduced(name, op);
-    unit->pushContainer(op);
-    $$ = op;
+    if(cl)
+    {
+	OperationPtr op = cl->createOperation(name, returnType);
+	if(op)
+	{
+	    cl->checkIntroduced(name, op);
+	    unit->pushContainer(op);
+	    $$ = op;
+	}
+	else
+	{
+	    $$ = 0;
+	}
+    }
+    else
+    {
+        $$ = 0;
+    }
 }
 | ICE_NONMUTATING return_type ICE_IDENT_OP
 {
     TypePtr returnType = TypePtr::dynamicCast($2);
     string name = StringTokPtr::dynamicCast($3)->v;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
-    assert(cl);
-    OperationPtr op = cl->createOperation(name, returnType, Operation::Nonmutating);
-    cl->checkIntroduced(name, op);
-    unit->pushContainer(op);
-    $$ = op;
+    if(cl)
+    {
+	OperationPtr op = cl->createOperation(name, returnType, Operation::Nonmutating);
+	if(op)
+	{
+	    cl->checkIntroduced(name, op);
+	    unit->pushContainer(op);
+	    $$ = op;
+	}
+	else
+	{
+	    $$ = 0;
+	}
+    }
+    else
+    {
+        $$ = 0;
+    }
 }
 | ICE_IDEMPOTENT return_type ICE_IDENT_OP
 {
     TypePtr returnType = TypePtr::dynamicCast($2);
     string name = StringTokPtr::dynamicCast($3)->v;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
-    assert(cl);
-    OperationPtr op = cl->createOperation(name, returnType, Operation::Idempotent);
-    cl->checkIntroduced(name, op);
-    unit->pushContainer(op);
-    $$ = op;
+    if(cl)
+    {
+	OperationPtr op = cl->createOperation(name, returnType, Operation::Idempotent);
+	if(op)
+	{
+	    cl->checkIntroduced(name, op);
+	    unit->pushContainer(op);
+	    $$ = op;
+	}
+	else
+	{
+	    $$ = 0;
+	}
+    }
+    else
+    {
+        $$ = 0;
+    }
 }
 | return_type ICE_KEYWORD_OP
 {
     TypePtr returnType = TypePtr::dynamicCast($1);
     string name = StringTokPtr::dynamicCast($2)->v;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
-    assert(cl);
-    OperationPtr op = cl->createOperation(name, returnType);
-    unit->pushContainer(op);
-    unit->error("keyword `" + name + "' cannot be used as operation name");
-    $$ = op;
+    if(cl)
+    {
+	OperationPtr op = cl->createOperation(name, returnType);
+	if(op)
+	{
+	    unit->pushContainer(op);
+	    unit->error("keyword `" + name + "' cannot be used as operation name");
+	    $$ = op;
+	}
+	else
+	{
+	    $$ = 0;
+	}
+    }
+    else
+    {
+        $$ = 0;
+    }
 }
 | ICE_NONMUTATING return_type ICE_KEYWORD_OP
 {
     TypePtr returnType = TypePtr::dynamicCast($2);
     string name = StringTokPtr::dynamicCast($3)->v;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
-    assert(cl);
-    OperationPtr op = cl->createOperation(name, returnType, Operation::Nonmutating);
-    unit->pushContainer(op);
-    unit->error("keyword `" + name + "' cannot be used as operation name");
-    $$ = op;
+    if(cl)
+    {
+	OperationPtr op = cl->createOperation(name, returnType, Operation::Nonmutating);
+	if(op)
+	{
+	    unit->pushContainer(op);
+	    unit->error("keyword `" + name + "' cannot be used as operation name");
+	    $$ = op;
+	}
+	else
+	{
+	    $$ = 0;
+	}
+    }
+    else
+    {
+    	$$ = 0;
+    }
 }
 | ICE_IDEMPOTENT return_type ICE_KEYWORD_OP
 {
     TypePtr returnType = TypePtr::dynamicCast($2);
     string name = StringTokPtr::dynamicCast($3)->v;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
-    assert(cl);
-    OperationPtr op = cl->createOperation(name, returnType, Operation::Idempotent);
-    unit->pushContainer(op);
-    unit->error("keyword `" + name + "' cannot be used as operation name");
-    $$ = op;
+    if(cl)
+    {
+	OperationPtr op = cl->createOperation(name, returnType, Operation::Idempotent);
+	if(op)
+	{
+	    unit->pushContainer(op);
+	    unit->error("keyword `" + name + "' cannot be used as operation name");
+	    $$ = op;
+	}
+	else
+	{
+	    return 0;
+	}
+    }
+    else
+    {
+    	$$ = 0;
+    }
 }
 ;
 
@@ -732,8 +839,15 @@ operation
 // ----------------------------------------------------------------------
 : operation_preamble parameters ')'
 {
-    unit->popContainer();
-    $$ = $1;
+    if($1)
+    {
+	unit->popContainer();
+	$$ = $1;
+    }
+    else
+    {
+        $$ = 0;
+    }
 }
 throws
 {
@@ -747,7 +861,10 @@ throws
 }
 | operation_preamble error ')'
 {
-    unit->popContainer();
+    if($1)
+    {
+	unit->popContainer();
+    }
     yyerrok;
 }
 throws
@@ -808,18 +925,28 @@ interface_def
     ContainerPtr cont = unit->currentContainer();
     ClassListTokPtr bases = ClassListTokPtr::dynamicCast($3);
     ClassDefPtr cl = cont->createClassDef(ident->v, true, bases->v, local->v);
-    if(!cl)
+    if(cl)
     {
-	YYERROR; // Can't continue, jump to next yyerrok
+	cont->checkIntroduced(ident->v, cl);
+	unit->pushContainer(cl);
+	$$ = cl;
     }
-    cont->checkIntroduced(ident->v, cl);
-    unit->pushContainer(cl);
-    $$ = cl;
+    else
+    {
+        $$ = 0;
+    }
 }
 '{' interface_exports '}'
 {
-    unit->popContainer();
-    $$ = $4;
+    if($4)
+    {
+	unit->popContainer();
+	$$ = $4;
+    }
+    else
+    {
+	$$ = 0;
+    }
 }
 ;
 
@@ -1143,10 +1270,10 @@ parameters
 : // empty
 {
 }
-| out_qualifier type_id
+| out_qualifier meta_data type_id
 {
     BoolTokPtr isOutParam = BoolTokPtr::dynamicCast($1);
-    TypeStringTokPtr tsp = TypeStringTokPtr::dynamicCast($2);
+    TypeStringTokPtr tsp = TypeStringTokPtr::dynamicCast($3);
     TypePtr type = tsp->v.first;
     string ident = tsp->v.second;
     OperationPtr op = OperationPtr::dynamicCast(unit->currentContainer());
@@ -1154,12 +1281,17 @@ parameters
     {
 	ParamDeclPtr pd = op->createParamDecl(ident, type, isOutParam->v);
 	unit->currentContainer()->checkIntroduced(ident, pd);
+        StringListTokPtr metaData = StringListTokPtr::dynamicCast($2);
+        if(!metaData->v.empty())
+        {
+            pd->setMetaData(metaData->v);
+        }
     }
 }
-| parameters ',' out_qualifier type_id
+| parameters ',' out_qualifier meta_data type_id
 {
     BoolTokPtr isOutParam = BoolTokPtr::dynamicCast($3);
-    TypeStringTokPtr tsp = TypeStringTokPtr::dynamicCast($4);
+    TypeStringTokPtr tsp = TypeStringTokPtr::dynamicCast($5);
     TypePtr type = tsp->v.first;
     string ident = tsp->v.second;
     OperationPtr op = OperationPtr::dynamicCast(unit->currentContainer());
@@ -1167,13 +1299,18 @@ parameters
     {
 	ParamDeclPtr pd = op->createParamDecl(ident, type, isOutParam->v);
 	unit->currentContainer()->checkIntroduced(ident, pd);
+        StringListTokPtr metaData = StringListTokPtr::dynamicCast($4);
+        if(!metaData->v.empty())
+        {
+            pd->setMetaData(metaData->v);
+        }
     }
 }
-| out_qualifier type keyword
+| out_qualifier meta_data type keyword
 {
     BoolTokPtr isOutParam = BoolTokPtr::dynamicCast($1);
-    TypePtr type = TypePtr::dynamicCast($2);
-    StringTokPtr ident = StringTokPtr::dynamicCast($3);
+    TypePtr type = TypePtr::dynamicCast($3);
+    StringTokPtr ident = StringTokPtr::dynamicCast($4);
     OperationPtr op = OperationPtr::dynamicCast(unit->currentContainer());
     if(op)
     {
@@ -1181,11 +1318,11 @@ parameters
 	unit->error("keyword `" + ident->v + "' cannot be used as parameter name");
     }
 }
-| parameters ',' out_qualifier type keyword
+| parameters ',' out_qualifier meta_data type keyword
 {
     BoolTokPtr isOutParam = BoolTokPtr::dynamicCast($3);
-    TypePtr type = TypePtr::dynamicCast($4);
-    StringTokPtr ident = StringTokPtr::dynamicCast($5);
+    TypePtr type = TypePtr::dynamicCast($5);
+    StringTokPtr ident = StringTokPtr::dynamicCast($6);
     OperationPtr op = OperationPtr::dynamicCast(unit->currentContainer());
     if(op)
     {
@@ -1193,10 +1330,10 @@ parameters
 	unit->error("keyword `" + ident->v + "' cannot be used as parameter name");
     }
 }
-| out_qualifier type
+| out_qualifier meta_data type
 {
     BoolTokPtr isOutParam = BoolTokPtr::dynamicCast($1);
-    TypePtr type = TypePtr::dynamicCast($2);
+    TypePtr type = TypePtr::dynamicCast($3);
     OperationPtr op = OperationPtr::dynamicCast(unit->currentContainer());
     if(op)
     {
@@ -1204,10 +1341,10 @@ parameters
 	unit->error("missing parameter name");
     }
 }
-| parameters ',' out_qualifier type
+| parameters ',' out_qualifier meta_data type
 {
     BoolTokPtr isOutParam = BoolTokPtr::dynamicCast($3);
-    TypePtr type = TypePtr::dynamicCast($4);
+    TypePtr type = TypePtr::dynamicCast($5);
     OperationPtr op = OperationPtr::dynamicCast(unit->currentContainer());
     if(op)
     {

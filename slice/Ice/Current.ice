@@ -11,6 +11,7 @@
 #define ICE_CURRENT_ICE
 
 #include <Ice/ObjectAdapterF.ice>
+#include <Ice/ConnectionF.ice>
 #include <Ice/Identity.ice>
 
 module Ice
@@ -76,10 +77,8 @@ enum OperationMode
  *
  * Information about the current method invocation for servers. Each
  * operation on the server has a [Current] as its implicit final
- * parameter. [Current] is mostly used for &Ice; services, such as
- * &IceStorm;. Most applications ignore this parameter.
- *
- * @see IceStorm
+ * parameter. [Current] is mostly used for &Ice; services. Most
+ * applications ignore this parameter.
  *
  **/
 local struct Current
@@ -90,6 +89,15 @@ local struct Current
      *
      **/
     ObjectAdapter adapter;
+    
+    /**
+     *
+     * Information about the connection over which the current method
+     * invocation was received. If the invocation is direct due to
+     * collocation optimization, this value is set to null.
+     *
+     **/
+    Connection con;
 
     /**
      *

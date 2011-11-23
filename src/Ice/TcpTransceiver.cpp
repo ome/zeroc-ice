@@ -50,22 +50,35 @@ IceInternal::TcpTransceiver::close()
 }
 
 void
-IceInternal::TcpTransceiver::shutdown()
+IceInternal::TcpTransceiver::shutdownWrite()
 {
     if(_traceLevels->network >= 2)
     {
 	Trace out(_logger, _traceLevels->networkCat);
-	out << "shutting down tcp connection\n" << toString();
+	out << "shutting down tcp connection for writing\n" << toString();
     }
 
     assert(_fd != INVALID_SOCKET);
-    shutdownSocket(_fd);
+    shutdownSocketWrite(_fd);
+}
+
+void
+IceInternal::TcpTransceiver::shutdownReadWrite()
+{
+    if(_traceLevels->network >= 2)
+    {
+	Trace out(_logger, _traceLevels->networkCat);
+	out << "shutting down tcp connection for reading and writing\n" << toString();
+    }
+
+    assert(_fd != INVALID_SOCKET);
+    shutdownSocketReadWrite(_fd);
 }
 
 void
 IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
 {
-     Buffer::Container::difference_type packetSize = buf.b.end() - buf.i;
+    Buffer::Container::difference_type packetSize = buf.b.end() - buf.i;
     
 #ifdef _WIN32
     //
@@ -164,7 +177,7 @@ IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
 
 	if(_stats)
 	{
-	    _stats->bytesSent(_name, static_cast<Int>(ret));
+	    _stats->bytesSent(type(), static_cast<Int>(ret));
 	}
 
 	buf.i += ret;
@@ -197,7 +210,7 @@ IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 	    // loss. Therefore this helper to make them detect it.
 	    //
 	    //assert(_fd != INVALID_SOCKET);
-	    //shutdownSocket(_fd);
+	    //shutdownSocketReadWrite(_fd);
 	    
 	    ConnectionLostException ex(__FILE__, __LINE__);
 	    ex.error = 0;
@@ -265,7 +278,7 @@ IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 		// data.
 		//
 		//assert(_fd != INVALID_SOCKET);
-		//shutdownSocket(_fd);
+		//shutdownSocketReadWrite(_fd);
 	    
 		ConnectionLostException ex(__FILE__, __LINE__);
 		ex.error = getSocketErrno();
@@ -287,7 +300,7 @@ IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 
 	if(_stats)
 	{
-	    _stats->bytesReceived(_name, static_cast<Int>(ret));
+	    _stats->bytesReceived(type(), static_cast<Int>(ret));
 	}
 
 	buf.i += ret;
@@ -300,6 +313,12 @@ IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
 }
 
 string
+IceInternal::TcpTransceiver::type() const
+{
+    return "tcp";
+}
+
+string
 IceInternal::TcpTransceiver::toString() const
 {
     return _desc;
@@ -309,16 +328,11 @@ IceInternal::TcpTransceiver::TcpTransceiver(const InstancePtr& instance, SOCKET 
     _traceLevels(instance->traceLevels()),
     _logger(instance->logger()),
     _stats(instance->stats()),
-    _name("tcp"),
-    _fd(fd)
+    _fd(fd),
+    _desc(fdToString(fd))
 {
     FD_ZERO(&_rFdSet);
     FD_ZERO(&_wFdSet);
-
-    //
-    // fdToString may raise a socket exception.
-    //
-    const_cast<string&>(_desc) = fdToString(_fd);
 }
 
 IceInternal::TcpTransceiver::~TcpTransceiver()

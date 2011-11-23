@@ -13,8 +13,9 @@
 
 using namespace std;
 using namespace Ice;
+using namespace Test;
 
-TestPrx
+TestIntfPrx
 allTests(const CommunicatorPtr& communicator)
 {
     cout << "testing stringToProxy... " << flush;
@@ -23,12 +24,12 @@ allTests(const CommunicatorPtr& communicator)
     cout << "ok" << endl;
 
     cout << "testing checked cast... " << flush;
-    TestPrx obj = TestPrx::checkedCast(base);
+    TestIntfPrx obj = TestIntfPrx::checkedCast(base);
     test(obj);
     test(obj == base);
     cout << "ok" << endl;
 
-    cout << "creating, activating and deactivating a new object adapter in one operation... " << flush;
+    cout << "creating/activating/deactivating object adapter in one operation... " << flush;
     obj->transient();
     cout << "ok" << endl;
 

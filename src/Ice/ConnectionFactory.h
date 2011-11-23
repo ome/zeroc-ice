@@ -12,8 +12,9 @@
 
 #include <IceUtil/Mutex.h>
 #include <IceUtil/Monitor.h>
+#include <IceUtil/Thread.h> // For ThreadPerIncomingConnectionFactory.
 #include <Ice/ConnectionFactoryF.h>
-#include <Ice/ConnectionF.h>
+#include <Ice/ConnectionIF.h>
 #include <Ice/InstanceF.h>
 #include <Ice/ObjectAdapterF.h>
 #include <Ice/EndpointF.h>
@@ -35,7 +36,7 @@ class ObjectAdapterI;
 namespace IceInternal
 {
 
-class OutgoingConnectionFactory : public ::IceUtil::Shared, public ::IceUtil::Monitor< ::IceUtil::Mutex>
+class OutgoingConnectionFactory : public IceUtil::Shared, public IceUtil::Monitor<IceUtil::Mutex>
 {
 public:
 
@@ -43,7 +44,7 @@ public:
 
     void waitUntilFinished();
 
-    ConnectionPtr create(const std::vector<EndpointPtr>&, bool&);
+    Ice::ConnectionIPtr create(const std::vector<EndpointPtr>&, bool&);
     void setRouter(const ::Ice::RouterPrx&);
     void removeAdapter(const ::Ice::ObjectAdapterPtr&);
     void flushBatchRequests();
@@ -56,11 +57,11 @@ private:
 
     const InstancePtr _instance;
     bool _destroyed;
-    std::multimap<EndpointPtr, ConnectionPtr> _connections;
+    std::multimap<EndpointPtr, Ice::ConnectionIPtr> _connections;
     std::set<EndpointPtr> _pending; // Endpoints for which connection establishment is pending.
 };
 
-class IncomingConnectionFactory : public EventHandler, public ::IceUtil::Monitor< ::IceUtil::Mutex>
+class IncomingConnectionFactory : public EventHandler, public IceUtil::Monitor<IceUtil::Mutex>
 {
 public:
 
@@ -73,7 +74,7 @@ public:
 
     EndpointPtr endpoint() const;
     bool equivalent(const EndpointPtr&) const;
-    std::list<ConnectionPtr> connections() const;
+    std::list<Ice::ConnectionIPtr> connections() const;
     void flushBatchRequests();
 
     //
@@ -104,6 +105,22 @@ private:
     void registerWithPool();
     void unregisterWithPool();
 
+    void run();
+
+    class ThreadPerIncomingConnectionFactory : public IceUtil::Thread
+    {
+    public:
+	
+	ThreadPerIncomingConnectionFactory(const IncomingConnectionFactoryPtr&);
+	virtual void run();
+
+    private:
+	
+	IncomingConnectionFactoryPtr _factory;
+    };
+    friend class ThreadPerIncomingConnectionFactory;
+    IceUtil::ThreadPtr _threadPerIncomingConnectionFactory;
+
     AcceptorPtr _acceptor;
     const TransceiverPtr _transceiver;
     const EndpointPtr _endpoint;
@@ -111,10 +128,11 @@ private:
     const ::Ice::ObjectAdapterPtr _adapter;
 
     bool _registeredWithPool;
+    const IceInternal::ThreadPoolPtr _threadPool;
 
     const bool _warn;
 
-    std::list<ConnectionPtr> _connections;
+    std::list<Ice::ConnectionIPtr> _connections;
 
     State _state;
 };

@@ -1,3 +1,138 @@
+Changes since version 1.5.1
+---------------------------
+
+- Fixed a bug in IcePack which could cause a core dump of the IcePack
+  registry or node when updating an application deployment.
+
+- The proxy returned by the object adapter operations addFacet and
+  addFacetWithUUID did not contain the facet. This required the
+  application to make an extra call to ice_newFacet in order to
+  obtain the correct proxy. This has been fixed.
+
+- Added the object adapter property <name>.PublishedEndpoints, which
+  specifies endpoints to advertise in proxies created by the adapter.
+
+- For WIN32, Thread::getThreadControl() set the thread id of the
+  ThreadControl object to the current thread instead of the thread the
+  control object belongs to. This has been fixed.
+
+- Changed Ice::Service to use _exit() in the daemon parent.
+
+- Fixed a bug with AMD exception handling, where it was possible that
+  certain exceptions propagate out of ice_response() or
+  ice_exception(), and therefore such exceptions were not handled
+  properly.
+
+- Exceptions raised while marshaling data for batch requests resulted
+  in a connection deadlock. This has been fixed.
+
+- Fixed a bug in slice2cs: the generated code was incorrect for
+  dictionaries with sequence value types, if that sequence value type
+  was mapped to an array.
+
+- Fixed bug in IcePack that would prevent dynamically added adapters
+  from being used again after the IcePack registry was restarted.
+
+- Fixed tracing of operation mode.
+
+- Fixed bug in slice2cpp: for statically linked binaries under
+  Windows, exceptions and classes could cause an
+  UnmarshalOutOfBoundsException.
+
+- Fixed bug in slice2java: with the --impl-tie option, incorrect code
+  was generated for local interfaces and classes.
+
+- Tightened semantic check for all Slice compilers: previously, a
+  local interface or class could be derived from a non-local interface
+  or class. This is now correctly diagnosed as an error.
+
+- Changed code generation in slice2java: for local interfaces, only an
+  OperationsNC (but no Operations) interface is generated
+  now. (Previously, both interfaces were generated, with one of them
+  being empty.)
+
+- The IceSSL plug-in was using regular mutexes in some places where
+  static mutexes are necessary. This has been fixed.
+
+- Fixed a bug in the garbage collector that caused a crash in rare
+  circumstances.
+
+- Freeze dictionaries now support indices. You can index on the full
+  value of the dictionary, or on a member (when the value is a struct
+  or a class). When you index on a member, you can define several
+  indices (for different members). See the Freeze bench demo and the
+  Freeze dbmap test for examples.
+
+- The Ice::Service class no longer resets the umask to 0, but rather
+  uses the inherited umask.
+
+- Fixed a code generation problem in slice2cpp. This problem showed up
+  only for the --impl option.
+
+- Changed the way C++ keywords are escaped. Previously, a Slice
+  identifier that is a C++ keyword was escaped everywhere. For
+  example, Slice "while" was mapped to "_cpp_while" and
+  "_cpp_whilePrx". With the change, Slice "while" is mapped to
+  "_cpp_while" and "whilePrx".
+
+- Fixed the slice2java and slice2cs compilers for operations with
+  multiple exceptions in an exception specification: if an exception
+  was a base of one or more other exceptions in the same exception
+  specification, the code generator sometimes emitted the catch blocks
+  in the marshaling and dispatch code in the wrong order. (This
+  applied only to interfaces with an ["amd"] metadata directive.)
+
+- Fixed a bug in the slice2cs code generator:
+  
+  ["cs:collection"] sequence<Object> S1;
+  ["cs:collection"] sequence<Object*> S2;
+
+  Sequences of Object or Object* caused incorrect code to be generated
+  if they were marked as "cs:collection".
+
+- Fixed a bug in the slice2cs code generator: for nested sequences,
+  incorrect code was generated if both the inner and the outer
+  sequence were mapped as arrays.
+
+- Fixed a number of bugs in slice2cs that caused incorrect code to be
+  generated if C# keywords were used as Slice identifiers.
+
+- Fixed a bug in slice2cpp that permitted impossible exceptions to be
+  received by a client if client and server used Slice definitions
+  with mismatched exception specifications. The client now correctly
+  receives UnknownUserException if the server throws an exception
+  that, according to the client's view of the operation, is
+  impossible.
+
+- The documentation has always stated that same-named constructs
+  cannot be directly nested inside each other. (For example, a module
+  `M' cannot contain a constant named `M'.) The Slice compilers did
+  not enforce this correctly up to now for modules containing
+  constructs with the same name as the enclosing module.  This has
+  been fixed and now results in a diagnostic.
+
+- The slice2cpp compiler now deprecates Slice definitions at global
+  scope: only modules can be defined at global scope. Everything else
+  (constants, classes, interfaces, etc.) must be defined inside a
+  module.
+
+  For the time being, the compiler issues a warning for each global
+  definition but continues to compile the code. Global non-module
+  definitions will elicit a hard error two releases from now.
+
+- Several demos used Slice classes where interfaces were more
+  appropriate. This has been fixed.
+
+- Fixed a bug in the Windows IcePack registry project that would cause
+  a compilation error if the registry was compiled before the node.
+
+- Fixed a hang in the IcePack registry that would occur if multiple
+  nodes were started simultaneously.
+
+- Added new properties Ice.StdErr and Ice.StdOut to redirect the
+  standard error and output streams of a process. Reimplemented
+  IcePack's error/output redirection using these properties.
+
 Changes since version 1.5.0
 ---------------------------
 
@@ -13,8 +148,8 @@ Changes since version 1.5.0
 - Fixed a bug in the slice2cs code generator: classes with multiple
   sequence members caused incorrect code to be generated.
 
-- Added work-around for clients "hanging" at exit when using
-  IcePack on Windows.
+- Added work-around for clients "hanging" at exit when using IcePack
+  on Windows.
 
 Changes since version 1.4.0
 ---------------------------
@@ -105,7 +240,7 @@ Changes since version 1.3.0
 - Removed slice2wsdl.
 
 - Changed the way sequences are unmarshaled to protect against
-  malicous messages with faked very large sequence count values.
+  malicious messages with faked very large sequence count values.
   While even with previous versions of Ice, buffer overruns were
   impossible, malicious messages could cause large amounts of memory
   to be preallocated, causing the receiving process to run out of
@@ -657,7 +792,7 @@ Changes since version 1.1.1
       have an associated transaction that is committed when the
       iterator is closed.
 
-    Concurrent reads and writes to the same underlyding Map can
+    Concurrent reads and writes to the same underlying Map can
     generate deadlocks, even with a single writer. Berkeley DB detects
     such deadlocks and "kills" one locker (iterator or transaction) to
     resolve it. For non-iterator access, Freeze handles this situation

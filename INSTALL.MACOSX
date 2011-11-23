@@ -8,15 +8,17 @@ Operating System
 
 MacOS X 10.3.x
 
+
 C++ compiler
 ------------
 
 - GCC 3.3
 
+
 Third-party libraries
 ---------------------
 
-- Berkeley DB 4.1.25 or 4.2.52 configured with --enable-cxx You can
+- Berkeley DB 4.2.52 or 4.3.21 configured with --enable-cxx .You can
   download the Berkeley DB source distribution from
   http://www.sleepycat.com
 

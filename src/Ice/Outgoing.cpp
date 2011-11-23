@@ -7,18 +7,9 @@
 //
 // **********************************************************************
 
-#ifdef __INTEL_COMPILER
-//
-// COMPILERBUG: The Ice/exception test fails when this file is built
-// with ICC 8.0.55 with -O1 or -O2. It would be nice to isolate and
-// work-around this bug.
-//
-#pragma optimize("", off)
-#endif
-
 #include <Ice/Outgoing.h>
 #include <Ice/Object.h>
-#include <Ice/Connection.h>
+#include <Ice/ConnectionI.h>
 #include <Ice/Reference.h>
 #include <Ice/Endpoint.h>
 #include <Ice/LocalException.h>
@@ -44,16 +35,16 @@ IceInternal::NonRepeatable::get() const
     return _ex.get();
 }
 
-IceInternal::Outgoing::Outgoing(Connection* connection, Reference* ref, const string& operation,
+IceInternal::Outgoing::Outgoing(ConnectionI* connection, Reference* ref, const string& operation,
 				OperationMode mode, const Context& context, bool compress) :
     _connection(connection),
     _reference(ref),
     _state(StateUnsent),
-    _is(ref->instance.get()),
-    _os(ref->instance.get()),
+    _is(ref->getInstance().get()),
+    _os(ref->getInstance().get()),
     _compress(compress)
 {
-    switch(_reference->mode)
+    switch(_reference->getMode())
     {
 	case Reference::ModeTwoway:
 	case Reference::ModeOneway:
@@ -71,19 +62,19 @@ IceInternal::Outgoing::Outgoing(Connection* connection, Reference* ref, const st
 	}
     }
 
-    _reference->identity.__write(&_os);
+    _reference->getIdentity().__write(&_os);
 
     //
     // For compatibility with the old FacetPath.
     //
-    if(_reference->facet.empty())
+    if(_reference->getFacet().empty())
     {
 	_os.write(vector<string>());
     }
     else
     {
 	vector<string> facetPath;
-	facetPath.push_back(_reference->facet);
+	facetPath.push_back(_reference->getFacet());
 	_os.write(facetPath);
     }
 
@@ -110,9 +101,11 @@ IceInternal::Outgoing::Outgoing(Connection* connection, Reference* ref, const st
 bool
 IceInternal::Outgoing::invoke()
 {
+    assert(_state == StateUnsent);
+
     _os.endWriteEncaps();
     
-    switch(_reference->mode)
+    switch(_reference->getMode())
     {
 	case Reference::ModeTwoway:
 	{
@@ -226,11 +219,12 @@ IceInternal::Outgoing::invoke()
 	    //
 	    // For oneway and datagram requests, the connection object
 	    // never calls back on this object. Therefore we don't
-	    // need to lock the mutex, keep track of state, or save
-	    // exceptions. We simply let all exceptions from sending
-	    // propagate to the caller, because such exceptions can be
-	    // retried without violating "at-most-once".
+	    // need to lock the mutex or save exceptions. We simply
+	    // let all exceptions from sending propagate to the
+	    // caller, because such exceptions can be retried without
+	    // violating "at-most-once".
 	    //
+	    _state = StateInProgress;
 	    _connection->sendRequest(&_os, 0, _compress);
 	    break;
 	}
@@ -243,6 +237,7 @@ IceInternal::Outgoing::invoke()
 	    // regular oneways and datagrams (see comment above)
 	    // apply.
 	    //
+	    _state = StateInProgress;
 	    _connection->finishBatchRequest(&_os, _compress);
 	    break;
 	}
@@ -252,11 +247,36 @@ IceInternal::Outgoing::invoke()
 }
 
 void
+IceInternal::Outgoing::abort(const LocalException& ex)
+{
+    assert(_state == StateUnsent);
+    
+    //
+    // If we didn't finish a batch oneway or datagram request, we must
+    // notify the connection about that we give up ownership of the
+    // batch stream.
+    //
+    if(_reference->getMode() == Reference::ModeBatchOneway || _reference->getMode() == Reference::ModeBatchDatagram)
+    {
+	_connection->abortBatchRequest();
+	
+	//
+	// If we abort a batch requests, we cannot retry, because not
+	// only the batch request that caused the problem will be
+	// aborted, but all other requests in the batch as well.
+	//
+	throw NonRepeatable(ex);
+    }
+    
+    ex.ice_throw();
+}
+
+void
 IceInternal::Outgoing::finished(BasicStream& is)
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 
-    assert(_reference->mode == Reference::ModeTwoway); // Can only be called for twoways.
+    assert(_reference->getMode() == Reference::ModeTwoway); // Can only be called for twoways.
 
     assert(_state <= StateInProgress);
 
@@ -422,7 +442,7 @@ IceInternal::Outgoing::finished(const LocalException& ex)
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
     
-    assert(_reference->mode == Reference::ModeTwoway); // Can only be called for twoways.
+    assert(_reference->getMode() == Reference::ModeTwoway); // Can only be called for twoways.
 
     assert(_state <= StateInProgress);
     

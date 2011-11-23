@@ -25,6 +25,49 @@ namespace Freeze
 {
 
 class IteratorHelper;
+class MapHelper;
+
+
+class MapIndexI;
+class MapHelperI;
+class IteratorHelperI;
+class SharedDb;
+
+class FREEZE_API MapIndexBase : public IceUtil::Shared
+{
+public:
+    
+    virtual ~MapIndexBase();
+
+    const std::string& name() const;
+
+    IteratorHelper* untypedFind(const Key&, bool) const;
+    int untypedCount(const Key&) const;
+
+    //
+    // Implemented by the generated code
+    //
+    virtual void marshalKey(const Value&, Key&) const = 0;
+
+protected:
+
+    MapIndexBase(const std::string&);
+
+    Ice::CommunicatorPtr _communicator;
+
+private:
+
+    friend class MapHelperI;
+    friend class IteratorHelperI;
+    friend class SharedDb;
+
+    std::string _name;
+    MapIndexI* _impl;
+    const MapHelperI* _map;
+};
+
+typedef IceUtil::Handle<MapIndexBase> MapIndexBasePtr;
+
 
 class FREEZE_API MapHelper
 {
@@ -33,6 +76,7 @@ public:
     static MapHelper*
     create(const Freeze::ConnectionPtr& connection, 
 	   const std::string& dbName, 
+	   const std::vector<MapIndexBasePtr>&,
 	   bool createDb);
 
     virtual ~MapHelper() = 0;
@@ -61,6 +105,8 @@ public:
     virtual void
     closeAllIterators() = 0;
 
+    virtual const MapIndexBasePtr&
+    index(const std::string&) const = 0;
 };
 
 
@@ -77,6 +123,9 @@ public:
     virtual IteratorHelper*
     clone() const = 0;
     
+    virtual const Key* 
+    get() const = 0;
+
     virtual void
     get(const Key*&, const Value*&) const = 0;
     
@@ -88,11 +137,7 @@ public:
 
     virtual bool
     next() const = 0;
-
-    virtual bool
-    equals(const IteratorHelper&) const = 0;
 }; 
-
 
 
 //
@@ -189,14 +234,22 @@ public:
 
     bool operator==(const Iterator& rhs) const
     {
+	if(_helper.get() == rhs._helper.get())
+	{
+	    return true;
+	}
+	
 	if(_helper.get() != 0 && rhs._helper.get() != 0)
 	{
-	    return _helper->equals(*rhs._helper.get());
+	    const Key* lhsKey = _helper->get();
+	    const Key* rhsKey = rhs._helper->get();
+	    
+	    if(lhsKey != 0 && rhsKey != 0)
+	    {
+		return *lhsKey == *rhsKey;
+	    }
 	}
-	else
-	{
-	    return _helper.get() == rhs._helper.get();
-	}
+	return false;
     }
 
     bool operator!=(const Iterator& rhs) const
@@ -413,14 +466,22 @@ public:
 
     bool operator==(const ConstIterator& rhs)
     {
+	if(_helper.get() == rhs._helper.get())
+	{
+	    return true;
+	}
+	
 	if(_helper.get() != 0 && rhs._helper.get() != 0)
 	{
-	    return _helper->equals(*rhs._helper);
+	    const Key* lhsKey = _helper->get();
+	    const Key* rhsKey = rhs._helper->get();
+	    
+	    if(lhsKey != 0 && rhsKey != 0)
+	    {
+		return *lhsKey == *rhsKey;
+	    }
 	}
-	else
-	{
-	    return _helper.get() == rhs._helper.get();
-	}
+	return false;
     }
 
     bool operator!=(const ConstIterator& rhs)
@@ -565,21 +626,23 @@ public:
     // Constructors
     //
     Map(const Freeze::ConnectionPtr& connection, 
-	  const std::string& dbName, 
-	  bool createDb = true) :
-	_helper(MapHelper::create(connection, dbName, createDb)),
+	const std::string& dbName, 
+	bool createDb = true) :
 	_communicator(connection->getCommunicator())
     {
+	std::vector<MapIndexBasePtr> indices;
+	_helper.reset(MapHelper::create(connection, dbName, indices, createDb));
     }
 
     template <class _InputIterator>
     Map(const Freeze::ConnectionPtr& connection, 
-	  const std::string& dbName, 
-	  bool createDb,
-	  _InputIterator first, _InputIterator last) :
-	_helper(new MapHelper(connection, dbName, createDb)),
+	const std::string& dbName, 
+	bool createDb,
+	_InputIterator first, _InputIterator last) :
 	_communicator(connection->getCommunicator())
     {
+	std::vector<MapIndexBasePtr> indices;
+	_helper.reset(MapHelper::create(connection, dbName, indices, createDb));
 	while(first != last)
 	{
 	    put(*first);
@@ -867,11 +930,17 @@ public:
     }
 
 
-private:
+protected:
+
+    Map(const Ice::CommunicatorPtr& communicator) :
+	_communicator(communicator)
+    {
+    }
 
     std::auto_ptr<MapHelper> _helper;
     const Ice::CommunicatorPtr _communicator;
 };
+
 
 }
 

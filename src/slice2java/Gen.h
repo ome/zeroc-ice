@@ -76,7 +76,7 @@ public:
 
     bool operator!() const; // Returns true if there was a constructor error
 
-    void generate(const UnitPtr&);
+    void generate(const UnitPtr&, bool);
     void generateTie(const UnitPtr&);
     void generateImpl(const UnitPtr&);
     void generateImplTie(const UnitPtr&);
@@ -96,8 +96,9 @@ private:
         OpsVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
-        virtual void visitClassDefEnd(const ClassDefPtr&);
-        virtual void visitOperation(const OperationPtr&);
+
+    private:
+	void writeOperations(const ClassDefPtr&, bool);
     };
 
     class TieVisitor : public JavaVisitor
@@ -109,11 +110,20 @@ private:
         virtual bool visitClassDefStart(const ClassDefPtr&);
     };
 
+    class PackageVisitor : public JavaVisitor
+    {
+    public:
+
+        PackageVisitor(const std::string&);
+
+        virtual bool visitModuleStart(const ModulePtr&);
+    };
+
     class TypesVisitor : public JavaVisitor
     {
     public:
 
-        TypesVisitor(const std::string&);
+        TypesVisitor(const std::string&, bool);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
         virtual void visitClassDefEnd(const ClassDefPtr&);
@@ -124,13 +134,17 @@ private:
         virtual void visitEnum(const EnumPtr&);
         virtual void visitConst(const ConstPtr&);
         virtual void visitDataMember(const DataMemberPtr&);
+
+    private:
+
+        bool _stream;
     };
 
     class HolderVisitor : public JavaVisitor
     {
     public:
 
-        HolderVisitor(const std::string&);
+        HolderVisitor(const std::string&, bool);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
         virtual bool visitStructStart(const StructPtr&);
@@ -141,17 +155,25 @@ private:
     private:
 
         void writeHolder(const TypePtr&);
+
+        bool _stream;
     };
 
     class HelperVisitor : public JavaVisitor
     {
     public:
 
-        HelperVisitor(const std::string&);
+        HelperVisitor(const std::string&, bool);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
+        virtual bool visitStructStart(const StructPtr&);
         virtual void visitSequence(const SequencePtr&);
         virtual void visitDictionary(const DictionaryPtr&);
+        virtual void visitEnum(const EnumPtr&);
+
+    private:
+
+        bool _stream;
     };
 
     class ProxyVisitor : public JavaVisitor
@@ -213,7 +235,7 @@ private:
         // Generate code to emit a local variable declaration and initialize it
         // if necessary.
         //
-        void writeDecl(::IceUtil::Output&, const std::string&, const std::string&, const TypePtr&);
+        void writeDecl(::IceUtil::Output&, const std::string&, const std::string&, const TypePtr&, const StringList&);
 
         //
         // Generate code to return a value.

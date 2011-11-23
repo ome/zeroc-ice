@@ -10,6 +10,7 @@
 #ifndef GLACIER_H
 #define GLACIER_H
 
+#include <Glacier/Router.h>
 #include <Glacier/Starter.h>
 #include <Glacier/Session.h>
 #include <Glacier/SessionManager.h>

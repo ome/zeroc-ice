@@ -38,9 +38,9 @@ class ObjectAdapterI : public ObjectAdapter, public IceUtil::Monitor<IceUtil::Re
 {
 public:
 
-    virtual std::string getName();
+    virtual std::string getName() const;
 
-    virtual CommunicatorPtr getCommunicator();
+    virtual CommunicatorPtr getCommunicator() const;
 
     virtual void activate();
     virtual void hold();
@@ -55,26 +55,24 @@ public:
     virtual ObjectPtr remove(const Identity&);
     virtual ObjectPtr removeFacet(const Identity&, const std::string&);
     virtual FacetMap removeAllFacets(const Identity&);
-    virtual ObjectPtr find(const Identity&);
-    virtual ObjectPtr findFacet(const Identity&, const std::string&);
-    virtual FacetMap findAllFacets(const Identity&);
-    virtual ObjectPtr findByProxy(const ObjectPrx&);
+    virtual ObjectPtr find(const Identity&) const;
+    virtual ObjectPtr findFacet(const Identity&, const std::string&) const;
+    virtual FacetMap findAllFacets(const Identity&) const;
+    virtual ObjectPtr findByProxy(const ObjectPrx&) const;
 
     virtual void addServantLocator(const ServantLocatorPtr&, const std::string&);
-    virtual ServantLocatorPtr findServantLocator(const std::string&);
+    virtual ServantLocatorPtr findServantLocator(const std::string&) const;
 
-    virtual ObjectPrx createProxy(const Identity&);
-    virtual ObjectPrx createDirectProxy(const Identity&);
-    virtual ObjectPrx createReverseProxy(const Identity&);
+    virtual ObjectPrx createProxy(const Identity&) const;
+    virtual ObjectPrx createDirectProxy(const Identity&) const;
+    virtual ObjectPrx createReverseProxy(const Identity&) const;
 
     virtual void addRouter(const RouterPrx&);
 
     virtual void setLocator(const LocatorPrx&);
-    virtual LocatorPrx getLocator();
+//    virtual LocatorPrx getLocator() const;
     
     bool isLocal(const ObjectPrx&) const;
-
-    std::list<IceInternal::ConnectionPtr> getIncomingConnections() const;
 
     void flushBatchRequests();
 
@@ -90,10 +88,11 @@ private:
     virtual ~ObjectAdapterI();
     friend class IceInternal::ObjectAdapterFactory;
     
-    ObjectPrx newProxy(const Identity&) const;
-    ObjectPrx newDirectProxy(const Identity&) const;
+    ObjectPrx newProxy(const Identity&, const std::string&) const;
+    ObjectPrx newDirectProxy(const Identity&, const std::string&) const;
     void checkForDeactivation() const;
     static void checkIdentity(const Identity&);
+    std::vector<IceInternal::EndpointPtr> parseEndpoints(const std::string&) const;
 
     bool _deactivated;
     IceInternal::InstancePtr _instance;
@@ -105,6 +104,7 @@ private:
     const std::string _id;
     std::vector<IceInternal::IncomingConnectionFactoryPtr> _incomingConnectionFactories;
     std::vector<IceInternal::EndpointPtr> _routerEndpoints;
+    std::vector<IceInternal::EndpointPtr> _publishedEndpoints;
     IceInternal::LocatorInfoPtr _locatorInfo;
     int _directCount; // The number of direct proxies dispatching on this object adapter.
     bool _waitForDeactivate;
@@ -116,6 +116,8 @@ private:
         ProcessI(const CommunicatorPtr&);
 
         virtual void shutdown(const Current&);
+
+	virtual void writeMessage(const std::string&, Int, const Current&);
 
     private:
 

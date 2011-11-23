@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Glacier::SessionManager</TITLE
+>IceSSL::TrustedCertificateAddException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
@@ -14,11 +14,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Glacier::Session"
-HREF="x11092.html"><LINK
+TITLE="IceSSL::SslException"
+HREF="x11080.html"><LINK
 REL="NEXT"
-TITLE="Glacier::Starter"
-HREF="x11178.html"></HEAD
+TITLE="IceSSL::UnsupportedContextException"
+HREF="x11141.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -46,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x11092.html"
+HREF="x11080.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -60,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x11178.html"
+HREF="x11141.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -74,11 +74,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="GLACIER.SESSIONMANAGER"
+NAME="ICESSL.TRUSTEDCERTIFICATEADDEXCEPTION"
 ></A
 ><TT
 CLASS="LITERAL"
->Glacier::SessionManager</TT
+>IceSSL::TrustedCertificateAddException</TT
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -96,151 +96,27 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->interface <TT
+>local exception <TT
 CLASS="CLASSNAME"
->SessionManager</TT
+>TrustedCertificateAddException</TT
+>
+    extends 
+	<A
+HREF="x10513.html"
+><TT
+CLASS="CLASSNAME"
+>ContextException</TT
+></A
 ></PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->The session manager, which is responsible for managing <A
-HREF="x11092.html"
-><TT
-CLASS="CLASSNAME"
->Session</TT
-></A
->
-objects. New session objects are created by the <A
-HREF="x11036.html"
-><TT
-CLASS="CLASSNAME"
->Router</TT
-></A
-> object.</P
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN11142"
-></A
->See Also</H3
-><P
->	    <A
-HREF="x11092.html"
-><TT
-CLASS="CLASSNAME"
->Session</TT
-></A
-></P
-></DIV
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN11149"
-></A
->Operation Index</H3
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
-><A
-HREF="x11130.html#GLACIER.SESSIONMANAGER.CREATE"
-><TT
-CLASS="FUNCTION"
->create</TT
-></A
-></DT
-><DD
-><P
->Create a new session object.</P
-></DD
-></DL
-></DIV
-></DIV
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="GLACIER.SESSIONMANAGER.CREATE"
-></A
-><TT
+>An attempt to add a certificate to the <TT
 CLASS="LITERAL"
->create</TT
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><TT
-CLASS="CLASSNAME"
->Session*</TT
-> <TT
-CLASS="FUNCTION"
->create</TT
->(<SPAN
-CLASS="TYPE"
->string</SPAN
-> <TT
-CLASS="PARAMETER"
-><I
->userId</I
-></TT
->);</PRE
-></TD
-></TR
-></TABLE
-><P
->Create a new session object.</P
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN11167"
-></A
->Parameters</H3
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
-><TT
-CLASS="PARAMETER"
-><I
->userId</I
-></TT
-></DT
-><DD
-><P
->			    The user id for the session.</P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN11175"
-></A
->Return Value</H3
-><P
->		A proxy to the newly created session.</P
-></DIV
+>Context</TT
+>'s
+trusted certifificate store has failed.</P
 ></DIV
 ></DIV
 ><DIV
@@ -259,7 +135,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x11092.html"
+HREF="x11080.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -277,7 +153,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x11178.html"
+HREF="x11141.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -289,7 +165,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Glacier::Session</TT
+>IceSSL::SslException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -306,7 +182,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Glacier::Starter</TT
+>IceSSL::UnsupportedContextException</TT
 ></TD
 ></TR
 ></TABLE

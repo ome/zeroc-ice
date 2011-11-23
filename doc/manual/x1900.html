@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Ice::ConnectionNotValidatedException</TITLE
+>Ice::CompressionException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
@@ -14,11 +14,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Ice::ConnectionLostException"
-HREF="x1888.html"><LINK
+TITLE="Ice::CommunicatorDestroyedException"
+HREF="x1883.html"><LINK
 REL="NEXT"
-TITLE="Ice::ConnectionRefusedException"
-HREF="x1912.html"></HEAD
+TITLE="Ice::CompressionNotSupportedException"
+HREF="x1928.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -46,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x1888.html"
+HREF="x1883.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -60,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x1912.html"
+HREF="x1928.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -74,11 +74,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICE.CONNECTIONNOTVALIDATEDEXCEPTION"
+NAME="ICE.COMPRESSIONEXCEPTION"
 ></A
 ><TT
 CLASS="LITERAL"
->Ice::ConnectionNotValidatedException</TT
+>Ice::CompressionException</TT
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -98,11 +98,11 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 >local exception <TT
 CLASS="CLASSNAME"
->ConnectionNotValidatedException</TT
+>CompressionException</TT
 >
     extends 
 	<A
-HREF="x4765.html"
+HREF="x5063.html"
 ><TT
 CLASS="CLASSNAME"
 >ProtocolException</TT
@@ -113,14 +113,76 @@ CLASS="CLASSNAME"
 ></TABLE
 ><P
 >This exception is a specialization of <A
-HREF="x4765.html"
+HREF="x5063.html"
 ><TT
 CLASS="CLASSNAME"
 >ProtocolException</TT
 ></A
->, that is
-raised if a message is received over a connection that is not yet
-validated.</P
+> that is
+raised if there is a problem with compressing or uncompressing
+data.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN1912"
+></A
+>Data Member Index</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x1900.html#ICE.COMPRESSIONEXCEPTION.REASON"
+><SPAN
+CLASS="TYPE"
+>reason</SPAN
+></A
+></DT
+><DD
+><P
+>The reason for the failure.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICE.COMPRESSIONEXCEPTION.REASON"
+></A
+><TT
+CLASS="LITERAL"
+>reason</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="STRUCTFIELD"
+><I
+>reason</I
+></TT
+>;</PRE
+></TD
+></TR
+></TABLE
+><P
+>The reason for the failure.</P
 ></DIV
 ></DIV
 ><DIV
@@ -139,7 +201,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x1888.html"
+HREF="x1883.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -157,7 +219,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x1912.html"
+HREF="x1928.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -169,7 +231,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::ConnectionLostException</TT
+>Ice::CommunicatorDestroyedException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -186,7 +248,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Ice::ConnectionRefusedException</TT
+>Ice::CompressionNotSupportedException</TT
 ></TD
 ></TR
 ></TABLE

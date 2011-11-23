@@ -10,7 +10,7 @@
 #ifndef ICE_GC_H
 #define ICE_GC_H
 
-#include <Ice/Config.h>
+#include <IceUtil/Config.h>
 #include <IceUtil/Thread.h>
 #include <IceUtil/Monitor.h>
 #include <IceUtil/Mutex.h>
@@ -22,7 +22,7 @@ struct ICE_UTIL_API GCStats
 {
     int examined;
     int collected;
-    double msec;
+    Time time;
 };
 
 class GC : public ::IceUtil::Thread, public ::IceUtil::Monitor< ::IceUtil::Mutex>

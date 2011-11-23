@@ -7,8 +7,8 @@
 //
 // **********************************************************************
 
-#ifndef GLACIER_ICE
-#define GLACIER_ICE
+#ifndef GLACIER_STARTER_ICE
+#define GLACIER_STARTER_ICE
 
 #include <Glacier/Router.ice>
 #include <Ice/BuiltinSequences.ice>
@@ -18,7 +18,7 @@
  *
  * &Glacier; is a firewall solution for Ice. &Glacier; authenticates
  * and filters client requests and allows callbacks to the client in a
- * secure fashion. In combination with &IceSSL;, Glacier provides a
+ * secure fashion. In combination with &IceSSL;, &Glacier; provides a
  * security solution that is both non-intrusive and easy to configure.
  *
  **/
@@ -107,19 +107,18 @@ interface PermissionsVerifier
 {
     /**
      *
-     * Check whether user has permission to access router.
+     * Check whether a user has permission to access the router.
      *
-     * @param userId The user id for which to check permissions.
+     * @param userId The user id for which to check permission.
      *
      * @param password The user's password.
      *
-     * @param reason The reason access was denied.
+     * @param reason The reason why access was denied.
      *
-     * @return true if access is allowed, or false otherwise.
+     * @return True if access is granted, or false otherwise.
      *
      **/
-    nonmutating
-    bool checkPermissions(string userId, string password, out string reason);
+    nonmutating bool checkPermissions(string userId, string password, out string reason);
 };
 
 };

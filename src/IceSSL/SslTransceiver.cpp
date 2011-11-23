@@ -34,7 +34,7 @@ using namespace IceInternal;
 // Static Member Initialization
 //
 IceSSL::SslTransceiverMap IceSSL::SslTransceiver::_transceiverMap;
-IceUtil::Mutex IceSSL::SslTransceiver::_transceiverRepositoryMutex;
+IceUtil::StaticMutex IceSSL::SslTransceiver::_transceiverRepositoryMutex = ICE_STATIC_MUTEX_INITIALIZER;
 
 void IceInternal::incRef(IceSSL::SslTransceiver* p) { p->__incRef(); }
 void IceInternal::decRef(IceSSL::SslTransceiver* p) { p->__decRef(); }
@@ -68,7 +68,7 @@ IceSSL::SslTransceiver::close()
 	int retries = -numRetries;
 	do
 	{
-	    shutdown = internalShutdown();
+	    shutdown = internalShutdownWrite(0);
 	    retries++;
 	}
 	while((shutdown == 0) && (retries < 0));
@@ -92,12 +92,12 @@ IceSSL::SslTransceiver::close()
 }
 
 void
-IceSSL::SslTransceiver::shutdown()
+IceSSL::SslTransceiver::shutdownWrite()
 {
     if(_traceLevels->network >= 2)
     {
  	Trace out(_logger, _traceLevels->networkCat);
-	out << "shutting down ssl connection\n" << toString();
+	out << "shutting down ssl connection for writing\n" << toString();
     }
 
     int shutdown = 0;
@@ -105,13 +105,38 @@ IceSSL::SslTransceiver::shutdown()
     int retries = -numRetries;
     do
     {
-        shutdown = internalShutdown();
+        shutdown = internalShutdownWrite(0);
         retries++;
     }
     while((shutdown == 0) && (retries < 0));
 
     assert(_fd != INVALID_SOCKET);
-    shutdownSocket(_fd);
+    shutdownSocketWrite(_fd);
+}
+
+void
+IceSSL::SslTransceiver::shutdownReadWrite()
+{
+    if(_traceLevels->network >= 2)
+    {
+ 	Trace out(_logger, _traceLevels->networkCat);
+	out << "shutting down ssl connection for reading and writing\n" << toString();
+    }
+
+/*
+    int shutdown = 0;
+    int numRetries = 100;
+    int retries = -numRetries;
+    do
+    {
+        shutdown = internalShutdownWrite(0);
+        retries++;
+    }
+    while((shutdown == 0) && (retries < 0));
+*/
+
+    assert(_fd != INVALID_SOCKET);
+    shutdownSocketReadWrite(_fd);
 }
 
 void
@@ -179,7 +204,7 @@ IceSSL::SslTransceiver::read(Buffer& buf, int timeout)
 
 		    if(_stats)
 		    {
-			_stats->bytesReceived(_name, bytesRead);
+			_stats->bytesReceived(type(), bytesRead);
 		    }
 
                     totalBytesRead += bytesRead;
@@ -307,9 +332,15 @@ IceSSL::SslTransceiver::read(Buffer& buf, int timeout)
 }
 
 string
+IceSSL::SslTransceiver::type() const
+{
+    return "ssl";
+}
+
+string
 IceSSL::SslTransceiver::toString() const
 {
-    return _desc;
+    return fdToString(_fd);
 }
 
 void
@@ -371,7 +402,7 @@ IceSSL::SslTransceiver::setHandshakeRetries(int retries)
 IceSSL::SslTransceiverPtr
 IceSSL::SslTransceiver::getTransceiver(SSL* sslPtr)
 {
-    IceUtil::Mutex::Lock sync(_transceiverRepositoryMutex);
+    IceUtil::StaticMutex::Lock sync(_transceiverRepositoryMutex);
 
     assert(sslPtr);
 
@@ -452,7 +483,7 @@ IceSSL::SslTransceiver::verifyCertificate(int preVerifyOkay, X509_STORE_CTX* x50
 //
 
 int
-IceSSL::SslTransceiver::internalShutdown(int timeout)
+IceSSL::SslTransceiver::internalShutdownWrite(int timeout)
 {
     if(_sslConnection == 0)
     {
@@ -491,7 +522,7 @@ IceSSL::SslTransceiver::internalShutdown(int timeout)
     if(retCode == 1)
     {
         // Shutdown successful - shut down the socket for writing.
-	shutdownSocket(SSL_get_fd(_sslConnection));
+	shutdownSocketWrite(SSL_get_fd(_sslConnection));
     }
     else if(retCode == -1)
     {
@@ -675,7 +706,7 @@ IceSSL::SslTransceiver::initialize(int timeout)
 
                     case Shutdown : 
                     {
-                        retCode = internalShutdown(timeout);
+                        retCode = internalShutdownWrite(timeout);
                         break;
                     }
 
@@ -827,7 +858,7 @@ IceSSL::SslTransceiver::addTransceiver(SSL* sslPtr, SslTransceiver* transceiver)
 {
     assert(sslPtr);
     assert(transceiver);
-    IceUtil::Mutex::Lock sync(_transceiverRepositoryMutex);
+    IceUtil::StaticMutex::Lock sync(_transceiverRepositoryMutex);
     _transceiverMap[sslPtr] = transceiver;
 }
 
@@ -835,7 +866,7 @@ void
 IceSSL::SslTransceiver::removeTransceiver(SSL* sslPtr)
 {
     assert(sslPtr);
-    IceUtil::Mutex::Lock sync(_transceiverRepositoryMutex);
+    IceUtil::StaticMutex::Lock sync(_transceiverRepositoryMutex);
     _transceiverMap.erase(sslPtr);
 }
 
@@ -1031,7 +1062,6 @@ IceSSL::SslTransceiver::SslTransceiver(const OpenSSLPluginIPtr& plugin,
     _traceLevels(plugin->getTraceLevels()),
     _logger(plugin->getLogger()),
     _stats(plugin->getStats()),
-    _name("ssl"),
     _fd(fd),
     _certificateVerifier(certificateVerifier)
 {
@@ -1055,11 +1085,6 @@ IceSSL::SslTransceiver::SslTransceiver(const OpenSSLPluginIPtr& plugin,
 
     // Set up the SSL to be able to refer back to our connection object.
     addTransceiver(_sslConnection, this);
-
-    //
-    // fdToString may raise a socket exception.
-    //
-    const_cast<string&>(_desc) = fdToString(_fd);
 }
 
 IceSSL::SslTransceiver::~SslTransceiver()
@@ -1072,4 +1097,3 @@ IceSSL::SslTransceiver::~SslTransceiver()
         _sslConnection = 0;
     }
 }
-

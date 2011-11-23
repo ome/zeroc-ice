@@ -63,11 +63,6 @@ IceUtil::Time::operator timeval() const
     return tv;
 }
 
-IceUtil::Time::operator double() const
-{
-    return _usec / 1000000.0L;
-}
-
 Int64
 IceUtil::Time::toSeconds() const
 {
@@ -84,6 +79,24 @@ Int64
 IceUtil::Time::toMicroSeconds() const
 {
     return _usec;
+}
+
+double
+IceUtil::Time::toSecondsDouble() const
+{
+    return _usec / 1000000.0;
+}
+
+double
+IceUtil::Time::toMilliSecondsDouble() const
+{
+    return _usec / 1000.0;
+}
+
+double
+IceUtil::Time::toMicroSecondsDouble() const
+{
+    return static_cast<double>(_usec);
 }
 
 std::string
@@ -114,4 +127,10 @@ IceUtil::Time::toString() const
 Time::Time(Int64 usec) :
     _usec(usec)
 {
+}
+
+std::ostream&
+IceUtil::operator<<(std::ostream& out, const Time& tm)
+{
+    return out << tm.toMicroSeconds() / 1000000.0;
 }

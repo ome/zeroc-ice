@@ -14,11 +14,12 @@
 using namespace std;
 using namespace Ice;
 using namespace Freeze;
+using namespace Test;
 
 int
 run(const CommunicatorPtr& communicator, const string& envName, const string& dbName)
 {
-    ConnectionPtr connection = createConnection(communicator, envName);
+    Freeze::ConnectionPtr connection = createConnection(communicator, envName);
     IntSMap m(connection, dbName);
 
     m.put(IntSMap::value_type(0, S()));

@@ -28,15 +28,15 @@ class ServantLocator : public Ice::ServantLocator
 {
 public:
 
-    ServantLocator(const ::Ice::ObjectPtr&);
+    ServantLocator(const ObjectPtr&);
     
-    virtual Ice::ObjectPtr locate(const Ice::Current&, Ice::LocalObjectPtr&);
-    virtual void finished(const Ice::Current&, const Ice::ObjectPtr&, const Ice::LocalObjectPtr&);
+    virtual ObjectPtr locate(const Current&, LocalObjectPtr&);
+    virtual void finished(const Current&, const ObjectPtr&, const LocalObjectPtr&);
     virtual void deactivate(const string&);
 
 private:
 
-    ::Ice::ObjectPtr _blobject;
+    ObjectPtr _blobject;
 };
 
 class RouterApp : public Application
@@ -148,7 +148,7 @@ Glacier::RouterApp::run(int argc, char* argv[])
         if(!clientCertBase64.empty())
         {
             // Install a Certificate Verifier that only accepts indicated certificate.
-            Ice::ByteSeq clientCert = IceUtil::Base64::decode(clientCertBase64);
+            ByteSeq clientCert = IceUtil::Base64::decode(clientCertBase64);
             sslPlugin->setCertificateVerifier(contextType, sslPlugin->getSingleCertVerifier(clientCert));
         
             // Add the Client's certificate as a trusted certificate.
@@ -355,11 +355,12 @@ main(int argc, char* argv[])
     //
     // Make sure that this process doesn't use a router.
     //
-    try {
+    try
+    {
 	PropertiesPtr defaultProperties = getDefaultProperties(argc, argv);
 	defaultProperties->setProperty("Ice.Default.Router", "");
     }
-    catch(const Ice::Exception& e)
+    catch(const Exception& e)
     {
 	cerr << e << endl;
 	exit(EXIT_FAILURE);

@@ -27,17 +27,15 @@ testFailed(const char* expr, const char* file, unsigned int line)
 
 #define test(ex) ((ex) ? ((void)0) : testFailed(#ex, __FILE__, __LINE__))
 
-
-
 int
 main(int argc, char* argv[])
 {
-    PropertiesPtr properties = Ice::createProperties(argc, argv);
+    PropertiesPtr properties = Ice::createProperties();
     properties->load("config");
 
     CommunicatorPtr communicator = initializeWithProperties(argc, argv, properties);
 
-    ConnectionPtr connection = createConnection(communicator, "db");
+    Freeze::ConnectionPtr connection = createConnection(communicator, "backup");
     IntLongMap m(connection, "IntLongMap", true);
     
     const size_t size = 10000;
@@ -82,8 +80,8 @@ main(int argc, char* argv[])
 	    count++;
 	} while(++p != m.end());
 
-	cout << "Switching from " << Time::milliSeconds(oldMs).toString() 
-	     << " to " << time.toString() << " ... " << flush;
+	cout << "Read " << Time::milliSeconds(oldMs).toString() << " in all records;" 
+	     << " updating with " << time.toString() << " ... " << flush;
 	  
 	txHolder.commit();
 	cout << "done" << endl;

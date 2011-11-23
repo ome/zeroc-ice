@@ -10,10 +10,15 @@
 #ifndef HELLO_ICE
 #define HELLO_ICE
 
-class Hello
+module Demo
+{
+
+interface Hello
 {
     void sayHello();
     void shutdown();
+};
+
 };
 
 #endif

@@ -12,6 +12,7 @@
 
 using namespace std;
 using namespace Ice;
+using namespace Demo;
 
 class NestedServer : public Application
 {
@@ -24,7 +25,7 @@ int
 main(int argc, char* argv[])
 {
     NestedServer app;
-    return app.main(argc, argv, "config.server");
+    return app.main(argc, argv, "config");
 }
 
 int

@@ -21,6 +21,8 @@
 #include <Ice/LocatorInfo.h>
 #include <Ice/BasicStream.h>
 #include <Ice/LocalException.h>
+#include <Ice/ConnectionI.h> // To convert from ConnectionIPtr to ConnectionPtr in ice_connection().
+#include <Ice/Stream.h>
 
 using namespace std;
 using namespace Ice;
@@ -95,13 +97,13 @@ IceProxy::Ice::Object::operator<(const Object& r) const
 Int
 IceProxy::Ice::Object::ice_hash() const
 {
-    return _reference->hashValue;
+    return _reference->hash();
 }
 
 bool
 IceProxy::Ice::Object::ice_isA(const string& __id)
 {
-    return ice_isA(__id, _reference->context);
+    return ice_isA(__id, _reference->getContext());
 }
 
 bool
@@ -130,7 +132,7 @@ IceProxy::Ice::Object::ice_isA(const string& __id, const Context& __context)
 void
 IceProxy::Ice::Object::ice_ping()
 {
-    ice_ping(_reference->context);
+    ice_ping(_reference->getContext());
 }
 
 void
@@ -159,7 +161,7 @@ IceProxy::Ice::Object::ice_ping(const Context& __context)
 vector<string>
 IceProxy::Ice::Object::ice_ids()
 {
-    return ice_ids(_reference->context);
+    return ice_ids(_reference->getContext());
 }
 
 vector<string>
@@ -188,7 +190,7 @@ IceProxy::Ice::Object::ice_ids(const Context& __context)
 string
 IceProxy::Ice::Object::ice_id()
 {
-    return ice_id(_reference->context);
+    return ice_id(_reference->getContext());
 }
 
 string
@@ -220,7 +222,7 @@ IceProxy::Ice::Object::ice_invoke(const string& operation,
 				  const vector<Byte>& inParams,
 				  vector<Byte>& outParams)
 {
-    return ice_invoke(operation, mode, inParams, outParams, _reference->context);
+    return ice_invoke(operation, mode, inParams, outParams, _reference->getContext());
 }
 
 bool
@@ -263,7 +265,7 @@ IceProxy::Ice::Object::ice_invoke_async(const AMI_Object_ice_invokePtr& cb,
 					OperationMode mode,
 					const vector<Byte>& inParams)
 {
-    ice_invoke_async(cb, operation, mode, inParams, _reference->context);
+    ice_invoke_async(cb, operation, mode, inParams, _reference->getContext());
 }
 
 void
@@ -280,13 +282,13 @@ IceProxy::Ice::Object::ice_invoke_async(const AMI_Object_ice_invokePtr& cb,
 Context
 IceProxy::Ice::Object::ice_getContext() const
 {
-    return _reference->context;
+    return _reference->getContext();
 }
 
 ObjectPrx
 IceProxy::Ice::Object::ice_newContext(const Context& newContext) const
 {
-    if(newContext == _reference->context)
+    if(newContext == _reference->getContext())
     {
 	return ObjectPrx(const_cast< ::IceProxy::Ice::Object*>(this));
     }
@@ -301,13 +303,13 @@ IceProxy::Ice::Object::ice_newContext(const Context& newContext) const
 Identity
 IceProxy::Ice::Object::ice_getIdentity() const
 {
-    return _reference->identity;
+    return _reference->getIdentity();
 }
 
 ObjectPrx
 IceProxy::Ice::Object::ice_newIdentity(const Identity& newIdentity) const
 {
-    if(newIdentity == _reference->identity)
+    if(newIdentity == _reference->getIdentity())
     {
 	return ObjectPrx(const_cast< ::IceProxy::Ice::Object*>(this));
     }
@@ -322,13 +324,13 @@ IceProxy::Ice::Object::ice_newIdentity(const Identity& newIdentity) const
 const string&
 IceProxy::Ice::Object::ice_getFacet() const
 {
-    return _reference->facet;
+    return _reference->getFacet();
 }
 
 ObjectPrx
 IceProxy::Ice::Object::ice_newFacet(const string& newFacet) const
 {
-    if(newFacet == _reference->facet)
+    if(newFacet == _reference->getFacet())
     {
 	return ObjectPrx(const_cast< ::IceProxy::Ice::Object*>(this));
     }
@@ -359,7 +361,7 @@ IceProxy::Ice::Object::ice_twoway() const
 bool
 IceProxy::Ice::Object::ice_isTwoway() const
 {
-    return _reference->mode == Reference::ModeTwoway;
+    return _reference->getMode() == Reference::ModeTwoway;
 }
 
 ObjectPrx
@@ -381,7 +383,7 @@ IceProxy::Ice::Object::ice_oneway() const
 bool
 IceProxy::Ice::Object::ice_isOneway() const
 {
-    return _reference->mode == Reference::ModeOneway;
+    return _reference->getMode() == Reference::ModeOneway;
 }
 
 ObjectPrx
@@ -403,7 +405,7 @@ IceProxy::Ice::Object::ice_batchOneway() const
 bool
 IceProxy::Ice::Object::ice_isBatchOneway() const
 {
-    return _reference->mode == Reference::ModeBatchOneway;
+    return _reference->getMode() == Reference::ModeBatchOneway;
 }
 
 ObjectPrx
@@ -425,7 +427,7 @@ IceProxy::Ice::Object::ice_datagram() const
 bool
 IceProxy::Ice::Object::ice_isDatagram() const
 {
-    return _reference->mode == Reference::ModeDatagram;
+    return _reference->getMode() == Reference::ModeDatagram;
 }
 
 ObjectPrx
@@ -447,7 +449,7 @@ IceProxy::Ice::Object::ice_batchDatagram() const
 bool
 IceProxy::Ice::Object::ice_isBatchDatagram() const
 {
-    return _reference->mode == Reference::ModeBatchDatagram;
+    return _reference->getMode() == Reference::ModeBatchDatagram;
 }
 
 ObjectPrx
@@ -550,6 +552,8 @@ ObjectPrx
 IceProxy::Ice::Object::ice_default() const
 {
     ReferencePtr ref = _reference->changeDefault();
+    ref = ref->changeDefault();
+
     if(ref == _reference)
     {
 	return ObjectPrx(const_cast< ::IceProxy::Ice::Object*>(this));
@@ -559,6 +563,24 @@ IceProxy::Ice::Object::ice_default() const
 	ObjectPrx proxy(new ::IceProxy::Ice::Object());
 	proxy->setup(ref);
 	return proxy;
+    }
+}
+
+ConnectionPtr
+IceProxy::Ice::Object::ice_connection()
+{
+    int __cnt = 0;
+    while(true)
+    {
+	try
+	{
+	    Handle< ::IceDelegate::Ice::Object> __del = __getDelegate();
+	    return __del->ice_connection();
+	}
+	catch(const LocalException& __ex)
+	{
+	    __handleException(__ex, __cnt);
+	}
     }
 }
 
@@ -618,12 +640,13 @@ IceProxy::Ice::Object::__handleException(const LocalException& ex, int& cnt)
 	_delegate = 0;
     }
 
-    if(_reference->locatorInfo)
+    IndirectReferencePtr ir = IndirectReferencePtr::dynamicCast(_reference);
+    if(ir && ir->getLocatorInfo())
     {
-	_reference->locatorInfo->clearObjectCache(_reference);
+	ir->getLocatorInfo()->clearObjectCache(ir);
     }
 
-    ProxyFactoryPtr proxyFactory = _reference->instance->proxyFactory();
+    ProxyFactoryPtr proxyFactory = _reference->getInstance()->proxyFactory();
     if(proxyFactory)
     {
 	proxyFactory->checkRetryAfterException(ex, cnt);
@@ -645,9 +668,10 @@ IceProxy::Ice::Object::__rethrowException(const LocalException& ex)
 	_delegate = 0;
     }
 
-    if(_reference->locatorInfo)
+    IndirectReferencePtr ir = IndirectReferencePtr::dynamicCast(_reference);
+    if(ir && ir->getLocatorInfo())
     {
-	_reference->locatorInfo->clearObjectCache(_reference);
+	ir->getLocatorInfo()->clearObjectCache(ir);
     }
 
     ex.ice_throw();
@@ -676,9 +700,9 @@ IceProxy::Ice::Object::__getDelegate()
 
     if(!_delegate)
     {
-	if(_reference->collocationOptimization)
+	if(_reference->getCollocationOptimization())
 	{
-	    ObjectAdapterPtr adapter = _reference->instance->objectAdapterFactory()->findObjectAdapter(this);
+	    ObjectAdapterPtr adapter = _reference->getInstance()->objectAdapterFactory()->findObjectAdapter(this);
 	    if(adapter)
 	    {
 		Handle< ::IceDelegateD::Ice::Object> delegate = __createDelegateD();
@@ -698,9 +722,10 @@ IceProxy::Ice::Object::__getDelegate()
 	    // using a router, then add this proxy to the router info
 	    // object.
 	    //
-	    if(_reference->routerInfo)
+	    RoutableReferencePtr rr = RoutableReferencePtr::dynamicCast(_reference);
+	    if(rr && rr->getRouterInfo())
 	    {
-		_reference->routerInfo->addProxy(this);
+		rr->getRouterInfo()->addProxy(this);
 	    }
 	}
     }
@@ -723,7 +748,7 @@ IceProxy::Ice::Object::__createDelegateD()
 const Context&
 IceProxy::Ice::Object::__defaultContext() const
 {
-    return _reference->context;
+    return _reference->getContext();
 }
 
 void
@@ -842,7 +867,7 @@ IceDelegateM::Ice::Object::ice_invoke(const string& operation,
     BasicStream* __os = __out.os();
     __os->writeBlob(inParams);
     bool ok = __out.invoke();
-    if(__reference->mode == Reference::ModeTwoway)
+    if(__reference->getMode() == Reference::ModeTwoway)
     {
         try
         {
@@ -856,6 +881,12 @@ IceDelegateM::Ice::Object::ice_invoke(const string& operation,
         }
     }
     return ok;
+}
+
+ConnectionPtr
+IceDelegateM::Ice::Object::ice_connection()
+{
+    return __connection;
 }
 
 void
@@ -956,6 +987,12 @@ IceDelegateD::Ice::Object::ice_invoke(const string&,
     throw CollocationOptimizationException(__FILE__, __LINE__);
 }
 
+ConnectionPtr
+IceDelegateD::Ice::Object::ice_connection()
+{
+    throw CollocationOptimizationException(__FILE__, __LINE__);
+}
+
 void
 IceDelegateD::Ice::Object::__copyFrom(const ::IceInternal::Handle< ::IceDelegateD::Ice::Object>& from)
 {
@@ -981,8 +1018,8 @@ IceDelegateD::Ice::Object::__initCurrent(Current& current, const string& op, Ope
 					 const Context& context)
 {
     current.adapter = __adapter;
-    current.id = __reference->identity;
-    current.facet = __reference->facet;
+    current.id = __reference->getIdentity();
+    current.facet = __reference->getFacet();
     current.operation = op;
     current.mode = mode;
     current.ctx = context;
@@ -1123,4 +1160,16 @@ Ice::proxyIdentityAndFacetEqual(const ObjectPrx& lhs, const ObjectPrx& rhs)
 	
 	return false;
     }
+}
+
+void
+Ice::ice_writeObjectPrx(const OutputStreamPtr& out, const ObjectPrx& v)
+{
+    out->writeProxy(v);
+}
+
+void
+Ice::ice_readObjectPrx(const InputStreamPtr& in, ObjectPrx& v)
+{
+    v = in->readProxy();
 }

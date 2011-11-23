@@ -8,7 +8,7 @@
 
  **********************************************************************
 -->
-<!-- Ice version 1.5.1 -->
+<!-- Ice version 2.0.0 -->
 <section>
     <title>Global Module</title>
     <section>
@@ -94,6 +94,13 @@ additional functionality that supports high scalability.</para>
 		    <listitem>
 			<para>
 The central object in &Ice;.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Connection"><type>Connection</type></link></term>
+		    <listitem>
+			<para>
+The user-level interface to a connection.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -371,6 +378,15 @@ endpoint.</para>
 			<para>
 This exception is raised if no facet with the given name exists,
 but at least one facet with the given identity exists.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.ForcedCloseConnectionException"><classname>ForcedCloseConnectionException</classname></link></term>
+		    <listitem>
+			<para>
+This exception is raised by an operation call if the application
+forcefully closes the connection used by this call with
+<link linkend="Ice.Connection.close"><function>Connection::close</function></link>.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -1217,6 +1233,20 @@ Flush any pending batch requests for this communicator.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
+		    <term><link linkend="Ice.Communicator.getDefaultLocator"><function>getDefaultLocator</function></link></term>
+		    <listitem>
+			<para>
+Get the default locator this communicator.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Communicator.getDefaultRouter"><function>getDefaultRouter</function></link></term>
+		    <listitem>
+			<para>
+Get the default router this communicator.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
 		    <term><link linkend="Ice.Communicator.getLogger"><function>getLogger</function></link></term>
 		    <listitem>
 			<para>
@@ -1501,6 +1531,42 @@ Flush any pending batch requests for this communicator.
 This causes all batch requests that were sent via proxies
 obtained via this communicator to be sent to the server.</para>
     </section>
+    <section id="Ice.Communicator.getDefaultLocator">
+	<title><literal>getDefaultLocator</literal></title>
+<synopsis><classname>Locator*</classname> <function>getDefaultLocator</function>();</synopsis>
+	<para>
+Get the default locator this communicator.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		The default locator for this communicator.</para>
+	</section>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Ice.Communicator.setDefaultLocator"><function>setDefaultLocator</function></link></member>
+		<member><link linkend="Ice.Locator"><classname>Locator</classname></link></member>
+	    </simplelist></para></section>
+    </section>
+    <section id="Ice.Communicator.getDefaultRouter">
+	<title><literal>getDefaultRouter</literal></title>
+<synopsis><classname>Router*</classname> <function>getDefaultRouter</function>();</synopsis>
+	<para>
+Get the default router this communicator.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		The default router for this communicator.</para>
+	</section>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Ice.Communicator.setDefaultRouter"><function>setDefaultRouter</function></link></member>
+		<member><link linkend="Ice.Router"><classname>Router</classname></link></member>
+	    </simplelist></para></section>
+    </section>
     <section id="Ice.Communicator.getLogger">
 	<title><literal>getLogger</literal></title>
 <synopsis><link linkend="Ice.Logger"><classname>Logger</classname></link> <function>getLogger</function>();</synopsis>
@@ -1515,6 +1581,7 @@ Get the logger for this communicator.</para>
 	    <title>See Also</title>
 	    <para>
 	    <simplelist type="inline">
+		<member><link linkend="Ice.Communicator.setLogger"><function>setLogger</function></link></member>
 		<member><link linkend="Ice.Logger"><classname>Logger</classname></link></member>
 	    </simplelist></para></section>
     </section>
@@ -1566,6 +1633,7 @@ Get the statistics callback object for this communicator.</para>
 	    <title>See Also</title>
 	    <para>
 	    <simplelist type="inline">
+		<member><link linkend="Ice.Communicator.setStats"><function>setStats</function></link></member>
 		<member><link linkend="Ice.Stats"><classname>Stats</classname></link></member>
 	    </simplelist></para></section>
     </section>
@@ -1655,6 +1723,7 @@ object adapter.</para></note></para>
 	    <title>See Also</title>
 	    <para>
 	    <simplelist type="inline">
+		<member><link linkend="Ice.Communicator.getDefaultLocator"><function>getDefaultLocator</function></link></member>
 		<member><link linkend="Ice.Locator"><classname>Locator</classname></link></member>
 		<member><link linkend="Ice.ObjectAdapter.setLocator"><function>ObjectAdapter::setLocator</function></link></member>
 	    </simplelist></para></section>
@@ -1685,6 +1754,7 @@ by calling the operation <literal>ice_router</literal> on the proxy.</para></not
 	    <title>See Also</title>
 	    <para>
 	    <simplelist type="inline">
+		<member><link linkend="Ice.Communicator.getDefaultRouter"><function>getDefaultRouter</function></link></member>
 		<member><link linkend="Ice.Router"><classname>Router</classname></link></member>
 		<member><link linkend="Ice.ObjectAdapter.addRouter"><function>ObjectAdapter::addRouter</function></link></member>
 	    </simplelist></para></section>
@@ -1710,6 +1780,7 @@ Set the logger for this communicator.</para>
 	    <title>See Also</title>
 	    <para>
 	    <simplelist type="inline">
+		<member><link linkend="Ice.Communicator.getLogger"><function>getLogger</function></link></member>
 		<member><link linkend="Ice.Logger"><classname>Logger</classname></link></member>
 	    </simplelist></para></section>
     </section>
@@ -1735,6 +1806,7 @@ communicator.</para>
 	    <title>See Also</title>
 	    <para>
 	    <simplelist type="inline">
+		<member><link linkend="Ice.Communicator.getStats"><function>getStats</function></link></member>
 		<member><link linkend="Ice.Stats"><classname>Stats</classname></link></member>
 	    </simplelist></para></section>
     </section>
@@ -1850,7 +1922,7 @@ data.</para>
 		    <term><link linkend="Ice.CompressionException.reason"><type>reason</type></link></term>
 		    <listitem>
 			<para>
-A description of the problem with compress or uncompress.</para>
+The reason for the failure.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -1860,7 +1932,7 @@ A description of the problem with compress or uncompress.</para>
 	<title><literal>reason</literal></title>
 <synopsis><type>string</type> <structfield>reason</structfield>;</synopsis>
 	<para>
-A description of the problem with compress or uncompress.</para>
+The reason for the failure.</para>
     </section>
 </section>
 <section id="Ice.CompressionNotSupportedException">
@@ -1904,6 +1976,171 @@ connection failures.</para>
 	<para>
 This exception is a specialization of <link linkend="Ice.TimeoutException"><classname>TimeoutException</classname></link> for
 connection establishment timeout conditions.</para>
+    </section>
+</section>
+<section id="Ice.Connection">
+    <title><literal>Ice::Connection</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>local interface <classname>Connection</classname></synopsis>
+	<para>
+The user-level interface to a connection.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Ice.Current.con"><type>Current::con</type></link></member>
+	    </simplelist></para></section>
+	<section>
+	    <title>Operation Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="Ice.Connection.close"><function>close</function></link></term>
+		    <listitem>
+			<para>
+Close a connection, either gracefully or forcefully.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Connection.createProxy"><function>createProxy</function></link></term>
+		    <listitem>
+			<para>
+Create a proxy that always uses this connection.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Connection.flushBatchRequests"><function>flushBatchRequests</function></link></term>
+		    <listitem>
+			<para>
+Flush any pending batch requests for this connection.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Connection.timeout"><function>timeout</function></link></term>
+		    <listitem>
+			<para>
+Get the timeout for the connection.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Connection.toString"><function>toString</function></link></term>
+		    <listitem>
+			<para>
+Return a description of the connection as human readable text,
+suitable for logging or error messages.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Connection.type"><function>type</function></link></term>
+		    <listitem>
+			<para>
+Return the connection type.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="Ice.Connection.close">
+	<title><literal>close</literal></title>
+<synopsis><type>void</type> <function>close</function>(<type>bool</type> <parameter>force</parameter>);</synopsis>
+	<para>
+Close a connection, either gracefully or forcefully. If a
+connection is closed forcefully, it closes immediately, without
+sending the relevant close connection protocol messages to the
+peer and waiting for the peer to acknowledge these protocol
+messages.</para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>force</parameter></term>
+		    <listitem>
+			<para>
+			    If true, close forcefully. Otherwise the
+connection is closed gracefully.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="Ice.Connection.createProxy">
+	<title><literal>createProxy</literal></title>
+<synopsis><type>Object*</type> <function>createProxy</function>(<link linkend="Ice.Identity"><structname>Identity</structname></link> <parameter>id</parameter>);</synopsis>
+	<para>
+Create a proxy that always uses this connection. This is
+typically used for reverse communications using connections
+that have been established from a client to an object adapter.
+<note><para> This operation is intended to be used by special
+services, such as <link linkend="Ice.Router"><classname>Router</classname></link> implementations. Regular user code
+should not attempt to use this operation. </para></note></para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>id</parameter></term>
+		    <listitem>
+			<para>
+			    The identity for which a proxy is to be created.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		A proxy that matches the given identity and uses this
+connection.</para>
+	</section>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Ice.Identity"><structname>Identity</structname></link></member>
+	    </simplelist></para></section>
+    </section>
+    <section id="Ice.Connection.flushBatchRequests">
+	<title><literal>flushBatchRequests</literal></title>
+<synopsis><type>void</type> <function>flushBatchRequests</function>();</synopsis>
+	<para>
+Flush any pending batch requests for this connection. This
+causes all batch requests that were sent via proxies that use
+this connection to be sent to the server.</para>
+    </section>
+    <section id="Ice.Connection.timeout">
+	<title><literal>timeout</literal></title>
+<synopsis><type>int</type> <function>timeout</function>();</synopsis>
+	<para>
+Get the timeout for the connection.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		The connection's timeout.</para>
+	</section>
+    </section>
+    <section id="Ice.Connection.toString">
+	<title><literal>toString</literal></title>
+<synopsis><type>string</type> <function>toString</function>();</synopsis>
+	<para>
+Return a description of the connection as human readable text,
+suitable for logging or error messages.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		The description of the connection as human readable
+text.</para>
+	</section>
+    </section>
+    <section id="Ice.Connection.type">
+	<title><literal>type</literal></title>
+<synopsis><type>string</type> <function>type</function>();</synopsis>
+	<para>
+Return the connection type. This corresponds to the endpoint
+type, i.e., "tcp", "udp", etc.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		The type of the connection.</para>
+	</section>
     </section>
 </section>
 <section id="Ice.ConnectionLostException">
@@ -1965,20 +2202,14 @@ idle for some time.</para>
 	<para>
 Information about the current method invocation for servers. Each
 operation on the server has a <link linkend="Ice.Current"><structname>Current</structname></link> as its implicit final
-parameter. <link linkend="Ice.Current"><structname>Current</structname></link> is mostly used for &Ice; services, such as
-&IceStorm;. Most applications ignore this parameter.</para>
+parameter. <link linkend="Ice.Current"><structname>Current</structname></link> is mostly used for &Ice; services. Most
+applications ignore this parameter.</para>
 	<section>
 	    <title>Used By</title>
 	    <para>
 	    <simplelist type="inline">
 		<member><link linkend="Ice.ServantLocator.finished"><function>ServantLocator::finished</function></link></member>
 		<member><link linkend="Ice.ServantLocator.locate"><function>ServantLocator::locate</function></link></member>
-	    </simplelist></para></section>
-	<section>
-	    <title>See Also</title>
-	    <para>
-	    <simplelist type="inline">
-		<member><link linkend="IceStorm"><type>::IceStorm</type></link></member>
 	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
@@ -1988,6 +2219,14 @@ parameter. <link linkend="Ice.Current"><structname>Current</structname></link> i
 		    <listitem>
 			<para>
 The object adapter.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Current.con"><type>con</type></link></term>
+		    <listitem>
+			<para>
+Information about the connection over which the current method
+invocation was received.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -2033,6 +2272,14 @@ The operation name.</para>
 <synopsis><link linkend="Ice.ObjectAdapter"><classname>ObjectAdapter</classname></link> <structfield>adapter</structfield>;</synopsis>
 	<para>
 The object adapter.</para>
+    </section>
+    <section id="Ice.Current.con">
+	<title><literal>con</literal></title>
+<synopsis><link linkend="Ice.Connection"><classname>Connection</classname></link> <structfield>con</structfield>;</synopsis>
+	<para>
+Information about the connection over which the current method
+invocation was received. If the invocation is direct due to
+collocation optimization, this value is set to null.</para>
     </section>
     <section id="Ice.Current.ctx">
 	<title><literal>ctx</literal></title>
@@ -2174,6 +2421,25 @@ This exception is raised if no facet with the given name exists,
 but at least one facet with the given identity exists.</para>
     </section>
 </section>
+<section id="Ice.ForcedCloseConnectionException">
+    <title><literal>Ice::ForcedCloseConnectionException</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>local exception <classname>ForcedCloseConnectionException</classname>
+    extends 
+	<link linkend="Ice.ProtocolException"><classname>ProtocolException</classname></link></synopsis>
+	<para>
+This exception is raised by an operation call if the application
+forcefully closes the connection used by this call with
+<link linkend="Ice.Connection.close"><function>Connection::close</function></link>.</para>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Ice.Connection.close"><function>Connection::close</function></link></member>
+	    </simplelist></para></section>
+    </section>
+</section>
 <section id="Ice.Identity">
     <title><literal>Ice::Identity</literal></title>
     <section>
@@ -2200,6 +2466,7 @@ object.</para>
 		<member><link linkend="Freeze.Evictor.removeFacet"><function>::Freeze::Evictor::removeFacet</function></link></member>
 		<member><link linkend="Freeze.EvictorIterator.next"><function>::Freeze::EvictorIterator::next</function></link></member>
 		<member><link linkend="Freeze.ServantInitializer.initialize"><function>::Freeze::ServantInitializer::initialize</function></link></member>
+		<member><link linkend="Ice.Connection.createProxy"><function>Connection::createProxy</function></link></member>
 		<member><link linkend="Ice.Current.id"><type>Current::id</type></link></member>
 		<member><link linkend="Ice.IdentitySeq"><type>IdentitySeq</type></link></member>
 		<member><link linkend="Ice.IllegalIdentityException.id"><type>IllegalIdentityException::id</type></link></member>
@@ -2738,6 +3005,24 @@ raised upon an error during marshaling or unmarshaling data.</para>
 		<member><link linkend="Ice.ProxyUnmarshalException"><classname>ProxyUnmarshalException</classname></link></member>
 		<member><link linkend="Ice.UnmarshalOutOfBoundsException"><classname>UnmarshalOutOfBoundsException</classname></link></member>
 	    </simplelist></para></section>
+	<section>
+	    <title>Data Member Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="Ice.MarshalException.reason"><type>reason</type></link></term>
+		    <listitem>
+			<para>
+The reason for the failure.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="Ice.MarshalException.reason">
+	<title><literal>reason</literal></title>
+<synopsis><type>string</type> <structfield>reason</structfield>;</synopsis>
+	<para>
+The reason for the failure.</para>
     </section>
 </section>
 <section id="Ice.MemoryLimitException">
@@ -3272,9 +3557,9 @@ over connections that are established from this process to
 the router. This avoids the need for the router to establish
 a separate connection back to this object adapter.
 <note><para> You can add a particular router to only a single
-object adapter. Adding the same router to more than one object adapter
-results in undefined behavior. However, it is possible to
-add different routers to different object
+object adapter. Adding the same router to more than one object
+adapter results in undefined behavior. However, it is possible
+to add different routers to different object
 adapters. </para></note></para>
 	<section>
 	    <title>Parameters</title>
@@ -3466,12 +3751,12 @@ adapter.</para>
 <synopsis><type>Object*</type> <function>createReverseProxy</function>(<link linkend="Ice.Identity"><structname>Identity</structname></link> <parameter>id</parameter>);</synopsis>
 	<para>
 Create a "reverse proxy" that matches this object adapter and
-the given identity. A reverse proxy uses connections that have
-been established from a client to this object adapter.
-<note><para> Like the <link linkend="Ice.Router"><classname>Router</classname></link> interface, this operation is
-intended to be used by router implementations. Regular user
-code should not attempt to use this operation.
-</para></note></para>
+the given identity. A reverse proxy uses the incoming
+connections that have been established from a client to this
+object adapter.
+<note><para> This operation is intended to be used by special
+services, such as <link linkend="Ice.Router"><classname>Router</classname></link> implementations. Regular user code
+should not attempt to use this operation. </para></note></para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -3488,7 +3773,7 @@ code should not attempt to use this operation.
 	    <title>Return Value</title>
 	    <para>
 		A "reverse proxy" that matches the given identity and
-this object adapter.</para>
+uses the incoming connections of this object adapter.</para>
 	</section>
 	<section>
 	    <title>See Also</title>
@@ -4393,6 +4678,13 @@ a secured endpoint.</para></note></para>
 Initiate a graceful shutdown.</para>
 		    </listitem>
 		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Process.writeMessage"><function>writeMessage</function></link></term>
+		    <listitem>
+			<para>
+Write a message on the process' stdout or stderr.</para>
+		    </listitem>
+		</varlistentry>
 	    </variablelist>
 	</section>
     </section>
@@ -4407,6 +4699,32 @@ Initiate a graceful shutdown.</para>
 	    <simplelist type="inline">
 		<member><link linkend="Ice.Communicator.shutdown"><function>Communicator::shutdown</function></link></member>
 	    </simplelist></para></section>
+    </section>
+    <section id="Ice.Process.writeMessage">
+	<title><literal>writeMessage</literal></title>
+<synopsis><type>void</type> <function>writeMessage</function>(<type>string</type> <parameter>message</parameter>,
+    <type>int</type> <parameter>fd</parameter>);</synopsis>
+	<para>
+Write a message on the process' stdout or stderr.</para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>message</parameter></term>
+		    <listitem>
+			<para>
+			    The message.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><parameter>fd</parameter></term>
+		    <listitem>
+			<para>
+			    1 for stdout, 2 for stderr.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
     </section>
 </section>
 <section id="Ice.Properties">
@@ -4824,6 +5142,7 @@ conditions.</para>
 		<member><link linkend="Ice.CompressionNotSupportedException"><classname>CompressionNotSupportedException</classname></link></member>
 		<member><link linkend="Ice.ConnectionNotValidatedException"><classname>ConnectionNotValidatedException</classname></link></member>
 		<member><link linkend="Ice.DatagramLimitException"><classname>DatagramLimitException</classname></link></member>
+		<member><link linkend="Ice.ForcedCloseConnectionException"><classname>ForcedCloseConnectionException</classname></link></member>
 		<member><link linkend="Ice.IllegalMessageSizeException"><classname>IllegalMessageSizeException</classname></link></member>
 		<member><link linkend="Ice.MarshalException"><classname>MarshalException</classname></link></member>
 		<member><link linkend="Ice.UnknownMessageException"><classname>UnknownMessageException</classname></link></member>
@@ -11247,7 +11566,7 @@ An attempt was made to call a method that references a
 	<para>
 &Glacier; is a firewall solution for Ice. &Glacier; authenticates
 and filters client requests and allows callbacks to the client in a
-secure fashion. In combination with &IceSSL;, Glacier provides a
+secure fashion. In combination with &IceSSL;, &Glacier; provides a
 security solution that is both non-intrusive and easy to configure.</para>
 	<section>
 	    <title>Interface Index</title>
@@ -11397,7 +11716,7 @@ The &Glacier; router starter permissions verifier.</para>
 		    <term><link linkend="Glacier.PermissionsVerifier.checkPermissions"><function>checkPermissions</function></link></term>
 		    <listitem>
 			<para>
-Check whether user has permission to access router.</para>
+Check whether a user has permission to access the router.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -11409,7 +11728,7 @@ Check whether user has permission to access router.</para>
     <type>string</type> <parameter>password</parameter>,
     out <type>string</type> <parameter>reason</parameter>);</synopsis>
 	<para>
-Check whether user has permission to access router.</para>
+Check whether a user has permission to access the router.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -11417,7 +11736,7 @@ Check whether user has permission to access router.</para>
 		    <term><parameter>userId</parameter></term>
 		    <listitem>
 			<para>
-			    The user id for which to check permissions.</para>
+			    The user id for which to check permission.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -11431,7 +11750,7 @@ Check whether user has permission to access router.</para>
 		    <term><parameter>reason</parameter></term>
 		    <listitem>
 			<para>
-			    The reason access was denied.</para>
+			    The reason why access was denied.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -11439,7 +11758,7 @@ Check whether user has permission to access router.</para>
 	<section>
 	    <title>Return Value</title>
 	    <para>
-		true if access is allowed, or false otherwise.</para>
+		True if access is granted, or false otherwise.</para>
 	</section>
     </section>
 </section>
@@ -11459,7 +11778,7 @@ The &Glacier; router interface.</para>
 		    <term><link linkend="Glacier.Router.createSession"><function>createSession</function></link></term>
 		    <listitem>
 			<para>
-Create a new session.</para>
+Create a session, or return a previously created session.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -11478,12 +11797,12 @@ Shutdown the router.</para>
     throws
 	<link linkend="Glacier.NoSessionManagerException"><classname>NoSessionManagerException</classname></link>;</synopsis>
 	<para>
-Create a new session. The session is automatically shutdown
-when the Router terminates.</para>
+Create a session, or return a previously created session. The
+session is automatically shutdown when the Router terminates.</para>
 	<section>
 	    <title>Return Value</title>
 	    <para>
-		A proxy to the new session.</para>
+		A proxy to the session.</para>
 	</section>
 	<section>
 	    <title>Exceptions</title>
@@ -11492,8 +11811,8 @@ when the Router terminates.</para>
 		    <term><link linkend="Glacier.NoSessionManagerException"><classname>NoSessionManagerException</classname></link></term>
 		    <listitem>
 			<para>
-			    if there is no
-configured <link linkend="Glacier.SessionManager"><classname>SessionManager</classname></link>.</para>
+			    if there is no configured
+<link linkend="Glacier.SessionManager"><classname>SessionManager</classname></link>.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>

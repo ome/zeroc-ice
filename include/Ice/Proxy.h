@@ -14,7 +14,7 @@
 #include <IceUtil/Mutex.h>
 #include <Ice/ProxyF.h>
 #include <Ice/ProxyFactoryF.h>
-#include <Ice/ConnectionF.h>
+#include <Ice/ConnectionIF.h>
 #include <Ice/EndpointF.h>
 #include <Ice/ObjectF.h>
 #include <Ice/ObjectAdapterF.h>
@@ -23,6 +23,7 @@
 //#include <Ice/RouterF.h> // Can't include RouterF.h here, otherwise we have cyclic includes
 //#include <Ice/LocatorF.h> // Can't include RouterF.h here, otherwise we have cyclic includes
 #include <Ice/Current.h>
+#include <Ice/StreamF.h>
 
 namespace IceProxy
 {
@@ -55,6 +56,9 @@ typedef ::IceInternal::ProxyHandle< ::IceProxy::Ice::Router> RouterPrx;
 typedef ::IceInternal::ProxyHandle< ::IceProxy::Ice::Locator> LocatorPrx;
 
 class LocalException;
+
+ICE_API void ice_writeObjectPrx(const ::Ice::OutputStreamPtr&, const ObjectPrx&);
+ICE_API void ice_readObjectPrx(const ::Ice::InputStreamPtr&, ObjectPrx&);
 
 }
 
@@ -122,6 +126,8 @@ public:
     ::Ice::ObjectPrx ice_collocationOptimization(bool) const;
     ::Ice::ObjectPrx ice_default() const;
 
+    ::Ice::ConnectionPtr ice_connection();
+
     ::IceInternal::ReferencePtr __reference() const;
     void __copyFrom(const ::Ice::ObjectPrx&);
     void __handleException(const ::Ice::LocalException&, int&);
@@ -161,6 +167,8 @@ public:
     virtual ::std::string ice_id(const ::Ice::Context&) = 0;
     virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 			    ::std::vector< ::Ice::Byte>&, const ::Ice::Context&) = 0;
+
+    virtual ::Ice::ConnectionPtr ice_connection() = 0;
 };
 
 } }
@@ -181,12 +189,14 @@ public:
     virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 			    ::std::vector< ::Ice::Byte>&, const ::Ice::Context&);
 
+    virtual ::Ice::ConnectionPtr ice_connection();
+
     void __copyFrom(const ::IceInternal::Handle< ::IceDelegateM::Ice::Object>&);
 
 protected:
 
     ::IceInternal::ReferencePtr __reference;
-    ::IceInternal::ConnectionPtr __connection;
+    ::Ice::ConnectionIPtr __connection;
     bool __compress;
 
 private:
@@ -210,6 +220,9 @@ public:
     virtual ::std::string ice_id(const ::Ice::Context&);
     virtual bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 			    ::std::vector< ::Ice::Byte>&, const ::Ice::Context&);
+
+    virtual ::Ice::ConnectionPtr ice_connection();
+
     void __copyFrom(const ::IceInternal::Handle< ::IceDelegateD::Ice::Object>&);
 
 protected:

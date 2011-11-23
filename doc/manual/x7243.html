@@ -1,0 +1,389 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Freeze::ServantInitializer</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="Freeze::ObjectRecord"
+HREF="x7201.html"><LINK
+REL="NEXT"
+TITLE="Freeze::Statistics"
+HREF="x7315.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x7201.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x7315.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="FREEZE.SERVANTINITIALIZER"
+></A
+><TT
+CLASS="LITERAL"
+>Freeze::ServantInitializer</TT
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN7246"
+></A
+>Overview</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local interface <TT
+CLASS="CLASSNAME"
+>ServantInitializer</TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>A servant initializer is installed in an evictor and provides the
+application with an opportunity to perform custom servant
+initialization.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN7251"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x6244.html"
+><TT
+CLASS="CLASSNAME"
+>Evictor</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN7258"
+></A
+>Operation Index</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x7243.html#FREEZE.SERVANTINITIALIZER.INITIALIZE"
+><TT
+CLASS="FUNCTION"
+>initialize</TT
+></A
+></DT
+><DD
+><P
+>Called whenever the evictor creates a new servant.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="FREEZE.SERVANTINITIALIZER.INITIALIZE"
+></A
+><TT
+CLASS="LITERAL"
+>initialize</TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>initialize</TT
+>(<A
+HREF="x3140.html"
+><TT
+CLASS="CLASSNAME"
+>::Ice::ObjectAdapter</TT
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>adapter</I
+></TT
+>,
+    <A
+HREF="x2402.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>facet</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>Object</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Called whenever the evictor creates a new servant. This
+operation allows application code to perform custom servant
+initialization after the servant has been created by the
+evictor and its persistent state has been restored.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN7284"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>adapter</I
+></TT
+></DT
+><DD
+><P
+>			    The object adapter in which the evictor is
+installed.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>identity</I
+></TT
+></DT
+><DD
+><P
+>			    The identity of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> object for which the
+servant was created.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>facet</I
+></TT
+></DT
+><DD
+><P
+>			    The facet. An empty facet means the default
+facet.</P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>servant</I
+></TT
+></DT
+><DD
+><P
+>			    The servant to initialize.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN7308"
+></A
+>See Also</H3
+><P
+>	    <A
+HREF="x2402.html"
+><SPAN
+CLASS="STRUCTNAME"
+>::Ice::Identity</SPAN
+></A
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x7201.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x7315.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Freeze::ObjectRecord</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>Freeze::Statistics</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

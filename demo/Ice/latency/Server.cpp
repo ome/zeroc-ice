@@ -11,6 +11,7 @@
 #include <Latency.h>
 
 using namespace std;
+using namespace Demo;
 
 int
 run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
@@ -31,7 +32,7 @@ main(int argc, char* argv[])
 
     try
     {
-	Ice::PropertiesPtr properties = Ice::createProperties(argc, argv);
+	Ice::PropertiesPtr properties = Ice::createProperties();
         properties->load("config");
 	communicator = Ice::initializeWithProperties(argc, argv, properties);
 	status = run(argc, argv, communicator);

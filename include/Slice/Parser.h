@@ -81,6 +81,7 @@ class Const;
 class Unit;
 class CICompare;
 class DerivedToBaseCompare;
+class ModulePartialCompare;
 
 typedef ::IceUtil::Handle<GrammarBase> GrammarBasePtr;
 typedef ::IceUtil::Handle<SyntaxTreeBase> SyntaxTreeBasePtr;
@@ -156,7 +157,6 @@ public:
 #if defined(__SUNPRO_CC)
 SLICE_API bool derivedToBaseCompare(const ExceptionPtr&, const ExceptionPtr&);
 #endif
-
 
 // ----------------------------------------------------------------------
 // ParserVisitor
@@ -237,7 +237,7 @@ public:
     virtual void destroy();
     UnitPtr unit() const;
     DefinitionContextPtr definitionContext() const; // May be nil
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
 
 protected:
 
@@ -321,6 +321,7 @@ public:
     std::string scoped() const;
     std::string scope() const;
     std::string file() const;
+    std::string line() const;
     std::string comment() const;
 
     int includeLevel() const;
@@ -363,6 +364,7 @@ protected:
     std::string _name;
     std::string _scoped;
     std::string _file;
+    std::string _line;
     std::string _comment;
     int _includeLevel;
     std::list<std::string> _metaData;
@@ -379,7 +381,8 @@ public:
     virtual void destroy();
     ModulePtr createModule(const std::string&);
     ClassDefPtr createClassDef(const std::string&, bool, const ClassList&, bool);
-    ClassDeclPtr createClassDecl(const std::string&, bool, bool);
+    // TODO: remove final (defaulted) bool parameter once deprecated features are outlawed.
+    ClassDeclPtr createClassDecl(const std::string&, bool, bool, bool = false);
     ExceptionPtr createException(const std::string&, const ExceptionPtr&, bool);
     StructPtr createStruct(const std::string&, bool);
     SequencePtr createSequence(const std::string&, const TypePtr&, bool);
@@ -399,20 +402,29 @@ public:
     DictionaryList dictionaries() const;
     EnumList enums() const;
     bool hasNonLocalClassDecls() const;
+    bool hasNonLocalClassDefs() const;
+    bool hasNonLocalSequences() const;
+    bool hasNonLocalDictionaries() const;
+    bool hasNonLocalExceptions() const;
     bool hasClassDecls() const;
     bool hasClassDefs() const;
+    bool hasAbstractClassDefs() const;
     bool hasDataOnlyClasses() const;
-    bool hasNonLocalExceptions() const;
     bool hasOtherConstructedOrExceptions() const; // Exceptions or constructed types other than classes.
     bool hasContentsWithMetaData(const std::string&) const;
+    bool hasAsyncOps() const;
     std::string thisScope() const;
     void mergeModules();
     void sort();
     void sortContents();
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
     void containerRecDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.
 
     bool checkIntroduced(const std::string&, ContainedPtr = 0);
+    // TODO: remove final (defaulted) bool parameter once deprecated features are outlawed.
+    bool nameIsLegal(const std::string&, const char *, bool = false);
+    // TODO: remove final (defaulted) bool parameter once deprecated features are outlawed.
+    bool checkForGlobalDef(const std::string&, const char *, bool = false);
 
 protected:
 
@@ -436,7 +448,7 @@ public:
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual std::string kindOf() const;
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
 
 protected:
 
@@ -481,11 +493,11 @@ public:
     virtual bool usesClasses() const;
     virtual size_t minWireSize() const;
     virtual bool isVariableLength() const;
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
     virtual std::string kindOf() const;
     virtual void recDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.
 
-    static void checkBasesAreLegal(const std::string&, bool, const ClassList&, const UnitPtr&);
+    static void checkBasesAreLegal(const std::string&, bool, bool, const ClassList&, const UnitPtr&);
 
 protected:
 
@@ -538,7 +550,7 @@ public:
     bool returnsClasses() const;
     bool returnsData() const;
     virtual std::string kindOf() const;
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
 
 protected:
 
@@ -587,7 +599,7 @@ public:
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual std::string kindOf() const;
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
 
 protected:
 
@@ -647,7 +659,7 @@ public:
     virtual bool uses(const ContainedPtr&) const;
     bool usesClasses() const;
     virtual std::string kindOf() const;
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
 
 protected:
 
@@ -675,7 +687,7 @@ public:
     virtual size_t minWireSize() const;
     virtual bool isVariableLength() const;
     virtual std::string kindOf() const;
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
     virtual void recDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.
 
 protected:
@@ -699,7 +711,7 @@ public:
     virtual size_t minWireSize() const;
     virtual bool isVariableLength() const;
     virtual std::string kindOf() const;
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
     virtual void recDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.
 
 protected:
@@ -726,7 +738,7 @@ public:
     virtual size_t minWireSize() const;
     virtual bool isVariableLength() const;
     virtual std::string kindOf() const;
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
     virtual void recDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.
 
     static bool legalKeyType(const TypePtr&);
@@ -757,7 +769,7 @@ public:
     virtual size_t minWireSize() const;
     virtual bool isVariableLength() const;
     virtual std::string kindOf() const;
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
     virtual void recDependencies(std::set<ConstructedPtr>&); // Internal operation, don't use directly.
 
 protected:
@@ -803,7 +815,7 @@ public:
     virtual bool uses(const ContainedPtr&) const;
     virtual ContainedType containedType() const;
     virtual std::string kindOf() const;
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
 
     static bool isLegalType(const std::string&, const TypePtr&, const UnitPtr&);
     static bool typesAreCompatible(const std::string&, const TypePtr&,
@@ -832,7 +844,7 @@ public:
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual std::string kindOf() const;
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
 
 protected:
 
@@ -855,7 +867,7 @@ public:
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual std::string kindOf() const;
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
 
 protected:
     
@@ -918,13 +930,14 @@ public:
     bool usesProxies() const;
     bool usesNonLocals() const;
     bool usesConsts() const;
+    bool disallowDeprecatedFeatures() const; // TODO: remove this once global definitions are outlawed.
 
     StringList includeFiles() const;
 
-    int parse(FILE*, bool);
+    int parse(FILE*, bool, bool = true); // TODO: remove third parameter once global definitions are outlawed.
 
     virtual void destroy();
-    virtual void visit(ParserVisitor*);
+    virtual void visit(ParserVisitor*, bool);
 
     BuiltinPtr builtin(Builtin::Kind); // Not const, as builtins are created on the fly. (Lazy initialization.)
 
@@ -936,6 +949,7 @@ private:
     bool _all;
     bool _allowIcePrefix;
     bool _caseSensitive;
+    bool _disallowDeprecatedFeatures; // TODO: remove this once global definitions are outlawed.
     int _errors;
     std::string _currentComment;
     int _currentLine;
@@ -949,7 +963,7 @@ private:
     std::map<std::string, ContainedList> _contentMap;
 };
 
-extern SLICE_API Unit* unit;		// The current parser for bison/flex
+extern SLICE_API Unit* unit; // The current parser for bison/flex
 
 }
 

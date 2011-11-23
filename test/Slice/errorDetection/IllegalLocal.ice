@@ -9,12 +9,12 @@
 
 
 
-
-
+module Test
+{
 
 interface i1 {};
 
-local interface i2 extends i1 {};	// OK
+local interface i2 extends i1 {};	// error
 
 interface i3 extends i2 {};		// error
 
@@ -90,4 +90,6 @@ local interface i6
 local class c7
 {
     void op() throws E;			// error
+};
+
 };

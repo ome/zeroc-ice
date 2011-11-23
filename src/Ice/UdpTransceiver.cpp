@@ -43,7 +43,12 @@ IceInternal::UdpTransceiver::close()
 }
 
 void
-IceInternal::UdpTransceiver::shutdown()
+IceInternal::UdpTransceiver::shutdownWrite()
+{
+}
+
+void
+IceInternal::UdpTransceiver::shutdownReadWrite()
 {
 }
 
@@ -108,7 +113,7 @@ repeat:
     
     if(_stats)
     {
-	_stats->bytesSent(_name, static_cast<Int>(ret));
+	_stats->bytesSent(type(), static_cast<Int>(ret));
     }
 
     assert(ret == static_cast<ssize_t>(buf.b.size()));
@@ -225,11 +230,17 @@ repeat:
 
     if(_stats)
     {
-	_stats->bytesReceived(_name, static_cast<Int>(ret));
+	_stats->bytesReceived(type(), static_cast<Int>(ret));
     }
 
     buf.b.resize(ret);
     buf.i = buf.b.end();
+}
+
+string
+IceInternal::UdpTransceiver::type() const
+{
+    return "udp";
 }
 
 string
@@ -288,7 +299,6 @@ IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const s
     _traceLevels(instance->traceLevels()),
     _logger(instance->logger()),
     _stats(instance->stats()),
-    _name("udp"),
     _incoming(true),
     _connect(connect),
     _warn(instance->properties()->getPropertyAsInt("Ice.Warn.Datagrams") > 0)

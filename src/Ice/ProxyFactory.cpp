@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <IceUtil/Thread.h>
+#include <IceUtil/Time.h>
 #include <Ice/ProxyFactory.h>
 #include <Ice/Instance.h>
 #include <Ice/Proxy.h>
@@ -60,7 +61,7 @@ IceInternal::ProxyFactory::proxyToStream(const ObjectPrx& proxy, BasicStream* s)
 {
     if(proxy)
     {
-	proxy->__reference()->identity.__write(s);
+	proxy->__reference()->getIdentity().__write(s);
 	proxy->__reference()->streamWrite(s);
     }
     else

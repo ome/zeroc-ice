@@ -7,6 +7,9 @@
 //
 // **********************************************************************
 
+module Demo
+{
+
 struct Struct1
 {
     long l;
@@ -15,6 +18,7 @@ struct Struct1
 struct Struct2
 {
     string s;
+    Struct1 s1;
 };
 
 class Class1
@@ -26,4 +30,6 @@ class Class2 extends Class1
 {
     Object obj;
     Object rec;
+};
+
 };

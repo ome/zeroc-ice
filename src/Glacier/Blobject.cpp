@@ -7,7 +7,6 @@
 //
 // **********************************************************************
 
-#include <Ice/RoutingTable.h>
 #include <Glacier/Blobject.h>
 
 using namespace std;
@@ -96,7 +95,7 @@ Glacier::TwowayThrottle::twowayFinished()
 // Compiler bug!
 // The conditional in Glacier::Blobject::Blobject below result in a
 // std::exception "thread synchronization error" at runtime
-// when using string litterals (looks like a RogueWave bug)
+// when using string literals (looks like a RogueWave bug)
 // The work around is to use static strings:
 //
 

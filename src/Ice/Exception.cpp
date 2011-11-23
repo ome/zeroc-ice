@@ -36,7 +36,7 @@ Ice::UnknownException::ice_print(ostream& out) const
     out << ":\nunknown exception";
     if(!unknown.empty())
     {
-	out << "\nunknown exception text:\n" << unknown;
+	out << ":\n" << unknown;
     }
 }
 
@@ -47,7 +47,7 @@ Ice::UnknownLocalException::ice_print(ostream& out) const
     out << ":\nunknown local exception";
     if(!unknown.empty())
     {
-	out << "\nunknown local exception text:\n" << unknown;
+	out << ":\n" << unknown;
     }
 }
 
@@ -58,7 +58,7 @@ Ice::UnknownUserException::ice_print(ostream& out) const
     out << ":\nunknown user exception";
     if(!unknown.empty())
     {
-	out << "\nunknown user exception text:\n" << unknown;
+	out << ":\n" << unknown;
     }
 }
 
@@ -326,6 +326,13 @@ Ice::CloseConnectionException::ice_print(ostream& out) const
 }
 
 void
+Ice::ForcedCloseConnectionException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\nprotocol error: connection forcefully closed";
+}
+
+void
 Ice::AbortBatchRequestException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
@@ -362,6 +369,10 @@ Ice::MarshalException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: error during marshaling or unmarshaling";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void
@@ -442,14 +453,14 @@ void
 Ice::AlreadyRegisteredException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\n" << kindOfObject << " already registered under ID `" << id << "'";
+    out << ":\n" << kindOfObject << " with id `" << id << "' is already registered";
 }
 
 void
 Ice::NotRegisteredException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\n no " << kindOfObject << " registered under ID `" << id << "'";
+    out << ":\n no " << kindOfObject << " with id `" << id << "' is registered";
 }
 
 void
