@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,7 +21,7 @@ public:
     virtual void
     callback(Ice::Int num, const Ice::Current&)
     {
-	cout << "received callback #" << num << endl;
+        cout << "received callback #" << num << endl;
     }
 };
 
@@ -42,23 +42,15 @@ main(int argc, char* argv[])
 int
 CallbackClient::run(int argc, char* argv[])
 {
-    Ice::PropertiesPtr properties = communicator()->getProperties();
-    const char* proxyProperty = "Callback.Client.CallbackServer";
-    std::string proxy = properties->getProperty(proxyProperty);
-    if(proxy.empty())
-    {
-	cerr << appName() << ": property `" << proxyProperty << "' not set" << endl;
-	return EXIT_FAILURE;
-    }
-
-    CallbackSenderPrx server = CallbackSenderPrx::checkedCast(communicator()->stringToProxy(proxy));
+    CallbackSenderPrx server = 
+        CallbackSenderPrx::checkedCast(communicator()->propertyToProxy("Callback.Client.CallbackServer"));
     if(!server)
     {
-	cerr << appName() << ": invalid proxy" << endl;
-	return EXIT_FAILURE;
+        cerr << appName() << ": invalid proxy" << endl;
+        return EXIT_FAILURE;
     }
 
-    Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Callback.Client");
+    Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("");
     Ice::Identity ident;
     ident.name = IceUtil::generateUUID();
     ident.category = "";

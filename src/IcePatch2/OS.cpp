@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -68,7 +68,7 @@ OS::getcwd(string& cwd)
     wchar_t cwdbuf[_MAX_PATH];
     if(_wgetcwd(cwdbuf, _MAX_PATH) == NULL)
     {
-	return -1;
+        return -1;
     }
     cwd = IceUtil::wstringToString(cwdbuf);
     return 0;
@@ -124,7 +124,7 @@ OS::getcwd(string& cwd)
     char cwdbuf[PATH_MAX];
     if(::getcwd(cwdbuf, PATH_MAX) == NULL)
     {
-	return -1;
+        return -1;
     }
     cwd = cwdbuf;
     return 0;

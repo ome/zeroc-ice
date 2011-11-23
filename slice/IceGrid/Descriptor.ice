@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -30,7 +30,18 @@ dictionary<string, string> StringStringDict;
  **/
 struct PropertyDescriptor
 {
+    /**
+     *
+     * The name of the property.
+     *
+     **/
     string name;
+
+    /**
+     *
+     * The value of the property.
+     *
+     **/
     string value;
 };
 
@@ -72,7 +83,7 @@ dictionary<string, PropertySetDescriptor> PropertySetDescriptorDict;
 
 /**
  *
- * An &Ice; object descriptor.
+ * An Ice object descriptor.
  * 
  **/
 struct ObjectDescriptor
@@ -101,7 +112,7 @@ struct ObjectDescriptor
 
 /**
  *
- * An &Ice; object adapter descriptor.
+ * An Ice object adapter descriptor.
  *
  **/
 struct AdapterDescriptor
@@ -136,6 +147,15 @@ struct AdapterDescriptor
 
     /**
      *
+     * The adapter priority. This is eventually used when the adapter
+     * is member of a replica group to sort the adapter endpoints by
+     * priority.
+     * 
+     **/
+    string priority;
+
+    /**
+     *
      * Flag to specify if the object adapter will register a process object.
      *
      **/
@@ -143,11 +163,13 @@ struct AdapterDescriptor
 
     /**
      *
-     * If true the activator will wait for this object adapter
-     * activation to mark the server as active.
+     * If true the lifetime of this object adapter is the same of the
+     * server lifetime. This information is used by the IceGrid node
+     * to figure out the server state: the server is active only if
+     * all its "server lifetime" adapters are active.
      *
      **/
-    bool waitForActivation;
+    bool serverLifetime;
 
     /**
      *
@@ -173,7 +195,7 @@ struct AdapterDescriptor
 
 /**
  *
- * A &Freeze; database environment descriptor.
+ * A Freeze database environment descriptor.
  *
  **/
 struct DbEnvDescriptor
@@ -247,6 +269,13 @@ class CommunicatorDescriptor
 
     /**
      *
+     * The path of each log file.
+     *
+     **/
+    Ice::StringSeq logs;
+
+    /**
+     *
      * A description of this descriptor.
      *
      **/
@@ -255,7 +284,7 @@ class CommunicatorDescriptor
 
 /**
  *
- * A distribution descriptor defines an &IcePatch2; server and the
+ * A distribution descriptor defines an IcePatch2 server and the
  * directories to retrieve from the patch server.
  *
  **/
@@ -270,7 +299,7 @@ struct DistributionDescriptor
 
 /**
  *
- * An &Ice; server descriptor.
+ * An Ice server descriptor.
  *
  **/
 class ServerDescriptor extends CommunicatorDescriptor
@@ -373,7 +402,7 @@ class ServerDescriptor extends CommunicatorDescriptor
 
 /**
  *
- * An &IceBox; service descriptor.
+ * An IceBox service descriptor.
  *
  **/
 class ServiceDescriptor extends CommunicatorDescriptor
@@ -387,7 +416,7 @@ class ServiceDescriptor extends CommunicatorDescriptor
 
     /**
      *
-     * The entry point of the &IceBox; service.
+     * The entry point of the IceBox service.
      * 
      **/
     string entry;
@@ -427,6 +456,14 @@ struct ServerInstanceDescriptor
      *
      **/
     PropertySetDescriptor propertySet;
+
+    /**
+     *
+     * The services property sets. It's only valid to set these
+     * property sets if the template is an IceBox server template.
+     *
+     **/
+    PropertySetDescriptorDict servicePropertySets;
 };
 
 /**
@@ -518,7 +555,7 @@ struct ServiceInstanceDescriptor
 
 /**
  *
- * An &IceBox; server descriptor.
+ * An IceBox server descriptor.
  *
  **/
 class IceBoxDescriptor extends ServerDescriptor
@@ -610,6 +647,15 @@ class LoadBalancingPolicy
  *
  **/
 class RandomLoadBalancingPolicy extends LoadBalancingPolicy
+{
+};
+
+/**
+ *
+ * Ordered load balancing policy.
+ *
+ **/
+class OrderedLoadBalancingPolicy extends LoadBalancingPolicy
 {
 };
 
@@ -847,7 +893,7 @@ struct NodeUpdateDescriptor
     /**
      *
      * The updated load factor of the node (or null if the load factor
-     * wasn't updated.)
+     * was not updated).
      *
      **/
     BoxedString loadFactor;

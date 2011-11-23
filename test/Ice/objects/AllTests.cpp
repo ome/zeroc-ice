@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,22 +31,22 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 
     cout << "testing constructor, copy constructor, and assignment operator... " << flush;
 
-    Base ba1;
-    test(ba1.theS.str == "");
-    test(ba1.str == "");
+    BasePtr ba1 = new Base;
+    test(ba1->theS.str == "");
+    test(ba1->str == "");
 
     S s;
     s.str = "hello";
-    Base ba2(s, "hi");
-    test(ba2.theS.str == "hello");
-    test(ba2.str == "hi");
+    BasePtr ba2 = new Base(s, "hi");
+    test(ba2->theS.str == "hello");
+    test(ba2->str == "hi");
 
-    ba1 = ba2;
-    test(ba1.theS.str == "hello");
-    test(ba1.str == "hi");
+    *ba1 = *ba2;
+    test(ba1->theS.str == "hello");
+    test(ba1->str == "hi");
 
     BasePtr bp1 = new Base();
-    *bp1 = ba2;
+    *bp1 = *ba2;
     test(bp1->theS.str == "hello");
     test(bp1->str == "hi");
 
@@ -137,6 +137,36 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
         test(d->theB->theC->postUnmarshalInvoked());
     }
     cout << "ok" << endl;
+
+    if(!collocated)
+    {
+        cout << "testing UnexpectedObjectException... " << flush;
+        ref = "uoet:default -p 12010 -t 10000";
+        base = communicator->stringToProxy(ref);
+        test(base);
+        UnexpectedObjectExceptionTestPrx uoet = UnexpectedObjectExceptionTestPrx::uncheckedCast(base);
+        test(uoet);
+        try
+        {
+            uoet->op();
+            test(false);
+        }
+        catch(const Ice::UnexpectedObjectException& ex)
+        {
+            test(ex.type == "::Test::AlsoEmpty");
+            test(ex.expectedType == "::Test::Empty");
+        }
+        catch(const Ice::Exception& ex)
+        {
+            cout << ex << endl;
+            test(false);
+        }
+        catch(...)
+        {
+            test(false);
+        }
+        cout << "ok" << endl;
+    }
 
     return initial;
 }

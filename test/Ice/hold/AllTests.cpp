@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -32,7 +32,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
     cout << "changing state between active and hold rapidly... " << flush;
     for(int i = 0; i < 100; ++i)
     {
-	hold->putOnHold(0);
+        hold->putOnHold(0);
     }
     cout << "ok" << endl;
 

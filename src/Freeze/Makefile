@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -18,11 +18,9 @@ TARGETS		= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(li
 
 OBJS		= CatalogData.o \
                   Catalog.o \
-		  ConnectionF.o \
-                  ConnectionI.o \
+		  ConnectionI.o \
                   Connection.o \
 		  DB.o \
-		  EvictorF.o \
 		  EvictorI.o \
                   EvictorIteratorI.o \
 		  Evictor.o \
@@ -51,10 +49,11 @@ SLICE_SRCS	= $(SDIR)/DB.ice \
 		  $(SDIR)/EvictorStorage.ice \
 		  $(SDIR)/Evictor.ice \
                   $(SDIR)/Transaction.ice \
-		  PingObject.ice
+		  ../Freeze/PingObject.ice
 
 HDIR		= $(includedir)/Freeze
 SDIR		= $(slicedir)/Freeze
+
 
 include $(top_srcdir)/config/Make.rules
 

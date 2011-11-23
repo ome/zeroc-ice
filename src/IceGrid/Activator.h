@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -32,14 +32,14 @@ class Activator : public IceUtil::Monitor< IceUtil::Mutex>, public IceUtil::Shar
 {
 public:
 
-    Activator(const TraceLevelsPtr&, const Ice::PropertiesPtr&);
+    Activator(const TraceLevelsPtr&);
     virtual ~Activator();
 
     virtual int activate(const std::string&, const std::string&, const std::string&,
 #ifndef _WIN32
-			 uid_t, gid_t, 
+                         uid_t, gid_t, 
 #endif
-			 const Ice::StringSeq&, const Ice::StringSeq&, const ServerIPtr&);
+                         const Ice::StringSeq&, const Ice::StringSeq&, const ServerIPtr&);
     virtual void deactivate(const std::string&, const Ice::ProcessPrx&);
     virtual void kill(const std::string&);
     virtual void sendSignal(const std::string&, const std::string&);
@@ -57,8 +57,6 @@ public:
 
 private:
 
-    void deactivateAll();    
-
     void terminationListener();
     void clearInterrupt();
     void setInterrupt();
@@ -69,15 +67,14 @@ private:
         DWORD pid;
         HANDLE hnd;
 #else
-	pid_t pid;
-	int pipeFd;
-	std::string msg;
+        pid_t pid;
+        int pipeFd;
+        std::string msg;
 #endif
-	ServerIPtr server;
+        ServerIPtr server;
     };
 
     TraceLevelsPtr _traceLevels;
-    Ice::PropertiesPtr _properties;
     std::map<std::string, Process> _processes;
     bool _deactivating;
 
@@ -87,11 +84,6 @@ private:
     int _fdIntrRead;
     int _fdIntrWrite;
 #endif
-
-    std::vector<std::string> _propertiesOverride;
-
-    std::string _outputDir;
-    bool _redirectErrToOut;
 
     IceUtil::ThreadPtr _thread;
 };

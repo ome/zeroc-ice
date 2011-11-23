@@ -11,10 +11,9 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, 59 Temple Place - Suite 330,
-Boston, MA 02111-1307, USA.
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
  In other words, you are welcome to use, share and improve this program.
  You are forbidden to forbid anyone else to use, share and improve
@@ -246,10 +245,19 @@ static void integer_overflow PROTO((void));
 //
 // Required to allow the code to compile with VC 8 with bison 2.1.
 //
-#if _MSC_VER==1400
+#if defined(_MSC_VER) && _MSC_VER == 1400
 #   define __STDC__
 #   define YYMALLOC
 #   define YYFREE
+#endif
+
+//
+// Required to allow the code to compile with VC 6 and VC 71 with
+// bison 2.3.
+//
+#if defined(_MSC_VER) && _MSC_VER < 1400
+#   define YYMALLOC malloc
+#   define YYFREE free
 #endif
 
 %}

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,7 +20,7 @@ class PhoneBookServer : public Ice::Application
 public:
     
     PhoneBookServer(const string& envName) :
-	_envName(envName)
+        _envName(envName)
     {
     }
 
@@ -71,10 +71,10 @@ PhoneBookServer::run(int argc, char* argv[])
     Freeze::EvictorPtr evictor = Freeze::createEvictor(adapter, _envName, "contacts", 0, indices);
     adapter->addServantLocator(evictor, "contact");
 
-    Ice::Int evictorSize = properties->getPropertyAsInt("PhoneBook.EvictorSize");
+    Ice::Int evictorSize = properties->getPropertyAsInt("EvictorSize");
     if(evictorSize > 0)
     {
-	evictor->setSize(evictorSize);
+        evictor->setSize(evictorSize);
     }
 
     //

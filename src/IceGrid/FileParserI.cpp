@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,11 +20,12 @@ FileParserI::parse(const string& file, const AdminPrx& admin, const Ice::Current
 {
     try
     {
-	return DescriptorParser::parseDescriptor(file, Ice::StringSeq(), map<string, string>(),
-						 current.adapter->getCommunicator(), admin);
+        return DescriptorParser::parseDescriptor(file, Ice::StringSeq(), map<string, string>(),
+                                                 current.adapter->getCommunicator(), admin);
     }
     catch(const IceXML::ParserException& e)
     {
-	throw ParseException(e.reason());
+        throw ParseException(e.reason());
+        return ApplicationDescriptor();
     }
 }

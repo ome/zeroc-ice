@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,7 +10,6 @@
 #ifndef ICE_LOGGER_I_H
 #define ICE_LOGGER_I_H
 
-#include <IceUtil/Mutex.h>
 #include <Ice/Logger.h>
 
 namespace Ice
@@ -20,7 +19,7 @@ class LoggerI : public Logger
 {
 public:
 
-    LoggerI(const std::string&, bool);
+    LoggerI(const std::string&);
 
     virtual void print(const std::string&);
     virtual void trace(const std::string&, const std::string&);
@@ -30,15 +29,9 @@ public:
 private:
 
     std::string _prefix;
-    std::string _emptyPrefix;
-    bool _timestamp;
-
-    //
-    // A global mutex is used to avoid garbled output with multiple
-    // communicators.
-    //
-    static IceUtil::Mutex _globalMutex;
 };
+
+typedef IceUtil::Handle<LoggerI> LoggerIPtr;
 
 }
 

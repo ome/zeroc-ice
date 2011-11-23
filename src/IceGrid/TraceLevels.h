@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,7 +11,7 @@
 #define ICE_GRID_TRACE_LEVELS_H
 
 #include <IceUtil/Shared.h>
-#include <Ice/PropertiesF.h>
+#include <Ice/CommunicatorF.h>
 #include <Ice/LoggerF.h>
 
 namespace IceGrid
@@ -21,7 +21,7 @@ class TraceLevels : public ::IceUtil::Shared
 {
 public:
 
-    TraceLevels(const ::Ice::PropertiesPtr&, const Ice::LoggerPtr&, bool);
+    TraceLevels(const Ice::CommunicatorPtr&, const std::string&);
     virtual ~TraceLevels();
 
     const int application;
@@ -29,6 +29,9 @@ public:
 
     const int node;
     const char* nodeCat;
+
+    const int replica;
+    const char* replicaCat;
 
     const int server;
     const char* serverCat;

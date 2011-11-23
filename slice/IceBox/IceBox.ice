@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,8 +17,8 @@
 
 /**
  *
- * &IceBox; is an application server specifically for &Ice;
- * applications. &IceBox; can easily run and administer Ice services
+ * IceBox is an application server specifically for Ice
+ * applications. IceBox can easily run and administer Ice services
  * that are dynamically loaded as a DLL, shared library, or Java
  * class.
  *
@@ -28,8 +28,9 @@ module IceBox
     
 /**
  *
- * Indicates a failure occurred. For example, if a service encounters
- * an error during initialization, or if the service manager is unable
+ * This exception is a general failure notification. It is thrown
+ * for errors such as a service encountering an error during
+ * initialization, or the service manager being unable
  * to load a service executable.
  *
  **/
@@ -41,6 +42,37 @@ local exception FailureException
      *
      **/
     string reason;
+};
+
+
+/**
+ *
+ * This exception is thrown if an attempt is made to start an
+ * already-started service.
+ *
+ **/
+exception AlreadyStartedException
+{
+};
+
+/**
+ *
+ * This exception is thrown if an attempt is made to stop an
+ * already-stopped service.
+ *
+ **/
+exception AlreadyStoppedException
+{
+};
+
+/**
+ *
+ * This exception is thrown if a service name does not refer
+ * to an existing service.
+ *
+ **/
+exception NoSuchServiceException
+{
 };
 
 /**
@@ -57,8 +89,8 @@ local interface Service
      * also be used by other services, depending on the service
      * configuration.
      *
-     * <note><para>The [ServiceManager] owns this communicator, and is
-     * responsible for destroying it.</para></note>
+     * <p class="Note">The [ServiceManager] owns this communicator, and is
+     * responsible for destroying it.
      *
      * @param name The service's name, as determined by the
      * configuration.
@@ -97,11 +129,31 @@ interface ServiceManager
      * @return A dictionary mapping Slice type ids to their checksums.
      *
      **/
-    nonmutating Ice::SliceChecksumDict getSliceChecksums();
+    ["nonmutating", "cpp:const"] idempotent Ice::SliceChecksumDict getSliceChecksums();
 
     /**
      *
-     * Shutdown all services. This will cause [Service::stop] to be
+     * Start an individual service.
+     * 
+     * @param service The service name.
+     *
+     **/
+    void startService(string service)
+        throws AlreadyStartedException, NoSuchServiceException;
+
+    /**
+     *
+     * Stop an individual service.
+     * 
+     * @param service The service name.
+     *
+     **/
+    void stopService(string service)
+        throws AlreadyStoppedException, NoSuchServiceException;
+
+    /**
+     *
+     * Shut down all services. This causes [Service::stop] to be
      * invoked on all configured services.
      *
      **/

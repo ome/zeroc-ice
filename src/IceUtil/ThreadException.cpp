@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,7 +19,7 @@ IceUtil::ThreadSyscallException::ThreadSyscallException(const char* file, int li
     
 const char* IceUtil::ThreadSyscallException::_name = "IceUtil::ThreadSyscallException";
 
-const string
+string
 IceUtil::ThreadSyscallException::ice_name() const
 {
     return _name;
@@ -31,30 +31,30 @@ IceUtil::ThreadSyscallException::ice_print(ostream& os) const
     Exception::ice_print(os);
     if(_error != 0)
     {
-	os << ":\nthread syscall exception: ";
+        os << ":\nthread syscall exception: ";
 #ifdef _WIN32
-	LPVOID lpMsgBuf = 0;
-	DWORD ok = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-				 FORMAT_MESSAGE_FROM_SYSTEM |
-				 FORMAT_MESSAGE_IGNORE_INSERTS,
-				 NULL,
-				 _error,
-				 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-				 (LPTSTR)&lpMsgBuf,
-				 0,
-				 NULL);
-	
-	if(ok)
-	{
-	    LPCTSTR msg = (LPCTSTR)lpMsgBuf;
-	    assert(msg && strlen((char*)msg) > 0);
-	    os << msg;
-	    LocalFree(lpMsgBuf);
-	}
-	else
-	{
-	    os << "unknown thread error";
-	}
+        LPVOID lpMsgBuf = 0;
+        DWORD ok = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                                 FORMAT_MESSAGE_FROM_SYSTEM |
+                                 FORMAT_MESSAGE_IGNORE_INSERTS,
+                                 NULL,
+                                 _error,
+                                 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+                                 (LPTSTR)&lpMsgBuf,
+                                 0,
+                                 NULL);
+        
+        if(ok)
+        {
+            LPCTSTR msg = (LPCTSTR)lpMsgBuf;
+            assert(msg && strlen((char*)msg) > 0);
+            os << msg;
+            LocalFree(lpMsgBuf);
+        }
+        else
+        {
+            os << "unknown thread error";
+        }
 #else
         os << strerror(_error);
 #endif
@@ -87,7 +87,7 @@ IceUtil::ThreadLockedException::ThreadLockedException(const char* file, int line
 
 const char* IceUtil::ThreadLockedException::_name = "IceUtil::ThreadLockedException";
 
-const string
+string
 IceUtil::ThreadLockedException::ice_name() const
 {
     return _name;
@@ -112,7 +112,7 @@ IceUtil::ThreadStartedException::ThreadStartedException(const char* file, int li
 
 const char* IceUtil::ThreadStartedException::_name = "IceUtil::ThreadStartedException";
 
-const string
+string
 IceUtil::ThreadStartedException::ice_name() const
 {
     return _name;
@@ -137,7 +137,7 @@ IceUtil::ThreadNotStartedException::ThreadNotStartedException(const char* file, 
 
 const char* IceUtil::ThreadNotStartedException::_name = "IceUtil::ThreadNotStartedException";
 
-const string
+string
 IceUtil::ThreadNotStartedException::ice_name() const
 {
     return _name;
@@ -163,7 +163,7 @@ IceUtil::BadThreadControlException::BadThreadControlException(const char* file, 
 
 const char* IceUtil::BadThreadControlException::_name = "IceUtil::BadThreadControlException";
 
-const string
+string
 IceUtil::BadThreadControlException::ice_name() const
 {
     return _name;

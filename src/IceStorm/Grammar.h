@@ -1,7 +1,7 @@
-/* A Bison parser, made by GNU Bison 2.1.  */
+/* A Bison parser, made by GNU Bison 1.875c.  */
 
 /* Skeleton parser for Yacc-like parsing with Bison,
-   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,8 +15,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA 02111-1307, USA.  */
 
 /* As a special exception, when this file is copied by Bison into a
    Bison output file, you may use that output file without restriction.
@@ -31,31 +31,26 @@
    enum yytokentype {
      ICE_STORM_HELP = 258,
      ICE_STORM_EXIT = 259,
-     ICE_STORM_CREATE = 260,
-     ICE_STORM_DESTROY = 261,
-     ICE_STORM_LIST = 262,
+     ICE_STORM_CURRENT = 260,
+     ICE_STORM_CREATE = 261,
+     ICE_STORM_DESTROY = 262,
      ICE_STORM_LINK = 263,
      ICE_STORM_UNLINK = 264,
-     ICE_STORM_GRAPH = 265,
-     ICE_STORM_STRING = 266,
-     ICE_STORM_SHOW = 267,
-     ICE_STORM_COPYING = 268,
-     ICE_STORM_WARRANTY = 269
+     ICE_STORM_LINKS = 265,
+     ICE_STORM_TOPICS = 266,
+     ICE_STORM_STRING = 267
    };
 #endif
-/* Tokens.  */
 #define ICE_STORM_HELP 258
 #define ICE_STORM_EXIT 259
-#define ICE_STORM_CREATE 260
-#define ICE_STORM_DESTROY 261
-#define ICE_STORM_LIST 262
+#define ICE_STORM_CURRENT 260
+#define ICE_STORM_CREATE 261
+#define ICE_STORM_DESTROY 262
 #define ICE_STORM_LINK 263
 #define ICE_STORM_UNLINK 264
-#define ICE_STORM_GRAPH 265
-#define ICE_STORM_STRING 266
-#define ICE_STORM_SHOW 267
-#define ICE_STORM_COPYING 268
-#define ICE_STORM_WARRANTY 269
+#define ICE_STORM_LINKS 265
+#define ICE_STORM_TOPICS 266
+#define ICE_STORM_STRING 267
 
 
 

@@ -13,17 +13,17 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with GNU CC; see the file COPYING.  If not, write to
-the Free Software Foundation, 59 Temple Place - Suite 330,
-Boston, MA 02111-1307, USA.  */
+You should have received a copy of the GNU General Public License along
+with GNU CC; see the file COPYING.  If not, write to the Free Software
+Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+*/
 
 /* This file mimics some of the support provided by include/ansidecl.h
    in binutils and gdb releases.
    ??? Over time the two should be merged into one.  */
 
-#ifndef	ANSIDECL_H
-#define	ANSIDECL_H
+#ifndef ANSIDECL_H
+#define ANSIDECL_H
 
 /* Add prototype support.  */
 #ifndef PROTO
@@ -36,11 +36,11 @@ Boston, MA 02111-1307, USA.  */
 
 #ifndef VPROTO
 #ifdef __STDC__
-#define PVPROTO(ARGS)		ARGS
+#define PVPROTO(ARGS)           ARGS
 #define VPROTO(ARGS)            ARGS
 #define VA_START(va_list,var)  va_start(va_list,var)
 #else
-#define PVPROTO(ARGS)		()
+#define PVPROTO(ARGS)           ()
 #define VPROTO(ARGS)            (va_alist) va_dcl
 #define VA_START(va_list,var)  va_start(va_list)
 #endif
@@ -66,11 +66,11 @@ Boston, MA 02111-1307, USA.  */
 
 #ifdef __STDC__
 
-#define	PTR void *
+#define PTR void *
 
 #else
 
-#define	PTR char *
+#define PTR char *
 #ifndef const
 #define const
 #endif

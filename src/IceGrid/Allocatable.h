@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -58,10 +58,10 @@ private:
 
     enum State
     {
-	Initial,
-	Pending,
-	Canceled,
-	Allocated
+        Initial,
+        Pending,
+        Canceled,
+        Allocated
     };
 
     const SessionIPtr _session;
@@ -80,7 +80,7 @@ public:
     virtual void checkAllocatable();
     virtual bool allocate(const AllocationRequestPtr&, bool = false);
     virtual bool tryAllocate(const AllocationRequestPtr&, bool = false);
-    virtual bool release(const SessionIPtr&, bool = false);
+    virtual void release(const SessionIPtr&, bool = false);
 
     bool isAllocatable() const { return _allocatable; }
     SessionIPtr getSession() const;
@@ -89,18 +89,21 @@ public:
     virtual void released(const SessionIPtr&) = 0;
     virtual bool canTryAllocate() { return false; }
 
+    virtual void allocatedNoSync(const SessionIPtr&) { ; }
+    virtual void releasedNoSync(const SessionIPtr&) { ; }
+
     bool operator<(const Allocatable&) const;
 
 protected:
 
     bool allocate(const AllocationRequestPtr&, bool, bool);
+    void queueAllocationAttemptFromChild(const AllocatablePtr&);
     bool allocateFromChild(const AllocationRequestPtr&, const AllocatablePtr&, bool, bool);
     
     void queueAllocationAttempt(const AllocatablePtr&, const AllocationRequestPtr&, bool);
-    void queueAllocationAttemptFromChild(const AllocatablePtr&);
     AllocatablePtr dequeueAllocationAttempt(AllocationRequestPtr&);
 
-    const bool _allocatable;
+    bool _allocatable;
     const AllocatablePtr _parent;
     
     std::list<std::pair<AllocatablePtr, AllocationRequestPtr> > _requests;

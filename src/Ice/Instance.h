@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,8 +15,6 @@
 #include <IceUtil/RecMutex.h>
 #include <Ice/InstanceF.h>
 #include <Ice/CommunicatorF.h>
-#include <Ice/PropertiesF.h>
-#include <Ice/LoggerF.h>
 #include <Ice/StatsF.h>
 #include <Ice/TraceLevelsF.h>
 #include <Ice/DefaultsAndOverridesF.h>
@@ -33,6 +31,8 @@
 #include <Ice/DynamicLibraryF.h>
 #include <Ice/PluginF.h>
 #include <Ice/Initialize.h>
+#include <Ice/SharedContext.h>
+#include <Ice/ImplicitContextI.h>
 #include <list>
 
 namespace Ice
@@ -74,10 +74,16 @@ public:
     Ice::Int serverACM() const;
     void flushBatchRequests();
     void setDefaultContext(const ::Ice::Context&);
-    ::Ice::Context getDefaultContext() const;
+    SharedContextPtr getDefaultContext() const;
     Ice::Identity stringToIdentity(const std::string&) const;
+
     std::string identityToString(const Ice::Identity&) const;
     
+    const Ice::ImplicitContextIPtr& getImplicitContext() const
+    {
+        return _implicitContext;
+    }
+
 private:
 
     Instance(const Ice::CommunicatorPtr&, const Ice::InitializationData&);
@@ -88,9 +94,9 @@ private:
 
     enum State
     {
-	StateActive,
-	StateDestroyInProgress,
-	StateDestroyed
+        StateActive,
+        StateDestroyInProgress,
+        StateDestroyed
     };
     State _state;
     Ice::InitializationData _initData;
@@ -114,7 +120,8 @@ private:
     EndpointFactoryManagerPtr _endpointFactoryManager;
     DynamicLibraryListPtr _dynamicLibraryList;
     Ice::PluginManagerPtr _pluginManager;
-    Ice::Context _defaultContext;
+    SharedContextPtr _defaultContext;
+    const Ice::ImplicitContextIPtr _implicitContext;
 };
 
 class UTF8BufferI : public Ice::UTF8Buffer

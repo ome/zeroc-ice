@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -21,6 +21,7 @@ LIBTARGETS	= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(
 TARGETS         = $(LIBTARGETS) $(NODE_SERVER) $(REGISTRY_SERVER) $(ADMIN)
 
 LIB_OBJS	= Admin.o \
+		  Locator.o \
 		  Query.o \
 	 	  Exception.o \
 		  Descriptor.o \
@@ -44,17 +45,19 @@ ADMIN_OBJS	= Grammar.o \
 COMMON_OBJS	= Internal.o \
                   DescriptorParser.o \
                   DescriptorBuilder.o \
-		  TraceLevels.o
+		  TraceLevels.o \
+		  FileCache.o \
+		  PlatformInfo.o
 
 NODE_OBJS	= NodeI.o \
 		  ServerI.o \
 		  ServerAdapterI.o \
 	          Activator.o \
-		  PlatformInfo.o
+		  NodeSessionManager.o
 
 REGISTRY_OBJS   = RegistryI.o \
 	  	  InternalRegistryI.o \
-		  StringApplicationDescriptorDict.o \
+		  StringApplicationInfoDict.o \
 		  IdentityObjectInfoDict.o \
 		  StringAdapterInfoDict.o \
 		  Database.o \
@@ -64,12 +67,14 @@ REGISTRY_OBJS   = RegistryI.o \
 		  AllocatableObjectCache.o \
 		  ServerCache.o \
 		  NodeCache.o \
+		  ReplicaCache.o \
 		  LocatorI.o \
 		  LocatorRegistryI.o \
 		  AdminI.o \
 		  Util.o \
 		  DescriptorHelper.o \
 		  NodeSessionI.o \
+		  ReplicaSessionI.o \
 		  ReapThread.o \
 		  SessionI.o \
 		  AdminSessionI.o \
@@ -77,7 +82,9 @@ REGISTRY_OBJS   = RegistryI.o \
 		  Topics.o \
 		  QueryI.o \
 		  WaitQueue.o \
-		  FileUserAccountMapperI.o 
+		  FileUserAccountMapperI.o \
+		  ReplicaSessionManager.o \
+		  WellKnownObjectsManager.o
 
 NODE_SVR_OBJS 	= $(COMMON_OBJS) \
 		  $(NODE_OBJS) \
@@ -100,13 +107,14 @@ SRCS		= $(LIB_OBJS:.o=.cpp) \
 SLICE_SRCS	= $(SDIR)/Admin.ice \
                   $(SDIR)/Exception.ice \
                   $(SDIR)/FileParser.ice \
+                  $(SDIR)/Locator.ice \
                   $(SDIR)/Query.ice \
+		  $(SDIR)/Registry.ice \
 		  $(SDIR)/Session.ice \
 		  $(SDIR)/Observer.ice \
 		  $(SDIR)/Descriptor.ice \
 		  $(SDIR)/UserAccountMapper.ice \
-		  $(SDIR)/Registry.ice \
-		  Internal.ice
+		  ../IceGrid/Internal.ice
 
 HDIR		= $(includedir)/IceGrid
 LOCAL_HDIR	= ../IceGrid
@@ -153,13 +161,13 @@ $(LOCAL_HDIR)/%.h %.cpp: $(SDIR)/%.ice $(SLICE2CPP)
 	rm -f $(HDIR)/$(*F).h $(*F).cpp
 	$(SLICE2CPP) $(SLICE2CPPFLAGS) $(SDIR)/$(*F).ice
 
-$(LOCAL_HDIR)/StringApplicationDescriptorDict.h StringApplicationDescriptorDict.cpp: $(SLICE2FREEZE)
-	rm -f StringApplicationDescriptorDict.h StringApplicationDescriptorDict.cpp
-	$(SLICE2FREEZECMD) --dict IceGrid::StringApplicationDescriptorDict,string,IceGrid::ApplicationDescriptor \
-	StringApplicationDescriptorDict ../../slice/IceGrid/Admin.ice
+$(LOCAL_HDIR)/StringApplicationInfoDict.h StringApplicationInfoDict.cpp: $(SLICE2FREEZE)
+	rm -f StringApplicationInfoDict.h StringApplicationInfoDict.cpp
+	$(SLICE2FREEZECMD) --dict IceGrid::StringApplicationInfoDict,string,IceGrid::ApplicationInfo \
+	StringApplicationInfoDict $(LOCAL_SDIR)/Internal.ice
 
 clean::
-	rm -f StringApplicationDescriptorDict.h StringApplicationDescriptorDict.cpp
+	rm -f StringApplicationInfoDict.h StringApplicationInfoDict.cpp
 
 $(LOCAL_HDIR)/IdentityObjectInfoDict.h IdentityObjectInfoDict.cpp: $(SLICE2FREEZE)
 	rm -f IdentityObjectInfoDict.h IdentityObjectInfoDict.cpp

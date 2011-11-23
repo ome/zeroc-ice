@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,7 +20,7 @@ class Blobject : public Ice::BlobjectArrayAsync
 {
 public:
     
-    Blobject(const Ice::CommunicatorPtr&, bool);
+    Blobject(const Ice::CommunicatorPtr&, bool, const Ice::Context&);
     virtual ~Blobject();
 
     virtual void destroy();
@@ -28,7 +28,7 @@ public:
 protected:
 
     void invoke(Ice::ObjectPrx&, const Ice::AMD_Array_Object_ice_invokePtr&, 
-    		const std::pair<const Ice::Byte*, const Ice::Byte*>&, const Ice::Current&);
+                const std::pair<const Ice::Byte*, const Ice::Byte*>&, const Ice::Current&);
 
     const Ice::CommunicatorPtr _communicator;
     const Ice::PropertiesPtr _properties;
@@ -43,6 +43,7 @@ private:
     const int _requestTraceLevel;
     const int _overrideTraceLevel;
     const RequestQueuePtr _requestQueue;
+    const Ice::Context _sslContext;
 };
 
 }

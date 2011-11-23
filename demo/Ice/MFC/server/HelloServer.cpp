@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -51,11 +51,11 @@ BOOL CHelloServerApp::InitInstance()
     try
     {
         int argc = 0;
-	Ice::InitializationData initData;
+        Ice::InitializationData initData;
         initData.properties = Ice::createProperties();
-	initData.properties->load("config");
+        initData.properties->load("config");
         log = new LogI;
-	initData.logger = log;
+        initData.logger = log;
         communicator = Ice::initialize(argc, 0, initData);
         adapter = communicator->createObjectAdapter("Hello");
     }

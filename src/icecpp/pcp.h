@@ -13,10 +13,10 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with GNU CC; see the file COPYING.  If not, write to
-the Free Software Foundation, 59 Temple Place - Suite 330,
-Boston, MA 02111-1307, USA.  */
+You should have received a copy of the GNU General Public License along
+with GNU CC; see the file COPYING.  If not, write to the Free Software
+Foundation,  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+*/
 
 
 
@@ -24,13 +24,13 @@ Boston, MA 02111-1307, USA.  */
 typedef struct stringdef STRINGDEF;
 struct stringdef
 {
-  U_CHAR *contents;		/* String to include */
-  int len;			/* Its length */
-  int writeflag;		/* Whether we write this */
-  int lineno;			/* Linenumber of source file */
-  U_CHAR *filename;		/* Name of source file */
-  STRINGDEF *chain;		/* Global list of strings in natural order */
-  int output_mark;		/* Where in the output this goes */
+  U_CHAR *contents;             /* String to include */
+  int len;                      /* Its length */
+  int writeflag;                /* Whether we write this */
+  int lineno;                   /* Linenumber of source file */
+  U_CHAR *filename;             /* Name of source file */
+  STRINGDEF *chain;             /* Global list of strings in natural order */
+  int output_mark;              /* Where in the output this goes */
 };
 
 typedef struct keydef KEYDEF;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -42,7 +42,7 @@ int
 CallbackClient::run(int argc, char* argv[])
 {
     Glacier2::RouterPrx router = Glacier2::RouterPrx::uncheckedCast(
-	communicator()->stringToProxy("abc/def:tcp -h 127.0.0.1 -p 12347 -t 10000"));
+        communicator()->stringToProxy("Glacier2/router:tcp -h 127.0.0.1 -p 12347 -t 10000"));
     communicator()->setDefaultRouter(router);
 
     //
@@ -51,23 +51,24 @@ CallbackClient::run(int argc, char* argv[])
     cout << "creating non-ssl session with tcp connection... ";
     try
     {
-	Glacier2::SessionPrx session = router->createSession("nossl", "");
-	router->destroySession();
+        Glacier2::SessionPrx session = router->createSession("nossl", "");
+        session->ice_ping();
+        router->destroySession();
     }
     catch(const Ice::ConnectionLostException&)
     {
     }
     catch(const Glacier2::PermissionDeniedException&)
     {
-	test(false);
+        test(false);
     }
     cout << "ok" << endl;
 
     cout << "creating ssl session with tcp connection... ";
     try
     {
-	Glacier2::SessionPrx session = router->createSessionFromSecureConnection();
-	test(false);
+        Glacier2::SessionPrx session = router->createSessionFromSecureConnection();
+        test(false);
     }
     catch(const Glacier2::PermissionDeniedException&)
     {
@@ -80,7 +81,7 @@ CallbackClient::run(int argc, char* argv[])
     //
     communicator()->setDefaultRouter(Glacier2::RouterPrx());
     router = Glacier2::RouterPrx::uncheckedCast(
-	communicator()->stringToProxy("abc/def:ssl -h 127.0.0.1 -p 12348 -t 10000"));
+        communicator()->stringToProxy("Glacier2/router:ssl -h 127.0.0.1 -p 12348 -t 10000"));
     communicator()->setDefaultRouter(router);
 
     //
@@ -89,36 +90,38 @@ CallbackClient::run(int argc, char* argv[])
     cout << "creating non-ssl session with ssl connection... ";
     try
     {
-	Glacier2::SessionPrx session = router->createSession("nossl", "");
-	router->destroySession();
+        Glacier2::SessionPrx session = router->createSession("nossl", "");
+        session->ice_ping();
+        router->destroySession();
     }
     catch(const Ice::ConnectionLostException&)
     {
     }
     catch(const Glacier2::PermissionDeniedException&)
     {
-	test(false);
+        test(false);
     }
     cout << "ok" << endl;
 
     cout << "creating ssl session with ssl connection... ";
     try
     {
-	Glacier2::SessionPrx session = router->createSessionFromSecureConnection();
-	router->destroySession();
+        Glacier2::SessionPrx session = router->createSessionFromSecureConnection();
+        session->ice_ping();
+        router->destroySession();
     }
     catch(const Ice::ConnectionLostException&)
     {
     }
     catch(const Glacier2::PermissionDeniedException&)
     {
-	test(false);
+        test(false);
     }
     cout << "ok" << endl;
 
     communicator()->setDefaultRouter(0);
     Glacier2::AdminPrx admin = Glacier2::AdminPrx::checkedCast(
-	communicator()->stringToProxy("ABC/DEF:tcp -h 127.0.0.1 -p 12349 -t 10000"));
+        communicator()->stringToProxy("Glacier2/admin:tcp -h 127.0.0.1 -p 12349 -t 10000"));
     admin->shutdown();
     
     return EXIT_SUCCESS;

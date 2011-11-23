@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,6 +15,7 @@
 #include <Ice/RouterInfoF.h>
 #include <Ice/RouterF.h>
 #include <Ice/ProxyF.h>
+#include <Ice/EndpointIF.h>
 
 #include <set>
 
@@ -55,10 +56,8 @@ public:
     bool operator<(const RouterInfo&) const;
 
     Ice::RouterPrx getRouter() const;
-    Ice::ObjectPrx getClientProxy();
-    void setClientProxy(const Ice::ObjectPrx&);
-    Ice::ObjectPrx getServerProxy();
-    void setServerProxy(const Ice::ObjectPrx&);
+    std::vector<IceInternal::EndpointIPtr> getClientEndpoints();
+    std::vector<IceInternal::EndpointIPtr> getServerEndpoints();
     void addProxy(const Ice::ObjectPrx&);
     void setAdapter(const Ice::ObjectAdapterPtr&);
     Ice::ObjectAdapterPtr getAdapter() const;
@@ -66,8 +65,8 @@ public:
 private:
 
     const Ice::RouterPrx _router;
-    Ice::ObjectPrx _clientProxy;
-    Ice::ObjectPrx _serverProxy;
+    std::vector<IceInternal::EndpointIPtr> _clientEndpoints;
+    std::vector<IceInternal::EndpointIPtr> _serverEndpoints;
     Ice::ObjectAdapterPtr _adapter;
     std::set<Ice::Identity> _identities;
 };

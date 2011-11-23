@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -69,13 +69,12 @@ run(const Ice::CommunicatorPtr& communicator, const string& envName, const strin
     Ice::ObjectFactoryPtr factory = new Factory;
     communicator->addObjectFactory(factory, "");
 
-    Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("test");
-
+    Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("");
     Freeze::EvictorPtr evictor = Freeze::createEvictor(adapter, envName, dbName);
 
     for(int i = 0; i < 10; ++i)
     {
-	string facetName = "theFacet";
+        string facetName = "theFacet";
 
         Ice::Identity id;
         ostringstream ostr;

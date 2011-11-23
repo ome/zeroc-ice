@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,7 @@ public:
     ~FactoryTable();
 };
 
-static FactoryTable factoryTableInitializer;	// Dummy variable to force initialization of factoryTable
+static FactoryTable factoryTableInitializer;    // Dummy variable to force initialization of factoryTable
 
 extern ICE_API FactoryTableDef* factoryTable;
 

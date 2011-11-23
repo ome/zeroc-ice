@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,15 +19,15 @@ class ActivateAdapterThread : public IceUtil::Thread
 public:
 
     ActivateAdapterThread(const ObjectAdapterPtr& adapter, int timeout) :
-	_adapter(adapter), _timeout(timeout)
+        _adapter(adapter), _timeout(timeout)
     {
     }
 
     virtual void
     run()
     {
-	IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(_timeout));
-	_adapter->activate();
+        IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(_timeout));
+        _adapter->activate();
     }
 
 private:

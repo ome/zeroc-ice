@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -28,7 +28,7 @@ SessionServantLocatorI::locate(const Ice::Current& current, Ice::LocalObjectPtr&
     map<Ice::Identity, SessionServant>::const_iterator p = _servants.find(current.id);
     if(p == _servants.end() || p->second.connection != current.con)
     {
-	return 0;
+        return 0;
     }
     return p->second.servant;
 }
@@ -41,6 +41,8 @@ SessionServantLocatorI::finished(const Ice::Current&, const Ice::ObjectPtr&, con
 void
 SessionServantLocatorI::deactivate(const std::string&)
 {
+    Lock sync(*this);
+    _servants.clear();
 }
 
 Ice::ObjectPrx
@@ -52,7 +54,7 @@ SessionServantLocatorI::add(const Ice::ObjectPtr& servant, const Ice::Connection
     id.category = _instanceName;
     if(!_servants.insert(make_pair(id, SessionServant(servant, con))).second)
     {
-	throw Ice::AlreadyRegisteredException(__FILE__, __LINE__, "servant", id.name);
+        throw Ice::AlreadyRegisteredException(__FILE__, __LINE__, "servant", id.name);
     }
     return _adapter->createProxy(id);
 }

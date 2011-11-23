@@ -1,7 +1,7 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
@@ -17,9 +17,8 @@
       <parameter name="index"/>
       <server id="AllocateServer-${index}" exe="./server" activation="on-demand">
         <adapter name="Hello" endpoints="tcp" register-process="true">
-	  <allocatable identity="hello-${index}" type="::Demo::Hello"/>
+	  <allocatable identity="hello-${index}" type="::Demo::Hello" property="Identity"/>
 	</adapter>
-	<property name="Identity" value="hello-${index}"/>
       </server>
     </server-template>
 

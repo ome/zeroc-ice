@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,24 +31,23 @@ allTests(const CommunicatorPtr& communicator)
 
     {
         cout << "creating/destroying/recreating object adapter... " << flush;
-	ObjectAdapterPtr adapter = 
-	    communicator->createObjectAdapterWithEndpoints("TransientTestAdapter", "default -p 9999");
-	try
-	{
-	    communicator->createObjectAdapterWithEndpoints("TransientTestAdapter", "default -p 9998");
-	    test(false);
-	}
-	catch(const AlreadyRegisteredException&)
-	{
-	}
-	adapter->deactivate();
-	adapter->waitForDeactivate();
-	//
-	// Use a different port than the first adapter to avoid an "address already in use" error.
-	//
-	adapter = communicator->createObjectAdapterWithEndpoints("TransientTestAdapter", "default -p 9998");
-	adapter->deactivate();
-	adapter->waitForDeactivate();
+        ObjectAdapterPtr adapter = 
+            communicator->createObjectAdapterWithEndpoints("TransientTestAdapter", "default -p 9999");
+        try
+        {
+            communicator->createObjectAdapterWithEndpoints("TransientTestAdapter", "default -p 9998");
+            test(false);
+        }
+        catch(const AlreadyRegisteredException&)
+        {
+        }
+        adapter->destroy();
+
+        //
+        // Use a different port than the first adapter to avoid an "address already in use" error.
+        //
+        adapter = communicator->createObjectAdapterWithEndpoints("TransientTestAdapter", "default -p 9998");
+        adapter->destroy();
         cout << "ok" << endl;
     }
 
@@ -63,12 +62,12 @@ allTests(const CommunicatorPtr& communicator)
     cout << "testing whether server is gone... " << flush;
     try
     {
-	obj->ice_ping();
-	test(false);
+        obj->ice_ping();
+        test(false);
     }
     catch(const LocalException&)
     {
-	cout << "ok" << endl;
+        cout << "ok" << endl;
     }
 
     return obj;

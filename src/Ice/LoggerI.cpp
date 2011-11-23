@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,26 +9,26 @@
 
 #include <IceUtil/Time.h>
 #include <Ice/LoggerI.h>
+#include <IceUtil/StaticMutex.h>
 
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
 
-IceUtil::Mutex Ice::LoggerI::_globalMutex;
+static IceUtil::StaticMutex outputMutex = ICE_STATIC_MUTEX_INITIALIZER;
 
-Ice::LoggerI::LoggerI(const string& prefix, bool timestamp) : 
-    _timestamp(timestamp)
+Ice::LoggerI::LoggerI(const string& prefix)
 {
     if(!prefix.empty())
     {
-	_prefix = prefix + ": ";
+        _prefix = prefix + ": ";
     }
 }
 
 void
 Ice::LoggerI::print(const string& message)
 {
-    IceUtil::Mutex::Lock sync(_globalMutex);
+    IceUtil::StaticMutex::Lock sync(outputMutex);
 
     cerr << message << endl;
 }
@@ -36,14 +36,7 @@ Ice::LoggerI::print(const string& message)
 void
 Ice::LoggerI::trace(const string& category, const string& message)
 {
-    IceUtil::Mutex::Lock sync(_globalMutex);
-
-    string s = "[ ";
-    if(_timestamp)
-    {
-	s += IceUtil::Time::now().toString() + " ";
-    }
-    s += _prefix;
+    string s = "[ " + IceUtil::Time::now().toDateTime() + " " + _prefix;
     if(!category.empty())
     {
         s += category + ": ";
@@ -53,30 +46,27 @@ Ice::LoggerI::trace(const string& category, const string& message)
     string::size_type idx = 0;
     while((idx = s.find("\n", idx)) != string::npos)
     {
-	s.insert(idx + 1, "  ");
-	++idx;
+        s.insert(idx + 1, "  ");
+        ++idx;
     }
+
+    IceUtil::StaticMutex::Lock sync(outputMutex);
+
     cerr << s << endl;
 }
 
 void
 Ice::LoggerI::warning(const string& message)
 {
-    IceUtil::Mutex::Lock sync(_globalMutex);
-    if(_timestamp)
-    {
-	cerr << IceUtil::Time::now().toString() << " ";
-    }
-    cerr << _prefix << "warning: " << message << endl;
+    IceUtil::StaticMutex::Lock sync(outputMutex);
+
+    cerr << IceUtil::Time::now().toDateTime() << " " << _prefix << "warning: " << message << endl;
 }
 
 void
 Ice::LoggerI::error(const string& message)
 {
-    IceUtil::Mutex::Lock sync(_globalMutex);
-    if(_timestamp)
-    {
-	cerr << IceUtil::Time::now().toString() << " ";
-    }
-    cerr << _prefix << "error: " << message << endl;
+    IceUtil::StaticMutex::Lock sync(outputMutex);
+
+    cerr << IceUtil::Time::now().toDateTime() << " " << _prefix << "error: " << message << endl;
 }

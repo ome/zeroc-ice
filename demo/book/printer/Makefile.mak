@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -26,15 +26,22 @@ SRCS		= $(OBJS:.obj=.cpp) \
 
 !include $(top_srcdir)/config/Make.rules.mak
 
-CPPFLAGS	= -I. $(CPPFLAGS)
+CPPFLAGS	= -I. $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
+
+!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+CPDBFLAGS        = /pdb:$(CLIENT:.exe=.pdb)
+SPDBFLAGS        = /pdb:$(SERVER:.exe=.pdb)
+!endif
 
 $(CLIENT): $(OBJS) $(COBJS)
-	del /q $@
-	$(LINK) $(LD_EXEFLAGS) $(OBJS) $(COBJS), $@,, $(LIBS)
+	$(LINK) $(LD_EXEFLAGS) $(CPDBFLAGS) $(SETARGV) $(OBJS) $(COBJS) $(PREOUT)$@ $(PRELIBS)$(LIBS)
+	@if exist $@.manifest echo ^ ^ ^ Embedding manifest using $(MT) && \
+	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
 $(SERVER): $(OBJS) $(SOBJS)
-	del /q $@
-	$(LINK) $(LD_EXEFLAGS) $(OBJS) $(SOBJS), $@,, $(LIBS)
+	$(LINK) $(LD_EXEFLAGS) $(SPDBFLAGS) $(SETARGV) $(OBJS) $(SOBJS) $(PREOUT)$@ $(PRELIBS)$(LIBS)
+	@if exist $@.manifest echo ^ ^ ^ Embedding manifest using $(MT) && \
+	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
 clean::
 	del /q Printer.cpp Printer.h

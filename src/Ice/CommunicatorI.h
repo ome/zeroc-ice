@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,9 +27,12 @@ public:
     virtual void destroy();
     virtual void shutdown();
     virtual void waitForShutdown();
+    virtual bool isShutdown() const;
 
     virtual ObjectPrx stringToProxy(const std::string&) const;
     virtual std::string proxyToString(const ObjectPrx&) const;
+
+    virtual ObjectPrx propertyToProxy(const std::string&) const;
 
     virtual Identity stringToIdentity(const std::string&) const;
     virtual std::string identityToString(const Identity&) const;
@@ -42,7 +45,9 @@ public:
     virtual ObjectFactoryPtr findObjectFactory(const std::string&) const;
 
     virtual Context getDefaultContext() const;
-    void setDefaultContextI(const Context&);
+    virtual void setDefaultContext(const Context&);
+
+    virtual ImplicitContextPtr getImplicitContext() const;
 
     virtual PropertiesPtr getProperties() const;
     virtual LoggerPtr getLogger() const;
@@ -70,6 +75,7 @@ private:
     void finishSetup(int&, char*[]);
 
     friend ICE_API CommunicatorPtr initialize(int&, char*[], const InitializationData&, Int);
+    friend ICE_API CommunicatorPtr initialize(StringSeq&, const InitializationData&, Int);
     friend ICE_API CommunicatorPtr initialize(const InitializationData&, Int);
     friend ICE_API ::IceInternal::InstancePtr IceInternal::getInstance(const ::Ice::CommunicatorPtr&);
 

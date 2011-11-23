@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -55,7 +55,8 @@ checkxml = os.path.join(directory, "check.xml")
 print "executing evictor transformations...",
 sys.stdout.flush()
 
-command = transformdb + " -e -p --old " + testold + " --new " + testnew + " -f " + transformxml + " " + dbdir + " evictor.db " + check_dbdir
+command = transformdb + " -e -p --old " + testold + " --new " + testnew + " -f " + transformxml + " " + dbdir + \
+    " evictor.db " + check_dbdir
 if TestUtil.debug:
     print "(" + command + ")",
 #stdin, stdout, stderr = os.popen3(command)
@@ -74,7 +75,8 @@ if clientStatus:
 print "validating database...",
 sys.stdout.flush()
 
-command = transformdb + " -e --old " + testnew + " --new " + testnew + " -f " + checkxml + " " + check_dbdir + " evictor.db " + tmp_dbdir
+command = transformdb + " -e --old " + testnew + " --new " + testnew + " -f " + checkxml + " " + check_dbdir + \
+    " evictor.db " + tmp_dbdir
 if TestUtil.debug:
     print "(" + command + ")",
 if os.system(command) != 0:

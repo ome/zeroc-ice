@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,7 +26,7 @@ interface CallbackReceiver
     ["ami"] void callback();
 
     ["ami"] void callbackEx()
-	throws CallbackException;
+        throws CallbackException;
 
     ["amd", "ami"] int concurrentCallback(int number);
 
@@ -40,7 +40,7 @@ interface Callback
     ["amd"] void initiateCallback(CallbackReceiver* proxy);
 
     ["amd"] void initiateCallbackEx(CallbackReceiver* proxy)
-	throws CallbackException;
+        throws CallbackException;
 
     ["amd", "ami"] int initiateConcurrentCallback(int number, CallbackReceiver* proxy);
 

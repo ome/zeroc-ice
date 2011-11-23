@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,7 +18,7 @@ module Ice
 
 /**
  *
- * The servant locator, which is called by the object adapter to
+ * A servant locator is called by an object adapter to
  * locate a servant that is not found in its active servant map.
  *
  * @see ObjectAdapter
@@ -30,18 +30,17 @@ local interface ServantLocator
 {
     /**
      *
-     * Called by the object adapter before a request is made when a
+     * Called before a request is dispatched if a
      * servant cannot be found in the object adapter's active servant
      * map. Note that the object adapter does not automatically insert
      * the returned servant into its active servant map. This must be
      * done by the servant locator implementation, if this is desired.
      *
-     * <important><para>If you call [locate] from your own code, you
+     * <p class="Note">If you call [locate] from your own code, you
      * must also call [finished] when you have finished using the
-     * servant, provided that a non-null servant was
-     * returned. Otherwise you will get undefined behavior if you use
-     * Servant Locators such as the
-     * [Freeze::Evictor].</para></important>
+     * servant, provided that [locate] returned a non-null servant;
+     * otherwise, you will get undefined behavior if you use
+     * servant locators such as the [Freeze::Evictor].
      *
      * @param curr Information about the current operation for which
      * a servant is required.

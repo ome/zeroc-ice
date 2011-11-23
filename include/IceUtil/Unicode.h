@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -97,10 +97,10 @@ ICE_UTIL_API std::wstring stringToWstring(const std::string&);
 
 enum ConversionResult
 {
-	conversionOK, 		/* conversion successful */
-	sourceExhausted,	/* partial character in source, but hit end */
-	targetExhausted,	/* insuff. room in target for conversion */
-	sourceIllegal		/* source sequence is illegal/malformed */
+        conversionOK,           /* conversion successful */
+        sourceExhausted,        /* partial character in source, but hit end */
+        targetExhausted,        /* insuff. room in target for conversion */
+        sourceIllegal           /* source sequence is illegal/malformed */
 };
 
 
@@ -117,15 +117,15 @@ isLegalUTF8Sequence(const Byte* source, const Byte* end);
 
 ICE_UTIL_API ConversionResult 
 convertUTFWstringToUTF8(const wchar_t*& sourceStart, const wchar_t* sourceEnd, 
-			Byte*& targetStart, Byte* targetEnd, ConversionFlags flags);
+                        Byte*& targetStart, Byte* targetEnd, ConversionFlags flags);
 
 ICE_UTIL_API ConversionResult
 convertUTF8ToUTFWstring(const Byte*& sourceStart, const Byte* sourceEnd, 
-			wchar_t*& targetStart, wchar_t* targetEnd, ConversionFlags flags);
+                        wchar_t*& targetStart, wchar_t* targetEnd, ConversionFlags flags);
 
 ICE_UTIL_API ConversionResult 
 convertUTF8ToUTFWstring(const Byte*& sourceStart, const Byte* sourceEnd, 
-			std::wstring& target, ConversionFlags flags);
+                        std::wstring& target, ConversionFlags flags);
 
 
 
@@ -139,7 +139,7 @@ class ICE_UTIL_API UTFConversionException : public Exception
 public:
     
     UTFConversionException(const char*, int, ConversionResult);
-    virtual const std::string ice_name() const;
+    virtual std::string ice_name() const;
     virtual void ice_print(std::ostream&) const;
     virtual Exception* ice_clone() const;
     virtual void ice_throw() const;

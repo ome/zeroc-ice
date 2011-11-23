@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -60,7 +60,8 @@ class ICE_SSL_API CertificateReadException : public IceUtil::Exception
 public:
 
     CertificateReadException(const char*, int, const std::string&);
-    virtual const std::string ice_name() const;
+    virtual ~CertificateReadException() throw();
+    virtual std::string ice_name() const;
     virtual IceUtil::Exception* ice_clone() const;
     virtual void ice_throw() const;
 
@@ -79,7 +80,8 @@ class ICE_SSL_API CertificateEncodingException : public IceUtil::Exception
 public:
 
     CertificateEncodingException(const char*, int, const std::string&);
-    virtual const std::string ice_name() const;
+    virtual ~CertificateEncodingException() throw();
+    virtual std::string ice_name() const;
     virtual IceUtil::Exception* ice_clone() const;
     virtual void ice_throw() const;
 
@@ -98,7 +100,8 @@ class ICE_SSL_API ParseException : public IceUtil::Exception
 public:
 
     ParseException(const char*, int, const std::string&);
-    virtual const std::string ice_name() const;
+    virtual ~ParseException() throw();
+    virtual std::string ice_name() const;
     virtual IceUtil::Exception* ice_clone() const;
     virtual void ice_throw() const;
 
@@ -478,7 +481,8 @@ class ICE_SSL_API ConnectionInvalidException : public IceUtil::Exception
 public:
 
     ConnectionInvalidException(const char*, int, const std::string&);
-    virtual const std::string ice_name() const;
+    virtual ~ConnectionInvalidException() throw();
+    virtual std::string ice_name() const;
     virtual IceUtil::Exception* ice_clone() const;
     virtual void ice_throw() const;
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -36,14 +36,14 @@ SLICE_API std::string operationModeToString(Operation::Mode);
 SLICE_API std::string fixKwd(const std::string&);
 
 SLICE_API void writeMarshalUnmarshalCode(::IceUtil::Output&, const TypePtr&, const std::string&, bool,
-					 const std::string& = "", bool = true, const StringList& = StringList(),
-					 bool = false);
+                                         const std::string& = "", bool = true, const StringList& = StringList(),
+                                         bool = false);
 SLICE_API void writeMarshalCode(::IceUtil::Output&, const ParamDeclList&, const TypePtr&, 
-				const StringList&, bool = false);
+                                const StringList&, bool = false);
 SLICE_API void writeUnmarshalCode(::IceUtil::Output&, const ParamDeclList&, const TypePtr&,
-				  const StringList&, bool = false);
+                                  const StringList&, bool = false);
 SLICE_API void writeAllocateCode(::IceUtil::Output&, const ParamDeclList&, const TypePtr&,
-				 const StringList&, bool = false, bool = false);
+                                 const StringList&, bool = false, bool = false);
 SLICE_API void writeStreamMarshalUnmarshalCode(::IceUtil::Output&, const TypePtr&, const std::string&, bool,
                                                const std::string& = "", bool = false, const StringList& = StringList());
 SLICE_API std::string findMetaData(const StringList&, bool);

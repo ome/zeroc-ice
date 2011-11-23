@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,7 +17,7 @@ module Glacier2
 
 /**
  *
- * The &Glacier2; permissions verifier. This is called through the
+ * The Glacier2 permissions verifier. This is called through the
  * process of establishing a session.
  *
  * @see Router
@@ -38,12 +38,12 @@ interface PermissionsVerifier
      * @return True if access is granted, or false otherwise.
      *
      **/
-    nonmutating bool checkPermissions(string userId, string password, out string reason);
+    ["nonmutating", "cpp:const"] idempotent bool checkPermissions(string userId, string password, out string reason);
 };
 
 /**
  *
- * The SSL &Glacier2; permissions verifier. This is called through the
+ * The SSL Glacier2 permissions verifier. This is called through the
  * process of establishing a session.
  *
  * @see Router
@@ -64,7 +64,7 @@ interface SSLPermissionsVerifier
      * @see SSLInfo
      *
      **/
-    nonmutating bool authorize(SSLInfo info, out string reason);
+    ["nonmutating", "cpp:const"] idempotent bool authorize(SSLInfo info, out string reason);
 };
 
 };

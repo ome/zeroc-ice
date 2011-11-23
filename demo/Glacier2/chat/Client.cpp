@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <Ice/Application.h>
+#include <IceUtil/IceUtil.h>
 #include <Glacier2/Router.h>
 #include <Chat.h>
 
@@ -72,16 +73,16 @@ public:
     {
 #ifdef __xlC__
 
-	//
-	// The xlC compiler synchronizes cin and cout; to see the messages
-	// while accepting input through cin, we have to print the messages
-	// with printf
-	//
+        //
+        // The xlC compiler synchronizes cin and cout; to see the messages
+        // while accepting input through cin, we have to print the messages
+        // with printf
+        //
 
-	printf("%s\n", data.c_str());
-	fflush(0);
+        printf("%s\n", data.c_str());
+        fflush(0);
 #else
-	cout << data << endl;
+        cout << data << endl;
 #endif
     }
 };
@@ -93,136 +94,179 @@ public:
     virtual int
     run(int argc, char* argv[])
     {
-	Ice::RouterPrx defaultRouter = communicator()->getDefaultRouter();
-	if(!defaultRouter)
-	{
-	    cerr << argv[0] << ": no default router set" << endl;
-	    return EXIT_FAILURE;
-	}
+        //
+        // Since this is an interactive demo we want the custom interrupt
+        // callback to be called when the process is interrupted.
+        //
+        callbackOnInterrupt();
 
-	Glacier2::RouterPrx router = Glacier2::RouterPrx::checkedCast(defaultRouter);
-	{
-	    if(!router)
-	    {
-		cerr << argv[0] << ": configured router is not a Glacier2 router" << endl;
-		return EXIT_FAILURE;
-	    }
-	}
+        {
+            IceUtil::Mutex::Lock sync(_mutex);
+            Ice::RouterPrx defaultRouter = communicator()->getDefaultRouter();
+            if(!defaultRouter)
+            {
+                cerr << argv[0] << ": no default router set" << endl;
+                return EXIT_FAILURE;
+            }
+            
+            _router = Glacier2::RouterPrx::checkedCast(defaultRouter);
+            if(!_router)
+            {
+                cerr << argv[0] << ": configured router is not a Glacier2 router" << endl;
+                return EXIT_FAILURE;
+            }
+        }
 
-	ChatSessionPrx session;
-	while(true)
-	{
-	    cout << "This demo accepts any user-id / password combination.\n";
+        ChatSessionPrx session;
+        while(true)
+        {
+            cout << "This demo accepts any user-id / password combination.\n";
 
-	    string id;
-	    cout << "user id: " << flush;
-	    getline(cin, id);
-	    id = trim(id);
+            string id;
+            cout << "user id: " << flush;
+            getline(cin, id);
+            id = trim(id);
 
-	    string pw;
-	    cout << "password: " << flush;
-	    getline(cin, pw);
-	    pw = trim(pw);
+            string pw;
+            cout << "password: " << flush;
+            getline(cin, pw);
+            pw = trim(pw);
 
-	    try
-	    {
-		session = ChatSessionPrx::uncheckedCast(router->createSession(id, pw));
-		break;
-	    }
-	    catch(const Glacier2::PermissionDeniedException& ex)
-	    {
-		cout << "permission denied:\n" << ex.reason << endl;
-	    }
-	}
+            try
+            {
+                session = ChatSessionPrx::uncheckedCast(_router->createSession(id, pw));
+                break;
+            }
+            catch(const Glacier2::PermissionDeniedException& ex)
+            {
+                cout << "permission denied:\n" << ex.reason << endl;
+            }
+        }
 
-	SessionPingThreadPtr ping = new SessionPingThread(session, (long)router->getSessionTimeout() / 2);
-	ping->start();
+        {
+            IceUtil::Mutex::Lock sync(_mutex);
+            _ping = new SessionPingThread(session, (long)_router->getSessionTimeout() / 2);
+            _ping->start();
+        }
 
-	Ice::Identity callbackReceiverIdent;
-	callbackReceiverIdent.name = "callbackReceiver";
-	callbackReceiverIdent.category = router->getCategoryForClient();
+        Ice::Identity callbackReceiverIdent;
+        callbackReceiverIdent.name = "callbackReceiver";
+        callbackReceiverIdent.category = _router->getCategoryForClient();
 
-	Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Chat.Client");
-	ChatCallbackPrx callback = ChatCallbackPrx::uncheckedCast(
-	    adapter->add(new ChatCallbackI, callbackReceiverIdent));
-	adapter->activate();
+        Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Chat.Client");
+        ChatCallbackPrx callback = ChatCallbackPrx::uncheckedCast(
+            adapter->add(new ChatCallbackI, callbackReceiverIdent));
+        adapter->activate();
 
-	session->setCallback(callback);
+        session->setCallback(callback);
 
-	menu();
+        menu();
 
-	try
-	{
-	    do
-	    {
-		string s;
-		cout << "==> ";
-		getline(cin, s);
-		s = trim(s);
-		if(!s.empty())
-		{
-		    if(s[0] == '/')
-		    {
-			if(s == "/quit")
-			{
-			    break;
-			}
-			menu();
-		    }
-		    else
-		    {
-			session->say(s);
-		    }
-		}
-	    }
-	    while(cin.good());
+        try
+        {
+            do
+            {
+                string s;
+                cout << "==> ";
+                getline(cin, s);
+                s = trim(s);
+                if(!s.empty())
+                {
+                    if(s[0] == '/')
+                    {
+                        if(s == "/quit")
+                        {
+                            break;
+                        }
+                        menu();
+                    }
+                    else
+                    {
+                        session->say(s);
+                    }
+                }
+            }
+            while(cin.good());
 
-	    try
-	    {
-		router->destroySession();
-	    }
-	    catch(const Ice::ConnectionLostException&)
-	    {
-		//
-		// Expected: the router closed the connection.
-		//
-	    }
-	}
-	catch(const Ice::Exception& ex)
-	{
-	    cerr << ex << endl;
+            cleanup();
+        }
+        catch(const Ice::Exception& ex)
+        {
+            cerr << ex << endl;
+            cleanup();
 
-            ping->destroy();
-            ping->getThreadControl().join();
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
+    }
 
-	    return EXIT_FAILURE;
-	}
-
-        ping->destroy();
-        ping->getThreadControl().join();
-	
-	return EXIT_SUCCESS;
+    virtual void
+    interruptCallback(int)
+    {
+        try
+        {
+            communicator()->destroy();
+        }
+        catch(const IceUtil::Exception& ex)
+        {
+            cerr << appName() << ": " << ex << endl;
+        }
+        catch(...)
+        {
+            cerr << appName() << ": unknown exception" << endl;
+        }
+        exit(EXIT_SUCCESS);
     }
 
 private:
 
     void
+    cleanup()
+    {
+        IceUtil::Mutex::Lock sync(_mutex);
+        if(_router)
+        {
+            try
+            {
+                _router->destroySession();
+            }
+            catch(const Ice::ConnectionLostException&)
+            {
+                //
+                // Expected: the router closed the connection.
+                //
+            }
+            _router = 0;
+        }
+        if(_ping)
+        {
+            _ping->destroy();
+            _ping->getThreadControl().join();
+            _ping = 0;
+        }
+    }
+
+    void
     menu()
     {
-	cout << "enter /quit to exit." << endl;
+        cout << "enter /quit to exit." << endl;
     }
 
     string
     trim(const string& s)
     {
-	static const string delims = "\t\r\n ";
-	string::size_type last = s.find_last_not_of(delims);
-	if(last != string::npos)
-	{
-	    return s.substr(s.find_first_not_of(delims), last+1);
-	}
-	return s;
+        static const string delims = "\t\r\n ";
+        string::size_type last = s.find_last_not_of(delims);
+        if(last != string::npos)
+        {
+            return s.substr(s.find_first_not_of(delims), last+1);
+        }
+        return s;
     }
+
+    IceUtil::Mutex _mutex;
+    Glacier2::RouterPrx _router;
+    SessionPingThreadPtr _ping;
 };
 
 int

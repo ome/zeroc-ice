@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -50,8 +50,8 @@ StartTest::run()
     control.join();
     try
     {
-	t->start();
-	test(false);
+        t->start();
+        test(false);
     }
     catch(const ThreadStartedException&)
     {
@@ -62,11 +62,11 @@ StartTest::run()
     //
     for(int i = 0; i < 50; i++)
     {
-	for(int j = 0; j < 50; j++)
-	{
-	    Thread* t = new StartTestThread;
-	    t->start().detach();
-	}
-	ThreadControl::sleep(Time::milliSeconds(5));
+        for(int j = 0; j < 50; j++)
+        {
+            Thread* t = new StartTestThread;
+            t->start().detach();
+        }
+        ThreadControl::sleep(Time::milliSeconds(5));
     }
 }

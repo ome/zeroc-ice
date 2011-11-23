@@ -1,18 +1,21 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
+#include <IceUtil/ArgVector.h>
 #include <Ice/GC.h>
 #include <Ice/CommunicatorI.h>
 #include <Ice/PropertiesI.h>
 #include <Ice/Initialize.h>
 #include <Ice/LocalException.h>
 #include <Ice/StreamI.h>
+#include <Ice/LoggerI.h>
 
 using namespace std;
 using namespace Ice;
@@ -30,7 +33,7 @@ Ice::collectGarbage()
 {
     if(theCollector)
     {
-	theCollector->collectGarbage();
+        theCollector->collectGarbage();
     }
 }
 
@@ -78,7 +81,7 @@ Ice::stringSeqToArgs(const StringSeq& args, int& argc, char* argv[])
     //
     if(argv && argcOrig != argc)
     {
-	argv[argc] = 0;
+        argv[argc] = 0;
     }
 }
 
@@ -106,21 +109,43 @@ Ice::createProperties(int& argc, char* argv[], const PropertiesPtr& defaults, co
 inline void checkIceVersion(Int version)
 {
 #ifndef ICE_IGNORE_VERSION
+
+#   if ICE_INT_VERSION % 100 > 50
+    //
+    // Beta version: exact match required
+    //
+    if(ICE_INT_VERSION != version)
+    {
+        throw VersionMismatchException(__FILE__, __LINE__);
+    }
+#   else
+
     //
     // Major and minor version numbers must match.
     //
     if(ICE_INT_VERSION / 100 != version / 100)
     {
-	throw VersionMismatchException(__FILE__, __LINE__);
+        throw VersionMismatchException(__FILE__, __LINE__);
     }
+
+    //
+    // Reject beta caller
+    //
+    if(version % 100 > 50)
+    {
+        throw VersionMismatchException(__FILE__, __LINE__);
+    }
+
     //
     // The caller's patch level cannot be greater than library's patch level. (Patch level changes are
     // backward-compatible, but not forward-compatible.)
     //
     if(version % 100 > ICE_INT_VERSION % 100)
     {
-	throw VersionMismatchException(__FILE__, __LINE__);
+        throw VersionMismatchException(__FILE__, __LINE__);
     }
+    
+#   endif    
 #endif
 }
 
@@ -137,6 +162,16 @@ Ice::initialize(int& argc, char* argv[], const InitializationData& initializatio
     CommunicatorPtr result = communicatorI; // For exception safety.
     communicatorI->finishSetup(argc, argv);
     return result;
+}
+
+CommunicatorPtr
+Ice::initialize(StringSeq& args, const InitializationData& initializationData, Int version)
+{
+    CommunicatorPtr communicator;
+    IceUtil::ArgVector av(args);
+    communicator = initialize(av.argc, av.argv, initializationData, version);
+    args = argsToStringSeq(av.argc, av.argv);
+    return communicator;
 }
 
 CommunicatorPtr
@@ -175,7 +210,7 @@ Ice::initializeWithLogger(int& argc, char* argv[], const LoggerPtr& logger, Int 
 
 CommunicatorPtr
 Ice::initializeWithPropertiesAndLogger(int& argc, char* argv[], const PropertiesPtr& properties,
-				       const LoggerPtr& logger, Int version)
+                                       const LoggerPtr& logger, Int version)
 {
     InitializationData initData;
     initData.properties = properties;
@@ -193,6 +228,31 @@ OutputStreamPtr
 Ice::createOutputStream(const CommunicatorPtr& communicator)
 {
     return new OutputStreamI(communicator);
+}
+
+static IceUtil::StaticMutex processLoggerMutex = ICE_STATIC_MUTEX_INITIALIZER;
+static Ice::LoggerPtr processLogger;
+
+LoggerPtr
+Ice::getProcessLogger()
+{
+    IceUtil::StaticMutex::Lock lock(processLoggerMutex);
+
+    if(processLogger == 0)
+    {
+       //
+       // TODO: Would be nice to be able to use process name as prefix by default.
+       //
+       processLogger = new Ice::LoggerI("");
+    }
+    return processLogger;
+}
+
+void
+Ice::setProcessLogger(const LoggerPtr& logger)
+{
+   IceUtil::StaticMutex::Lock lock(processLoggerMutex);
+   processLogger = logger;   
 }
 
 InstancePtr

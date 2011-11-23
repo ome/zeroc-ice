@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -30,21 +30,12 @@ main(int argc, char* argv[])
 int
 LatencyClient::run(int argc, char* argv[])
 {
-    Ice::PropertiesPtr properties = communicator()->getProperties();
-    const char* proxyProperty = "Latency.Ping";
-    std::string proxy = properties->getProperty(proxyProperty);
-    if(proxy.empty())
-    {
-	cerr << argv[0] << ": property `" << proxyProperty << "' not set" << endl;
-	return EXIT_FAILURE;
-    }
-
-    Ice::ObjectPrx base = communicator()->stringToProxy(proxy);
+    Ice::ObjectPrx base = communicator()->propertyToProxy("Latency.Ping");
     PingPrx ping = PingPrx::checkedCast(base);
     if(!ping)
     {
-	cerr << argv[0] << ": invalid proxy" << endl;
-	return EXIT_FAILURE;
+        cerr << argv[0] << ": invalid proxy" << endl;
+        return EXIT_FAILURE;
     }
 
     // Initial ping to setup the connection.
@@ -56,7 +47,7 @@ LatencyClient::run(int argc, char* argv[])
     cout << "pinging server " << repetitions << " times (this may take a while)" << endl;
     for(int i = 0; i < repetitions; ++i)
     {
-	ping->ice_ping();
+        ping->ice_ping();
     }
 
     tm = IceUtil::Time::now() - tm;

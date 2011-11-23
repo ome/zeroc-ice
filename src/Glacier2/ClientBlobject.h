@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,26 +31,23 @@ class ClientBlobject : public Glacier2::Blobject
 {
 public:
 
+    ClientBlobject(const Ice::CommunicatorPtr&, const FilterManagerPtr&, const Ice::Context&); 
     virtual ~ClientBlobject();
 
     virtual void ice_invoke_async(const Ice::AMD_Array_Object_ice_invokePtr&,
-    				  const std::pair<const Ice::Byte*, const Ice::Byte*>&, const Ice::Current&);
+                                  const std::pair<const Ice::Byte*, const Ice::Byte*>&, const Ice::Current&);
 
     Ice::ObjectProxySeq add(const Ice::ObjectProxySeq&, const Ice::Current&); // Returns evicted proxies.
-
-    ClientBlobject(const Ice::CommunicatorPtr&, const FilterManagerPtr& _filterManager); 
 
     StringSetPtr categories();
     StringSetPtr adapterIds();
     IdentitySetPtr identities();
 
 private:
+
     const RoutingTablePtr _routingTable;
-
-    FilterManagerPtr _filters;
-
+    const FilterManagerPtr _filters;
     const int _rejectTraceLevel;
-
 };
 }
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,6 +29,8 @@ public:
     
     Ice::ObjectPrx stringToProxy(const std::string&) const;
     std::string proxyToString(const Ice::ObjectPrx&) const;
+
+    Ice::ObjectPrx propertyToProxy(const std::string&) const;
 
     Ice::ObjectPrx streamToProxy(BasicStream*) const;
     void proxyToStream(const Ice::ObjectPrx&, BasicStream*) const;

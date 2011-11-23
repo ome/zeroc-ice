@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,7 +9,7 @@
 
 #include <FreezeScript/Parser.h>
 #include <FreezeScript/GrammarUtil.h>
-#include <IceUtil/Mutex.h>
+#include <IceUtil/StaticMutex.h>
 
 using namespace std;
 
@@ -66,7 +66,7 @@ int FreezeScript::parseLine;
 
 static string _input;
 static string::size_type _pos;
-static IceUtil::Mutex _parserMutex;
+static IceUtil::StaticMutex _parserMutex = ICE_STATIC_MUTEX_INITIALIZER;
 
 //
 // parseExpression
@@ -77,7 +77,7 @@ FreezeScript::parseExpression(const string& expr, const DataFactoryPtr& factory,
     //
     // The bison grammar is not thread-safe.
     //
-    IceUtil::Mutex::Lock sync(_parserMutex);
+    IceUtil::StaticMutex::Lock sync(_parserMutex);
 
     parseDataFactory = factory;
     parseErrorReporter = errorReporter;
@@ -126,9 +126,13 @@ FreezeScript::EvaluateException::EvaluateException(const char* file, int line, c
 {
 }
 
+FreezeScript::EvaluateException::~EvaluateException() throw()
+{
+}
+
 const char* FreezeScript::EvaluateException::_name = "FreezeScript::EvaluateException";
 
-const string
+string
 FreezeScript::EvaluateException::ice_name() const
 {
     return _name;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,6 +38,7 @@ public:
     virtual std::string type() const = 0;
     virtual std::string toString() const = 0;
     virtual void initialize(int) = 0;
+    virtual void checkSendSize(const Buffer&, size_t) = 0;
 };
 
 }

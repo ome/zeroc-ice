@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -28,9 +28,9 @@ exception ParseException
     
 /**
  *
- * The icegridadmin command line tool provides a [FileParser] object
- * to transform XML files into [ApplicationDescriptor] objects
- * (structs).
+ * <tt>icegridadmin</tt> provides a [FileParser]
+ * object to transform XML files into [ApplicationDescriptor]
+ * objects.
  *
  **/
 interface FileParser
@@ -52,7 +52,7 @@ interface FileParser
      **/
 
     idempotent ApplicationDescriptor parse(string xmlFile, Admin* adminProxy)
-	throws ParseException;
+        throws ParseException;
 };
 
 };

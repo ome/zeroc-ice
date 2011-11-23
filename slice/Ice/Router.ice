@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,7 +17,7 @@ module Ice
 
 /**
  *
- * The &Ice; router interface. Routers can be set either globally with
+ * The Ice router interface. Routers can be set either globally with
  * [Communicator::setDefaultRouter], or with [ice_router] on specific
  * proxies.
  *
@@ -32,7 +32,7 @@ interface Router
      * @return The router's client proxy.
      *
      **/
-    nonmutating Object* getClientProxy();
+    ["nonmutating", "cpp:const"] idempotent Object* getClientProxy();
 
     /**
      *
@@ -42,19 +42,19 @@ interface Router
      * @return The router's server proxy.
      *
      **/
-    nonmutating Object* getServerProxy();
+    ["nonmutating", "cpp:const"] idempotent Object* getServerProxy();
 
     /**
      *
      * Add new proxy information to the router's routing table.
      *
-     * <note><para>This operation is deprecated, and only used for old
-     * Ice clients (older than version 3.1).</para></note>
+     * <p class="Deprecated">This operation is deprecated, and only used for old
+     * Ice clients (older than version 3.1).
      *
      * @param proxy The proxy to add.
      *
      **/
-    ["deprecate:addProxy() has been deprecated, use addProxies() instead."]
+    ["deprecate:addProxy() is deprecated, use addProxies() instead."]
     idempotent void addProxy(Object* proxy);
 
     /**

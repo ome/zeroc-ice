@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,9 +16,9 @@ using namespace std;
 using namespace IceGrid;
 
 XmlAttributesHelper::XmlAttributesHelper(const IceXML::Attributes& attrs, 
-					 const Ice::LoggerPtr& logger,
-					 const string& filename,
-					 int line) :
+                                         const Ice::LoggerPtr& logger,
+                                         const string& filename,
+                                         int line) :
     _attributes(attrs),
     _logger(logger),
     _filename(filename),
@@ -32,17 +32,17 @@ XmlAttributesHelper::checkUnknownAttributes()
     vector<string> notUsed;
     for(map<string, string>::const_iterator p = _attributes.begin(); p != _attributes.end(); ++p)
     {
-	if(_used.find(p->first) == _used.end())
-	{
-	    notUsed.push_back(p->first);
-	}
+        if(_used.find(p->first) == _used.end())
+        {
+            notUsed.push_back(p->first);
+        }
     }
 
     if(!notUsed.empty())
     {
-	ostringstream os;
-	os << "unknown attributes in <" << _filename << "> descriptor, line " << _line << ":\n" << toString(notUsed);
-	throw os.str();
+        ostringstream os;
+        os << "unknown attributes in <" << _filename << "> descriptor, line " << _line << ":\n" << toString(notUsed);
+        throw os.str();
     }
 }
 
@@ -60,12 +60,12 @@ XmlAttributesHelper::operator()(const string& name) const
     IceXML::Attributes::const_iterator p = _attributes.find(name);
     if(p == _attributes.end())
     {
-	throw "missing attribute '" + name + "'";
+        throw "missing attribute '" + name + "'";
     }
     string v = p->second;
     if(v.empty())
     {
-	throw "attribute '" + name + "' is empty";
+        throw "attribute '" + name + "' is empty";
     }
     return v;
 }
@@ -77,11 +77,11 @@ XmlAttributesHelper::operator()(const string& name, const string& def) const
     IceXML::Attributes::const_iterator p = _attributes.find(name);
     if(p == _attributes.end())
     {
-	return def;
+        return def;
     }
     else
     {
-	return p->second;
+        return p->second;
     }
 }
 
@@ -90,7 +90,7 @@ XmlAttributesHelper::asMap() const
 {
     for(map<string, string>::const_iterator p = _attributes.begin(); p != _attributes.end(); ++p)
     {
-	_used.insert(p->first);
+        _used.insert(p->first);
     }
     return _attributes;
 }
@@ -102,21 +102,21 @@ XmlAttributesHelper::asBool(const string& name) const
     IceXML::Attributes::const_iterator p = _attributes.find(name);
     if(p == _attributes.end())
     {
-	throw "missing attribute '" + name + "'";
-	return true; // Keep the compiler happy.
+        throw "missing attribute '" + name + "'";
+        return true; // Keep the compiler happy.
     }
     else if(p->second == "true")
     {
-	return true;
+        return true;
     }    
     else if(p->second == "false")
     {
-	return false;
+        return false;
     }
     else
     {
-	throw "invalid attribute `" + name + "': value is not 'false' or 'true'";
-	return true; // Keep the compiler happy.
+        throw "invalid attribute `" + name + "': value is not 'false' or 'true'";
+        return true; // Keep the compiler happy.
     }
 }
 
@@ -127,20 +127,20 @@ XmlAttributesHelper::asBool(const string& name, bool def) const
     IceXML::Attributes::const_iterator p = _attributes.find(name);
     if(p == _attributes.end())
     {
-	return def;
+        return def;
     }
     else if(p->second == "true")
     {
-	return true;
+        return true;
     }    
     else if(p->second == "false")
     {
-	return false;
+        return false;
     }
     else
     {
-	throw "invalid attribute `" + name + "': value is not 'false' or 'true'";
-	return true; // Keep the compiler happy.
+        throw "invalid attribute `" + name + "': value is not 'false' or 'true'";
+        return true; // Keep the compiler happy.
     }
 }
 
@@ -150,8 +150,7 @@ DescriptorBuilder::addVariable(const XmlAttributesHelper&)
     throw "the <variable> element can't be a child of this element";
 }
 
-PropertySetDescriptorBuilder::PropertySetDescriptorBuilder(const XmlAttributesHelper& attrs) : 
-    _id(attrs("id")),
+PropertySetDescriptorBuilder::PropertySetDescriptorBuilder() : 
     _inPropertySetRef(false)
 {
 }
@@ -160,6 +159,24 @@ PropertySetDescriptorBuilder::PropertySetDescriptorBuilder(const PropertySetDesc
     _descriptor(desc),
     _inPropertySetRef(false)
 {
+}
+
+void
+PropertySetDescriptorBuilder::setId(const string& id)
+{
+    _id = id;
+}
+
+void
+PropertySetDescriptorBuilder::setService(const string& service)
+{
+    _service = service;
+}
+
+const string&
+PropertySetDescriptorBuilder::getService() const
+{
+    return _service;
 }
 
 const string&
@@ -189,11 +206,11 @@ PropertySetDescriptorBuilder::addPropertySet(const XmlAttributesHelper& attrs)
 {
     if(attrs.contains("id") || !attrs.contains("refid"))
     {
-	throw "only <properties refid=\"\"> can be a child of a <properties> element";
+        throw "only <properties refid=\"\"> can be a child of a <properties> element";
     }
     if(!_descriptor.properties.empty())
     {
-	throw "<properties refid=\"\"> can't be defined after a <property> element";
+        throw "<properties refid=\"\"> can't be defined after a <property> element";
     }
     _descriptor.references.push_back(attrs("refid"));
     _inPropertySetRef = true;
@@ -204,15 +221,15 @@ PropertySetDescriptorBuilder::finish()
 {
     if(_inPropertySetRef)
     {
-	_inPropertySetRef = false;
-	return false;
+        _inPropertySetRef = false;
+        return false;
     }
     return true;
 }
 
 ApplicationDescriptorBuilder::ApplicationDescriptorBuilder(const Ice::CommunicatorPtr& communicator,
-							   const XmlAttributesHelper& attrs, 
-							   const map<string, string>& overrides) :
+                                                           const XmlAttributesHelper& attrs, 
+                                                           const map<string, string>& overrides) :
     _communicator(communicator),
     _overrides(overrides)
 {
@@ -221,9 +238,9 @@ ApplicationDescriptorBuilder::ApplicationDescriptorBuilder(const Ice::Communicat
 }
 
 ApplicationDescriptorBuilder::ApplicationDescriptorBuilder(const Ice::CommunicatorPtr& communicator,
-							   const ApplicationDescriptor& app,
-							   const XmlAttributesHelper& attrs, 
-							   const map<string, string>& overrides) :
+                                                           const ApplicationDescriptor& app,
+                                                           const XmlAttributesHelper& attrs, 
+                                                           const map<string, string>& overrides) :
     _communicator(communicator),
     _descriptor(app),
     _overrides(overrides)
@@ -253,29 +270,43 @@ ApplicationDescriptorBuilder::addReplicaGroup(const XmlAttributesHelper& attrs)
 }
 
 void
+ApplicationDescriptorBuilder::finishReplicaGroup()
+{
+    if(!_descriptor.replicaGroups.back().loadBalancing)
+    {
+        _descriptor.replicaGroups.back().loadBalancing = new RandomLoadBalancingPolicy();
+        _descriptor.replicaGroups.back().loadBalancing->nReplicas = "0";
+    }
+}
+
+void
 ApplicationDescriptorBuilder::setLoadBalancing(const XmlAttributesHelper& attrs)
 {
     LoadBalancingPolicyPtr policy;
     string type = attrs("type");
     if(type == "random")
     {
-	policy = new RandomLoadBalancingPolicy();
+        policy = new RandomLoadBalancingPolicy();
+    }
+    else if(type == "ordered")
+    {
+        policy = new OrderedLoadBalancingPolicy();
     }
     else if(type == "round-robin")
     {
-	policy = new RoundRobinLoadBalancingPolicy();
+        policy = new RoundRobinLoadBalancingPolicy();
     }
     else if(type == "adaptive")
     {
-	AdaptiveLoadBalancingPolicyPtr alb = new AdaptiveLoadBalancingPolicy();
-	alb->loadSample = attrs("load-sample", "1");
-	policy = alb;
+        AdaptiveLoadBalancingPolicyPtr alb = new AdaptiveLoadBalancingPolicy();
+        alb->loadSample = attrs("load-sample", "1");
+        policy = alb;
     }
     else
     {
-	throw "invalid load balancing policy `" + type + "'";
+        throw "invalid load balancing policy `" + type + "'";
     }
-    policy->nReplicas = attrs("n-replicas", "0");
+    policy->nReplicas = attrs("n-replicas", "1");
     _descriptor.replicaGroups.back().loadBalancing = policy;
 }
 
@@ -291,6 +322,10 @@ ApplicationDescriptorBuilder::addObject(const XmlAttributesHelper& attrs)
     ObjectDescriptor object;
     object.type = attrs("type", "");
     object.id = _communicator->stringToIdentity(attrs("identity"));
+    if(attrs.contains("property"))
+    {
+        throw "property attribute is not allowed in object descriptors from a replica group";   
+    }
     _descriptor.replicaGroups.back().objects.push_back(object);
 }
 
@@ -299,11 +334,11 @@ ApplicationDescriptorBuilder::addVariable(const XmlAttributesHelper& attrs)
 {
     if(!isOverride(attrs("name")))
     {
-	_descriptor.variables[attrs("name")] = attrs("value", "");
+        _descriptor.variables[attrs("name")] = attrs("value", "");
     }
     else
     {
-	attrs.contains("value"); // NOTE: prevents warning about "value" not being used.
+        attrs.contains("value"); // NOTE: prevents warning about "value" not being used.
     }
 }
 
@@ -328,7 +363,11 @@ ApplicationDescriptorBuilder::createServiceTemplate(const XmlAttributesHelper& a
 PropertySetDescriptorBuilder*
 ApplicationDescriptorBuilder::createPropertySet(const XmlAttributesHelper& attrs) const
 {
-    return new PropertySetDescriptorBuilder(attrs);
+    string id = attrs("id");
+
+    PropertySetDescriptorBuilder* builder = new PropertySetDescriptorBuilder();
+    builder->setId(id);
+    return builder;
 }
 
 void
@@ -342,11 +381,11 @@ ApplicationDescriptorBuilder::addServerTemplate(const string& id, const Template
 {
     if(!templ.descriptor)
     {
-	throw "invalid server template `" + id + "': server definition is missing";
+        throw "invalid server template `" + id + "': server definition is missing";
     }
     if(!_descriptor.serverTemplates.insert(make_pair(id, templ)).second)
     {
-	throw "duplicate server template `" + id + "'";
+        throw "duplicate server template `" + id + "'";
     }
 }
 
@@ -355,11 +394,11 @@ ApplicationDescriptorBuilder::addServiceTemplate(const string& id, const Templat
 {
     if(!templ.descriptor)
     {
-	throw "invalid service template `" + id + "': service definition is missing";
+        throw "invalid service template `" + id + "': service definition is missing";
     }
     if(!_descriptor.serviceTemplates.insert(make_pair(id, templ)).second)
     {
-	throw "duplicate service template `" + id + "'";
+        throw "duplicate service template `" + id + "'";
     }
 }
 
@@ -368,7 +407,7 @@ ApplicationDescriptorBuilder::addPropertySet(const string& id, const PropertySet
 {
     if(!_descriptor.propertySets.insert(make_pair(id, desc)).second)
     {
-	throw "duplicate property set `" + id + "'";
+        throw "duplicate property set `" + id + "'";
     }
 }
 
@@ -398,20 +437,33 @@ ServerInstanceDescriptorBuilder::ServerInstanceDescriptorBuilder(const XmlAttrib
 }
 
 PropertySetDescriptorBuilder*
-ServerInstanceDescriptorBuilder::createPropertySet() const
+ServerInstanceDescriptorBuilder::createPropertySet(const XmlAttributesHelper& attrs) const
 {
-    return new PropertySetDescriptorBuilder(_descriptor.propertySet);
+    string service;
+    if(attrs.contains("service"))
+    {
+        service = attrs("service"); // Can't be empty.
+    }
+
+    PropertySetDescriptorBuilder* builder = new PropertySetDescriptorBuilder();
+    builder->setService(service);
+    return builder;
 }
 
 void
-ServerInstanceDescriptorBuilder::addPropertySet(const PropertySetDescriptor& desc)
+ServerInstanceDescriptorBuilder::addPropertySet(const string& service, const PropertySetDescriptor& desc)
 {
-    _descriptor.propertySet = desc;
+    //
+    // Allow re-opening of unamed property sets.
+    //
+    PropertySetDescriptor& p = service.empty() ? _descriptor.propertySet : _descriptor.servicePropertySets[service];
+    p.references.insert(p.references.end(), desc.references.begin(), desc.references.end());
+    p.properties.insert(p.properties.end(), desc.properties.begin(), desc.properties.end());
 }
 
 NodeDescriptorBuilder::NodeDescriptorBuilder(ApplicationDescriptorBuilder& app, 
-					     const NodeDescriptor& desc,
-					     const XmlAttributesHelper& attrs) :
+                                             const NodeDescriptor& desc,
+                                             const XmlAttributesHelper& attrs) :
     _application(app),
     _descriptor(desc)
 {
@@ -440,7 +492,11 @@ NodeDescriptorBuilder::createServerInstance(const XmlAttributesHelper& attrs)
 PropertySetDescriptorBuilder*
 NodeDescriptorBuilder::createPropertySet(const XmlAttributesHelper& attrs) const
 {
-    return new PropertySetDescriptorBuilder(attrs);
+    string id = attrs("id");
+
+    PropertySetDescriptorBuilder* builder = new PropertySetDescriptorBuilder();
+    builder->setId(id);
+    return builder;
 }
 
 void
@@ -448,11 +504,11 @@ NodeDescriptorBuilder::addVariable(const XmlAttributesHelper& attrs)
 {
     if(!_application.isOverride(attrs("name")))
     {
-	_descriptor.variables[attrs("name")] = attrs("value", "");
+        _descriptor.variables[attrs("name")] = attrs("value", "");
     }
     else
     {
-	attrs.contains("value"); // NOTE: prevents warning about "value" not being used.
+        attrs.contains("value"); // NOTE: prevents warning about "value" not being used.
     }
 }
 
@@ -473,7 +529,7 @@ NodeDescriptorBuilder::addPropertySet(const string& id, const PropertySetDescrip
 {
     if(!_descriptor.propertySets.insert(make_pair(id, desc)).second)
     {
-	throw "duplicate property set `" + id + "'";
+        throw "duplicate property set `" + id + "'";
     }
 }
 
@@ -484,8 +540,8 @@ NodeDescriptorBuilder::setDescription(const string& description)
 }
 
 TemplateDescriptorBuilder::TemplateDescriptorBuilder(ApplicationDescriptorBuilder& application, 
-						     const XmlAttributesHelper& attrs, 
-						     bool serviceTemplate) :
+                                                     const XmlAttributesHelper& attrs, 
+                                                     bool serviceTemplate) :
     _application(application),
     _serviceTemplate(serviceTemplate),
     _id(attrs("id"))
@@ -498,13 +554,13 @@ TemplateDescriptorBuilder::addParameter(const XmlAttributesHelper& attrs)
     if(find(_descriptor.parameters.begin(), _descriptor.parameters.end(), attrs("name")) !=
        _descriptor.parameters.end())
     {
-	throw "duplicate parameter `" + attrs("name") + "'"; 
+        throw "duplicate parameter `" + attrs("name") + "'"; 
     }
 
     _descriptor.parameters.push_back(attrs("name"));
     if(attrs.contains("default"))
     {
-	_descriptor.parameterDefaults.insert(make_pair(attrs("name"), attrs("default", "")));
+        _descriptor.parameterDefaults.insert(make_pair(attrs("name"), attrs("default", "")));
     }
 }
 
@@ -519,7 +575,7 @@ TemplateDescriptorBuilder::createServer(const XmlAttributesHelper& attrs)
 {
     if(_serviceTemplate)
     {
-	throw "<server> element can't be a child of <service-template>";
+        throw "<server> element can't be a child of <service-template>";
     }
     return new ServerDescriptorBuilder(_application.getCommunicator(), attrs);
 }
@@ -529,7 +585,7 @@ TemplateDescriptorBuilder::createIceBox(const XmlAttributesHelper& attrs)
 {
     if(_serviceTemplate)
     {
-	throw "<icebox> element can't be a child of <service-template>";
+        throw "<icebox> element can't be a child of <service-template>";
     }
     return new IceBoxDescriptorBuilder(_application.getCommunicator(), attrs);
 }
@@ -539,7 +595,7 @@ TemplateDescriptorBuilder::createService(const XmlAttributesHelper& attrs)
 {
     if(!_serviceTemplate)
     {
-	throw "<service> element can't be a child of <server-template>";
+        throw "<service> element can't be a child of <server-template>";
     }
     return new ServiceDescriptorBuilder(_application.getCommunicator(), attrs);
 }
@@ -565,7 +621,7 @@ CommunicatorDescriptorBuilder::finish()
     // before references to property sets.
     //
     _descriptor->propertySet.properties.insert(_descriptor->propertySet.properties.begin(),
-					       _hiddenProperties.begin(), _hiddenProperties.end());
+                                               _hiddenProperties.begin(), _hiddenProperties.end());
 }
 
 void
@@ -589,7 +645,12 @@ CommunicatorDescriptorBuilder::createPropertySet() const
 void
 CommunicatorDescriptorBuilder::addPropertySet(const PropertySetDescriptor& desc)
 {
-    _descriptor->propertySet = desc;
+    //
+    // Allow re-opening of unamed property sets.
+    //
+    PropertySetDescriptor& p = _descriptor->propertySet;
+    p.references.insert(p.references.end(), desc.references.begin(), desc.references.end());
+    p.properties.insert(p.properties.end(), desc.properties.begin(), desc.properties.end());
 }
 
 void
@@ -599,24 +660,25 @@ CommunicatorDescriptorBuilder::addAdapter(const XmlAttributesHelper& attrs)
     desc.name = attrs("name");
     if(attrs.contains("id"))
     {
-	desc.id = attrs("id");
+        desc.id = attrs("id");
     }
     else
     {
-	string fqn = "${server}";
-	if(ServiceDescriptorPtr::dynamicCast(_descriptor))
-	{
-	    fqn += ".${service}";
-	}
-	desc.id = fqn + "." + desc.name;
+        string fqn = "${server}";
+        if(ServiceDescriptorPtr::dynamicCast(_descriptor))
+        {
+            fqn += ".${service}";
+        }
+        desc.id = fqn + "." + desc.name;
     }
     desc.replicaGroupId = attrs("replica-group", "");
+    desc.priority = attrs("priority", "");
     desc.registerProcess = attrs.asBool("register-process", false);
     if(desc.id == "")
     {
-	throw "empty `id' for adapter `" + desc.name + "'";
+        throw "empty `id' for adapter `" + desc.name + "'";
     }
-    desc.waitForActivation = attrs.asBool("wait-for-activation", true);
+    desc.serverLifetime = attrs.asBool("server-lifetime", true);
     _descriptor->adapters.push_back(desc);
 
     addProperty(_hiddenProperties, desc.name + ".Endpoints", attrs("endpoints", "default"));
@@ -634,6 +696,10 @@ CommunicatorDescriptorBuilder::addObject(const XmlAttributesHelper& attrs)
     ObjectDescriptor object;
     object.type = attrs("type", "");
     object.id = _communicator->stringToIdentity(attrs("identity"));
+    if(attrs.contains("property"))
+    {
+        addProperty(_hiddenProperties, attrs("property"), attrs("identity"));
+    }
     _descriptor->adapters.back().objects.push_back(object);
 }
 
@@ -643,6 +709,10 @@ CommunicatorDescriptorBuilder::addAllocatable(const XmlAttributesHelper& attrs)
     ObjectDescriptor object;
     object.type = attrs("type", "");
     object.id = _communicator->stringToIdentity(attrs("identity"));
+    if(attrs.contains("property"))
+    {
+        addProperty(_hiddenProperties, attrs("property"), attrs("identity"));
+    }
     _descriptor->adapters.back().allocatables.push_back(object);
 }
 
@@ -656,28 +726,28 @@ CommunicatorDescriptorBuilder::addDbEnv(const XmlAttributesHelper& attrs)
     DbEnvDescriptorSeq::iterator p;
     for(p = _descriptor->dbEnvs.begin(); p != _descriptor->dbEnvs.end(); ++p)
     {
-	//
-	// We are re-opening the dbenv element to define more properties.
-	//
-	if(p->name == desc.name)
-	{	
-	    break;
-	}
+        //
+        // We are re-opening the dbenv element to define more properties.
+        //
+        if(p->name == desc.name)
+        {       
+            break;
+        }
     }
 
     if(p != _descriptor->dbEnvs.end())
     {
-	//
-	// Remove the previously defined dbenv, we'll add it back again when 
-	// the dbenv element end tag is reached.
-	//
-	desc = *p;
-	_descriptor->dbEnvs.erase(p);
-    }	
+        //
+        // Remove the previously defined dbenv, we'll add it back again when 
+        // the dbenv element end tag is reached.
+        //
+        desc = *p;
+        _descriptor->dbEnvs.erase(p);
+    }   
 
     if(desc.dbHome.empty())
     {
-	desc.dbHome = attrs("home", "");
+        desc.dbHome = attrs("home", "");
     }
     
     _descriptor->dbEnvs.push_back(desc);
@@ -686,6 +756,13 @@ CommunicatorDescriptorBuilder::addDbEnv(const XmlAttributesHelper& attrs)
 void
 CommunicatorDescriptorBuilder::addDbEnvProperty(const XmlAttributesHelper& attrs)
 {
+    if(!_descriptor->dbEnvs.back().dbHome.empty())
+    {
+        throw "can't add property to the database environment:\n"
+              "properties are only allowed if the database\n"
+              "environment home directory is managed by the node";
+    }
+
     PropertyDescriptor prop;
     prop.name = attrs("name");
     prop.value = attrs("value", "");
@@ -696,6 +773,16 @@ void
 CommunicatorDescriptorBuilder::setDbEnvDescription(const string& value)
 {
     _descriptor->dbEnvs.back().description = value;
+}
+
+void
+CommunicatorDescriptorBuilder::addLog(const XmlAttributesHelper& attrs)
+{
+    if(attrs.contains("property"))
+    {
+        addProperty(_hiddenProperties, attrs("property"), attrs("path"));
+    }
+    _descriptor->logs.push_back(attrs("path"));
 }
 
 void
@@ -723,11 +810,16 @@ ServiceInstanceDescriptorBuilder::createPropertySet() const
 void
 ServiceInstanceDescriptorBuilder::addPropertySet(const PropertySetDescriptor& desc)
 {
-    _descriptor.propertySet = desc;
+    //
+    // Allow re-opening of unamed property sets.
+    //
+    PropertySetDescriptor& p = _descriptor.propertySet;
+    p.references.insert(p.references.end(), desc.references.begin(), desc.references.end());
+    p.properties.insert(p.properties.end(), desc.properties.begin(), desc.properties.end());
 }
 
 ServerDescriptorBuilder::ServerDescriptorBuilder(const Ice::CommunicatorPtr& communicator,
-						 const XmlAttributesHelper& attrs) :
+                                                 const XmlAttributesHelper& attrs) :
     CommunicatorDescriptorBuilder(communicator)
 {
     init(new ServerDescriptor(), attrs);
@@ -805,7 +897,7 @@ ServerDescriptorBuilder::addDistributionDirectory(const string& directory)
 }
 
 IceBoxDescriptorBuilder::IceBoxDescriptorBuilder(const Ice::CommunicatorPtr& communicator,
-						 const XmlAttributesHelper& attrs) :
+                                                 const XmlAttributesHelper& attrs) :
     ServerDescriptorBuilder(communicator)
 {
     init(new IceBoxDescriptor(), attrs);
@@ -816,10 +908,28 @@ IceBoxDescriptorBuilder::init(const IceBoxDescriptorPtr& desc, const XmlAttribut
 {
     ServerDescriptorBuilder::init(desc, attrs);
     _descriptor = desc;
+}
 
-    addProperty(_hiddenProperties, "IceBox.InstanceName", _descriptor->id);    
-    addProperty(_hiddenProperties, "IceBox.ServiceManager.Endpoints", "tcp -h 127.0.0.1");
-    addProperty(_hiddenProperties, "IceBox.ServiceManager.RegisterProcess", "1");
+void
+IceBoxDescriptorBuilder::finish()
+{
+    if(getProperty(_descriptor->propertySet.properties, "IceBox.InstanceName").empty())
+    {
+        _hiddenProperties.push_back(createProperty("IceBox.InstanceName", "${server}"));
+    }
+    if(_descriptor->adapters.empty())
+    {
+        if(getProperty(_descriptor->propertySet.properties, "IceBox.ServiceManager.Endpoints").empty())
+        {
+            _hiddenProperties.push_back(createProperty("IceBox.ServiceManager.Endpoints", "tcp -h 127.0.0.1"));
+        }
+        if(getProperty(_descriptor->propertySet.properties, "IceBox.ServiceManager.RegisterProcess").empty())
+        {
+            _hiddenProperties.push_back(createProperty("IceBox.ServiceManager.RegisterProcess", "1"));
+        }
+    }
+    
+    ServerDescriptorBuilder::finish();
 }
 
 ServiceDescriptorBuilder*
@@ -839,20 +949,7 @@ IceBoxDescriptorBuilder::addAdapter(const XmlAttributesHelper& attrs)
 {
     if(attrs("name") != "IceBox.ServiceManager")
     {
-	throw "<adapter> element can't be a child of an <icebox> element";
-    }
-
-    PropertyDescriptorSeq::iterator p = _hiddenProperties.begin();
-    while(p != _hiddenProperties.end())
-    {
-	if(p->name == "IceBox.ServiceManager.Endpoints" || p->name == "IceBox.ServiceManager.RegisterProcess")
-	{
-	    p = _hiddenProperties.erase(p);
-	}
-	else
-	{
-	    ++p;
-	}
+        throw "<adapter> element can't be a child of an <icebox> element";
     }
 
     ServerDescriptorBuilder::addAdapter(attrs);
@@ -880,7 +977,7 @@ IceBoxDescriptorBuilder::addService(const ServiceDescriptorPtr& desc)
 }
 
 ServiceDescriptorBuilder::ServiceDescriptorBuilder(const Ice::CommunicatorPtr& communicator,
-						   const XmlAttributesHelper& attrs) :
+                                                   const XmlAttributesHelper& attrs) :
     CommunicatorDescriptorBuilder(communicator)
 {
     init(new ServiceDescriptor(), attrs);

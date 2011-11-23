@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -23,7 +23,7 @@
 #
 # The file is organized into labelled sections. The label for a
 # section must be an identifier followed by a colon, such as
-# "ice:". The section label is optionally followed by a boolean
+# "Ice:". The section label is optionally followed by a boolean
 # which is used to determine whether command line processing is
 # done on this section by default. The default is true. If set to
 # true, command line options matching the section label will be
@@ -46,7 +46,7 @@
 #
 
 # The token "<any>" is a wildcard and matches any non-empty sequence
-# of non-whitespace characters, excluding '.'.
+# of non-whitespace characters.
 #
 # Examples:
 #
@@ -115,19 +115,39 @@
 Ice:
     ACM.Client
     ACM.Server
+    BatchAutoFlush
     ChangeUser
     Compression.Level
     Config
     Default.CollocationOptimization
+    Default.EndpointSelection
     Default.Host
     Default.Locator
+    Default.Locator.EndpointSelection
+    Default.Locator.ConnectionCached
+    Default.Locator.PreferSecure
+    Default.Locator.LocatorCacheTimeout
+    Default.Locator.Locator
+    Default.Locator.Router
+    Default.Locator.CollocationOptimization
+    Default.Locator.ThreadPerConnection
     Default.LocatorCacheTimeout
     Default.Package
+    Default.PreferSecure
     Default.Protocol
     Default.Router
+    Default.Router.EndpointSelection
+    Default.Router.ConnectionCached
+    Default.Router.PreferSecure
+    Default.Router.LocatorCacheTimeout
+    Default.Router.Locator
+    Default.Router.Router
+    Default.Router.CollocationOptimization
+    Default.Router.ThreadPerConnection
     GC.Interval
+    ImplicitContext
     InitPlugins
-    Logger.Timestamp
+    LoggerPlugin
     MessageSizeMax
     MonitorConnections
     Nohup
@@ -135,6 +155,7 @@ Ice:
     Override.Compress
     Override.ConnectTimeout
     Override.Timeout
+    Override.Secure
     Package.<any>
     Plugin.<any>
     PluginLoadOrder
@@ -171,6 +192,8 @@ Ice:
     Warn.Datagrams
     Warn.Dispatch
     Warn.Endpoints
+    Warn.UnknownProperties
+    CacheMessageBuffers
 
 IceBox:
     InstanceName
@@ -178,62 +201,96 @@ IceBox:
     PrintServicesReady
     Service.<any>
     ServiceManager.AdapterId
-    ServiceManager.ReplicaGroupId
     ServiceManager.Endpoints
-    ServiceManager.Identity
+    ServiceManager.Locator
     ServiceManager.PublishedEndpoints
     ServiceManager.RegisterProcess
+    ServiceManager.ReplicaGroupId
+    ServiceManager.Router
+    ServiceManager.ThreadPerConnection
+    ServiceManager.ThreadPerConnection.StackSize
     ServiceManager.ThreadPool.Size
     ServiceManager.ThreadPool.SizeMax
     ServiceManager.ThreadPool.SizeWarn
     ServiceManager.ThreadPool.StackSize
     UseSharedCommunicator.<any>
+    InheritProperties
+
+IceGridAdmin:
+    AuthenticateUsingSSL
+    Username
+    Password
+    Replica
+    Trace.Observers
+    Trace.SaveToRegistry
 
 IceGrid:
-    AdminGUI.Endpoints
     InstanceName
     Node.AdapterId
-    Node.ReplicaGroupId
-    Node.RegisterProcess
     Node.CollocateRegistry
     Node.Data
     Node.DisableOnFailure
     Node.Endpoints
+    Node.Locator
     Node.Name
     Node.Output
     Node.PrintServersReady
     Node.PropertiesOverride
     Node.PublishedEndpoints
     Node.RedirectErrToOut
+    Node.RegisterProcess
+    Node.ReplicaGroupId
+    Node.Router
+    Node.ThreadPerConnection
+    Node.ThreadPerConnection.StackSize
     Node.ThreadPool.Size
     Node.ThreadPool.SizeMax
     Node.ThreadPool.SizeWarn
     Node.ThreadPool.StackSize
     Node.Trace.Activator
     Node.Trace.Adapter
-    Node.Trace.Server
     Node.Trace.Patch
+    Node.Trace.Replica
+    Node.Trace.Server
     Node.UserAccounts
     Node.UserAccountMapper
+    Node.UserAccountMapper.EndpointSelection
+    Node.UserAccountMapper.ConnectionCached
+    Node.UserAccountMapper.PreferSecure
+    Node.UserAccountMapper.LocatorCacheTimeout
+    Node.UserAccountMapper.Locator
+    Node.UserAccountMapper.Router
+    Node.UserAccountMapper.CollocationOptimization
+    Node.UserAccountMapper.ThreadPerConnection
     Node.WaitTime
-    Registry.Admin.AdapterId
-    Registry.Admin.ReplicaGroupId
-    Registry.Admin.Endpoints
-    Registry.Admin.PublishedEndpoints
-    Registry.Admin.RegisterProcess
-    Registry.Admin.ThreadPool.Size
-    Registry.Admin.ThreadPool.SizeMax
-    Registry.Admin.ThreadPool.SizeWarn
-    Registry.Admin.ThreadPool.StackSize
     Registry.AdminCryptPasswords
     Registry.AdminPermissionsVerifier
+    Registry.AdminPermissionsVerifier.EndpointSelection
+    Registry.AdminPermissionsVerifier.ConnectionCached
+    Registry.AdminPermissionsVerifier.PreferSecure
+    Registry.AdminPermissionsVerifier.LocatorCacheTimeout
+    Registry.AdminPermissionsVerifier.Locator
+    Registry.AdminPermissionsVerifier.Router
+    Registry.AdminPermissionsVerifier.CollocationOptimization
+    Registry.AdminPermissionsVerifier.ThreadPerConnection
     Registry.AdminSSLPermissionsVerifier
-    Registry.AdminSessionTimeout
+    Registry.AdminSSLPermissionsVerifier.EndpointSelection
+    Registry.AdminSSLPermissionsVerifier.ConnectionCached
+    Registry.AdminSSLPermissionsVerifier.PreferSecure
+    Registry.AdminSSLPermissionsVerifier.LocatorCacheTimeout
+    Registry.AdminSSLPermissionsVerifier.Locator
+    Registry.AdminSSLPermissionsVerifier.Router
+    Registry.AdminSSLPermissionsVerifier.CollocationOptimization
+    Registry.AdminSSLPermissionsVerifier.ThreadPerConnection
     Registry.Client.AdapterId
-    Registry.Client.ReplicaGroupId
     Registry.Client.Endpoints
+    Registry.Client.Locator
     Registry.Client.PublishedEndpoints
     Registry.Client.RegisterProcess
+    Registry.Client.ReplicaGroupId
+    Registry.Client.Router
+    Registry.Client.ThreadPerConnection
+    Registry.Client.ThreadPerConnection.StackSize
     Registry.Client.ThreadPool.Size
     Registry.Client.ThreadPool.SizeMax
     Registry.Client.ThreadPool.SizeWarn
@@ -243,59 +300,105 @@ IceGrid:
     Registry.DefaultTemplates
     Registry.DynamicRegistration
     Registry.Internal.AdapterId
-    Registry.Internal.ReplicaGroupId
     Registry.Internal.Endpoints
+    Registry.Internal.Locator
     Registry.Internal.PublishedEndpoints
     Register.Internal.RegisterProcess
+    Registry.Internal.ReplicaGroupId
+    Registry.Internal.Router
+    Registry.Internal.ThreadPerConnection
+    Registry.Internal.ThreadPerConnection.StackSize
     Registry.Internal.ThreadPool.Size
     Registry.Internal.ThreadPool.SizeMax
     Registry.Internal.ThreadPool.SizeWarn
     Registry.Internal.ThreadPool.StackSize
     Registry.NodeSessionTimeout
     Registry.PermissionsVerifier
+    Registry.PermissionsVerifier.EndpointSelection
+    Registry.PermissionsVerifier.ConnectionCached
+    Registry.PermissionsVerifier.PreferSecure
+    Registry.PermissionsVerifier.LocatorCacheTimeout
+    Registry.PermissionsVerifier.Locator
+    Registry.PermissionsVerifier.Router
+    Registry.PermissionsVerifier.CollocationOptimization
+    Registry.PermissionsVerifier.ThreadPerConnection
+    Registry.ReplicaName
+    Registry.ReplicaSessionTimeout
     Registry.Server.AdapterId
-    Registry.Server.ReplicaGroupId
     Registry.Server.Endpoints
+    Registry.Server.Locator
     Registry.Server.PublishedEndpoints
     Registry.Server.RegisterProcess
+    Registry.Server.ReplicaGroupId
+    Registry.Server.Router
+    Registry.Server.ThreadPerConnection
+    Registry.Server.ThreadPerConnection.StackSize
     Registry.Server.ThreadPool.Size
     Registry.Server.ThreadPool.SizeMax
     Registry.Server.ThreadPool.SizeWarn
     Registry.Server.ThreadPool.StackSize
+    Registry.SessionManager.AdapterId
+    Registry.SessionManager.Endpoints
+    Registry.SessionManager.Locator
+    Registry.SessionManager.PublishedEndpoints
+    Registry.SessionManager.RegisterProcess
+    Registry.SessionManager.ReplicaGroupId
+    Registry.SessionManager.Router
+    Registry.SessionManager.ThreadPerConnection
+    Registry.SessionManager.ThreadPerConnection.StackSize
+    Registry.SessionManager.ThreadPool.Size
+    Registry.SessionManager.ThreadPool.SizeMax
+    Registry.SessionManager.ThreadPool.SizeWarn
+    Registry.SessionManager.ThreadPool.StackSize
     Registry.SessionTimeout
     Registry.SSLPermissionsVerifier
+    Registry.SSLPermissionsVerifier.EndpointSelection
+    Registry.SSLPermissionsVerifier.ConnectionCached
+    Registry.SSLPermissionsVerifier.PreferSecure
+    Registry.SSLPermissionsVerifier.LocatorCacheTimeout
+    Registry.SSLPermissionsVerifier.Locator
+    Registry.SSLPermissionsVerifier.Router
+    Registry.SSLPermissionsVerifier.CollocationOptimization
+    Registry.SSLPermissionsVerifier.ThreadPerConnection
     Registry.Trace.Application
     Registry.Trace.Adapter
     Registry.Trace.Locator
     Registry.Trace.Node
     Registry.Trace.Object
     Registry.Trace.Patch
+    Registry.Trace.Replica
     Registry.Trace.Server
     Registry.Trace.Session
     Registry.UserAccounts
     
 IcePatch2:
     AdapterId
-    ReplicaGroupId
     Admin.AdapterId
-    Admin.ReplicaGroupId
     Admin.Endpoints
+    Admin.Locator
     Admin.PublishedEndpoints
     Admin.RegisterProcess
+    Admin.ReplicaGroupId
+    Admin.Router
+    Admin.ThreadPerConnection
+    Admin.ThreadPerConnection.StackSize
     Admin.ThreadPool.Size
     Admin.ThreadPool.SizeMax
     Admin.ThreadPool.SizeWarn
     Admin.ThreadPool.StackSize
-    AdminIdentity
     ChunkSize
     Directory
     Endpoints
-    Identity
     InstanceName
+    Locator
     PublishedEndpoints
     RegisterProcess
+    ReplicaGroupId
     Remove
+    Router
     Thorough
+    ThreadPerConnection
+    ThreadPerConnection.StackSize
     ThreadPool.Size
     ThreadPool.SizeMax
     ThreadPool.SizeWarn
@@ -312,8 +415,8 @@ IceSSL:
     DefaultDir
     DH.<any>
     EntropyDaemon
-    FindCert.<any>.<any>
-    ImportCert.<any>.<any>
+    FindCert.<any>
+    ImportCert.<any>
     KeyFile
     Keystore
     KeystorePassword
@@ -333,37 +436,63 @@ IceSSL:
     TrustOnly.Server
     TrustOnly.Server.<any>
 
+IceStormAdmin:
+    TopicManager.<any>
+
 IceStorm:
     Flush.Timeout
     InstanceName
     Publish.AdapterId
-    Publish.ReplicaGroupId
     Publish.Endpoints
+    Publish.Locator
     Publish.PublishedEndpoints
     Publish.RegisterProcess
+    Publish.ReplicaGroupId
+    Publish.Router
+    Publish.ThreadPerConnection
+    Publish.ThreadPerConnection.StackSize
     Publish.ThreadPool.Size
     Publish.ThreadPool.SizeMax
     Publish.ThreadPool.SizeWarn
     Publish.ThreadPool.StackSize
     TopicManager.AdapterId
-    TopicManager.ReplicaGroupId
     TopicManager.Endpoints
+    TopicManager.Locator
     TopicManager.Proxy
+    TopicManager.Proxy.EndpointSelection
+    TopicManager.Proxy.ConnectionCached
+    TopicManager.Proxy.PreferSecure
+    TopicManager.Proxy.LocatorCacheTimeout
+    TopicManager.Proxy.Locator
+    TopicManager.Proxy.Router
+    TopicManager.Proxy.CollocationOptimization
+    TopicManager.Proxy.ThreadPerConnection
     TopicManager.PublishedEndpoints
     TopicManager.RegisterProcess
+    TopicManager.ReplicaGroupId
+    TopicManager.Router
+    TopicManager.ThreadPerConnection
+    TopicManager.ThreadPerConnection.StackSize
     TopicManager.ThreadPool.Size
     TopicManager.ThreadPool.SizeMax
     TopicManager.ThreadPool.SizeWarn
     TopicManager.ThreadPool.StackSize
+    SubscriberPool.Size
+    SubscriberPool.SizeMax
+    SubscriberPool.SizeWarn
+    SubscriberPool.Timeout
     Trace.Flush
     Trace.Subscriber
+    Trace.SubscriberPool
     Trace.Topic
     Trace.TopicManager
+    Send.Timeout
+    Discard.Interval
 
 Glacier2:
+    AddSSLContext
     AddUserToAllowCategories
     Admin.Endpoints
-    AdminIdentity
     Admin.PublishedEndpoints
     Admin.RegisterProcess
     AllowCategories
@@ -381,13 +510,30 @@ Glacier2:
     Filter.Address.Accept
     Filter.ProxySizeMax
     Filter.Category.Accept
+    Filter.Category.AcceptUser
     Filter.AdapterId.Accept
     Filter.Identity.Accept
     CryptPasswords
     InstanceName
     PermissionsVerifier
+    PermissionsVerifier.EndpointSelection
+    PermissionsVerifier.ConnectionCached
+    PermissionsVerifier.PreferSecure
+    PermissionsVerifier.LocatorCacheTimeout
+    PermissionsVerifier.Locator
+    PermissionsVerifier.Router
+    PermissionsVerifier.CollocationOptimization
+    PermissionsVerifier.ThreadPerConnection
+    ReturnClientProxy
     SSLPermissionsVerifier
-    RouterIdentity
+    SSLPermissionsVerifier.EndpointSelection
+    SSLPermissionsVerifier.ConnectionCached
+    SSLPermissionsVerifier.PreferSecure
+    SSLPermissionsVerifier.LocatorCacheTimeout
+    SSLPermissionsVerifier.Locator
+    SSLPermissionsVerifier.Router
+    SSLPermissionsVerifier.CollocationOptimization
+    SSLPermissionsVerifier.ThreadPerConnection
     RoutingTable.MaxSize
     Server.AlwaysBatch
     Server.Buffered
@@ -399,9 +545,23 @@ Glacier2:
     Server.Trace.Override
     Server.Trace.Request
     SessionManager
+    SessionManager.EndpointSelection
+    SessionManager.ConnectionCached
+    SessionManager.PreferSecure
     SessionManager.LocatorCacheTimeout
+    SessionManager.Locator
+    SessionManager.Router
+    SessionManager.CollocationOptimization
+    SessionManager.ThreadPerConnection
     SSLSessionManager
+    SSLSessionManager.EndpointSelection
+    SSLSessionManager.ConnectionCached
+    SSLSessionManager.PreferSecure
     SSLSessionManager.LocatorCacheTimeout
+    SSLSessionManager.Locator
+    SSLSessionManager.Router
+    SSLSessionManager.CollocationOptimization
+    SSLSessionManager.ThreadPerConnection
     SessionTimeout
     Trace.RoutingTable
     Trace.Session
@@ -413,11 +573,12 @@ Freeze:
     DbEnv.<any>.DbRecoverFatal
     DbEnv.<any>.OldLogsAutoDelete
     DbEnv.<any>.PeriodicCheckpointMinSize
-    Evictor.<any>.<any>.MaxTxSize
-    Evictor.<any>.<any>.SavePeriod
-    Evictor.<any>.<any>.SaveSizeTrigger
-    Evictor.<any>.<any>.StreamTimeout
-    Evictor.<any>.<any>.PopulateEmptyIndices
+    Evictor.<any>.MaxTxSize
+    Evictor.<any>.SavePeriod
+    Evictor.<any>.SaveSizeTrigger
+    Evictor.<any>.StreamTimeout
+    Evictor.<any>.PopulateEmptyIndices
+    Evictor.UseNonmutating
     Trace.DbEnv
     Trace.Evictor
     Trace.Map

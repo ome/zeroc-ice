@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,110 +13,80 @@
 #include <IceUtil/RecMutex.h>
 #include <IceStorm/IceStormInternal.h>
 #include <IceStorm/PersistentTopicMap.h>
-#include <IceStorm/SubscriberFactory.h>
 #include <list>
 
 namespace IceStorm
 {
 
-class Event;
-typedef IceUtil::Handle<Event> EventPtr;
-
-class TopicSubscribers;
-typedef IceUtil::Handle<TopicSubscribers> TopicSubscribersPtr;
-
-class TraceLevels;
-typedef IceUtil::Handle<TraceLevels> TraceLevelsPtr;
+class Instance;
+typedef IceUtil::Handle<Instance> InstancePtr;
 
 class Subscriber;
 typedef IceUtil::Handle<Subscriber> SubscriberPtr;
 
-class SubscriberFactory;
-typedef IceUtil::Handle<SubscriberFactory> SubscriberFactoryPtr;
-
-typedef std::list<SubscriberPtr> SubscriberList;
-
-class TopicSubscribers : public IceUtil::Shared
+class TopicI : public TopicInternal
 {
 public:
 
-    TopicSubscribers(const Ice::CommunicatorPtr&, const TraceLevelsPtr&);
-    virtual ~TopicSubscribers();
-
-    void add(const SubscriberPtr&);
-    void remove(const Ice::ObjectPrx&);
-    void publish(const EventPtr&);
-    SubscriberList clearErrorList();
-
-private:
-	
-    Ice::CommunicatorPtr _communicator;
-    TraceLevelsPtr _traceLevels;
-
-    //
-    // TODO: Should there be a map from identity to subscriber?
-    //
-    IceUtil::Mutex _subscribersMutex;
-    SubscriberList _subscribers;
-
-    //
-    // Set of subscribers that have encountered an error.
-    //
-    IceUtil::Mutex _errorMutex;
-    SubscriberList _error;
-};
-
-class TopicI : public TopicInternal, public IceUtil::RecMutex
-{
-public:
-
-    TopicI(const Ice::CommunicatorPtr&, const Ice::ObjectAdapterPtr&, const TraceLevelsPtr&, const std::string&,
-           const LinkRecordDict&, const SubscriberFactoryPtr&, const std::string&, const std::string&);
+    TopicI(const InstancePtr&, const std::string&, const Ice::Identity&, const LinkRecordSeq&, const std::string&,
+           const std::string&);
     ~TopicI();
 
     virtual std::string getName(const Ice::Current&) const;
     virtual Ice::ObjectPrx getPublisher(const Ice::Current&) const;
     virtual void subscribe(const QoS&, const Ice::ObjectPrx&, const Ice::Current&);
+    virtual Ice::ObjectPrx subscribeAndGetPublisher(const QoS&, const Ice::ObjectPrx&, const Ice::Current&);
     virtual void unsubscribe(const Ice::ObjectPrx&, const Ice::Current&);
-    virtual void destroy(const Ice::Current&);
+    virtual TopicLinkPrx getLinkProxy(const Ice::Current&);
     virtual void link(const TopicPrx&, Ice::Int, const Ice::Current&);
     virtual void unlink(const TopicPrx&, const Ice::Current&);
     virtual LinkInfoSeq getLinkInfoSeq(const Ice::Current&) const;
+    virtual void destroy(const Ice::Current&);
 
-    virtual TopicLinkPrx getLinkProxy(const Ice::Current&);
 
     // Internal methods
     bool destroyed() const;
-
+    Ice::Identity id() const;
     void reap();
+    void publish(bool, const EventDataSeq&);
 
 private:
 
+    void removeSubscriber(const Ice::ObjectPrx&);
     //
     // Immutable members.
     //
-    Ice::CommunicatorPtr _communicator;
-    Ice::ObjectAdapterPtr _adapter;
-    TraceLevelsPtr _traceLevels;
-    std::string _name; // The topic name
-    SubscriberFactoryPtr _factory;
+    const InstancePtr _instance;
+    const std::string _name; // The topic name
+    const Ice::Identity _id; // The topic identity
 
-    Ice::ObjectPtr _publisher; // Publisher & associated proxy
-    Ice::ObjectPrx _publisherPrx;
+    /*const*/ Ice::ObjectPrx _publisherPrx;
+    /*const*/ TopicLinkPrx _linkPrx;
 
-    Ice::ObjectPtr _link; // TopicLink & associated proxy
-    TopicLinkPrx _linkPrx;
+    // Set of subscribers.
+    IceUtil::Mutex _subscribersMutex;
 
     //
-    // Mutable members. Protected by *this
+    // We keep a vector of subscribers since the optimized behaviour
+    // should be publishing events, not searching through the list of
+    // subscribers for a particular subscriber. I tested
+    // vector/list/map and although there was little difference vector
+    // was the fastest of the three.
     //
-    bool _destroyed; // Has this Topic been destroyed?
+    std::vector<SubscriberPtr> _subscribers;
 
-    TopicSubscribersPtr _subscribers; // Set of Subscribers
+    // Set of subscribers that have encountered an error.
+    IceUtil::Mutex _errorMutex;
+    std::list<SubscriberPtr> _error;
 
-    Freeze::ConnectionPtr _connection;
+    const Freeze::ConnectionPtr _connection;
+
+    // The set of downstream topics.
+    IceUtil::RecMutex _topicRecordMutex;
     PersistentTopicMap _topics;
-    LinkRecordDict _links;
+    IceStorm::LinkRecordSeq _topicRecord;
+
+    bool _destroyed; // Has this Topic been destroyed?
 };
 
 typedef IceUtil::Handle<TopicI> TopicIPtr;

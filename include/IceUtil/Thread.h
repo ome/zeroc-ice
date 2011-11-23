@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -140,8 +140,8 @@ protected:
 #endif
 
 private:
-    Thread(const Thread&);		// Copying is forbidden
-    void operator=(const Thread&);	// Assignment is forbidden
+    Thread(const Thread&);              // Copying is forbidden
+    void operator=(const Thread&);      // Assignment is forbidden
 };
 
 typedef Handle<Thread> ThreadPtr;

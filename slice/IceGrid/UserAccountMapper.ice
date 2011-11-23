@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,7 +25,7 @@ exception UserAccountNotFoundException
 
 /**
  *
- * A user account mapper object is used by &IceGrid; nodes to map
+ * A user account mapper object is used by IceGrid nodes to map
  * session identifiers to user accounts.
  *
  **/
@@ -34,13 +34,13 @@ interface UserAccountMapper
     /**
      *
      * Get the name of the user account for the given user. This is
-     * used by &IceGrid; nodes to figure out the user account to use
+     * used by IceGrid nodes to figure out the user account to use
      * to run servers.
      *
-     * @param user The value of the server descriptor's <literal>user</literal>
+     * @param user The value of the server descriptor's <tt>user</tt>
      * attribute. If this attribute is not defined, and the server's
-     * activation mode is <literal>session</literal>, the default value of
-     * [user] is the session identifier.
+     * activation mode is <tt>session</tt>, the default value of
+     * <tt>user</tt> is the session identifier.
      *
      * @return The user account name.
      *
@@ -49,7 +49,7 @@ interface UserAccountMapper
      * 
      **/
     string getUserAccount(string user)
-	throws UserAccountNotFoundException;
+        throws UserAccountNotFoundException;
 };
 
 };

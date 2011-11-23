@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,6 +10,7 @@
 #ifndef ICE_GRID_PLATFORM_INFO_H
 #define ICE_GRID_PLATFORM_INFO_H
 
+#include <IceUtil/Thread.h>
 #include <IceGrid/Internal.h>
 
 #ifdef _WIN32
@@ -17,37 +18,60 @@
 #   include <deque>
 #endif
 
+
+
 namespace IceGrid
 {
 
 class TraceLevels;
 typedef IceUtil::Handle<TraceLevels> TraceLevelsPtr;
 
+NodeInfo toNodeInfo(const InternalNodeInfoPtr&);
+RegistryInfo toRegistryInfo(const InternalReplicaInfoPtr&);
+
 class PlatformInfo
 {
 public:
 
-    PlatformInfo(const Ice::CommunicatorPtr&, const TraceLevelsPtr&);
+    PlatformInfo(const std::string&, const Ice::CommunicatorPtr&, const TraceLevelsPtr&);
     ~PlatformInfo();
 
+    void start();
+    void stop();
+
+    InternalNodeInfoPtr getInternalNodeInfo() const;
+    InternalReplicaInfoPtr getInternalReplicaInfo() const;
+
     NodeInfo getNodeInfo() const;
+    RegistryInfo getRegistryInfo() const;
+
     LoadInfo getLoadInfo();
     std::string getHostname() const;
     std::string getDataDir() const;
+    std::string getCwd() const;
+
+#if defined(_WIN32)
+    void runUpdateLoadInfo();
+#endif
 
 private:
 
-#if defined(_WIN32)
-    void initQuery();
-#endif    
-
     const TraceLevelsPtr _traceLevels;
-    NodeInfo _info;
+    std::string _name;
+    std::string _os;
     std::string _hostname;
+    std::string _release;
+    std::string _version;
+    std::string _machine;
+    int _nProcessors;
+    std::string _dataDir;
+    std::string _cwd;
+    std::string _endpoints;
 
 #if defined(_WIN32)
-    HQUERY _query;
-    HCOUNTER _counter;
+    IceUtil::ThreadPtr _updateUtilizationThread;
+    IceUtil::Monitor<IceUtil::Mutex> _utilizationMonitor;
+    bool _terminated;
     std::deque<int> _usages1;
     std::deque<int> _usages5;
     std::deque<int> _usages15;

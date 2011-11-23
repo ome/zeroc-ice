@@ -1,0 +1,46 @@
+This demo demonstrates how to configure and deploy IceStorm in a
+replicated fashion using IceGrid replica groups.
+
+To run the demo, start the IceGrid service:
+
+$ icegridnode --Ice.Config=config.grid
+
+In a separate window:
+
+$ icegridadmin --Ice.Config=config.grid -e \
+    "application add 'application.xml'"
+$ subscriber
+
+In another window:
+
+$ publisher
+
+While the publisher continues to run, "tick" messages should be
+displayed in the subscriber window.
+
+The IceGrid application described in `application.xml' deploys three
+IceStorm service instances. The three IceStorm service instances share
+the same instance name and their object adapters are configured to be
+members of IceGrid replica groups.
+
+When the subscriber starts, it retrieves all the topic manager object
+replicas. It then retrieves (or creates if it doesn't already exist)
+the topic named `time' on each topic manager. Finally, it subscribes
+to the `time' topic of each IceStorm service instance.
+
+The publisher just retrieves the publisher proxy of the `time' topic
+from a randomly selected IceStorm service instance. This publisher
+proxy is configured to use per-request load balancing so that each
+invocation is sent successively to each replica thanks to the round
+robin load balancing configured for the replica group (you can set
+Ice.Trace.Location=1 to see the locator invocations).
+
+Note that the subscriptions are not persistent and the subscriber
+makes no attempt to re-establish dropped subscriptions. So if an
+IceStorm service instance is restarted, its subscriptions are lost and
+need to be re-established by restarting the subscribers.
+
+Similarly, if you add an IceStorm service instance while some
+publishers and subscribers are already running, you need to restart
+the subscribers in order to get them to subscribe to this new IceStorm
+service instance.

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,23 +18,23 @@ module Ice
  * An administrative interface for process management. Managed servers must
  * implement this interface.
  *
- * <note><para> A servant implementing this interface is a potential target
+ * <p class="Note">A servant implementing this interface is a potential target
  * for denial-of-service attacks, therefore proper security precautions
  * should be taken. For example, the servant can use a UUID to make its
  * identity harder to guess, and be registered in an object adapter with
- * a secured endpoint.</para></note>
+ * a secured endpoint.
  *
  **/
 interface Process
 {
     /**
      *
-     * Initiate a graceful shutdown.
+     * Initiate a graceful shut-down.
      *
      * @see Communicator::shutdown
      *
      **/
-    ["ami"] idempotent void shutdown();
+    ["ami"] void shutdown();
 
 
     /**

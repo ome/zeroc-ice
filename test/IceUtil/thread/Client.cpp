@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,17 +21,17 @@ main(int argc, char** argv)
 {
     try
     {
-	initializeTestSuite();
+        initializeTestSuite();
 
-	for(list<TestBasePtr>::const_iterator p = allTests.begin(); p != allTests.end(); ++p)
-	{
-	    (*p)->start();
-	}
+        for(list<TestBasePtr>::const_iterator p = allTests.begin(); p != allTests.end(); ++p)
+        {
+            (*p)->start();
+        }
     }
     catch(const TestFailed& e)
     {
-	cout << "test " << e.name << " failed" << endl;
-	return EXIT_FAILURE;
+        cout << "test " << e.name << " failed" << endl;
+        return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
 }

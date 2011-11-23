@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,9 +15,9 @@
 
 /**
  *
- * &Glacier2; is a firewall solution for Ice. &Glacier2; authenticates
+ * Glacier2 is a firewall solution for Ice. Glacier2 authenticates
  * and filters client requests and allows callbacks to the client in a
- * secure fashion. In combination with &IceSSL;, &Glacier2; provides a
+ * secure fashion. In combination with IceSSL, Glacier2 provides a
  * security solution that is both non-intrusive and easy to configure.
  *
  **/
@@ -30,6 +30,7 @@ module Glacier2
  * a session with the router.
  *
  * @see Router::createSession
+ * @see Router::createSessionFromSecureConnection
  *
  **/
 exception PermissionDeniedException
@@ -56,7 +57,7 @@ exception SessionNotExistException
 
 /**
  *
- * The &Glacier2; specialization of the standard &Ice; router
+ * The Glacier2 specialization of the [Ice::Router]
  * interface.
  *
  **/
@@ -71,7 +72,7 @@ interface Router extends Ice::Router
      * @return The category.
      *
      **/
-    nonmutating string getCategoryForClient();
+    ["nonmutating", "cpp:const"] idempotent string getCategoryForClient();
 
     /**
      *
@@ -107,7 +108,7 @@ interface Router extends Ice::Router
      *
      **/
     Session* createSession(string userId, string password)
-	throws PermissionDeniedException, CannotCreateSessionException;
+        throws PermissionDeniedException, CannotCreateSessionException;
 
     /**
      *
@@ -139,7 +140,7 @@ interface Router extends Ice::Router
      *
      **/
     Session* createSessionFromSecureConnection()
-	throws PermissionDeniedException, CannotCreateSessionException;
+        throws PermissionDeniedException, CannotCreateSessionException;
 
     /**
      *
@@ -150,7 +151,7 @@ interface Router extends Ice::Router
      *
      **/
     void destroySession()
-	throws SessionNotExistException;
+        throws SessionNotExistException;
 
     /**
      *
@@ -160,12 +161,12 @@ interface Router extends Ice::Router
      * @return The timeout (in seconds).
      *
      **/
-    nonmutating long getSessionTimeout();
+    ["nonmutating", "cpp:const"] idempotent long getSessionTimeout();
 };
 
 /**
  *
- * The &Glacier2; administrative interface. This must only be
+ * The Glacier2 administrative interface. This must only be
  * accessible from inside the firewall.
  *
  **/
@@ -173,10 +174,10 @@ interface Admin
 {
     /**
      *
-     * Shut down the &Glacier2; router.
+     * Shut down the Glacier2 router.
      *
      **/
-    idempotent void shutdown();
+    void shutdown();
 };
 
 };

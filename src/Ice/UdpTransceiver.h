@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -41,6 +41,7 @@ public:
     virtual std::string type() const;
     virtual std::string toString() const;
     virtual void initialize(int);
+    virtual void checkSendSize(const Buffer&, size_t);
 
     bool equivalent(const std::string&, int) const;
     int effectivePort() const;
@@ -62,8 +63,10 @@ private:
 
     SOCKET _fd;
     struct sockaddr_in _addr;
+#ifdef _WIN32
     fd_set _rFdSet;
     fd_set _wFdSet;
+#endif
     bool _connect;
     int _rcvSize;
     int _sndSize;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <Ice/Communicator.h>
+#include <Ice/Logger.h>
 #include <Ice/Properties.h>
 #include <Glacier2/FilterManager.h>
 #include <Glacier2/FilterI.h>
@@ -31,61 +32,61 @@ stringToSeq(const string& str, vector<string>& seq)
     string::size_type end = 0;
     while(current != string::npos)
     {
-	switch(str[current])
-	{
-	case '"':
-	case '\'':
-	{
-	    char quote = str[current];
-	    end = current+1;
-	    while(true)
-	    {
-		end = str.find(quote, end);
+        switch(str[current])
+        {
+        case '"':
+        case '\'':
+        {
+            char quote = str[current];
+            end = current+1;
+            while(true)
+            {
+                end = str.find(quote, end);
 
-		if(end == string::npos)
-		{
-		    //
-		    // TODO: should this be an unmatched quote error?
-		    //
-		    seq.push_back(str.substr(current));
-		    break;
-		}
+                if(end == string::npos)
+                {
+                    //
+                    // TODO: should this be an unmatched quote error?
+                    //
+                    seq.push_back(str.substr(current));
+                    break;
+                }
 
-		bool markString = true;
-		for(string::size_type r = end -1 ; r > current && str[r] == '\\' ; --r)
-		{
-		    markString = !markString;
-		}
-		//
-		// We don't want the quote so we skip that.
-		//
-		if(markString)
-		{
-		    ++current;
-		    seq.push_back(str.substr(current, end-current));
-		    break;
-		}
-		else
-		{
-		    ++end;
-		}
-	    } 
-	    if(end != string::npos)
-	    {
-		++end;
-	    }
-	    break;
-	}
+                bool markString = true;
+                for(string::size_type r = end -1 ; r > current && str[r] == '\\' ; --r)
+                {
+                    markString = !markString;
+                }
+                //
+                // We don't want the quote so we skip that.
+                //
+                if(markString)
+                {
+                    ++current;
+                    seq.push_back(str.substr(current, end-current));
+                    break;
+                }
+                else
+                {
+                    ++end;
+                }
+            } 
+            if(end != string::npos)
+            {
+                ++end;
+            }
+            break;
+        }
 
-	default:
-	{
-	    end = str.find_first_of(ws, current);
-	    string::size_type len = (end == string::npos) ? string::npos : end - current;
-	    seq.push_back(str.substr(current, len));
-	    break;
-	}
-	}
-	current = str.find_first_not_of(ws, end);
+        default:
+        {
+            end = str.find_first_of(ws, current);
+            string::size_type len = (end == string::npos) ? string::npos : end - current;
+            seq.push_back(str.substr(current, len));
+            break;
+        }
+        }
+        current = str.find_first_not_of(ws, end);
     }
 }
 
@@ -101,61 +102,61 @@ stringToSeq(const CommunicatorPtr& comm, const string& str, vector<Identity>& se
     string::size_type end = 0;
     while(current != string::npos)
     {
-	switch(str[current])
-	{
-	case '"':
-	case '\'':
-	{
-	    char quote = str[current];
-	    end = current+1;
-	    while(true)
-	    {
-		end = str.find(quote, end);
+        switch(str[current])
+        {
+        case '"':
+        case '\'':
+        {
+            char quote = str[current];
+            end = current+1;
+            while(true)
+            {
+                end = str.find(quote, end);
 
-		if(end == string::npos)
-		{
-		    //
-		    // TODO: should this be an unmatched quote error?
-		    //
-		    seq.push_back(comm->stringToIdentity(str.substr(current)));
-		    break;
-		}
+                if(end == string::npos)
+                {
+                    //
+                    // TODO: should this be an unmatched quote error?
+                    //
+                    seq.push_back(comm->stringToIdentity(str.substr(current)));
+                    break;
+                }
 
-		bool markString = true;
-		for(string::size_type r = end -1 ; r > current && str[r] == '\\' ; --r)
-		{
-		    markString = !markString;
-		}
-		//
-		// We don't want the quote so we skip that.
-		//
-		if(markString)
-		{
-		    ++current;
-		    seq.push_back(comm->stringToIdentity(str.substr(current, end-current)));
-		    break;
-		}
-		else
-		{
-		    ++end;
-		}
-	    } 
-	    if(end != string::npos)
-	    {
-		++end;
-	    }
-	    break;
-	}
+                bool markString = true;
+                for(string::size_type r = end -1 ; r > current && str[r] == '\\' ; --r)
+                {
+                    markString = !markString;
+                }
+                //
+                // We don't want the quote so we skip that.
+                //
+                if(markString)
+                {
+                    ++current;
+                    seq.push_back(comm->stringToIdentity(str.substr(current, end-current)));
+                    break;
+                }
+                else
+                {
+                    ++end;
+                }
+            } 
+            if(end != string::npos)
+            {
+                ++end;
+            }
+            break;
+        }
 
-	default:
-	{
-	    end = str.find_first_of(ws, current);
-	    string::size_type len = (end == string::npos) ? string::npos : end - current;
-	    seq.push_back(comm->stringToIdentity(str.substr(current, len)));
-	    break;
-	}
-	}
-	current = str.find_first_not_of(ws, end);
+        default:
+        {
+            end = str.find_first_of(ws, current);
+            string::size_type len = (end == string::npos) ? string::npos : end - current;
+            seq.push_back(comm->stringToIdentity(str.substr(current, len)));
+            break;
+        }
+        }
+        current = str.find_first_not_of(ws, end);
     }
 }
 
@@ -169,42 +170,42 @@ Glacier2::FilterManager::destroy()
 {
     if(_adapter)
     {
-	try
-	{
-	    if(_categoriesPrx)
-	    {
-		_adapter->remove(_categoriesPrx->ice_getIdentity());
-	    }
-	}
-	catch(const Exception&)
-	{
-	}
-	try
-	{
-	    if(_adapterIdsPrx)
-	    {
-		_adapter->remove(_adapterIdsPrx->ice_getIdentity());
-	    }
-	}
-	catch(const Exception&)
-	{
-	}
-	try
-	{
-	    if(_identitiesPrx)
-	    {
-		_adapter->remove(_identitiesPrx->ice_getIdentity());
-	    }
-	}
-	catch(const Exception&)
-	{
-	}
+        try
+        {
+            if(_categoriesPrx)
+            {
+                _adapter->remove(_categoriesPrx->ice_getIdentity());
+            }
+        }
+        catch(const Exception&)
+        {
+        }
+        try
+        {
+            if(_adapterIdsPrx)
+            {
+                _adapter->remove(_adapterIdsPrx->ice_getIdentity());
+            }
+        }
+        catch(const Exception&)
+        {
+        }
+        try
+        {
+            if(_identitiesPrx)
+            {
+                _adapter->remove(_identitiesPrx->ice_getIdentity());
+            }
+        }
+        catch(const Exception&)
+        {
+        }
     }
 }
 
 Glacier2::FilterManager::FilterManager(const ObjectAdapterPtr& adapter, const Glacier2::StringSetIPtr& categories, 
-				       const Glacier2::StringSetIPtr& adapters,
-				       const Glacier2::IdentitySetIPtr& identities) :
+                                       const Glacier2::StringSetIPtr& adapters,
+                                       const Glacier2::IdentitySetIPtr& identities) :
     _categories(categories),
     _adapters(adapters),
     _identities(identities),
@@ -212,33 +213,38 @@ Glacier2::FilterManager::FilterManager(const ObjectAdapterPtr& adapter, const Gl
 {
     try
     {
-	if(_adapter)
-	{
-	    _categoriesPrx = Glacier2::StringSetPrx::uncheckedCast(_adapter->addWithUUID(_categories));
-	    _adapterIdsPrx = Glacier2::StringSetPrx::uncheckedCast(_adapter->addWithUUID(_adapters));
-	    _identitiesPrx = Glacier2::IdentitySetPrx::uncheckedCast(_adapter->addWithUUID(_identities));
-	}
+        if(_adapter)
+        {
+            _categoriesPrx = Glacier2::StringSetPrx::uncheckedCast(_adapter->addWithUUID(_categories));
+            _adapterIdsPrx = Glacier2::StringSetPrx::uncheckedCast(_adapter->addWithUUID(_adapters));
+            _identitiesPrx = Glacier2::IdentitySetPrx::uncheckedCast(_adapter->addWithUUID(_identities));
+        }
     }
     catch(...)
     {
-	destroy();
-	throw;
+        destroy();
+        throw;
     }
 }
 
 Glacier2::FilterManager*
 Glacier2::FilterManager::create(const CommunicatorPtr& communicator, const ObjectAdapterPtr& adapter, const string& userId,
-				const bool allowAddUser)
+                                const bool allowAddUser)
 {
     PropertiesPtr props = communicator->getProperties();
     //
     // DEPRECATED PROPERTY: Glacier2.AllowCategories is to be deprecated
-    // and superseded by Glacier2.Filter.Categories.Accept.
+    // and superseded by Glacier2.Filter.Category.Accept.
     //
-    string allow = props->getProperty("Glacier2.AllowCategories");
+    string allow = props->getProperty("Glacier2.Filter.Category.Accept");
     if(allow.empty())
     {
-	allow = props->getProperty("Glacier2.Filter.Category.Accept");
+        allow = props->getProperty("Glacier2.AllowCategories");
+        if(!allow.empty())
+        {
+            communicator->getLogger()->warning(
+                "Glacier2.AllowCategories has been deprecated, use Glacier2.Filter.Category.Accept instead.");
+        }
     }
 
     vector<string> allowSeq;
@@ -246,19 +252,37 @@ Glacier2::FilterManager::create(const CommunicatorPtr& communicator, const Objec
 
     if(allowAddUser)
     {
-	int addUserMode = props->getPropertyAsInt("Glacier2.AddUserToAllowCategories");
+        //
+        // DEPRECATED PROPERTY: Glacier2.AddUserToAllowCategories is to be deprecated
+        // and superseded by Glacier2.Filter.Category.AcceptUser.
+        //
+        int addUserMode;
+        if(!props->getProperty("Glacier2.Filter.Category.AcceptUser").empty())
+        {
+            addUserMode = props->getPropertyAsInt("Glacier2.Filter.Category.AcceptUser");
+        }
+        else
+        {
+            if(!props->getProperty("Glacier2.AddUserToAllowCategories").empty())
+            {
+                communicator->getLogger()->warning(
+                        "Glacier2.AddUserToAllowCategories has been deprecated, \
+                         use Glacier2.Filter.Category.AcceptUser instead.");
+            }
+            addUserMode = props->getPropertyAsInt("Glacier2.AddUserToAllowCategories");
+        }
        
-	if(addUserMode > 0 && !userId.empty())
-	{
-	    if(addUserMode == 1)
-	    {
-		allowSeq.push_back(userId); // Add user id to allowed categories.
-	    }
-	    else if(addUserMode == 2)
-	    {
-		allowSeq.push_back('_' + userId); // Add user id with prepended underscore to allowed categories.
-	    }
-	}	
+        if(addUserMode > 0 && !userId.empty())
+        {
+            if(addUserMode == 1)
+            {
+                allowSeq.push_back(userId); // Add user id to allowed categories.
+            }
+            else if(addUserMode == 2)
+            {
+                allowSeq.push_back('_' + userId); // Add user id with prepended underscore to allowed categories.
+            }
+        }       
     }
     Glacier2::StringSetIPtr categoryFilter = new Glacier2::StringSetI(allowSeq);
 

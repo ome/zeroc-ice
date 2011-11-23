@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -39,10 +39,10 @@ public:
     virtual void updateApplication(const ApplicationUpdateDescriptor&, const Ice::Current&);
     virtual void removeApplication(const std::string&, const Ice::Current&);
     virtual void instantiateServer(const std::string&, const std::string&, const ServerInstanceDescriptor&, 
-				   const Ice::Current&);
+                                   const Ice::Current&);
     virtual void patchApplication_async(const AMD_Admin_patchApplicationPtr&, const std::string&, bool, 
-					const Ice::Current&);
-    virtual ApplicationDescriptor getApplicationDescriptor(const ::std::string&, const Ice::Current&) const;
+                                        const Ice::Current&);
+    virtual ApplicationInfo getApplicationInfo(const ::std::string&, const Ice::Current&) const;
     virtual ApplicationDescriptor getDefaultApplicationDescriptor(const Ice::Current&) const;
     virtual Ice::StringSeq getAllApplicationNames(const Ice::Current&) const;
 
@@ -77,17 +77,25 @@ public:
     virtual std::string getNodeHostname(const std::string&, const Ice::Current&) const;
     virtual Ice::StringSeq getAllNodeNames(const ::Ice::Current&) const;
 
+    virtual RegistryInfo getRegistryInfo(const std::string&, const Ice::Current&) const;
+    virtual bool pingRegistry(const std::string&, const Ice::Current&) const;
+    virtual void shutdownRegistry(const std::string&, const Ice::Current&);
+    virtual Ice::StringSeq getAllRegistryNames(const ::Ice::Current&) const;
+
     virtual void shutdown(const Ice::Current&);
 
     virtual Ice::SliceChecksumDict getSliceChecksums(const Ice::Current&) const;
 
 private:
 
+    void checkIsMaster() const;
+    
     const DatabasePtr _database;
     const RegistryIPtr _registry;
     const TraceLevelsPtr _traceLevels;
     const AdminSessionIPtr _session;
 };
+typedef IceUtil::Handle<AdminI> AdminIPtr;
 
 }
 

@@ -1,7 +1,7 @@
-/* A Bison parser, made by GNU Bison 2.1.  */
+/* A Bison parser, made by GNU Bison 1.875c.  */
 
 /* Skeleton parser for Yacc-like parsing with Bison,
-   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,8 +15,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA 02111-1307, USA.  */
 
 /* As a special exception, when this file is copied by Bison into a
    Bison output file, you may use that output file without restriction.
@@ -36,9 +36,6 @@
 /* Identify Bison output.  */
 #define YYBISON 1
 
-/* Bison version.  */
-#define YYBISON_VERSION "2.1"
-
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
 
@@ -48,7 +45,8 @@
 /* Using locations.  */
 #define YYLSP_NEEDED 0
 
-/* Substitute the variable and function names.  */
+/* If NAME_PREFIX is specified substitute the variables and functions
+   names.  */
 #define yyparse slice_parse
 #define yylex   slice_lex
 #define yyerror slice_error
@@ -107,7 +105,6 @@
      BAD_CHAR = 298
    };
 #endif
-/* Tokens.  */
 #define ICE_MODULE 258
 #define ICE_CLASS 259
 #define ICE_INTERFACE 260
@@ -159,7 +156,7 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -211,11 +208,6 @@ slice_error(const char* s)
 # define YYERROR_VERBOSE 0
 #endif
 
-/* Enabling the token table.  */
-#ifndef YYTOKEN_TABLE
-# define YYTOKEN_TABLE 0
-#endif
-
 #if ! defined (YYSTYPE) && ! defined (YYSTYPE_IS_DECLARED)
 typedef int YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -228,49 +220,30 @@ typedef int YYSTYPE;
 /* Copy the second part of user declarations.  */
 
 
-/* Line 219 of yacc.c.  */
-#line 233 "Grammar.tab.c"
-
-#if ! defined (YYSIZE_T) && defined (__SIZE_TYPE__)
-# define YYSIZE_T __SIZE_TYPE__
-#endif
-#if ! defined (YYSIZE_T) && defined (size_t)
-# define YYSIZE_T size_t
-#endif
-#if ! defined (YYSIZE_T) && (defined (__STDC__) || defined (__cplusplus))
-# include <stddef.h> /* INFRINGES ON USER NAME SPACE */
-# define YYSIZE_T size_t
-#endif
-#if ! defined (YYSIZE_T)
-# define YYSIZE_T unsigned int
-#endif
-
-#ifndef YY_
-# if YYENABLE_NLS
-#  if ENABLE_NLS
-#   include <libintl.h> /* INFRINGES ON USER NAME SPACE */
-#   define YY_(msgid) dgettext ("bison-runtime", msgid)
-#  endif
-# endif
-# ifndef YY_
-#  define YY_(msgid) msgid
-# endif
-#endif
+/* Line 214 of yacc.c.  */
+#line 225 "Grammar.tab.c"
 
 #if ! defined (yyoverflow) || YYERROR_VERBOSE
+
+# ifndef YYFREE
+#  define YYFREE free
+# endif
+# ifndef YYMALLOC
+#  define YYMALLOC malloc
+# endif
 
 /* The parser invokes alloca or malloc; define the necessary symbols.  */
 
 # ifdef YYSTACK_USE_ALLOCA
 #  if YYSTACK_USE_ALLOCA
+#   define YYSTACK_ALLOC alloca
+#  endif
+# else
+#  if defined (alloca) || defined (_ALLOCA_H)
+#   define YYSTACK_ALLOC alloca
+#  else
 #   ifdef __GNUC__
 #    define YYSTACK_ALLOC __builtin_alloca
-#   else
-#    define YYSTACK_ALLOC alloca
-#    if defined (__STDC__) || defined (__cplusplus)
-#     include <stdlib.h> /* INFRINGES ON USER NAME SPACE */
-#     define YYINCLUDED_STDLIB_H
-#    endif
 #   endif
 #  endif
 # endif
@@ -278,39 +251,13 @@ typedef int YYSTYPE;
 # ifdef YYSTACK_ALLOC
    /* Pacify GCC's `empty if-body' warning. */
 #  define YYSTACK_FREE(Ptr) do { /* empty */; } while (0)
-#  ifndef YYSTACK_ALLOC_MAXIMUM
-    /* The OS might guarantee only one guard page at the bottom of the stack,
-       and a page size can be as small as 4096 bytes.  So we cannot safely
-       invoke alloca (N) if N exceeds 4096.  Use a slightly smaller number
-       to allow for a few compiler-allocated temporary stack slots.  */
-#   define YYSTACK_ALLOC_MAXIMUM 4032 /* reasonable circa 2005 */
-#  endif
 # else
+#  if defined (__STDC__) || defined (__cplusplus)
+#   include <stdlib.h> /* INFRINGES ON USER NAME SPACE */
+#   define YYSIZE_T size_t
+#  endif
 #  define YYSTACK_ALLOC YYMALLOC
 #  define YYSTACK_FREE YYFREE
-#  ifndef YYSTACK_ALLOC_MAXIMUM
-#   define YYSTACK_ALLOC_MAXIMUM ((YYSIZE_T) -1)
-#  endif
-#  ifdef __cplusplus
-extern "C" {
-#  endif
-#  ifndef YYMALLOC
-#   define YYMALLOC malloc
-#   if (! defined (malloc) && ! defined (YYINCLUDED_STDLIB_H) \
-	&& (defined (__STDC__) || defined (__cplusplus)))
-void *malloc (YYSIZE_T); /* INFRINGES ON USER NAME SPACE */
-#   endif
-#  endif
-#  ifndef YYFREE
-#   define YYFREE free
-#   if (! defined (free) && ! defined (YYINCLUDED_STDLIB_H) \
-	&& (defined (__STDC__) || defined (__cplusplus)))
-void free (void *); /* INFRINGES ON USER NAME SPACE */
-#   endif
-#  endif
-#  ifdef __cplusplus
-}
-#  endif
 # endif
 #endif /* ! defined (yyoverflow) || YYERROR_VERBOSE */
 
@@ -322,7 +269,7 @@ void free (void *); /* INFRINGES ON USER NAME SPACE */
 /* A type that is properly aligned for any stack member.  */
 union yyalloc
 {
-  short int yyss;
+  short yyss;
   YYSTYPE yyvs;
   };
 
@@ -332,7 +279,7 @@ union yyalloc
 /* The size of an array large to enough to hold all stacks, each with
    N elements.  */
 # define YYSTACK_BYTES(N) \
-     ((N) * (sizeof (short int) + sizeof (YYSTYPE))			\
+     ((N) * (sizeof (short) + sizeof (YYSTYPE))				\
       + YYSTACK_GAP_MAXIMUM)
 
 /* Copy COUNT objects from FROM to TO.  The source and destination do
@@ -345,7 +292,7 @@ union yyalloc
 #   define YYCOPY(To, From, Count)		\
       do					\
 	{					\
-	  YYSIZE_T yyi;				\
+	  register YYSIZE_T yyi;		\
 	  for (yyi = 0; yyi < (Count); yyi++)	\
 	    (To)[yyi] = (From)[yyi];		\
 	}					\
@@ -374,7 +321,7 @@ union yyalloc
 #if defined (__STDC__) || defined (__cplusplus)
    typedef signed char yysigned_char;
 #else
-   typedef short int yysigned_char;
+   typedef short yysigned_char;
 #endif
 
 /* YYFINAL -- State number of the termination state. */
@@ -395,7 +342,7 @@ union yyalloc
 #define YYUNDEFTOK  2
 #define YYMAXUTOK   298
 
-#define YYTRANSLATE(YYX)						\
+#define YYTRANSLATE(YYX) 						\
   ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
 
 /* YYTRANSLATE[YYLEX] -- Bison symbol number corresponding to YYLEX.  */
@@ -436,7 +383,7 @@ static const unsigned char yytranslate[] =
 #if YYDEBUG
 /* YYPRHS[YYN] -- Index of the first RHS symbol of rule number YYN in
    YYRHS.  */
-static const unsigned short int yyprhs[] =
+static const unsigned short yyprhs[] =
 {
        0,     0,     3,     5,     9,    13,    14,    15,    19,    20,
       26,    27,    32,    35,    36,    38,    40,    42,    44,    46,
@@ -518,7 +465,7 @@ static const yysigned_char yyrhs[] =
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
-static const unsigned short int yyrline[] =
+static const unsigned short yyrline[] =
 {
        0,   104,   104,   112,   121,   126,   135,   134,   144,   143,
      155,   154,   159,   164,   171,   175,   179,   183,   187,   191,
@@ -527,23 +474,23 @@ static const unsigned short int yyrline[] =
      354,   367,   373,   377,   388,   399,   398,   434,   443,   446,
      451,   458,   464,   468,   479,   493,   492,   532,   567,   575,
      580,   588,   597,   600,   605,   612,   635,   657,   683,   684,
-     693,   717,   741,   765,   789,   813,   843,   842,   865,   864,
-     887,   888,   894,   898,   909,   924,   923,   958,   993,  1028,
-    1038,  1043,  1051,  1060,  1063,  1068,  1075,  1081,  1088,  1100,
-    1112,  1123,  1132,  1147,  1158,  1175,  1179,  1191,  1190,  1218,
-    1224,  1232,  1244,  1252,  1261,  1268,  1279,  1281,  1299,  1317,
-    1329,  1341,  1352,  1368,  1373,  1381,  1384,  1390,  1403,  1407,
-    1411,  1415,  1419,  1423,  1427,  1431,  1435,  1439,  1443,  1447,
-    1466,  1507,  1513,  1521,  1528,  1540,  1547,  1557,  1567,  1577,
-    1606,  1614,  1622,  1635,  1643,  1657,  1660,  1663,  1666,  1669,
-    1672,  1675,  1678,  1681,  1684,  1687,  1690,  1693,  1696,  1699,
-    1702,  1705,  1708,  1711,  1714,  1717,  1720,  1723,  1726,  1729,
-    1732,  1735,  1738,  1741
+     693,   717,   758,   782,   806,   830,   860,   859,   882,   881,
+     904,   905,   911,   915,   926,   941,   940,   975,  1010,  1045,
+    1055,  1060,  1068,  1077,  1080,  1085,  1092,  1098,  1105,  1117,
+    1129,  1140,  1149,  1164,  1175,  1192,  1196,  1208,  1207,  1235,
+    1241,  1249,  1261,  1269,  1278,  1285,  1296,  1298,  1316,  1334,
+    1346,  1358,  1369,  1385,  1390,  1398,  1401,  1407,  1420,  1424,
+    1428,  1432,  1436,  1440,  1444,  1448,  1452,  1456,  1460,  1464,
+    1483,  1524,  1530,  1538,  1545,  1557,  1564,  1574,  1584,  1594,
+    1623,  1631,  1639,  1652,  1660,  1674,  1677,  1680,  1683,  1686,
+    1689,  1692,  1695,  1698,  1701,  1704,  1707,  1710,  1713,  1716,
+    1719,  1722,  1725,  1728,  1731,  1734,  1737,  1740,  1743,  1746,
+    1749,  1752,  1755,  1758
 };
 #endif
 
-#if YYDEBUG || YYERROR_VERBOSE || YYTOKEN_TABLE
-/* YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
+#if YYDEBUG || YYERROR_VERBOSE
+/* YYTNME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
    First, the terminals, then, starting at YYNTOKENS, nonterminals. */
 static const char *const yytname[] =
 {
@@ -579,7 +526,7 @@ static const char *const yytname[] =
 # ifdef YYPRINT
 /* YYTOKNUM[YYLEX-NUM] -- Internal token number corresponding to
    token YYLEX-NUM.  */
-static const unsigned short int yytoknum[] =
+static const unsigned short yytoknum[] =
 {
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
      265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
@@ -673,7 +620,7 @@ static const unsigned char yydefact[] =
 };
 
 /* YYDEFGOTO[NTERM-NUM]. */
-static const short int yydefgoto[] =
+static const short yydefgoto[] =
 {
       -1,     4,     5,     6,     7,    14,    41,    33,    18,    19,
       56,    49,    20,    21,   132,   114,   172,   174,   190,    50,
@@ -687,7 +634,7 @@ static const short int yydefgoto[] =
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
 #define YYPACT_NINF -179
-static const short int yypact[] =
+static const short yypact[] =
 {
      341,   -22,     2,     2,    61,  -179,     7,  -179,  -179,     2,
     -179,   -21,   -18,  -179,    76,    34,  -179,    60,    29,  -179,
@@ -719,7 +666,7 @@ static const short int yypact[] =
 };
 
 /* YYPGOTO[NTERM-NUM].  */
-static const short int yypgoto[] =
+static const short yypgoto[] =
 {
     -179,  -179,  -179,   -17,   -13,  -179,  -179,  -179,  -179,  -179,
     -179,  -179,  -179,  -179,  -179,  -179,  -172,  -178,  -179,  -179,
@@ -735,7 +682,7 @@ static const short int yypgoto[] =
    number is the opposite.  If zero, do what YYDEFACT says.
    If YYTABLE_NINF, syntax error.  */
 #define YYTABLE_NINF -117
-static const short int yytable[] =
+static const short yytable[] =
 {
       40,    38,   116,   -58,   113,   102,   104,   106,   108,   131,
       15,   112,   134,   124,   139,   191,    70,   212,   193,    35,
@@ -818,7 +765,7 @@ static const short int yytable[] =
        0,     0,     0,    67,    68
 };
 
-static const short int yycheck[] =
+static const short yycheck[] =
 {
       17,    14,    12,    13,    12,    42,    43,    44,    45,   113,
        3,    48,   116,    32,   118,   171,    40,   189,   173,    40,
@@ -934,6 +881,22 @@ static const unsigned char yystos[] =
      119,    70,   113,    48,   119,   100
 };
 
+#if ! defined (YYSIZE_T) && defined (__SIZE_TYPE__)
+# define YYSIZE_T __SIZE_TYPE__
+#endif
+#if ! defined (YYSIZE_T) && defined (size_t)
+# define YYSIZE_T size_t
+#endif
+#if ! defined (YYSIZE_T)
+# if defined (__STDC__) || defined (__cplusplus)
+#  include <stddef.h> /* INFRINGES ON USER NAME SPACE */
+#  define YYSIZE_T size_t
+# endif
+#endif
+#if ! defined (YYSIZE_T)
+# define YYSIZE_T unsigned int
+#endif
+
 #define yyerrok		(yyerrstatus = 0)
 #define yyclearin	(yychar = YYEMPTY)
 #define YYEMPTY		(-2)
@@ -963,58 +926,25 @@ do								\
       goto yybackup;						\
     }								\
   else								\
-    {								\
-      yyerror (YY_("syntax error: cannot back up")); \
+    { 								\
+      yyerror ("syntax error: cannot back up");\
       YYERROR;							\
     }								\
 while (0)
 
-
 #define YYTERROR	1
 #define YYERRCODE	256
 
+/* YYLLOC_DEFAULT -- Compute the default location (before the actions
+   are run).  */
 
-/* YYLLOC_DEFAULT -- Set CURRENT to span from RHS[1] to RHS[N].
-   If N is 0, then set CURRENT to the empty location which ends
-   the previous symbol: RHS[0] (always defined).  */
-
-#define YYRHSLOC(Rhs, K) ((Rhs)[K])
 #ifndef YYLLOC_DEFAULT
-# define YYLLOC_DEFAULT(Current, Rhs, N)				\
-    do									\
-      if (N)								\
-	{								\
-	  (Current).first_line   = YYRHSLOC (Rhs, 1).first_line;	\
-	  (Current).first_column = YYRHSLOC (Rhs, 1).first_column;	\
-	  (Current).last_line    = YYRHSLOC (Rhs, N).last_line;		\
-	  (Current).last_column  = YYRHSLOC (Rhs, N).last_column;	\
-	}								\
-      else								\
-	{								\
-	  (Current).first_line   = (Current).last_line   =		\
-	    YYRHSLOC (Rhs, 0).last_line;				\
-	  (Current).first_column = (Current).last_column =		\
-	    YYRHSLOC (Rhs, 0).last_column;				\
-	}								\
-    while (0)
+# define YYLLOC_DEFAULT(Current, Rhs, N)		\
+   ((Current).first_line   = (Rhs)[1].first_line,	\
+    (Current).first_column = (Rhs)[1].first_column,	\
+    (Current).last_line    = (Rhs)[N].last_line,	\
+    (Current).last_column  = (Rhs)[N].last_column)
 #endif
-
-
-/* YY_LOCATION_PRINT -- Print the location on the stream.
-   This macro was not mandated originally: define only if we know
-   we won't break user code: when these are the locations we know.  */
-
-#ifndef YY_LOCATION_PRINT
-# if YYLTYPE_IS_TRIVIAL
-#  define YY_LOCATION_PRINT(File, Loc)			\
-     fprintf (File, "%d.%d-%d.%d",			\
-              (Loc).first_line, (Loc).first_column,	\
-              (Loc).last_line,  (Loc).last_column)
-# else
-#  define YY_LOCATION_PRINT(File, Loc) ((void) 0)
-# endif
-#endif
-
 
 /* YYLEX -- calling `yylex' with the right arguments.  */
 
@@ -1038,13 +968,19 @@ do {						\
     YYFPRINTF Args;				\
 } while (0)
 
-# define YY_SYMBOL_PRINT(Title, Type, Value, Location)		\
+# define YYDSYMPRINT(Args)			\
+do {						\
+  if (yydebug)					\
+    yysymprint Args;				\
+} while (0)
+
+# define YYDSYMPRINTF(Title, Token, Value, Location)		\
 do {								\
   if (yydebug)							\
     {								\
       YYFPRINTF (stderr, "%s ", Title);				\
-      yysymprint (stderr,					\
-                  Type, Value);	\
+      yysymprint (stderr, 					\
+                  Token, Value);	\
       YYFPRINTF (stderr, "\n");					\
     }								\
 } while (0)
@@ -1056,12 +992,12 @@ do {								\
 
 #if defined (__STDC__) || defined (__cplusplus)
 static void
-yy_stack_print (short int *bottom, short int *top)
+yy_stack_print (short *bottom, short *top)
 #else
 static void
 yy_stack_print (bottom, top)
-    short int *bottom;
-    short int *top;
+    short *bottom;
+    short *top;
 #endif
 {
   YYFPRINTF (stderr, "Stack now");
@@ -1091,13 +1027,13 @@ yy_reduce_print (yyrule)
 #endif
 {
   int yyi;
-  unsigned long int yylno = yyrline[yyrule];
-  YYFPRINTF (stderr, "Reducing stack by rule %d (line %lu), ",
+  unsigned int yylno = yyrline[yyrule];
+  YYFPRINTF (stderr, "Reducing stack by rule %d (line %u), ",
              yyrule - 1, yylno);
   /* Print the symbols being reduced, and their result.  */
   for (yyi = yyprhs[yyrule]; 0 <= yyrhs[yyi]; yyi++)
-    YYFPRINTF (stderr, "%s ", yytname[yyrhs[yyi]]);
-  YYFPRINTF (stderr, "-> %s\n", yytname[yyr1[yyrule]]);
+    YYFPRINTF (stderr, "%s ", yytname [yyrhs[yyi]]);
+  YYFPRINTF (stderr, "-> %s\n", yytname [yyr1[yyrule]]);
 }
 
 # define YY_REDUCE_PRINT(Rule)		\
@@ -1111,7 +1047,8 @@ do {					\
 int yydebug;
 #else /* !YYDEBUG */
 # define YYDPRINTF(Args)
-# define YY_SYMBOL_PRINT(Title, Type, Value, Location)
+# define YYDSYMPRINT(Args)
+# define YYDSYMPRINTF(Title, Token, Value, Location)
 # define YY_STACK_PRINT(Bottom, Top)
 # define YY_REDUCE_PRINT(Rule)
 #endif /* !YYDEBUG */
@@ -1126,8 +1063,12 @@ int yydebug;
    if the built-in stack extension method is used).
 
    Do not make this value too large; the results are undefined if
-   YYSTACK_ALLOC_MAXIMUM < YYSTACK_BYTES (YYMAXDEPTH)
+   SIZE_MAX < YYSTACK_BYTES (YYMAXDEPTH)
    evaluated with infinite-precision integer arithmetic.  */
+
+#if defined (YYMAXDEPTH) && YYMAXDEPTH == 0
+# undef YYMAXDEPTH
+#endif
 
 #ifndef YYMAXDEPTH
 # define YYMAXDEPTH 10000
@@ -1150,7 +1091,7 @@ yystrlen (yystr)
      const char *yystr;
 #   endif
 {
-  const char *yys = yystr;
+  register const char *yys = yystr;
 
   while (*yys++ != '\0')
     continue;
@@ -1175,8 +1116,8 @@ yystpcpy (yydest, yysrc)
      const char *yysrc;
 #   endif
 {
-  char *yyd = yydest;
-  const char *yys = yysrc;
+  register char *yyd = yydest;
+  register const char *yys = yysrc;
 
   while ((*yyd++ = *yys++) != '\0')
     continue;
@@ -1186,55 +1127,7 @@ yystpcpy (yydest, yysrc)
 #  endif
 # endif
 
-# ifndef yytnamerr
-/* Copy to YYRES the contents of YYSTR after stripping away unnecessary
-   quotes and backslashes, so that it's suitable for yyerror.  The
-   heuristic is that double-quoting is unnecessary unless the string
-   contains an apostrophe, a comma, or backslash (other than
-   backslash-backslash).  YYSTR is taken from yytname.  If YYRES is
-   null, do not copy; instead, return the length of what the result
-   would have been.  */
-static YYSIZE_T
-yytnamerr (char *yyres, const char *yystr)
-{
-  if (*yystr == '"')
-    {
-      size_t yyn = 0;
-      char const *yyp = yystr;
-
-      for (;;)
-	switch (*++yyp)
-	  {
-	  case '\'':
-	  case ',':
-	    goto do_not_strip_quotes;
-
-	  case '\\':
-	    if (*++yyp != '\\')
-	      goto do_not_strip_quotes;
-	    /* Fall through.  */
-	  default:
-	    if (yyres)
-	      yyres[yyn] = *yyp;
-	    yyn++;
-	    break;
-
-	  case '"':
-	    if (yyres)
-	      yyres[yyn] = '\0';
-	    return yyn;
-	  }
-    do_not_strip_quotes: ;
-    }
-
-  if (! yyres)
-    return yystrlen (yystr);
-
-  return yystpcpy (yyres, yystr) - yyres;
-}
-# endif
-
-#endif /* YYERROR_VERBOSE */
+#endif /* !YYERROR_VERBOSE */
 
 
 
@@ -1258,15 +1151,15 @@ yysymprint (yyoutput, yytype, yyvaluep)
   (void) yyvaluep;
 
   if (yytype < YYNTOKENS)
-    YYFPRINTF (yyoutput, "token %s (", yytname[yytype]);
+    {
+      YYFPRINTF (yyoutput, "token %s (", yytname[yytype]);
+# ifdef YYPRINT
+      YYPRINT (yyoutput, yytoknum[yytype], *yyvaluep);
+# endif
+    }
   else
     YYFPRINTF (yyoutput, "nterm %s (", yytname[yytype]);
 
-
-# ifdef YYPRINT
-  if (yytype < YYNTOKENS)
-    YYPRINT (yyoutput, yytoknum[yytype], *yyvaluep);
-# endif
   switch (yytype)
     {
       default:
@@ -1282,21 +1175,16 @@ yysymprint (yyoutput, yytype, yyvaluep)
 
 #if defined (__STDC__) || defined (__cplusplus)
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep)
+yydestruct (int yytype, YYSTYPE *yyvaluep)
 #else
 static void
-yydestruct (yymsg, yytype, yyvaluep)
-    const char *yymsg;
+yydestruct (yytype, yyvaluep)
     int yytype;
     YYSTYPE *yyvaluep;
 #endif
 {
   /* Pacify ``unused variable'' warnings.  */
   (void) yyvaluep;
-
-  if (!yymsg)
-    yymsg = "Deleting";
-  YY_SYMBOL_PRINT (yymsg, yytype, yyvaluep, yylocationp);
 
   switch (yytype)
     {
@@ -1350,21 +1238,21 @@ yyparse ()
 #endif
 #endif
 {
-  /* The look-ahead symbol.  */
+  /* The lookahead symbol.  */
 int yychar;
 
-/* The semantic value of the look-ahead symbol.  */
+/* The semantic value of the lookahead symbol.  */
 YYSTYPE yylval;
 
 /* Number of syntax errors so far.  */
 int yynerrs;
 
-  int yystate;
-  int yyn;
+  register int yystate;
+  register int yyn;
   int yyresult;
   /* Number of tokens to shift before error messages enabled.  */
   int yyerrstatus;
-  /* Look-ahead token as an internal (translated) token number.  */
+  /* Lookahead token as an internal (translated) token number.  */
   int yytoken = 0;
 
   /* Three stacks and their tools:
@@ -1376,14 +1264,14 @@ int yynerrs;
      to reallocate them elsewhere.  */
 
   /* The state stack.  */
-  short int yyssa[YYINITDEPTH];
-  short int *yyss = yyssa;
-  short int *yyssp;
+  short	yyssa[YYINITDEPTH];
+  short *yyss = yyssa;
+  register short *yyssp;
 
   /* The semantic value stack.  */
   YYSTYPE yyvsa[YYINITDEPTH];
   YYSTYPE *yyvs = yyvsa;
-  YYSTYPE *yyvsp;
+  register YYSTYPE *yyvsp;
 
 
 
@@ -1440,14 +1328,14 @@ int yynerrs;
 	   these so that the &'s don't force the real ones into
 	   memory.  */
 	YYSTYPE *yyvs1 = yyvs;
-	short int *yyss1 = yyss;
+	short *yyss1 = yyss;
 
 
 	/* Each stack pointer address is followed by the size of the
 	   data in use in that stack, in bytes.  This used to be a
 	   conditional around just the two extra args, but that might
 	   be undefined if yyoverflow is a macro.  */
-	yyoverflow (YY_("memory exhausted"),
+	yyoverflow ("parser stack overflow",
 		    &yyss1, yysize * sizeof (*yyssp),
 		    &yyvs1, yysize * sizeof (*yyvsp),
 
@@ -1458,21 +1346,21 @@ int yynerrs;
       }
 #else /* no yyoverflow */
 # ifndef YYSTACK_RELOCATE
-      goto yyexhaustedlab;
+      goto yyoverflowlab;
 # else
       /* Extend the stack our own way.  */
       if (YYMAXDEPTH <= yystacksize)
-	goto yyexhaustedlab;
+	goto yyoverflowlab;
       yystacksize *= 2;
       if (YYMAXDEPTH < yystacksize)
 	yystacksize = YYMAXDEPTH;
 
       {
-	short int *yyss1 = yyss;
+	short *yyss1 = yyss;
 	union yyalloc *yyptr =
 	  (union yyalloc *) YYSTACK_ALLOC (YYSTACK_BYTES (yystacksize));
 	if (! yyptr)
-	  goto yyexhaustedlab;
+	  goto yyoverflowlab;
 	YYSTACK_RELOCATE (yyss);
 	YYSTACK_RELOCATE (yyvs);
 
@@ -1504,18 +1392,18 @@ int yynerrs;
 yybackup:
 
 /* Do appropriate processing given the current state.  */
-/* Read a look-ahead token if we need one and don't already have one.  */
+/* Read a lookahead token if we need one and don't already have one.  */
 /* yyresume: */
 
-  /* First try to decide what to do without reference to look-ahead token.  */
+  /* First try to decide what to do without reference to lookahead token.  */
 
   yyn = yypact[yystate];
   if (yyn == YYPACT_NINF)
     goto yydefault;
 
-  /* Not known => get a look-ahead token if don't already have one.  */
+  /* Not known => get a lookahead token if don't already have one.  */
 
-  /* YYCHAR is either YYEMPTY or YYEOF or a valid look-ahead symbol.  */
+  /* YYCHAR is either YYEMPTY or YYEOF or a valid lookahead symbol.  */
   if (yychar == YYEMPTY)
     {
       YYDPRINTF ((stderr, "Reading a token: "));
@@ -1530,7 +1418,7 @@ yybackup:
   else
     {
       yytoken = YYTRANSLATE (yychar);
-      YY_SYMBOL_PRINT ("Next token is", yytoken, &yylval, &yylloc);
+      YYDSYMPRINTF ("Next token is", yytoken, &yylval, &yylloc);
     }
 
   /* If the proper action on seeing token YYTOKEN is to reduce or to
@@ -1550,8 +1438,8 @@ yybackup:
   if (yyn == YYFINAL)
     YYACCEPT;
 
-  /* Shift the look-ahead token.  */
-  YY_SYMBOL_PRINT ("Shifting", yytoken, &yylval, &yylloc);
+  /* Shift the lookahead token.  */
+  YYDPRINTF ((stderr, "Shifting token %s, ", yytname[yytoken]));
 
   /* Discard the token being shifted unless it is eof.  */
   if (yychar != YYEOF)
@@ -1609,28 +1497,28 @@ yyreduce:
   case 3:
 #line 113 "Grammar.y"
     {
-    (yyval) = (yyvsp[-1]);
+    yyval = yyvsp[-1];
 ;}
     break;
 
   case 4:
 #line 122 "Grammar.y"
     {
-    (yyval) = (yyvsp[-1]);
+    yyval = yyvsp[-1];
 ;}
     break;
 
   case 5:
 #line 126 "Grammar.y"
     {
-    (yyval) = new StringListTok;
+    yyval = new StringListTok;
 ;}
     break;
 
   case 6:
 #line 135 "Grammar.y"
     {
-    StringListTokPtr metaData = StringListTokPtr::dynamicCast((yyvsp[0]));
+    StringListTokPtr metaData = StringListTokPtr::dynamicCast(yyvsp[0]);
     if(!metaData->v.empty())
     {
         unit->addGlobalMetaData(metaData->v);
@@ -1641,8 +1529,8 @@ yyreduce:
   case 8:
 #line 144 "Grammar.y"
     {
-    StringListTokPtr metaData = StringListTokPtr::dynamicCast((yyvsp[-1]));
-    ContainedPtr contained = ContainedPtr::dynamicCast((yyvsp[0]));
+    StringListTokPtr metaData = StringListTokPtr::dynamicCast(yyvsp[-1]);
+    ContainedPtr contained = ContainedPtr::dynamicCast(yyvsp[0]);
     if(contained && !metaData->v.empty())
     {
 	contained->setMetaData(metaData->v);
@@ -1674,109 +1562,109 @@ yyreduce:
   case 14:
 #line 172 "Grammar.y"
     {
-    assert((yyvsp[0]) == 0 || ModulePtr::dynamicCast((yyvsp[0])));
+    assert(yyvsp[0] == 0 || ModulePtr::dynamicCast(yyvsp[0]));
 ;}
     break;
 
   case 15:
 #line 176 "Grammar.y"
     {
-    assert((yyvsp[0]) == 0 || ClassDeclPtr::dynamicCast((yyvsp[0])));
+    assert(yyvsp[0] == 0 || ClassDeclPtr::dynamicCast(yyvsp[0]));
 ;}
     break;
 
   case 16:
 #line 180 "Grammar.y"
     {
-    assert((yyvsp[0]) == 0 || ClassDefPtr::dynamicCast((yyvsp[0])));
+    assert(yyvsp[0] == 0 || ClassDefPtr::dynamicCast(yyvsp[0]));
 ;}
     break;
 
   case 17:
 #line 184 "Grammar.y"
     {
-    assert((yyvsp[0]) == 0 || ClassDeclPtr::dynamicCast((yyvsp[0])));
+    assert(yyvsp[0] == 0 || ClassDeclPtr::dynamicCast(yyvsp[0]));
 ;}
     break;
 
   case 18:
 #line 188 "Grammar.y"
     {
-    assert((yyvsp[0]) == 0 || ClassDefPtr::dynamicCast((yyvsp[0])));
+    assert(yyvsp[0] == 0 || ClassDefPtr::dynamicCast(yyvsp[0]));
 ;}
     break;
 
   case 19:
 #line 192 "Grammar.y"
     {
-    assert((yyvsp[0]) == 0);
+    assert(yyvsp[0] == 0);
 ;}
     break;
 
   case 20:
 #line 196 "Grammar.y"
     {
-    assert((yyvsp[0]) == 0 || ExceptionPtr::dynamicCast((yyvsp[0])));
+    assert(yyvsp[0] == 0 || ExceptionPtr::dynamicCast(yyvsp[0]));
 ;}
     break;
 
   case 21:
 #line 200 "Grammar.y"
     {
-    assert((yyvsp[0]) == 0);
+    assert(yyvsp[0] == 0);
 ;}
     break;
 
   case 22:
 #line 204 "Grammar.y"
     {
-    assert((yyvsp[0]) == 0 || StructPtr::dynamicCast((yyvsp[0])));
+    assert(yyvsp[0] == 0 || StructPtr::dynamicCast(yyvsp[0]));
 ;}
     break;
 
   case 23:
 #line 208 "Grammar.y"
     {
-    assert((yyvsp[0]) == 0 || SequencePtr::dynamicCast((yyvsp[0])));
+    assert(yyvsp[0] == 0 || SequencePtr::dynamicCast(yyvsp[0]));
 ;}
     break;
 
   case 24:
 #line 212 "Grammar.y"
     {
-    assert((yyvsp[0]) == 0 || DictionaryPtr::dynamicCast((yyvsp[0])));
+    assert(yyvsp[0] == 0 || DictionaryPtr::dynamicCast(yyvsp[0]));
 ;}
     break;
 
   case 25:
 #line 216 "Grammar.y"
     {
-    assert((yyvsp[0]) == 0 || EnumPtr::dynamicCast((yyvsp[0])));
+    assert(yyvsp[0] == 0 || EnumPtr::dynamicCast(yyvsp[0]));
 ;}
     break;
 
   case 26:
 #line 220 "Grammar.y"
     {
-    assert((yyvsp[0]) == 0 || ConstPtr::dynamicCast((yyvsp[0])));
+    assert(yyvsp[0] == 0 || ConstPtr::dynamicCast(yyvsp[0]));
 ;}
     break;
 
   case 27:
 #line 229 "Grammar.y"
     {
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     ContainerPtr cont = unit->currentContainer();
     ModulePtr module = cont->createModule(ident->v);
     if(module)
     {
 	cont->checkIntroduced(ident->v, module);
 	unit->pushContainer(module);
-	(yyval) = module;
+	yyval = module;
     }
     else
     {
-        (yyval) = 0;
+        yyval = 0;
     }
 ;}
     break;
@@ -1784,14 +1672,14 @@ yyreduce:
   case 28:
 #line 245 "Grammar.y"
     {
-    if((yyvsp[-3]))
+    if(yyvsp[-3])
     {
 	unit->popContainer();
-	(yyval) = (yyvsp[-3]);
+	yyval = yyvsp[-3];
     }
     else
     {
-        (yyval) = 0;
+        yyval = 0;
     }
 ;}
     break;
@@ -1799,16 +1687,16 @@ yyreduce:
   case 29:
 #line 262 "Grammar.y"
     {
-    (yyval) = (yyvsp[0]);
+    yyval = yyvsp[0];
 ;}
     break;
 
   case 30:
 #line 266 "Grammar.y"
     {
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     unit->error("keyword `" + ident->v + "' cannot be used as exception name");
-    (yyval) = (yyvsp[0]);
+    yyval = yyvsp[0];
 ;}
     break;
 
@@ -1816,16 +1704,16 @@ yyreduce:
 #line 277 "Grammar.y"
     {
     unit->error("exceptions cannot be forward declared");
-    (yyval) = 0;
+    yyval = 0;
 ;}
     break;
 
   case 32:
 #line 287 "Grammar.y"
     {
-    BoolTokPtr local = BoolTokPtr::dynamicCast((yyvsp[-2]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[-1]));
-    ExceptionPtr base = ExceptionPtr::dynamicCast((yyvsp[0]));
+    BoolTokPtr local = BoolTokPtr::dynamicCast(yyvsp[-2]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[-1]);
+    ExceptionPtr base = ExceptionPtr::dynamicCast(yyvsp[0]);
     ContainerPtr cont = unit->currentContainer();
     ExceptionPtr ex = cont->createException(ident->v, base, local->v);
     if(ex)
@@ -1833,44 +1721,44 @@ yyreduce:
 	cont->checkIntroduced(ident->v, ex);
 	unit->pushContainer(ex);
     }
-    (yyval) = ex;
+    yyval = ex;
 ;}
     break;
 
   case 33:
 #line 301 "Grammar.y"
     {
-    if((yyvsp[-3]))
+    if(yyvsp[-3])
     {
 	unit->popContainer();
     }
-    (yyval) = (yyvsp[-3]);
+    yyval = yyvsp[-3];
 ;}
     break;
 
   case 34:
 #line 314 "Grammar.y"
     {
-    StringTokPtr scoped = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr scoped = StringTokPtr::dynamicCast(yyvsp[0]);
     ContainerPtr cont = unit->currentContainer();
     ContainedPtr contained = cont->lookupException(scoped->v);
     cont->checkIntroduced(scoped->v);
-    (yyval) = contained;
+    yyval = contained;
 ;}
     break;
 
   case 35:
 #line 322 "Grammar.y"
     {
-    (yyval) = 0;
+    yyval = 0;
 ;}
     break;
 
   case 36:
 #line 331 "Grammar.y"
     {
-    StringListTokPtr metaData = StringListTokPtr::dynamicCast((yyvsp[-3]));
-    ContainedPtr contained = ContainedPtr::dynamicCast((yyvsp[-2]));
+    StringListTokPtr metaData = StringListTokPtr::dynamicCast(yyvsp[-3]);
+    ContainedPtr contained = ContainedPtr::dynamicCast(yyvsp[-2]);
     if(contained && !metaData->v.empty())
     {
 	contained->setMetaData(metaData->v);
@@ -1900,27 +1788,27 @@ yyreduce:
   case 40:
 #line 355 "Grammar.y"
     {
-    TypePtr type = TypePtr::dynamicCast((yyvsp[-1]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    TypePtr type = TypePtr::dynamicCast(yyvsp[-1]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     TypeStringTokPtr typestring = new TypeStringTok;
     typestring->v = make_pair(type, ident->v);
-    (yyval) = typestring;
+    yyval = typestring;
 ;}
     break;
 
   case 42:
 #line 374 "Grammar.y"
     {
-    (yyval) = (yyvsp[0]);
+    yyval = yyvsp[0];
 ;}
     break;
 
   case 43:
 #line 378 "Grammar.y"
     {
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     unit->error("keyword `" + ident->v + "' cannot be used as struct name");
-    (yyval) = (yyvsp[0]);
+    yyval = yyvsp[0];
 ;}
     break;
 
@@ -1928,15 +1816,15 @@ yyreduce:
 #line 389 "Grammar.y"
     {
     unit->error("structs cannot be forward declared");
-    (yyval) = 0;
+    yyval = 0;
 ;}
     break;
 
   case 45:
 #line 399 "Grammar.y"
     {
-    BoolTokPtr local = BoolTokPtr::dynamicCast((yyvsp[-1]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    BoolTokPtr local = BoolTokPtr::dynamicCast(yyvsp[-1]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     ContainerPtr cont = unit->currentContainer();
     StructPtr st = cont->createStruct(ident->v, local->v);
     if(st)
@@ -1944,23 +1832,23 @@ yyreduce:
 	cont->checkIntroduced(ident->v, st);
 	unit->pushContainer(st);
     }
-    (yyval) = st;
+    yyval = st;
 ;}
     break;
 
   case 46:
 #line 412 "Grammar.y"
     {
-    if((yyvsp[-3]))
+    if(yyvsp[-3])
     {
 	unit->popContainer();
     }
-    (yyval) = (yyvsp[-3]);
+    yyval = yyvsp[-3];
 
     //
     // Empty structures are not allowed
     //
-    StructPtr st = StructPtr::dynamicCast((yyval));
+    StructPtr st = StructPtr::dynamicCast(yyval);
     assert(st);
     if(st->dataMembers().empty())
     {
@@ -1972,8 +1860,8 @@ yyreduce:
   case 47:
 #line 435 "Grammar.y"
     {
-    StringListTokPtr metaData = StringListTokPtr::dynamicCast((yyvsp[-3]));
-    ContainedPtr contained = ContainedPtr::dynamicCast((yyvsp[-2]));
+    StringListTokPtr metaData = StringListTokPtr::dynamicCast(yyvsp[-3]);
+    ContainedPtr contained = ContainedPtr::dynamicCast(yyvsp[-2]);
     if(contained && !metaData->v.empty())
     {
 	contained->setMetaData(metaData->v);
@@ -2003,38 +1891,38 @@ yyreduce:
   case 52:
 #line 465 "Grammar.y"
     {
-    (yyval) = (yyvsp[0]);
+    yyval = yyvsp[0];
 ;}
     break;
 
   case 53:
 #line 469 "Grammar.y"
     {
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     unit->error("keyword `" + ident->v + "' cannot be used as class name");
-    (yyval) = (yyvsp[0]);
+    yyval = yyvsp[0];
 ;}
     break;
 
   case 54:
 #line 480 "Grammar.y"
     {
-    BoolTokPtr local = BoolTokPtr::dynamicCast((yyvsp[-1]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    BoolTokPtr local = BoolTokPtr::dynamicCast(yyvsp[-1]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     ContainerPtr cont = unit->currentContainer();
     ClassDeclPtr cl = cont->createClassDecl(ident->v, false, local->v);
-    (yyval) = cl;
+    yyval = cl;
 ;}
     break;
 
   case 55:
 #line 493 "Grammar.y"
     {
-    BoolTokPtr local = BoolTokPtr::dynamicCast((yyvsp[-3]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[-2]));
+    BoolTokPtr local = BoolTokPtr::dynamicCast(yyvsp[-3]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[-2]);
     ContainerPtr cont = unit->currentContainer();
-    ClassDefPtr base = ClassDefPtr::dynamicCast((yyvsp[-1]));
-    ClassListTokPtr bases = ClassListTokPtr::dynamicCast((yyvsp[0]));
+    ClassDefPtr base = ClassDefPtr::dynamicCast(yyvsp[-1]);
+    ClassListTokPtr bases = ClassListTokPtr::dynamicCast(yyvsp[0]);
     if(base)
     {
 	bases->v.push_front(base);
@@ -2044,11 +1932,11 @@ yyreduce:
     {
 	cont->checkIntroduced(ident->v, cl);
 	unit->pushContainer(cl);
-	(yyval) = cl;
+	yyval = cl;
     }
     else
     {
-        (yyval) = 0;
+        yyval = 0;
     }
 ;}
     break;
@@ -2056,14 +1944,14 @@ yyreduce:
   case 56:
 #line 516 "Grammar.y"
     {
-    if((yyvsp[-3]))
+    if(yyvsp[-3])
     {
 	unit->popContainer();
-	(yyval) = (yyvsp[-3]);
+	yyval = yyvsp[-3];
     }
     else
     {
-        (yyval) = 0;
+        yyval = 0;
     }
 ;}
     break;
@@ -2071,10 +1959,10 @@ yyreduce:
   case 57:
 #line 533 "Grammar.y"
     {
-    StringTokPtr scoped = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr scoped = StringTokPtr::dynamicCast(yyvsp[0]);
     ContainerPtr cont = unit->currentContainer();
     TypeList types = cont->lookupType(scoped->v);
-    (yyval) = 0;
+    yyval = 0;
     if(!types.empty())
     {
 	ClassDeclPtr cl = ClassDeclPtr::dynamicCast(types.front());
@@ -2098,7 +1986,7 @@ yyreduce:
 	    else
 	    {
 	    	cont->checkIntroduced(scoped->v);
-		(yyval) = def;
+		yyval = def;
 	    }
 	}
     }
@@ -2108,29 +1996,29 @@ yyreduce:
   case 58:
 #line 567 "Grammar.y"
     {
-    (yyval) = 0;
+    yyval = 0;
 ;}
     break;
 
   case 59:
 #line 576 "Grammar.y"
     {
-    (yyval) = (yyvsp[0]);
+    yyval = yyvsp[0];
 ;}
     break;
 
   case 60:
 #line 580 "Grammar.y"
     {
-    (yyval) = new ClassListTok;
+    yyval = new ClassListTok;
 ;}
     break;
 
   case 61:
 #line 589 "Grammar.y"
     {
-    StringListTokPtr metaData = StringListTokPtr::dynamicCast((yyvsp[-3]));
-    ContainedPtr contained = ContainedPtr::dynamicCast((yyvsp[-2]));
+    StringListTokPtr metaData = StringListTokPtr::dynamicCast(yyvsp[-3]);
+    ContainedPtr contained = ContainedPtr::dynamicCast(yyvsp[-2]);
     if(contained && !metaData->v.empty())
     {
 	contained->setMetaData(metaData->v);
@@ -2160,8 +2048,8 @@ yyreduce:
   case 65:
 #line 613 "Grammar.y"
     {
-    TypePtr type = TypeStringTokPtr::dynamicCast((yyvsp[0]))->v.first;
-    string name = TypeStringTokPtr::dynamicCast((yyvsp[0]))->v.second;
+    TypePtr type = TypeStringTokPtr::dynamicCast(yyvsp[0])->v.first;
+    string name = TypeStringTokPtr::dynamicCast(yyvsp[0])->v.second;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
     DataMemberPtr dm;
     if(cl)
@@ -2179,31 +2067,31 @@ yyreduce:
 	dm = ex->createDataMember(name, type);
     }
     unit->currentContainer()->checkIntroduced(name, dm);
-    (yyval) = dm;
+    yyval = dm;
 ;}
     break;
 
   case 66:
 #line 636 "Grammar.y"
     {
-    TypePtr type = TypePtr::dynamicCast((yyvsp[-1]));
-    string name = StringTokPtr::dynamicCast((yyvsp[0]))->v;
+    TypePtr type = TypePtr::dynamicCast(yyvsp[-1]);
+    string name = StringTokPtr::dynamicCast(yyvsp[0])->v;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
     if(cl)
     {
-	(yyval) = cl->createDataMember(name, type);
+	yyval = cl->createDataMember(name, type);
     }
     StructPtr st = StructPtr::dynamicCast(unit->currentContainer());
     if(st)
     {
-	(yyval) = st->createDataMember(name, type);
+	yyval = st->createDataMember(name, type);
     }
     ExceptionPtr ex = ExceptionPtr::dynamicCast(unit->currentContainer());
     if(ex)
     {
-	(yyval) = ex->createDataMember(name, type);
+	yyval = ex->createDataMember(name, type);
     }
-    assert((yyval));
+    assert(yyval);
     unit->error("keyword `" + name + "' cannot be used as data member name");
 ;}
     break;
@@ -2211,23 +2099,23 @@ yyreduce:
   case 67:
 #line 658 "Grammar.y"
     {
-    TypePtr type = TypePtr::dynamicCast((yyvsp[0]));
+    TypePtr type = TypePtr::dynamicCast(yyvsp[0]);
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
     if(cl)
     {
-        (yyval) = cl->createDataMember(IceUtil::generateUUID(), type);
+        yyval = cl->createDataMember(IceUtil::generateUUID(), type);
     }
     StructPtr st = StructPtr::dynamicCast(unit->currentContainer());
     if(st)
     {
-	(yyval) = st->createDataMember(IceUtil::generateUUID(), type);
+	yyval = st->createDataMember(IceUtil::generateUUID(), type);
     }
     ExceptionPtr ex = ExceptionPtr::dynamicCast(unit->currentContainer());
     if(ex)
     {
-	(yyval) = ex->createDataMember(IceUtil::generateUUID(), type);
+	yyval = ex->createDataMember(IceUtil::generateUUID(), type);
     }
-    assert((yyval));
+    assert(yyval);
     unit->error("missing data member name");
 ;}
     break;
@@ -2235,15 +2123,15 @@ yyreduce:
   case 69:
 #line 685 "Grammar.y"
     {
-    (yyval) = 0;
+    yyval = 0;
 ;}
     break;
 
   case 70:
 #line 694 "Grammar.y"
     {
-    TypePtr returnType = TypePtr::dynamicCast((yyvsp[-1]));
-    string name = StringTokPtr::dynamicCast((yyvsp[0]))->v;
+    TypePtr returnType = TypePtr::dynamicCast(yyvsp[-1]);
+    string name = StringTokPtr::dynamicCast(yyvsp[0])->v;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
     if(cl)
     {
@@ -2252,16 +2140,16 @@ yyreduce:
 	{
 	    cl->checkIntroduced(name, op);
 	    unit->pushContainer(op);
-	    (yyval) = op;
+	    yyval = op;
 	}
 	else
 	{
-	    (yyval) = 0;
+	    yyval = 0;
 	}
     }
     else
     {
-        (yyval) = 0;
+        yyval = 0;
     }
 ;}
     break;
@@ -2269,8 +2157,8 @@ yyreduce:
   case 71:
 #line 718 "Grammar.y"
     {
-    TypePtr returnType = TypePtr::dynamicCast((yyvsp[-1]));
-    string name = StringTokPtr::dynamicCast((yyvsp[0]))->v;
+    TypePtr returnType = TypePtr::dynamicCast(yyvsp[-1]);
+    string name = StringTokPtr::dynamicCast(yyvsp[0])->v;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
     if(cl)
     {
@@ -2279,25 +2167,42 @@ yyreduce:
 	{
 	    cl->checkIntroduced(name, op);
 	    unit->pushContainer(op);
-	    (yyval) = op;
+	    static bool firstWarning = true;  
+	    
+	    string msg = "the keyword 'nonmutating' is deprecated";
+	    if(firstWarning)
+	    {
+		msg += ";\n";
+		msg += "You should use instead 'idempotent' plus:\n";
+		msg += " - Freeze metadata ([\"freeze:read\"], [\"freeze:write\"]) if you implement your objects with a Freeze evictor\n";
+		msg += " - [\"nonmutating\"], if you need to maintain compatibility with operations that expect ";
+		msg += "'Nonmutating' as operation-mode. With this metadata, the generated code sends ";
+		msg += "'Nonmutating' instead of 'Idempotent'\n";
+		msg += " - [\"cpp:const\"], to get a const member function on the generated C++ servant base class";
+
+		firstWarning = false;
+	    }
+	    
+	    unit->warning(msg); 
+	    yyval = op;
 	}
 	else
 	{
-	    (yyval) = 0;
+	    yyval = 0;
 	}
     }
     else
     {
-        (yyval) = 0;
+        yyval = 0;
     }
 ;}
     break;
 
   case 72:
-#line 742 "Grammar.y"
+#line 759 "Grammar.y"
     {
-    TypePtr returnType = TypePtr::dynamicCast((yyvsp[-1]));
-    string name = StringTokPtr::dynamicCast((yyvsp[0]))->v;
+    TypePtr returnType = TypePtr::dynamicCast(yyvsp[-1]);
+    string name = StringTokPtr::dynamicCast(yyvsp[0])->v;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
     if(cl)
     {
@@ -2306,25 +2211,25 @@ yyreduce:
 	{
 	    cl->checkIntroduced(name, op);
 	    unit->pushContainer(op);
-	    (yyval) = op;
+	    yyval = op;
 	}
 	else
 	{
-	    (yyval) = 0;
+	    yyval = 0;
 	}
     }
     else
     {
-        (yyval) = 0;
+        yyval = 0;
     }
 ;}
     break;
 
   case 73:
-#line 766 "Grammar.y"
+#line 783 "Grammar.y"
     {
-    TypePtr returnType = TypePtr::dynamicCast((yyvsp[-1]));
-    string name = StringTokPtr::dynamicCast((yyvsp[0]))->v;
+    TypePtr returnType = TypePtr::dynamicCast(yyvsp[-1]);
+    string name = StringTokPtr::dynamicCast(yyvsp[0])->v;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
     if(cl)
     {
@@ -2333,25 +2238,25 @@ yyreduce:
 	{
 	    unit->pushContainer(op);
 	    unit->error("keyword `" + name + "' cannot be used as operation name");
-	    (yyval) = op;
+	    yyval = op;
 	}
 	else
 	{
-	    (yyval) = 0;
+	    yyval = 0;
 	}
     }
     else
     {
-        (yyval) = 0;
+        yyval = 0;
     }
 ;}
     break;
 
   case 74:
-#line 790 "Grammar.y"
+#line 807 "Grammar.y"
     {
-    TypePtr returnType = TypePtr::dynamicCast((yyvsp[-1]));
-    string name = StringTokPtr::dynamicCast((yyvsp[0]))->v;
+    TypePtr returnType = TypePtr::dynamicCast(yyvsp[-1]);
+    string name = StringTokPtr::dynamicCast(yyvsp[0])->v;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
     if(cl)
     {
@@ -2360,25 +2265,25 @@ yyreduce:
 	{
 	    unit->pushContainer(op);
 	    unit->error("keyword `" + name + "' cannot be used as operation name");
-	    (yyval) = op;
+	    yyval = op;
 	}
 	else
 	{
-	    (yyval) = 0;
+	    yyval = 0;
 	}
     }
     else
     {
-    	(yyval) = 0;
+    	yyval = 0;
     }
 ;}
     break;
 
   case 75:
-#line 814 "Grammar.y"
+#line 831 "Grammar.y"
     {
-    TypePtr returnType = TypePtr::dynamicCast((yyvsp[-1]));
-    string name = StringTokPtr::dynamicCast((yyvsp[0]))->v;
+    TypePtr returnType = TypePtr::dynamicCast(yyvsp[-1]);
+    string name = StringTokPtr::dynamicCast(yyvsp[0])->v;
     ClassDefPtr cl = ClassDefPtr::dynamicCast(unit->currentContainer());
     if(cl)
     {
@@ -2387,7 +2292,7 @@ yyreduce:
 	{
 	    unit->pushContainer(op);
 	    unit->error("keyword `" + name + "' cannot be used as operation name");
-	    (yyval) = op;
+	    yyval = op;
 	}
 	else
 	{
@@ -2396,31 +2301,31 @@ yyreduce:
     }
     else
     {
-    	(yyval) = 0;
+    	yyval = 0;
     }
 ;}
     break;
 
   case 76:
-#line 843 "Grammar.y"
+#line 860 "Grammar.y"
     {
-    if((yyvsp[-2]))
+    if(yyvsp[-2])
     {
 	unit->popContainer();
-	(yyval) = (yyvsp[-2]);
+	yyval = yyvsp[-2];
     }
     else
     {
-        (yyval) = 0;
+        yyval = 0;
     }
 ;}
     break;
 
   case 77:
-#line 855 "Grammar.y"
+#line 872 "Grammar.y"
     {
-    OperationPtr op = OperationPtr::dynamicCast((yyvsp[-1]));
-    ExceptionListTokPtr el = ExceptionListTokPtr::dynamicCast((yyvsp[0]));
+    OperationPtr op = OperationPtr::dynamicCast(yyvsp[-1]);
+    ExceptionListTokPtr el = ExceptionListTokPtr::dynamicCast(yyvsp[0]);
     assert(el);
     if(op)
     {
@@ -2430,9 +2335,9 @@ yyreduce:
     break;
 
   case 78:
-#line 865 "Grammar.y"
+#line 882 "Grammar.y"
     {
-    if((yyvsp[-2]))
+    if(yyvsp[-2])
     {
 	unit->popContainer();
     }
@@ -2441,10 +2346,10 @@ yyreduce:
     break;
 
   case 79:
-#line 873 "Grammar.y"
+#line 890 "Grammar.y"
     {
-    OperationPtr op = OperationPtr::dynamicCast((yyvsp[-1]));
-    ExceptionListTokPtr el = ExceptionListTokPtr::dynamicCast((yyvsp[0]));
+    OperationPtr op = OperationPtr::dynamicCast(yyvsp[-1]);
+    ExceptionListTokPtr el = ExceptionListTokPtr::dynamicCast(yyvsp[0]);
     assert(el);
     if(op)
     {
@@ -2454,74 +2359,74 @@ yyreduce:
     break;
 
   case 82:
-#line 895 "Grammar.y"
+#line 912 "Grammar.y"
     {
-    (yyval) = (yyvsp[0]);
+    yyval = yyvsp[0];
 ;}
     break;
 
   case 83:
-#line 899 "Grammar.y"
+#line 916 "Grammar.y"
     {
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     unit->error("keyword `" + ident->v + "' cannot be used as interface name");
-    (yyval) = (yyvsp[0]);
+    yyval = yyvsp[0];
 ;}
     break;
 
   case 84:
-#line 910 "Grammar.y"
+#line 927 "Grammar.y"
     {
-    BoolTokPtr local = BoolTokPtr::dynamicCast((yyvsp[-1]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    BoolTokPtr local = BoolTokPtr::dynamicCast(yyvsp[-1]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     ContainerPtr cont = unit->currentContainer();
     ClassDeclPtr cl = cont->createClassDecl(ident->v, true, local->v);
     cont->checkIntroduced(ident->v, cl);
-    (yyval) = cl;
+    yyval = cl;
 ;}
     break;
 
   case 85:
-#line 924 "Grammar.y"
+#line 941 "Grammar.y"
     {
-    BoolTokPtr local = BoolTokPtr::dynamicCast((yyvsp[-2]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[-1]));
+    BoolTokPtr local = BoolTokPtr::dynamicCast(yyvsp[-2]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[-1]);
     ContainerPtr cont = unit->currentContainer();
-    ClassListTokPtr bases = ClassListTokPtr::dynamicCast((yyvsp[0]));
+    ClassListTokPtr bases = ClassListTokPtr::dynamicCast(yyvsp[0]);
     ClassDefPtr cl = cont->createClassDef(ident->v, true, bases->v, local->v);
     if(cl)
     {
 	cont->checkIntroduced(ident->v, cl);
 	unit->pushContainer(cl);
-	(yyval) = cl;
+	yyval = cl;
     }
     else
     {
-        (yyval) = 0;
+        yyval = 0;
     }
 ;}
     break;
 
   case 86:
-#line 942 "Grammar.y"
+#line 959 "Grammar.y"
     {
-    if((yyvsp[-3]))
+    if(yyvsp[-3])
     {
 	unit->popContainer();
-	(yyval) = (yyvsp[-3]);
+	yyval = yyvsp[-3];
     }
     else
     {
-	(yyval) = 0;
+	yyval = 0;
     }
 ;}
     break;
 
   case 87:
-#line 959 "Grammar.y"
+#line 976 "Grammar.y"
     {
-    ClassListTokPtr intfs = ClassListTokPtr::dynamicCast((yyvsp[0]));
-    StringTokPtr scoped = StringTokPtr::dynamicCast((yyvsp[-2]));
+    ClassListTokPtr intfs = ClassListTokPtr::dynamicCast(yyvsp[0]);
+    StringTokPtr scoped = StringTokPtr::dynamicCast(yyvsp[-2]);
     ContainerPtr cont = unit->currentContainer();
     TypeList types = cont->lookupType(scoped->v);
     if(!types.empty())
@@ -2551,15 +2456,15 @@ yyreduce:
 	    }
 	}
     }
-    (yyval) = intfs;
+    yyval = intfs;
 ;}
     break;
 
   case 88:
-#line 994 "Grammar.y"
+#line 1011 "Grammar.y"
     {
     ClassListTokPtr intfs = new ClassListTok;
-    StringTokPtr scoped = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr scoped = StringTokPtr::dynamicCast(yyvsp[0]);
     ContainerPtr cont = unit->currentContainer();
     TypeList types = cont->lookupType(scoped->v);
     if(!types.empty())
@@ -2589,37 +2494,37 @@ yyreduce:
 	    }
 	}
     }
-    (yyval) = intfs;
+    yyval = intfs;
 ;}
     break;
 
   case 89:
-#line 1029 "Grammar.y"
+#line 1046 "Grammar.y"
     {
     unit->error("illegal inheritance from type Object");
-    (yyval) = new ClassListTok;
+    yyval = new ClassListTok;
 ;}
     break;
 
   case 90:
-#line 1039 "Grammar.y"
+#line 1056 "Grammar.y"
     {
-    (yyval) = (yyvsp[0]);
+    yyval = yyvsp[0];
 ;}
     break;
 
   case 91:
-#line 1043 "Grammar.y"
+#line 1060 "Grammar.y"
     {
-    (yyval) = new ClassListTok;
+    yyval = new ClassListTok;
 ;}
     break;
 
   case 92:
-#line 1052 "Grammar.y"
+#line 1069 "Grammar.y"
     {
-    StringListTokPtr metaData = StringListTokPtr::dynamicCast((yyvsp[-3]));
-    ContainedPtr contained = ContainedPtr::dynamicCast((yyvsp[-2]));
+    StringListTokPtr metaData = StringListTokPtr::dynamicCast(yyvsp[-3]);
+    ContainedPtr contained = ContainedPtr::dynamicCast(yyvsp[-2]);
     if(contained && !metaData->v.empty())
     {
 	contained->setMetaData(metaData->v);
@@ -2628,48 +2533,48 @@ yyreduce:
     break;
 
   case 93:
-#line 1061 "Grammar.y"
+#line 1078 "Grammar.y"
     {
 ;}
     break;
 
   case 94:
-#line 1064 "Grammar.y"
+#line 1081 "Grammar.y"
     {
     unit->error("`;' missing after definition");
 ;}
     break;
 
   case 95:
-#line 1068 "Grammar.y"
+#line 1085 "Grammar.y"
     {
 ;}
     break;
 
   case 97:
-#line 1082 "Grammar.y"
+#line 1099 "Grammar.y"
     {
-    ExceptionPtr exception = ExceptionPtr::dynamicCast((yyvsp[-2]));
-    ExceptionListTokPtr exceptionList = ExceptionListTokPtr::dynamicCast((yyvsp[0]));
+    ExceptionPtr exception = ExceptionPtr::dynamicCast(yyvsp[-2]);
+    ExceptionListTokPtr exceptionList = ExceptionListTokPtr::dynamicCast(yyvsp[0]);
     exceptionList->v.push_front(exception);
-    (yyval) = exceptionList;
+    yyval = exceptionList;
 ;}
     break;
 
   case 98:
-#line 1089 "Grammar.y"
+#line 1106 "Grammar.y"
     {
-    ExceptionPtr exception = ExceptionPtr::dynamicCast((yyvsp[0]));
+    ExceptionPtr exception = ExceptionPtr::dynamicCast(yyvsp[0]);
     ExceptionListTokPtr exceptionList = new ExceptionListTok;
     exceptionList->v.push_front(exception);
-    (yyval) = exceptionList;
+    yyval = exceptionList;
 ;}
     break;
 
   case 99:
-#line 1101 "Grammar.y"
+#line 1118 "Grammar.y"
     {
-    StringTokPtr scoped = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr scoped = StringTokPtr::dynamicCast(yyvsp[0]);
     ContainerPtr cont = unit->currentContainer();
     ExceptionPtr exception = cont->lookupException(scoped->v);
     if(!exception)
@@ -2677,137 +2582,137 @@ yyreduce:
 	exception = cont->createException(IceUtil::generateUUID(), 0, false);
     }
     cont->checkIntroduced(scoped->v, exception);
-    (yyval) = exception;
+    yyval = exception;
 ;}
     break;
 
   case 100:
-#line 1113 "Grammar.y"
+#line 1130 "Grammar.y"
     {
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     unit->error("keyword `" + ident->v + "' cannot be used as exception name");
-    (yyval) = unit->currentContainer()->createException(IceUtil::generateUUID(), 0, false);
+    yyval = unit->currentContainer()->createException(IceUtil::generateUUID(), 0, false);
 ;}
     break;
 
   case 101:
-#line 1124 "Grammar.y"
+#line 1141 "Grammar.y"
     {
-    BoolTokPtr local = BoolTokPtr::dynamicCast((yyvsp[-6]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
-    StringListTokPtr metaData = StringListTokPtr::dynamicCast((yyvsp[-3]));
-    TypePtr type = TypePtr::dynamicCast((yyvsp[-2]));
+    BoolTokPtr local = BoolTokPtr::dynamicCast(yyvsp[-6]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
+    StringListTokPtr metaData = StringListTokPtr::dynamicCast(yyvsp[-3]);
+    TypePtr type = TypePtr::dynamicCast(yyvsp[-2]);
     ContainerPtr cont = unit->currentContainer();
-    (yyval) = cont->createSequence(ident->v, type, metaData->v, local->v);
+    yyval = cont->createSequence(ident->v, type, metaData->v, local->v);
 ;}
     break;
 
   case 102:
-#line 1133 "Grammar.y"
+#line 1150 "Grammar.y"
     {
-    BoolTokPtr local = BoolTokPtr::dynamicCast((yyvsp[-6]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
-    StringListTokPtr metaData = StringListTokPtr::dynamicCast((yyvsp[-3]));
-    TypePtr type = TypePtr::dynamicCast((yyvsp[-2]));
+    BoolTokPtr local = BoolTokPtr::dynamicCast(yyvsp[-6]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
+    StringListTokPtr metaData = StringListTokPtr::dynamicCast(yyvsp[-3]);
+    TypePtr type = TypePtr::dynamicCast(yyvsp[-2]);
     ContainerPtr cont = unit->currentContainer();
-    (yyval) = cont->createSequence(ident->v, type, metaData->v, local->v);
+    yyval = cont->createSequence(ident->v, type, metaData->v, local->v);
     unit->error("keyword `" + ident->v + "' cannot be used as sequence name");
 ;}
     break;
 
   case 103:
-#line 1148 "Grammar.y"
+#line 1165 "Grammar.y"
     {
-    BoolTokPtr local = BoolTokPtr::dynamicCast((yyvsp[-9]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
-    StringListTokPtr keyMetaData = StringListTokPtr::dynamicCast((yyvsp[-6]));
-    TypePtr keyType = TypePtr::dynamicCast((yyvsp[-5]));
-    StringListTokPtr valueMetaData = StringListTokPtr::dynamicCast((yyvsp[-3]));
-    TypePtr valueType = TypePtr::dynamicCast((yyvsp[-2]));
+    BoolTokPtr local = BoolTokPtr::dynamicCast(yyvsp[-9]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
+    StringListTokPtr keyMetaData = StringListTokPtr::dynamicCast(yyvsp[-6]);
+    TypePtr keyType = TypePtr::dynamicCast(yyvsp[-5]);
+    StringListTokPtr valueMetaData = StringListTokPtr::dynamicCast(yyvsp[-3]);
+    TypePtr valueType = TypePtr::dynamicCast(yyvsp[-2]);
     ContainerPtr cont = unit->currentContainer();
-    (yyval) = cont->createDictionary(ident->v, keyType, keyMetaData->v, valueType, valueMetaData->v, local->v);
+    yyval = cont->createDictionary(ident->v, keyType, keyMetaData->v, valueType, valueMetaData->v, local->v);
 ;}
     break;
 
   case 104:
-#line 1159 "Grammar.y"
+#line 1176 "Grammar.y"
     {
-    BoolTokPtr local = BoolTokPtr::dynamicCast((yyvsp[-9]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
-    StringListTokPtr keyMetaData = StringListTokPtr::dynamicCast((yyvsp[-6]));
-    TypePtr keyType = TypePtr::dynamicCast((yyvsp[-5]));
-    StringListTokPtr valueMetaData = StringListTokPtr::dynamicCast((yyvsp[-3]));
-    TypePtr valueType = TypePtr::dynamicCast((yyvsp[-2]));
+    BoolTokPtr local = BoolTokPtr::dynamicCast(yyvsp[-9]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
+    StringListTokPtr keyMetaData = StringListTokPtr::dynamicCast(yyvsp[-6]);
+    TypePtr keyType = TypePtr::dynamicCast(yyvsp[-5]);
+    StringListTokPtr valueMetaData = StringListTokPtr::dynamicCast(yyvsp[-3]);
+    TypePtr valueType = TypePtr::dynamicCast(yyvsp[-2]);
     ContainerPtr cont = unit->currentContainer();
-    (yyval) = cont->createDictionary(ident->v, keyType, keyMetaData->v, valueType, valueMetaData->v, local->v);
+    yyval = cont->createDictionary(ident->v, keyType, keyMetaData->v, valueType, valueMetaData->v, local->v);
     unit->error("keyword `" + ident->v + "' cannot be used as dictionary name");
 ;}
     break;
 
   case 105:
-#line 1176 "Grammar.y"
+#line 1193 "Grammar.y"
     {
-    (yyval) = (yyvsp[0]);
+    yyval = yyvsp[0];
 ;}
     break;
 
   case 106:
-#line 1180 "Grammar.y"
+#line 1197 "Grammar.y"
     {
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     unit->error("keyword `" + ident->v + "' cannot be used as enumeration name");
-    (yyval) = (yyvsp[0]);
+    yyval = yyvsp[0];
 ;}
     break;
 
   case 107:
-#line 1191 "Grammar.y"
+#line 1208 "Grammar.y"
     {
-    BoolTokPtr local = BoolTokPtr::dynamicCast((yyvsp[-1]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    BoolTokPtr local = BoolTokPtr::dynamicCast(yyvsp[-1]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     ContainerPtr cont = unit->currentContainer();
     EnumPtr en = cont->createEnum(ident->v, local->v);
     cont->checkIntroduced(ident->v, en);
-    (yyval) = en;
+    yyval = en;
 ;}
     break;
 
   case 108:
-#line 1200 "Grammar.y"
+#line 1217 "Grammar.y"
     {
-    EnumPtr en = EnumPtr::dynamicCast((yyvsp[-3]));
+    EnumPtr en = EnumPtr::dynamicCast(yyvsp[-3]);
     if(en)
     {
-	EnumeratorListTokPtr enumerators = EnumeratorListTokPtr::dynamicCast((yyvsp[-1]));
+	EnumeratorListTokPtr enumerators = EnumeratorListTokPtr::dynamicCast(yyvsp[-1]);
 	if(enumerators->v.empty())
 	{
 	    unit->error("enum `" + en->name() + "' must have at least one enumerator");
 	}
 	en->setEnumerators(enumerators->v);
     }
-    (yyval) = (yyvsp[-3]);
+    yyval = yyvsp[-3];
 ;}
     break;
 
   case 109:
-#line 1219 "Grammar.y"
+#line 1236 "Grammar.y"
     {
-    EnumeratorListTokPtr ens = EnumeratorListTokPtr::dynamicCast((yyvsp[-2]));
-    ens->v.splice(ens->v.end(), EnumeratorListTokPtr::dynamicCast((yyvsp[0]))->v);
-    (yyval) = ens;
+    EnumeratorListTokPtr ens = EnumeratorListTokPtr::dynamicCast(yyvsp[-2]);
+    ens->v.splice(ens->v.end(), EnumeratorListTokPtr::dynamicCast(yyvsp[0])->v);
+    yyval = ens;
 ;}
     break;
 
   case 110:
-#line 1225 "Grammar.y"
+#line 1242 "Grammar.y"
     {
 ;}
     break;
 
   case 111:
-#line 1233 "Grammar.y"
+#line 1250 "Grammar.y"
     {
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     EnumeratorListTokPtr ens = new EnumeratorListTok;
     ContainerPtr cont = unit->currentContainer();
     EnumeratorPtr en = cont->createEnumerator(ident->v);
@@ -2815,57 +2720,57 @@ yyreduce:
     {
 	ens->v.push_front(en);
     }
-    (yyval) = ens;
+    yyval = ens;
 ;}
     break;
 
   case 112:
-#line 1245 "Grammar.y"
+#line 1262 "Grammar.y"
     {
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     unit->error("keyword `" + ident->v + "' cannot be used as enumerator");
     EnumeratorListTokPtr ens = new EnumeratorListTok;
-    (yyval) = ens;
+    yyval = ens;
 ;}
     break;
 
   case 113:
-#line 1252 "Grammar.y"
+#line 1269 "Grammar.y"
     {
     EnumeratorListTokPtr ens = new EnumeratorListTok;
-    (yyval) = ens;
+    yyval = ens;
 ;}
     break;
 
   case 114:
-#line 1262 "Grammar.y"
+#line 1279 "Grammar.y"
     {
     BoolTokPtr out = new BoolTok;
     out->v = true;
-    (yyval) = out;
+    yyval = out;
 ;}
     break;
 
   case 115:
-#line 1268 "Grammar.y"
+#line 1285 "Grammar.y"
     {
     BoolTokPtr out = new BoolTok;
     out->v = false;
-    (yyval) = out;
+    yyval = out;
 ;}
     break;
 
   case 116:
-#line 1279 "Grammar.y"
+#line 1296 "Grammar.y"
     {
 ;}
     break;
 
   case 117:
-#line 1282 "Grammar.y"
+#line 1299 "Grammar.y"
     {
-    BoolTokPtr isOutParam = BoolTokPtr::dynamicCast((yyvsp[-2]));
-    TypeStringTokPtr tsp = TypeStringTokPtr::dynamicCast((yyvsp[0]));
+    BoolTokPtr isOutParam = BoolTokPtr::dynamicCast(yyvsp[-2]);
+    TypeStringTokPtr tsp = TypeStringTokPtr::dynamicCast(yyvsp[0]);
     TypePtr type = tsp->v.first;
     string ident = tsp->v.second;
     OperationPtr op = OperationPtr::dynamicCast(unit->currentContainer());
@@ -2873,7 +2778,7 @@ yyreduce:
     {
 	ParamDeclPtr pd = op->createParamDecl(ident, type, isOutParam->v);
 	unit->currentContainer()->checkIntroduced(ident, pd);
-        StringListTokPtr metaData = StringListTokPtr::dynamicCast((yyvsp[-1]));
+        StringListTokPtr metaData = StringListTokPtr::dynamicCast(yyvsp[-1]);
         if(!metaData->v.empty())
         {
             pd->setMetaData(metaData->v);
@@ -2883,10 +2788,10 @@ yyreduce:
     break;
 
   case 118:
-#line 1300 "Grammar.y"
+#line 1317 "Grammar.y"
     {
-    BoolTokPtr isOutParam = BoolTokPtr::dynamicCast((yyvsp[-2]));
-    TypeStringTokPtr tsp = TypeStringTokPtr::dynamicCast((yyvsp[0]));
+    BoolTokPtr isOutParam = BoolTokPtr::dynamicCast(yyvsp[-2]);
+    TypeStringTokPtr tsp = TypeStringTokPtr::dynamicCast(yyvsp[0]);
     TypePtr type = tsp->v.first;
     string ident = tsp->v.second;
     OperationPtr op = OperationPtr::dynamicCast(unit->currentContainer());
@@ -2894,7 +2799,7 @@ yyreduce:
     {
 	ParamDeclPtr pd = op->createParamDecl(ident, type, isOutParam->v);
 	unit->currentContainer()->checkIntroduced(ident, pd);
-        StringListTokPtr metaData = StringListTokPtr::dynamicCast((yyvsp[-1]));
+        StringListTokPtr metaData = StringListTokPtr::dynamicCast(yyvsp[-1]);
         if(!metaData->v.empty())
         {
             pd->setMetaData(metaData->v);
@@ -2904,11 +2809,11 @@ yyreduce:
     break;
 
   case 119:
-#line 1318 "Grammar.y"
+#line 1335 "Grammar.y"
     {
-    BoolTokPtr isOutParam = BoolTokPtr::dynamicCast((yyvsp[-3]));
-    TypePtr type = TypePtr::dynamicCast((yyvsp[-1]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    BoolTokPtr isOutParam = BoolTokPtr::dynamicCast(yyvsp[-3]);
+    TypePtr type = TypePtr::dynamicCast(yyvsp[-1]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     OperationPtr op = OperationPtr::dynamicCast(unit->currentContainer());
     if(op)
     {
@@ -2919,11 +2824,11 @@ yyreduce:
     break;
 
   case 120:
-#line 1330 "Grammar.y"
+#line 1347 "Grammar.y"
     {
-    BoolTokPtr isOutParam = BoolTokPtr::dynamicCast((yyvsp[-3]));
-    TypePtr type = TypePtr::dynamicCast((yyvsp[-1]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    BoolTokPtr isOutParam = BoolTokPtr::dynamicCast(yyvsp[-3]);
+    TypePtr type = TypePtr::dynamicCast(yyvsp[-1]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     OperationPtr op = OperationPtr::dynamicCast(unit->currentContainer());
     if(op)
     {
@@ -2934,10 +2839,10 @@ yyreduce:
     break;
 
   case 121:
-#line 1342 "Grammar.y"
+#line 1359 "Grammar.y"
     {
-    BoolTokPtr isOutParam = BoolTokPtr::dynamicCast((yyvsp[-2]));
-    TypePtr type = TypePtr::dynamicCast((yyvsp[0]));
+    BoolTokPtr isOutParam = BoolTokPtr::dynamicCast(yyvsp[-2]);
+    TypePtr type = TypePtr::dynamicCast(yyvsp[0]);
     OperationPtr op = OperationPtr::dynamicCast(unit->currentContainer());
     if(op)
     {
@@ -2948,10 +2853,10 @@ yyreduce:
     break;
 
   case 122:
-#line 1353 "Grammar.y"
+#line 1370 "Grammar.y"
     {
-    BoolTokPtr isOutParam = BoolTokPtr::dynamicCast((yyvsp[-2]));
-    TypePtr type = TypePtr::dynamicCast((yyvsp[0]));
+    BoolTokPtr isOutParam = BoolTokPtr::dynamicCast(yyvsp[-2]);
+    TypePtr type = TypePtr::dynamicCast(yyvsp[0]);
     OperationPtr op = OperationPtr::dynamicCast(unit->currentContainer());
     if(op)
     {
@@ -2962,126 +2867,126 @@ yyreduce:
     break;
 
   case 123:
-#line 1369 "Grammar.y"
+#line 1386 "Grammar.y"
     {
-    (yyval) = (yyvsp[0]);
+    yyval = yyvsp[0];
 ;}
     break;
 
   case 124:
-#line 1373 "Grammar.y"
+#line 1390 "Grammar.y"
     {
-    (yyval) = new ExceptionListTok;
+    yyval = new ExceptionListTok;
 ;}
     break;
 
   case 125:
-#line 1382 "Grammar.y"
+#line 1399 "Grammar.y"
     {
 ;}
     break;
 
   case 126:
-#line 1385 "Grammar.y"
+#line 1402 "Grammar.y"
     {
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     ident->v = "::" + ident->v;
-    (yyval) = ident;
+    yyval = ident;
 ;}
     break;
 
   case 127:
-#line 1391 "Grammar.y"
+#line 1408 "Grammar.y"
     {
-    StringTokPtr scoped = StringTokPtr::dynamicCast((yyvsp[-2]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr scoped = StringTokPtr::dynamicCast(yyvsp[-2]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[0]);
     scoped->v += "::";
     scoped->v += ident->v;
-    (yyval) = scoped;
+    yyval = scoped;
 ;}
     break;
 
   case 128:
-#line 1404 "Grammar.y"
+#line 1421 "Grammar.y"
     {
-    (yyval) = unit->builtin(Builtin::KindByte);
+    yyval = unit->builtin(Builtin::KindByte);
 ;}
     break;
 
   case 129:
-#line 1408 "Grammar.y"
+#line 1425 "Grammar.y"
     {
-    (yyval) = unit->builtin(Builtin::KindBool);
+    yyval = unit->builtin(Builtin::KindBool);
 ;}
     break;
 
   case 130:
-#line 1412 "Grammar.y"
+#line 1429 "Grammar.y"
     {
-    (yyval) = unit->builtin(Builtin::KindShort);
+    yyval = unit->builtin(Builtin::KindShort);
 ;}
     break;
 
   case 131:
-#line 1416 "Grammar.y"
+#line 1433 "Grammar.y"
     {
-    (yyval) = unit->builtin(Builtin::KindInt);
+    yyval = unit->builtin(Builtin::KindInt);
 ;}
     break;
 
   case 132:
-#line 1420 "Grammar.y"
+#line 1437 "Grammar.y"
     {
-    (yyval) = unit->builtin(Builtin::KindLong);
+    yyval = unit->builtin(Builtin::KindLong);
 ;}
     break;
 
   case 133:
-#line 1424 "Grammar.y"
+#line 1441 "Grammar.y"
     {
-    (yyval) = unit->builtin(Builtin::KindFloat);
+    yyval = unit->builtin(Builtin::KindFloat);
 ;}
     break;
 
   case 134:
-#line 1428 "Grammar.y"
+#line 1445 "Grammar.y"
     {
-    (yyval) = unit->builtin(Builtin::KindDouble);
+    yyval = unit->builtin(Builtin::KindDouble);
 ;}
     break;
 
   case 135:
-#line 1432 "Grammar.y"
+#line 1449 "Grammar.y"
     {
-    (yyval) = unit->builtin(Builtin::KindString);
+    yyval = unit->builtin(Builtin::KindString);
 ;}
     break;
 
   case 136:
-#line 1436 "Grammar.y"
+#line 1453 "Grammar.y"
     {
-    (yyval) = unit->builtin(Builtin::KindObject);
+    yyval = unit->builtin(Builtin::KindObject);
 ;}
     break;
 
   case 137:
-#line 1440 "Grammar.y"
+#line 1457 "Grammar.y"
     {
-    (yyval) = unit->builtin(Builtin::KindObjectProxy);
+    yyval = unit->builtin(Builtin::KindObjectProxy);
 ;}
     break;
 
   case 138:
-#line 1444 "Grammar.y"
+#line 1461 "Grammar.y"
     {
-    (yyval) = unit->builtin(Builtin::KindLocalObject);
+    yyval = unit->builtin(Builtin::KindLocalObject);
 ;}
     break;
 
   case 139:
-#line 1448 "Grammar.y"
+#line 1465 "Grammar.y"
     {
-    StringTokPtr scoped = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr scoped = StringTokPtr::dynamicCast(yyvsp[0]);
     ContainerPtr cont = unit->currentContainer();
     if(cont)
     {
@@ -3091,19 +2996,19 @@ yyreduce:
 	    YYERROR; // Can't continue, jump to next yyerrok
 	}
 	cont->checkIntroduced(scoped->v);
-	(yyval) = types.front();
+	yyval = types.front();
     }
     else
     {
-        (yyval) = 0;
+        yyval = 0;
     }
 ;}
     break;
 
   case 140:
-#line 1467 "Grammar.y"
+#line 1484 "Grammar.y"
     {
-    StringTokPtr scoped = StringTokPtr::dynamicCast((yyvsp[-1]));
+    StringTokPtr scoped = StringTokPtr::dynamicCast(yyvsp[-1]);
     ContainerPtr cont = unit->currentContainer();
     if(cont)
     {
@@ -3130,98 +3035,98 @@ yyreduce:
 	    }
 	    *p = new Proxy(cl);
 	}
-	(yyval) = types.front();
+	yyval = types.front();
     }
     else
     {
-        (yyval) = 0;
+        yyval = 0;
     }
 ;}
     break;
 
   case 141:
-#line 1508 "Grammar.y"
+#line 1525 "Grammar.y"
     {
-    StringTokPtr str1 = StringTokPtr::dynamicCast((yyvsp[-1]));
-    StringTokPtr str2 = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr str1 = StringTokPtr::dynamicCast(yyvsp[-1]);
+    StringTokPtr str2 = StringTokPtr::dynamicCast(yyvsp[0]);
     str1->v += str2->v;
 ;}
     break;
 
   case 142:
-#line 1514 "Grammar.y"
+#line 1531 "Grammar.y"
     {
 ;}
     break;
 
   case 143:
-#line 1522 "Grammar.y"
+#line 1539 "Grammar.y"
     {
-    StringTokPtr str = StringTokPtr::dynamicCast((yyvsp[0]));
-    StringListTokPtr stringList = StringListTokPtr::dynamicCast((yyvsp[-2]));
+    StringTokPtr str = StringTokPtr::dynamicCast(yyvsp[0]);
+    StringListTokPtr stringList = StringListTokPtr::dynamicCast(yyvsp[-2]);
     stringList->v.push_back(str->v);
-    (yyval) = stringList;
+    yyval = stringList;
 ;}
     break;
 
   case 144:
-#line 1529 "Grammar.y"
+#line 1546 "Grammar.y"
     {
-    StringTokPtr str = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr str = StringTokPtr::dynamicCast(yyvsp[0]);
     StringListTokPtr stringList = new StringListTok;
     stringList->v.push_back(str->v);
-    (yyval) = stringList;
+    yyval = stringList;
 ;}
     break;
 
   case 145:
-#line 1541 "Grammar.y"
+#line 1558 "Grammar.y"
     {
     BoolTokPtr local = new BoolTok;
     local->v = true;
-    (yyval) = local;
+    yyval = local;
 ;}
     break;
 
   case 146:
-#line 1547 "Grammar.y"
+#line 1564 "Grammar.y"
     {
     BoolTokPtr local = new BoolTok;
     local->v = false;
-    (yyval) = local;
+    yyval = local;
 ;}
     break;
 
   case 147:
-#line 1558 "Grammar.y"
+#line 1575 "Grammar.y"
     {
     BuiltinPtr type = unit->builtin(Builtin::KindLong);
-    IntegerTokPtr intVal = IntegerTokPtr::dynamicCast((yyvsp[0]));
+    IntegerTokPtr intVal = IntegerTokPtr::dynamicCast(yyvsp[0]);
     ostringstream sstr;
     sstr << intVal->v;
     SyntaxTreeBaseStringTokPtr basestring = new SyntaxTreeBaseStringTok;
     basestring->v = pair<SyntaxTreeBasePtr,string>(type, sstr.str());
-    (yyval) = basestring;
+    yyval = basestring;
 ;}
     break;
 
   case 148:
-#line 1568 "Grammar.y"
+#line 1585 "Grammar.y"
     {
     BuiltinPtr type = unit->builtin(Builtin::KindDouble);
-    FloatingTokPtr floatVal = FloatingTokPtr::dynamicCast((yyvsp[0]));
+    FloatingTokPtr floatVal = FloatingTokPtr::dynamicCast(yyvsp[0]);
     ostringstream sstr;
     sstr << floatVal->v;
     SyntaxTreeBaseStringTokPtr basestring = new SyntaxTreeBaseStringTok;
     basestring->v = pair<SyntaxTreeBasePtr,string>(type, sstr.str());
-    (yyval) = basestring;
+    yyval = basestring;
 ;}
     break;
 
   case 149:
-#line 1578 "Grammar.y"
+#line 1595 "Grammar.y"
     {
-    StringTokPtr scoped = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr scoped = StringTokPtr::dynamicCast(yyvsp[0]);
     SyntaxTreeBaseStringTokPtr basestring = new SyntaxTreeBaseStringTok;
     ContainedList cl = unit->currentContainer()->lookupContained(scoped->v);
     if(cl.empty())
@@ -3246,246 +3151,245 @@ yyreduce:
 	unit->currentContainer()->checkIntroduced(scoped->v, enumerator);
 	basestring->v = pair<SyntaxTreeBasePtr,string>(enumerator, scoped->v);
     }
-    (yyval) = basestring;
+    yyval = basestring;
 ;}
     break;
 
   case 150:
-#line 1607 "Grammar.y"
+#line 1624 "Grammar.y"
     {
     BuiltinPtr type = unit->builtin(Builtin::KindString);
-    StringTokPtr literal = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr literal = StringTokPtr::dynamicCast(yyvsp[0]);
     SyntaxTreeBaseStringTokPtr basestring = new SyntaxTreeBaseStringTok;
     basestring->v = pair<SyntaxTreeBasePtr,string>(type, literal->v);
-    (yyval) = basestring;
+    yyval = basestring;
 ;}
     break;
 
   case 151:
-#line 1615 "Grammar.y"
+#line 1632 "Grammar.y"
     {
     BuiltinPtr type = unit->builtin(Builtin::KindBool);
-    StringTokPtr literal = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr literal = StringTokPtr::dynamicCast(yyvsp[0]);
     SyntaxTreeBaseStringTokPtr basestring = new SyntaxTreeBaseStringTok;
     basestring->v = pair<SyntaxTreeBasePtr,string>(type, literal->v);
-    (yyval) = basestring;
+    yyval = basestring;
 ;}
     break;
 
   case 152:
-#line 1623 "Grammar.y"
+#line 1640 "Grammar.y"
     {
     BuiltinPtr type = unit->builtin(Builtin::KindBool);
-    StringTokPtr literal = StringTokPtr::dynamicCast((yyvsp[0]));
+    StringTokPtr literal = StringTokPtr::dynamicCast(yyvsp[0]);
     SyntaxTreeBaseStringTokPtr basestring = new SyntaxTreeBaseStringTok;
     basestring->v = pair<SyntaxTreeBasePtr,string>(type, literal->v);
-    (yyval) = basestring;
+    yyval = basestring;
 ;}
     break;
 
   case 153:
-#line 1636 "Grammar.y"
+#line 1653 "Grammar.y"
     {
-    StringListTokPtr metaData = StringListTokPtr::dynamicCast((yyvsp[-4]));
-    TypePtr const_type = TypePtr::dynamicCast((yyvsp[-3]));
-    StringTokPtr ident = StringTokPtr::dynamicCast((yyvsp[-2]));
-    SyntaxTreeBaseStringTokPtr value = SyntaxTreeBaseStringTokPtr::dynamicCast((yyvsp[0]));
-    (yyval) = unit->currentContainer()->createConst(ident->v, const_type, metaData->v, value->v.first, value->v.second);
+    StringListTokPtr metaData = StringListTokPtr::dynamicCast(yyvsp[-4]);
+    TypePtr const_type = TypePtr::dynamicCast(yyvsp[-3]);
+    StringTokPtr ident = StringTokPtr::dynamicCast(yyvsp[-2]);
+    SyntaxTreeBaseStringTokPtr value = SyntaxTreeBaseStringTokPtr::dynamicCast(yyvsp[0]);
+    yyval = unit->currentContainer()->createConst(ident->v, const_type, metaData->v, value->v.first, value->v.second);
 ;}
     break;
 
   case 154:
-#line 1644 "Grammar.y"
+#line 1661 "Grammar.y"
     {
-    StringListTokPtr metaData = StringListTokPtr::dynamicCast((yyvsp[-3]));
-    TypePtr const_type = TypePtr::dynamicCast((yyvsp[-2]));
-    SyntaxTreeBaseStringTokPtr value = SyntaxTreeBaseStringTokPtr::dynamicCast((yyvsp[0]));
+    StringListTokPtr metaData = StringListTokPtr::dynamicCast(yyvsp[-3]);
+    TypePtr const_type = TypePtr::dynamicCast(yyvsp[-2]);
+    SyntaxTreeBaseStringTokPtr value = SyntaxTreeBaseStringTokPtr::dynamicCast(yyvsp[0]);
     unit->error("missing constant name");
-    (yyval) = unit->currentContainer()->createConst(IceUtil::generateUUID(), const_type, metaData->v, value->v.first,
+    yyval = unit->currentContainer()->createConst(IceUtil::generateUUID(), const_type, metaData->v, value->v.first,
     					       value->v.second);
 ;}
     break;
 
   case 155:
-#line 1658 "Grammar.y"
+#line 1675 "Grammar.y"
     {
 ;}
     break;
 
   case 156:
-#line 1661 "Grammar.y"
+#line 1678 "Grammar.y"
     {
 ;}
     break;
 
   case 157:
-#line 1664 "Grammar.y"
+#line 1681 "Grammar.y"
     {
 ;}
     break;
 
   case 158:
-#line 1667 "Grammar.y"
+#line 1684 "Grammar.y"
     {
 ;}
     break;
 
   case 159:
-#line 1670 "Grammar.y"
+#line 1687 "Grammar.y"
     {
 ;}
     break;
 
   case 160:
-#line 1673 "Grammar.y"
+#line 1690 "Grammar.y"
     {
 ;}
     break;
 
   case 161:
-#line 1676 "Grammar.y"
+#line 1693 "Grammar.y"
     {
 ;}
     break;
 
   case 162:
-#line 1679 "Grammar.y"
+#line 1696 "Grammar.y"
     {
 ;}
     break;
 
   case 163:
-#line 1682 "Grammar.y"
+#line 1699 "Grammar.y"
     {
 ;}
     break;
 
   case 164:
-#line 1685 "Grammar.y"
+#line 1702 "Grammar.y"
     {
 ;}
     break;
 
   case 165:
-#line 1688 "Grammar.y"
+#line 1705 "Grammar.y"
     {
 ;}
     break;
 
   case 166:
-#line 1691 "Grammar.y"
+#line 1708 "Grammar.y"
     {
 ;}
     break;
 
   case 167:
-#line 1694 "Grammar.y"
+#line 1711 "Grammar.y"
     {
 ;}
     break;
 
   case 168:
-#line 1697 "Grammar.y"
+#line 1714 "Grammar.y"
     {
 ;}
     break;
 
   case 169:
-#line 1700 "Grammar.y"
+#line 1717 "Grammar.y"
     {
 ;}
     break;
 
   case 170:
-#line 1703 "Grammar.y"
+#line 1720 "Grammar.y"
     {
 ;}
     break;
 
   case 171:
-#line 1706 "Grammar.y"
+#line 1723 "Grammar.y"
     {
 ;}
     break;
 
   case 172:
-#line 1709 "Grammar.y"
+#line 1726 "Grammar.y"
     {
 ;}
     break;
 
   case 173:
-#line 1712 "Grammar.y"
+#line 1729 "Grammar.y"
     {
 ;}
     break;
 
   case 174:
-#line 1715 "Grammar.y"
+#line 1732 "Grammar.y"
     {
 ;}
     break;
 
   case 175:
-#line 1718 "Grammar.y"
+#line 1735 "Grammar.y"
     {
 ;}
     break;
 
   case 176:
-#line 1721 "Grammar.y"
+#line 1738 "Grammar.y"
     {
 ;}
     break;
 
   case 177:
-#line 1724 "Grammar.y"
+#line 1741 "Grammar.y"
     {
 ;}
     break;
 
   case 178:
-#line 1727 "Grammar.y"
+#line 1744 "Grammar.y"
     {
 ;}
     break;
 
   case 179:
-#line 1730 "Grammar.y"
+#line 1747 "Grammar.y"
     {
 ;}
     break;
 
   case 180:
-#line 1733 "Grammar.y"
+#line 1750 "Grammar.y"
     {
 ;}
     break;
 
   case 181:
-#line 1736 "Grammar.y"
+#line 1753 "Grammar.y"
     {
 ;}
     break;
 
   case 182:
-#line 1739 "Grammar.y"
+#line 1756 "Grammar.y"
     {
 ;}
     break;
 
   case 183:
-#line 1742 "Grammar.y"
+#line 1759 "Grammar.y"
     {
 ;}
     break;
 
 
-      default: break;
     }
 
-/* Line 1126 of yacc.c.  */
-#line 3489 "Grammar.tab.c"
+/* Line 1000 of yacc.c.  */
+#line 3393 "Grammar.tab.c"
 
   yyvsp -= yylen;
   yyssp -= yylen;
@@ -3524,35 +3428,11 @@ yyerrlab:
 
       if (YYPACT_NINF < yyn && yyn < YYLAST)
 	{
+	  YYSIZE_T yysize = 0;
 	  int yytype = YYTRANSLATE (yychar);
-	  YYSIZE_T yysize0 = yytnamerr (0, yytname[yytype]);
-	  YYSIZE_T yysize = yysize0;
-	  YYSIZE_T yysize1;
-	  int yysize_overflow = 0;
-	  char *yymsg = 0;
-#	  define YYERROR_VERBOSE_ARGS_MAXIMUM 5
-	  char const *yyarg[YYERROR_VERBOSE_ARGS_MAXIMUM];
+	  const char* yyprefix;
+	  char *yymsg;
 	  int yyx;
-
-#if 0
-	  /* This is so xgettext sees the translatable formats that are
-	     constructed on the fly.  */
-	  YY_("syntax error, unexpected %s");
-	  YY_("syntax error, unexpected %s, expecting %s");
-	  YY_("syntax error, unexpected %s, expecting %s or %s");
-	  YY_("syntax error, unexpected %s, expecting %s or %s or %s");
-	  YY_("syntax error, unexpected %s, expecting %s or %s or %s or %s");
-#endif
-	  char *yyfmt;
-	  char const *yyf;
-	  static char const yyunexpected[] = "syntax error, unexpected %s";
-	  static char const yyexpecting[] = ", expecting %s";
-	  static char const yyor[] = " or %s";
-	  char yyformat[sizeof yyunexpected
-			+ sizeof yyexpecting - 1
-			+ ((YYERROR_VERBOSE_ARGS_MAXIMUM - 2)
-			   * (sizeof yyor - 1))];
-	  char const *yyprefix = yyexpecting;
 
 	  /* Start YYX at -YYN if negative to avoid negative indexes in
 	     YYCHECK.  */
@@ -3561,91 +3441,81 @@ yyerrlab:
 	  /* Stay within bounds of both yycheck and yytname.  */
 	  int yychecklim = YYLAST - yyn;
 	  int yyxend = yychecklim < YYNTOKENS ? yychecklim : YYNTOKENS;
-	  int yycount = 1;
+	  int yycount = 0;
 
-	  yyarg[0] = yytname[yytype];
-	  yyfmt = yystpcpy (yyformat, yyunexpected);
-
+	  yyprefix = ", expecting ";
 	  for (yyx = yyxbegin; yyx < yyxend; ++yyx)
 	    if (yycheck[yyx + yyn] == yyx && yyx != YYTERROR)
 	      {
-		if (yycount == YYERROR_VERBOSE_ARGS_MAXIMUM)
+		yysize += yystrlen (yyprefix) + yystrlen (yytname [yyx]);
+		yycount += 1;
+		if (yycount == 5)
 		  {
-		    yycount = 1;
-		    yysize = yysize0;
-		    yyformat[sizeof yyunexpected - 1] = '\0';
+		    yysize = 0;
 		    break;
 		  }
-		yyarg[yycount++] = yytname[yyx];
-		yysize1 = yysize + yytnamerr (0, yytname[yyx]);
-		yysize_overflow |= yysize1 < yysize;
-		yysize = yysize1;
-		yyfmt = yystpcpy (yyfmt, yyprefix);
-		yyprefix = yyor;
 	      }
-
-	  yyf = YY_(yyformat);
-	  yysize1 = yysize + yystrlen (yyf);
-	  yysize_overflow |= yysize1 < yysize;
-	  yysize = yysize1;
-
-	  if (!yysize_overflow && yysize <= YYSTACK_ALLOC_MAXIMUM)
-	    yymsg = (char *) YYSTACK_ALLOC (yysize);
-	  if (yymsg)
+	  yysize += (sizeof ("syntax error, unexpected ")
+		     + yystrlen (yytname[yytype]));
+	  yymsg = (char *) YYSTACK_ALLOC (yysize);
+	  if (yymsg != 0)
 	    {
-	      /* Avoid sprintf, as that infringes on the user's name space.
-		 Don't have undefined behavior even if the translation
-		 produced a string with the wrong number of "%s"s.  */
-	      char *yyp = yymsg;
-	      int yyi = 0;
-	      while ((*yyp = *yyf))
+	      char *yyp = yystpcpy (yymsg, "syntax error, unexpected ");
+	      yyp = yystpcpy (yyp, yytname[yytype]);
+
+	      if (yycount < 5)
 		{
-		  if (*yyp == '%' && yyf[1] == 's' && yyi < yycount)
-		    {
-		      yyp += yytnamerr (yyp, yyarg[yyi++]);
-		      yyf += 2;
-		    }
-		  else
-		    {
-		      yyp++;
-		      yyf++;
-		    }
+		  yyprefix = ", expecting ";
+		  for (yyx = yyxbegin; yyx < yyxend; ++yyx)
+		    if (yycheck[yyx + yyn] == yyx && yyx != YYTERROR)
+		      {
+			yyp = yystpcpy (yyp, yyprefix);
+			yyp = yystpcpy (yyp, yytname[yyx]);
+			yyprefix = " or ";
+		      }
 		}
 	      yyerror (yymsg);
 	      YYSTACK_FREE (yymsg);
 	    }
 	  else
-	    {
-	      yyerror (YY_("syntax error"));
-	      goto yyexhaustedlab;
-	    }
+	    yyerror ("syntax error; also virtual memory exhausted");
 	}
       else
 #endif /* YYERROR_VERBOSE */
-	yyerror (YY_("syntax error"));
+	yyerror ("syntax error");
     }
 
 
 
   if (yyerrstatus == 3)
     {
-      /* If just tried and failed to reuse look-ahead token after an
+      /* If just tried and failed to reuse lookahead token after an
 	 error, discard it.  */
 
       if (yychar <= YYEOF)
         {
-	  /* Return failure if at end of input.  */
+          /* If at end of input, pop the error token,
+	     then the rest of the stack, then return failure.  */
 	  if (yychar == YYEOF)
-	    YYABORT;
+	     for (;;)
+	       {
+		 YYPOPSTACK;
+		 if (yyssp == yyss)
+		   YYABORT;
+		 YYDSYMPRINTF ("Error: popping", yystos[*yyssp], yyvsp, yylsp);
+		 yydestruct (yystos[*yyssp], yyvsp);
+	       }
         }
       else
 	{
-	  yydestruct ("Error: discarding", yytoken, &yylval);
+	  YYDSYMPRINTF ("Error: discarding", yytoken, &yylval, &yylloc);
+	  yydestruct (yytoken, &yylval);
 	  yychar = YYEMPTY;
+
 	}
     }
 
-  /* Else will try to reuse look-ahead token after shifting the error
+  /* Else will try to reuse lookahead token after shifting the error
      token.  */
   goto yyerrlab1;
 
@@ -3655,13 +3525,14 @@ yyerrlab:
 `---------------------------------------------------*/
 yyerrorlab:
 
-  /* Pacify compilers like GCC when the user code never invokes
-     YYERROR and the label yyerrorlab therefore never appears in user
-     code.  */
+#ifdef __GNUC__
+  /* Pacify GCC when the user code never invokes YYERROR and the label
+     yyerrorlab therefore never appears in user code.  */
   if (0)
      goto yyerrorlab;
+#endif
 
-yyvsp -= yylen;
+  yyvsp -= yylen;
   yyssp -= yylen;
   yystate = *yyssp;
   goto yyerrlab1;
@@ -3691,8 +3562,8 @@ yyerrlab1:
       if (yyssp == yyss)
 	YYABORT;
 
-
-      yydestruct ("Error: popping", yystos[yystate], yyvsp);
+      YYDSYMPRINTF ("Error: popping", yystos[*yyssp], yyvsp, yylsp);
+      yydestruct (yystos[yystate], yyvsp);
       YYPOPSTACK;
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp);
@@ -3701,11 +3572,10 @@ yyerrlab1:
   if (yyn == YYFINAL)
     YYACCEPT;
 
+  YYDPRINTF ((stderr, "Shifting error token, "));
+
   *++yyvsp = yylval;
 
-
-  /* Shift the error token. */
-  YY_SYMBOL_PRINT ("Shifting", yystos[yyn], yyvsp, yylsp);
 
   yystate = yyn;
   goto yynewstate;
@@ -3726,25 +3596,16 @@ yyabortlab:
   goto yyreturn;
 
 #ifndef yyoverflow
-/*-------------------------------------------------.
-| yyexhaustedlab -- memory exhaustion comes here.  |
-`-------------------------------------------------*/
-yyexhaustedlab:
-  yyerror (YY_("memory exhausted"));
+/*----------------------------------------------.
+| yyoverflowlab -- parser overflow comes here.  |
+`----------------------------------------------*/
+yyoverflowlab:
+  yyerror ("parser stack overflow");
   yyresult = 2;
   /* Fall through.  */
 #endif
 
 yyreturn:
-  if (yychar != YYEOF && yychar != YYEMPTY)
-     yydestruct ("Cleanup: discarding lookahead",
-		 yytoken, &yylval);
-  while (yyssp != yyss)
-    {
-      yydestruct ("Cleanup: popping",
-		  yystos[*yyssp], yyvsp);
-      YYPOPSTACK;
-    }
 #ifndef yyoverflow
   if (yyss != yyssa)
     YYSTACK_FREE (yyss);
@@ -3753,6 +3614,6 @@ yyreturn:
 }
 
 
-#line 1746 "Grammar.y"
+#line 1763 "Grammar.y"
 
 

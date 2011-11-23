@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,7 +11,11 @@
 #define ICE_GRID_REGISTRYI_H
 
 #include <IceGrid/Registry.h>
+#include <IceGrid/Query.h>
+#include <IceGrid/Locator.h>
 #include <IceGrid/Internal.h>
+#include <IceGrid/PlatformInfo.h>
+#include <IceGrid/ReplicaSessionManager.h>
 #include <Glacier2/PermissionsVerifierF.h>
 #include <IceStorm/Service.h>
 
@@ -20,6 +24,9 @@ namespace IceGrid
 
 class Database;
 typedef IceUtil::Handle<Database> DatabasePtr;
+
+class WellKnownObjectsManager;
+typedef IceUtil::Handle<WellKnownObjectsManager> WellKnownObjectsManagerPtr;
 
 class TraceLevels;
 typedef IceUtil::Handle<TraceLevels> TraceLevelsPtr;
@@ -43,7 +50,7 @@ class RegistryI : public Registry
 {
 public:
 
-    RegistryI(const Ice::CommunicatorPtr&);
+    RegistryI(const Ice::CommunicatorPtr&, const TraceLevelsPtr&);
     ~RegistryI();
 
     bool start(bool);
@@ -55,29 +62,58 @@ public:
     virtual SessionPrx createSessionFromSecureConnection(const Ice::Current&);
     virtual AdminSessionPrx createAdminSessionFromSecureConnection(const Ice::Current&);
 
-    virtual int getSessionTimeout(const Ice::Current&) const;
+    virtual int getSessionTimeout(const Ice::Current& = Ice::Current()) const;
+    
+    std::string getName() const;
+    RegistryInfo getInfo() const;
 
+    void waitForShutdown();
     virtual void shutdown();
     
 private:
 
-    void addWellKnownObject(const Ice::ObjectPrx&, const std::string&);
-    void setupThreadPool(const Ice::PropertiesPtr&, const std::string&, int, int = 0);
-    Glacier2::PermissionsVerifierPrx getPermissionsVerifier(const Ice::ObjectAdapterPtr&, const Ice::LocatorPrx&,
-							    const std::string&, const std::string&, bool);
+    Ice::LocatorRegistryPrx setupLocatorRegistry(const Ice::ObjectAdapterPtr&); 
+    LocatorPrx setupLocator(const Ice::ObjectAdapterPtr&, const Ice::ObjectAdapterPtr&, const Ice::LocatorRegistryPrx&,
+                            const RegistryPrx&, const QueryPrx&); 
+    QueryPrx setupQuery(const Ice::ObjectAdapterPtr&);
+    RegistryPrx setupRegistry(const Ice::ObjectAdapterPtr&);
+    InternalRegistryPrx setupInternalRegistry(const Ice::ObjectAdapterPtr&);
+    void setupNullPermissionsVerifier(const Ice::ObjectAdapterPtr&);
+    bool setupUserAccountMapper(const Ice::ObjectAdapterPtr&);
+    void setupClientSessionFactory(const Ice::ObjectAdapterPtr&, const Ice::ObjectAdapterPtr&, const LocatorPrx&,
+                                   bool);
+    void setupAdminSessionFactory(const Ice::ObjectAdapterPtr&, const Ice::ObjectAdapterPtr&, const LocatorPrx&,
+                                  bool);
 
-    Glacier2::SSLPermissionsVerifierPrx getSSLPermissionsVerifier(const Ice::LocatorPrx&, const std::string&, bool);
+    void setupThreadPool(const Ice::PropertiesPtr&, const std::string&, int, int = 0);
+    Glacier2::PermissionsVerifierPrx getPermissionsVerifier(const Ice::ObjectAdapterPtr&, const LocatorPrx&,
+                                                            const std::string&, const std::string&, bool);
+
+    Glacier2::SSLPermissionsVerifierPrx getSSLPermissionsVerifier(const LocatorPrx&, const std::string&, bool);
     Glacier2::SSLInfo getSSLInfo(const Ice::ConnectionPtr&, std::string&);
 
-    Ice::CommunicatorPtr _communicator;
+    NodePrxSeq registerReplicas(const InternalRegistryPrx&, const InternalRegistryPrxSeq&, const NodePrxSeq&);
+    void registerNodes(const InternalRegistryPrx&, const NodePrxSeq&);
+    
+    const Ice::CommunicatorPtr _communicator;
+    const TraceLevelsPtr _traceLevels;
+
     DatabasePtr _database;
-    TraceLevelsPtr _traceLevels;
-    ReapThreadPtr _nodeReaper;
-    ReapThreadPtr _clientReaper;
+    Ice::ObjectAdapterPtr _clientAdapter;
+    WellKnownObjectsManagerPtr _wellKnownObjects;
+    std::string _instanceName;
+    bool _master;
+    std::string _replicaName;
+    ReapThreadPtr _reaper;
     WaitQueuePtr _waitQueue;
     SessionServantLocatorIPtr _sessionServantLocator;
-
     int _sessionTimeout;
+    ReplicaSessionManager _session;
+    mutable PlatformInfo _platform;
+
+    Glacier2::PermissionsVerifierPrx _nullPermissionsVerifier;
+    Glacier2::SSLPermissionsVerifierPrx _nullSSLPermissionsVerifier;
+
     ClientSessionFactoryPtr _clientSessionFactory;
     Glacier2::PermissionsVerifierPrx _clientVerifier;
     Glacier2::SSLPermissionsVerifierPrx _sslClientVerifier;

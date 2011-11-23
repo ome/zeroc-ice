@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,18 +18,18 @@ void
 usage(const char* n)
 {
     cerr << "Usage: " << n << " [options] slice-files...\n";
-    cerr <<	
+    cerr <<     
         "Options:\n"
         "-h, --help               Show this message.\n"
         "-v, --version            Display the Ice version.\n"
         "--header-ext EXT         Use EXT instead of the default `h' extension.\n"
         "--source-ext EXT         Use EXT instead of the default `cpp' extension.\n"
-	"--add-header HDR[,GUARD] Add #include for HDR (with guard GUARD) to generated source file.\n"
+        "--add-header HDR[,GUARD] Add #include for HDR (with guard GUARD) to generated source file.\n"
         "-DNAME                   Define NAME as 1.\n"
         "-DNAME=DEF               Define NAME as DEF.\n"
         "-UNAME                   Remove any definition for NAME.\n"
         "-IDIR                    Put DIR in the include file search path.\n"
-	"-E                       Print preprocessor output on stdout.\n"
+        "-E                       Print preprocessor output on stdout.\n"
         "--include-dir DIR        Use DIR as the header include directory in source files.\n"
         "--output-dir DIR         Create files in the directory DIR.\n"
         "--dll-export SYMBOL      Use SYMBOL for DLL exports.\n"
@@ -46,20 +46,6 @@ usage(const char* n)
 int
 main(int argc, char* argv[])
 {
-    string cppArgs;
-    vector<string> includePaths;
-    bool preprocess;
-    string include;
-    string output;
-    string dllExport;
-    bool impl;
-    bool depend;
-    bool debug;
-    bool ice;
-    bool checksum;
-    bool stream;
-    bool caseSensitive;
-
     IceUtil::Options opts;
     opts.addOpt("h", "help");
     opts.addOpt("v", "version");
@@ -86,22 +72,23 @@ main(int argc, char* argv[])
     {
         args = opts.parse(argc, (const char**)argv);
     }
-    catch(const IceUtil::Options::BadOpt& e)
+    catch(const IceUtil::BadOptException& e)
     {
-	cerr << argv[0] << ": " << e.reason << endl;
-	usage(argv[0]);
-	return EXIT_FAILURE;
+        cerr << argv[0] << ": " << e.reason << endl;
+        usage(argv[0]);
+        return EXIT_FAILURE;
     }
 
-    if(opts.isSet("h") || opts.isSet("help"))
+    if(opts.isSet("help"))
     {
-	usage(argv[0]);
-	return EXIT_SUCCESS;
+        usage(argv[0]);
+        return EXIT_SUCCESS;
     }
-    if(opts.isSet("v") || opts.isSet("version"))
+
+    if(opts.isSet("version"))
     {
-	cout << ICE_STRING_VERSION << endl;
-	return EXIT_SUCCESS;
+        cout << ICE_STRING_VERSION << endl;
+        return EXIT_SUCCESS;
     }
 
     string headerExtension = opts.optArg("header-ext");
@@ -109,122 +96,120 @@ main(int argc, char* argv[])
     
     vector<string> extraHeaders = opts.argVec("add-header");
 
-    if(opts.isSet("D"))
+    string cppArgs;
+    vector<string> optargs = opts.argVec("D");
+    vector<string>::const_iterator i;
+    for(i = optargs.begin(); i != optargs.end(); ++i)
     {
-	vector<string> optargs = opts.argVec("D");
-	for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
-	{
-	    cppArgs += " -D\"" + *i + "\"";
-	}
+        cppArgs += " -D" + Preprocessor::addQuotes(*i);
     }
-    if(opts.isSet("U"))
+
+    optargs = opts.argVec("U");
+    for(i = optargs.begin(); i != optargs.end(); ++i)
     {
-	vector<string> optargs = opts.argVec("U");
-	for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
-	{
-	    cppArgs += " -U\"" + *i + "\"";
-	}
+        cppArgs += " -U" + Preprocessor::addQuotes(*i);
     }
-    if(opts.isSet("I"))
+
+    vector<string> includePaths;
+    includePaths = opts.argVec("I");
+    for(i = includePaths.begin(); i != includePaths.end(); ++i)
     {
-	includePaths = opts.argVec("I");
-	for(vector<string>::const_iterator i = includePaths.begin(); i != includePaths.end(); ++i)
-	{
-	    cppArgs += " -I\"" + *i + "\"";
-	}
+	cppArgs += " -I" + Preprocessor::normalizeIncludePath(*i);
     }
-    preprocess = opts.isSet("E");
-    if(opts.isSet("include-dir"))
-    {
-	include = opts.optArg("include-dir");
-    }
-    if(opts.isSet("output-dir"))
-    {
-	output = opts.optArg("output-dir");
-    }
-    if(opts.isSet("dll-export"))
-    {
-	dllExport = opts.optArg("dll-export");
-    }
-    impl = opts.isSet("impl");
-    depend = opts.isSet("depend");
-    debug = opts.isSet("d") || opts.isSet("debug");
-    ice = opts.isSet("ice");
-    checksum = opts.isSet("checksum");
-    stream = opts.isSet("stream");
-    caseSensitive = opts.isSet("case-sensitive");
+
+    bool preprocess = opts.isSet("E");
+
+    string include = opts.optArg("include-dir");
+
+    string output = opts.optArg("output-dir");
+
+    string dllExport = opts.optArg("dll-export");
+
+    bool impl = opts.isSet("impl");
+
+    bool depend = opts.isSet("depend");
+
+    bool debug = opts.isSet("debug");
+
+    bool ice = opts.isSet("ice");
+
+    bool checksum = opts.isSet("checksum");
+
+    bool stream = opts.isSet("stream");
+
+    bool caseSensitive = opts.isSet("case-sensitive");
 
     if(args.empty())
     {
-	cerr << argv[0] << ": no input file" << endl;
-	usage(argv[0]);
-	return EXIT_FAILURE;
+        cerr << argv[0] << ": no input file" << endl;
+        usage(argv[0]);
+        return EXIT_FAILURE;
     }
 
     int status = EXIT_SUCCESS;
 
-    for(vector<string>::const_iterator i = args.begin(); i != args.end(); ++i)
+    for(i = args.begin(); i != args.end(); ++i)
     {
-	if(depend)
-	{
-	    Preprocessor icecpp(argv[0], *i, cppArgs);
-	    icecpp.printMakefileDependencies(Preprocessor::CPlusPlus);
-	}
-	else
-	{
-	    Preprocessor icecpp(argv[0], *i, cppArgs);
-	    FILE* cppHandle = icecpp.preprocess(false);
+        if(depend)
+        {
+            Preprocessor icecpp(argv[0], *i, cppArgs);
+            icecpp.printMakefileDependencies(Preprocessor::CPlusPlus);
+        }
+        else
+        {
+            Preprocessor icecpp(argv[0], *i, cppArgs);
+            FILE* cppHandle = icecpp.preprocess(false);
 
-	    if(cppHandle == 0)
-	    {
-		return EXIT_FAILURE;
-	    }
+            if(cppHandle == 0)
+            {
+                return EXIT_FAILURE;
+            }
 
-	    if(preprocess)
-	    {
-	        char buf[4096];
-		while(fgets(buf, static_cast<int>(sizeof(buf)), cppHandle) != NULL)
-		{
-		    if(fputs(buf, stdout) == EOF)
-		    {
-		        return EXIT_FAILURE;
-		    }
-		}
-		if(!icecpp.close())
-		{
-		    return EXIT_FAILURE;
-		}
-	    }
-	    else
-	    {
-		UnitPtr u = Unit::createUnit(false, false, ice, caseSensitive);
-		int parseStatus = u->parse(cppHandle, debug);
-	    
-		if(!icecpp.close())
-		{
-		    u->destroy();
-		    return EXIT_FAILURE;
-		}
+            if(preprocess)
+            {
+                char buf[4096];
+                while(fgets(buf, static_cast<int>(sizeof(buf)), cppHandle) != NULL)
+                {
+                    if(fputs(buf, stdout) == EOF)
+                    {
+                        return EXIT_FAILURE;
+                    }
+                }
+                if(!icecpp.close())
+                {
+                    return EXIT_FAILURE;
+                }
+            }
+            else
+            {
+                UnitPtr u = Unit::createUnit(false, false, ice, caseSensitive);
+                int parseStatus = u->parse(cppHandle, debug);
+            
+                if(!icecpp.close())
+                {
+                    u->destroy();
+                    return EXIT_FAILURE;
+                }
 
-		if(parseStatus == EXIT_FAILURE)
-		{
-		    status = EXIT_FAILURE;
-		}
-		else
-		{
-		    Gen gen(argv[0], icecpp.getBaseName(), headerExtension, sourceExtension, extraHeaders, include,
-			    includePaths, dllExport, output, impl, checksum, stream, ice);
-		    if(!gen)
-		    {
-			u->destroy();
-			return EXIT_FAILURE;
-		    }
-		    gen.generate(u);
-		}
+                if(parseStatus == EXIT_FAILURE)
+                {
+                    status = EXIT_FAILURE;
+                }
+                else
+                {
+                    Gen gen(argv[0], icecpp.getBaseName(), headerExtension, sourceExtension, extraHeaders, include,
+                            includePaths, dllExport, output, impl, checksum, stream, ice);
+                    if(!gen)
+                    {
+                        u->destroy();
+                        return EXIT_FAILURE;
+                    }
+                    gen.generate(u);
+                }
 
-		u->destroy();
-	    }
-	}
+                u->destroy();
+            }
+        }
     }
 
     return status;

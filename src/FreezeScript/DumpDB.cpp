@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -54,7 +54,7 @@ class DescriptorHandler : public IceXML::Handler
 public:
 
     DescriptorHandler(const DataFactoryPtr&, const Slice::UnitPtr&, const ErrorReporterPtr&,
-		      const FreezeScript::ObjectFactoryPtr&);
+                      const FreezeScript::ObjectFactoryPtr&);
 
     virtual void startElement(const std::string&, const IceXML::Attributes&, int, int);
     virtual void endElement(const std::string&, int, int);
@@ -78,7 +78,7 @@ private:
 static void
 usage(const char* n)
 {
-    cerr << "Usage: " << n << " [options] [dbenv db]\n";
+    cerr << "Usage: " << n << " [options] [dbenv [db]]\n";
     cerr <<
         "Options:\n"
         "-h, --help            Show this message.\n"
@@ -96,8 +96,26 @@ usage(const char* n)
         "--key TYPE            Specifies the Slice type of the database key.\n"
         "--value TYPE          Specifies the Slice type of the database value.\n"
         "--select EXPR         Dump a record only if EXPR is true.\n"
+        "-c, --catalog         Display information about the databases in an\n"
+        "                      environment, or about a particular database.\n"
         ;
     // Note: --case-sensitive is intentionally not shown here!
+}
+
+static void
+printCatalogData(const string& dbName, const Freeze::CatalogData& data)
+{
+    cout << dbName << ": ";
+    if(data.evictor)
+    {
+        cout << "Evictor database" << endl;
+    }
+    else
+    {
+        cout << "Map database" << endl;
+        cout << "  key type   = " << data.key << endl;
+        cout << "  value type = " << data.value << endl;
+    }
 }
 
 static int
@@ -131,6 +149,7 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
     opts.addOpt("", "key", IceUtil::Options::NeedArg);
     opts.addOpt("", "value", IceUtil::Options::NeedArg);
     opts.addOpt("", "select", IceUtil::Options::NeedArg);
+    opts.addOpt("c", "catalog");
     opts.addOpt("", "case-sensitive");
 
     vector<string> args;
@@ -138,83 +157,137 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
     {
         args = opts.parse(argc, (const char**)argv);
     }
-    catch(const IceUtil::Options::BadOpt& e)
+    catch(const IceUtil::BadOptException& e)
     {
-	cerr << argv[0] << ": " << e.reason << endl;
-	usage(argv[0]);
-	return EXIT_FAILURE;
+        cerr << argv[0] << ": " << e.reason << endl;
+        usage(argv[0]);
+        return EXIT_FAILURE;
     }
 
-    if(opts.isSet("h") || opts.isSet("help"))
+    if(opts.isSet("h"))
     {
-	usage(argv[0]);
-	return EXIT_SUCCESS;
+        usage(argv[0]);
+        return EXIT_SUCCESS;
     }
-    if(opts.isSet("v") || opts.isSet("version"))
+    if(opts.isSet("version"))
     {
-	cout << ICE_STRING_VERSION << endl;
-	return EXIT_SUCCESS;
+        cout << ICE_STRING_VERSION << endl;
+        return EXIT_SUCCESS;
+    }
+    if(opts.isSet("c"))
+    {
+        if(args.empty())
+        {
+            cerr << argv[0] << ": no database environment specified." << endl;
+            usage(argv[0]);
+            return EXIT_FAILURE;
+        }
+        else if(args.size() > 2)
+        {
+            usage(argv[0]);
+            return EXIT_FAILURE;
+        }
+        try
+        {
+            FreezeScript::CatalogDataMap catalog = FreezeScript::readCatalog(communicator, args[0]);
+            if(args.size() == 1)
+            {
+                if(catalog.empty())
+                {
+                    cout << "Catalog is empty." << endl;
+                }
+                else
+                {
+                    cout << "Catalog contents:" << endl;
+                    for(FreezeScript::CatalogDataMap::const_iterator p = catalog.begin(); p != catalog.end(); ++p)
+                    {
+                        cout << endl;
+                        printCatalogData(p->first, p->second);
+                    }
+                }
+            }
+            else
+            {
+                FreezeScript::CatalogDataMap::const_iterator p = catalog.find(args[1]);
+                if(p == catalog.end())
+                {
+                    cerr << argv[0] << ": database `" << args[1] << "' not found in environment `" << args[0] << "'."
+                         << endl;
+                    return EXIT_FAILURE;
+                }
+                else
+                {
+                    printCatalogData(p->first, p->second);
+                }
+            }
+            return EXIT_SUCCESS;
+        }
+        catch(const FreezeScript::FailureException& ex)
+        {
+            cerr << argv[0] << ": " << ex.reason() << endl;
+            return EXIT_FAILURE;
+        }
     }
     if(opts.isSet("D"))
     {
-	vector<string> optargs = opts.argVec("D");
-	for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
-	{
-	    cppArgs += " -D" + *i;
-	}
+        vector<string> optargs = opts.argVec("D");
+        for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
+        {
+            cppArgs += " -D" + *i;
+        }
     }
     if(opts.isSet("U"))
     {
-	vector<string> optargs = opts.argVec("U");
-	for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
-	{
-	    cppArgs += " -U" + *i;
-	}
+        vector<string> optargs = opts.argVec("U");
+        for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
+        {
+            cppArgs += " -U" + *i;
+        }
     }
     if(opts.isSet("I"))
     {
-	vector<string> optargs = opts.argVec("I");
-	for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
-	{
-	    cppArgs += " -I" + *i;
-	}
+        vector<string> optargs = opts.argVec("I");
+        for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
+        {
+            cppArgs += " -I" + *i;
+        }
     }
-    debug = opts.isSet("d") || opts.isSet("debug");
+    debug = opts.isSet("debug");
 
     // No need to set --ice option here -- it is always true.
 
     if(opts.isSet("o"))
     {
-	outputFile = opts.optArg("o");
+        outputFile = opts.optArg("o");
     }
     if(opts.isSet("f"))
     {
-	inputFile = opts.optArg("f");
+        inputFile = opts.optArg("f");
     }
     if(opts.isSet("load"))
     {
         vector<string> optArgs = opts.argVec("load");
-	for(vector<string>::const_iterator i = optArgs.begin(); i != optArgs.end(); ++i)
-	{
-	    slice.push_back(*i);
-	}
+        for(vector<string>::const_iterator i = optArgs.begin(); i != optArgs.end(); ++i)
+        {
+            slice.push_back(*i);
+        }
     }
     evictor = opts.isSet("e");
     if(opts.isSet("key"))
     {
-	keyTypeName = opts.optArg("key");
+        keyTypeName = opts.optArg("key");
     }
     if(opts.isSet("value"))
     {
-	valueTypeName = opts.optArg("value");
+        valueTypeName = opts.optArg("value");
     }
     if(opts.isSet("select"))
     {
-	selectExpr = opts.optArg("select");
+        selectExpr = opts.optArg("select");
     }
     caseSensitive = opts.isSet("case-sensitive");
 
-    if(outputFile.empty() && args.size() < 2)
+    if(outputFile.empty() && args.size() != 2)
     {
         usage(argv[0]);
         return EXIT_FAILURE;
@@ -255,15 +328,55 @@ run(int argc, char** argv, const Ice::CommunicatorPtr& communicator)
     string descriptors;
     if(inputFile.empty())
     {
-        if(evictor)
+        const string evictorKeyTypeName = "::Ice::Identity";
+        const string evictorValueTypeName = "::Freeze::ObjectRecord";
+
+        if((!keyTypeName.empty() && valueTypeName.empty()) || (keyTypeName.empty() && !valueTypeName.empty()))
         {
-            keyTypeName = "::Ice::Identity";
-            valueTypeName = "::Freeze::ObjectRecord";
-        }
-        else if(keyTypeName.empty() || valueTypeName.empty())
-        {
+            cerr << argv[0] << ": a key type and a value type must be specified" << endl;
             usage(argv[0]);
             return EXIT_FAILURE;
+        }
+        else if(!evictor && keyTypeName.empty() && valueTypeName.empty())
+        {
+            try
+            {
+                FreezeScript::CatalogDataMap catalog = FreezeScript::readCatalog(communicator, dbEnvName);
+                FreezeScript::CatalogDataMap::iterator p = catalog.find(dbName);
+                if(p == catalog.end())
+                {
+                    cerr << argv[0] << ": database `" << dbName << "' not found in catalog." << endl;
+                    cerr << "Current catalog databases:" << endl;
+                    for(p = catalog.begin(); p != catalog.end(); ++p)
+                    {
+                        cerr << "  " << p->first << endl;
+                    }
+                    return EXIT_FAILURE;
+                }
+                else
+                {
+                    if(p->second.evictor)
+                    {
+                        evictor = true;
+                    }
+                    else
+                    {
+                        keyTypeName = p->second.key;
+                        valueTypeName = p->second.value;
+                    }
+                }
+            }
+            catch(const FreezeScript::FailureException& ex)
+            {
+                cerr << argv[0] << ": " << ex.reason() << endl;
+                return EXIT_FAILURE;
+            }
+        }
+
+        if(evictor)
+        {
+            keyTypeName = evictorKeyTypeName;
+            valueTypeName = evictorValueTypeName;
         }
 
         Slice::TypePtr keyType, valueType;
@@ -536,8 +649,8 @@ FreezeScript::SliceVisitor::visitClassDefStart(const Slice::ClassDefPtr& v)
         return false;
     }
 
-    _out.nl();
-    _out.nl();
+    _out.newline();
+    _out.newline();
     _out << "<!-- class " << scoped << " -->";
     _out << se("dump") << attr("type", scoped) << ee;
 
@@ -558,8 +671,8 @@ FreezeScript::SliceVisitor::visitStructStart(const Slice::StructPtr& v)
         return false;
     }
 
-    _out.nl();
-    _out.nl();
+    _out.newline();
+    _out.newline();
     _out << "<!-- struct " << scoped << " -->";
     _out << se("dump") << attr("type", scoped) << ee;
 
@@ -580,8 +693,8 @@ FreezeScript::SliceVisitor::visitSequence(const Slice::SequencePtr& v)
         return;
     }
 
-    _out.nl();
-    _out.nl();
+    _out.newline();
+    _out.newline();
     _out << "<!-- sequence " << scoped << " -->";
     _out << se("dump") << attr("type", scoped) << ee;
 }
@@ -600,8 +713,8 @@ FreezeScript::SliceVisitor::visitDictionary(const Slice::DictionaryPtr& v)
         return;
     }
 
-    _out.nl();
-    _out.nl();
+    _out.newline();
+    _out.newline();
     _out << "<!-- dictionary " << scoped << " -->";
     _out << se("dump") << attr("type", scoped) << ee;
 }
@@ -620,8 +733,8 @@ FreezeScript::SliceVisitor::visitEnum(const Slice::EnumPtr& v)
         return;
     }
 
-    _out.nl();
-    _out.nl();
+    _out.newline();
+    _out.newline();
     _out << "<!-- enum " << scoped << " -->";
     _out << se("dump") << attr("type", scoped) << ee;
 }
@@ -631,7 +744,7 @@ FreezeScript::SliceVisitor::visitEnum(const Slice::EnumPtr& v)
 //
 FreezeScript::DescriptorHandler::DescriptorHandler(const DataFactoryPtr& factory, const Slice::UnitPtr& unit,
                                                    const ErrorReporterPtr& errorReporter,
-						   const FreezeScript::ObjectFactoryPtr& objectFactory) :
+                                                   const FreezeScript::ObjectFactoryPtr& objectFactory) :
     _factory(factory), _unit(unit), _errorReporter(errorReporter), _objectFactory(objectFactory)
 {
 }

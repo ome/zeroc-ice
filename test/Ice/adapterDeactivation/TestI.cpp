@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,10 +20,9 @@ TestI::transient(const Current& current)
     CommunicatorPtr communicator = current.adapter->getCommunicator();
     
     ObjectAdapterPtr adapter =
-	communicator->createObjectAdapterWithEndpoints("TransientTestAdapter", "default -p 9999");
+        communicator->createObjectAdapterWithEndpoints("TransientTestAdapter", "default -p 9999");
     adapter->activate();
-    adapter->deactivate();
-    adapter->waitForDeactivate();
+    adapter->destroy();
 }
 
 void

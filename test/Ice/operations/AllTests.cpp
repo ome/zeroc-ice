@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,8 +15,7 @@
 using namespace std;
 
 Test::MyClassPrx
-allTests(const Ice::CommunicatorPtr& communicator, 
-	 const Ice::InitializationData& initData, bool collocated)
+allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 {
     cout << "testing stringToProxy... " << flush;
     string ref = "test:default -p 12010 -t 10000";
@@ -203,39 +202,39 @@ allTests(const Ice::CommunicatorPtr& communicator,
 
     if(!collocated)
     {
-	cout << "testing timeout... " << flush;
-	Test::MyClassPrx clTimeout = Test::MyClassPrx::uncheckedCast(cl->ice_timeout(500));
-	try
-	{
-	    clTimeout->opSleep(2000);
-	    test(false);
-	}
-	catch(const Ice::TimeoutException&)
-	{
-	}
-	cout << "ok" << endl;
+        cout << "testing timeout... " << flush;
+        Test::MyClassPrx clTimeout = Test::MyClassPrx::uncheckedCast(cl->ice_timeout(500));
+        try
+        {
+            clTimeout->opSleep(2000);
+            test(false);
+        }
+        catch(const Ice::TimeoutException&)
+        {
+        }
+        cout << "ok" << endl;
     }
 
     cout << "testing twoway operations... " << flush;
-    void twoways(const Ice::CommunicatorPtr&, const Ice::InitializationData&, const Test::MyClassPrx&);
-    twoways(communicator, initData, cl);
-    twoways(communicator, initData, derived);
+    void twoways(const Ice::CommunicatorPtr&, const Test::MyClassPrx&);
+    twoways(communicator, cl);
+    twoways(communicator, derived);
     derived->opDerived();
     cout << "ok" << endl;
 
     if(!collocated)
     {
-	cout << "testing twoway operations with AMI... " << flush;
-	void twowaysAMI(const Ice::CommunicatorPtr&, const Ice::InitializationData&, const Test::MyClassPrx&);
-	twowaysAMI(communicator, initData, cl);
-	twowaysAMI(communicator, initData, derived);
-	cout << "ok" << endl;
+        cout << "testing twoway operations with AMI... " << flush;
+        void twowaysAMI(const Ice::CommunicatorPtr&, const Test::MyClassPrx&);
+        twowaysAMI(communicator, cl);
+        twowaysAMI(communicator, derived);
+        cout << "ok" << endl;
 
-	cout << "testing batch oneway operations... " << flush;
-	void batchOneways(const Test::MyClassPrx&);
-	batchOneways(cl);
-	batchOneways(derived);
-	cout << "ok" << endl;
+        cout << "testing batch oneway operations... " << flush;
+        void batchOneways(const Test::MyClassPrx&);
+        batchOneways(cl);
+        batchOneways(derived);
+        cout << "ok" << endl;
     }
 
     return cl;

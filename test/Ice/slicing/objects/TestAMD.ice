@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -67,7 +67,7 @@ exception DerivedException extends BaseException
     D1 pd1;
 };
 
-class Forward;		// Forward-declared class defined in another compilation unit
+class Forward;          // Forward-declared class defined in another compilation unit
 
 ["ami", "amd"] interface TestIntf
 {
@@ -104,7 +104,7 @@ class Forward;		// Forward-declared class defined in another compilation unit
     void throwDerivedAsDerived() throws DerivedException;
     void throwUnknownDerivedAsBase() throws BaseException;
 
-    void useForward(out Forward f);	// Use of forward-declared class to verify that code is generated correctly.
+    void useForward(out Forward f);     // Use of forward-declared class to verify that code is generated correctly.
 
     void shutdown();
 };

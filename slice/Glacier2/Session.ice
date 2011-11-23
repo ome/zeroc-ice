@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,9 @@ module Glacier2
  * failed.
  *
  * @see Router::createSession
- * @see SessionManager::createSession
+ * @see Router::createSessionFromSecureConnection
+ * @see SessionManager::create
+ * @see SSLSessionManager::create
  *
  **/
 exception CannotCreateSessionException
@@ -156,7 +158,7 @@ interface SessionControl
      * Access the object that manages the allowable categories
      * for object identities for this session. 
      *
-     * @return A StringSet object
+     * @return A StringSet object.
      *
      **/
     StringSet* categories();
@@ -166,7 +168,7 @@ interface SessionControl
      * Access the object that manages the allowable adapter identities
      * for objects for this session. 
      *
-     * @return A StringSet object
+     * @return A StringSet object.
      *
      **/
     StringSet* adapterIds();
@@ -176,10 +178,19 @@ interface SessionControl
      * Access the object that manages the allowable object identities
      * for this session. 
      *
-     * @return An IdentitySet object
+     * @return An IdentitySet object.
      *
      **/
     IdentitySet* identities();
+
+    /**
+     *
+     * Get the session timeout.
+     *
+     * @return The timeout.
+     *
+     **/
+    idempotent int getSessionTimeout();
     
     /**
      *
@@ -218,7 +229,7 @@ interface SessionManager
      *
      **/
     Session* create(string userId, SessionControl* control)
-	throws CannotCreateSessionException;
+        throws CannotCreateSessionException;
 };
 
 /**
@@ -250,7 +261,7 @@ interface SSLSessionManager
      *
      **/
     Session* create(SSLInfo info, SessionControl* control)
-	throws CannotCreateSessionException;
+        throws CannotCreateSessionException;
 };
 
 };

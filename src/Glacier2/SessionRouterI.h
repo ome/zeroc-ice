@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -47,9 +47,9 @@ class SessionRouterI : public Router, public IceUtil::Monitor<IceUtil::Mutex>
 {
 public:
 
-    SessionRouterI(const Ice::ObjectAdapterPtr&, const Ice::ObjectAdapterPtr&, const Ice::ObjectAdapterPtr&,
-		   const PermissionsVerifierPrx&, const SessionManagerPrx&,
-		   const SSLPermissionsVerifierPrx&, const SSLSessionManagerPrx&);
+    SessionRouterI(const Ice::ObjectAdapterPtr&, const Ice::ObjectAdapterPtr&,
+                   const PermissionsVerifierPrx&, const SessionManagerPrx&,
+                   const SSLPermissionsVerifierPrx&, const SSLSessionManagerPrx&);
     virtual ~SessionRouterI();
     void destroy();
 
@@ -73,7 +73,7 @@ public:
 private:
 
     SessionPrx createSessionInternal(const std::string&, bool, const AuthorizerPtr&, const SessionFactoryPtr&,
-				     const Ice::Current&);
+                                     const Ice::Context&, const Ice::Current&);
 
     const Ice::PropertiesPtr _properties;
     const Ice::LoggerPtr _logger;
@@ -81,7 +81,6 @@ private:
     const int _rejectTraceLevel;
     const Ice::ObjectAdapterPtr _clientAdapter;
     const Ice::ObjectAdapterPtr _serverAdapter;
-    const Ice::ObjectAdapterPtr _adminAdapter;
     const PermissionsVerifierPrx _verifier;
     const SessionManagerPrx _sessionManager;
     const SSLPermissionsVerifierPrx _sslVerifier;
@@ -92,16 +91,16 @@ private:
     {
     public:
 
-	SessionThread(const SessionRouterIPtr&, const IceUtil::Time&);
-	virtual ~SessionThread();
-	void destroy();
+        SessionThread(const SessionRouterIPtr&, const IceUtil::Time&);
+        virtual ~SessionThread();
+        void destroy();
 
-	virtual void run();
+        virtual void run();
 
     private:
 
-	SessionRouterIPtr _sessionRouter;
-	const IceUtil::Time _sessionTimeout;
+        SessionRouterIPtr _sessionRouter;
+        const IceUtil::Time _sessionTimeout;
     };
     typedef IceUtil::Handle<SessionThread> SessionThreadPtr;
     SessionThreadPtr _sessionThread;

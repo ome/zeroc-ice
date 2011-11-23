@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -101,9 +101,9 @@ ifeq ($(CXX),CC)
     mklib		    = $(CXX) -xar -o $(1) $(2)
 
     ifneq ($(embedded_runpath_prefix),)
-         LDPLATFORMFLAGS    = -R $(runpath_libdir) -z text
+         LDPLATFORMFLAGS    = -R $(runpath_libdir):/usr/sfw/$(libsubdir) -z text
     else
-         LDPLATFORMFLAGS    = -z text
+         LDPLATFORMFLAGS    = -R /usr/sfw/$(libsubdir)  -z text
     endif
     
 endif

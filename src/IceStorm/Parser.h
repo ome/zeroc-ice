@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -63,20 +63,20 @@ class Parser : public ::IceUtil::SimpleShared
 {
 public:
 
-    static ParserPtr createParser(const Ice::CommunicatorPtr&, const IceStorm::TopicManagerPrx&);
+    static ParserPtr createParser(const Ice::CommunicatorPtr&, const IceStorm::TopicManagerPrx&,
+                                  const std::map<Ice::Identity, IceStorm::TopicManagerPrx>&);
 
     void usage();
 
     void create(const std::list<std::string>&);
     void destroy(const std::list<std::string>&);
-    void dolist(const std::list<std::string>&); // Don't name list - conflicts with std::list
     void link(const std::list<std::string>&);
     void unlink(const std::list<std::string>&);
-    void graph(const std::list<std::string>&);
+    void links(const std::list<std::string>&);
+    void topics(const std::list<std::string>&);
+    void current(const std::list<std::string>&);
 
     void showBanner();
-    void showCopying();
-    void showWarranty();
 
     void getInput(char*, int&, int);
     void nextLine();
@@ -95,11 +95,16 @@ public:
 
 private:
 
-    Parser(const Ice::CommunicatorPtr&, const IceStorm::TopicManagerPrx&);
+    IceStorm::TopicManagerPrx findManagerById(const std::string&, std::string&) const;
+    IceStorm::TopicManagerPrx findManagerByCategory(const std::string&) const;
 
+    Parser(const Ice::CommunicatorPtr&, const IceStorm::TopicManagerPrx&,
+           const std::map<Ice::Identity, IceStorm::TopicManagerPrx>&);
+
+    const Ice::CommunicatorPtr _communicator;
+    IceStorm::TopicManagerPrx _defaultManager;
+    const std::map<Ice::Identity, IceStorm::TopicManagerPrx> _managers;
     std::string _commands;
-    Ice::CommunicatorPtr _communicator;
-    IceStorm::TopicManagerPrx _admin;
     bool _continue;
     int _errors;
     int _currentLine;

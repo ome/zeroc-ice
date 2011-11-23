@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -22,12 +22,17 @@ SRCS		= $(SOBJS:.obj=.cpp)
 
 !include $(top_srcdir)/config/Make.rules.mak
 
-CPPFLAGS	= -I. -I../../../include $(CPPFLAGS)
 SLICE2CPPFLAGS	= --checksum $(SLICE2CPPFLAGS)
+CPPFLAGS	= -I. -I../../../include $(CPPFLAGS) -DWIN32_LEAN_AND_MEAN
+
+!if "$(CPP_COMPILER)" != "BCC2006" & "$(OPTIMIZE)" != "yes"
+PDBFLAGS        = /pdb:$(SERVER:.exe=.pdb)
+!endif
 
 $(SERVER): $(SOBJS)
-	del /q $@
-	$(LINK) $(LD_EXEFLAGS) $(SOBJS), $@,, $(LIBS)
+	$(LINK) $(LD_EXEFLAGS) $(PDBFLAGS) $(SETARGV) $(SOBJS) $(PREOUT)$@ $(PRELIBS)$(LIBS)
+	@if exist $@.manifest echo ^ ^ ^ Embedding manifest using $(MT) && \
+	    $(MT) -nologo -manifest $@.manifest -outputresource:$@;#1 && del /q $@.manifest
 
 clean::
 	del /q Test.cpp Test.h

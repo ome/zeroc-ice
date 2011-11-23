@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,7 +12,7 @@
 namespace IceInternal
 {
 
-const Ice::Byte magic[] = { 0x49, 0x63, 0x65, 0x50 };	// 'I', 'c', 'e', 'P'
+const Ice::Byte magic[] = { 0x49, 0x63, 0x65, 0x50 };   // 'I', 'c', 'e', 'P'
 
 #ifdef __BCPLUSPLUS__
 const Ice::Byte requestHdr[headerSize + sizeof(Ice::Int)] = 

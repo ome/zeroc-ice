@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -46,13 +46,24 @@ struct Statistics
 
 /**
  *
- * The evictor uses a number of maps [Ice::Identity] to [ObjectRecord] as its
+ * The evictor uses a number of maps with [Ice::Identity] keys and [ObjectRecord] values as its
  * persistent storage.
  *
  **/
 struct ObjectRecord
 {
+    /**
+     *
+     * The servant implementing the object.
+     *
+     **/
     Object servant;
+
+    /**
+     *
+     * The statistics for the object.
+     *
+     **/
     Statistics stats;
 };
 

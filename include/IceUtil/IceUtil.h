@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,6 +14,7 @@
 // This file must include *all* other headers of IceUtil.
 //
 
+#include <IceUtil/ArgVector.h>
 #include <IceUtil/Functional.h>
 #include <IceUtil/Shared.h>
 #include <IceUtil/Unicode.h>
@@ -32,5 +33,7 @@
 #include <IceUtil/InputUtil.h>
 #include <IceUtil/OutputUtil.h>
 #include <IceUtil/Options.h>
+#include <IceUtil/Random.h>
+#include <IceUtil/CtrlCHandler.h>
 
 #endif

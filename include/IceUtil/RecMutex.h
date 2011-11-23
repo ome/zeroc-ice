@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -46,7 +46,8 @@ public:
     void lock() const;
 
     //
-    // Returns true if the lock was acquired, and false otherwise.
+    // Returns true if the lock was acquired or was already acquired
+    // by the calling thread, and false otherwise.
     //
     bool tryLock() const;
 
@@ -77,13 +78,13 @@ private:
 #ifdef _WIN32
     struct LockState
     {
-	int count;
+        int count;
     };
 #else
     struct LockState
     {
-	pthread_mutex_t* mutex;
-	int count;
+        pthread_mutex_t* mutex;
+        int count;
     };
 #endif
 

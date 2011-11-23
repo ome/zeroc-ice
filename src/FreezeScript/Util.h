@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,8 @@
 #define FREEZE_SCRIPT_UTIL_H
 
 #include <Slice/Parser.h>
+#include <Ice/CommunicatorF.h>
+#include <Freeze/CatalogData.h>
 
 namespace FreezeScript
 {
@@ -54,6 +56,10 @@ std::string typeToString(const Slice::TypePtr&);
 bool ignoreType(const std::string&);
 void createEvictorSliceTypes(const Slice::UnitPtr&);
 bool parseSlice(const std::string&, const Slice::UnitPtr&, const std::vector<std::string>&, const std::string&, bool);
+
+typedef std::map<std::string, Freeze::CatalogData> CatalogDataMap;
+
+CatalogDataMap readCatalog(const Ice::CommunicatorPtr&, const std::string&);
 
 } // End of namespace FreezeScript
 

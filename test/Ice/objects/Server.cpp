@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,6 +20,8 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
     Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("TestAdapter");
     InitialPtr initial = new InitialI(adapter);
     adapter->add(initial, communicator->stringToIdentity("initial"));
+    UnexpectedObjectExceptionTestIPtr uoet = new UnexpectedObjectExceptionTestI;
+    adapter->add(uoet, communicator->stringToIdentity("uoet"));
     adapter->activate();
     communicator->waitForShutdown();
     return EXIT_SUCCESS;
@@ -33,26 +35,26 @@ main(int argc, char* argv[])
 
     try
     {
-	communicator = Ice::initialize(argc, argv);
-	status = run(argc, argv, communicator);
+        communicator = Ice::initialize(argc, argv);
+        status = run(argc, argv, communicator);
     }
     catch(const Ice::Exception& ex)
     {
-	cerr << ex << endl;
-	status = EXIT_FAILURE;
+        cerr << ex << endl;
+        status = EXIT_FAILURE;
     }
 
     if(communicator)
     {
-	try
-	{
-	    communicator->destroy();
-	}
-	catch(const Ice::Exception& ex)
-	{
-	    cerr << ex << endl;
-	    status = EXIT_FAILURE;
-	}
+        try
+        {
+            communicator->destroy();
+        }
+        catch(const Ice::Exception& ex)
+        {
+            cerr << ex << endl;
+            status = EXIT_FAILURE;
+        }
     }
 
     return status;

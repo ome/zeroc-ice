@@ -1,12 +1,14 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <IceUtil/Options.h>
+#include <IceUtil/Thread.h>
 #include <Ice/Application.h>
 #include <IceStorm/IceStorm.h>
 
@@ -29,58 +31,106 @@ main(int argc, char* argv[])
     return app.main(argc, argv, "config.pub");
 }
 
+void
+usage(const string& n)
+{
+    cerr << "Usage: " << n << " [--datagram|--twoway|--oneway] [topic]\n" << endl;
+}
+
 int
 Publisher::run(int argc, char* argv[])
 {
-    Ice::PropertiesPtr properties = communicator()->getProperties();
+    IceUtil::Options opts;
+    opts.addOpt("", "datagram");
+    opts.addOpt("", "twoway");
+    opts.addOpt("", "oneway");
 
-    const string proxyProperty = "IceStorm.TopicManager.Proxy";
-    string proxy = properties->getProperty(proxyProperty);
-    if(proxy.empty())
+    IceUtil::Options::StringVector remaining;
+    try
     {
-	cerr << appName() << ": property `" << proxyProperty << "' not set" << endl;
-	return EXIT_FAILURE;
+        remaining = opts.parse(argc, (const char**)argv);
+    }
+    catch(const IceUtil::BadOptException& e)
+    {
+        cerr << argv[0] << ": " << e.reason << endl;
+        return EXIT_FAILURE;
     }
 
-    Ice::ObjectPrx base = communicator()->stringToProxy(proxy);
-    IceStorm::TopicManagerPrx manager = IceStorm::TopicManagerPrx::checkedCast(base);
+    IceStorm::TopicManagerPrx manager = IceStorm::TopicManagerPrx::checkedCast(
+        communicator()->propertyToProxy("IceStorm.TopicManager.Proxy"));
     if(!manager)
     {
-	cerr << appName() << ": invalid proxy" << endl;
-	return EXIT_FAILURE;
+        cerr << appName() << ": invalid proxy" << endl;
+        return EXIT_FAILURE;
+    }
+
+    string topicName = "time";
+    if(!remaining.empty())
+    {
+        topicName = remaining.front();
     }
 
     //
-    // Retrieve the topic named "time".
+    // Retrieve the topic.
     //
     IceStorm::TopicPrx topic;
     try
     {
-	topic = manager->retrieve("time");
+        topic = manager->retrieve(topicName);
     }
-    catch(const IceStorm::NoSuchTopic& e)
+    catch(const IceStorm::NoSuchTopic&)
     {
-	cerr << appName() << ": " << e << " name: " << e.name << endl;
-	return EXIT_FAILURE;
+        try
+        {
+            topic = manager->create(topicName);
+        }
+        catch(const IceStorm::TopicExists&)
+        {
+            cerr << appName() << ": temporary failure. try again." << endl;
+            return EXIT_FAILURE;
+        }
     }
-    assert(topic);
 
     //
-    // Get the topic's publisher object, verify that it supports
-    // the Clock type, and create a oneway Clock proxy (for efficiency
-    // reasons).
+    // Get the topic's publisher object, and create a Clock proxy with
+    // the mode specified as an argument of this application.
     //
-    Ice::ObjectPrx obj = topic->getPublisher();
-    if(!obj->ice_isDatagram())
+    Ice::ObjectPrx publisher = topic->getPublisher();
+    int optsSet = 0;
+    if(opts.isSet("datagram"))
     {
-        obj = obj->ice_oneway();
+        publisher = publisher->ice_datagram();
+        ++optsSet;
     }
-    ClockPrx clock = ClockPrx::uncheckedCast(obj);
-
-    cout << "publishing 10 tick events" << endl;
-    for(int i = 0; i < 10; ++i)
+    else if(opts.isSet("twoway"))
     {
-	clock->tick();
+        // Do nothing.
+        ++optsSet;
+    }
+    else if(opts.isSet("oneway") || optsSet == 0)
+    {
+        publisher = publisher->ice_oneway();
+        ++optsSet;
+    }
+    if(optsSet != 1)
+    {
+        usage(appName());
+        return EXIT_FAILURE;
+    }
+    ClockPrx clock = ClockPrx::uncheckedCast(publisher);
+
+    cout << "publishing tick events. Press ^C to terminate the application." << endl;
+    try
+    {
+        while(true)
+        {
+            clock->tick(IceUtil::Time::now().toDateTime());
+            IceUtil::ThreadControl::sleep(IceUtil::Time::seconds(1));
+        }
+    }
+    catch(const Ice::CommunicatorDestroyedException&)
+    {
+        // Ignore
     }
 
     return EXIT_SUCCESS;

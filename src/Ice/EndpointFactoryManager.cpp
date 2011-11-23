@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@
 #include <Ice/BasicStream.h>
 #include <Ice/LocalException.h>
 #include <Ice/Instance.h>
+#include <Ice/Properties.h>
 #include <Ice/DefaultsAndOverrides.h>
 
 using namespace std;
@@ -74,8 +75,8 @@ IceInternal::EndpointFactoryManager::create(const string& str) const
     if(beg == string::npos)
     {
         EndpointParseException ex(__FILE__, __LINE__);
-	ex.str = str;
-	throw ex;
+        ex.str = str;
+        throw ex;
     }
 
     string::size_type end = str.find_first_of(delim, beg);

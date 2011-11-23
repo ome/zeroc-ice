@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,6 +18,7 @@ class InvokeClient : public Ice::Application
 public:
 
     virtual int run(int, char*[]);
+    virtual void interruptCallback(int);
 
 private:
 
@@ -52,16 +53,13 @@ operator<<(ostream& out, Demo::Color c)
 int
 InvokeClient::run(int argc, char* argv[])
 {
-    Ice::PropertiesPtr properties = communicator()->getProperties();
-    const char* proxyProperty = "Printer.Proxy";
-    string proxy = properties->getProperty(proxyProperty);
-    if(proxy.empty())
-    {
-        cerr << argv[0] << ": property `" << proxyProperty << "' not set" << endl;
-        return EXIT_FAILURE;
-    }
+    //
+    // Since this is an interactive demo we want the custom interrupt
+    // callback to be called when the process is interrupted.
+    //
+    callbackOnInterrupt();
 
-    Ice::ObjectPrx obj = communicator()->stringToProxy(proxy);
+    Ice::ObjectPrx obj = communicator()->propertyToProxy("Printer.Proxy");
 
     menu();
 
@@ -299,6 +297,24 @@ InvokeClient::run(int argc, char* argv[])
     while(cin.good() && ch != 'x');
 
     return EXIT_SUCCESS;
+}
+
+void
+InvokeClient::interruptCallback(int)
+{
+    try
+    {
+        communicator()->destroy();
+    }
+    catch(const IceUtil::Exception& ex)
+    {
+        cerr << appName() << ": " << ex << endl;
+    }
+    catch(...)
+    {
+        cerr << appName() << ": unknown exception" << endl;
+    }
+    exit(EXIT_SUCCESS);
 }
 
 void

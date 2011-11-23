@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -81,10 +81,10 @@ Ice::identityToString(const Identity& ident)
 {
     if(ident.category.empty())
     {
-	return IceUtil::escapeString(ident.name, "/");
+        return IceUtil::escapeString(ident.name, "/");
     }
     else
     {
-	return IceUtil::escapeString(ident.category, "/") + '/' + IceUtil::escapeString(ident.name, "/");
+        return IceUtil::escapeString(ident.category, "/") + '/' + IceUtil::escapeString(ident.name, "/");
     }
 }

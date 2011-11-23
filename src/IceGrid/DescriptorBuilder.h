@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@
 #include <Ice/Logger.h>
 #include <IceXML/Parser.h>
 #include <IceGrid/Descriptor.h>
+#include <set>
 
 namespace IceGrid
 {
@@ -58,10 +59,14 @@ class PropertySetDescriptorBuilder : DescriptorBuilder
 {
 public:
     
-    PropertySetDescriptorBuilder(const XmlAttributesHelper&);
+    PropertySetDescriptorBuilder();
     PropertySetDescriptorBuilder(const PropertySetDescriptor&);
     
+    void setId(const std::string&);
+    void setService(const std::string&);
+
     const std::string& getId() const;
+    const std::string& getService() const;
     const PropertySetDescriptor& getDescriptor() const;
     
     void addProperty(const XmlAttributesHelper&);
@@ -71,6 +76,7 @@ public:
 private:
 
     std::string _id;
+    std::string _service;
     PropertySetDescriptor _descriptor;
     bool _inPropertySetRef;
 };
@@ -83,15 +89,16 @@ class ApplicationDescriptorBuilder : public DescriptorBuilder
 public:
 
     ApplicationDescriptorBuilder(const Ice::CommunicatorPtr&, const XmlAttributesHelper&,
-    				 const std::map<std::string, std::string>&);
+                                 const std::map<std::string, std::string>&);
     ApplicationDescriptorBuilder(const Ice::CommunicatorPtr&, const ApplicationDescriptor&, const XmlAttributesHelper&,
-				 const std::map<std::string, std::string>&);
+                                 const std::map<std::string, std::string>&);
 
     const ApplicationDescriptor& getDescriptor() const;
 
     void setVariableOverrides(const std::map<std::string, std::string>&);
     void setDescription(const std::string&);
     void addReplicaGroup(const XmlAttributesHelper&);
+    void finishReplicaGroup();
     void setLoadBalancing(const XmlAttributesHelper&);
     void setReplicaGroupDescription(const std::string&);
     void addObject(const XmlAttributesHelper&);
@@ -131,8 +138,8 @@ public:
     ServerInstanceDescriptorBuilder(const XmlAttributesHelper&);
     const ServerInstanceDescriptor& getDescriptor() const { return _descriptor; }
 
-    virtual PropertySetDescriptorBuilder* createPropertySet() const;
-    virtual void addPropertySet(const PropertySetDescriptor&);
+    virtual PropertySetDescriptorBuilder* createPropertySet(const XmlAttributesHelper& attrs) const;
+    virtual void addPropertySet(const std::string&, const PropertySetDescriptor&);
     
 private:
 
@@ -212,6 +219,7 @@ public:
     virtual void addDbEnv(const XmlAttributesHelper&);
     virtual void addDbEnvProperty(const XmlAttributesHelper&);
     virtual void setDbEnvDescription(const std::string&);
+    virtual void addLog(const XmlAttributesHelper&);
 
     virtual PropertySetDescriptorBuilder* createPropertySet() const;
 
@@ -275,6 +283,7 @@ public:
     IceBoxDescriptorBuilder(const Ice::CommunicatorPtr&, const XmlAttributesHelper&);
 
     void init(const IceBoxDescriptorPtr&, const XmlAttributesHelper&);
+    virtual void finish();
 
     virtual ServiceDescriptorBuilder* createService(const XmlAttributesHelper&);
     virtual ServiceInstanceDescriptorBuilder* createServiceInstance(const XmlAttributesHelper&);

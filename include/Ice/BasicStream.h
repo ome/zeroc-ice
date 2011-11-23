@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,7 +17,6 @@
 #include <Ice/Buffer.h>
 #include <Ice/Protocol.h>
 #include <Ice/StringConverter.h>
-#include <IceUtil/AutoArray.h>
 #include <IceUtil/Unicode.h>
 
 namespace Ice
@@ -39,14 +38,14 @@ public:
     public:
 
         StreamUTF8BufferI(BasicStream& stream) : 
-	    _stream(stream)
-	{
-	}
+            _stream(stream)
+        {
+        }
 
         Ice::Byte*
         getMoreBytes(size_t howMany, Ice::Byte* firstUnused)
         {
-	    assert(howMany > 0);
+            assert(howMany > 0);
 
             if(firstUnused != 0)
             {
@@ -72,12 +71,12 @@ public:
 
     private:
 
-	BasicStream& _stream;
+        BasicStream& _stream;
     };
 
     typedef void (*PatchFunc)(void*, Ice::ObjectPtr&);
 
-    BasicStream(Instance*);
+    BasicStream(Instance*, bool = false);
     ~BasicStream()
     {
         // Inlined for performance reasons.
@@ -102,12 +101,15 @@ public:
 
     void resize(Container::size_type sz)
     {
-	if(sz > _messageSizeMax)
-	{
-	    throwMemoryLimitException(__FILE__, __LINE__);
-	}
-	
-	b.resize(sz);
+        //
+        // Check memory limit if stream is not unlimited.
+        //
+        if(!_unlimited && sz > _messageSizeMax)
+        {
+            throwMemoryLimitException(__FILE__, __LINE__);
+        }
+        
+        b.resize(sz);
     }
 
     void startSeq(int, int);
@@ -140,8 +142,8 @@ public:
     void checkFixedSeq(int, int); // For sequences of fixed-size types.
     void endElement()
     {
-	assert(_seqDataStack);
-	--_seqDataStack->numElements;
+        assert(_seqDataStack);
+        --_seqDataStack->numElements;
     }
     void endSeq(int);
 
@@ -362,41 +364,41 @@ public:
 
     void write(Ice::Byte v)
     {
-	b.push_back(v);
+        b.push_back(v);
     }
     void write(const Ice::Byte*, const Ice::Byte*);
     void read(Ice::Byte& v)
     {
-	if(i >= b.end())
-	{
-	    throwUnmarshalOutOfBoundsException(__FILE__, __LINE__);
-	}
-	v = *i++;
+        if(i >= b.end())
+        {
+            throwUnmarshalOutOfBoundsException(__FILE__, __LINE__);
+        }
+        v = *i++;
     }
     void read(std::pair<const Ice::Byte*, const Ice::Byte*>&);
 
     void write(bool v)
     {
-	b.push_back(static_cast<Ice::Byte>(v));
+        b.push_back(static_cast<Ice::Byte>(v));
     }
     void write(const std::vector<bool>&);
     void write(const bool*, const bool*);
     void read(bool& v)
     {
-	if(i >= b.end())
-	{
-	    throwUnmarshalOutOfBoundsException(__FILE__, __LINE__);
-	}
-	v = *i++;
+        if(i >= b.end())
+        {
+            throwUnmarshalOutOfBoundsException(__FILE__, __LINE__);
+        }
+        v = *i++;
     }
     void read(std::vector<bool>&);
-    void read(std::pair<const bool*, const bool*>&, IceUtil::auto_array<bool>&);
+    bool* read(std::pair<const bool*, const bool*>&);
 
     void write(Ice::Short);
     void write(const Ice::Short*, const Ice::Short*);
     void read(Ice::Short&);
     void read(std::vector<Ice::Short>&);
-    void read(std::pair<const Ice::Short*, const Ice::Short*>&, IceUtil::auto_array<Ice::Short>&);
+    Ice::Short* read(std::pair<const Ice::Short*, const Ice::Short*>&);
 
     void write(Ice::Int v) // Inlined for performance reasons.
     {
@@ -443,25 +445,25 @@ public:
 
     void write(const Ice::Int*, const Ice::Int*);
     void read(std::vector<Ice::Int>&);
-    void read(std::pair<const Ice::Int*, const Ice::Int*>&, IceUtil::auto_array<Ice::Int>&);
+    Ice::Int* read(std::pair<const Ice::Int*, const Ice::Int*>&);
 
     void write(Ice::Long);
     void write(const Ice::Long*, const Ice::Long*);
     void read(Ice::Long&);
     void read(std::vector<Ice::Long>&);
-    void read(std::pair<const Ice::Long*, const Ice::Long*>&, IceUtil::auto_array<Ice::Long>&);
+    Ice::Long* read(std::pair<const Ice::Long*, const Ice::Long*>&);
 
     void write(Ice::Float);
     void write(const Ice::Float*, const Ice::Float*);
     void read(Ice::Float&);
     void read(std::vector<Ice::Float>&);
-    void read(std::pair<const Ice::Float*, const Ice::Float*>&, IceUtil::auto_array<Ice::Float>&);
+    Ice::Float* read(std::pair<const Ice::Float*, const Ice::Float*>&);
 
     void write(Ice::Double);
     void write(const Ice::Double*, const Ice::Double*);
     void read(Ice::Double&);
     void read(std::vector<Ice::Double>&);
-    void read(std::pair<const Ice::Double*, const Ice::Double*>&, IceUtil::auto_array<Ice::Double>&);
+    Ice::Double* read(std::pair<const Ice::Double*, const Ice::Double*>&);
 
     //
     // NOTE: This function is not implemented. It is declared here to
@@ -477,11 +479,11 @@ public:
     {
         Ice::Int sz = static_cast<Ice::Int>(v.size());
         if(convert && sz > 0 && _stringConverter != 0)
-	{
-	    writeConverted(v);
-	}
-	else
-	{
+        {
+            writeConverted(v);
+        }
+        else
+        {
             writeSize(sz);
             if(sz > 0)
             {
@@ -489,10 +491,11 @@ public:
                 resize(pos + sz);
                 memcpy(&b[pos], v.data(), sz);
             }
-	}
+        }
     }
     void write(const std::string*, const std::string*, bool = true);
     void read(std::string& v, bool convert = true)
+
     {
         Ice::Int sz;
         readSize(sz);
@@ -502,15 +505,14 @@ public:
             {
                 throwUnmarshalOutOfBoundsException(__FILE__, __LINE__);
             }
-	    if(convert && _stringConverter != 0)
-	    {
-		_stringConverter->fromUTF8(i, i + sz, v);
-	    }
-	    else
-	    {
+            if(convert && _stringConverter != 0)
+            {
+                _stringConverter->fromUTF8(i, i + sz, v);
+            }
+            else
+            {
                 std::string(reinterpret_cast<const char*>(&*i), reinterpret_cast<const char*>(&*i) + sz).swap(v);
-//              v.assign(reinterpret_cast<const char*>(&(*i)), sz);
-	    }
+            }
             i += sz;
         }
         else
@@ -533,7 +535,7 @@ public:
                 throwUnmarshalOutOfBoundsException(__FILE__, __LINE__);
             }
 
-	    _wstringConverter->fromUTF8(i, i + sz, v);
+            _wstringConverter->fromUTF8(i, i + sz, v);
             i += sz;
         }
         else
@@ -559,8 +561,8 @@ public:
 
     struct PatchEntry 
     {
-	PatchFunc patchFunc;
-	void* patchAddr;
+        PatchFunc patchFunc;
+        void* patchAddr;
     };
 
     typedef std::vector<PatchEntry> PatchList;
@@ -596,20 +598,20 @@ private:
     {
     public:
 
-	ReadEncaps() : patchMap(0), unmarshaledMap(0), typeIdMap(0), typeIdIndex(0), previous(0)
-	{
-	    // Inlined for performance reasons.
-	}
-	~ReadEncaps()
-	{
-	    // Inlined for performance reasons.
+        ReadEncaps() : patchMap(0), unmarshaledMap(0), typeIdMap(0), typeIdIndex(0), previous(0)
+        {
+            // Inlined for performance reasons.
+        }
+        ~ReadEncaps()
+        {
+            // Inlined for performance reasons.
             delete patchMap;
             delete unmarshaledMap;
             delete typeIdMap;
-	}
-	void reset()
+        }
+        void reset()
         {
-	    // Inlined for performance reasons.
+            // Inlined for performance reasons.
             delete patchMap;
             delete unmarshaledMap;
             delete typeIdMap;
@@ -620,40 +622,40 @@ private:
             typeIdIndex = 0;
             previous = 0;
         }
-	void swap(ReadEncaps&);
+        void swap(ReadEncaps&);
 
-	Container::size_type start;
-	Ice::Int sz;
+        Container::size_type start;
+        Ice::Int sz;
 
-	Ice::Byte encodingMajor;
-	Ice::Byte encodingMinor;
+        Ice::Byte encodingMajor;
+        Ice::Byte encodingMinor;
 
-	PatchMap* patchMap;
-	IndexToPtrMap* unmarshaledMap;
-	TypeIdReadMap* typeIdMap;
-	Ice::Int typeIdIndex;
+        PatchMap* patchMap;
+        IndexToPtrMap* unmarshaledMap;
+        TypeIdReadMap* typeIdMap;
+        Ice::Int typeIdIndex;
 
-	ReadEncaps* previous;
+        ReadEncaps* previous;
     };
 
     class ICE_API WriteEncaps : private ::IceUtil::noncopyable
     {
     public:
 
-	WriteEncaps() : writeIndex(0), toBeMarshaledMap(0), marshaledMap(0), typeIdMap(0), typeIdIndex(0), previous(0)
- 	{
-	    // Inlined for performance reasons.
-	}
-	~WriteEncaps()
+        WriteEncaps() : writeIndex(0), toBeMarshaledMap(0), marshaledMap(0), typeIdMap(0), typeIdIndex(0), previous(0)
         {
-	    // Inlined for performance reasons.
+            // Inlined for performance reasons.
+        }
+        ~WriteEncaps()
+        {
+            // Inlined for performance reasons.
             delete toBeMarshaledMap;
             delete marshaledMap;
             delete typeIdMap;
         }
-	void reset()
+        void reset()
         {
-	    // Inlined for performance reasons.
+            // Inlined for performance reasons.
             delete toBeMarshaledMap;
             delete marshaledMap;
             delete typeIdMap;
@@ -665,17 +667,17 @@ private:
             typeIdIndex = 0;
             previous = 0;
         }
-	void swap(WriteEncaps&);
+        void swap(WriteEncaps&);
 
-	Container::size_type start;
+        Container::size_type start;
 
-	Ice::Int writeIndex;
-	PtrToIndexMap* toBeMarshaledMap;
-	PtrToIndexMap* marshaledMap;
-	TypeIdWriteMap* typeIdMap;
-	Ice::Int typeIdIndex;
+        Ice::Int writeIndex;
+        PtrToIndexMap* toBeMarshaledMap;
+        PtrToIndexMap* marshaledMap;
+        TypeIdWriteMap* typeIdMap;
+        Ice::Int typeIdIndex;
 
-	WriteEncaps* previous;
+        WriteEncaps* previous;
     };
 
     ReadEncaps* _currentReadEncaps;
@@ -696,16 +698,17 @@ private:
     bool _sliceObjects;
 
     const Container::size_type _messageSizeMax;
+    bool _unlimited;
 
     const Ice::StringConverterPtr& _stringConverter;
     const Ice::WstringConverterPtr& _wstringConverter;
 
     struct SeqData
     {
-	SeqData(int, int);
-	int numElements;
-	int minSize;
-	SeqData* previous;
+        SeqData(int, int);
+        int numElements;
+        int minSize;
+        SeqData* previous;
     };
     SeqData* _seqDataStack;
 

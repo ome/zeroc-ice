@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -56,16 +56,10 @@ namespace IceInternal
 {
 
 template<typename P> P 
-checkedCastImpl(const ::Ice::ObjectPrx&);
+checkedCastImpl(const ::Ice::ObjectPrx&, const ::Ice::Context*);
 
 template<typename P> P 
-checkedCastImpl(const ::Ice::ObjectPrx&, const std::string&);
-
-template<typename P> P 
-checkedCastImpl(const ::Ice::ObjectPrx&, const ::Ice::Context&);
-
-template<typename P> P 
-checkedCastImpl(const ::Ice::ObjectPrx&, const std::string&, const ::Ice::Context&);
+checkedCastImpl(const ::Ice::ObjectPrx&, const std::string&, const ::Ice::Context*);
 
 template<typename P> P 
 uncheckedCastImpl(const ::Ice::ObjectPrx&);
@@ -77,13 +71,7 @@ uncheckedCastImpl(const ::Ice::ObjectPrx&, const std::string&);
 // Upcast
 //
 template<typename T, typename Y> inline ProxyHandle<T> 
-checkedCastHelper(const ::IceInternal::ProxyHandle<Y>& b, T*)
-{
-    return b;
-}
-
-template<typename T, typename Y> inline ProxyHandle<T> 
-checkedCastHelper(const ::IceInternal::ProxyHandle<Y>& b, T*, const ::Ice::Context&)
+checkedCastHelper(const ::IceInternal::ProxyHandle<Y>& b, T*, const ::Ice::Context*)
 {
     return b;
 }
@@ -98,19 +86,7 @@ uncheckedCastHelper(const ::IceInternal::ProxyHandle<Y>& b, T*)
 // Downcast
 //
 template<typename T, typename Y> inline ProxyHandle<T> 
-checkedCastHelper(const ::IceInternal::ProxyHandle<Y>& b, void*)
-{
-    return checkedCastImpl<ProxyHandle<T> >(b);
-}
-
-template<typename T, typename Y> inline ProxyHandle<T> 
-checkedCastHelper(const ::IceInternal::ProxyHandle<Y>& b, const ::Ice::Context& ctx)
-{
-    return checkedCastImpl<ProxyHandle<T> >(b, ctx);
-}
-
-template<typename T, typename Y> inline ProxyHandle<T> 
-checkedCastHelper(const ::IceInternal::ProxyHandle<Y>& b, void*, const ::Ice::Context& ctx)
+checkedCastHelper(const ::IceInternal::ProxyHandle<Y>& b, void*, const ::Ice::Context* ctx)
 {
     return checkedCastImpl<ProxyHandle<T> >(b, ctx);
 }
@@ -134,168 +110,171 @@ public:
     
     ProxyHandle(T* p = 0)
     {
-	this->_ptr = p;
+        this->_ptr = p;
 
-	if(this->_ptr)
-	{
-	    incRef(this->_ptr);
-	}
+        if(this->_ptr)
+        {
+            incRef(this->_ptr);
+        }
     }
     
     template<typename Y>
     ProxyHandle(const ProxyHandle<Y>& r)
     {
-	this->_ptr = r._ptr;
+        this->_ptr = r._ptr;
 
-	if(this->_ptr)
-	{
-	    incRef(this->_ptr);
-	}
+        if(this->_ptr)
+        {
+            incRef(this->_ptr);
+        }
     }
 
     template<typename Y>
     ProxyHandle(const ::IceUtil::Handle<Y>& r)
     {
-	this->_ptr = r._ptr;
+        this->_ptr = r._ptr;
 
-	if(this->_ptr)
-	{
-	    incRef(this->_ptr);
-	}
+        if(this->_ptr)
+        {
+            incRef(this->_ptr);
+        }
     }
 
     ProxyHandle(const ProxyHandle& r)
     {
-	this->_ptr = r._ptr;
+        this->_ptr = r._ptr;
 
-	if(this->_ptr)
-	{
-	    incRef(this->_ptr);
-	}
+        if(this->_ptr)
+        {
+            incRef(this->_ptr);
+        }
     }
     
     ~ProxyHandle()
     {
-	if(this->_ptr)
-	{
-	    decRef(this->_ptr);
-	}
+        if(this->_ptr)
+        {
+            decRef(this->_ptr);
+        }
     }
     
     ProxyHandle& operator=(T* p)
     {
-	if(this->_ptr != p)
-	{
-	    if(p)
-	    {
-		incRef(p);
-	    }
+        if(this->_ptr != p)
+        {
+            if(p)
+            {
+                incRef(p);
+            }
 
-	    if(this->_ptr)
-	    {
-		decRef(this->_ptr);
-	    }
-	    
-	    this->_ptr = p;
-	}
-	return *this;
+            if(this->_ptr)
+            {
+                decRef(this->_ptr);
+            }
+            
+            this->_ptr = p;
+        }
+        return *this;
     }
         
     template<typename Y>
     ProxyHandle& operator=(const ProxyHandle<Y>& r)
     {
-	if(this->_ptr != r._ptr)
-	{
-	    if(r._ptr)
-	    {
-		incRef(r._ptr);
-	    }
+        if(this->_ptr != r._ptr)
+        {
+            if(r._ptr)
+            {
+                incRef(r._ptr);
+            }
 
-	    if(this->_ptr)
-	    {
-		decRef(this->_ptr);
-	    }
-	    
-	    this->_ptr = r._ptr;
-	}
-	return *this;
+            if(this->_ptr)
+            {
+                decRef(this->_ptr);
+            }
+            
+            this->_ptr = r._ptr;
+        }
+        return *this;
     }
 
     template<typename Y>
     ProxyHandle& operator=(const ::IceUtil::Handle<Y>& r)
     {
-	if(this->_ptr != r._ptr)
-	{
-	    if(r._ptr)
-	    {
-		incRef(r._ptr);
-	    }
+        if(this->_ptr != r._ptr)
+        {
+            if(r._ptr)
+            {
+                incRef(r._ptr);
+            }
 
-	    if(this->_ptr)
-	    {
-		decRef(this->_ptr);
-	    }
-	    
-	    this->_ptr = r._ptr;
-	}
-	return *this;
+            if(this->_ptr)
+            {
+                decRef(this->_ptr);
+            }
+            
+            this->_ptr = r._ptr;
+        }
+        return *this;
     }
 
     ProxyHandle& operator=(const ProxyHandle& r)
     {
-	if(this->_ptr != r._ptr)
-	{
-	    if(r._ptr)
-	    {
-		incRef(r._ptr);
-	    }
+        if(this->_ptr != r._ptr)
+        {
+            if(r._ptr)
+            {
+                incRef(r._ptr);
+            }
 
-	    if(this->_ptr)
-	    {
-		decRef(this->_ptr);
-	    }
-	    
-	    this->_ptr = r._ptr;
-	}
-	return *this;
+            if(this->_ptr)
+            {
+                decRef(this->_ptr);
+            }
+            
+            this->_ptr = r._ptr;
+        }
+        return *this;
     }
         
     template<class Y>
     static ProxyHandle checkedCast(const ProxyHandle<Y>& r)
     {
-	Y* tag = 0;
-	return ::IceInternal::checkedCastHelper<T>(r, tag);
+        Y* tag = 0;
+        Ice::Context* ctx = 0;
+        return ::IceInternal::checkedCastHelper<T>(r, tag, ctx);
     }
 
     template<class Y>
     static ProxyHandle checkedCast(const ProxyHandle<Y>& r, const std::string& f)
     {
-	return ::IceInternal::checkedCastImpl<ProxyHandle>(r, f);
+        Ice::Context* ctx = 0;
+        return ::IceInternal::checkedCastImpl<ProxyHandle>(r, f, ctx);
     }
 
     template<class Y>
     static ProxyHandle checkedCast(const ProxyHandle<Y>& r, const ::Ice::Context& ctx)
     {
-	return ::IceInternal::checkedCastHelper<T>(r, ctx);
+        Y* tag = 0;
+        return ::IceInternal::checkedCastHelper<T>(r, tag, &ctx);
     }
 
     template<class Y>
     static ProxyHandle checkedCast(const ProxyHandle<Y>& r, const std::string& f, const ::Ice::Context& ctx)
     {
-	return ::IceInternal::checkedCastImpl<ProxyHandle>(r, f, ctx);
+        return ::IceInternal::checkedCastImpl<ProxyHandle>(r, f, &ctx);
     }
 
     template<class Y>
     static ProxyHandle uncheckedCast(const ProxyHandle<Y>& r)
     {
-	Y* tag = 0;
-	return::IceInternal::uncheckedCastHelper<T>(r, tag);
+        Y* tag = 0;
+        return::IceInternal::uncheckedCastHelper<T>(r, tag);
     }
 
     template<class Y>
     static ProxyHandle uncheckedCast(const ProxyHandle<Y>& r, const std::string& f)
     {
-	return ::IceInternal::uncheckedCastImpl<ProxyHandle>(r, f);
+        return ::IceInternal::uncheckedCastImpl<ProxyHandle>(r, f);
     }
 };
 

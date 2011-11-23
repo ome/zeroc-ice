@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,12 +15,12 @@ HoldI::putOnHold(Ice::Int seconds, const Ice::Current& current)
 {
     if(seconds <= 0)
     {
-	current.adapter->hold();
-	current.adapter->activate();
+        current.adapter->hold();
+        current.adapter->activate();
     }
     else
     {
-	assert(false); // TODO
+        assert(false); // TODO
     }
 }
 

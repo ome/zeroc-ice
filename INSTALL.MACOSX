@@ -22,15 +22,17 @@ Third-party libraries
 
 Ice has dependencies on a number of third-party libraries:
 
-- Berkeley DB 4.3.29 configured with --enable-cxx.
+- Berkeley DB 4.5.20 configured with --enable-cxx.
 
   If you intend to use Ice for Java with Berkeley DB, you must also
   include the option --enable-java.
 
   You can download the Berkeley DB source distribution from
-  http://www.sleepycat.com/download
 
-- expat 1.9x. You can download expat from
+  http://www.oracle.com/technology/software/products/berkeley-db/index.html
+
+- expat 2.0. You can download expat from
+
   http://sourceforge.net/projects/expat/
 
 
@@ -41,11 +43,11 @@ Compilation and Testing
 Extract the Ice archive in any directory you like (for example, in
 your home directory):
 
-$ tar xvfz Ice-3.1.1.tar.gz
+$ tar xvfz Ice-3.2.0.tar.gz
 
-Change the working directory to Ice-3.1.1:
+Change the working directory to Ice-3.2.0:
 
-$ cd Ice-3.1.1
+$ cd Ice-3.2.0
 
 Edit config/Make.rules to establish your build configuration. The
 comments in the file provide more information. Pay particular
@@ -75,6 +77,11 @@ DYLD_LIBRARY_PATH environment variable to add the "lib" directory:
 
 $ export PATH=`pwd`/bin:$PATH
 $ export DYLD_LIBRARY_PATH=`pwd`/lib:$DYLD_LIBRARY_PATH
+
+On Intel platforms, you also need to set DYLD_BIND_AT_LAUNCH to
+prevent random crashes at runtime in the dynamic linker binding code:
+
+$ export DYLD_BIND_AT_LAUNCH=1
 
 
 ======================================================================

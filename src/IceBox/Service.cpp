@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -54,19 +54,19 @@ IceBox::IceBoxService::start(int argc, char* argv[])
     {
         args = opts.parse(argc, (const char**)argv);
     }
-    catch(const IceUtil::Options::BadOpt& e)
+    catch(const IceUtil::BadOptException& e)
     {
         error(e.reason);
         usage(argv[0]);
         return false;
     }
 
-    if(opts.isSet("h") || opts.isSet("help"))
+    if(opts.isSet("help"))
     {
         usage(argv[0]);
         return false;
     }
-    if(opts.isSet("v") || opts.isSet("version"))
+    if(opts.isSet("version"))
     {
         print(ICE_STRING_VERSION);
         return false;
@@ -88,7 +88,7 @@ IceBox::IceBoxService::stop()
     if(_serviceManager)
     {
         _serviceManager->stop();
-	_serviceManager = 0;
+        _serviceManager = 0;
     }
     return true;
 }
@@ -128,6 +128,7 @@ IceBox::IceBoxService::usage(const string& appName)
         "\n"
         "\n"
         "--daemon             Run as a daemon.\n"
+        "--pidfile FILE       Write process ID into FILE.\n"
         "--noclose            Do not close open file descriptors.\n"
         "--nochdir            Do not change the current working directory."
     );

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,16 +20,16 @@ class WstringClassI : virtual public WstringClass
 public:
 
     virtual void opString_async(const ::Test1::AMD_WstringClass_opStringPtr&,
-				const ::std::wstring&,
-				const Ice::Current&);
+                                const ::std::wstring&,
+                                const Ice::Current&);
 
     virtual void opStruct_async(const ::Test1::AMD_WstringClass_opStructPtr&,
-				const ::Test1::WstringStruct&,
-				const Ice::Current&);
+                                const ::Test1::WstringStruct&,
+                                const Ice::Current&);
 
     virtual void throwExcept_async(const ::Test1::AMD_WstringClass_throwExceptPtr&,
-				   const ::std::wstring&,
-				   const Ice::Current&);
+                                   const ::std::wstring&,
+                                   const Ice::Current&);
 };
 
 }
@@ -42,16 +42,16 @@ class WstringClassI : virtual public WstringClass
 public:
 
     virtual void opString_async(const ::Test2::AMD_WstringClass_opStringPtr&,
-				const ::std::wstring&,
-				const Ice::Current&);
+                                const ::std::wstring&,
+                                const Ice::Current&);
 
     virtual void opStruct_async(const ::Test2::AMD_WstringClass_opStructPtr&,
-				const ::Test2::WstringStruct&,
-				const Ice::Current&);
+                                const ::Test2::WstringStruct&,
+                                const Ice::Current&);
 
     virtual void throwExcept_async(const ::Test2::AMD_WstringClass_throwExceptPtr&,
-				   const ::std::wstring&,
-				   const Ice::Current&);
+                                   const ::std::wstring&,
+                                   const Ice::Current&);
 };
 
 }

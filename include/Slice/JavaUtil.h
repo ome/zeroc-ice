@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -115,14 +115,14 @@ protected:
     // to typeToString.
     //
     std::string typeToObjectString(const TypePtr&, TypeMode, const std::string& = std::string(),
-				   const StringList& = StringList(), bool = true) const;
+                                   const StringList& = StringList(), bool = true) const;
 
     //
     // Generate code to marshal or unmarshal a type.
     //
     void writeMarshalUnmarshalCode(::IceUtil::Output&, const std::string&, const TypePtr&, const std::string&,
                                    bool, int&, bool = false, const StringList& = StringList(),
-				   const std::string& patchParams = "");
+                                   const std::string& patchParams = "");
 
     //
     // Generate code to marshal or unmarshal a dictionary type.
@@ -143,7 +143,7 @@ protected:
     //
     void writeStreamMarshalUnmarshalCode(::IceUtil::Output&, const std::string&, const TypePtr&, const std::string&,
                                          bool, int&, bool = false, const StringList& = StringList(),
-				         const std::string& patchParams = "");
+                                         const std::string& patchParams = "");
 
     //
     // Generate code to marshal or unmarshal a dictionary type using the public stream API.
@@ -179,15 +179,16 @@ protected:
     // the default mapping was used.
     //
     bool getDictionaryTypes(const DictionaryPtr&, const std::string&, const StringList&,
-			    std::string&, std::string&) const;
+                            std::string&, std::string&) const;
     bool getSequenceTypes(const SequencePtr&, const std::string&, const StringList&,
-			  std::string&, std::string&) const;
+                          std::string&, std::string&) const;
 
     virtual JavaOutput* createOutput();
 
     Slice::FeatureProfile _featureProfile;
 
     static const std::string _getSetMetaData;
+    static const std::string _java2MetaData;
     static const std::string _java5MetaData;
 
 private:
@@ -211,8 +212,8 @@ private:
     private:
 
         StringList getMetaData(const ContainedPtr&);
-	void validateType(const SyntaxTreeBasePtr&, const StringList&, const std::string&, const std::string&);
-	void validateGetSet(const SyntaxTreeBasePtr&, const StringList&, const std::string&, const std::string&);
+        void validateType(const SyntaxTreeBasePtr&, const StringList&, const std::string&, const std::string&);
+        void validateGetSet(const SyntaxTreeBasePtr&, const StringList&, const std::string&, const std::string&);
 
         StringSet _history;
     };

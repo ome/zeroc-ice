@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,9 +19,8 @@ module IceGrid
 
 /**
  *
- * The &IceGrid; registry provides a registry object to allow clients
- * or administrative clients to create sessions directly with the
- * registry.
+ * The IceGrid registry allows clients create sessions
+ * directly with the registry.
  *
  * @see Session
  * @see AdminSession
@@ -48,7 +47,7 @@ interface Registry
      *
      **/
     Session* createSession(string userId, string password)
-	throws PermissionDeniedException;
+        throws PermissionDeniedException;
 
     /**
      *
@@ -69,7 +68,7 @@ interface Registry
      *
      **/
     AdminSession* createAdminSession(string userId, string password)
-	throws PermissionDeniedException;
+        throws PermissionDeniedException;
 
     /**
      *
@@ -90,7 +89,7 @@ interface Registry
      *
      **/
     Session* createSessionFromSecureConnection()
-	throws PermissionDeniedException;
+        throws PermissionDeniedException;
 
     /**
      *
@@ -107,7 +106,7 @@ interface Registry
      *
      **/
     AdminSession* createAdminSessionFromSecureConnection()
-	throws PermissionDeniedException;
+        throws PermissionDeniedException;
 
     /**
      *
@@ -121,7 +120,7 @@ interface Registry
      * @return The timeout in milliseconds.
      *
      **/
-    nonmutating int getSessionTimeout();
+    ["nonmutating", "cpp:const"] idempotent int getSessionTimeout();
 };
 
 };

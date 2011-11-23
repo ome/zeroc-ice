@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,13 +25,13 @@ class CreateTestThread : public Thread
 public:
     
     CreateTestThread() :
-	threadran(false)
+        threadran(false)
     {
     }
 
     virtual void run()
     {
-	threadran = true;
+        threadran = true;
     }
 
     bool threadran;
@@ -49,16 +49,16 @@ CreateTest::run()
 {
     for(int i = 0; i < 4096 ; ++i)
     {
-	CreateTestThreadPtr t = new CreateTestThread();
-	ThreadControl control = t->start();
-	control.join();
-	test(t->threadran);
-	if((i % 256) == 0)
-	{
-	    char buf[5];
-	    sprintf(buf, "%04d", i);
-	    cout << buf << "" << flush;
-	}
+        CreateTestThreadPtr t = new CreateTestThread();
+        ThreadControl control = t->start();
+        control.join();
+        test(t->threadran);
+        if((i % 256) == 0)
+        {
+            char buf[5];
+            sprintf(buf, "%04d", i);
+            cout << buf << "" << flush;
+        }
     }
     cout << "    " << flush;
 }

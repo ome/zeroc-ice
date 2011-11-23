@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,10 +10,13 @@
 #ifndef LINK_RECORD_ICE
 #define LINK_RECORD_ICE
 
-#include <IceStorm/IceStormInternal.ice>
+#include <Ice/Identity.ice>
 
 module IceStorm
 {
+
+interface TopicLink;
+interface Topic;
 
 /**
  *
@@ -22,16 +25,13 @@ module IceStorm
  **/
 struct LinkRecord
 {
-    TopicLink* obj;
-    int cost;
-
-    //
-    // Only for Topic::getLinkInfoSeq()
-    //
-    Topic* theTopic; 
+    TopicLink* obj; // The topic link object.
+    int cost; // The cost.
+    Topic* theTopic;  // The linked topic for getLinkInfoSeq
 };
 
-dictionary<string, LinkRecord> LinkRecordDict;
+/** Dictionary of link name to link record. */
+sequence<LinkRecord> LinkRecordSeq;
 
 }; // End module IceStorm
 

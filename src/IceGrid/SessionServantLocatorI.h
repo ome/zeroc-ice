@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,10 +33,10 @@ private:
 
     struct SessionServant
     {
-	SessionServant(const Ice::ObjectPtr& s, const Ice::ConnectionPtr& con) : servant(s), connection(con) { }
+        SessionServant(const Ice::ObjectPtr& s, const Ice::ConnectionPtr& con) : servant(s), connection(con) { }
 
-	const Ice::ObjectPtr servant;
-	const Ice::ConnectionPtr connection;
+        const Ice::ObjectPtr servant;
+        const Ice::ConnectionPtr connection;
     };
 
     const Ice::ObjectAdapterPtr _adapter;

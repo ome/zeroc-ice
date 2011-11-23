@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -56,6 +56,7 @@ CHelloClientDlg::OnInitDialog()
     _mode = (CComboBox*)GetDlgItem(IDC_MODE);
     _secure = (CButton*)GetDlgItem(IDC_SECURE);
     _timeout = (CButton*)GetDlgItem(IDC_TIMEOUT);
+    _delay = (CButton*)GetDlgItem(IDC_DELAY);
     _status = (CStatic*)GetDlgItem(IDC_STATUSBAR);
 
     //
@@ -66,10 +67,7 @@ CHelloClientDlg::OnInitDialog()
     //
     // Create the proxy.
     //
-    Ice::PropertiesPtr properties = _communicator->getProperties();
-    const char* proxyProperty = "Hello.Proxy";
-    string proxy = properties->getProperty(proxyProperty);
-    Ice::ObjectPrx obj = _communicator->stringToProxy(proxy);
+    Ice::ObjectPrx obj = _communicator->propertyToProxy("Hello.Proxy");
     _proxy = HelloPrx::uncheckedCast(obj);
     _currentProxy = _proxy;
     _status->SetWindowText(CString(" Ready"));
@@ -121,7 +119,7 @@ CHelloClientDlg::OnSayHello()
     try
     {
         updateProxy();
-        _currentProxy->sayHello();
+        _currentProxy->sayHello(_delay->GetCheck() == BST_CHECKED ? 2500 : 0);
         if(_currentProxy->ice_isBatchOneway() || _currentProxy->ice_isBatchDatagram())
         {
             _status->SetWindowText(CString(" Queued batch request"));

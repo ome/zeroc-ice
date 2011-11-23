@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,11 +22,23 @@
 #include <Ice/EventHandlerF.h>
 #include <list>
 
-#ifdef _WIN32
+#if defined(__linux) && !defined(ICE_NO_EPOLL)
+#   define ICE_USE_EPOLL 1
+#endif
+
+#if defined(_WIN32)
 #   include <winsock2.h>
 #else
 #   define SOCKET int
+#   if defined(ICE_USE_EPOLL)
+#       include <sys/epoll.h>
+#   elif defined(__APPLE__)
+#       include <sys/event.h>
+#   else
+#       include <sys/poll.h>
+#   endif
 #endif
+
 
 namespace IceInternal
 {
@@ -41,6 +53,9 @@ public:
     virtual ~ThreadPool();
 
     void destroy();
+
+    void incFdsInUse();
+    void decFdsInUse();
 
     void _register(SOCKET, const EventHandlerPtr&);
     void unregister(SOCKET);
@@ -66,7 +81,18 @@ private:
     SOCKET _lastFd;
     SOCKET _fdIntrRead;
     SOCKET _fdIntrWrite;
+#if defined(_WIN32)
     fd_set _fdSet;
+    int _fdsInUse;
+#elif defined(ICE_USE_EPOLL)
+    int _epollFd;
+    std::vector<struct epoll_event> _events;
+#elif defined(__APPLE__)
+    int _kqueueFd;
+    std::vector<struct kevent> _events;
+#else
+    std::vector<struct pollfd> _pollFdSet;
+#endif
 
     std::list<std::pair<SOCKET, EventHandlerPtr> > _changes; // Event handler set for addition; null for removal.
 
@@ -77,13 +103,13 @@ private:
     class EventHandlerThread : public IceUtil::Thread
     {
     public:
-	
-	EventHandlerThread(const ThreadPoolPtr&);
-	virtual void run();
+        
+        EventHandlerThread(const ThreadPoolPtr&);
+        virtual void run();
 
     private:
 
-	ThreadPoolPtr _pool;
+        ThreadPoolPtr _pool;
     };
     friend class EventHandlerThread;
 

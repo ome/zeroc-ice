@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,8 +11,8 @@
 #define TEST_I_H
 
 #include <Freeze/EvictorF.h>
+#include <IceUtil/IceUtil.h>
 #include <Test.h>
-#include <IceUtil/AbstractMutex.h>
 
 namespace Test
 {
@@ -23,7 +23,7 @@ typedef IceUtil::Handle<ServantI> ServantIPtr;
 class RemoteEvictorI;
 typedef IceUtil::Handle<RemoteEvictorI> RemoteEvictorIPtr;
 
-class ServantI : virtual public Servant, public IceUtil::AbstractMutexI<IceUtil::Mutex>
+class ServantI : public virtual Servant, public IceUtil::AbstractMutexI<IceUtil::Monitor<IceUtil::Mutex> >
 {
 public:
 
@@ -41,7 +41,7 @@ public:
 
     
     virtual void slowGetValue_async(const AMD_Servant_slowGetValuePtr&,
-				    const Ice::Current& = Ice::Current()) const;
+                                    const Ice::Current& = Ice::Current()) const;
 
     virtual void setValue(::Ice::Int, const Ice::Current& = Ice::Current());
 

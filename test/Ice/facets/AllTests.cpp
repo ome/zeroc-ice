@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,14 +22,15 @@ GPrx
 allTests(const Ice::CommunicatorPtr& communicator)
 {
     cout << "testing facet registration exceptions... " << flush;
+    communicator->getProperties()->setProperty("FacetExceptionTestAdapter.Endpoints", "default");
     Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("FacetExceptionTestAdapter");
     Ice::ObjectPtr obj = new EmptyI;
     adapter->add(obj, communicator->stringToIdentity("d"));
     adapter->addFacet(obj, communicator->stringToIdentity("d"), "facetABCD");
     try
     {
-	adapter->addFacet(obj, communicator->stringToIdentity("d"), "facetABCD");
-	test(false);
+        adapter->addFacet(obj, communicator->stringToIdentity("d"), "facetABCD");
+        test(false);
     }
     catch(Ice::AlreadyRegisteredException&)
     {
@@ -37,8 +38,8 @@ allTests(const Ice::CommunicatorPtr& communicator)
     adapter->removeFacet(communicator->stringToIdentity("d"), "facetABCD");
     try
     {
-	adapter->removeFacet(communicator->stringToIdentity("d"), "facetABCD");
-	test(false);
+        adapter->removeFacet(communicator->stringToIdentity("d"), "facetABCD");
+        test(false);
     }
     catch(Ice::NotRegisteredException&)
     {
@@ -60,8 +61,8 @@ allTests(const Ice::CommunicatorPtr& communicator)
     test(fm["f2"] == obj2);
     try
     {
-	adapter->removeAllFacets(communicator->stringToIdentity("id1"));
-	test(false);
+        adapter->removeAllFacets(communicator->stringToIdentity("id1"));
+        test(false);
     }
     catch(Ice::NotRegisteredException&)
     {

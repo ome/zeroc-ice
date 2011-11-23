@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,12 +24,12 @@ IceGrid::toString(const vector<string>& v, const string& sep)
     Ice::StringSeq::const_iterator p = v.begin();
     while(p != v.end())
     {
-	os << *p;
-	++p;
-	if(p != v.end())
-	{
-	    os << sep;
-	}
+        os << *p;
+        ++p;
+        if(p != v.end())
+        {
+            os << sep;
+        }
     }
     return os.str();
 }
@@ -40,22 +40,22 @@ IceGrid::toString(const Ice::Exception& exception)
     std::ostringstream os;
     try
     {
-	exception.ice_throw();
+        exception.ice_throw();
     }
     catch(const NodeUnreachableException& ex)
     {
-	os << ex << ":";
-	os << "\nnode: " << ex.name;
-	os << "\nreason: " << ex.reason;
+        os << ex << ":";
+        os << "\nnode: " << ex.name;
+        os << "\nreason: " << ex.reason;
     }
     catch(const DeploymentException& ex)
     {
-	os << ex << ":";
-	os << "\nreason: " << ex.reason;
+        os << ex << ":";
+        os << "\nreason: " << ex.reason;
     }
     catch(const Ice::Exception& ex)
     {
-	os << ex;
+        os << ex;
     }
     return os.str();
 }
@@ -65,11 +65,20 @@ IceGrid::getProperty(const PropertyDescriptorSeq& properties, const string& name
 {    
     for(PropertyDescriptorSeq::const_iterator q = properties.begin(); q != properties.end(); ++q)
     {
-	if(q->name == name)
-	{
-	    return q->value;
-	}
+        if(q->name == name)
+        {
+            return q->value;
+        }
     }
     return def;
+}
+
+PropertyDescriptor
+IceGrid::createProperty(const string& name, const string& value)
+{
+    PropertyDescriptor prop;
+    prop.name = name;
+    prop.value = value;
+    return prop;
 }
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -71,6 +71,8 @@ public:
     virtual const std::string& ice_id(const Current& = Current()) const;
     IceInternal::DispatchStatus ___ice_id(IceInternal::Incoming&, const Current&);
 
+    virtual Int ice_operationAttributes(const std::string&) const;
+
     static const std::string& ice_staticId();
 
     virtual ObjectPtr ice_clone() const;
@@ -131,7 +133,7 @@ public:
 
     // Returns true if ok, false if user exception.
     virtual void ice_invoke_async(const AMD_Array_Object_ice_invokePtr&, const std::pair<const Byte*, const Byte*>&,
-    				  const Current&) = 0;
+                                  const Current&) = 0;
     virtual IceInternal::DispatchStatus __dispatch(IceInternal::Incoming&, const Current&);
 };
 

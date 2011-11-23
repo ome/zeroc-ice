@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -66,7 +66,7 @@ LogI::message(const string& msg)
     string line = msg + "\r\n";
     if(_hwnd)
     {
-	post(line);
+        post(line);
     }
     else
     {
@@ -80,7 +80,7 @@ LogI::setHandle(HWND hwnd)
     _hwnd = hwnd;
     if(_hwnd != 0 && !_buffer.empty())
     {
-	post(_buffer);
+        post(_buffer);
         _buffer.clear();
     }
 }

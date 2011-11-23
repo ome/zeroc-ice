@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,10 +27,10 @@ local dictionary<string, string> PropertyDict;
 
 /**
  *
- * A property set used to configure &Ice; and &Ice; applications.
+ * A property set used to configure Ice and Ice applications.
  * Properties are key/value pairs, with both keys and values
  * being [string]s. By convention, property keys should have the form
- * <replaceable>application-name</replaceable>\[.<replaceable>category</replaceable>\[.<replaceable>sub-category</replaceable>]].<replaceable>name</replaceable>.
+ * <em>application-name</em>\[.<em>category</em>\[.<em>sub-category</em>]].<em>name</em>.
  *
  **/
 local interface Properties
@@ -101,8 +101,8 @@ local interface Properties
     /**
      *
      * Get all properties whose keys begins with
-     * <replaceable>prefix</replaceable>. If
-     * <replaceable>prefix</replaceable> is an empty string,
+     * <em>prefix</em>. If
+     * <em>prefix</em> is an empty string,
      * then all properties are returned.
      *
      * @return The matching property set.
@@ -128,7 +128,7 @@ local interface Properties
      * Get a sequence of command-line options that is equivalent to
      * this property set. Each element of the returned sequence is
      * a command-line option of the form
-     * [--<replaceable>key</replaceable>=<replaceable>value</replaceable>].
+     * <tt>--<em>key</em>=<em>value</em></tt>.
      *
      * @return The command line options for this property set.
      *
@@ -139,12 +139,12 @@ local interface Properties
      *
      * Convert a sequence of command-line options into properties.
      * All options that begin with
-     * [--<replaceable>prefix</replaceable>.] are
+     * <tt>--<em>prefix</em>.</tt> are
      * converted into properties. If the prefix is empty, all options
-     * that begin with [--] are converted to properties.
+     * that begin with <tt>--</tt> are converted to properties.
      *
      * @param prefix The property prefix, or an empty string to
-     * convert all options starting with [--].
+     * convert all options starting with <tt>--</tt>.
      *
      * @param options The command-line options.
      *
@@ -158,9 +158,8 @@ local interface Properties
      *
      * Convert a sequence of command-line options into properties.
      * All options that begin with one of the following prefixes
-     * are converted into properties: [--Ice], [--IceBox], [--IceGrid],
-     * [--IcePatch], [--IcePatch2], [--IceSSL], [--IceStorm], [--Freeze],
-     * [--Glacier], and [--Glacier2].
+     * are converted into properties: <tt>--Ice</tt>, <tt>--IceBox</tt>, <tt>--IceGrid</tt>,
+     * <tt>--IcePatch2</tt>, <tt>--IceSSL</tt>, <tt>--IceStorm</tt>, <tt>--Freeze</tt>, and <tt>--Glacier2</tt>.
      *
      * @param options The command-line options.
      *

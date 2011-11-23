@@ -2,7 +2,7 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -104,16 +104,16 @@ NL	[\n]
     return ICE_STORM_EXIT;
 }
 
+"current" {
+    return ICE_STORM_CURRENT;
+}
+
 "create" {
     return ICE_STORM_CREATE;
 }
 
 "destroy" {
     return ICE_STORM_DESTROY;
-}
-
-"list" {
-    return ICE_STORM_LIST;
 }
 
 "link" {
@@ -124,20 +124,12 @@ NL	[\n]
     return ICE_STORM_UNLINK;
 }
 
-"graph" {
-    return ICE_STORM_GRAPH;
+"links" {
+    return ICE_STORM_LINKS;
 }
 
-"show" {
-    return ICE_STORM_SHOW;
-}
-
-"copying" {
-    return ICE_STORM_COPYING;
-}
-
-"warranty" {
-    return ICE_STORM_WARRANTY;
+"topics" {
+    return ICE_STORM_TOPICS;
 }
 
 {WS}*(\\{WS}*{NL})? {

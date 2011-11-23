@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,8 +23,8 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator,
     adapter->add(new TestCheckedCastI, communicator->stringToIdentity("context"));
     adapter->activate();
 
-    Test::MyClassPrx allTests(const Ice::CommunicatorPtr&, const Ice::InitializationData&, bool);
-    allTests(communicator, initData, true);
+    Test::MyClassPrx allTests(const Ice::CommunicatorPtr&, bool);
+    allTests(communicator, true);
 
     return EXIT_SUCCESS;
 }
@@ -37,28 +37,28 @@ main(int argc, char* argv[])
 
     try
     {
-	Ice::InitializationData initData;
-	initData.properties = Ice::createProperties(argc, argv);
-	communicator = Ice::initialize(argc, argv, initData);
-	status = run(argc, argv, communicator, initData);
+        Ice::InitializationData initData;
+        initData.properties = Ice::createProperties(argc, argv);
+        communicator = Ice::initialize(argc, argv, initData);
+        status = run(argc, argv, communicator, initData);
     }
     catch(const Ice::Exception& ex)
     {
-	cerr << ex << endl;
-	status = EXIT_FAILURE;
+        cerr << ex << endl;
+        status = EXIT_FAILURE;
     }
 
     if(communicator)
     {
-	try
-	{
-	    communicator->destroy();
-	}
-	catch(const Ice::Exception& ex)
-	{
-	    cerr << ex << endl;
-	    status = EXIT_FAILURE;
-	}
+        try
+        {
+            communicator->destroy();
+        }
+        catch(const Ice::Exception& ex)
+        {
+            cerr << ex << endl;
+            status = EXIT_FAILURE;
+        }
     }
 
     return status;

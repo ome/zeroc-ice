@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -19,6 +19,10 @@ SUBDIRS		= IceUtil \
 		  IceStorm \
 		  IceGrid \
 		  book
+
+!if "$(CPP_COMPILER)" != "BCC2006" & "$(CPP_COMPILER)" != "VC80_EXPRESS"
+SUBDIRS		= $(SUBDIRS) IcePatch2
+!endif
 
 $(EVERYTHING)::
 	@for %i in ( $(SUBDIRS) ) do \

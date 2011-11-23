@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,6 +15,7 @@
 #include <IceGrid/Activator.h>
 #include <IceGrid/WaitQueue.h>
 #include <IceGrid/Internal.h>
+#include <set>
 
 #ifndef _WIN32
 #   include <sys/types.h> // for uid_t, gid_t
@@ -46,26 +47,26 @@ public:
 
     enum InternalServerState
     {
-	Inactive,
-	Activating,
-	WaitForActivation,
-	ActivationTimeout,
-	Active,
-	Deactivating,
-	DeactivatingWaitForProcess,
-	Destroying,
-	Destroyed,
-	Loading,
-	Patching
+        Loading,
+        Patching,
+        Inactive,
+        Activating,
+        WaitForActivation,
+        ActivationTimeout,
+        Active,
+        Deactivating,
+        DeactivatingWaitForProcess,
+        Destroying,
+        Destroyed
     };
 
     enum ServerActivation
     {
-	Always,
-	Session,
-	OnDemand,
-	Manual,
-	Disabled
+        Always,
+        Session,
+        OnDemand,
+        Manual,
+        Disabled
     };
 
     ServerI(const NodeIPtr&, const ServerPrx&, const std::string&, const std::string&, int);
@@ -83,16 +84,16 @@ public:
     virtual bool isEnabled(const ::Ice::Current& = Ice::Current()) const;
     virtual void setProcess_async(const AMD_Server_setProcessPtr&, const ::Ice::ProcessPrx&, const ::Ice::Current&);
 
-    std::string getApplication() const;
-    bool canActivateOnDemand() const;
+    virtual Ice::Long getOffsetFromEnd(const std::string&, int, const Ice::Current&) const;
+    virtual bool read(const std::string&, Ice::Long, int, Ice::Long&, Ice::StringSeq&, const Ice::Current&) const;
+
+    bool isAdapterActivatable(const std::string&) const;
     const std::string& getId() const;
-    DistributionDescriptor getDistribution() const;
-    bool hasApplicationDistribution() const;
-    void getDynamicInfo(ServerDynamicInfoSeq&, AdapterDynamicInfoSeq&) const;
+    InternalDistributionDescriptorPtr getDistribution() const;
 
     void start(ServerActivation, const AMD_Server_startPtr& = AMD_Server_startPtr());
-    void load(const AMD_Node_loadServerPtr&, const std::string&, const ServerDescriptorPtr&, const std::string&);
-    void destroy(const AMD_Node_destroyServerPtr&);
+    ServerCommandPtr load(const AMD_Node_loadServerPtr&, const InternalServerDescriptorPtr&, const std::string&);
+    ServerCommandPtr destroy(const AMD_Node_destroyServerPtr&, const std::string&, int, const std::string&);
     bool startPatch(bool);
     bool waitForPatch();
     void finishPatch();
@@ -111,9 +112,11 @@ public:
 
 private:
     
-    void updateImpl(const std::string&, const ServerDescriptorPtr&, const std::string&);
+    void updateImpl(const InternalServerDescriptorPtr&);
+    void checkRevision(const std::string&, const std::string&, int) const;
+    void updateRevision(const std::string&, int);
     void checkActivation();
-    void checkDestroyed();
+    void checkDestroyed() const;
     void disableOnFailure();
     void enableAfterFailure(bool);
 
@@ -121,14 +124,11 @@ private:
     ServerCommandPtr nextCommand();
     void setStateNoSync(InternalServerState, const std::string& = std::string());
     
-    std::string addAdapter(const AdapterDescriptor&, const CommunicatorDescriptorPtr&);
-    void updateConfigFile(const std::string&, const CommunicatorDescriptorPtr&);
-    void updateDbEnv(const std::string&, const DbEnvDescriptor&);
-    PropertyDescriptor createProperty(const std::string&, const std::string& = std::string());
     void createOrUpdateDirectory(const std::string&);
     ServerState toServerState(InternalServerState) const;
     ServerActivation toServerActivation(const std::string&) const;
     ServerDynamicInfo getDynamicInfo() const;
+    std::string getFilePath(const std::string&) const;
 
     const NodeIPtr _node;
     const ServerPrx _this;
@@ -137,9 +137,7 @@ private:
     const std::string _serverDir;
     const int _disableOnFailure;
 
-    std::string _application;
-    ServerDescriptorPtr _desc;
-    std::string _sessionId;
+    InternalServerDescriptorPtr _desc;
 #ifndef _WIN32
     uid_t _uid;
     gid_t _gid;
@@ -150,12 +148,18 @@ private:
     int _deactivationTimeout;
     typedef std::map<std::string, ServerAdapterIPtr> ServerAdapterDict;
     ServerAdapterDict _adapters;
+    std::set<std::string> _serverLifetimeAdapters;
     bool _processRegistered;
     Ice::ProcessPrx _process;
-    std::set<std::string> _activeAdapters;
+    std::set<std::string> _activatedAdapters;
     IceUtil::Time _failureTime;
     ServerActivation _previousActivation;
     WaitItemPtr _timer;
+    bool _waitForReplication;
+    std::string _stdErrFile;
+    std::string _stdOutFile;
+    Ice::StringSeq _logs;
+    PropertyDescriptorSeq _properties;
 
     DestroyCommandPtr _destroy;
     StopCommandPtr _stop;
@@ -172,6 +176,8 @@ class ServerCommand : public IceUtil::SimpleShared
 public:
 
     ServerCommand(const ServerIPtr&);
+    virtual ~ServerCommand();
+
     virtual void execute() = 0;
     virtual ServerI::InternalServerState nextState() = 0;
 
@@ -203,18 +209,19 @@ class DestroyCommand : public ServerCommand
 {
 public:
 
-    DestroyCommand(const ServerIPtr&, bool);
+    DestroyCommand(const ServerIPtr&, bool = false);
 
-    bool canExecute(ServerI::InternalServerState state);
+    bool canExecute(ServerI::InternalServerState);
     ServerI::InternalServerState nextState();
     void execute();
 
-    void addCallback(const AMD_Node_destroyServerPtr& amdCB);
+    void addCallback(const AMD_Node_destroyServerPtr&);
     void finished();
+    bool loadFailure() const;
 
 private:
 
-    const bool _kill;
+    const bool _loadFailure;
     std::vector<AMD_Node_destroyServerPtr> _destroyCB;
 };
 
@@ -224,9 +231,9 @@ public:
 
     StopCommand(const ServerIPtr&, const WaitQueuePtr&, int);
 
-    static bool isStopped(ServerI::InternalServerState state);
+    static bool isStopped(ServerI::InternalServerState);
 
-    bool canExecute(ServerI::InternalServerState state);
+    bool canExecute(ServerI::InternalServerState);
     ServerI::InternalServerState nextState();
     void execute();
     void timeout(bool destroyed);
@@ -246,7 +253,7 @@ public:
 
     StartCommand(const ServerIPtr&, const WaitQueuePtr&, int);
 
-    bool canExecute(ServerI::InternalServerState state);
+    bool canExecute(ServerI::InternalServerState);
     ServerI::InternalServerState nextState();
     void execute();
     void timeout(bool destroyed);
@@ -266,7 +273,7 @@ public:
 
     PatchCommand(const ServerIPtr&);
 
-    bool canExecute(ServerI::InternalServerState state);
+    bool canExecute(ServerI::InternalServerState);
     ServerI::InternalServerState nextState();
     void execute();
 
@@ -286,15 +293,13 @@ public:
 
     LoadCommand(const ServerIPtr&);
 
-    bool canExecute(ServerI::InternalServerState state);
+    bool canExecute(ServerI::InternalServerState);
     ServerI::InternalServerState nextState();
     void execute();
 
-    void setUpdate(const std::string&, const ServerDescriptorPtr&, const std::string&, bool clearDir);
+    void setUpdate(const InternalServerDescriptorPtr&, bool);
     bool clearDir() const;
-    std::string sessionId() const;
-    std::string getApplication() const;
-    ServerDescriptorPtr getDescriptor() const;
+    InternalServerDescriptorPtr getInternalServerDescriptor() const;
     void addCallback(const AMD_Node_loadServerPtr&);
     void failed(const Ice::Exception&);
     void finished(const ServerPrx&, const AdapterPrxDict&, int, int);
@@ -303,9 +308,7 @@ private:
 
     std::vector<AMD_Node_loadServerPtr> _loadCB;
     bool _clearDir;
-    std::string _application;
-    ServerDescriptorPtr _desc;
-    std::string _sessionId;
+    InternalServerDescriptorPtr _desc;
     std::auto_ptr<DeploymentException> _exception;
 };
 

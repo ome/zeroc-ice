@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -59,29 +59,34 @@ struct InitializationData
     PropertiesPtr properties;
     LoggerPtr logger;
     StatsPtr stats;
-    Context defaultContext;
     StringConverterPtr stringConverter;
     WstringConverterPtr wstringConverter;
     ThreadNotificationPtr threadHook;
 };
 
 ICE_API CommunicatorPtr initialize(int&, char*[], const InitializationData& = InitializationData(),
-				   Int = ICE_INT_VERSION);
+                                   Int = ICE_INT_VERSION);
+
+ICE_API CommunicatorPtr initialize(Ice::StringSeq&, const InitializationData& = InitializationData(),
+                                   Int = ICE_INT_VERSION);
 
 ICE_API CommunicatorPtr initialize(const InitializationData& = InitializationData(), 
-				   Int = ICE_INT_VERSION);
+                                   Int = ICE_INT_VERSION);
 
 
 ICE_API ICE_DEPRECATED_API CommunicatorPtr initializeWithProperties(int&, char*[], const PropertiesPtr&,
-								    Int = ICE_INT_VERSION);
+                                                                    Int = ICE_INT_VERSION);
 ICE_API ICE_DEPRECATED_API CommunicatorPtr initializeWithLogger(int&, char*[], const Ice::LoggerPtr&,
-								Int = ICE_INT_VERSION);
+                                                                Int = ICE_INT_VERSION);
 ICE_API ICE_DEPRECATED_API CommunicatorPtr initializeWithPropertiesAndLogger(int&, char*[], const PropertiesPtr&,
-							                     const Ice::LoggerPtr&, 
-									     Int = ICE_INT_VERSION);
+                                                                             const Ice::LoggerPtr&, 
+                                                                             Int = ICE_INT_VERSION);
 
 ICE_API InputStreamPtr createInputStream(const CommunicatorPtr&, const ::std::vector< Byte >&);
 ICE_API OutputStreamPtr createOutputStream(const CommunicatorPtr&);
+
+ICE_API LoggerPtr getProcessLogger();
+ICE_API void setProcessLogger(const LoggerPtr&);
 
 }
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -99,7 +99,7 @@ public:
     virtual Ice::ObjectPtr
     create(const string& type)
     {
-	return _factory->create(type);
+        return _factory->create(type);
     }
 
     virtual void
@@ -110,7 +110,7 @@ public:
     void
     setFactory(const Ice::ObjectFactoryPtr& factory)
     {
-	_factory = factory;
+        _factory = factory;
     }
 
 private:

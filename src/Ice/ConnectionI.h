@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -40,15 +40,15 @@ namespace Ice
 class LocalException;
 
 class ICE_API ConnectionI : public Connection, public IceInternal::EventHandler,
-			    public IceUtil::Monitor<IceUtil::Mutex>
+                            public IceUtil::Monitor<IceUtil::Mutex>
 {
 public:
 
     void validate();
     enum DestructionReason
     {
-	ObjectAdapterDeactivated,
-	CommunicatorDestroyed
+        ObjectAdapterDeactivated,
+        CommunicatorDestroyed
     };
     void activate();
     void hold();
@@ -77,6 +77,7 @@ public:
     void sendNoResponse();
 
     IceInternal::EndpointIPtr endpoint() const;
+    bool threadPerConnection() const;
 
     virtual void setAdapter(const ObjectAdapterPtr&); // From Connection.
     virtual ObjectAdapterPtr getAdapter() const; // From Connection.
@@ -91,6 +92,7 @@ public:
     virtual void message(IceInternal::BasicStream&, const IceInternal::ThreadPoolPtr&);
     virtual void finished(const IceInternal::ThreadPoolPtr&);
     virtual void exception(const LocalException&);
+    virtual void invokeException(const LocalException&, int);
     virtual std::string type() const; // From Connection.
     virtual Ice::Int timeout() const; // From Connection.
     virtual std::string toString() const;  // From Connection and EvantHandler.
@@ -101,19 +103,23 @@ public:
 private:
 
     ConnectionI(const IceInternal::InstancePtr&, const IceInternal::TransceiverPtr&, 
-		const IceInternal::EndpointIPtr&, const ObjectAdapterPtr&);
+                const IceInternal::EndpointIPtr&, const ObjectAdapterPtr&, bool, size_t);
     virtual ~ConnectionI();
+    void start();
     friend class IceInternal::IncomingConnectionFactory;
     friend class IceInternal::OutgoingConnectionFactory;
 
     enum State
     {
-	StateNotValidated,
-	StateActive,
-	StateHolding,
-	StateClosing,
-	StateClosed
+        StateNotValidated,
+        StateActive,
+        StateHolding,
+        StateClosing,
+        StateClosed
     };
+
+    void resetBatch(bool);
+    void flushBatchRequestsInternal(bool); 
 
     void setState(State, const LocalException&);
     void setState(State);
@@ -127,26 +133,28 @@ private:
     void doUncompress(IceInternal::BasicStream&, IceInternal::BasicStream&);
 
     void parseMessage(IceInternal::BasicStream&, Int&, Int&, Byte&,
-		      IceInternal::ServantManagerPtr&, ObjectAdapterPtr&, IceInternal::OutgoingAsyncPtr&);
+                      IceInternal::ServantManagerPtr&, ObjectAdapterPtr&, IceInternal::OutgoingAsyncPtr&);
     void invokeAll(IceInternal::BasicStream&, Int, Int, Byte,
-		   const IceInternal::ServantManagerPtr&, const ObjectAdapterPtr&);
+                   const IceInternal::ServantManagerPtr&, const ObjectAdapterPtr&);
 
-    void run();
+    void run(); // For thread per connection.
 
     class ThreadPerConnection : public IceUtil::Thread
     {
     public:
-	
-	ThreadPerConnection(const ConnectionIPtr&);
-	virtual void run();
+        
+        ThreadPerConnection(const ConnectionIPtr&);
+        virtual void run();
 
     private:
-	
-	ConnectionIPtr _connection;
+        
+        ConnectionIPtr _connection;
     };
     friend class ThreadPerConnection;
     // Defined as mutable because "isFinished() const" sets this to 0.
-    mutable IceUtil::ThreadPtr _threadPerConnection;
+    mutable IceUtil::ThreadPtr _thread;
+    const bool _threadPerConnection;
+    const size_t _threadPerConnectionStackSize;
 
     IceInternal::TransceiverPtr _transceiver;
     const std::string _desc;
@@ -177,18 +185,20 @@ private:
 
     struct AsyncRequest
     {
-	IceInternal::OutgoingAsyncPtr p;
-	IceUtil::Time t;
+        IceInternal::OutgoingAsyncPtr p;
+        IceUtil::Time t;
     };
     std::map<Int, AsyncRequest> _asyncRequests;
     std::map<Int, AsyncRequest>::iterator _asyncRequestsHint;
 
     std::auto_ptr<LocalException> _exception;
 
+    const bool _batchAutoFlush;
     IceInternal::BasicStream _batchStream;
     bool _batchStreamInUse;
     int _batchRequestNum;
     bool _batchRequestCompress;
+    size_t _batchMarker;
 
     int _dispatchCount;
 

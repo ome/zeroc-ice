@@ -1,12 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <Ice/Communicator.h>
 #include <Ice/ReferenceFactory.h>
 #include <Ice/ProxyFactory.h>
 #include <Ice/LocalException.h>
@@ -14,11 +15,14 @@
 #include <Ice/EndpointI.h>
 #include <Ice/EndpointFactoryManager.h>
 #include <Ice/RouterInfo.h>
+#include <Ice/Router.h>
 #include <Ice/LocatorInfo.h>
+#include <Ice/Locator.h>
 #include <Ice/LoggerUtil.h>
 #include <Ice/BasicStream.h>
 #include <Ice/Properties.h>
 #include <Ice/DefaultsAndOverrides.h>
+#include <Ice/PropertyNames.h>
 #include <IceUtil/StringUtil.h>
 
 using namespace std;
@@ -35,7 +39,7 @@ IceInternal::ReferenceFactory::copy(const Reference* r) const
 
     if(!_instance)
     {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+        throw CommunicatorDestroyedException(__FILE__, __LINE__);
     }
 
     const Ice::Identity& ident = r->getIdentity();
@@ -49,19 +53,23 @@ IceInternal::ReferenceFactory::copy(const Reference* r) const
 
 ReferencePtr
 IceInternal::ReferenceFactory::create(const Identity& ident,
-				      const Context& context,
-				      const string& facet,
-				      Reference::Mode mode,
-				      bool secure,
-				      const vector<EndpointIPtr>& endpoints,
-				      const RouterInfoPtr& routerInfo,
-				      bool collocationOptimization)
+                                      const SharedContextPtr& context,
+                                      const string& facet,
+                                      Reference::Mode mode,
+                                      bool secure,
+                                      bool preferSecure,
+                                      const vector<EndpointIPtr>& endpoints,
+                                      const RouterInfoPtr& routerInfo,
+                                      bool collocationOptimization,
+                                      bool cacheConnection,
+                                      EndpointSelectionType endpointSelection,
+                                      bool threadPerConnection)
 {
     IceUtil::Mutex::Lock sync(*this);
 
     if(!_instance)
     {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+        throw CommunicatorDestroyedException(__FILE__, __LINE__);
     }
 
     if(ident.name.empty() && ident.category.empty())
@@ -72,27 +80,32 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
     //
     // Create new reference
     //
-    return new DirectReference(_instance, _communicator, ident, context, facet, mode, secure,
-			       endpoints, routerInfo, collocationOptimization);
+    return new DirectReference(_instance, _communicator, ident, context, facet, mode, secure, preferSecure,
+                               endpoints, routerInfo, collocationOptimization, cacheConnection, endpointSelection,
+                               threadPerConnection);
 }
 
 ReferencePtr
 IceInternal::ReferenceFactory::create(const Identity& ident,
-				      const Context& context,
-				      const string& facet,
-				      Reference::Mode mode,
-				      bool secure,
-				      const string& adapterId,
-				      const RouterInfoPtr& routerInfo,
-				      const LocatorInfoPtr& locatorInfo,
-				      bool collocationOptimization,
-				      int locatorCacheTimeout)
+                                      const SharedContextPtr& context,
+                                      const string& facet,
+                                      Reference::Mode mode,
+                                      bool secure,
+                                      bool preferSecure,
+                                      const string& adapterId,
+                                      const RouterInfoPtr& routerInfo,
+                                      const LocatorInfoPtr& locatorInfo,
+                                      bool collocationOptimization,
+                                      bool cacheConnection,
+                                      EndpointSelectionType endpointSelection,
+                                      bool threadPerConnection,
+                                      int locatorCacheTimeout)
 {
     IceUtil::Mutex::Lock sync(*this);
 
     if(!_instance)
     {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+        throw CommunicatorDestroyedException(__FILE__, __LINE__);
     }
 
     if(ident.name.empty() && ident.category.empty())
@@ -103,22 +116,23 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
     //
     // Create new reference
     //
-    return new IndirectReference(_instance, _communicator, ident, context, facet, mode, secure,
-				 adapterId, routerInfo, locatorInfo, collocationOptimization, locatorCacheTimeout);
+    return new IndirectReference(_instance, _communicator, ident, context, facet, mode, secure, preferSecure,
+                                 adapterId, routerInfo, locatorInfo, collocationOptimization, cacheConnection,
+                                 endpointSelection, threadPerConnection, locatorCacheTimeout);
 }
 
 ReferencePtr
 IceInternal::ReferenceFactory::create(const Identity& ident,
-				      const Context& context,
-				      const string& facet,
-				      Reference::Mode mode,
-				      const vector<Ice::ConnectionIPtr>& fixedConnections)
+                                      const SharedContextPtr& context,
+                                      const string& facet,
+                                      Reference::Mode mode,
+                                      const vector<Ice::ConnectionIPtr>& fixedConnections)
 {
     IceUtil::Mutex::Lock sync(*this);
 
     if(!_instance)
     {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+        throw CommunicatorDestroyedException(__FILE__, __LINE__);
     }
 
     if(ident.name.empty() && ident.category.empty())
@@ -149,9 +163,9 @@ IceInternal::ReferenceFactory::create(const string& str)
     beg = s.find_first_not_of(delim, end);
     if(beg == string::npos)
     {
-	ProxyParseException ex(__FILE__, __LINE__);
-	ex.str = str;
-	throw ex;
+        ProxyParseException ex(__FILE__, __LINE__);
+        ex.str = str;
+        throw ex;
     }
     
     //
@@ -162,9 +176,9 @@ IceInternal::ReferenceFactory::create(const string& str)
     end = IceUtil::checkQuote(s, beg);
     if(end == string::npos)
     {
-	ProxyParseException ex(__FILE__, __LINE__);
-	ex.str = str;
-	throw ex;
+        ProxyParseException ex(__FILE__, __LINE__);
+        ex.str = str;
+        throw ex;
     }
     else if(end == 0)
     {
@@ -184,9 +198,9 @@ IceInternal::ReferenceFactory::create(const string& str)
 
     if(beg == end)
     {
-	ProxyParseException ex(__FILE__, __LINE__);
-	ex.str = str;
-	throw ex;
+        ProxyParseException ex(__FILE__, __LINE__);
+        ex.str = str;
+        throw ex;
     }
 
     //
@@ -230,54 +244,54 @@ IceInternal::ReferenceFactory::create(const string& str)
 
     while(true)
     {
-	beg = s.find_first_not_of(delim, end);
-	if(beg == string::npos)
-	{
-	    break;
-	}
+        beg = s.find_first_not_of(delim, end);
+        if(beg == string::npos)
+        {
+            break;
+        }
 
         if(s[beg] == ':' || s[beg] == '@')
         {
             break;
         }
         
-	end = s.find_first_of(delim + ":@", beg);
-	if(end == string::npos)
-	{
-	    end = s.length();
-	}
+        end = s.find_first_of(delim + ":@", beg);
+        if(end == string::npos)
+        {
+            end = s.length();
+        }
 
-	if(beg == end)
-	{
-	    break;
-	}
-	
-	string option = s.substr(beg, end - beg);
-	if(option.length() != 2 || option[0] != '-')
-	{
-	    ProxyParseException ex(__FILE__, __LINE__);
-	    ex.str = str;
-	    throw ex;
-	}
+        if(beg == end)
+        {
+            break;
+        }
+        
+        string option = s.substr(beg, end - beg);
+        if(option.length() != 2 || option[0] != '-')
+        {
+            ProxyParseException ex(__FILE__, __LINE__);
+            ex.str = str;
+            throw ex;
+        }
 
         //
         // Check for the presence of an option argument. The
         // argument may be enclosed in single or double
         // quotation marks.
         //
-	string argument;
-	string::size_type argumentBeg = s.find_first_not_of(delim, end);
-	if(argumentBeg != string::npos)
-	{
+        string argument;
+        string::size_type argumentBeg = s.find_first_not_of(delim, end);
+        if(argumentBeg != string::npos)
+        {
             if(s[argumentBeg] != '@' && s[argumentBeg] != ':' && s[argumentBeg] != '-')
             {
                 beg = argumentBeg;
                 end = IceUtil::checkQuote(s, beg);
                 if(end == string::npos)
                 {
-		    ProxyParseException ex(__FILE__, __LINE__);
-		    ex.str = str;
-		    throw ex;
+                    ProxyParseException ex(__FILE__, __LINE__);
+                    ex.str = str;
+                    throw ex;
                 }
                 else if(end == 0)
                 {
@@ -294,122 +308,122 @@ IceInternal::ReferenceFactory::create(const string& str)
                     argument = s.substr(beg, end - beg);
                     end++; // Skip trailing quote
                 }
-	    }
-	}
+            }
+        }
 
-	//
-	// If any new options are added here,
-	// IceInternal::Reference::toString() and its derived classes must be updated as well.
-	//
-	switch(option[1])
-	{
-	    case 'f':
-	    {
-		if(argument.empty())
-		{
-		    ProxyParseException ex(__FILE__, __LINE__);
-		    ex.str = str;
-		    throw ex;
-		}
+        //
+        // If any new options are added here,
+        // IceInternal::Reference::toString() and its derived classes must be updated as well.
+        //
+        switch(option[1])
+        {
+            case 'f':
+            {
+                if(argument.empty())
+                {
+                    ProxyParseException ex(__FILE__, __LINE__);
+                    ex.str = str;
+                    throw ex;
+                }
 
-		if(!IceUtil::unescapeString(argument, 0, argument.size(), facet))
-		{
-		    ProxyParseException ex(__FILE__, __LINE__);
-		    ex.str = str;
-		    throw ex;
-		}
+                if(!IceUtil::unescapeString(argument, 0, argument.size(), facet))
+                {
+                    ProxyParseException ex(__FILE__, __LINE__);
+                    ex.str = str;
+                    throw ex;
+                }
 
-    	        if(_instance->initializationData().stringConverter)
-    		{
-		    string tmpFacet;
-        	    _instance->initializationData().stringConverter->fromUTF8(
-		    		reinterpret_cast<const Byte*>(facet.data()),
-				reinterpret_cast<const Byte*>(facet.data() + facet.size()), tmpFacet);
-		    facet = tmpFacet;
-    		}
+                if(_instance->initializationData().stringConverter)
+                {
+                    string tmpFacet;
+                    _instance->initializationData().stringConverter->fromUTF8(
+                                reinterpret_cast<const Byte*>(facet.data()),
+                                reinterpret_cast<const Byte*>(facet.data() + facet.size()), tmpFacet);
+                    facet = tmpFacet;
+                }
 
-		break;
-	    }
+                break;
+            }
 
-	    case 't':
-	    {
-		if(!argument.empty())
-		{
-		    ProxyParseException ex(__FILE__, __LINE__);
-		    ex.str = str;
-		    throw ex;
-		}
-		mode = Reference::ModeTwoway;
-		break;
-	    }
+            case 't':
+            {
+                if(!argument.empty())
+                {
+                    ProxyParseException ex(__FILE__, __LINE__);
+                    ex.str = str;
+                    throw ex;
+                }
+                mode = Reference::ModeTwoway;
+                break;
+            }
 
-	    case 'o':
-	    {
-		if(!argument.empty())
-		{
-		    ProxyParseException ex(__FILE__, __LINE__);
-		    ex.str = str;
-		    throw ex;
-		}
-		mode = Reference::ModeOneway;
-		break;
-	    }
+            case 'o':
+            {
+                if(!argument.empty())
+                {
+                    ProxyParseException ex(__FILE__, __LINE__);
+                    ex.str = str;
+                    throw ex;
+                }
+                mode = Reference::ModeOneway;
+                break;
+            }
 
-	    case 'O':
-	    {
-		if(!argument.empty())
-		{
-		    ProxyParseException ex(__FILE__, __LINE__);
-		    ex.str = str;
-		    throw ex;
-		}
-		mode = Reference::ModeBatchOneway;
-		break;
-	    }
+            case 'O':
+            {
+                if(!argument.empty())
+                {
+                    ProxyParseException ex(__FILE__, __LINE__);
+                    ex.str = str;
+                    throw ex;
+                }
+                mode = Reference::ModeBatchOneway;
+                break;
+            }
 
-	    case 'd':
-	    {
-		if(!argument.empty())
-		{
-		    ProxyParseException ex(__FILE__, __LINE__);
-		    ex.str = str;
-		    throw ex;
-		}
-		mode = Reference::ModeDatagram;
-		break;
-	    }
+            case 'd':
+            {
+                if(!argument.empty())
+                {
+                    ProxyParseException ex(__FILE__, __LINE__);
+                    ex.str = str;
+                    throw ex;
+                }
+                mode = Reference::ModeDatagram;
+                break;
+            }
 
-	    case 'D':
-	    {
-		if(!argument.empty())
-		{
-		    ProxyParseException ex(__FILE__, __LINE__);
-		    ex.str = str;
-		    throw ex;
-		}
-		mode = Reference::ModeBatchDatagram;
-		break;
-	    }
+            case 'D':
+            {
+                if(!argument.empty())
+                {
+                    ProxyParseException ex(__FILE__, __LINE__);
+                    ex.str = str;
+                    throw ex;
+                }
+                mode = Reference::ModeBatchDatagram;
+                break;
+            }
 
-	    case 's':
-	    {
-		if(!argument.empty())
-		{
-		    ProxyParseException ex(__FILE__, __LINE__);
-		    ex.str = str;
-		    throw ex;
-		}
-		secure = true;
-		break;
-	    }
+            case 's':
+            {
+                if(!argument.empty())
+                {
+                    ProxyParseException ex(__FILE__, __LINE__);
+                    ex.str = str;
+                    throw ex;
+                }
+                secure = true;
+                break;
+            }
 
-	    default:
-	    {
-		ProxyParseException ex(__FILE__, __LINE__);
-		ex.str = str;
-		throw ex;
-	    }
-	}
+            default:
+            {
+                ProxyParseException ex(__FILE__, __LINE__);
+                ex.str = str;
+                throw ex;
+            }
+        }
     }
 
     RouterInfoPtr routerInfo = _instance->routerManager()->get(getDefaultRouter());
@@ -417,125 +431,218 @@ IceInternal::ReferenceFactory::create(const string& str)
 
     if(beg == string::npos)
     {
-	return create(ident, _instance->getDefaultContext(), facet, mode, secure, "", routerInfo,
-		      locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization, 
-		      _instance->defaultsAndOverrides()->defaultLocatorCacheTimeout);
+        return create(ident, _instance->getDefaultContext(), facet, mode, secure, 
+                      _instance->defaultsAndOverrides()->defaultPreferSecure, "", routerInfo,
+                      locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization, 
+                      true, _instance->defaultsAndOverrides()->defaultEndpointSelection,
+                      _instance->threadPerConnection(), _instance->defaultsAndOverrides()->defaultLocatorCacheTimeout);
     }
 
     vector<EndpointIPtr> endpoints;
 
     switch(s[beg])
     {
-	case ':':
-	{
-	    vector<string> unknownEndpoints;
-	    end = beg;
-	    
-	    while(end < s.length() && s[end] == ':')
-	    {
-		beg = end + 1;
-		
-		end = s.find(':', beg);
-		if(end == string::npos)
-		{
-		    end = s.length();
-		}
-		
-		string es = s.substr(beg, end - beg);
-		EndpointIPtr endp = _instance->endpointFactoryManager()->create(es);
-		if(endp != 0)
-		{
-		    vector<EndpointIPtr> endps = endp->expand(false);
-		    endpoints.insert(endpoints.end(), endps.begin(), endps.end());
-		}
-		else
-		{
-		    unknownEndpoints.push_back(es);
-		}
-	    }
-	    if(endpoints.size() == 0)
-	    {
-	        EndpointParseException ex(__FILE__, __LINE__);
-		ex.str = unknownEndpoints.front();
-		throw ex;
-	    }
-	    else if(unknownEndpoints.size() != 0 &&
-	    	    _instance->initializationData().properties->
-		    		getPropertyAsIntWithDefault("Ice.Warn.Endpoints", 1) > 0)
-	    {
-		Warning out(_instance->initializationData().logger);
-	        out << "Proxy contains unknown endpoints:";
-	        for(unsigned int idx = 0; idx < unknownEndpoints.size(); ++idx)
-		{
-		    out << " `" << unknownEndpoints[idx] << "'";
-		}
-	    }
+        case ':':
+        {
+            vector<string> unknownEndpoints;
+            end = beg;
+            
+            while(end < s.length() && s[end] == ':')
+            {
+                beg = end + 1;
+                
+                end = s.find(':', beg);
+                if(end == string::npos)
+                {
+                    end = s.length();
+                }
+                
+                string es = s.substr(beg, end - beg);
+                EndpointIPtr endp = _instance->endpointFactoryManager()->create(es);
+                if(endp != 0)
+                {
+                    vector<EndpointIPtr> endps = endp->expand(false);
+                    endpoints.insert(endpoints.end(), endps.begin(), endps.end());
+                }
+                else
+                {
+                    unknownEndpoints.push_back(es);
+                }
+            }
+            if(endpoints.size() == 0)
+            {
+                EndpointParseException ex(__FILE__, __LINE__);
+                ex.str = unknownEndpoints.front();
+                throw ex;
+            }
+            else if(unknownEndpoints.size() != 0 &&
+                    _instance->initializationData().properties->
+                                getPropertyAsIntWithDefault("Ice.Warn.Endpoints", 1) > 0)
+            {
+                Warning out(_instance->initializationData().logger);
+                out << "Proxy contains unknown endpoints:";
+                for(unsigned int idx = 0; idx < unknownEndpoints.size(); ++idx)
+                {
+                    out << " `" << unknownEndpoints[idx] << "'";
+                }
+            }
 
-	    return create(ident, _instance->getDefaultContext(), facet, mode, secure, endpoints, 
-	    		  routerInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization);
-	    break;
-	}
-	case '@':
-	{
-	    beg = s.find_first_not_of(delim, beg + 1);
-	    if(beg == string::npos)
-	    {
-		ProxyParseException ex(__FILE__, __LINE__);
-		ex.str = str;
-		throw ex;
-	    }
+            return create(ident, _instance->getDefaultContext(), facet, mode, secure,
+                          _instance->defaultsAndOverrides()->defaultPreferSecure, endpoints, routerInfo,
+                          _instance->defaultsAndOverrides()->defaultCollocationOptimization, true,
+                          _instance->defaultsAndOverrides()->defaultEndpointSelection,
+                          _instance->threadPerConnection());
+            break;
+        }
+        case '@':
+        {
+            beg = s.find_first_not_of(delim, beg + 1);
+            if(beg == string::npos)
+            {
+                ProxyParseException ex(__FILE__, __LINE__);
+                ex.str = str;
+                throw ex;
+            }
 
-	    end = IceUtil::checkQuote(s, beg);
-	    if(end == string::npos)
-	    {
-		ProxyParseException ex(__FILE__, __LINE__);
-		ex.str = str;
-		throw ex;
-	    }
-	    else if(end == 0)
-	    {
-		end = s.find_first_of(delim, beg);
-		if(end == string::npos)
-		{
-		    end = s.size();
-		}
-	    }
-	    else
-	    {
-		beg++; // Skip leading quote
-	    }
+            end = IceUtil::checkQuote(s, beg);
+            if(end == string::npos)
+            {
+                ProxyParseException ex(__FILE__, __LINE__);
+                ex.str = str;
+                throw ex;
+            }
+            else if(end == 0)
+            {
+                end = s.find_first_of(delim, beg);
+                if(end == string::npos)
+                {
+                    end = s.size();
+                }
+            }
+            else
+            {
+                beg++; // Skip leading quote
+            }
 
 
-	    if(!IceUtil::unescapeString(s, beg, end, adapter) || adapter.size() == 0)
-	    {
-		ProxyParseException ex(__FILE__, __LINE__);
-		ex.str = str;
-		throw ex;
-	    }
+            if(!IceUtil::unescapeString(s, beg, end, adapter) || adapter.size() == 0)
+            {
+                ProxyParseException ex(__FILE__, __LINE__);
+                ex.str = str;
+                throw ex;
+            }
 
             if(_instance->initializationData().stringConverter)
             {
-	        string tmpAdapter;
+                string tmpAdapter;
                 _instance->initializationData().stringConverter->fromUTF8(
-				reinterpret_cast<const Byte*>(adapter.data()), 
-				reinterpret_cast<const Byte*>(adapter.data() + adapter.size()), tmpAdapter);
-		adapter = tmpAdapter;
+                                reinterpret_cast<const Byte*>(adapter.data()), 
+                                reinterpret_cast<const Byte*>(adapter.data() + adapter.size()), tmpAdapter);
+                adapter = tmpAdapter;
             }
-	    
-	    return create(ident, _instance->getDefaultContext(), facet, mode, secure, adapter,
-	    		  routerInfo, locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization,
-			  _instance->defaultsAndOverrides()->defaultLocatorCacheTimeout);
-	    break;
-	}
-	default:
-	{
-	    ProxyParseException ex(__FILE__, __LINE__);
-	    ex.str = str;
-	    throw ex;
-	}
+            
+            return create(ident, _instance->getDefaultContext(), facet, mode, secure, 
+                          _instance->defaultsAndOverrides()->defaultPreferSecure, adapter, routerInfo, locatorInfo,
+                          _instance->defaultsAndOverrides()->defaultCollocationOptimization, true,
+                          _instance->defaultsAndOverrides()->defaultEndpointSelection, _instance->threadPerConnection(),
+                          _instance->defaultsAndOverrides()->defaultLocatorCacheTimeout);
+            break;
+        }
+        default:
+        {
+            ProxyParseException ex(__FILE__, __LINE__);
+            ex.str = str;
+            throw ex;
+        }
     }
 
     return 0; // Unreachable, prevents compiler warning.
+}
+
+ReferencePtr
+IceInternal::ReferenceFactory::createFromProperties(const string& propertyPrefix)
+{
+    PropertiesPtr properties = _instance->initializationData().properties;
+
+    ReferencePtr ref = create(properties->getProperty(propertyPrefix));
+    if(!ref)
+    {
+        return 0;
+    }
+
+    //
+    // Warn about unknown properties.
+    //
+    if(properties->getPropertyAsIntWithDefault("Ice.Warn.UnknownProperties", 1) > 0)
+    {
+        checkForUnknownProperties(propertyPrefix);
+    }
+
+    string property = propertyPrefix + ".Locator";
+    if(!properties->getProperty(property).empty())
+    {
+        ref = ref->changeLocator(
+            LocatorPrx::uncheckedCast(_communicator->propertyToProxy(property)));
+    }
+
+    property = propertyPrefix + ".LocatorCacheTimeout";
+    if(!properties->getProperty(property).empty())
+    {
+        ref = ref->changeLocatorCacheTimeout(properties->getPropertyAsInt(property));
+    }
+
+    property = propertyPrefix + ".Router";
+    if(!properties->getProperty(property).empty())
+    {
+        ref = ref->changeRouter(
+            RouterPrx::uncheckedCast(_communicator->propertyToProxy(property)));
+    }
+
+    property = propertyPrefix + ".PreferSecure";
+    if(!properties->getProperty(property).empty())
+    {
+        ref = ref->changePreferSecure(properties->getPropertyAsInt(property) > 0);
+    }
+
+    property = propertyPrefix + ".ConnectionCached";
+    if(!properties->getProperty(property).empty())
+    {
+        ref = ref->changeCacheConnection(properties->getPropertyAsInt(property) > 0);
+    }
+
+    property = propertyPrefix + ".EndpointSelection";
+    if(!properties->getProperty(property).empty())
+    {
+        string type = properties->getProperty(property);
+        if(type == "Random")
+        {
+            ref = ref->changeEndpointSelection(Random);
+        } 
+        else if(type == "Ordered")
+        {
+            ref = ref->changeEndpointSelection(Ordered);
+        }
+        else
+        {
+            EndpointSelectionTypeParseException ex(__FILE__, __LINE__);
+            ex.str = type;
+            throw ex;
+        }
+    }
+
+    property = propertyPrefix + ".CollocationOptimization";
+    if(!properties->getProperty(property).empty())
+    {
+        ref = ref->changeCollocationOptimization(properties->getPropertyAsInt(property) > 0);
+    }
+
+    property = propertyPrefix + ".ThreadPerConnection";
+    if(!properties->getProperty(property).empty())
+    {
+        ref = ref->changeThreadPerConnection(properties->getPropertyAsInt(property) > 0);
+    }
+
+    return ref;
 }
 
 ReferencePtr
@@ -548,7 +655,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
 
     if(ident.name.empty() && ident.category.empty())
     {
-	return 0;
+        return 0;
     }
 
     //
@@ -559,10 +666,10 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
     string facet;
     if(!facetPath.empty())
     {
-	if(facetPath.size() > 1)
-	{
-	    throw ProxyUnmarshalException(__FILE__, __LINE__);
-	}
+        if(facetPath.size() > 1)
+        {
+            throw ProxyUnmarshalException(__FILE__, __LINE__);
+        }
         facet.swap(facetPath[0]);
     }
 
@@ -571,7 +678,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
     Reference::Mode mode = static_cast<Reference::Mode>(modeAsByte);
     if(mode < 0 || mode > Reference::ModeLast)
     {
-	throw ProxyUnmarshalException(__FILE__, __LINE__);
+        throw ProxyUnmarshalException(__FILE__, __LINE__);
     }
 
     bool secure;
@@ -588,21 +695,25 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
     
     if(sz > 0)
     {
-	endpoints.reserve(sz);
-	while(sz--)
-	{
-	    EndpointIPtr endpoint = _instance->endpointFactoryManager()->read(s);
-	    endpoints.push_back(endpoint);
-	}
-	return create(ident, _instance->getDefaultContext(), facet, mode, secure, endpoints, 
-		      routerInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization);
+        endpoints.reserve(sz);
+        while(sz--)
+        {
+            EndpointIPtr endpoint = _instance->endpointFactoryManager()->read(s);
+            endpoints.push_back(endpoint);
+        }
+        return create(ident, _instance->getDefaultContext(), facet, mode, secure,
+                      _instance->defaultsAndOverrides()->defaultPreferSecure, endpoints, routerInfo,
+                      _instance->defaultsAndOverrides()->defaultCollocationOptimization, true,
+                      _instance->defaultsAndOverrides()->defaultEndpointSelection, _instance->threadPerConnection());
     }
     else
     {
-	s->read(adapterId);
-	return create(ident, _instance->getDefaultContext(), facet, mode, secure, adapterId,
-	  	      routerInfo, locatorInfo, _instance->defaultsAndOverrides()->defaultCollocationOptimization,
-		      _instance->defaultsAndOverrides()->defaultLocatorCacheTimeout);
+        s->read(adapterId);
+        return create(ident, _instance->getDefaultContext(), facet, mode, secure, 
+                      _instance->defaultsAndOverrides()->defaultPreferSecure, adapterId, routerInfo, locatorInfo,
+                      _instance->defaultsAndOverrides()->defaultCollocationOptimization, true,
+                      _instance->defaultsAndOverrides()->defaultEndpointSelection, _instance->threadPerConnection(),
+                      _instance->defaultsAndOverrides()->defaultLocatorCacheTimeout);
     }
 }
 
@@ -647,11 +758,70 @@ IceInternal::ReferenceFactory::destroy()
 
     if(!_instance)
     {
-	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+        throw CommunicatorDestroyedException(__FILE__, __LINE__);
     }
 
     _instance = 0;
     _communicator = 0;
     _defaultRouter = 0;
     _defaultLocator = 0;
+}
+
+void
+IceInternal::ReferenceFactory::checkForUnknownProperties(const string& prefix)
+{
+    static const string suffixes[] =
+    {
+        "EndpointSelection",
+        "ConnectionCached",
+        "PreferSecure",
+        "LocatorCacheTimeout",
+        "Locator",
+        "Router",
+        "CollocationOptimization",
+        "ThreadPerConnection"
+    };
+
+    //
+    // Do not warn about unknown properties list if Ice prefix, ie Ice, Glacier2, etc
+    //
+    for(const char** i = IceInternal::PropertyNames::clPropNames; *i != 0; ++i)
+    {
+        if(prefix.find(*i) == 0)
+        {
+            return;
+        }
+    }
+
+    StringSeq unknownProps;
+    PropertyDict props = _instance->initializationData().properties->getPropertiesForPrefix(prefix + ".");
+    PropertyDict::const_iterator p;
+    for(p = props.begin(); p != props.end(); ++p)
+    {
+        bool valid = false;
+        for(unsigned int i = 0; i < sizeof(suffixes)/sizeof(*suffixes); ++i)
+        {
+            string prop = prefix + "." + suffixes[i];
+            if(p->first == prop)
+            {
+                valid = true;
+                break;
+            }
+        }
+
+        if(!valid)
+        {
+            unknownProps.push_back(p->first);
+        }
+    }
+
+    if(unknownProps.size())
+    {
+        Warning out(_instance->initializationData().logger);
+        out << "found unknown properties for proxy '" << prefix << "':";
+        for(unsigned int i = 0; i < unknownProps.size(); ++i)
+        {
+            out << "\n    " << unknownProps[i];
+        }
+    }
 }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -53,7 +53,7 @@ local interface PluginManager
      * Initialize the configured plugins. The communicator automatically initializes
      * the plugins by default, but an application may need to interact directly with
      * a plugin prior to initialization. In this case, the application must set
-     * <literal>Ice.InitPlugins=0</literal> and then invoke [initializePlugins]
+     * <tt>Ice.InitPlugins=0</tt> and then invoke [initializePlugins]
      * manually. The plugins are initialized in the order in which they are loaded.
      * If a plugin raises an exception during initialization, the communicator
      * invokes destroy on the plugins that have already been initialized.

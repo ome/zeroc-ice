@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -61,11 +61,11 @@ handleDbException(const DbException&, const char*, int);
 
 void
 handleDbException(const DbException&, Key&, Dbt&, 
-		  const char*, int);
+                  const char*, int);
 
 void
 handleDbException(const DbException&, Key&, Dbt&, Value&, Dbt&, 
-		  const char*, int);
+                  const char*, int);
 
 }
 

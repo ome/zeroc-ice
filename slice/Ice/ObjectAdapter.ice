@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,7 +22,10 @@ module Ice
 
 /**
  *
- * The object adapter, which is responsible for receiving requests
+ * The object adapter provides an up-call interface from the Ice
+ * run time to the implementation of Ice objects.
+ *
+ * The object adapter is responsible for receiving requests
  * from endpoints, and for mapping between servants, identities, and
  * proxies.
  *
@@ -39,7 +42,7 @@ local interface ObjectAdapter
      * @return This object adapter's name.
      *
      **/
-    nonmutating string getName();
+    ["cpp:const"] string getName();
 
     /**
      *
@@ -50,7 +53,7 @@ local interface ObjectAdapter
      * @see Communicator
      *
      **/
-    nonmutating Communicator getCommunicator();
+    ["cpp:const"] Communicator getCommunicator();
 
     /**
      *
@@ -69,10 +72,10 @@ local interface ObjectAdapter
      * Temporarily hold receiving and dispatching requests. The object
      * adapter can be reactivated with the [activate] operation.
      *
-     * <note><para> Holding is not immediate, i.e., after [hold]
+     * <p class="Note"> Holding is not immediate, i.e., after [hold]
      * returns, the object adapter might still be active for some
      * time. You can use [waitForHold] to wait until holding is
-     * complete. </para></note>
+     * complete.
      *
      * @see activate
      * @see deactivate
@@ -105,12 +108,12 @@ local interface ObjectAdapter
      * [deactivate] an already deactivated object adapter are ignored
      * and do nothing.
      *
-     * <note><para> After [deactivate] returns, no new requests are
+     * <p class="Note"> After [deactivate] returns, no new requests are
      * processed by the object adapter. However, requests that have
      * been started before [deactivate] was called might still be
      * active. You can use [waitForDeactivate] to wait for the
      * completion of all requests for this object
-     * adapter. </para></note>
+     * adapter.
      *
      * @see activate
      * @see hold
@@ -125,9 +128,7 @@ local interface ObjectAdapter
      * Wait until the object adapter has deactivated. Calling
      * [deactivate] initiates object adapter deactivation, and
      * [waitForDeactivate] only returns when deactivation has
-     * been completed. Once waitForDeactivate has returned it
-     * is possible to recreate an object adapter with the
-     * same name.
+     * been completed. 
      *
      * @see deactivate
      * @see waitForHold
@@ -138,15 +139,42 @@ local interface ObjectAdapter
 
     /**
      *
+     * Check whether object adapter has been deacivated.
+     *
+     * @return Whether adapter has been deactivated.
+     *
+     * @see Communicator::shutdown
+     *
+     **/
+    ["cpp:const"] bool isDeactivated();
+
+    /**
+     *
+     * Destroys the object adapter and cleans up all resources
+     * held by the object adapter. If object adapter has not yet
+     * been deactivated, [destroy] implicitly initiates the
+     * deactivation and waits for it to finish. Once [destroy] has
+     * returned it is possible to recreate an object adapter with
+     * the same name. Subsequent calls to [destroy] are ignored.
+     * 
+     * @see deactivate
+     * @see waitForDeactivate
+     * @see Communicator::destroy
+     *
+     **/
+    void destroy();
+
+    /**
+     *
      * Add a servant to this object adapter's Active Servant Map. Note
-     * that one servant can implement several &Ice; objects by
+     * that one servant can implement several Ice objects by
      * registering the servant with multiple identities. Adding a
      * servant with an identity that is in the map already throws
      * [AlreadyRegisteredException].
      *
      * @param servant The servant to add.
      *
-     * @param id The identity of the &Ice; object that is
+     * @param id The identity of the Ice object that is
      * implemented by the servant.
      *
      * @return A proxy that matches the given identity and this object
@@ -163,13 +191,13 @@ local interface ObjectAdapter
 
     /**
      *
-     * Like [add], but with a facet. Calling <literal>add(servant, * id)</literal>
+     * Like [add], but with a facet. Calling <tt>add(servant, * id)</tt>
      * is equivalent to calling [addFacet] with an empty
      * facet.
      *
      * @param servant The servant to add.
      *
-     * @param id The identity of the &Ice; object that is
+     * @param id The identity of the Ice object that is
      * implemented by the servant.
      *
      * @param facet The facet. An empty facet means the default
@@ -211,7 +239,7 @@ local interface ObjectAdapter
     /**
      *
      * Like [addWithUUID], but with a facet. Calling
-     * <literal>addWithUUID(servant)</literal> is equivalent to calling
+     * <tt>addWithUUID(servant)</tt> is equivalent to calling
      * [addFacetWithUUID] with an empty facet.
      *
      * @param servant The servant to add.
@@ -236,9 +264,9 @@ local interface ObjectAdapter
      * Remove a servant (that is, the default facet) from the
      * object adapter's Active Servant Map.
      *
-     * @param id The identity of the &Ice; object that is
+     * @param id The identity of the Ice object that is
      * implemented by the servant. If the servant implements multiple
-     * &Ice; objects, [remove] has to be called for all those &Ice;
+     * Ice objects, [remove] has to be called for all those Ice
      * objects. Removing an identity that is not in the map throws
      * [NotRegisteredException].
      *
@@ -254,10 +282,10 @@ local interface ObjectAdapter
     /**
      *
      * Like [remove], but with a facet. Calling
-     * <literal>remove(id)</literal> is equivalent to calling
+     * <tt>remove(id)</tt> is equivalent to calling
      * [removeFacet] with an empty facet.
      *
-     * @param id The identity of the &Ice; object that is
+     * @param id The identity of the Ice object that is
      * implemented by the servant.
      *
      * @param facet The facet. An empty facet means the default
@@ -275,14 +303,14 @@ local interface ObjectAdapter
     /**
      *
      * Remove all facets with the given identity from the Active
-     * Servant Map (that is, completely remove the &Ice; object,
-     * including its default facet). Removing an identity that
+     * Servant Map. The operation completely removes the Ice object,
+     * including its default facet. Removing an identity that
      * is not in the map throws [NotRegisteredException].
      *
-     * @param id The identity of the &Ice; object to be removed.
+     * @param id The identity of the Ice object to be removed.
      *
      * @return A collection containing all the facet names and
-     * servants of the removed &Ice; object.
+     * servants of the removed Ice object.
      *
      * @see remove
      * @see removeFacet
@@ -293,16 +321,16 @@ local interface ObjectAdapter
     /**
      *
      * Look up a servant in this object adapter's Active Servant Map
-     * by the identity of the &Ice; object it implements.
+     * by the identity of the Ice object it implements.
      *
-     * <note><para>This operation only tries to lookup a servant in
+     * <p class="Note">This operation only tries to lookup a servant in
      * the Active Servant Map. It does not attempt to find a servant
-     * by using any installed [ServantLocator].</para></note>
+     * by using any installed [ServantLocator].
      *
-     * @param id The identity of the &Ice; object for which the
+     * @param id The identity of the Ice object for which the
      * servant should be returned.
      *
-     * @return The servant that implements the &Ice; object with the
+     * @return The servant that implements the Ice object with the
      * given identity, or null if no such servant has been found.
      *
      * @see Identity
@@ -310,21 +338,21 @@ local interface ObjectAdapter
      * @see findByProxy
      *
      **/
-    nonmutating Object find(Identity id);
+    ["cpp:const"] Object find(Identity id);
 
     /**
      *
      * Like [find], but with a facet. Calling
-     * <literal>find(id)</literal> is equivalent to calling
+     * <tt>find(id)</tt> is equivalent to calling
      * [findFacet] with an empty facet.
      *
-     * @param id The identity of the &Ice; object for which the
+     * @param id The identity of the Ice object for which the
      * servant should be returned.
      *
      * @param facet The facet. An empty facet means the default
      * facet.
      *
-     * @return The servant that implements the &Ice; object with the
+     * @return The servant that implements the Ice object with the
      * given identity and facet, or null if no such servant has been
      * found.
      *
@@ -333,34 +361,34 @@ local interface ObjectAdapter
      * @see findByProxy
      *
      **/
-    nonmutating Object findFacet(Identity id, string facet);
+    ["cpp:const"] Object findFacet(Identity id, string facet);
 
     /**
      *
      * Find all facets with the given identity in the Active Servant
      * Map.
      *
-     * @param id The identity of the &Ice; object for which the facets
+     * @param id The identity of the Ice object for which the facets
      * should be returned.
      *
      * @return A collection containing all the facet names and
-     * servants which have been found, or an empty map if there is no
+     * servants that have been found, or an empty map if there is no
      * facet for the given identity.
      *
      * @see find
      * @see findFacet
      *
      **/
-    nonmutating FacetMap findAllFacets(Identity id);
+    ["cpp:const"] FacetMap findAllFacets(Identity id);
 
     /**
      *
      * Look up a servant in this object adapter's Active Servant Map,
      * given a proxy.
      *
-     * <note><para>This operation only tries to lookup a servant in
+     * <p class="Note">This operation only tries to lookup a servant in
      * the Active Servant Map. It does not attempt to find a servant
-     * via any installed [ServantLocator]s.</para></note>
+     * via any installed [ServantLocator]s.
      *
      * @param proxy The proxy for which the servant should be returned.
      *
@@ -371,7 +399,7 @@ local interface ObjectAdapter
      * @see findFacet
      *
      **/
-    nonmutating Object findByProxy(Object* proxy);
+    ["cpp:const"] Object findByProxy(Object* proxy);
 
     /**
      *
@@ -379,36 +407,36 @@ local interface ObjectAdapter
      * locator for a category for which a servant locator is already
      * registered throws [AlreadyRegisteredException]. To dispatch
      * operation calls on servants, the object adapter tries to find a
-     * servant for a given &Ice; object identity and facet in the
+     * servant for a given Ice object identity and facet in the
      * following order:
      *
-     * <orderedlist>
+     * <ol>
      *
-     * <listitem><para>The object adapter tries to find a servant for
+     * <li>The object adapter tries to find a servant for
      * the identity and facet in the Active Servant
-     * Map.</para></listitem>
+     * Map.</li>
      *
-     * <listitem><para>If no servant has been found in the Active
+     * <li>If no servant has been found in the Active
      * Servant Map, the object adapter tries to find a locator for the
      * category component of the identity. If a locator is found, the
      * object adapter tries to find a servant using this
-     * locator.</para></listitem>
+     * locator.</li>
      *
-     * <listitem><para>If no servant has been found by any of the
+     * <li>If no servant has been found by any of the
      * preceding steps, the object adapter tries to find a locator for
      * an empty category, regardless of the category contained in the
      * identity. If a locator is found, the object adapter tries to
-     * find a servant using this locator.</para></listitem>
+     * find a servant using this locator.</li>
      *
-     * <listitem><para>If no servant has been found with any of the
+     * <li>If no servant has been found with any of the
      * preceding steps, the object adapter gives up and the caller
      * receives [ObjectNotExistException] or
-     * [FacetNotExistException].</para></listitem>
+     * [FacetNotExistException].</li>
      *
-     * </orderedlist>
+     * </ol>
      *
-     * <note><para>Only one locator for the empty category can be
-     * installed.</para></note>
+     * <p class="Note">Only one locator for the empty category can be
+     * installed.
      *
      * @param locator The locator to add.
      *
@@ -439,7 +467,7 @@ local interface ObjectAdapter
      * @see ServantLocator
      *
      **/
-    nonmutating ServantLocator findServantLocator(string category);
+    ["cpp:const"] ServantLocator findServantLocator(string category);
 
     /**
      *
@@ -458,7 +486,7 @@ local interface ObjectAdapter
      * @see Identity
      *
      **/
-    nonmutating Object* createProxy(Identity id);
+    ["cpp:const"] Object* createProxy(Identity id);
 
     /**
      *
@@ -473,7 +501,7 @@ local interface ObjectAdapter
      * @see Identity
      *
      **/
-    nonmutating Object* createDirectProxy(Identity id);
+    ["cpp:const"] Object* createDirectProxy(Identity id);
 
     /**
      *
@@ -489,7 +517,7 @@ local interface ObjectAdapter
      * @see Identity
      *
      **/
-    nonmutating Object* createIndirectProxy(Identity id);
+    ["cpp:const"] Object* createIndirectProxy(Identity id);
 
     /**
      *
@@ -497,9 +525,9 @@ local interface ObjectAdapter
      * A reverse proxy uses the incoming connections that have been
      * established from a client to this object adapter.
      *
-     * <note><para> This operation is intended to be used by special
+     * <p class="Note"> This operation is intended to be used by special
      * services, such as [Router] implementations. Regular user code
-     * should not attempt to use this operation. </para></note>
+     * should not attempt to use this operation.
      *
      * @param id The identity for which a proxy is to be created.
      *
@@ -509,10 +537,10 @@ local interface ObjectAdapter
      * @see Identity
      *
      **/
-    nonmutating Object* createReverseProxy(Identity id);
+    ["cpp:const"] Object* createReverseProxy(Identity id);
 
     /**
-     * Set an &Ice; locator for this object adapter. By doing so, the
+     * Set an Ice locator for this object adapter. By doing so, the
      * object adapter will register itself with the locator registry
      * when it is activated for the first time. Furthermore, the proxies
      * created by this object adapter will contain the adapter name instead

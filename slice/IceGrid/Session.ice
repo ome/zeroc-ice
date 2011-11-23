@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,7 +18,7 @@ module IceGrid
 
 /**
  *
- * A session object is used by &IceGrid; clients to allocate and
+ * A session object is used by IceGrid clients to allocate and
  * release objects. Client sessions are either created with the
  * [Registry] object or the registry client [Glacier2::SessionManager]
  * object.
@@ -60,27 +60,28 @@ interface Session extends Glacier2::Session
      *
      **/
     ["ami", "amd"] Object* allocateObjectById(Ice::Identity id)
-	throws ObjectNotRegisteredException, AllocationException;
+        throws ObjectNotRegisteredException, AllocationException;
     
     /**
      *
      * Allocate an object with the given type. Depending on the
-     * allocation timeout, this operation might hang until an object
+     * allocation timeout, this operation can block until an object
      * becomes available or until the timeout is reached.
      *
      * @param type The type of the object.
      *
      * @return The proxy of the allocated object.
      *
-     * @throws Raised if no objects with the given type can be
-     * allocated.
+     * @throws ObjectNotRegisteredException Raised if no objects with the given type can be allocated.
+     *
+     * @throws AllocationException Raised if the object could not be allocated.
      *
      * @see setAllocationTimeout
      * @see releaseObject
      *
      **/
     ["ami", "amd"] Object* allocateObjectByType(string type)
-	throws AllocationException;
+        throws AllocationException;
     
     /**
      *
@@ -100,7 +101,7 @@ interface Session extends Glacier2::Session
      *
      **/
     void releaseObject(Ice::Identity id)
-	throws ObjectNotRegisteredException, AllocationException;
+        throws ObjectNotRegisteredException, AllocationException;
     
     /**
      *

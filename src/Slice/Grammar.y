@@ -2,7 +2,7 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -726,6 +726,23 @@ operation_preamble
 	{
 	    cl->checkIntroduced(name, op);
 	    unit->pushContainer(op);
+	    static bool firstWarning = true;  
+	    
+	    string msg = "the keyword 'nonmutating' is deprecated";
+	    if(firstWarning)
+	    {
+		msg += ";\n";
+		msg += "You should use instead 'idempotent' plus:\n";
+		msg += " - Freeze metadata ([\"freeze:read\"], [\"freeze:write\"]) if you implement your objects with a Freeze evictor\n";
+		msg += " - [\"nonmutating\"], if you need to maintain compatibility with operations that expect ";
+		msg += "'Nonmutating' as operation-mode. With this metadata, the generated code sends ";
+		msg += "'Nonmutating' instead of 'Idempotent'\n";
+		msg += " - [\"cpp:const\"], to get a const member function on the generated C++ servant base class";
+
+		firstWarning = false;
+	    }
+	    
+	    unit->warning(msg); 
 	    $$ = op;
 	}
 	else

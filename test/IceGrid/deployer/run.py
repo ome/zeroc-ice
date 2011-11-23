@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -28,10 +28,11 @@ TestUtil.addLdPath(testdir)
 
 iceBox = TestUtil.getIceBox(testdir)
 
-IceGridAdmin.iceGridTest(name, "application.xml", "", '"icebox.exe=' + TestUtil.getIceBox(testdir) + '"')
+IceGridAdmin.iceGridTest(name, "application.xml", "--TestDir=\"" + testdir + "\"", \
+                         '"icebox.exe=' + TestUtil.getIceBox(testdir) + '"')
 
 # Tests with targets
-IceGridAdmin.iceGridTest(name, "application.xml", "-t", \
+IceGridAdmin.iceGridTest(name, "application.xml", "-t --TestDir=\"" + testdir + "\"", \
                          "icebox.exe=" + TestUtil.getIceBox(testdir) + \
                          " moreservers moreservices moreproperties")
 

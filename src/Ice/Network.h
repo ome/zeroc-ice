@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,13 +23,7 @@ typedef int ssize_t;
 #   include <unistd.h>
 #   include <fcntl.h>
 #   include <sys/socket.h>
-
-#   if defined(__hpux)
-#      include <sys/time.h>
-#   else   
-#      include <sys/select.h>
-#   endif
-
+#   include <sys/poll.h>
 #   include <netinet/in.h>
 #   include <netinet/tcp.h>
 #   include <arpa/inet.h>

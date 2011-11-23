@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,7 +21,8 @@
     defined(__MIPSEL__)
 #   define ICE_LITTLE_ENDIAN
 #elif defined(__sparc) || defined(__sparc__) || defined(__hppa)      || \
-      defined(__ppc__) || defined(_ARCH_COM) || defined(__MIPSEB__)
+      defined(__ppc__) || defined(__powerpc) || defined(_ARCH_COM) || \
+      defined(__MIPSEB__)
 #   define ICE_BIG_ENDIAN
 #else
 #   error "Unknown architecture"
@@ -206,7 +207,7 @@ typedef long long Int64;
 //
 // The Ice version.
 //
-#define ICE_STRING_VERSION "3.1.1" // "A.B.C", with A=major, B=minor, C=patch
-#define ICE_INT_VERSION 30101      // AABBCC, with AA=major, BB=minor, CC=patch
+#define ICE_STRING_VERSION "3.2.0" // "A.B.C", with A=major, B=minor, C=patch
+#define ICE_INT_VERSION 30200      // AABBCC, with AA=major, BB=minor, CC=patch
 
 #endif

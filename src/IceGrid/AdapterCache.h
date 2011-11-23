@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -28,23 +28,35 @@ typedef std::vector<ServerEntryPtr> ServerEntrySeq;
 class AdapterEntry;
 typedef IceUtil::Handle<AdapterEntry> AdapterEntryPtr;
 
-class AdapterEntry : virtual public IceUtil::Shared, public IceUtil::Mutex
+struct LocatorAdapterInfo
+{
+    std::string id;
+    AdapterPrx proxy;
+    int activationTimeout;
+    int deactivationTimeout;
+};
+typedef std::vector<LocatorAdapterInfo> LocatorAdapterInfoSeq;
+
+class AdapterEntry : virtual public IceUtil::Shared
 {
 public:
     
-    AdapterEntry(AdapterCache&, const std::string&);
+    AdapterEntry(AdapterCache&, const std::string&, const std::string&);
 
-    virtual std::vector<std::pair<std::string, AdapterPrx> > getProxies(int&, bool&) = 0;
+    virtual void getLocatorAdapterInfo(LocatorAdapterInfoSeq&, int&, bool&) = 0;
     virtual float getLeastLoadedNodeLoad(LoadSample) const = 0;
-    virtual std::string getApplication() const = 0;
     virtual AdapterInfoSeq getAdapterInfo() const = 0;
 
     virtual bool canRemove();
+
+    std::string getId() const;
+    std::string getApplication() const;
     
 protected:
 
     AdapterCache& _cache;
     const std::string _id;
+    const std::string _application;
 };
 typedef IceUtil::Handle<AdapterEntry> AdapterEntryPtr;
 
@@ -52,34 +64,33 @@ class ServerAdapterEntry : public AdapterEntry
 {
 public:
 
-    ServerAdapterEntry(AdapterCache&, const std::string&, const std::string&, const ServerEntryPtr&);
+    ServerAdapterEntry(AdapterCache&, const std::string&, const std::string&, const std::string&, int, 
+                       const ServerEntryPtr&);
 
-    virtual std::vector<std::pair<std::string, AdapterPrx> > getProxies(int&, bool&);
+    virtual void getLocatorAdapterInfo(LocatorAdapterInfoSeq&, int&, bool&);
     virtual float getLeastLoadedNodeLoad(LoadSample) const;
-    virtual std::string getApplication() const;
     virtual AdapterInfoSeq getAdapterInfo() const;
     virtual const std::string& getReplicaGroupId() const { return _replicaGroupId; }
 
     AdapterPrx getProxy(const std::string&, bool) const;
-
-private:
+    int getPriority() const;
     
-    ServerEntryPtr getServer() const;
+private:
 
     const std::string _replicaGroupId;
+    const int _priority;
     const ServerEntryPtr _server;
 };
 typedef IceUtil::Handle<ServerAdapterEntry> ServerAdapterEntryPtr;
 
-class ReplicaGroupEntry : public AdapterEntry
+class ReplicaGroupEntry : public AdapterEntry, public IceUtil::Mutex
 {
 public:
 
     ReplicaGroupEntry(AdapterCache&, const std::string&, const std::string&, const LoadBalancingPolicyPtr&);
 
-    virtual std::vector<std::pair<std::string, AdapterPrx> > getProxies(int&, bool&);
+    virtual void getLocatorAdapterInfo(LocatorAdapterInfoSeq&, int&, bool&);
     virtual float getLeastLoadedNodeLoad(LoadSample) const;
-    virtual std::string getApplication() const;
     virtual AdapterInfoSeq getAdapterInfo() const;
 
     void addReplica(const std::string&, const ServerAdapterEntryPtr&);
@@ -87,16 +98,12 @@ public:
 
     void update(const LoadBalancingPolicyPtr&);
 
-    typedef std::vector<std::pair<std::string, ServerAdapterEntryPtr> > ReplicaSeq;
-
 private:
-
-    const std::string _application;
 
     LoadBalancingPolicyPtr _loadBalancing;
     int _loadBalancingNReplicas;
     LoadSample _loadSample;
-    ReplicaSeq _replicas;
+    std::vector<ServerAdapterEntryPtr> _replicas;
     int _lastReplica;
 };
 typedef IceUtil::Handle<ReplicaGroupEntry> ReplicaGroupEntryPtr;
@@ -105,12 +112,10 @@ class AdapterCache : public CacheByString<AdapterEntry>
 {
 public:
 
-    ServerAdapterEntryPtr addServerAdapter(const std::string&, const std::string&, const ServerEntryPtr&);
-    ReplicaGroupEntryPtr addReplicaGroup(const std::string&, const std::string&, const LoadBalancingPolicyPtr&);
+    ServerAdapterEntryPtr addServerAdapter(const AdapterDescriptor&, const ServerEntryPtr&, const std::string&);
+    ReplicaGroupEntryPtr addReplicaGroup(const ReplicaGroupDescriptor&, const std::string&);
 
     AdapterEntryPtr get(const std::string&) const;
-    ServerAdapterEntryPtr getServerAdapter(const std::string&) const;
-    ReplicaGroupEntryPtr getReplicaGroup(const std::string&) const;
     
     void removeServerAdapter(const std::string&);
     void removeReplicaGroup(const std::string&);
@@ -118,7 +123,7 @@ public:
 protected:
     
     virtual AdapterEntryPtr addImpl(const std::string&, const AdapterEntryPtr&);
-    virtual AdapterEntryPtr removeImpl(const std::string&);
+    virtual void removeImpl(const std::string&);
 
 };
 

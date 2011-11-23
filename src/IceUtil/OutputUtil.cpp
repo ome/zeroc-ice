@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -36,7 +36,7 @@ IceUtil::OutputBase::OutputBase() :
     _pos(0),
     _indent(0),
     _indentSize(4),
-    _useTab(true),
+    _useTab(false),
     _separator(true)
 {
 }
@@ -46,7 +46,7 @@ IceUtil::OutputBase::OutputBase(ostream& os) :
     _pos(0),
     _indent(0),
     _indentSize(4),
-    _useTab(true),
+    _useTab(false),
     _separator(true)
 {
 }
@@ -57,7 +57,7 @@ IceUtil::OutputBase::OutputBase(const char* s) :
     _pos(0),
     _indent(0),
     _indentSize(4),
-    _useTab(true),
+    _useTab(false),
     _separator(true)
 {
     open(s);
@@ -84,14 +84,14 @@ IceUtil::OutputBase::print(const char* s)
 {
     for(unsigned int i = 0; i < strlen(s); ++i)
     {
-	if(s[i] == '\n')
-	{
-	    _pos = 0;
-	}
-	else
-	{
-	    ++_pos;
-	}
+        if(s[i] == '\n')
+        {
+            _pos = 0;
+        }
+        else
+        {
+            ++_pos;
+        }
     }
 
     _out << s;
@@ -132,6 +132,12 @@ IceUtil::OutputBase::restoreIndent()
     _indentSave.pop();
 }
 
+int
+IceUtil::OutputBase::currIndent()
+{
+    return _indent;
+}
+
 void 
 IceUtil::OutputBase::setIndent(int indentSize)
 {
@@ -145,7 +151,7 @@ IceUtil::OutputBase::setUseTab(bool useTab)
 }
 
 void
-IceUtil::OutputBase::nl()
+IceUtil::OutputBase::newline()
 {
     _out << '\n';
     _pos = 0;
@@ -183,7 +189,7 @@ IceUtil::OutputBase::nl()
 }
 
 void
-IceUtil::OutputBase::sp()
+IceUtil::OutputBase::separator()
 {
     if(_separator)
     {
@@ -230,10 +236,10 @@ IceUtil::Output::print(const char* s)
 {
     if(_par >= 0)
     {
-	if(++_par > 1) // No comma for the first parameter.
-	{
-	    _out << ", ";
-	}
+        if(++_par > 1) // No comma for the first parameter.
+        {
+            _out << ", ";
+        }
     }
     OutputBase::print(s);
 }
@@ -255,7 +261,7 @@ IceUtil::Output::sb()
 {
     if(_blockStart.length())
     {
-        nl();
+        newline();
         _out << _blockStart;
     }
     ++_pos;
@@ -269,7 +275,7 @@ IceUtil::Output::eb()
     dec();
     if(_blockEnd.length())
     {
-        nl();
+        newline();
         _out << _blockEnd;
     }
     --_pos;
@@ -306,7 +312,6 @@ IceUtil::XMLOutput::XMLOutput() :
     OutputBase(),
     _se(false),
     _text(false),
-    _sgml(false),
     _escape(false)
 {
 }
@@ -315,7 +320,6 @@ IceUtil::XMLOutput::XMLOutput(ostream& os) :
     OutputBase(os),
     _se(false),
     _text(false),
-    _sgml(false),
     _escape(false)
 {
 }
@@ -324,15 +328,8 @@ IceUtil::XMLOutput::XMLOutput(const char* s) :
     OutputBase(s),
     _se(false),
     _text(false),
-    _sgml(false),
     _escape(false)
 {
-}
-
-void
-IceUtil::XMLOutput::setSGML(bool sgml)
-{
-    _sgml = true;
 }
 
 void
@@ -340,37 +337,37 @@ IceUtil::XMLOutput::print(const char* s)
 {
     if(_se)
     {
-	_out << '>';
-	_se = false;
+        _out << '>';
+        _se = false;
     }
     _text = true;
 
     if(_escape)
     {
-	string escaped = escape(s);
-	OutputBase::print(escaped.c_str());
+        string escaped = escape(s);
+        OutputBase::print(escaped.c_str());
     }
     else
     {
-	OutputBase::print(s);
+        OutputBase::print(s);
     }
 }
 
 void
-IceUtil::XMLOutput::nl()
+IceUtil::XMLOutput::newline()
 {
     if(_se)
     {
-	_se = false;
-	_out << '>';
+        _se = false;
+        _out << '>';
     }
-    OutputBase::nl();
+    OutputBase::newline();
 }
 
 void
-IceUtil::XMLOutput::se(const string& element)
+IceUtil::XMLOutput::startElement(const string& element)
 {
-    nl();
+    newline();
 
     //
     // If we're not in SGML mode the output of the '>' character is
@@ -379,11 +376,11 @@ IceUtil::XMLOutput::se(const string& element)
     //
     if(_escape)
     {
-	_out << '<' << escape(element);
+        _out << '<' << escape(element);
     }
     else
     {
-	_out << '<' << element;
+        _out << '<' << element;
     }
     _se = true;
     _text = false;
@@ -391,11 +388,11 @@ IceUtil::XMLOutput::se(const string& element)
     string::size_type pos = element.find_first_of(" \t");
     if(pos == string::npos)
     {
-	_elementStack.push(element);
+        _elementStack.push(element);
     }
     else
     {
-	_elementStack.push(element.substr(0, pos));
+        _elementStack.push(element.substr(0, pos));
     }
 
     ++_pos; // TODO: ???
@@ -404,7 +401,7 @@ IceUtil::XMLOutput::se(const string& element)
 }
 
 void
-IceUtil::XMLOutput::ee()
+IceUtil::XMLOutput::endElement()
 {
     string element = _elementStack.top();
     _elementStack.pop();
@@ -412,25 +409,15 @@ IceUtil::XMLOutput::ee()
     dec();
     if(_se)
     {
-	//
-	// SGML (docbook) doesn't support <foo/>.
-	//
-	if(_sgml)
-	{
-	    _out << "></" << element << '>';
-	}
-	else
-	{
-	    _out << "/>";
-	}
+        _out << "></" << element << '>';
     }
     else
     {
-	if(!_text)
-	{
-	    nl();
-	}
-	_out << "</" << element << '>';
+        if(!_text)
+        {
+            newline();
+        }
+        _out << "</" << element << '>';
     }
     --_pos; // TODO: ???
 
@@ -485,50 +472,50 @@ IceUtil::XMLOutput::escape(const string& input) const
     const string allReserved = "<>'\"&";
     if(v.find_first_of(allReserved) != string::npos)
     {
-	//
-	// First convert all & to &amp;
-	//
-	size_t pos = 0;
-	while((pos = v.find_first_of('&', pos)) != string::npos)
-	{
-	    v.insert(pos+1, "amp;");
-	    pos += 4;
-	}
+        //
+        // First convert all & to &amp;
+        //
+        size_t pos = 0;
+        while((pos = v.find_first_of('&', pos)) != string::npos)
+        {
+            v.insert(pos+1, "amp;");
+            pos += 4;
+        }
 
-	//
-	// Next convert remaining reserved characters.
-	//
-	const string reserved = "<>'\"";
-	pos = 0;
-	while((pos = v.find_first_of(reserved, pos)) != string::npos)
-	{
-	    string replace;
-	    switch(v[pos])
-	    {
-	    case '>':
-		replace = "&gt;";
-		break;
+        //
+        // Next convert remaining reserved characters.
+        //
+        const string reserved = "<>'\"";
+        pos = 0;
+        while((pos = v.find_first_of(reserved, pos)) != string::npos)
+        {
+            string replace;
+            switch(v[pos])
+            {
+            case '>':
+                replace = "&gt;";
+                break;
 
-	    case '<':
-		replace = "&lt;";
-		break;
+            case '<':
+                replace = "&lt;";
+                break;
 
-	    case '\'':
-		replace = "&apos;";
-		break;
+            case '\'':
+                replace = "&apos;";
+                break;
 
-	    case '"':
-		replace = "&quot;";
-		break;
+            case '"':
+                replace = "&quot;";
+                break;
 
-	    default:
-		assert(false);
-	    }
+            default:
+                assert(false);
+            }
 
-	    v.erase(pos, 1);
-	    v.insert(pos, replace);
-	    pos += replace.size();
-	}
+            v.erase(pos, 1);
+            v.insert(pos, replace);
+            pos += replace.size();
+        }
     }
     return v;
 }

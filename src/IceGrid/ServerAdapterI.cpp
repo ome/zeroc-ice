@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,17 +17,15 @@ using namespace std;
 using namespace IceGrid;
 
 ServerAdapterI::ServerAdapterI(const NodeIPtr& node,
-			       ServerI* server, 
-			       const string& serverName,
-			       const AdapterPrx& proxy,
-			       const string& id,
-			       Ice::Int waitTime) :
+                               ServerI* server, 
+                               const string& serverName,
+                               const AdapterPrx& proxy,
+                               const string& id) :
     _node(node),
     _this(proxy),
     _serverId(serverName),
     _id(id),
-    _server(server),
-    _waitTime(IceUtil::Time::seconds(waitTime))
+    _server(server)
 {
 }
 
@@ -39,27 +37,39 @@ void
 ServerAdapterI::activate_async(const AMD_Adapter_activatePtr& cb, const Ice::Current& current)
 {
     {
-	Lock sync(*this);
-	if(_proxy)
-	{
-	    //
-	    // Return the adapter direct proxy.
-	    //
-	    cb->ice_response(_proxy);
-	    return;
-	}
+        Lock sync(*this);
+        if(_proxy)
+        {
+            //
+            // Return the adapter direct proxy.
+            //
+            cb->ice_response(_proxy);
+            return;
+        }
+        else if(_activateCB.empty())
+        {
+            //
+            // Nothing else waits for this adapter so we must make sure that this 
+            // adapter if still activatable.
+            //
+            if(!_server->isAdapterActivatable(_id))
+            {
+                cb->ice_response(0);
+                return;
+            }
+        }
 
-	if(_node->getTraceLevels()->adapter > 2)
-	{
-	    Ice::Trace out(_node->getTraceLevels()->logger, _node->getTraceLevels()->adapterCat);
-	    out << "waiting for activation of server `" + _serverId + "' adapter `" << _id << "'";
-	}
+        if(_node->getTraceLevels()->adapter > 2)
+        {
+            Ice::Trace out(_node->getTraceLevels()->logger, _node->getTraceLevels()->adapterCat);
+            out << "waiting for activation of server `" + _serverId + "' adapter `" << _id << "'";
+        }
 
-	_activateCB.push_back(cb);
-	if(_activateCB.size() > 1)
-	{
-	    return;
-	}
+        _activateCB.push_back(cb);
+        if(_activateCB.size() > 1)
+        {
+            return;
+        }
     }
 
     //
@@ -69,23 +79,22 @@ ServerAdapterI::activate_async(const AMD_Adapter_activatePtr& cb, const Ice::Cur
     //
     try
     {
-	_server->start(ServerI::OnDemand);
-	return;
+        _server->start(ServerI::OnDemand);
+        return;
     }
-    catch(const ServerStartException&)
+    catch(const ServerStartException& ex)
     {
+        activationFailed(ex.reason);
     }
     catch(const Ice::ObjectNotExistException&)
     {
-	//
-	// The server associated to this adapter doesn't exist anymore. Somehow the database is 
-	// inconsistent if this happens. The best thing to do is to destroy the adapter and throw
-	// an ObjectNotExist exception.
-	//
-	destroy();
+        //
+        // The server associated to this adapter doesn't exist anymore. Somehow the database is 
+        // inconsistent if this happens. The best thing to do is to destroy the adapter.
+        //
+        destroy();
+        activationFailed("server destroyed");
     }
-    
-    activationFailed(_server->getState() != IceGrid::Activating);
 }
 
 Ice::ObjectPrx
@@ -99,15 +108,13 @@ ServerAdapterI::getDirectProxy(const Ice::Current& current) const
     //
     if(_proxy)
     {
-	return _proxy;
+        return _proxy;
     }
     else
     {
-	AdapterNotActiveException ex;
-	ServerState state = _server->getState();
-	ex.activatable = _server->canActivateOnDemand() || state == Activating || state == Active;
-	ex.timeout = static_cast<int>(_waitTime.toMilliSeconds());
-	throw ex;
+        AdapterNotActiveException ex;
+        ex.activatable = _server->isAdapterActivatable(_id);
+        throw ex;
     }
 }
 
@@ -122,10 +129,10 @@ ServerAdapterI::setDirectProxy(const Ice::ObjectPrx& prx, const Ice::Current&)
     //
     if(prx && _proxy)
     {
-	if(_server->getState() == Active)
-	{
-	    throw AdapterActiveException();
-	}
+        if(_server->getState() == Active)
+        {
+            throw AdapterActiveException();
+        }
     }
 
     bool updated = _proxy != prx;
@@ -133,45 +140,35 @@ ServerAdapterI::setDirectProxy(const Ice::ObjectPrx& prx, const Ice::Current&)
 
     for(vector<AMD_Adapter_activatePtr>::const_iterator p = _activateCB.begin(); p != _activateCB.end(); ++p)
     {
-	(*p)->ice_response(_proxy);
+        (*p)->ice_response(_proxy);
     }
     _activateCB.clear();
 
     if(updated)
     {
-	NodeObserverPrx observer = _node->getObserver();
-	if(observer)
-	{
-	    AdapterDynamicInfo info;
-	    info.id = _id;
-	    info.proxy = _proxy;
-	    try
-	    {
-		observer->updateAdapter(_node->getName(), info);
-	    }
-	    catch(const Ice::LocalException&)
-	    {
-	    }
-	}
+        AdapterDynamicInfo info;
+        info.id = _id;
+        info.proxy = _proxy;
+        _node->observerUpdateAdapter(info);
     }
 
     if(_proxy)
     {
-	_server->adapterActivated(_id);
+        _server->adapterActivated(_id);
     }
     else
     {
-	_server->adapterDeactivated(_id);
+        _server->adapterDeactivated(_id);
     }
 
     if(_node->getTraceLevels()->adapter > 1)
     {
-	Ice::Trace out(_node->getTraceLevels()->logger, _node->getTraceLevels()->adapterCat);
-	out << "server `" + _serverId + "' adapter `" << _id << "' " << (_proxy ? "activated" : "deactivated");
-	if(_proxy)
-	{
-	    out << ": " << _node->getCommunicator()->proxyToString(_proxy);
-	}
+        Ice::Trace out(_node->getTraceLevels()->logger, _node->getTraceLevels()->adapterCat);
+        out << "server `" + _serverId + "' adapter `" << _id << "' " << (_proxy ? "activated" : "deactivated");
+        if(_proxy)
+        {
+            out << ": " << _node->getCommunicator()->proxyToString(_proxy);
+        }
     }
 }
 
@@ -189,7 +186,7 @@ ServerAdapterI::clear()
 }
 
 void 
-ServerAdapterI::activationFailed(bool timeout)
+ServerAdapterI::activationFailed(const std::string& reason)
 {
 
     //
@@ -197,21 +194,14 @@ ServerAdapterI::activationFailed(bool timeout)
     //
     if(_node->getTraceLevels()->adapter > 1)
     {
-	Ice::Trace out(_node->getTraceLevels()->logger, _node->getTraceLevels()->adapterCat);
-	if(timeout)
-	{
-	    out << "server `" + _serverId + "' adapter `" << _id << "' activation timed out";
-	}
-	else
-	{
-	    out << "server `" + _serverId + "' adapter `" << _id << "' activation failed: server didn't start";
-	}
+        Ice::Trace out(_node->getTraceLevels()->logger, _node->getTraceLevels()->adapterCat);
+        out << "server `" + _serverId + "' adapter `" << _id << "' activation failed: " << reason;
     }
 
     Lock sync(*this);
     for(vector<AMD_Adapter_activatePtr>::const_iterator p = _activateCB.begin(); p != _activateCB.end(); ++p)
     {
-	(*p)->ice_response(0);
+        (*p)->ice_response(0);
     }
     _activateCB.clear();
 }

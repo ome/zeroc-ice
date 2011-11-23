@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,6 +27,7 @@
 #include <Ice/ThreadPoolF.h>
 #include <Ice/Exception.h>
 #include <Ice/Process.h>
+#include <Ice/BuiltinSequences.h>
 #include <list>
 
 namespace Ice
@@ -48,6 +49,8 @@ public:
     virtual void waitForHold();
     virtual void deactivate();
     virtual void waitForDeactivate();
+    virtual bool isDeactivated() const;
+    virtual void destroy();
 
     virtual ObjectPrx add(const ObjectPtr&, const Identity&);
     virtual ObjectPrx addFacet(const ObjectPtr&, const Identity&, const std::string&);
@@ -80,12 +83,14 @@ public:
 
     IceInternal::ThreadPoolPtr getThreadPool() const;
     IceInternal::ServantManagerPtr getServantManager() const;
+    bool getThreadPerConnection() const;
+    size_t getThreadPerConnectionStackSize() const;
 
 private:
 
     ObjectAdapterI(const IceInternal::InstancePtr&, const CommunicatorPtr&, 
-		   const IceInternal::ObjectAdapterFactoryPtr&, const std::string&, const std::string&,
-		   const RouterPrx&);
+                   const IceInternal::ObjectAdapterFactoryPtr&, const std::string&, const std::string&,
+                   const RouterPrx&, bool);
     virtual ~ObjectAdapterI();
     friend class IceInternal::ObjectAdapterFactory;
     
@@ -96,6 +101,7 @@ private:
     static void checkIdentity(const Identity&);
     std::vector<IceInternal::EndpointIPtr> parseEndpoints(const std::string&) const;
     void updateLocatorRegistry(const IceInternal::LocatorInfoPtr&, const Ice::ObjectPrx&, bool);
+    bool filterProperties(Ice::StringSeq&);
 
     bool _deactivated;
     IceInternal::InstancePtr _instance;
@@ -114,7 +120,11 @@ private:
     IceInternal::LocatorInfoPtr _locatorInfo;
     int _directCount; // The number of direct proxies dispatching on this object adapter.
     bool _waitForActivate;
-    bool _waitForDeactivate;
+    bool _destroying;
+    bool _destroyed;
+    bool _noConfig;
+    bool _threadPerConnection;
+    size_t _threadPerConnectionStackSize;
 
     class ProcessI : public Process
     {
@@ -123,7 +133,7 @@ private:
         ProcessI(const CommunicatorPtr&);
 
         virtual void shutdown(const Current&);
-	virtual void writeMessage(const std::string&, Int, const Current&);
+        virtual void writeMessage(const std::string&, Int, const Current&);
 
     private:
 

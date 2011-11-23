@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,38 +25,38 @@ ReapThread::run()
 
     while(!_terminated)
     {
-	timedWait(_timeout);
+        timedWait(_timeout);
 
-	if(!_terminated)
-	{
-	    list<SessionProxyPair>::iterator p = _sessions.begin();
-	    while(p != _sessions.end())
-	    {
-		try
-		{
-		    //
-		    // Session destruction may take time in a
-		    // real-world example. Therefore the current time
-		    // is computed for each iteration.
-		    //
-		    if((IceUtil::Time::now() - p->session->timestamp()) > _timeout)
-		    {
-			string name = p->proxy->getName();
-			p->proxy->destroy();
-			cout << "The session " << name << " has timed out." << endl;
-    	    	    	p = _sessions.erase(p);
-		    }
-		    else
-		    {
-			++p;
-		    }
-    	    	}
-		catch(const Ice::ObjectNotExistException&)
-		{
-		    p = _sessions.erase(p);
-		}
-	    }
-	}
+        if(!_terminated)
+        {
+            list<SessionProxyPair>::iterator p = _sessions.begin();
+            while(p != _sessions.end())
+            {
+                try
+                {
+                    //
+                    // Session destruction may take time in a
+                    // real-world example. Therefore the current time
+                    // is computed for each iteration.
+                    //
+                    if((IceUtil::Time::now() - p->session->timestamp()) > _timeout)
+                    {
+                        string name = p->proxy->getName();
+                        p->proxy->destroy();
+                        cout << "The session " << name << " has timed out." << endl;
+                        p = _sessions.erase(p);
+                    }
+                    else
+                    {
+                        ++p;
+                    }
+                }
+                catch(const Ice::ObjectNotExistException&)
+                {
+                    p = _sessions.erase(p);
+                }
+            }
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -37,8 +37,8 @@ ICE_UTIL_API Int64 strToInt64(const char*, char**, int);
 //
 // - return value == true indicates a successful conversion and result contains the converted value
 // - return value == false indicates an unsuccessful conversion:
-//	- result == 0 indicates that no digits were available for conversion
-//	- result == "Int64 Min" or result == "Int64 Max" indicate underflow or overflow.
+//      - result == 0 indicates that no digits were available for conversion
+//      - result == "Int64 Min" or result == "Int64 Max" indicate underflow or overflow.
 //
 ICE_UTIL_API  bool stringToInt64(const std::string&, Int64&);
 

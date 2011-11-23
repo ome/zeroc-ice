@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,7 +14,7 @@
 
 /**
  *
- * &IcePatch2; can be used to update file hiearchies in a simple and
+ * IcePatch can be used to update file hiearchies in a simple and
  * efficient manner. Checksums ensure file integrity, and data is
  * compressed before download.
  *
@@ -32,8 +32,8 @@ sequence<Ice::ByteSeq> ByteSeqSeq;
 
 /**
  *
- * This exception is raised if the [partition] argument for
- * [getFileInfoSeq] is not in the range 0-255.
+ * The [partition] argument for
+ * [FileServer::getFileInfoSeq] was not in the range 0-255.
  *
  **/
 exception PartitionOutOfRangeException
@@ -42,7 +42,7 @@ exception PartitionOutOfRangeException
 
 /**
  *
- * This exception is raised if [getFileCompressed] cannot read the
+ * This exception is raised if [FileServer::getFileCompressed] cannot read the
  * contents of a file.
  *
  **/
@@ -56,6 +56,11 @@ exception FileAccessException
     string reason;
 };
 
+/**
+ *
+ * The interface that provides access to files.
+ *
+ **/
 interface FileServer
 {
     /**
@@ -70,8 +75,8 @@ interface FileServer
      * files in the specified partition.
      *
      **/
-    ["ami"] nonmutating FileInfoSeq getFileInfoSeq(int partition)
-	throws PartitionOutOfRangeException;
+    ["ami", "nonmutating", "cpp:const"] idempotent FileInfoSeq getFileInfoSeq(int partition)
+        throws PartitionOutOfRangeException;
 
     /**
      *
@@ -84,7 +89,7 @@ interface FileServer
      * updated files.
      *
      **/
-    nonmutating ByteSeqSeq getChecksumSeq();
+    ["nonmutating", "cpp:const"] idempotent ByteSeqSeq getChecksumSeq();
 
     /**
      *
@@ -94,7 +99,7 @@ interface FileServer
      * @return The master checksum for the file set.
      *
      **/
-    nonmutating Ice::ByteSeq getChecksum();
+    ["nonmutating", "cpp:const"] idempotent Ice::ByteSeq getChecksum();
 
     /**
      *
@@ -113,13 +118,14 @@ interface FileServer
      * @return A sequence containing the compressed file contents.
      *
      **/
-    ["ami", "amd", "cpp:array"] nonmutating Ice::ByteSeq getFileCompressed(string path, int pos, int num)
-	throws FileAccessException;
+    ["ami", "amd", "nonmutating", "cpp:const", "cpp:array"] 
+    idempotent Ice::ByteSeq getFileCompressed(string path, int pos, int num)
+        throws FileAccessException;
 };
 
 /**
  *
- * The &IcePatch2; administrative interface. This must only be
+ * The IcePatch administrative interface. This must only be
  * accessible from inside the firewall.
  *
  **/
@@ -127,10 +133,10 @@ interface Admin
 {
     /**
      *
-     * Shut down the &IcePatch2; server.
+     * Shut down the IcePatch server.
      *
      **/
-    idempotent void shutdown();
+    void shutdown();
 };
 
 };

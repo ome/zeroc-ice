@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,7 +18,10 @@ RemoteObjectAdapterPrx
 RemoteCommunicatorI::createObjectAdapter(const string& name, const string& endpoints, const Current& current)
 {
     Ice::CommunicatorPtr com = current.adapter->getCommunicator();
-    com->getProperties()->setProperty(name + ".ThreadPool.Size", "1");
+    if(com->getProperties()->getPropertyAsIntWithDefault("Ice.ThreadPerConnection", 0) == 0)
+    {
+        com->getProperties()->setProperty( name + ".ThreadPool.Size", "1");
+    }
     ObjectAdapterPtr adapter = com->createObjectAdapterWithEndpoints(name, endpoints);
     return RemoteObjectAdapterPrx::uncheckedCast(current.adapter->addWithUUID(new RemoteObjectAdapterI(adapter)));
 }
@@ -38,7 +41,7 @@ RemoteCommunicatorI::shutdown(const Ice::Current& current)
 RemoteObjectAdapterI::RemoteObjectAdapterI(const Ice::ObjectAdapterPtr& adapter) : 
     _adapter(adapter), 
     _testIntf(TestIntfPrx::uncheckedCast(_adapter->add(new TestI(), 
-    					 adapter->getCommunicator()->stringToIdentity("test"))))
+                                         adapter->getCommunicator()->stringToIdentity("test"))))
 {
     _adapter->activate();
 }
@@ -54,8 +57,7 @@ RemoteObjectAdapterI::deactivate(const Ice::Current&)
 {
     try
     {
-	_adapter->deactivate();
-	_adapter->waitForDeactivate();
+        _adapter->destroy();
     }
     catch(const ObjectAdapterDeactivatedException&)
     {

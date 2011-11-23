@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -39,7 +39,7 @@ else:
 nodeOverrideOptions = "--IceDir=\"" + toplevel + "\" --TestDir=\"" + testdir + "\"" + \
                       ' --NodePropertiesOverride="' + \
                       TestUtil.clientServerOptions.replace("--", "") + \
-	              ' Ice.ServerIdleTime=0 Ice.PrintProcessId=0 Ice.PrintAdapterReady=0' + '"'
+                      ' Ice.ServerIdleTime=0 Ice.PrintProcessId=0 Ice.PrintAdapterReady=0' + '"'
 
 IceGridAdmin.iceGridTest(name, "", nodeOverrideOptions)
 sys.exit(0)

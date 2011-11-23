@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,8 +24,8 @@ IceInternal::TcpConnector::connect(int timeout)
 {
     if(_traceLevels->network >= 2)
     {
-	Trace out(_logger, _traceLevels->networkCat);
-	out << "trying to establish tcp connection to " << toString();
+        Trace out(_logger, _traceLevels->networkCat);
+        out << "trying to establish tcp connection to " << toString();
     }
 
     SOCKET fd = createSocket(false);
@@ -34,8 +34,8 @@ IceInternal::TcpConnector::connect(int timeout)
 
     if(_traceLevels->network >= 1)
     {
-	Trace out(_logger, _traceLevels->networkCat);
-	out << "tcp connection established\n" << fdToString(fd);
+        Trace out(_logger, _traceLevels->networkCat);
+        out << "tcp connection established\n" << fdToString(fd);
     }
 
     return new TcpTransceiver(_instance, fd);

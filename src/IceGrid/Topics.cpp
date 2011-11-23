@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,85 +14,19 @@
 using namespace std;
 using namespace IceGrid;
 
-class RegistryInitCB : public AMI_RegistryObserver_init
-{
-public:
 
-    RegistryInitCB(const RegistryObserverTopicPtr& topic, const RegistryObserverPrx& observer, int serial) : 
-	_topic(topic),
-	_observer(observer),
-	_serial(serial)
-    {	
-    }
-
-    void
-    ice_response()
-    {
-	_topic->subscribe(_observer, _serial);
-    }
-
-    void
-    ice_exception(const Ice::Exception& ex)
-    {
-	Ice::Warning out(_observer->ice_getCommunicator()->getLogger());
-	out << "couldn't initialize registry observer:\n" << ex;    
-    }
-
-private:
-
-    const RegistryObserverTopicPtr _topic;
-    const RegistryObserverPrx _observer;
-    const int _serial;
-};
-
-class NodeInitCB : public AMI_NodeObserver_init
-{
-public:
-
-    NodeInitCB(const NodeObserverTopicPtr& topic, const NodeObserverPrx& observer, int serial) : 
-	_topic(topic),
-	_observer(observer),
-	_serial(serial)
-    {	
-    }
-
-    void
-    ice_response()
-    {
-	_topic->subscribe(_observer, _serial);
-    }
-    
-    void
-    ice_exception(const Ice::Exception& ex)
-    {
-	Ice::Warning out(_observer->ice_getCommunicator()->getLogger());
-	out << "couldn't initialize node observer:\n" << ex;    
-    }
-    
-private:
-
-    const NodeObserverTopicPtr _topic;
-    const NodeObserverPrx _observer;
-    const int _serial;
-};
-
-NodeObserverTopic::NodeObserverTopic(const IceStorm::TopicManagerPrx& topicManager) : _serial(0)
-#ifdef __BCPLUSPLUS__ // COMPILERFIX
-{
-}
-
-void
-NodeObserverTopic::initialize(const IceStorm::TopicManagerPrx& topicManager)
-#endif
+ObserverTopic::ObserverTopic(const IceStorm::TopicManagerPrx& topicManager, const string& name) :
+    _logger(topicManager->ice_getCommunicator()->getLogger()),
+    _serial(0)
 {
     IceStorm::TopicPrx t;
     try
     {
-	t = topicManager->create("NodeObserver");
+        t = topicManager->create(name);
     }
     catch(const IceStorm::TopicExists&)
     {
-	t = topicManager->retrieve("NodeObserver");
+        t = topicManager->retrieve(name);
     }
 
     //
@@ -100,12 +34,290 @@ NodeObserverTopic::initialize(const IceStorm::TopicManagerPrx& topicManager)
     // topic because the subscribe() method is given a fixed proxy
     // which can't be marshalled.
     //
-    const_cast<IceStorm::TopicPrx&>(_topic) = IceStorm::TopicPrx::uncheckedCast(t->ice_collocationOptimized(true));
-    const_cast<NodeObserverPrx&>(_publisher) = NodeObserverPrx::uncheckedCast(_topic->getPublisher());
+    _topic = IceStorm::TopicPrx::uncheckedCast(t->ice_collocationOptimized(true));
+    _basePublisher = _topic->getPublisher()->ice_collocationOptimized(false);
+}
+
+ObserverTopic::~ObserverTopic()
+{
 }
 
 void
-NodeObserverTopic::init(const NodeDynamicInfoSeq&, const Ice::Current&)
+ObserverTopic::subscribe(const Ice::ObjectPrx& obsv, const string& name)
+{
+    Lock sync(*this);
+    if(!_topic)
+    {
+        return;
+    }
+
+    assert(obsv);
+    try
+    {
+        IceStorm::QoS qos;
+        qos["reliability"] = "ordered";
+        initObserver(_topic->subscribeAndGetPublisher(qos, obsv->ice_twoway()));
+    }
+    catch(const IceStorm::AlreadySubscribed&)
+    {
+        throw ObserverAlreadyRegisteredException(obsv->ice_getIdentity());
+    }
+
+    if(!name.empty())
+    {
+        assert(_syncSubscribers.find(name) == _syncSubscribers.end());
+        _syncSubscribers.insert(name);
+        addExpectedUpdate(_serial, name);
+        waitForSyncedSubscribersNoSync(_serial, name);
+    }
+}
+
+void
+ObserverTopic::unsubscribe(const Ice::ObjectPrx& observer, const string& name)
+{
+    Lock sync(*this);
+    if(_topic)
+    {
+        _topic->unsubscribe(observer);
+    }
+
+    assert(observer);
+
+    if(!name.empty())
+    {
+        assert(_syncSubscribers.find(name) != _syncSubscribers.end());
+        _syncSubscribers.erase(name);
+
+        map<int, set<string> >::iterator p = _waitForUpdates.begin();
+        bool notifyMonitor = false;
+        while(p != _waitForUpdates.end())
+        {
+            p->second.erase(name);
+            if(p->second.empty())
+            {
+                _waitForUpdates.erase(p++);
+                notifyMonitor = true;
+            }
+            else
+            {
+                ++p;
+            }
+        }
+    
+        if(notifyMonitor)
+        {
+            notifyAll();
+        }
+    }
+}
+
+void
+ObserverTopic::destroy()
+{
+    Lock sync(*this);
+    _topic = 0;
+    notifyAll();
+}
+
+void
+ObserverTopic::receivedUpdate(const string& name, int serial, const string& failure)
+{
+    Lock sync(*this);
+    map<int, set<string> >::iterator p = _waitForUpdates.find(serial);
+    if(p != _waitForUpdates.end())
+    {
+        p->second.erase(name);
+        
+        if(!failure.empty())
+        {
+            map<int, map<string, string> >::iterator q = _updateFailures.find(serial);
+            if(q == _updateFailures.end())
+            {
+                q = _updateFailures.insert(make_pair(serial, map<string ,string>())).first;
+            }
+            q->second.insert(make_pair(name, failure));
+        }
+
+        if(p->second.empty())
+        {
+            _waitForUpdates.erase(p);
+        }
+
+        notifyAll();
+    }
+}
+
+void
+ObserverTopic::waitForSyncedSubscribers(int serial, const string& name)
+{
+    Lock sync(*this);
+    waitForSyncedSubscribersNoSync(serial, name);
+}
+
+void
+ObserverTopic::addExpectedUpdate(int serial, const string& name)
+{
+    if(_syncSubscribers.empty() && name.empty())
+    {
+        return;
+    }
+
+    // Must be called with the lock held.
+    if(name.empty())
+    {
+        assert(_waitForUpdates[serial].empty());
+        _waitForUpdates[serial] = _syncSubscribers;
+    }
+    else
+    {
+        _waitForUpdates[serial].insert(name);
+    }
+}
+
+void
+ObserverTopic::waitForSyncedSubscribersNoSync(int serial, const string& name)
+{
+    if(serial < 0)
+    {
+        return;
+    }
+
+    //
+    // Wait until all the updates are received.
+    //
+    while(true)
+    {
+        map<int, set<string> >::const_iterator p = _waitForUpdates.find(serial);
+        if(p == _waitForUpdates.end())
+        {
+            map<int, map<string, string> >::iterator q = _updateFailures.find(serial);
+            if(q != _updateFailures.end())
+            {
+                map<string, string> failures = q->second;
+                _updateFailures.erase(q);               
+                ostringstream os;
+                for(map<string, string>::const_iterator r = failures.begin(); r != failures.end(); ++r)
+                {
+                    os << "replication failed on replica `" << r->first << "':\n" << r->second << "\n";
+                }
+
+                Ice::Error err(_logger);
+                err << os.str();
+            }
+            return;
+        }
+        else
+        {
+            if(!name.empty() && p->second.find(name) == p->second.end())
+            {
+                return;
+            }
+            wait();
+        }
+    }
+}
+
+void
+ObserverTopic::updateSerial(int serial)
+{
+    assert(_serial + 1 == serial);
+    _serial = serial;
+}
+
+Ice::Context
+ObserverTopic::getContext(int serial) const
+{
+    ostringstream os;
+    os << serial;
+
+    Ice::Context context;
+    context["serial"] = os.str();
+    return context;
+}
+
+RegistryObserverTopic::RegistryObserverTopic(const IceStorm::TopicManagerPrx& topicManager) : 
+    ObserverTopic(topicManager, "RegistryObserver")
+{
+    const_cast<RegistryObserverPrx&>(_publisher) = RegistryObserverPrx::uncheckedCast(_basePublisher);
+}
+
+void
+RegistryObserverTopic::registryUp(const RegistryInfo& info)
+{
+    Lock sync(*this);
+    if(!_topic)
+    {
+        return;
+    }
+    updateSerial(_serial + 1);
+    _registries.insert(make_pair(info.name, info));
+    try
+    {
+        _publisher->registryUp(info);
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `registryUp' update:\n" << ex;    
+    }
+}
+
+void 
+RegistryObserverTopic::registryDown(const string& name)
+{
+    Lock sync(*this);
+    if(!_topic)
+    {
+        return;
+    }
+
+    if(_registries.find(name) == _registries.end())
+    {
+        return;
+    }
+
+    updateSerial(_serial + 1);
+    _registries.erase(name);
+    try
+    {
+        _publisher->registryDown(name);
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `registryDown' update:\n" << ex;    
+    }
+}
+
+void
+RegistryObserverTopic::initObserver(const Ice::ObjectPrx& obsv)
+{
+    RegistryObserverPrx observer = RegistryObserverPrx::uncheckedCast(obsv);
+    RegistryInfoSeq registries;
+    registries.reserve(_registries.size());
+    for(map<string, RegistryInfo>::const_iterator p = _registries.begin(); p != _registries.end(); ++p)
+    {
+        registries.push_back(p->second);
+    }
+    observer->registryInit(registries, getContext(_serial));
+}
+
+NodeObserverTopic::NodeObserverTopic(const IceStorm::TopicManagerPrx& topicManager, 
+                                     const Ice::ObjectAdapterPtr& adapter) : 
+    ObserverTopic(topicManager, "NodeObserver")
+{
+    const_cast<NodeObserverPrx&>(_publisher) = NodeObserverPrx::uncheckedCast(_basePublisher);
+    try
+    {
+        const_cast<NodeObserverPrx&>(_externalPublisher) = NodeObserverPrx::uncheckedCast(adapter->addWithUUID(this));
+    }
+    catch(const Ice::LocalException&)
+    {
+    }
+}
+
+void
+NodeObserverTopic::nodeInit(const NodeDynamicInfoSeq&, const Ice::Current&)
 {
     assert(false);
 }
@@ -114,405 +326,661 @@ void
 NodeObserverTopic::nodeUp(const NodeDynamicInfo& info, const Ice::Current& current)
 {
     Lock sync(*this);
-    _nodes.insert(make_pair(info.name, info));
-    _publisher->nodeUp(info);
+    if(!_topic)
+    {
+        return;
+    }
+    updateSerial(_serial + 1);
+    _nodes.insert(make_pair(info.info.name, info));
+    try
+    {
+        _publisher->nodeUp(info);
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing 'nodeUp' update:\n" << ex;    
+    }
 }
 
 void 
 NodeObserverTopic::nodeDown(const string& name, const Ice::Current&)
 {
-    Lock sync(*this);
-    if(_nodes.find(name) != _nodes.end())
-    {
-	_nodes.erase(name);
-	_publisher->nodeDown(name);
-    }
+    assert(false);
 }
 
 void 
 NodeObserverTopic::updateServer(const string& node, const ServerDynamicInfo& server, const Ice::Current&)
 {
     Lock sync(*this);
+    if(!_topic)
+    {
+        return;
+    }
+
     if(_nodes.find(node) == _nodes.end())
     {
-	//
-	// If the node isn't known anymore, we ignore the update.
-	//
-	return;
+        //
+        // If the node isn't known anymore, we ignore the update.
+        //
+        return;
     }
     
-    ++_serial;
+    updateSerial(_serial + 1);
 
     ServerDynamicInfoSeq& servers = _nodes[node].servers;
     ServerDynamicInfoSeq::iterator p = servers.begin();
     while(p != servers.end())
     {
-	if(p->id == server.id)
-	{
-	    if(server.state == Destroyed || server.state == Inactive)
-	    {
-		servers.erase(p);
-	    }
-	    else
-	    {
-		*p = server;
-	    }
-	    break;
-	}
-	++p;
+        if(p->id == server.id)
+        {
+            if(server.state == Destroyed || (server.state == Inactive && server.enabled))
+            {
+                servers.erase(p);
+            }
+            else
+            {
+                *p = server;
+            }
+            break;
+        }
+        ++p;
     }
-    if(server.state != Destroyed && server.state != Inactive && p == servers.end())
+    if(server.state != Destroyed && (server.state != Inactive || !server.enabled) && p == servers.end())
     {
-	servers.push_back(server);
+        servers.push_back(server);
     }
 
-    _publisher->updateServer(node, server);
+    try
+    {
+        _publisher->updateServer(node, server);
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `updateServer' update:\n" << ex;    
+    }
 }
 
 void 
 NodeObserverTopic::updateAdapter(const string& node, const AdapterDynamicInfo& adapter, const Ice::Current&)
 {
     Lock sync(*this);
-    if(_nodes.find(node) == _nodes.end())
+    if(!_topic)
     {
-	//
-	// If the node isn't known anymore, we ignore the update.
-	//
-	return;
+        return;
     }
 
-    ++_serial;
+    if(_nodes.find(node) == _nodes.end())
+    {
+        //
+        // If the node isn't known anymore, we ignore the update.
+        //
+        return;
+    }
+
+    updateSerial(_serial + 1);
 
     AdapterDynamicInfoSeq& adapters = _nodes[node].adapters;
     AdapterDynamicInfoSeq::iterator p = adapters.begin();
     while(p != adapters.end())
     {
-	if(p->id == adapter.id)
-	{
-	    if(adapter.proxy)
-	    {
-		*p = adapter;
-	    }
-	    else
-	    {
-		adapters.erase(p);
-	    }
-	    break;
-	}
-	++p;
+        if(p->id == adapter.id)
+        {
+            if(adapter.proxy)
+            {
+                *p = adapter;
+            }
+            else
+            {
+                adapters.erase(p);
+            }
+            break;
+        }
+        ++p;
     }
     if(adapter.proxy && p == adapters.end())
     {
-	adapters.push_back(adapter);
+        adapters.push_back(adapter);
     }
     
-    _publisher->updateAdapter(node, adapter);
+    try
+    {
+        _publisher->updateAdapter(node, adapter);
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `updateAdapter' update:\n" << ex;    
+    }
 }
 
-void
-NodeObserverTopic::subscribe(const NodeObserverPrx& observer, int serial)
+void 
+NodeObserverTopic::nodeDown(const string& name)
 {
-    while(true)
+    Lock sync(*this);
+    if(!_topic)
     {
-	if(serial == -1)
-	{
-	    NodeDynamicInfoSeq nodes;
-	    {
-		Lock sync(*this);
-		nodes.reserve(_nodes.size());
-		for(map<string, NodeDynamicInfo>::const_iterator p = _nodes.begin(); p != _nodes.end(); ++p)
-		{
-		    nodes.push_back(p->second);
-		}
-		serial = _serial;
-	    }
-	    observer->init_async(new NodeInitCB(this, observer, serial), nodes);
-	    return;
-	}
+        return;
+    }
 
-	Lock sync(*this);
-	if(serial != _serial)
-	{
-	    serial = -1;
-	    continue;
-	}
+    updateSerial(_serial + 1);
 
-	IceStorm::QoS qos;
-	qos["reliability"] = "twoway ordered";
-	_topic->subscribe(qos, observer);
-	break;
+    if(_nodes.find(name) != _nodes.end())
+    {
+        _nodes.erase(name);
+        try
+        {
+            _publisher->nodeDown(name);
+        }
+        catch(const Ice::LocalException& ex)
+        {
+            Ice::Warning out(_logger);
+            out << "unexpected exception while publishing `nodeDown' update:\n" << ex;    
+        }
     }
 }
 
 void
-NodeObserverTopic::unsubscribe(const NodeObserverPrx& observer)
+NodeObserverTopic::initObserver(const Ice::ObjectPrx& obsv)
 {
-    _topic->unsubscribe(observer);
+    NodeObserverPrx observer = NodeObserverPrx::uncheckedCast(obsv);
+    NodeDynamicInfoSeq nodes;
+    nodes.reserve(_nodes.size());
+    for(map<string, NodeDynamicInfo>::const_iterator p = _nodes.begin(); p != _nodes.end(); ++p)
+    {
+        nodes.push_back(p->second);
+    }
+    observer->nodeInit(nodes, getContext(_serial));
 }
 
-RegistryObserverTopic::RegistryObserverTopic(const IceStorm::TopicManagerPrx& topicManager) : _serial(0)
-#ifdef __BCPLUSPLUS__ // COMPILERFIX
-{
-}
-
-void
-RegistryObserverTopic::initialize(const IceStorm::TopicManagerPrx& topicManager)
+ApplicationObserverTopic::ApplicationObserverTopic(const IceStorm::TopicManagerPrx& topicManager,
+                                                   const StringApplicationInfoDict& applications) :
+    ObserverTopic(topicManager, "ApplicationObserver")
+#ifndef _RWSTD_NO_MEMBER_TEMPLATES
+    ,_applications(applications.begin(), applications.end())
 #endif
 {
-    IceStorm::TopicPrx t;
+#ifdef _RWSTD_NO_MEMBER_TEMPLATES
+    for(StringApplicationInfoDict::const_iterator p = applications.begin(); p != applications.end(); ++p)
+    {
+        _applications[p->first] = p->second;
+    }
+#endif
+
+    const_cast<ApplicationObserverPrx&>(_publisher) = ApplicationObserverPrx::uncheckedCast(_basePublisher);
+}
+
+int
+ApplicationObserverTopic::applicationInit(int serial, const ApplicationInfoSeq& apps)
+{
+    Lock sync(*this);
+    if(!_topic)
+    {
+        return -1;
+    }
+    updateSerial(serial);
+    _applications.clear();
+    for(ApplicationInfoSeq::const_iterator p = apps.begin(); p != apps.end(); ++p)
+    {
+        _applications.insert(make_pair(p->descriptor.name, *p));
+    }
     try
     {
-	t = topicManager->create("RegistryObserver");
+        _publisher->applicationInit(serial, apps, getContext(serial));
     }
-    catch(const IceStorm::TopicExists&)
+    catch(const Ice::LocalException& ex)
     {
-	t = topicManager->retrieve("RegistryObserver");
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `applicationInit' update:\n" << ex;    
     }
-
-    //
-    // NOTE: collocation optimization needs to be turned on for the
-    // topic because the subscribe() method is given a fixed proxy
-    // which can't be marshalled.
-    //
-    const_cast<IceStorm::TopicPrx&>(_topic) = IceStorm::TopicPrx::uncheckedCast(t->ice_collocationOptimized(true));
-    const_cast<RegistryObserverPrx&>(_publisher) = RegistryObserverPrx::uncheckedCast(_topic->getPublisher());
+    addExpectedUpdate(serial);
+    return serial;
 }
 
-void 
-RegistryObserverTopic::init(int serial, 
-			    const ApplicationDescriptorSeq& apps, 
-			    const AdapterInfoSeq& adpts,
-			    const ObjectInfoSeq& objects,
-			    const Ice::Current&)
+int 
+ApplicationObserverTopic::applicationAdded(int serial, const ApplicationInfo& info)
 {
     Lock sync(*this);
-
-    _serial = serial;
-
-    for(ApplicationDescriptorSeq::const_iterator p = apps.begin(); p != apps.end(); ++p)
+    if(!_topic)
     {
-	_applications.insert(make_pair(p->name, *p));
+        return -1;
     }
-    for(AdapterInfoSeq::const_iterator q = adpts.begin(); q != adpts.end(); ++q)
-    {
-	_adapters.insert(make_pair(q->id, *q));
-    }
-    for(ObjectInfoSeq::const_iterator r = objects.begin(); r != objects.end(); ++r)
-    {
-	_objects.insert(make_pair(r->proxy->ice_getIdentity(), *r));
-    }
-
-    _publisher->init(serial, apps, adpts, objects);
-}
-
-void 
-RegistryObserverTopic::applicationAdded(int serial, const ApplicationDescriptor& desc, const Ice::Current&)
-{
-    Lock sync(*this);
 
     updateSerial(serial);
-
-    _applications.insert(make_pair(desc.name, desc));
-
-    _publisher->applicationAdded(serial, desc);
+    _applications.insert(make_pair(info.descriptor.name, info));
+    try
+    {
+        _publisher->applicationAdded(serial, info, getContext(serial));
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `applicationAdded' update:\n" << ex;    
+    }
+    addExpectedUpdate(serial);
+    return serial;
 }
 
-void 
-RegistryObserverTopic::applicationRemoved(int serial, const string& name, const Ice::Current&)
+int 
+ApplicationObserverTopic::applicationRemoved(int serial, const string& name)
 {
     Lock sync(*this);
-
+    if(!_topic)
+    {
+        return -1;
+    }
     updateSerial(serial);
-
     _applications.erase(name);
-
-    _publisher->applicationRemoved(serial, name);
+    try
+    {
+        _publisher->applicationRemoved(serial, name, getContext(serial));
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `applicationRemoved' update:\n" << ex;    
+    }
+    addExpectedUpdate(serial);
+    return serial;
 }
 
-void 
-RegistryObserverTopic::applicationUpdated(int serial, const ApplicationUpdateDescriptor& desc, const Ice::Current& c)
+int 
+ApplicationObserverTopic::applicationUpdated(int serial, const ApplicationUpdateInfo& info)
 {
     Lock sync(*this);
+    if(!_topic)
+    {
+        return -1;
+    }
 
     updateSerial(serial);
     try
     {
-	map<string, ApplicationDescriptor>::iterator p = _applications.find(desc.name);
-	if(p != _applications.end())
-	{
-	    ApplicationHelper helper(c.adapter->getCommunicator(), p->second);
-	    p->second = helper.update(desc);
-	}
+        map<string, ApplicationInfo>::iterator p = _applications.find(info.descriptor.name);
+        if(p != _applications.end())
+        {
+            ApplicationHelper helper(_publisher->ice_getCommunicator(), p->second.descriptor);
+            p->second.descriptor = helper.update(info.descriptor);
+            p->second.updateTime = info.updateTime;
+            p->second.updateUser = info.updateUser;
+            p->second.revision = info.revision;
+        }
     }
     catch(const DeploymentException& ex)
     {
-	cerr << ex.reason << endl;
-	assert(false);
+        cerr << ex.reason << endl;
+        assert(false);
     }
     catch(const std::string& msg)
     {
-	cerr << msg << endl;
-	assert(false);
+        cerr << msg << endl;
+        assert(false);
     }
     catch(const char* msg)
     {
-	cerr << msg << endl;
-	assert(false);
+        cerr << msg << endl;
+        assert(false);
     }
     catch(...)
     {
-	assert(false);
+        assert(false);
     }
-
-    _publisher->applicationUpdated(serial, desc);
+    try
+    {
+        _publisher->applicationUpdated(serial, info, getContext(serial));
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `applicationUpdated' update:\n" << ex;    
+    }
+    addExpectedUpdate(serial);
+    return serial;
 }
 
 void 
-RegistryObserverTopic::adapterAdded(int serial, const AdapterInfo& info, const Ice::Current&)
+ApplicationObserverTopic::initObserver(const Ice::ObjectPrx& obsv)
+{
+    ApplicationObserverPrx observer = ApplicationObserverPrx::uncheckedCast(obsv);
+    ApplicationInfoSeq applications;
+    for(map<string, ApplicationInfo>::const_iterator p = _applications.begin(); p != _applications.end(); ++p)
+    {
+        applications.push_back(p->second);
+    }
+    observer->applicationInit(_serial, applications, getContext(_serial));
+}
+
+AdapterObserverTopic::AdapterObserverTopic(const IceStorm::TopicManagerPrx& topicManager,
+                                           const StringAdapterInfoDict& adapters) :
+    ObserverTopic(topicManager, "AdapterObserver")
+#ifndef _RWSTD_NO_MEMBER_TEMPLATES
+    , _adapters(adapters.begin(), adapters.end())
+#endif
+{
+#ifdef _RWSTD_NO_MEMBER_TEMPLATES
+    for(StringAdapterInfoDict::const_iterator p = adapters.begin(); p != adapters.end(); ++p)
+    {
+        _adapters[p->first] = p->second;
+    }
+#endif
+
+    const_cast<AdapterObserverPrx&>(_publisher) = AdapterObserverPrx::uncheckedCast(_basePublisher);
+}
+
+int 
+AdapterObserverTopic::adapterInit(const AdapterInfoSeq& adpts)
 {
     Lock sync(*this);
+    if(!_topic)
+    {
+        return -1;
+    }
+    updateSerial(_serial + 1);
+    _adapters.clear();
+    for(AdapterInfoSeq::const_iterator q = adpts.begin(); q != adpts.end(); ++q)
+    {
+        _adapters.insert(make_pair(q->id, *q));
+    }
+    try
+    {
+        _publisher->adapterInit(adpts, getContext(_serial));
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `adapterInit' update:\n" << ex;    
+    }
+    addExpectedUpdate(_serial);
+    return _serial;
+}
 
-    updateSerial(serial);
-
+int 
+AdapterObserverTopic::adapterAdded(const AdapterInfo& info)
+{
+    Lock sync(*this);
+    if(!_topic)
+    {
+        return -1;
+    }
+    updateSerial(_serial + 1);
     _adapters.insert(make_pair(info.id, info));
-
-    _publisher->adapterAdded(serial, info);
+    try
+    {
+        _publisher->adapterAdded(info, getContext(_serial));
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `adapterAdded' update:\n" << ex;    
+    }
+    addExpectedUpdate(_serial);
+    return _serial;
 }
 
-void 
-RegistryObserverTopic::adapterUpdated(int serial, const AdapterInfo& info, const Ice::Current&)
+int 
+AdapterObserverTopic::adapterUpdated(const AdapterInfo& info)
 {
     Lock sync(*this);
-
-    updateSerial(serial);
-
+    if(!_topic)
+    {
+        return -1;
+    }
+    updateSerial(_serial + 1);
     _adapters[info.id] = info;
-
-    _publisher->adapterUpdated(serial, info);
+    try
+    {
+        _publisher->adapterUpdated(info, getContext(_serial));
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `adapterUpdated' update:\n" << ex;    
+    }
+    addExpectedUpdate(_serial);
+    return _serial;
 }
 
-void
-RegistryObserverTopic::adapterRemoved(int serial, const string& id, const Ice::Current&)
+int
+AdapterObserverTopic::adapterRemoved(const string& id)
 {
     Lock sync(*this);
-
-    updateSerial(serial);
-
+    if(!_topic)
+    {
+        return -1;
+    }
+    updateSerial(_serial + 1);
     _adapters.erase(id);
-
-    _publisher->adapterRemoved(serial, id);
+    try
+    {
+        _publisher->adapterRemoved(id, getContext(_serial));
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `adapterRemoved' update:\n" << ex;    
+    }
+    addExpectedUpdate(_serial);
+    return _serial;
 }
 
 void 
-RegistryObserverTopic::objectAdded(int serial, const ObjectInfo& info, const Ice::Current&)
+AdapterObserverTopic::initObserver(const Ice::ObjectPrx& obsv)
+{
+    AdapterObserverPrx observer = AdapterObserverPrx::uncheckedCast(obsv);
+    AdapterInfoSeq adapters;
+    for(map<string, AdapterInfo>::const_iterator p = _adapters.begin(); p != _adapters.end(); ++p)
+    {
+        adapters.push_back(p->second);
+    }   
+    observer->adapterInit(adapters, getContext(_serial));
+}
+
+ObjectObserverTopic::ObjectObserverTopic(const IceStorm::TopicManagerPrx& topicManager,
+                                         const IdentityObjectInfoDict& objects) :
+    ObserverTopic(topicManager, "ObjectObserver")
+#ifndef _RWSTD_NO_MEMBER_TEMPLATES
+    , _objects(objects.begin(), objects.end())
+#endif
+{
+#ifdef _RWSTD_NO_MEMBER_TEMPLATES
+    for(IdentityObjectInfoDict::const_iterator p = objects.begin(); p != objects.end(); ++p)
+    {
+        _objects[p->first] = p->second;
+    }
+#endif
+    
+    const_cast<ObjectObserverPrx&>(_publisher) = ObjectObserverPrx::uncheckedCast(_basePublisher);
+}
+
+int 
+ObjectObserverTopic::objectInit(const ObjectInfoSeq& objects)
 {
     Lock sync(*this);
+    if(!_topic)
+    {
+        return -1;
+    }
+    updateSerial(_serial + 1);
+    _objects.clear();
+    for(ObjectInfoSeq::const_iterator r = objects.begin(); r != objects.end(); ++r)
+    {
+        _objects.insert(make_pair(r->proxy->ice_getIdentity(), *r));
+    }
+    try
+    {
+        _publisher->objectInit(objects, getContext(_serial));
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `objectInit' update:\n" << ex;    
+    }
+    addExpectedUpdate(_serial);
+    return _serial;
+}
 
-    updateSerial(serial);
-
+int 
+ObjectObserverTopic::objectAdded(const ObjectInfo& info)
+{
+    Lock sync(*this);
+    if(!_topic)
+    {
+        return -1;
+    }
+    updateSerial(_serial + 1);
     _objects.insert(make_pair(info.proxy->ice_getIdentity(), info));
-
-    _publisher->objectAdded(serial, info);
+    try
+    {
+        _publisher->objectAdded(info, getContext(_serial));
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `objectAdded' update:\n" << ex;    
+    }
+    addExpectedUpdate(_serial);
+    return _serial;
 }
 
-void 
-RegistryObserverTopic::objectUpdated(int serial, const ObjectInfo& info, const Ice::Current&)
+int 
+ObjectObserverTopic::objectUpdated(const ObjectInfo& info)
 {
     Lock sync(*this);
-
-    updateSerial(serial);
-
+    if(!_topic)
+    {
+        return -1;
+    }
+    updateSerial(_serial + 1);
     _objects[info.proxy->ice_getIdentity()] = info;
-
-    _publisher->objectUpdated(serial, info);
+    try
+    {
+        _publisher->objectUpdated(info, getContext(_serial));
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `objectUpdated' update:\n" << ex;    
+    }
+    addExpectedUpdate(_serial);
+    return _serial;
 }
 
-void
-RegistryObserverTopic::objectRemoved(int serial, const Ice::Identity& id, const Ice::Current&)
+int
+ObjectObserverTopic::objectRemoved(const Ice::Identity& id)
 {
     Lock sync(*this);
-
-    updateSerial(serial);
-
+    if(!_topic)
+    {
+        return -1;
+    }
+    updateSerial(_serial + 1);
     _objects.erase(id);
-
-    _publisher->objectRemoved(serial, id);
-}
-
-void 
-RegistryObserverTopic::subscribe(const RegistryObserverPrx& observer, int serial)
-{
-    while(true)
+    try
     {
-	if(serial == -1)
-	{
-	    ApplicationDescriptorSeq applications;
-	    AdapterInfoSeq adapters;
-	    ObjectInfoSeq objects;
-	    {
-		Lock sync(*this);
-		assert(_serial != -1);
-		serial = _serial;
-
-		map<string, ApplicationDescriptor>::const_iterator p;
-		for(p = _applications.begin(); p != _applications.end(); ++p)
-		{
-		    applications.push_back(p->second);
-		}
-		
-		map<string, AdapterInfo>::const_iterator q;
-		for(q = _adapters.begin(); q != _adapters.end(); ++q)
-		{
-		    adapters.push_back(q->second);
-		}
-
-		map<Ice::Identity, ObjectInfo>::const_iterator r;
-		for(r = _objects.begin(); r != _objects.end(); ++r)
-		{
-		    objects.push_back(r->second);
-		}
-	    }
-	    observer->init_async(new RegistryInitCB(this, observer, serial), serial, applications, adapters, objects);
-	    return;
-	}
-
-	//
-	// If the registry cache changed since we've send the init()
-	// call we need to do it again. Otherwise, we can subscribe to
-	// the IceStorm topic.
-	//
-	Lock sync(*this);
-	if(serial != _serial)
-	{
-	    serial = -1;
-	    continue;
-	}
-
-	IceStorm::QoS qos;
-	qos["reliability"] = "twoway ordered";
-	_topic->subscribe(qos, observer);
-	break;
+        _publisher->objectRemoved(id, getContext(_serial));
     }
+    catch(const Ice::LocalException& ex)
+    {
+        Ice::Warning out(_logger);
+        out << "unexpected exception while publishing `objectRemoved' update:\n" << ex;    
+    }
+    addExpectedUpdate(_serial);
+    return _serial;
 }
 
-void 
-RegistryObserverTopic::unsubscribe(const RegistryObserverPrx& observer)
+int
+ObjectObserverTopic::objectsAddedOrUpdated(const ObjectInfoSeq& infos)
 {
     Lock sync(*this);
-    _topic->unsubscribe(observer);
+    if(!_topic)
+    {
+        return -1;
+    }
+    updateSerial(_serial + 1);
+
+    for(ObjectInfoSeq::const_iterator p = infos.begin(); p != infos.end(); ++p)
+    {
+        map<Ice::Identity, ObjectInfo>::iterator q = _objects.find(p->proxy->ice_getIdentity());
+        if(q != _objects.end())
+        {
+            q->second = *p;
+            try
+            {
+                _publisher->objectUpdated(*p, getContext(_serial));
+            }
+            catch(const Ice::LocalException& ex)
+            {
+                Ice::Warning out(_logger);
+                out << "unexpected exception while publishing `objectUpdated' update:\n" << ex;    
+            }
+        }
+        else
+        {
+            _objects.insert(make_pair(p->proxy->ice_getIdentity(), *p));
+            try
+            {
+                _publisher->objectAdded(*p, getContext(_serial));
+            }
+            catch(const Ice::LocalException& ex)
+            {
+                Ice::Warning out(_logger);
+                out << "unexpected exception while publishing `objectAdded' update:\n" << ex;    
+            }
+        }
+    }
+
+    //
+    // We don't wait for the update to be received by the replicas
+    // here. This operation is called by ReplicaSessionI.
+    // 
+    addExpectedUpdate(_serial);
+    //waitForSyncedSubscribersNoSync(_serial);
+    return _serial;
 }
 
-void
-RegistryObserverTopic::updateSerial(int serial)
+int
+ObjectObserverTopic::objectsRemoved(const ObjectInfoSeq& infos)
 {
-    //
-    // This loop ensures that updates from the database are processed
-    // sequentially.
-    //
-    while(_serial + 1 != serial)
+    Lock sync(*this);
+    if(!_topic)
     {
-	wait();
+        return -1;
     }
-    _serial = serial;
-    notifyAll();
+    updateSerial(_serial + 1);
+
+    for(ObjectInfoSeq::const_iterator p = infos.begin(); p != infos.end(); ++p)
+    {
+        _objects.erase(p->proxy->ice_getIdentity());
+        try
+        {
+            _publisher->objectRemoved(p->proxy->ice_getIdentity(), getContext(_serial));
+        }
+        catch(const Ice::LocalException& ex)
+        {
+            Ice::Warning out(_logger);
+            out << "unexpected exception while publishing `objectUpdated' update:\n" << ex;    
+        }
+    }
+
+    //
+    // We don't need to wait for the update to be received by the
+    // replicas here. This operation is only called internaly by 
+    // IceGrid.
+    // 
+    addExpectedUpdate(_serial);
+    //waitForSyncedSubscribersNoSync(_serial);
+    return _serial;
+}
+
+void 
+ObjectObserverTopic::initObserver(const Ice::ObjectPrx& obsv)
+{
+    ObjectObserverPrx observer = ObjectObserverPrx::uncheckedCast(obsv);
+    ObjectInfoSeq objects;
+    for(map<Ice::Identity, ObjectInfo>::const_iterator p = _objects.begin(); p != _objects.end(); ++p)
+    {
+        objects.push_back(p->second);
+    }
+    observer->objectInit(objects, getContext(_serial));
 }

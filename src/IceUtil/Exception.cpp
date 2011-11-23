@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -30,13 +30,13 @@ IceUtil::Exception::Exception(const char* file, int line) :
 {
 }
     
-IceUtil::Exception::~Exception()
+IceUtil::Exception::~Exception() throw()
 {
 }
 
 const char* IceUtil::Exception::_name = "IceUtil::Exception";
 
-const string
+string
 IceUtil::Exception::ice_name() const
 {
     return _name;
@@ -47,7 +47,7 @@ IceUtil::Exception::ice_print(ostream& out) const
 {
     if(_file && _line > 0)
     {
-	out << _file << ':' << _line << ": ";
+        out << _file << ':' << _line << ": ";
     }
     out << ice_name();
 }
@@ -88,13 +88,17 @@ IceUtil::NullHandleException::NullHandleException(const char* file, int line) :
 {
     if(nullHandleAbort)
     {
-	abort();
+        abort();
     }
+}
+
+IceUtil::NullHandleException::~NullHandleException() throw()
+{
 }
 
 const char* IceUtil::NullHandleException::_name = "IceUtil::NullHandleException";
 
-const string
+string
 IceUtil::NullHandleException::ice_name() const
 {
     return _name;
@@ -123,9 +127,13 @@ IceUtil::IllegalArgumentException::IllegalArgumentException(const char* file, in
 {
 }
 
+IceUtil::IllegalArgumentException::~IllegalArgumentException() throw()
+{
+}
+
 const char* IceUtil::IllegalArgumentException::_name = "IceUtil::IllegalArgumentException";
 
-const string
+string
 IceUtil::IllegalArgumentException::ice_name() const
 {
     return _name;

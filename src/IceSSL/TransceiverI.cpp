@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -35,8 +35,8 @@ IceSSL::TransceiverI::close()
 {
     if(_instance->networkTraceLevel() >= 1)
     {
-	Trace out(_logger, _instance->networkTraceCategory());
-	out << "closing ssl connection\n" << toString();
+        Trace out(_logger, _instance->networkTraceCategory());
+        out << "closing ssl connection\n" << toString();
     }
 
     shutdown();
@@ -52,8 +52,8 @@ IceSSL::TransceiverI::shutdownWrite()
 {
     if(_instance->networkTraceLevel() >= 2)
     {
-	Trace out(_logger, _instance->networkTraceCategory());
-	out << "shutting down ssl connection for writing\n" << toString();
+        Trace out(_logger, _instance->networkTraceCategory());
+        out << "shutting down ssl connection for writing\n" << toString();
     }
 
     shutdown();
@@ -67,8 +67,8 @@ IceSSL::TransceiverI::shutdownReadWrite()
 {
     if(_instance->networkTraceLevel() >= 2)
     {
-	Trace out(_logger, _instance->networkTraceCategory());
-	out << "shutting down ssl connection for reading and writing\n" << toString();
+        Trace out(_logger, _instance->networkTraceCategory());
+        out << "shutting down ssl connection for reading and writing\n" << toString();
     }
 
     shutdown();
@@ -89,125 +89,125 @@ IceSSL::TransceiverI::write(IceInternal::Buffer& buf, int timeout)
     //
     if(_isPeerLocal && packetSize > 64 * 1024)
     { 
-   	packetSize = 64 * 1024;
+        packetSize = 64 * 1024;
     }
 #endif
 
     while(buf.i != buf.b.end())
     {
-	ERR_clear_error(); // Clear any spurious errors.
-	assert(_fd != INVALID_SOCKET);
-	int ret = SSL_write(_ssl, reinterpret_cast<const void*>(&*buf.i), packetSize);
+        ERR_clear_error(); // Clear any spurious errors.
+        assert(_fd != INVALID_SOCKET);
+        int ret = SSL_write(_ssl, reinterpret_cast<const void*>(&*buf.i), packetSize);
 
-	if(ret <= 0)
-	{
-	    switch(SSL_get_error(_ssl, ret))
-	    {
-	    case SSL_ERROR_NONE:
-		assert(false);
-		break;
-	    case SSL_ERROR_ZERO_RETURN:
-	    {
-		ConnectionLostException ex(__FILE__, __LINE__);
-		ex.error = IceInternal::getSocketErrno();
-		throw ex;
-	    }
-	    case SSL_ERROR_WANT_READ:
-	    {
-		if(!selectRead(_fd, timeout))
-		{
-		    throw TimeoutException(__FILE__, __LINE__);
-		}
-		continue;
-	    }
-	    case SSL_ERROR_WANT_WRITE:
-	    {
-		if(!selectWrite(_fd, timeout))
-		{
-		    throw TimeoutException(__FILE__, __LINE__);
-		}
-		continue;
-	    }
-	    case SSL_ERROR_SYSCALL:
-	    {
-		if(ret == -1)
-		{
-		    if(IceInternal::interrupted())
-		    {
-			continue;
-		    }
+        if(ret <= 0)
+        {
+            switch(SSL_get_error(_ssl, ret))
+            {
+            case SSL_ERROR_NONE:
+                assert(false);
+                break;
+            case SSL_ERROR_ZERO_RETURN:
+            {
+                ConnectionLostException ex(__FILE__, __LINE__);
+                ex.error = IceInternal::getSocketErrno();
+                throw ex;
+            }
+            case SSL_ERROR_WANT_READ:
+            {
+                if(!selectRead(_fd, timeout))
+                {
+                    throw TimeoutException(__FILE__, __LINE__);
+                }
+                continue;
+            }
+            case SSL_ERROR_WANT_WRITE:
+            {
+                if(!selectWrite(_fd, timeout))
+                {
+                    throw TimeoutException(__FILE__, __LINE__);
+                }
+                continue;
+            }
+            case SSL_ERROR_SYSCALL:
+            {
+                if(ret == -1)
+                {
+                    if(IceInternal::interrupted())
+                    {
+                        continue;
+                    }
 
-		    if(IceInternal::noBuffers() && packetSize > 1024)
-		    {
-			packetSize /= 2;
-			continue;
-		    }
+                    if(IceInternal::noBuffers() && packetSize > 1024)
+                    {
+                        packetSize /= 2;
+                        continue;
+                    }
 
-		    if(IceInternal::wouldBlock())
-		    {
-			if(SSL_want_read(_ssl))
-			{
-			    if(!selectRead(_fd, timeout))
-			    {
-				throw TimeoutException(__FILE__, __LINE__);
-			    }
-			}
-			else if(SSL_want_write(_ssl))
-			{
-			    if(!selectWrite(_fd, timeout))
-			    {
-				throw TimeoutException(__FILE__, __LINE__);
-			    }
-			}
+                    if(IceInternal::wouldBlock())
+                    {
+                        if(SSL_want_read(_ssl))
+                        {
+                            if(!selectRead(_fd, timeout))
+                            {
+                                throw TimeoutException(__FILE__, __LINE__);
+                            }
+                        }
+                        else if(SSL_want_write(_ssl))
+                        {
+                            if(!selectWrite(_fd, timeout))
+                            {
+                                throw TimeoutException(__FILE__, __LINE__);
+                            }
+                        }
 
-			continue;
-		    }
+                        continue;
+                    }
 
-		    if(IceInternal::connectionLost())
-		    {
-			ConnectionLostException ex(__FILE__, __LINE__);
-			ex.error = IceInternal::getSocketErrno();
-			throw ex;
-		    }
-		}
+                    if(IceInternal::connectionLost())
+                    {
+                        ConnectionLostException ex(__FILE__, __LINE__);
+                        ex.error = IceInternal::getSocketErrno();
+                        throw ex;
+                    }
+                }
 
-		if(ret == 0)
-		{
-		    ConnectionLostException ex(__FILE__, __LINE__);
-		    ex.error = 0;
-		    throw ex;
-		}
+                if(ret == 0)
+                {
+                    ConnectionLostException ex(__FILE__, __LINE__);
+                    ex.error = 0;
+                    throw ex;
+                }
 
-		SocketException ex(__FILE__, __LINE__);
-		ex.error = IceInternal::getSocketErrno();
-		throw ex;
-	    }
-	    case SSL_ERROR_SSL:
-	    {
-		ProtocolException ex(__FILE__, __LINE__);
-		ex.reason = "SSL protocol error during write:\n" + _instance->sslErrors();
-		throw ex;
-	    }
-	    }
-	}
+                SocketException ex(__FILE__, __LINE__);
+                ex.error = IceInternal::getSocketErrno();
+                throw ex;
+            }
+            case SSL_ERROR_SSL:
+            {
+                ProtocolException ex(__FILE__, __LINE__);
+                ex.reason = "SSL protocol error during write:\n" + _instance->sslErrors();
+                throw ex;
+            }
+            }
+        }
 
-	if(_instance->networkTraceLevel() >= 3)
-	{
-	    Trace out(_logger, _instance->networkTraceCategory());
-	    out << "sent " << ret << " of " << packetSize << " bytes via ssl\n" << toString();
-	}
+        if(_instance->networkTraceLevel() >= 3)
+        {
+            Trace out(_logger, _instance->networkTraceCategory());
+            out << "sent " << ret << " of " << packetSize << " bytes via ssl\n" << toString();
+        }
 
-	if(_stats)
-	{
-	    _stats->bytesSent(type(), static_cast<Int>(ret));
-	}
+        if(_stats)
+        {
+            _stats->bytesSent(type(), static_cast<Int>(ret));
+        }
 
-	buf.i += ret;
+        buf.i += ret;
 
-	if(packetSize > buf.b.end() - buf.i)
-	{
-	    packetSize = static_cast<int>(buf.b.end() - buf.i);
-	}
+        if(packetSize > buf.b.end() - buf.i)
+        {
+            packetSize = static_cast<int>(buf.b.end() - buf.i);
+        }
     }
 }
 
@@ -219,153 +219,162 @@ IceSSL::TransceiverI::read(IceInternal::Buffer& buf, int timeout)
     
     while(buf.i != buf.b.end())
     {
-	ERR_clear_error(); // Clear any spurious errors.
-	assert(_fd != INVALID_SOCKET);
-	int ret = SSL_read(_ssl, reinterpret_cast<void*>(&*buf.i), packetSize);
+        ERR_clear_error(); // Clear any spurious errors.
+        assert(_fd != INVALID_SOCKET);
+        int ret = SSL_read(_ssl, reinterpret_cast<void*>(&*buf.i), packetSize);
 
-	if(ret <= 0)
-	{
-	    switch(SSL_get_error(_ssl, ret))
-	    {
-	    case SSL_ERROR_NONE:
-		assert(false);
-		break;
-	    case SSL_ERROR_ZERO_RETURN:
-	    {
-		//
-		// If the connection is lost when reading data, we shut
-		// down the write end of the socket. This helps to unblock
-		// threads that are stuck in send() or select() while
-		// sending data. Note: I don't really understand why
-		// send() or select() sometimes don't detect a connection
-		// loss. Therefore this helper to make them detect it.
-		//
-		//assert(_fd != INVALID_SOCKET);
-		//shutdownSocketReadWrite(_fd);
+        if(ret <= 0)
+        {
+            switch(SSL_get_error(_ssl, ret))
+            {
+            case SSL_ERROR_NONE:
+                assert(false);
+                break;
+            case SSL_ERROR_ZERO_RETURN:
+            {
+                //
+                // If the connection is lost when reading data, we shut
+                // down the write end of the socket. This helps to unblock
+                // threads that are stuck in send() or select() while
+                // sending data. Note: I don't really understand why
+                // send() or select() sometimes don't detect a connection
+                // loss. Therefore this helper to make them detect it.
+                //
+                //assert(_fd != INVALID_SOCKET);
+                //shutdownSocketReadWrite(_fd);
 
-		ConnectionLostException ex(__FILE__, __LINE__);
-		ex.error = 0;
-		throw ex;
-	    }
-	    case SSL_ERROR_WANT_READ:
-	    {
-		if(!selectRead(_fd, timeout))
-		{
-		    throw TimeoutException(__FILE__, __LINE__);
-		}
-		continue;
-	    }
-	    case SSL_ERROR_WANT_WRITE:
-	    {
-		if(!selectWrite(_fd, timeout))
-		{
-		    throw TimeoutException(__FILE__, __LINE__);
-		}
-		continue;
-	    }
-	    case SSL_ERROR_SYSCALL:
-	    {
-		if(ret == -1)
-		{
-		    if(IceInternal::interrupted())
-		    {
-			continue;
-		    }
+                ConnectionLostException ex(__FILE__, __LINE__);
+                ex.error = 0;
+                throw ex;
+            }
+            case SSL_ERROR_WANT_READ:
+            {
+                if(!selectRead(_fd, timeout))
+                {
+                    throw TimeoutException(__FILE__, __LINE__);
+                }
+                continue;
+            }
+            case SSL_ERROR_WANT_WRITE:
+            {
+                if(!selectWrite(_fd, timeout))
+                {
+                    throw TimeoutException(__FILE__, __LINE__);
+                }
+                continue;
+            }
+            case SSL_ERROR_SYSCALL:
+            {
+                if(ret == -1)
+                {
+                    if(IceInternal::interrupted())
+                    {
+                        continue;
+                    }
 
-		    if(IceInternal::noBuffers() && packetSize > 1024)
-		    {
-			packetSize /= 2;
-			continue;
-		    }
+                    if(IceInternal::noBuffers() && packetSize > 1024)
+                    {
+                        packetSize /= 2;
+                        continue;
+                    }
 
-		    if(IceInternal::wouldBlock())
-		    {
-			if(SSL_want_read(_ssl))
-			{
-			    if(!selectRead(_fd, timeout))
-			    {
-				throw TimeoutException(__FILE__, __LINE__);
-			    }
-			}
-			else if(SSL_want_write(_ssl))
-			{
-			    if(!selectWrite(_fd, timeout))
-			    {
-				throw TimeoutException(__FILE__, __LINE__);
-			    }
-			}
+                    if(IceInternal::wouldBlock())
+                    {
+                        if(SSL_want_read(_ssl))
+                        {
+                            if(!selectRead(_fd, timeout))
+                            {
+                                throw TimeoutException(__FILE__, __LINE__);
+                            }
+                        }
+                        else if(SSL_want_write(_ssl))
+                        {
+                            if(!selectWrite(_fd, timeout))
+                            {
+                                throw TimeoutException(__FILE__, __LINE__);
+                            }
+                        }
 
-			continue;
-		    }
+                        continue;
+                    }
 
-		    if(IceInternal::connectionLost())
-		    {
-			//
-			// See the commment above about shutting down the
-			// socket if the connection is lost while reading
-			// data.
-			//
-			//assert(_fd != INVALID_SOCKET);
-			//shutdownSocketReadWrite(_fd);
+                    if(IceInternal::connectionLost())
+                    {
+                        //
+                        // See the commment above about shutting down the
+                        // socket if the connection is lost while reading
+                        // data.
+                        //
+                        //assert(_fd != INVALID_SOCKET);
+                        //shutdownSocketReadWrite(_fd);
 
-			ConnectionLostException ex(__FILE__, __LINE__);
-			ex.error = IceInternal::getSocketErrno();
-			throw ex;
-		    }
-		}
+                        ConnectionLostException ex(__FILE__, __LINE__);
+                        ex.error = IceInternal::getSocketErrno();
+                        throw ex;
+                    }
+                }
 
-		if(ret == 0)
-		{
-		    ConnectionLostException ex(__FILE__, __LINE__);
-		    ex.error = 0;
-		    throw ex;
-		}
+                if(ret == 0)
+                {
+                    ConnectionLostException ex(__FILE__, __LINE__);
+                    ex.error = 0;
+                    throw ex;
+                }
 
-		SocketException ex(__FILE__, __LINE__);
-		ex.error = IceInternal::getSocketErrno();
-		throw ex;
-	    }
-	    case SSL_ERROR_SSL:
-	    {
-		//
-		// Forcefully closing a connection can result in SSL_read reporting
-		// "decryption failed or bad record mac". We trap that error and
-		// treat it as the loss of a connection.
-		//
-		unsigned long e = ERR_peek_error();
-		if(ERR_GET_LIB(e) == ERR_LIB_SSL && ERR_GET_REASON(e) == SSL_R_DECRYPTION_FAILED_OR_BAD_RECORD_MAC)
-		{
-		    ConnectionLostException ex(__FILE__, __LINE__);
-		    ex.error = 0;
-		    throw ex;
-		}
-		else
-		{
-		    ProtocolException ex(__FILE__, __LINE__);
-		    ex.reason = "SSL protocol error during read:\n" + _instance->sslErrors();
-		    throw ex;
-		}
-	    }
-	    }
-	}
+                SocketException ex(__FILE__, __LINE__);
+                ex.error = IceInternal::getSocketErrno();
+                throw ex;
+            }
+            case SSL_ERROR_SSL:
+            {
+                //
+                // Forcefully closing a connection can result in SSL_read reporting
+                // "decryption failed or bad record mac". We trap that error and
+                // treat it as the loss of a connection.
+                //
+                // NOTE: We have to compare the reason string instead
+                // of the error codes because the error code values
+                // changed between OpenSSL 0.9.7i and 0.9.7j and
+                // between OpenSSL 0.9.8a and 0.9.8b...
+                //
+                //unsigned long e = ERR_peek_error();
+                //if(ERR_GET_LIB(e) == ERR_LIB_SSL && ERR_GET_REASON(e) == SSL_R_DECRYPTION_FAILED_OR_BAD_RECORD_MAC)
+                //
+                unsigned long e = ERR_peek_error();
+                if(ERR_GET_LIB(e) == ERR_LIB_SSL && 
+                   strcmp(ERR_reason_error_string(e), "decryption failed or bad record mac") == 0)
+                {
+                    ConnectionLostException ex(__FILE__, __LINE__);
+                    ex.error = 0;
+                    throw ex;
+                }
+                else
+                {
+                    ProtocolException ex(__FILE__, __LINE__);
+                    ex.reason = "SSL protocol error during read:\n" + _instance->sslErrors();
+                    throw ex;
+                }
+            }
+            }
+        }
 
-	if(_instance->networkTraceLevel() >= 3)
-	{
-	    Trace out(_logger, _instance->networkTraceCategory());
-	    out << "received " << ret << " of " << packetSize << " bytes via ssl\n" << toString();
-	}
+        if(_instance->networkTraceLevel() >= 3)
+        {
+            Trace out(_logger, _instance->networkTraceCategory());
+            out << "received " << ret << " of " << packetSize << " bytes via ssl\n" << toString();
+        }
 
-	if(_stats)
-	{
-	    _stats->bytesReceived(type(), static_cast<Int>(ret));
-	}
+        if(_stats)
+        {
+            _stats->bytesReceived(type(), static_cast<Int>(ret));
+        }
 
-	buf.i += ret;
+        buf.i += ret;
 
-	if(packetSize > buf.b.end() - buf.i)
-	{
-	    packetSize = static_cast<int>(buf.b.end() - buf.i);
-	}
+        if(packetSize > buf.b.end() - buf.i)
+        {
+            packetSize = static_cast<int>(buf.b.end() - buf.i);
+        }
     }
 }
 
@@ -382,8 +391,134 @@ IceSSL::TransceiverI::toString() const
 }
 
 void
-IceSSL::TransceiverI::initialize(int)
+IceSSL::TransceiverI::initialize(int timeout)
 {
+    if(_incoming)
+    {
+        // TODO: The timeout is 0 when called by the thread pool.
+        // Make this configurable?
+        if(timeout == 0)
+        {
+            timeout = -1;
+        }
+
+        do
+        {
+            int ret = SSL_accept(_ssl);
+            switch(SSL_get_error(_ssl, ret))
+            {
+            case SSL_ERROR_NONE:
+                assert(SSL_is_init_finished(_ssl));
+                break;
+            case SSL_ERROR_ZERO_RETURN:
+            {
+                ConnectionLostException ex(__FILE__, __LINE__);
+                ex.error = IceInternal::getSocketErrno();
+                throw ex;
+            }
+            case SSL_ERROR_WANT_READ:
+            {
+                if(!selectRead(_fd, timeout))
+                {
+                    throw ConnectTimeoutException(__FILE__, __LINE__);
+                }
+                break;
+            }
+            case SSL_ERROR_WANT_WRITE:
+            {
+                if(!selectWrite(_fd, timeout))
+                {
+                    throw ConnectTimeoutException(__FILE__, __LINE__);
+                }
+                break;
+            }
+            case SSL_ERROR_SYSCALL:
+            {
+                if(ret == -1)
+                {
+                    if(IceInternal::interrupted())
+                    {
+                        break;
+                    }
+
+                    if(IceInternal::wouldBlock())
+                    {
+                        if(SSL_want_read(_ssl))
+                        {
+                            if(!selectRead(_fd, timeout))
+                            {
+                                throw ConnectTimeoutException(__FILE__, __LINE__);
+                            }
+                        }
+                        else if(SSL_want_write(_ssl))
+                        {
+                            if(!selectWrite(_fd, timeout))
+                            {
+                                throw ConnectTimeoutException(__FILE__, __LINE__);
+                            }
+                        }
+
+                        break;
+                    }
+
+                    if(IceInternal::connectionLost())
+                    {
+                        ConnectionLostException ex(__FILE__, __LINE__);
+                        ex.error = IceInternal::getSocketErrno();
+                        throw ex;
+                    }
+                }
+
+                if(ret == 0)
+                {
+                    ConnectionLostException ex(__FILE__, __LINE__);
+                    ex.error = 0;
+                    throw ex;
+                }
+
+                SocketException ex(__FILE__, __LINE__);
+                ex.error = IceInternal::getSocketErrno();
+                throw ex;
+            }
+            case SSL_ERROR_SSL:
+            {
+                struct sockaddr_in remoteAddr;
+                string desc;
+                if(IceInternal::fdToRemoteAddress(_fd, remoteAddr))
+                {
+                    desc = IceInternal::addrToString(remoteAddr);
+                }
+                ProtocolException ex(__FILE__, __LINE__);
+                ex.reason = "SSL error occurred for new incoming connection:\nremote address = " + desc + "\n" +
+                    _instance->sslErrors();
+                throw ex;
+            }
+            }
+        }
+        while(!SSL_is_init_finished(_ssl));
+
+        _instance->verifyPeer(_ssl, _fd, "", _adapterName, true);
+
+        if(_instance->networkTraceLevel() >= 1)
+        {
+            Trace out(_logger, _instance->networkTraceCategory());
+            out << "accepted ssl connection\n" << IceInternal::fdToString(_fd);
+        }
+
+        if(_instance->securityTraceLevel() >= 1)
+        {
+            _instance->traceConnection(_ssl, true);
+        }
+    }
+}
+
+void
+IceSSL::TransceiverI::checkSendSize(const IceInternal::Buffer& buf, size_t messageSizeMax)
+{
+    if(buf.b.size() > messageSizeMax)
+    {
+        throw MemoryLimitException(__FILE__, __LINE__);
+    }
 }
 
 ConnectionInfo
@@ -397,7 +532,7 @@ IceSSL::TransceiverI::getConnectionInfo() const
 }
 
 IceSSL::TransceiverI::TransceiverI(const InstancePtr& instance, SSL* ssl, SOCKET fd,
-				   bool incoming, const string& adapterName) :
+                                   bool incoming, const string& adapterName) :
     _instance(instance),
     _logger(instance->communicator()->getLogger()),
     _stats(instance->communicator()->getStats()),
@@ -423,16 +558,10 @@ IceSSL::TransceiverI::shutdown()
     int err = SSL_shutdown(_ssl);
 
     //
-    // The man page for SSL_shutdown claims that it can return -1, but
-    // in fact it never does.
-    //
-    assert(err >= 0);
-
-    //
     // Call it one more time if it returned 0.
     //
     if(err == 0)
     {
-	SSL_shutdown(_ssl);
+        SSL_shutdown(_ssl);
     }
 }

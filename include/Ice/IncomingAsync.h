@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -37,6 +37,8 @@ protected:
     BasicStream* __os() { return &_os; }
 
 private:
+
+    bool __servantLocatorFinished();
 
     //
     // We need a separate InstancePtr, because _is and _os only hold a
@@ -97,7 +99,7 @@ public:
 };
 
 class ICE_API AMD_Array_Object_ice_invoke : public ::Ice::AMD_Array_Object_ice_invoke, 
-					    public IceInternal::IncomingAsync
+                                            public IceInternal::IncomingAsync
 {
 public:
     

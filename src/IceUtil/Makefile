@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -15,9 +15,10 @@ LIBNAME		= $(call mklibname,IceUtil)
 
 TARGETS		= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
 
-OBJS		= Base64.o \
+OBJS		= ArgVector.o \
+		  Base64.o \
 		  Cond.o \
-                  ConvertUTF.o \
+		  ConvertUTF.o \
 		  CountDownLatch.o \
 		  CtrlCHandler.o \
 		  Exception.o \

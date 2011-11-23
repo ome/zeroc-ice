@@ -2,7 +2,7 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -36,16 +36,14 @@ yyerror(const char* s)
 
 %token ICE_STORM_HELP
 %token ICE_STORM_EXIT
+%token ICE_STORM_CURRENT
 %token ICE_STORM_CREATE
 %token ICE_STORM_DESTROY
-%token ICE_STORM_LIST
 %token ICE_STORM_LINK
 %token ICE_STORM_UNLINK
-%token ICE_STORM_GRAPH
+%token ICE_STORM_LINKS
+%token ICE_STORM_TOPICS
 %token ICE_STORM_STRING
-%token ICE_STORM_SHOW
-%token ICE_STORM_COPYING
-%token ICE_STORM_WARRANTY
 
 %%
 
@@ -86,6 +84,15 @@ command
 {
     parser->create($2);
 }
+| ICE_STORM_CURRENT ';'
+{
+    std::list<std::string> args;
+    parser->current(args);
+}
+| ICE_STORM_CURRENT strings ';'
+{
+    parser->current($2);
+}
 | ICE_STORM_DESTROY strings ';'
 {
     parser->destroy($2);
@@ -98,26 +105,23 @@ command
 {
     parser->unlink($2);
 }
-| ICE_STORM_GRAPH strings ';'
-{
-    parser->graph($2);
-}
-| ICE_STORM_LIST ';'
+| ICE_STORM_LINKS ';'
 {
     std::list<std::string> args;
-    parser->dolist(args);
+    parser->links(args);
 }
-| ICE_STORM_LIST strings ';'
+| ICE_STORM_LINKS strings ';'
 {
-    parser->dolist($2);
+    parser->links($2);
 }
-| ICE_STORM_SHOW ICE_STORM_COPYING ';'
+| ICE_STORM_TOPICS ';'
 {
-    parser->showCopying();
+    std::list<std::string> args;
+    parser->topics(args);
 }
-| ICE_STORM_SHOW ICE_STORM_WARRANTY ';'
+| ICE_STORM_TOPICS strings ';'
 {
-    parser->showWarranty();
+    parser->topics($2);
 }
 | error ';'
 {

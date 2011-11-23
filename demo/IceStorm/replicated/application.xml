@@ -1,0 +1,52 @@
+<icegrid>
+
+  <application name="DemoIceStorm">
+   
+     <server-template id="IceStorm">
+       <parameter name="index"/>
+       <parameter name="topic-manager-endpoints" default="default"/>
+       <parameter name="publish-endpoints" default="default"/>
+
+       <icebox id="DemoIceStorm-${index}" exe="icebox" activation="on-demand">
+
+         <service name="IceStorm" entry="IceStormService,32:createIceStorm">
+
+           <dbenv name="${service}"/>
+
+           <adapter name="${service}.TopicManager"
+                    endpoints="${topic-manager-endpoints}"
+                    replica-group="IceStormTopicManagerReplicaGroup"/>
+
+   	   <adapter name="${service}.Publish" 
+		    endpoints="${publish-endpoints}" 
+                    replica-group="IceStormPublishReplicaGroup"/>
+
+           <properties>
+             <property name="${service}.InstanceName" value="DemoIceStorm"/>
+             <property name="${service}.Trace.TopicManager" value="2"/>
+             <property name="${service}.Trace.Topic" value="1"/>
+             <property name="${service}.Trace.Subscriber" value="1"/>
+           </properties>
+
+         </service>
+
+       </icebox>
+     </server-template>
+
+     <replica-group id="IceStormPublishReplicaGroup">
+       <load-balancing type="round-robin"/>
+     </replica-group>
+
+     <replica-group id="IceStormTopicManagerReplicaGroup">
+       <object identity="DemoIceStorm/TopicManager" type="::IceStorm::TopicManager"/>
+     </replica-group>
+
+     <node name="localhost">
+       <server-instance template="IceStorm" index="1"/>
+       <server-instance template="IceStorm" index="2"/>
+       <server-instance template="IceStorm" index="3"/>
+     </node>
+
+  </application>
+
+</icegrid>

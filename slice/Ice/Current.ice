@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,8 +29,7 @@ dictionary<string, string> Context;
 
 /**
  *
- * The [OperationMode] determines the skeleton signature (for C++), as
- * well as the retry behavior of the Ice run time for an operation
+ * The [OperationMode] determines the retry behavior an
  * invocation in case of a (potentially) recoverable error.
  *
  **/
@@ -57,6 +56,12 @@ enum OperationMode
      * run-time errors by re-issuing a failed request and propagate
      * the failure to the application only if the second attempt
      * fails.
+     *
+     * <p class="Deprecated"><tt>Nonmutating</tt> is deprecated; Use the
+     * <tt>idempotent</tt> keyword instead. For C++, to retain the mapping
+     * of <tt>nonmutating</tt> operations to C++ <tt>const</tt>
+     * member functions, use the <tt>\["cpp:const"]</tt> metadata
+     * directive.
      */
     \Nonmutating,
 
@@ -64,8 +69,8 @@ enum OperationMode
      * Operations that use the Slice [idempotent] keyword can modify
      * object state, but invoking an operation twice in a row must
      * result in the same object state as invoking it once.  For
-     * example, <literal>x = 1</literal> is an idempotent statement,
-     * whereas <literal>x += 1</literal> is not. For idempotent
+     * example, <tt>x = 1</tt> is an idempotent statement,
+     * whereas <tt>x += 1</tt> is not. For idempotent
      * operations, the Ice run-time uses the same retry behavior
      * as for nonmutating operations in case of a potentially
      * recoverable error.
@@ -77,7 +82,7 @@ enum OperationMode
  *
  * Information about the current method invocation for servers. Each
  * operation on the server has a [Current] as its implicit final
- * parameter. [Current] is mostly used for &Ice; services. Most
+ * parameter. [Current] is mostly used for Ice services. Most
  * applications ignore this parameter.
  *
  **/
@@ -101,7 +106,7 @@ local struct Current
 
     /**
      *
-     * The &Ice; object identity.
+     * The Ice object identity.
      *
      **/
     Identity id;

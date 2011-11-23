@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,9 +19,13 @@ FreezeScript::FailureException::FailureException(const char* file, int line, con
 {
 }
 
+FreezeScript::FailureException::~FailureException() throw()
+{
+}
+
 const char* FreezeScript::FailureException::_name = "FreezeScript::FailureException";
 
-const string
+string
 FreezeScript::FailureException::ice_name() const
 {
     return _name;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,8 +21,8 @@ class LibraryI : public Demo::Library, public IceUtil::Mutex
 public:
 
     LibraryI(const Ice::CommunicatorPtr& communicator,
-	     const std::string& envName, const std::string& dbName,
-	     const Freeze::EvictorPtr& evictor);
+             const std::string& envName, const std::string& dbName,
+             const Freeze::EvictorPtr& evictor);
 
     virtual Demo::BookPrx createBook(const Demo::BookDescription&, const Ice::Current&);
     virtual Demo::BookPrx findByIsbn(const std::string&, const Ice::Current&) const;

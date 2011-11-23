@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -32,20 +32,20 @@ IceInternal::TcpTransceiver::close()
 {
     if(_traceLevels->network >= 1)
     {
-	Trace out(_logger, _traceLevels->networkCat);
-	out << "closing tcp connection\n" << toString();
+        Trace out(_logger, _traceLevels->networkCat);
+        out << "closing tcp connection\n" << toString();
     }
 
     assert(_fd != INVALID_SOCKET);
     try
     {
-	closeSocket(_fd);
-	_fd = INVALID_SOCKET;
+        closeSocket(_fd);
+        _fd = INVALID_SOCKET;
     }
     catch(const SocketException&)
     {
-	_fd = INVALID_SOCKET;
-	throw;
+        _fd = INVALID_SOCKET;
+        throw;
     }
 }
 
@@ -54,8 +54,8 @@ IceInternal::TcpTransceiver::shutdownWrite()
 {
     if(_traceLevels->network >= 2)
     {
-	Trace out(_logger, _traceLevels->networkCat);
-	out << "shutting down tcp connection for writing\n" << toString();
+        Trace out(_logger, _traceLevels->networkCat);
+        out << "shutting down tcp connection for writing\n" << toString();
     }
 
     assert(_fd != INVALID_SOCKET);
@@ -67,8 +67,8 @@ IceInternal::TcpTransceiver::shutdownReadWrite()
 {
     if(_traceLevels->network >= 2)
     {
-	Trace out(_logger, _traceLevels->networkCat);
-	out << "shutting down tcp connection for reading and writing\n" << toString();
+        Trace out(_logger, _traceLevels->networkCat);
+        out << "shutting down tcp connection for reading and writing\n" << toString();
     }
 
     assert(_fd != INVALID_SOCKET);
@@ -87,106 +87,112 @@ IceInternal::TcpTransceiver::write(Buffer& buf, int timeout)
     //
     if(_isPeerLocal && packetSize > 64 * 1024)
     { 
-   	packetSize = 64 * 1024;
+        packetSize = 64 * 1024;
     }
 #endif
 
     while(buf.i != buf.b.end())
     {
-	assert(_fd != INVALID_SOCKET);
-	ssize_t ret = ::send(_fd, reinterpret_cast<const char*>(&*buf.i), packetSize, 0);
+        assert(_fd != INVALID_SOCKET);
+        ssize_t ret = ::send(_fd, reinterpret_cast<const char*>(&*buf.i), packetSize, 0);
 
-	if(ret == 0)
-	{
-	    ConnectionLostException ex(__FILE__, __LINE__);
-	    ex.error = 0;
-	    throw ex;
-	}
+        if(ret == 0)
+        {
+            ConnectionLostException ex(__FILE__, __LINE__);
+            ex.error = 0;
+            throw ex;
+        }
 
-	if(ret == SOCKET_ERROR)
-	{
-	    if(interrupted())
-	    {
-		continue;
-	    }
+        if(ret == SOCKET_ERROR)
+        {
+            if(interrupted())
+            {
+                continue;
+            }
 
-	    if(noBuffers() && packetSize > 1024)
-	    {
-		packetSize /= 2;
-		continue;
-	    }
+            if(noBuffers() && packetSize > 1024)
+            {
+                packetSize /= 2;
+                continue;
+            }
 
-	    if(wouldBlock())
-	    {
-	    repeatSelect:
+            if(wouldBlock())
+            {
+            repeatSelect:
 
-		int rs;
-		assert(_fd != INVALID_SOCKET);
-		FD_SET(_fd, &_wFdSet);
+                int rs;
+                assert(_fd != INVALID_SOCKET);
+#ifdef _WIN32
+                FD_SET(_fd, &_wFdSet);
 
-		if(timeout >= 0)
-		{
-		    struct timeval tv;
-		    tv.tv_sec = timeout / 1000;
-		    tv.tv_usec = (timeout - tv.tv_sec * 1000) * 1000;
-		    rs = ::select(static_cast<int>(_fd + 1), 0, &_wFdSet, 0, &tv);
-		}
-		else
-		{
-		    rs = ::select(static_cast<int>(_fd + 1), 0, &_wFdSet, 0, 0);
-		}
-		
-		if(rs == SOCKET_ERROR)
-		{
-		    if(interrupted())
-		    {
-			goto repeatSelect;
-		    }
-		    
-		    SocketException ex(__FILE__, __LINE__);
-		    ex.error = getSocketErrno();
-		    throw ex;
-		}
-		
-		if(rs == 0)
-		{
-		    throw TimeoutException(__FILE__, __LINE__);
-		}
-		
-		continue;
-	    }
-	    
-	    if(connectionLost())
-	    {
-		ConnectionLostException ex(__FILE__, __LINE__);
-		ex.error = getSocketErrno();
-		throw ex;
-	    }
-	    else
-	    {
-		SocketException ex(__FILE__, __LINE__);
-		ex.error = getSocketErrno();
-		throw ex;
-	    }
-	}
+                if(timeout >= 0)
+                {
+                    struct timeval tv;
+                    tv.tv_sec = timeout / 1000;
+                    tv.tv_usec = (timeout - tv.tv_sec * 1000) * 1000;
+                    rs = ::select(static_cast<int>(_fd + 1), 0, &_wFdSet, 0, &tv);
+                }
+                else
+                {
+                    rs = ::select(static_cast<int>(_fd + 1), 0, &_wFdSet, 0, 0);
+                }
+#else
+                struct pollfd pollFd[1];
+                pollFd[0].fd = _fd;
+                pollFd[0].events = POLLOUT;
+                rs = ::poll(pollFd, 1, timeout);
+#endif          
+                if(rs == SOCKET_ERROR)
+                {
+                    if(interrupted())
+                    {
+                        goto repeatSelect;
+                    }
+                    
+                    SocketException ex(__FILE__, __LINE__);
+                    ex.error = getSocketErrno();
+                    throw ex;
+                }
+                
+                if(rs == 0)
+                {
+                    throw TimeoutException(__FILE__, __LINE__);
+                }
+                
+                continue;
+            }
+            
+            if(connectionLost())
+            {
+                ConnectionLostException ex(__FILE__, __LINE__);
+                ex.error = getSocketErrno();
+                throw ex;
+            }
+            else
+            {
+                SocketException ex(__FILE__, __LINE__);
+                ex.error = getSocketErrno();
+                throw ex;
+            }
+        }
 
-	if(_traceLevels->network >= 3)
-	{
-	    Trace out(_logger, _traceLevels->networkCat);
-	    out << "sent " << ret << " of " << packetSize << " bytes via tcp\n" << toString();
-	}
+        if(_traceLevels->network >= 3)
+        {
+            Trace out(_logger, _traceLevels->networkCat);
+            out << "sent " << ret << " of " << packetSize << " bytes via tcp\n" << toString();
+        }
 
-	if(_stats)
-	{
-	    _stats->bytesSent(type(), static_cast<Int>(ret));
-	}
+        if(_stats)
+        {
+            _stats->bytesSent(type(), static_cast<Int>(ret));
+        }
 
-	buf.i += ret;
+        buf.i += ret;
 
-	if(packetSize > buf.b.end() - buf.i)
-	{
-	    packetSize = static_cast<int>(buf.b.end() - buf.i);
-	}
+        if(packetSize > buf.b.end() - buf.i)
+        {
+            packetSize = static_cast<int>(buf.b.end() - buf.i);
+        }
     }
 }
 
@@ -198,119 +204,125 @@ IceInternal::TcpTransceiver::read(Buffer& buf, int timeout)
     
     while(buf.i != buf.b.end())
     {
-	assert(_fd != INVALID_SOCKET);
-	ssize_t ret = ::recv(_fd, reinterpret_cast<char*>(&*buf.i), packetSize, 0);
+        assert(_fd != INVALID_SOCKET);
+        ssize_t ret = ::recv(_fd, reinterpret_cast<char*>(&*buf.i), packetSize, 0);
 
-	if(ret == 0)
-	{
-	    //
-	    // If the connection is lost when reading data, we shut
-	    // down the write end of the socket. This helps to unblock
-	    // threads that are stuck in send() or select() while
-	    // sending data. Note: I don't really understand why
-	    // send() or select() sometimes don't detect a connection
-	    // loss. Therefore this helper to make them detect it.
-	    //
-	    //assert(_fd != INVALID_SOCKET);
-	    //shutdownSocketReadWrite(_fd);
-	    
-	    ConnectionLostException ex(__FILE__, __LINE__);
-	    ex.error = 0;
-	    throw ex;
-	}
+        if(ret == 0)
+        {
+            //
+            // If the connection is lost when reading data, we shut
+            // down the write end of the socket. This helps to unblock
+            // threads that are stuck in send() or select() while
+            // sending data. Note: I don't really understand why
+            // send() or select() sometimes don't detect a connection
+            // loss. Therefore this helper to make them detect it.
+            //
+            //assert(_fd != INVALID_SOCKET);
+            //shutdownSocketReadWrite(_fd);
+            
+            ConnectionLostException ex(__FILE__, __LINE__);
+            ex.error = 0;
+            throw ex;
+        }
 
-	if(ret == SOCKET_ERROR)
-	{
-	    if(interrupted())
-	    {
-		continue;
-	    }
-	    
-	    if(noBuffers() && packetSize > 1024)
-	    {
-		packetSize /= 2;
-		continue;
-	    }
+        if(ret == SOCKET_ERROR)
+        {
+            if(interrupted())
+            {
+                continue;
+            }
+            
+            if(noBuffers() && packetSize > 1024)
+            {
+                packetSize /= 2;
+                continue;
+            }
 
-	    if(wouldBlock())
-	    {
-	    repeatSelect:
+            if(wouldBlock())
+            {
+            repeatSelect:
 
-		int rs;
-		assert(_fd != INVALID_SOCKET);
-		FD_SET(_fd, &_rFdSet);
+                int rs;
+                assert(_fd != INVALID_SOCKET);
+#ifdef _WIN32
+                FD_SET(_fd, &_rFdSet);
 
-		if(timeout >= 0)
-		{
-		    struct timeval tv;
-		    tv.tv_sec = timeout / 1000;
-		    tv.tv_usec = (timeout - tv.tv_sec * 1000) * 1000;
-		    rs = ::select(static_cast<int>(_fd + 1), &_rFdSet, 0, 0, &tv);
-		}
-		else
-		{
-		    rs = ::select(static_cast<int>(_fd + 1), &_rFdSet, 0, 0, 0);
-		}
-		
-		if(rs == SOCKET_ERROR)
-		{
-		    if(interrupted())
-		    {
-			goto repeatSelect;
-		    }
-		    
-		    SocketException ex(__FILE__, __LINE__);
-		    ex.error = getSocketErrno();
-		    throw ex;
-		}
-		
-		if(rs == 0)
-		{
-		    throw TimeoutException(__FILE__, __LINE__);
-		}
-		
-		continue;
-	    }
-	    
-	    if(connectionLost())
-	    {
-		//
-		// See the commment above about shutting down the
-		// socket if the connection is lost while reading
-		// data.
-		//
-		//assert(_fd != INVALID_SOCKET);
-		//shutdownSocketReadWrite(_fd);
-	    
-		ConnectionLostException ex(__FILE__, __LINE__);
-		ex.error = getSocketErrno();
-		throw ex;
-	    }
-	    else
-	    {
-		SocketException ex(__FILE__, __LINE__);
-		ex.error = getSocketErrno();
-		throw ex;
-	    }
-	}
+                if(timeout >= 0)
+                {
+                    struct timeval tv;
+                    tv.tv_sec = timeout / 1000;
+                    tv.tv_usec = (timeout - tv.tv_sec * 1000) * 1000;
+                    rs = ::select(static_cast<int>(_fd + 1), &_rFdSet, 0, 0, &tv);
+                }
+                else
+                {
+                    rs = ::select(static_cast<int>(_fd + 1), &_rFdSet, 0, 0, 0);
+                }
+#else
+                struct pollfd pollFd[1];
+                pollFd[0].fd = _fd;
+                pollFd[0].events = POLLIN;
+                rs = ::poll(pollFd, 1, timeout);
+#endif
+                if(rs == SOCKET_ERROR)
+                {
+                    if(interrupted())
+                    {
+                        goto repeatSelect;
+                    }
+                    
+                    SocketException ex(__FILE__, __LINE__);
+                    ex.error = getSocketErrno();
+                    throw ex;
+                }
+                
+                if(rs == 0)
+                {
+                    throw TimeoutException(__FILE__, __LINE__);
+                }
+                
+                continue;
+            }
+            
+            if(connectionLost())
+            {
+                //
+                // See the commment above about shutting down the
+                // socket if the connection is lost while reading
+                // data.
+                //
+                //assert(_fd != INVALID_SOCKET);
+                //shutdownSocketReadWrite(_fd);
+            
+                ConnectionLostException ex(__FILE__, __LINE__);
+                ex.error = getSocketErrno();
+                throw ex;
+            }
+            else
+            {
+                SocketException ex(__FILE__, __LINE__);
+                ex.error = getSocketErrno();
+                throw ex;
+            }
+        }
 
-	if(_traceLevels->network >= 3)
-	{
-	    Trace out(_logger, _traceLevels->networkCat);
-	    out << "received " << ret << " of " << packetSize << " bytes via tcp\n" << toString();
-	}
+        if(_traceLevels->network >= 3)
+        {
+            Trace out(_logger, _traceLevels->networkCat);
+            out << "received " << ret << " of " << packetSize << " bytes via tcp\n" << toString();
+        }
 
-	if(_stats)
-	{
-	    _stats->bytesReceived(type(), static_cast<Int>(ret));
-	}
+        if(_stats)
+        {
+            _stats->bytesReceived(type(), static_cast<Int>(ret));
+        }
 
-	buf.i += ret;
+        buf.i += ret;
 
-	if(packetSize > buf.b.end() - buf.i)
-	{
-	    packetSize = static_cast<int>(buf.b.end() - buf.i);
-	}
+        if(packetSize > buf.b.end() - buf.i)
+        {
+            packetSize = static_cast<int>(buf.b.end() - buf.i);
+        }
     }
 }
 
@@ -329,6 +341,15 @@ IceInternal::TcpTransceiver::toString() const
 void
 IceInternal::TcpTransceiver::initialize(int)
 {
+}
+
+void
+IceInternal::TcpTransceiver::checkSendSize(const Buffer& buf, size_t messageSizeMax)
+{
+    if(buf.b.size() > messageSizeMax)
+    {
+        throw MemoryLimitException(__FILE__, __LINE__);
+    }
 }
 
 IceInternal::TcpTransceiver::TcpTransceiver(const InstancePtr& instance, SOCKET fd) :

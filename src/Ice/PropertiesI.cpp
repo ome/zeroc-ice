@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@
 #include <Ice/Initialize.h>
 #include <Ice/LocalException.h>
 #include <Ice/PropertyNames.h>
+#include <Ice/Logger.h>
 #include <fstream>
 
 using namespace std;
@@ -27,11 +28,11 @@ Ice::PropertiesI::getProperty(const string& key)
     map<string, string>::const_iterator p = _properties.find(key);
     if(p != _properties.end())
     {
-	return p->second;
+        return p->second;
     }
     else
     {
-	return string();
+        return string();
     }
 }
 
@@ -43,11 +44,11 @@ Ice::PropertiesI::getPropertyWithDefault(const string& key, const string& value)
     map<string, string>::const_iterator p = _properties.find(key);
     if(p != _properties.end())
     {
-	return p->second;
+        return p->second;
     }
     else
     {
-	return value;
+        return value;
     }
 }
 
@@ -65,11 +66,11 @@ Ice::PropertiesI::getPropertyAsIntWithDefault(const string& key, Int value)
     map<string, string>::const_iterator p = _properties.find(key);
     if(p != _properties.end())
     {
-	istringstream v(p->second);
-	if(!(v >> value) || !v.eof())
-	{
-	    return 0;
-	}
+        istringstream v(p->second);
+        if(!(v >> value) || !v.eof())
+        {
+            return 0;
+        }
     }
 
     return value;
@@ -98,39 +99,38 @@ Ice::PropertiesI::setProperty(const string& key, const string& value)
 {
     if(key.empty())
     {
-	return;
+        return;
     }
 
     //
-    // Check if the property is legal. (We write to cerr instead of
-    // using a logger because no logger may be established at the time
-    // the property is parsed.)
+    // Check if the property is legal.
     //
+    LoggerPtr logger = getProcessLogger();
     string::size_type dotPos = key.find('.');
     if(dotPos != string::npos)
     {
-	string prefix = key.substr(0, dotPos);
-	for(const char* const** i = IceInternal::PropertyNames::validProps; *i != 0; ++i)
-	{
-	    string pattern(*i[0]);
-	    dotPos = pattern.find('.');
-	    assert(dotPos != string::npos);
-	    string propPrefix = pattern.substr(0, dotPos);
-	    if(propPrefix != prefix)
-	    {
-		continue;
-	    }
+        string prefix = key.substr(0, dotPos);
+        for(const char* const** i = IceInternal::PropertyNames::validProps; *i != 0; ++i)
+        {
+            string pattern(*i[0]);
+            dotPos = pattern.find('.');
+            assert(dotPos != string::npos);
+            string propPrefix = pattern.substr(0, dotPos);
+            if(propPrefix != prefix)
+            {
+                continue;
+            }
 
-	    bool found = false;
-	    for(const char* const* j = *i; *j != 0 && !found; ++j)
-	    {
-		found = IceUtil::match(key, *j);
-	    }
-	    if(!found)
-	    {
-		cerr << "warning: unknown property: " << key << endl;
-	    }
-	}
+            bool found = false;
+            for(const char* const* j = *i; *j != 0 && !found; ++j)
+            {
+                found = IceUtil::match(key, *j);
+            }
+            if(!found)
+            {
+                logger->warning("unknown property: " + key);
+            }
+        }
     }
 
     IceUtil::Mutex::Lock sync(*this);
@@ -140,11 +140,11 @@ Ice::PropertiesI::setProperty(const string& key, const string& value)
     //
     if(!value.empty())
     {
-	_properties[key] = value;
+        _properties[key] = value;
     }
     else
     {
-	_properties.erase(key);
+        _properties.erase(key);
     }
 }
 
@@ -158,7 +158,7 @@ Ice::PropertiesI::getCommandLineOptions()
     map<string, string>::const_iterator p;
     for(p = _properties.begin(); p != _properties.end(); ++p)
     {
-	result.push_back("--" + p->first + "=" + p->second);
+        result.push_back("--" + p->first + "=" + p->second);
     }
     return result;
 }
@@ -169,7 +169,7 @@ Ice::PropertiesI::parseCommandLineOptions(const string& prefix, const StringSeq&
     string pfx = prefix;
     if(!pfx.empty() && pfx[pfx.size() - 1] != '.')
     {
-	pfx += '.';
+        pfx += '.';
     }
     pfx = "--" + pfx;
     
@@ -178,6 +178,7 @@ Ice::PropertiesI::parseCommandLineOptions(const string& prefix, const StringSeq&
     for(i = 0; i < options.size(); i++)
     {
         string opt = options[i];
+       
         if(opt.find(pfx) == 0)
         {
             if(opt.find('=') == string::npos)
@@ -214,7 +215,7 @@ Ice::PropertiesI::load(const std::string& file)
     if(!in)
     {
         FileException ex(__FILE__, __LINE__);
-	ex.path = file;
+        ex.path = file;
         ex.error = getSystemErrno();
         throw ex;
     }
@@ -222,7 +223,7 @@ Ice::PropertiesI::load(const std::string& file)
     char line[1024];
     while(in.getline(line, 1024))
     {
-	parseLine(line, _converter);
+        parseLine(line, _converter);
     }
 }
 
@@ -249,21 +250,26 @@ Ice::PropertiesI::PropertiesI(StringSeq& args, const PropertiesPtr& defaults, co
 {
     if(defaults != 0)
     {
-	_properties = defaults->getPropertiesForPrefix("");
+        _properties = defaults->getPropertiesForPrefix("");
     }
 
     StringSeq::iterator q = args.begin();
-    if(q != args.end())
+
+    if(_properties.find("Ice.ProgramName") == _properties.end())
     {
-        //
-        // Use the first argument as the value for Ice.ProgramName. Replace
-        // any backslashes in this value with forward slashes, in case this
-        // value is used by the event logger.
-        //
-        string name = *q;
-        replace(name.begin(), name.end(), '\\', '/');
-	setProperty("Ice.ProgramName", name);
+        if(q != args.end())
+        {
+            //
+            // Use the first argument as the value for Ice.ProgramName. Replace
+            // any backslashes in this value with forward slashes, in case this
+            // value is used by the event logger.
+            //
+            string name = *q;
+            replace(name.begin(), name.end(), '\\', '/');
+            setProperty("Ice.ProgramName", name);
+        }
     }
+
     StringSeq tmp;
 
     bool loadConfigFiles = false;
@@ -277,27 +283,27 @@ Ice::PropertiesI::PropertiesI(StringSeq& args, const PropertiesPtr& defaults, co
                 s += "=1";
             }
             parseLine(s.substr(2), 0);
-	    loadConfigFiles = true;
+            loadConfigFiles = true;
         }
         else
         {
-	    tmp.push_back(s);
+            tmp.push_back(s);
         }
-	++q;
+        ++q;
     }
     args = tmp;
 
     if(!loadConfigFiles)
     {
-	//
-	// If Ice.Config is not set, load from ICE_CONFIG (if set)
-	//
-	loadConfigFiles = (_properties.find("Ice.Config") == _properties.end());
+        //
+        // If Ice.Config is not set, load from ICE_CONFIG (if set)
+        //
+        loadConfigFiles = (_properties.find("Ice.Config") == _properties.end());
     }
 
     if(loadConfigFiles)
     {
-	loadConfig();
+        loadConfig();
     }
 
     args = parseIceCommandLineOptions(args);
@@ -313,25 +319,25 @@ Ice::PropertiesI::parseLine(const string& line, const StringConverterPtr& conver
     string::size_type idx = s.find('#');
     if(idx != string::npos)
     {
-	s.erase(idx);
+        s.erase(idx);
     }
     
     idx = s.find_last_not_of(delim);
     if(idx != string::npos && idx + 1 < s.length())
     {
-	s.erase(idx + 1);
+        s.erase(idx + 1);
     }
     
     string::size_type beg = s.find_first_not_of(delim);
     if(beg == string::npos)
     {
-	return;
+        return;
     }
     
     string::size_type end = s.find_first_of(delim + "=", beg);
     if(end == string::npos)
     {
-	return;
+        return;
     }
     
     string key = s.substr(beg, end - beg);
@@ -339,7 +345,7 @@ Ice::PropertiesI::parseLine(const string& line, const StringConverterPtr& conver
     end = s.find('=', end);
     if(end == string::npos)
     {
-	return;
+        return;
     }
     ++end;
 
@@ -347,20 +353,20 @@ Ice::PropertiesI::parseLine(const string& line, const StringConverterPtr& conver
     beg = s.find_first_not_of(delim, end);
     if(beg != string::npos)
     {
-	end = s.length();
-	value = s.substr(beg, end - beg);
+        end = s.length();
+        value = s.substr(beg, end - beg);
     }
 
     if(converter)
     {
         string tmp;
-	converter->fromUTF8(reinterpret_cast<const Byte*>(key.data()), 
-			    reinterpret_cast<const Byte*>(key.data() + key.size()), tmp);
-	key.swap(tmp);
+        converter->fromUTF8(reinterpret_cast<const Byte*>(key.data()), 
+                            reinterpret_cast<const Byte*>(key.data() + key.size()), tmp);
+        key.swap(tmp);
 
-	converter->fromUTF8(reinterpret_cast<const Byte*>(value.data()), 
-			    reinterpret_cast<const Byte*>(value.data() + value.size()), tmp);
-	value.swap(tmp);
+        converter->fromUTF8(reinterpret_cast<const Byte*>(value.data()), 
+                            reinterpret_cast<const Byte*>(value.data() + value.size()), tmp);
+        value.swap(tmp);
     }
     
     setProperty(key, value);

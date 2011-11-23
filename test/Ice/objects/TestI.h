@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -81,5 +81,13 @@ private:
     Test::CPtr _c;
     Test::DPtr _d;
 };
+
+class UnexpectedObjectExceptionTestI : public Ice::Blobject
+{
+public:
+
+    virtual bool ice_invoke(const std::vector<Ice::Byte>&, std::vector<Ice::Byte>&, const Ice::Current&);
+};
+typedef IceUtil::Handle<UnexpectedObjectExceptionTestI> UnexpectedObjectExceptionTestIPtr;
 
 #endif

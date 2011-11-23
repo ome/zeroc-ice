@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -26,28 +26,21 @@ TARGETS         = $(LIBTARGETS) $(SVCLIBTARGETS) $(ADMIN)
 OBJS		= IceStorm.o
 
 SERVICE_OBJS	= IceStorm.o \
+		  Instance.o \
 		  TraceLevels.o \
-		  Flusher.o \
+		  BatchFlusher.o \
+		  SubscriberPool.o \
 		  Subscriber.o \
-		  OnewaySubscriber.o \
-		  OnewayBatchSubscriber.o \
-		  LinkSubscriber.o \
-		  SubscriberFactory.o \
 		  TopicI.o \
 		  TopicManagerI.o \
                   PersistentTopicMap.o \
 		  LinkRecord.o \
 		  IceStormInternal.o \
-		  Service.o \
-		  QueuedProxy.o \
-		  OnewayProxy.o \
-		  TwowayProxy.o \
-		  LinkProxy.o
+		  Service.o
 
 AOBJS		= Admin.o \
 		  Grammar.o \
 		  Scanner.o \
-		  WeightedGraph.o \
 		  Parser.o
 
 SRCS		= $(OBJS:.o=.cpp) \
@@ -55,8 +48,9 @@ SRCS		= $(OBJS:.o=.cpp) \
 		  $(AOBJS:.o=.cpp)
 
 SLICE_SRCS	= $(SDIR)/IceStorm.ice \
-		  IceStormInternal.ice \
-		  LinkRecord.ice
+		  ../IceStorm/IceStormInternal.ice \
+		  ../IceStorm/LinkRecord.ice \
+		  ../IceStorm/Event.ice
 
 HDIR		= $(includedir)/IceStorm
 SDIR		= $(slicedir)/IceStorm
@@ -65,17 +59,11 @@ SLICE2FREEZECMD = $(SLICE2FREEZE) --ice --include-dir IceStorm $(ICECPPFLAGS)
 
 include $(top_srcdir)/config/Make.rules
 
-CPPFLAGS	:= $(CPPFLAGS) -I.. $(READLINE_FLAGS) 
+CPPFLAGS	:= $(CPPFLAGS) -I.. -DICE_STORM_API_EXPORTS $(READLINE_FLAGS) 
 ICECPPFLAGS	:= $(ICECPPFLAGS) -I..
 SLICE2CPPFLAGS	:= --checksum --ice --dll-export ICE_STORM_API --include-dir IceStorm $(SLICE2CPPFLAGS)
 LINKWITH	:= $(BZIP2_RPATH_LINK) -lIce -lIceUtil
 SVCLINKWITH	:= $(DB_RPATH_LINK) -lFreeze -lIceBox $(BZIP2_RPATH_LINK) -lIce -lIceUtil
-
-IceStorm.o: IceStorm.cpp
-	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -DICE_STORM_API_EXPORTS $<
-
-%.o: %.cpp
-	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -DICE_STORM_SERVICE_API_EXPORTS $<
 
 $(libdir)/$(LIBFILENAME): $(OBJS)
 	rm -f $@
@@ -108,8 +96,8 @@ $(ADMIN): $(AOBJS) $(LIBTARGETS)
 
 PersistentTopicMap.h PersistentTopicMap.cpp: ../IceStorm/LinkRecord.ice $(slicedir)/Ice/Identity.ice $(SLICE2FREEZE)
 	rm -f PersistentTopicMap.h PersistentTopicMap.cpp
-	$(SLICE2FREEZECMD) --dict IceStorm::PersistentTopicMap,string,IceStorm::LinkRecordDict PersistentTopicMap \
-	../IceStorm/LinkRecord.ice
+	$(SLICE2FREEZECMD) --dict IceStorm::PersistentTopicMap,Ice::Identity,IceStorm::LinkRecordSeq \
+	PersistentTopicMap ../IceStorm/LinkRecord.ice
 
 clean::
 	rm -f PersistentTopicMap.h PersistentTopicMap.cpp

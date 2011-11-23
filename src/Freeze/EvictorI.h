@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -43,11 +43,11 @@ public:
     class Guard
     {
     public:
-	Guard(DeactivateController&);
-	~Guard();
+        Guard(DeactivateController&);
+        ~Guard();
 
     private:
-	DeactivateController& _controller;
+        DeactivateController& _controller;
     };
 
     DeactivateController(EvictorI*);    
@@ -112,7 +112,7 @@ class EvictorI : public Evictor,  public IceUtil::Monitor<IceUtil::Mutex>, publi
 public:
 
     EvictorI(const Ice::ObjectAdapterPtr&, const std::string&, DbEnv*, const std::string&, 
-	     const ServantInitializerPtr&, const std::vector<IndexPtr>&, bool);
+             const ServantInitializerPtr&, const std::vector<IndexPtr>&, bool);
 
     virtual ~EvictorI();
 
@@ -121,14 +121,13 @@ public:
    
     virtual Ice::ObjectPrx add(const Ice::ObjectPtr&, const Ice::Identity&);
     virtual Ice::ObjectPrx addFacet(const Ice::ObjectPtr&, const Ice::Identity&, const std::string&);
-    virtual void createObject(const Ice::Identity&, const Ice::ObjectPtr&);
 
     virtual Ice::ObjectPtr remove(const Ice::Identity&);
     virtual Ice::ObjectPtr removeFacet(const Ice::Identity&, const std::string&);
-    virtual void destroyObject(const Ice::Identity&);
 
     virtual void keep(const Ice::Identity&);
     virtual void keepFacet(const Ice::Identity&, const std::string&);
+
     virtual void release(const Ice::Identity&);
     virtual void releaseFacet(const Ice::Identity&, const std::string&);
 
@@ -166,10 +165,10 @@ public:
     
     struct StreamedObject
     {
-	Key key;
-	Value value;
-	Ice::Byte status;
-	ObjectStore* store;
+        Key key;
+        Value value;
+        Ice::Byte status;
+        ObjectStore* store;
     };
 
     
@@ -241,6 +240,8 @@ private:
     IceUtil::Time _savePeriod;
 
     bool _deadlockWarning;
+
+    bool _useNonmutating;
 
     Ice::ObjectPtr _pingObject;
 };

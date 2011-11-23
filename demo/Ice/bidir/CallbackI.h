@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -48,19 +48,19 @@ private:
     {
     public:
 
-	CallbackSenderThread(const CallbackSenderIPtr& callbackSender) :
-	    _callbackSender(callbackSender)
-	{
-	}
+        CallbackSenderThread(const CallbackSenderIPtr& callbackSender) :
+            _callbackSender(callbackSender)
+        {
+        }
 
-	virtual void run()
-	{
-	    _callbackSender->run();
-	}
+        virtual void run()
+        {
+            _callbackSender->run();
+        }
 
     private:
 
-	const CallbackSenderIPtr _callbackSender;
+        const CallbackSenderIPtr _callbackSender;
     };
 
     IceUtil::ThreadPtr _callbackSenderThread;

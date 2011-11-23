@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -95,6 +95,20 @@ sequence<CPrxList> CPrxListSeq;
 
 sequence<double> DoubleSeq;
 
+["cpp:class"] struct ClassOtherStruct
+{
+    int x;
+};
+sequence<ClassOtherStruct> ClassOtherStructSeq;
+
+["cpp:class"] struct ClassStruct
+{
+    ClassOtherStructSeq otherSeq;
+    ClassOtherStruct other;
+    int y;
+};
+sequence<ClassStruct> ClassStructSeq;
+
 ["ami"] class TestIntf
 {
     DoubleSeq opDoubleArray(["cpp:array"] DoubleSeq inSeq, out DoubleSeq outSeq);
@@ -125,7 +139,7 @@ sequence<double> DoubleSeq;
 
     ["cpp:type:std::deque< ::Ice::Byte>"] ByteSeq 
     opByteSeq(["cpp:type:std::deque< ::Ice::Byte>"] ByteSeq inSeq, 
-    	      out ["cpp:type:std::deque< ::Ice::Byte>"] ByteSeq outSeq);
+              out ["cpp:type:std::deque< ::Ice::Byte>"] ByteSeq outSeq);
 
     ByteList opByteList(ByteList inSeq, out ByteList outSeq);
 
@@ -134,7 +148,7 @@ sequence<double> DoubleSeq;
 
     ["cpp:type:std::deque<std::string>"] StringSeq 
     opStringSeq(["cpp:type:std::deque<std::string>"] StringSeq inSeq, 
-    		out ["cpp:type:std::deque<std::string>"] StringSeq outSeq);
+                out ["cpp:type:std::deque<std::string>"] StringSeq outSeq);
 
     StringList opStringList(StringList inSeq, out StringList outSeq);
 
@@ -146,13 +160,13 @@ sequence<double> DoubleSeq;
 
     ["cpp:type:std::deque< ::Test::Variable>"] VariableSeq 
     opVariableSeq(["cpp:type:std::deque< ::Test::Variable>"] VariableSeq inSeq, 
-    		  out ["cpp:type:std::deque< ::Test::Variable>"] VariableSeq outSeq);
+                  out ["cpp:type:std::deque< ::Test::Variable>"] VariableSeq outSeq);
 
     VariableList opVariableList(VariableList inSeq, out VariableList outSeq);
 
     ["cpp:type:std::deque< ::Test::StringStringDict>"] StringStringDictSeq 
     opStringStringDictSeq(["cpp:type:std::deque< ::Test::StringStringDict>"] StringStringDictSeq inSeq,
-    			  out ["cpp:type:std::deque< ::Test::StringStringDict>"] StringStringDictSeq outSeq);
+                          out ["cpp:type:std::deque< ::Test::StringStringDict>"] StringStringDictSeq outSeq);
 
     StringStringDictList opStringStringDictList(StringStringDictList inSeq, out StringStringDictList outSeq);
 
@@ -163,7 +177,7 @@ sequence<double> DoubleSeq;
 
     ["cpp:type:std::deque< ::Test::CPrx>"] CPrxSeq 
     opCPrxSeq(["cpp:type:std::deque< ::Test::CPrx>"] CPrxSeq inSeq, 
-    	      out ["cpp:type:std::deque< ::Test::CPrx>"] CPrxSeq outSeq);
+              out ["cpp:type:std::deque< ::Test::CPrx>"] CPrxSeq outSeq);
 
     CPrxList opCPrxList(CPrxList inSeq, out CPrxList outSeq);
 
@@ -171,6 +185,8 @@ sequence<double> DoubleSeq;
     opCSeq(["cpp:type:std::deque< ::Test::CPtr>"] CSeq inSeq, out ["cpp:type:std::deque< ::Test::CPtr>"] CSeq outSeq);
 
     CList opCList(CList inSeq, out CList outSeq);
+
+    ClassStruct opClassStruct(ClassStruct inS, ClassStructSeq inSeq, out ClassStruct outS, out ClassStructSeq outSeq);
 
     void shutdown();
 };

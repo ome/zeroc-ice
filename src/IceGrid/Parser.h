@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -62,13 +62,20 @@ typedef ::IceUtil::Handle<Parser> ParserPtr;
 namespace IceGrid
 {
 
-class Parser : public ::IceUtil::SimpleShared
+class Parser : public ::IceUtil::SimpleShared, IceUtil::Monitor<IceUtil::Mutex>
 {
 public:
 
-    static ParserPtr createParser(const Ice::CommunicatorPtr&, const IceGrid::AdminPrx&, const IceGrid::QueryPrx&);
+    static ParserPtr createParser(const Ice::CommunicatorPtr&, const AdminSessionPrx&, const AdminPrx&, bool);
 
     void usage();
+    void usage(const std::string&, const std::string& = std::string());
+    void usage(const std::string&, const std::list<std::string>&);
+
+    void interrupt();
+    bool interrupted() const;
+    void resetInterrupt();
+    void checkInterrupted();
 
     void addApplication(const std::list<std::string>&);
     void removeApplication(const std::list<std::string>&);
@@ -86,8 +93,12 @@ public:
     void pingNode(const std::list<std::string>&);
     void printLoadNode(const std::list<std::string>&);
     void shutdownNode(const std::list<std::string>&);
-    void removeNode(const std::list<std::string>&);
     void listAllNodes();
+
+    void describeRegistry(const std::list<std::string>&);
+    void pingRegistry(const std::list<std::string>&);
+    void shutdownRegistry(const std::list<std::string>&);
+    void listAllRegistries();
 
     void removeServer(const std::list<std::string>&);
     void startServer(const std::list<std::string>&);
@@ -111,7 +122,7 @@ public:
     void describeObject(const std::list<std::string>&);
     void listObject(const std::list<std::string>&);
 
-    void shutdown();
+    void showFile(const std::string&, const std::list<std::string>&);
 
     void showBanner();
     void showCopying();
@@ -125,6 +136,7 @@ public:
 
     void invalidCommand(const char*);
     void invalidCommand(const std::string&);
+    void invalidCommand(const std::string&, const std::string&);
     void patchFailed(const Ice::StringSeq&);
     void error(const char*);
     void error(const std::string&);
@@ -137,17 +149,20 @@ public:
 
 private:
 
-    Parser(const Ice::CommunicatorPtr&, const IceGrid::AdminPrx&, const IceGrid::QueryPrx&);
+    Parser(const Ice::CommunicatorPtr&, const AdminSessionPrx&, const AdminPrx&, bool);
     void exception(const Ice::Exception&);
 
     std::string _commands;
     Ice::CommunicatorPtr _communicator;
-    IceGrid::AdminPrx _admin;
-    IceGrid::QueryPrx _query;
+    AdminSessionPrx _session;
+    AdminPrx _admin;
     bool _continue;
+    bool _interrupted;
     int _errors;
     int _currentLine;
     std::string _currentFile;
+    bool _interactive;
+    std::map< std::string, std::map<std::string, std::string> > _helpCommands;
 };
 
 extern Parser* parser; // The current parser for bison/flex

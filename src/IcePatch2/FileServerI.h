@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,7 @@ public:
     Ice::ByteSeq getChecksum(const Ice::Current&) const;
 
     void getFileCompressed_async(const AMD_FileServer_getFileCompressedPtr&, const std::string&, Ice::Int pos, 
-    				 Ice::Int num, const Ice::Current&) const;
+                                 Ice::Int num, const Ice::Current&) const;
 
 private:
 

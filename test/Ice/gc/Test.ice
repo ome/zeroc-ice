@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -64,31 +64,31 @@ class Node
 // Sequence of structs defined above.
 
 
-sequence<C2Dict> C2DictSeq;		// Sequence of dictionary.
+sequence<C2Dict> C2DictSeq;             // Sequence of dictionary.
 
-sequence<CSeq> CSeqSeq;			// Sequence of sequence.
+sequence<CSeq> CSeqSeq;                 // Sequence of sequence.
 
 // Struct containing classes defined above.
 
-struct A				// Struct containing sequence.
+struct A                                // Struct containing sequence.
 {
     SSeq theSSeq;
 };
 
 // Struct containing dictionary defined above.
 
-struct B				// Struct containing struct.
+struct B                                // Struct containing struct.
 {
     S theS;
 };
 
 // Dictionary of classes defined above.
 
-dictionary<int, CSeq> CSeqDict;		// Dictionary containing sequence.
+dictionary<int, CSeq> CSeqDict;         // Dictionary containing sequence.
 
-dictionary<int, S> SDict;		// Dictionary containing struct.
+dictionary<int, S> SDict;               // Dictionary containing struct.
 
-dictionary<int, CDict> CDictDict;	// Dictionary containing dictionary.
+dictionary<int, CDict> CDictDict;       // Dictionary containing dictionary.
 
 class CTest
 {
@@ -114,18 +114,18 @@ module AAA
     dictionary<int, B> BDict;
     struct BStruct
     {
-	B bMem;
+        B bMem;
     };
 
     class C
     {
-	Object obj1;
-	Object obj2;
+        Object obj1;
+        Object obj2;
         B b1;
         B b2;
         BSeq x;
-	BDict y;
-	BStruct z;
+        BDict y;
+        BStruct z;
     };
 };
 
@@ -135,18 +135,18 @@ module AAA
     dictionary<int, C> CDict;
     struct CStruct
     {
-	C cMem;
+        C cMem;
     };
 
     class B
     {
-	Object obj1;
-	Object obj2;
-    	C c1;
-	C c2;
+        Object obj1;
+        Object obj2;
+        C c1;
+        C c2;
         CSeq x;
-	CDict y;
-	CStruct z;
+        CDict y;
+        CStruct z;
     };
 };
 
@@ -159,6 +159,35 @@ module CCC
 module CCC
 {
     class Forward
+    {
+    };
+};
+
+module DDD
+{     
+    interface I
+    {
+        void op();
+    };
+
+    class C
+    {
+        void op();
+    };
+
+    class C2;
+
+    class U
+    { 
+        I myI;
+        I* myIstar;
+        C myC;
+        C* myCstar;
+        C2 myC2;
+        C2* myC2star;
+    };
+
+    class C2
     {
     };
 };

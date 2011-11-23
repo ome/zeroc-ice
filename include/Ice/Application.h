@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,8 +34,21 @@ public:
     int main(int, char*[], const char*);
     int main(int, char*[], const Ice::InitializationData&);
     ICE_DEPRECATED_API int main(int, char*[], const char*, const Ice::LoggerPtr&);
+    int main(const StringSeq&);
+    int main(const StringSeq&, const char*);
+    int main(const StringSeq&, const Ice::InitializationData&);
 
     virtual int run(int, char*[]) = 0;
+
+    //
+    // Override this to provide a custom application interrupt
+    // hook. You must call callbackOnInterrupt for this method to
+    // be called. Note that the interruptCallback can be called
+    // concurrently with any other thread (including main) in your
+    // application and thus must take appropriate concurrency
+    // precautions.
+    //
+    virtual void interruptCallback(int);
 
     //
     // Return the application name, i.e., argv[0].
@@ -58,6 +71,7 @@ public:
     static void destroyOnInterrupt();
     static void shutdownOnInterrupt();
     static void ignoreInterrupt();
+    static void callbackOnInterrupt();
 
     //
     // These methods can be used to temporarily block a signal and
@@ -80,7 +94,6 @@ public:
     // (interrupted() returns false in that case).
     //
     static bool interrupted();
-
 
 #if defined(__SUNPRO_CC)
 //

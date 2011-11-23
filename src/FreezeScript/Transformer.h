@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,10 +23,10 @@ namespace FreezeScript
 
 void
 transformDatabase(const Ice::CommunicatorPtr&,
-		  const FreezeScript::ObjectFactoryPtr& objectFactory,
-		  const Slice::UnitPtr&, const Slice::UnitPtr&,
+                  const FreezeScript::ObjectFactoryPtr& objectFactory,
+                  const Slice::UnitPtr&, const Slice::UnitPtr&,
                   Db*, Db*, DbTxn*, const Freeze::ConnectionPtr&, const std::string&, const std::string&, bool,
-		  std::ostream&, bool, std::istream&);
+                  std::ostream&, bool, std::istream&);
 
 } // End of namespace FreezeScript
 

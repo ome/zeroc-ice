@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,37 +33,37 @@ public:
     StringSetIPtr 
     categories() const
     {
-	return _categories;
+        return _categories;
     }
 
     StringSetIPtr 
     adapterIds() const
     {
-	return _adapters;
+        return _adapters;
     }
 
     IdentitySetIPtr 
     identities() const
     {
-	return _identities;
+        return _identities;
     }
 
     StringSetPrx 
     categoriesPrx() const
     {
-	return _categoriesPrx;
+        return _categoriesPrx;
     }
 
     StringSetPrx
     adapterIdsPrx() const
     {
-	return _adapterIdsPrx;
+        return _adapterIdsPrx;
     }
 
     IdentitySetPrx
     identitiesPrx() const
     {
-	return _identitiesPrx;
+        return _identitiesPrx;
     }
 
     static FilterManager* 

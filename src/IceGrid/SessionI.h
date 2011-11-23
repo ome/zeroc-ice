@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,8 +11,10 @@
 #define ICEGRID_SESSIONI_H
 
 #include <IceUtil/Mutex.h>
+#include <IceGrid/ReapThread.h>
 #include <IceGrid/Session.h>
 #include <IceGrid/SessionServantLocatorI.h>
+#include <set>
 
 namespace IceGrid
 {
@@ -35,19 +37,25 @@ typedef IceUtil::Handle<WaitQueue> WaitQueuePtr;
 class SessionI;
 typedef IceUtil::Handle<SessionI> SessionIPtr;
 
-class BaseSessionI : public IceUtil::Mutex
+class BaseSessionI : virtual Ice::Object, public IceUtil::Mutex
 {
 public:
 
     virtual ~BaseSessionI();
 
     virtual void keepAlive(const Ice::Current&);
-    virtual void destroy(const Ice::Current&);
 
     IceUtil::Time timestamp() const;
-    void setServantLocator(const SessionServantLocatorIPtr&);
+    void shutdown();
+
+    virtual Ice::ObjectPrx registerWithServantLocator(const SessionServantLocatorIPtr&, const Ice::ConnectionPtr&);
+    virtual Ice::ObjectPrx registerWithObjectAdapter(const Ice::ObjectAdapterPtr&);
+
+    const std::string& getId() const { return _id; }
 
 protected:
+
+    virtual void destroyImpl(bool);
 
     BaseSessionI(const std::string&, const std::string&, const DatabasePtr&);
 
@@ -55,10 +63,13 @@ protected:
     const std::string _prefix;
     const TraceLevelsPtr _traceLevels;
     const DatabasePtr _database;
-    const SessionServantLocatorIPtr _servantLocator;
+    SessionServantLocatorIPtr _servantLocator;
+    Ice::ObjectAdapterPtr _adapter;
+    Ice::Identity _identity;
     bool _destroyed;
     IceUtil::Time _timestamp;
 };
+typedef IceUtil::Handle<BaseSessionI> BaseSessionIPtr;
 
 class SessionDestroyedException
 {
@@ -75,16 +86,15 @@ public:
     virtual void keepAlive(const Ice::Current& current) { BaseSessionI::keepAlive(current); }
 
     virtual void allocateObjectById_async(const AMD_Session_allocateObjectByIdPtr&, const Ice::Identity&,
-					  const Ice::Current&);
+                                          const Ice::Current&);
     virtual void allocateObjectByType_async(const AMD_Session_allocateObjectByTypePtr&, const std::string&,
-					    const Ice::Current&);
+                                            const Ice::Current&);
     virtual void releaseObject(const Ice::Identity&, const Ice::Current&);
     virtual void setAllocationTimeout(int, const Ice::Current&);
     virtual void destroy(const Ice::Current&);
 
     int getAllocationTimeout() const;
     const WaitQueuePtr& getWaitQueue() const { return _waitQueue; }
-    const std::string& getId() const { return _id; }
     Glacier2::SessionControlPrx getSessionControl() const { return _sessionControl; }
 
     bool addAllocationRequest(const AllocationRequestPtr&);
@@ -93,6 +103,8 @@ public:
     void removeAllocation(const AllocatablePtr&);
 
 protected:
+
+    virtual void destroyImpl(bool);
 
     const WaitQueuePtr _waitQueue;
     const Glacier2::SessionControlPrx _sessionControl;
@@ -106,7 +118,7 @@ class ClientSessionFactory : virtual public IceUtil::Shared
 {
 public:
 
-    ClientSessionFactory(const Ice::ObjectAdapterPtr&, const DatabasePtr&, const WaitQueuePtr&);
+    ClientSessionFactory(const Ice::ObjectAdapterPtr&, const DatabasePtr&, const WaitQueuePtr&, const ReapThreadPtr&);
 
     Glacier2::SessionPrx createGlacier2Session(const std::string&, const Glacier2::SessionControlPrx&);
     SessionIPtr createSessionServant(const std::string&, const Glacier2::SessionControlPrx&);
@@ -118,6 +130,7 @@ private:
     const Ice::ObjectAdapterPtr _adapter;
     const DatabasePtr _database;
     const WaitQueuePtr _waitQueue;
+    const ReapThreadPtr _reaper;
 };
 typedef IceUtil::Handle<ClientSessionFactory> ClientSessionFactoryPtr;
 
@@ -141,7 +154,7 @@ public:
     ClientSSLSessionManagerI(const  ClientSessionFactoryPtr&);
     
     virtual Glacier2::SessionPrx create(const Glacier2::SSLInfo&, const Glacier2::SessionControlPrx&, 
-					const Ice::Current&);
+                                        const Ice::Current&);
 
 private:
 

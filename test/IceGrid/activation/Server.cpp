@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <Ice/Ice.h>
+#include <IceUtil/Thread.h>
 #include <TestI.h>
 
 using namespace std;
@@ -29,7 +30,7 @@ Server::run(int argc, char* argv[])
     Ice::stringSeqToArgs(args, argc, argv);
     if(properties->getPropertyAsInt("FailOnStartup") > 0)
     {
-	return EXIT_FAILURE;
+        return EXIT_FAILURE;
     }
 
     Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapter("TestAdapter");
@@ -40,13 +41,13 @@ Server::run(int argc, char* argv[])
     int delay = properties->getPropertyAsInt("ActivationDelay");
     if(delay > 0)
     {
-	IceUtil::ThreadControl::sleep(IceUtil::Time::seconds(delay));
+        IceUtil::ThreadControl::sleep(IceUtil::Time::seconds(delay));
     }
 
     shutdownOnInterrupt();
     try
     {
-	adapter->activate();
+        adapter->activate();
     }
     catch(const Ice::ObjectAdapterDeactivatedException&)
     {
@@ -57,7 +58,7 @@ Server::run(int argc, char* argv[])
     delay = properties->getPropertyAsInt("DeactivationDelay");
     if(delay > 0)
     {
-	IceUtil::ThreadControl::sleep(IceUtil::Time::seconds(delay));
+        IceUtil::ThreadControl::sleep(IceUtil::Time::seconds(delay));
     }
 
     return test->isFailed() ? EXIT_FAILURE : EXIT_SUCCESS;

@@ -2,7 +2,7 @@
 
 # **********************************************************************
 #
-# Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -10,8 +10,8 @@
 # **********************************************************************
 
 #
-# Set protocol to "ssl" in case you want to run the tests with the SSL
-# protocol. Otherwise TCP is used.
+# Set protocol to "ssl" in case you want to run the tests with the
+# SSL protocol. Otherwise TCP is used.
 #
 protocol = ""
 #protocol = "ssl"
@@ -48,11 +48,11 @@ debug = 0
 #
 # Don't change anything below this line!
 #
-import sys, os, re, errno, getopt
+import sys, os, re, errno, getopt, time
 from threading import Thread
 
 def usage():
-    print "usage: " + sys.argv[0] + " --debug --protocol protocol --compress --host host --threadPerConnection"
+    print "usage: " + sys.argv[0] + " --debug --protocol ssl|tcp --compress --host host --threadPerConnection"
     sys.exit(2)
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", ["debug", "protocol=", "compress", "host=", "threadPerConnection"])
@@ -61,15 +61,17 @@ except getopt.GetoptError:
 
 for o, a in opts:
     if o == "--debug":
-    	debug = 1
+        debug = 1
     if o == "--protocol":
-	protocol = a
+        if a not in ( "tcp", "ssl"):
+            usage()
+        protocol = a
     if o == "--compress":
-	compress = 1
+        compress = 1
     if o == "--threadPerConnection":
-	threadPerConnection = 1
+        threadPerConnection = 1
     if o == "--host":
-	host = a
+        host = a
 
 def getIceVersion():
 
@@ -82,7 +84,14 @@ def getIceSoVersion():
     intVersion = int(re.search("ICE_INT_VERSION ([0-9]*)", config.read()).group(1))
     majorVersion = intVersion / 10000
     minorVersion = intVersion / 100 - 100 * majorVersion    
-    return '%d' % (majorVersion * 10 + minorVersion)
+    patchVersion = intVersion % 100
+    if patchVersion > 50:
+        if patchVersion >= 52:
+            return '%db%d' % (majorVersion * 10 + minorVersion, patchVersion - 50)
+        else:
+            return '%db' % (majorVersion * 10 + minorVersion)
+    else:
+        return '%d' % (majorVersion * 10 + minorVersion)
 
 def isCygwin():
 
@@ -138,19 +147,17 @@ def isDarwin():
         return 0
 
 def closePipe(pipe):
-
     try:
-	status = pipe.close()
+        status = pipe.close()
     except IOError, ex:
-	# TODO: There's a waitpid problem on CentOS, so we have to ignore ECHILD.
-	if ex.errno == errno.ECHILD:
-	    status = 0
+        # TODO: There's a waitpid problem on CentOS, so we have to ignore ECHILD.
+        if ex.errno == errno.ECHILD:
+            status = 0
         # This happens with the test/IceGrid/simple test on AIX
         elif ex.errno == 0:
             status = 0
-	else:
-	    raise
-
+        else:
+            raise
     return status
      
 class ReaderThread(Thread):
@@ -164,16 +171,21 @@ class ReaderThread(Thread):
             while 1:
                 line = self.pipe.readline()
                 if not line: break
-		# Suppress "adapter ready" messages. Under windows the eol isn't \n.
-		if not line.endswith(" ready\n") and not line.endswith(" ready\r\n"):
-		    print line,
+                # Suppress "adapter ready" messages. Under windows the eol isn't \n.
+                if not line.endswith(" ready\n") and not line.endswith(" ready\r\n"):
+                    sys.stdout.flush()
+                    print line,
         except IOError:
             pass
 
-	self.status = closePipe(self.pipe)
+        #print "TERMINATED: " + str(self.pipe)
+        self.status = closePipe(self.pipe)
+
+    def getPipe(self):
+        return self.pipe
 
     def getStatus(self):
-	return self.status
+        return self.status
 
 serverPids = []
 serverThreads = []
@@ -183,18 +195,48 @@ def joinServers():
     global serverThreads
     global allServerThreads
     for t in serverThreads:
-	t.join()
-	allServerThreads.append(t)
+        t.join()
+        allServerThreads.append(t)
     serverThreads = []
 
+# This joins with all servers and if any of them failed then
+# it returns the failure status.
 def serverStatus():
     global allServerThreads
     joinServers()
     for t in allServerThreads:
-    	status = t.getStatus()
-    	if status:
-    	    return status
+        status = t.getStatus()
+        if status:
+            return status
     return 0
+
+# This joins with a specific server (the one started with the given pipe)
+# returns its exit status. If the server cannot be found an exception
+# is raised.
+def specificServerStatus(pipe, timeout = None):
+    global serverThreads
+    for t in serverThreads:
+        if t.getPipe() == pipe:
+            serverThreads.remove(t)
+	    if isWin32() and timeout != None:
+ 		#
+	        # BUGFIX: On Windows x64 with python 2.5 join with
+	        # a timeout doesn't work (it hangs for the duration
+		# of the timeout if the thread is alive at the time
+		# of the join call).
+		#
+	        while timeout >= 0 and t.isAlive():
+		    time.sleep(1)
+   	   	    timeout -= 1
+		if not t.isAlive():
+		    t.join()
+            else:
+	        t.join(timeout)
+            if t.isAlive():
+                raise "server with pipe " + str(pipe) + " did not exit within the timeout period."
+            status = t.getStatus()
+            return status
+    raise "can't find server with pipe: " + str(pipe)
 
 def killServers():
 
@@ -231,32 +273,32 @@ def getServerPid(pipe):
     global serverThreads
 
     while 1:
-	output = pipe.readline().strip()
-	if not output:
-	    print "failed!"
-	    killServers()
-	    sys.exit(1)
-    	if output.startswith("warning: "):
-    	    continue
-	break
+        output = pipe.readline().strip()
+        if not output:
+            print "failed!"
+            killServers()
+            sys.exit(1)
+        if output.startswith("warning: "):
+            continue
+        break
 
     try:
-	serverPids.append(int(output))
+        serverPids.append(int(output))
     except ValueError:
-	print "Output is not a PID: " + output
-	raise
+        print "Output is not a PID: " + output
+        raise
 
 def ignorePid(pipe):
 
     while 1:
-	output = pipe.readline().strip()
-	if not output:
-	    print "failed!"
-	    killServers()
-	    sys.exit(1)
-    	if output.startswith("warning: "):
-    	    continue
-	break
+        output = pipe.readline().strip()
+        if not output:
+            print "failed!"
+            killServers()
+            sys.exit(1)
+        if output.startswith("warning: "):
+            continue
+        break
 
 def getAdapterReady(pipe, createThread = True, count = 1):
     global serverThreads
@@ -272,9 +314,9 @@ def getAdapterReady(pipe, createThread = True, count = 1):
 
     # Start a thread for this server.
     if createThread:
-	serverThread = ReaderThread(pipe)
-	serverThread.start()
-	serverThreads.append(serverThread)
+        serverThread = ReaderThread(pipe)
+        serverThread.start()
+        serverThreads.append(serverThread)
 
 def getIceBox(testdir):
 
@@ -284,23 +326,23 @@ def getIceBox(testdir):
 
     iceBox = ""
     if isWin32():
-	#
-    	# Read the build.txt file from the test directory to figure out 
-    	# how the IceBox service was built ("debug" vs. "release") and 
-	# decide which icebox executable to use.
-    	# 
-    	build = open(os.path.join(testdir, "build.txt"), "r")
-    	type = build.read().strip()
-    	if type == "debug":
-	    iceBox = os.path.join(toplevel, "bin", "iceboxd.exe")
+        #
+        # Read the build.txt file from the test directory to figure out 
+        # how the IceBox service was built ("debug" vs. "release") and 
+        # decide which icebox executable to use.
+        # 
+        build = open(os.path.join(testdir, "build.txt"), "r")
+        type = build.read().strip()
+        if type == "debug":
+            iceBox = os.path.join(toplevel, "bin", "iceboxd.exe")
         elif type == "release":
             iceBox = os.path.join(toplevel, "bin", "icebox.exe")
     else:
-	iceBox = os.path.join(toplevel, "bin", "icebox")
+        iceBox = os.path.join(toplevel, "bin", "icebox")
 
     if iceBox == "" or not os.path.exists(iceBox):
-	print "couldn't find icebox executable to run the test"
-	sys.exit(0)
+        print "couldn't find icebox executable to run the test"
+        sys.exit(0)
 
     return iceBox;
 
@@ -317,9 +359,9 @@ def waitServiceReady(pipe, token, createThread = True):
 
     # Start a thread for this server.
     if createThread:
-	serverThread = ReaderThread(pipe)
-	serverThread.start()
-	serverThreads.append(serverThread)
+        serverThread = ReaderThread(pipe)
+        serverThread.start()
+        serverThreads.append(serverThread)
 
 def printOutputFromPipe(pipe):
 
@@ -331,15 +373,15 @@ def printOutputFromPipe(pipe):
 
 def addLdPath(path):
     if isWin32():
-	if isCygwin():
-	    os.environ["PATH"] = path + ":" + os.getenv("PATH", "")
-	else:
-	    os.environ["PATH"] = path + ";" + os.getenv("PATH", "")
+        if isCygwin():
+            os.environ["PATH"] = path + ":" + os.getenv("PATH", "")
+        else:
+            os.environ["PATH"] = path + ";" + os.getenv("PATH", "")
     elif isAIX():
-	os.environ["LIBPATH"] = path + ":" + os.getenv("LIBPATH", "")
+        os.environ["LIBPATH"] = path + ":" + os.getenv("LIBPATH", "")
     else:
-	os.environ["LD_LIBRARY_PATH"] = path + ":" + os.getenv("LD_LIBRARY_PATH", "")
-	os.environ["LD_LIBRARY_PATH_64"] = path + ":" + os.getenv("LD_LIBRARY_PATH_64", "")
+        os.environ["LD_LIBRARY_PATH"] = path + ":" + os.getenv("LD_LIBRARY_PATH", "")
+        os.environ["LD_LIBRARY_PATH_64"] = path + ":" + os.getenv("LD_LIBRARY_PATH_64", "")
 
 for toplevel in [".", "..", "../..", "../../..", "../../../.."]:
     toplevel = os.path.normpath(toplevel)
@@ -350,13 +392,14 @@ else:
 
 if isWin32():
     if isCygwin():
-	os.environ["PATH"] = os.path.join(toplevel, "bin") + ":" + os.getenv("PATH", "")
+        os.environ["PATH"] = os.path.join(toplevel, "bin") + ":" + os.getenv("PATH", "")
     else:
-	os.environ["PATH"] = os.path.join(toplevel, "bin") + ";" + os.getenv("PATH", "")
+        os.environ["PATH"] = os.path.join(toplevel, "bin") + ";" + os.getenv("PATH", "")
 elif isHpUx():
     os.environ["SHLIB_PATH"] = os.path.join(toplevel, "lib") + ":" + os.getenv("SHLIB_PATH", "")
 elif isDarwin():
     os.environ["DYLD_LIBRARY_PATH"] = os.path.join(toplevel, "lib") + ":" + os.getenv("DYLD_LIBRRARY_PATH", "")
+    os.environ["DYLD_BIND_AT_LAUNCH"] = "1"
 elif isAIX():
     os.environ["LIBPATH"] = os.path.join(toplevel, "lib") + ":" + os.getenv("LIBPATH", "")
 else:
@@ -364,7 +407,7 @@ else:
     os.environ["LD_LIBRARY_PATH_64"] = os.path.join(toplevel, "lib") + ":" + os.getenv("LD_LIBRARY_PATH_64", "")
 
 if protocol == "ssl":
-    plugin		 = " --Ice.Plugin.IceSSL=IceSSL:createIceSSL"
+    plugin               = " --Ice.Plugin.IceSSL=IceSSL:createIceSSL"
     clientProtocol       = plugin + " --Ice.Default.Protocol=ssl" + \
                            " --IceSSL.DefaultDir=" + os.path.join(toplevel, "certs") + \
                            " --IceSSL.CertFile=c_rsa1024_pub.pem" + \
@@ -386,11 +429,6 @@ if compress:
     serverProtocol += " --Ice.Override.Compress"
     clientServerProtocol += " --Ice.Override.Compress"
 
-if threadPerConnection:
-    clientProtocol += " --Ice.ThreadPerConnection"
-    serverProtocol += " --Ice.ThreadPerConnection"
-    clientServerProtocol += " --Ice.ThreadPerConnection"
-
 if host != "":
     defaultHost = " --Ice.Default.Host=" + host
 else:
@@ -399,9 +437,14 @@ else:
 commonClientOptions = " --Ice.NullHandleAbort --Ice.Warn.Connections"
 
 commonServerOptions = " --Ice.PrintProcessId --Ice.PrintAdapterReady --Ice.NullHandleAbort" + \
-                      " --Ice.Warn.Connections --Ice.ServerIdleTime=30" + \
-                      " --Ice.ThreadPool.Server.Size=1 --Ice.ThreadPool.Server.SizeMax=3" + \
-                      " --Ice.ThreadPool.Server.SizeWarn=0"
+                      " --Ice.Warn.Connections --Ice.ServerIdleTime=30"
+
+if threadPerConnection:
+    commonClientOptions += " --Ice.ThreadPerConnection"
+    commonServerOptions += " --Ice.ThreadPerConnection"
+else:
+    commonServerOptions += " --Ice.ThreadPool.Server.Size=1 --Ice.ThreadPool.Server.SizeMax=3" + \
+                           " --Ice.ThreadPool.Server.SizeWarn=0"
 
 clientOptions = clientProtocol + defaultHost + commonClientOptions
 serverOptions = serverProtocol + defaultHost + commonServerOptions
@@ -418,7 +461,7 @@ def clientServerTestWithOptionsAndNames(name, additionalServerOptions, additiona
     print "starting " + serverName + "...",
     serverCmd = server + serverOptions + additionalServerOptions
     if debug:
-	print "(" + serverCmd + ")",
+        print "(" + serverCmd + ")",
     serverPipe = os.popen(serverCmd + " 2>&1")
     getServerPid(serverPipe)
     getAdapterReady(serverPipe)
@@ -427,7 +470,7 @@ def clientServerTestWithOptionsAndNames(name, additionalServerOptions, additiona
     print "starting " + clientName + "...",
     clientCmd = client + clientOptions + additionalClientOptions
     if debug:
-	print "(" + clientCmd + ")",
+        print "(" + clientCmd + ")",
     clientPipe = os.popen(clientCmd + " 2>&1")
     print "ok"
 
@@ -435,7 +478,7 @@ def clientServerTestWithOptionsAndNames(name, additionalServerOptions, additiona
 
     clientStatus = closePipe(clientPipe)
     if clientStatus:
-	killServers()
+        killServers()
 
     joinServers()
 
@@ -459,7 +502,7 @@ def mixedClientServerTestWithOptions(name, additionalServerOptions, additionalCl
     print "starting server...",
     serverCmd = server + clientServerOptions + additionalServerOptions
     if debug:
-	print "(" + serverCmd + ")",
+        print "(" + serverCmd + ")",
     serverPipe = os.popen(serverCmd + " 2>&1")
     getServerPid(serverPipe)
     getAdapterReady(serverPipe)
@@ -468,7 +511,7 @@ def mixedClientServerTestWithOptions(name, additionalServerOptions, additionalCl
     print "starting client...",
     clientCmd = client + clientServerOptions + additionalClientOptions
     if debug:
-	print "(" + clientCmd + ")",
+        print "(" + clientCmd + ")",
     clientPipe = os.popen(clientCmd + " 2>&1")
     ignorePid(clientPipe)
     getAdapterReady(clientPipe, False)
@@ -479,10 +522,10 @@ def mixedClientServerTestWithOptions(name, additionalServerOptions, additionalCl
     clientStatus = closePipe(clientPipe)
 
     if clientStatus:
-	killServers()
+        killServers()
 
     if clientStatus or serverStatus():
-	sys.exit(1)
+        sys.exit(1)
 
 def mixedClientServerTest(name):
 
@@ -496,7 +539,7 @@ def collocatedTestWithOptions(name, additionalOptions):
     print "starting collocated...",
     command = collocated + collocatedOptions + additionalOptions 
     if debug:
-	print "(" + command + ")",
+        print "(" + command + ")",
     collocatedPipe = os.popen(command + " 2>&1")
     print "ok"
 
@@ -505,7 +548,7 @@ def collocatedTestWithOptions(name, additionalOptions):
     collocatedStatus = closePipe(collocatedPipe)
 
     if collocatedStatus:
-	sys.exit(1)
+        sys.exit(1)
 
 def collocatedTest(name):
 

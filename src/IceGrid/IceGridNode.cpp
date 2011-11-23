@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,14 +16,16 @@
 #include <IceGrid/RegistryI.h>
 #include <IceGrid/FileUserAccountMapperI.h>
 #include <IceGrid/NodeI.h>
+#include <IceGrid/NodeSessionManager.h>
 #include <IceGrid/TraceLevels.h>
-#include <IceGrid/DescriptorParser.h>
 #ifdef __BCPLUSPLUS__
 #  include <IceGrid/ServerI.h>
 #  include <IceGrid/AdminSessionI.h>
 #  include <IceGrid/ReapThread.h>
 #  include <IceGrid/Database.h>
+#  include <IceGrid/WellKnownObjectsManager.h>
 #endif
+#include <IceGrid/DescriptorParser.h>
 #include <IcePatch2/Util.h>
 
 #ifdef _WIN32
@@ -45,51 +47,6 @@ using namespace IceGrid;
 
 namespace IceGrid
 {
-
-class KeepAliveThread : public IceUtil::Thread, public IceUtil::Monitor<IceUtil::Mutex>
-{
-public:
-
-    KeepAliveThread(const NodeIPtr& node, int timeout) : 
-	_node(node), 
-	_timeout(IceUtil::Time::seconds(timeout)), 
-	_shutdown(false)
-    {
-    }
-
-    virtual void
-    run()
-    {
-	Lock sync(*this);
-	while(!_shutdown)
-	{
-	    int timeout = _node->keepAlive();
-	    if(timeout > 0)
-	    {
-		_timeout = IceUtil::Time::seconds(timeout);
-	    }
-	    if(!_shutdown)
-	    {
-		timedWait(_timeout);
-	    }
-	}
-    }
-
-    virtual void
-    terminate()
-    {
-	Lock sync(*this);
-	_shutdown = true;
-	notifyAll();
-    }
-
-private:
-
-    const NodeIPtr _node;
-    IceUtil::Time _timeout;
-    bool _shutdown;
-};
-typedef IceUtil::Handle<KeepAliveThread> KeepAliveThreadPtr;
 
 class ProcessI : public Process
 {
@@ -124,12 +81,13 @@ protected:
 private:
 
     void usage(const std::string&);
+    string trim(const string&);
 
     ActivatorPtr _activator;
     WaitQueuePtr _waitQueue;
     RegistryIPtr _registry;
     NodeIPtr _node;
-    KeepAliveThreadPtr _keepAliveThread;
+    NodeSessionManager _sessions;
     Ice::ObjectAdapterPtr _adapter;
 };
 
@@ -148,7 +106,7 @@ private:
 } // End of namespace IceGrid
 
 CollocatedRegistry::CollocatedRegistry(const CommunicatorPtr& communicator, const ActivatorPtr& activator) :
-    RegistryI(communicator), 
+    RegistryI(communicator, new TraceLevels(communicator, "IceGrid.Registry")), 
     _activator(activator)
 {
 }
@@ -174,16 +132,16 @@ ProcessI::writeMessage(const string& message, Int fd, const Current&)
 {
     switch(fd)
     {
-	case 1:
-	{
-	    cout << message << endl;
-	    break;
-	}
-	case 2:
-	{
-	    cerr << message << endl;
-	    break;
-	}
+        case 1:
+        {
+            cout << message << endl;
+            break;
+        }
+        case 2:
+        {
+            cerr << message << endl;
+            break;
+        }
     }
 }
 
@@ -196,6 +154,7 @@ NodeService::shutdown()
 {
     assert(_activator);
     _activator->shutdown();
+    _sessions.terminate(); // Unblock the main thread if it's blocked on waitForCreate()
     return true;
 }
 
@@ -237,12 +196,12 @@ NodeService::start(int argc, char* argv[])
                 targets.push_back(argv[i]);
             }
         }
-	else
-	{
-	    error("invalid option: `" + string(argv[i]) + "'");
-	    usage(argv[0]);
-	    return false;
-	}
+        else
+        {
+            error("invalid option: `" + string(argv[i]) + "'");
+            usage(argv[0]);
+            return false;
+        }
     }
 
     PropertiesPtr properties = communicator()->getProperties();
@@ -263,35 +222,58 @@ NodeService::start(int argc, char* argv[])
     //
     if(!nowarn && properties->getPropertyAsIntWithDefault("Ice.ThreadPool.Server.Size", 0) > 0)
     {
-	Warning out(communicator()->getLogger());
-	out << "setting `Ice.ThreadPool.Server.Size' is not useful,\n";
-	out << "you should set individual adapter thread pools instead.";
+        Warning out(communicator()->getLogger());
+        out << "setting `Ice.ThreadPool.Server.Size' is not useful, ";
+        out << "you should set individual adapter thread pools instead.";
     }
     
     int size = properties->getPropertyAsIntWithDefault("IceGrid.Node.ThreadPool.Size", 0);
     if(size <= 0)
     {
-	properties->setProperty("IceGrid.Node.ThreadPool.Size", "1");
-	size = 1;
+        properties->setProperty("IceGrid.Node.ThreadPool.Size", "1");
+        size = 1;
     }
+
     int sizeMax = properties->getPropertyAsIntWithDefault("IceGrid.Node.ThreadPool.SizeMax", 0);
     if(sizeMax <= 0)
     {
-	if(size >= sizeMax)
-	{
-	    sizeMax = size * 10;
-	}
-	
-	ostringstream os;
-	os << sizeMax;
-	properties->setProperty("IceGrid.Node.ThreadPool.SizeMax", os.str());
+        if(size >= sizeMax)
+        {
+            sizeMax = size * 10;
+        }
+        
+        ostringstream os;
+        os << sizeMax;
+        properties->setProperty("IceGrid.Node.ThreadPool.SizeMax", os.str());
+    }
+
+    size = properties->getPropertyAsIntWithDefault("Ice.ThreadPool.Client.Size", 0);
+    if(size <= 0)
+    {
+        properties->setProperty("Ice.ThreadPool.Client.Size", "1");
+        size = 1;
+    }
+    sizeMax = properties->getPropertyAsIntWithDefault("Ice.ThreadPool.Client.SizeMax", 0);
+    if(sizeMax <= 0)
+    {
+        if(size >= sizeMax)
+        {
+            sizeMax = size * 10;
+        }
+        if(sizeMax < 100)
+        {
+            sizeMax = 100;
+        }
+        ostringstream os;
+        os << sizeMax;
+        properties->setProperty("Ice.ThreadPool.Client.SizeMax", os.str());
     }
 
     //
     // Create the activator.
     //
-    TraceLevelsPtr traceLevels = new TraceLevels(properties, communicator()->getLogger(), true);
-    _activator = new Activator(traceLevels, properties);
+    TraceLevelsPtr traceLevels = new TraceLevels(communicator(), "IceGrid.Node");
+    _activator = new Activator(traceLevels);
 
     //
     // Collocate the IceGrid registry if we need to.
@@ -305,17 +287,21 @@ NodeService::start(int argc, char* argv[])
         }
 
         //
-        // Set the Ice.Default.Locator property to point to the
-        // collocated locator (this property is passed by the
-        // activator to each activated server).
+        // Set the default locator property to point to the collocated
+        // locator (this property is passed by the activator to each
+        // activated server). The default locator is also needed by
+        // the node session manager.
         //
-	const string instanceNameProperty = "IceGrid.InstanceName";
-	Identity locatorId;
-	locatorId.category = properties->getPropertyWithDefault(instanceNameProperty, "IceGrid");
-	locatorId.name = "Locator";
-	string locatorPrx = "\"" + communicator()->identityToString(locatorId) + "\" :" + 
-			    properties->getProperty("IceGrid.Registry.Client.Endpoints");
-        properties->setProperty("Ice.Default.Locator", locatorPrx);
+        if(properties->getProperty("Ice.Default.Locator").empty())
+        {
+            Identity locatorId;
+            locatorId.category = properties->getPropertyWithDefault("IceGrid.InstanceName", "IceGrid");
+            locatorId.name = "Locator";
+            string endpoints = properties->getProperty("IceGrid.Registry.Client.Endpoints");
+            string locatorPrx = "\"" + communicator()->identityToString(locatorId) + "\" :" + endpoints;
+            communicator()->setDefaultLocator(LocatorPrx::uncheckedCast(communicator()->stringToProxy(locatorPrx)));
+            properties->setProperty("Ice.Default.Locator", locatorPrx);
+        }
     }
     else if(properties->getProperty("Ice.Default.Locator").empty())
     {
@@ -339,25 +325,25 @@ NodeService::start(int argc, char* argv[])
         struct _stat filestat;
         if(::_stat(dataPath.c_str(), &filestat) != 0 || !S_ISDIR(filestat.st_mode))
         {
-	    ostringstream os;
-	    FileException ex(__FILE__, __LINE__);
-	    ex.path = dataPath;
-	    ex.error = getSystemErrno();
-	    os << ex;
+            ostringstream os;
+            FileException ex(__FILE__, __LINE__);
+            ex.path = dataPath;
+            ex.error = getSystemErrno();
+            os << ex;
             error("property `IceGrid.Node.Data' is set to an invalid path:\n" + os.str());
-	    return false;
+            return false;
         }            
 #else
         struct stat filestat;
         if(::stat(dataPath.c_str(), &filestat) != 0 || !S_ISDIR(filestat.st_mode))
         {
-	    ostringstream os;
-	    FileException ex(__FILE__, __LINE__);
-	    ex.path = dataPath;
-	    ex.error = getSystemErrno();
-	    os << ex;
+            ostringstream os;
+            FileException ex(__FILE__, __LINE__);
+            ex.path = dataPath;
+            ex.error = getSystemErrno();
+            os << ex;
             error("property `IceGrid.Node.Data' is set to an invalid path:\n" + os.str());
-	    return false;
+            return false;
         }            
 #endif
 
@@ -369,9 +355,9 @@ NodeService::start(int argc, char* argv[])
             dataPath += "/"; 
         }
 
-	IcePatch2::createDirectory(dataPath + "servers");
-	IcePatch2::createDirectory(dataPath + "tmp");
-	IcePatch2::createDirectory(dataPath + "distrib");
+        IcePatch2::createDirectory(dataPath + "servers");
+        IcePatch2::createDirectory(dataPath + "tmp");
+        IcePatch2::createDirectory(dataPath + "distrib");
     }
 
     //
@@ -386,23 +372,8 @@ NodeService::start(int argc, char* argv[])
     string name = properties->getProperty("IceGrid.Node.Name");
     if(name.empty())
     {
-	char host[1024 + 1];
-	string hostname;
-	if(gethostname(host, 1024) != -1)
-	{
-	    hostname = host;
-	}
-	if(hostname.empty())
-	{
-	    error("property `IceGrid.Node.Name' is not set and hostname is empty");
-	    return false;
-	}
-	if(!nowarn)
-        {
-            warning("property `IceGrid.Node.Name' is not set, using hostname: " + hostname);
-        }
-	properties->setProperty("IceGrid.Node.Name", hostname);
-	name = hostname;
+        error("property `IceGrid.Node.Name' is not set");
+        return false;
     }
 
     //
@@ -421,39 +392,40 @@ NodeService::start(int argc, char* argv[])
     //
     // Setup the user account mapper if configured.
     //
-    string mapperProperty = properties->getProperty("IceGrid.Node.UserAccountMapper");
+    string mapperProperty = "IceGrid.Node.UserAccountMapper";
+    string mapperPropertyValue = properties->getProperty(mapperProperty);
     UserAccountMapperPrx mapper;
-    if(!mapperProperty.empty())
+    if(!mapperPropertyValue.empty())
     {
-	try
-	{
-	    mapper = UserAccountMapperPrx::uncheckedCast(communicator()->stringToProxy(mapperProperty));
-	}
-	catch(const Ice::LocalException& ex)
-	{
-	    ostringstream os;
-	    os << "user account mapper `" << mapperProperty << "' is invalid:\n" << ex;
-	    error(os.str());
-	    return false;
-	}
+        try
+        {
+            mapper = UserAccountMapperPrx::uncheckedCast(communicator()->propertyToProxy(mapperProperty));
+        }
+        catch(const Ice::LocalException& ex)
+        {
+            ostringstream os;
+            os << "user account mapper `" << mapperProperty << "' is invalid:\n" << ex;
+            error(os.str());
+            return false;
+        }
     }
     else
     {
-	string userAccountFileProperty = properties->getProperty("IceGrid.Node.UserAccounts");
-	if(!userAccountFileProperty.empty())
-	{
-	    try
-	    {
-		Ice::ObjectPrx object = _adapter->addWithUUID(new FileUserAccountMapperI(userAccountFileProperty));
-		object = object->ice_collocationOptimized(true);
-		mapper = UserAccountMapperPrx::uncheckedCast(object);
-	    }
-	    catch(const std::string& msg)
-	    {
-		error(msg);
-		return false;
-	    }
-	}
+        string userAccountFileProperty = properties->getProperty("IceGrid.Node.UserAccounts");
+        if(!userAccountFileProperty.empty())
+        {
+            try
+            {
+                Ice::ObjectPrx object = _adapter->addWithUUID(new FileUserAccountMapperI(userAccountFileProperty));
+                object = object->ice_collocationOptimized(true);
+                mapper = UserAccountMapperPrx::uncheckedCast(object);
+            }
+            catch(const std::string& msg)
+            {
+                error(msg);
+                return false;
+            }
+        }
     }
 
     //
@@ -463,22 +435,29 @@ NodeService::start(int argc, char* argv[])
     _waitQueue->start();
 
     //
+    // The IceGrid instance name.
+    //
+    const string instanceName = communicator()->getDefaultLocator()->ice_getIdentity().category;
+
+    //
     // Create the server factory. The server factory creates persistent objects
     // for the server and server adapter. It also takes care of installing the
     // evictors and object factories necessary to store these objects.
     //
-    Identity id = communicator()->stringToIdentity(IceUtil::generateUUID());
+    Identity id = communicator()->stringToIdentity(instanceName + "/Node-" + name);
     NodePrx nodeProxy = NodePrx::uncheckedCast(_adapter->createProxy(id));
-    _node = new NodeI(_adapter, _activator, _waitQueue, traceLevels, nodeProxy, name, mapper);
+    _node = new NodeI(_adapter, _sessions, _activator, _waitQueue, traceLevels, nodeProxy, name, mapper);
     _adapter->add(_node, nodeProxy->ice_getIdentity());
 
     //
-    // Start the keep alive thread. By default we start the thread
-    // with a 5s timeout, then we'll use the registry node session
-    // timeout / 2.
+    // Start the platform info thread if needed.
     //
-    _keepAliveThread = new KeepAliveThread(_node, 5);
-    _keepAliveThread->start();
+    _node->getPlatformInfo().start();
+
+    //
+    // Create the node sessions with the registries.
+    //
+    _sessions.create(_node);
 
     //
     // Add a process servant to allow shutdown through the process
@@ -486,18 +465,18 @@ NodeService::start(int argc, char* argv[])
     //
     if(!properties->getProperty("Ice.ServerId").empty() && communicator()->getDefaultLocator())
     {
-	try
-	{
-	    ProcessPrx proxy = ProcessPrx::uncheckedCast(_adapter->addWithUUID(new ProcessI(_activator)));
-	    LocatorRegistryPrx locatorRegistry = communicator()->getDefaultLocator()->getRegistry();
-	    locatorRegistry->setServerProcessProxy(properties->getProperty("Ice.ServerId"), proxy);
-	}
-	catch(const ServerNotFoundException&)
-	{
-	}
-	catch(const LocalException&)
-	{
-	}
+        try
+        {
+            ProcessPrx proxy = ProcessPrx::uncheckedCast(_adapter->addWithUUID(new ProcessI(_activator)));
+            LocatorRegistryPrx locatorRegistry = communicator()->getDefaultLocator()->getRegistry();
+            locatorRegistry->setServerProcessProxy(properties->getProperty("Ice.ServerId"), proxy);
+        }
+        catch(const ServerNotFoundException&)
+        {
+        }
+        catch(const LocalException&)
+        {
+        }
     }
 
     //
@@ -511,67 +490,125 @@ NodeService::start(int argc, char* argv[])
     _adapter->activate();
 
     //
+    // Notify the node session manager that the node can start
+    // accepting incoming connections.
+    //
+    _sessions.activate();
+
+    string bundleName = properties->getProperty("IceGrid.Node.PrintServersReady");
+    if(!bundleName.empty() || !desc.empty())
+    {
+        enableInterrupt();
+        if(!_sessions.waitForCreate())
+        {
+            //
+            // Create was interrupted, return true as if the service was
+            // correctly initiliazed to make sure it's properly stopped.
+            //
+            return true;
+        }
+        disableInterrupt();
+    }
+
+    //
     // Deploy application if a descriptor is passed as a command-line option.
     //
     if(!desc.empty())
     {
-        AdminPrx admin;
         try
         {
-	    const string instanceNameProperty = "IceGrid.InstanceName";
-	    Identity adminId;
-	    adminId.category = properties->getPropertyWithDefault(instanceNameProperty, "IceGrid");
-	    adminId.name = "Admin";
-            admin = AdminPrx::checkedCast(
-	    		communicator()->stringToProxy("\"" + communicator()->identityToString(adminId) + "\""));
+            Ice::Identity registryId;
+            registryId.category = instanceName;
+            registryId.name = "Registry";
+            
+            RegistryPrx registry = RegistryPrx::checkedCast(
+                communicator()->stringToProxy("\"" + communicator()->identityToString(registryId) + "\""));
+            if(!registry)
+            {
+                throw "invalid registry";
+            }
+        
+            //
+            // Use SSL if available.
+            //
+            try
+            {
+                registry = RegistryPrx::checkedCast(registry->ice_secure(true));
+            }
+            catch(const Ice::NoEndpointException&)
+            {
+            }
+            
+            IceGrid::AdminSessionPrx session;
+            if(communicator()->getProperties()->getPropertyAsInt("IceGridAdmin.AuthenticateUsingSSL"))
+            {
+                session = registry->createAdminSessionFromSecureConnection();
+            }
+            else
+            {
+                string id = communicator()->getProperties()->getProperty("IceGridAdmin.Username");
+                string password = communicator()->getProperties()->getProperty("IceGridAdmin.Password");
+                while(id.empty())
+                {
+                    cout << "user id: " << flush;
+                    getline(cin, id);
+                    id = trim(id);
+                }
+                
+                if(password.empty())
+                {
+                    cout << "password: " << flush;
+                    getline(cin, password);
+                    password = trim(password);
+                }
+                
+                session = registry->createAdminSession(id, password);
+            }
+            assert(session);
+
+            AdminPrx admin = session->getAdmin();
+            map<string, string> vars;
+            ApplicationDescriptor app = DescriptorParser::parseDescriptor(desc, targets, vars, communicator(), admin);
+
+            try
+            {
+                admin->syncApplication(app);
+            }
+            catch(const ApplicationNotExistException&)
+            {
+                admin->addApplication(app);
+            }
+        }
+        catch(const DeploymentException& ex)
+        {
+            ostringstream ostr;
+            ostr << "failed to deploy application `" << desc << "':\n" << ex << ": " << ex.reason;
+            warning(ostr.str());
+        }
+        catch(const AccessDeniedException& ex)
+        {
+            ostringstream ostr;
+            ostr << "failed to deploy application `" << desc << "':\n" 
+                 << "registry database is locked by `" << ex.lockUserId << "'";
+            warning(ostr.str());
         }
         catch(const LocalException& ex)
         {
             ostringstream ostr;
-            ostr << "couldn't contact IceGrid admin interface to deploy application `" << desc << "':\n" << ex;
+            ostr << "failed to deploy application `" << desc << "':\n" << ex;
             warning(ostr.str());
         }
-
-        if(admin)
+        catch(const string& reason)
         {
-            try
-            {
-		map<string, string> vars;
-		ApplicationDescriptor app;
-		app = DescriptorParser::parseDescriptor(desc, targets, vars, communicator(), admin);
-		try
-		{
-		    admin->syncApplication(app);
-		}
-		catch(const ApplicationNotExistException&)
-		{
-		    admin->addApplication(app);
-		}
-	    }
-            catch(const DeploymentException& ex)
-            {
-                ostringstream ostr;
-                ostr << "failed to deploy application `" << desc << "':\n" << ex << ": " << ex.reason;
-                warning(ostr.str());
-            }
-            catch(const LocalException& ex)
-            {
-                ostringstream ostr;
-                ostr << "failed to deploy application `" << desc << "':\n" << ex;
-                warning(ostr.str());
-            }
+            ostringstream ostr;
+            ostr << "failed to deploy application `" << desc << "':\n" << reason;
+            warning(ostr.str());
         }
     }
 
-    string bundleName = properties->getProperty("IceGrid.Node.PrintServersReady");
     if(!bundleName.empty())
     {
-	//
-	// We wait for the node to be registered with the registry
-	// before to claim it's ready.
-	//
-	_node->waitForSession();
-	print(bundleName + " ready");
+        print(bundleName + " ready");
     }
 
     return true;
@@ -598,7 +635,7 @@ NodeService::stop()
     }
     catch(...)
     {
-	assert(false);
+        assert(false);
     }
 
     //
@@ -608,21 +645,11 @@ NodeService::stop()
     try
     {
         _waitQueue->destroy();
-	_waitQueue = 0;
+        _waitQueue = 0;
     }
     catch(...)
     {
-	assert(false);
-    }
-
-    //
-    // Terminate the registration thread if it was started.
-    //
-    if(_keepAliveThread)
-    {
-	_keepAliveThread->terminate();
-	_keepAliveThread->getThreadControl().join();
-	_keepAliveThread = 0;
+        assert(false);
     }
 
     _activator = 0;
@@ -632,21 +659,30 @@ NodeService::stop()
     //
     try
     {
-	_adapter->deactivate();
-	_adapter = 0;
+        _adapter->deactivate();
+        _adapter = 0;
     }
     catch(const Ice::LocalException& ex)
     {
-	ostringstream ostr;
-	ostr << "unexpected exception while shutting down node:\n" << ex;
-	warning(ostr.str());
+        ostringstream ostr;
+        ostr << "unexpected exception while shutting down node:\n" << ex;
+        warning(ostr.str());
     }
 
     //
-    // Stop the node (this unregister the node session with the
-    // registry.)
+    // Terminate the node sessions with the registries.
     //
-    _node->stop();
+    _sessions.destroy();
+
+    //
+    // Stop the platform info thread.
+    //
+    _node->getPlatformInfo().stop();
+
+    //
+    // Break cylic reference counts.
+    //
+    _node->destroy();
     _node = 0;
 
     //
@@ -659,9 +695,9 @@ NodeService::stop()
     }
     catch(const Ice::LocalException& ex)
     {
-	ostringstream ostr;
-	ostr << "unexpected exception while shutting down node:\n" << ex;
-	warning(ostr.str());
+        ostringstream ostr;
+        ostr << "unexpected exception while shutting down node:\n" << ex;
+        warning(ostr.str());
     }
 
     //
@@ -669,8 +705,8 @@ NodeService::stop()
     //
     if(_registry)
     {
-	_registry->stop();
-	_registry = 0;
+        _registry->stop();
+        _registry = 0;
     }
 
     return true;
@@ -678,7 +714,7 @@ NodeService::stop()
 
 CommunicatorPtr
 NodeService::initializeCommunicator(int& argc, char* argv[], 
-				    const InitializationData& initializationData)
+                                    const InitializationData& initializationData)
 {
     InitializationData initData = initializationData;
     initData.properties = createProperties(argc, argv, initData.properties);
@@ -697,35 +733,35 @@ void
 NodeService::usage(const string& appName)
 {
     string options =
-	"Options:\n"
-	"-h, --help           Show this message.\n"
-	"-v, --version        Display the Ice version.\n"
-	"--nowarn             Don't print any security warnings.\n"
-	"\n"
-	"--deploy DESCRIPTOR [TARGET1 [TARGET2 ...]]\n"
-	"                     Add or update descriptor in file DESCRIPTOR, with\n"
-	"                     optional targets.\n";
+        "Options:\n"
+        "-h, --help           Show this message.\n"
+        "-v, --version        Display the Ice version.\n"
+        "--nowarn             Don't print any security warnings.\n"
+        "\n"
+        "--deploy DESCRIPTOR [TARGET1 [TARGET2 ...]]\n"
+        "                     Add or update descriptor in file DESCRIPTOR, with\n"
+        "                     optional targets.\n";
 #ifdef _WIN32
     if(checkSystem())
     {
         options.append(
-	"\n"
-	"\n"
-	"--service NAME       Run as the Windows service NAME.\n"
-	"\n"
-	"--install NAME [--display DISP] [--executable EXEC] [args]\n"
-	"                     Install as Windows service NAME. If DISP is\n"
-	"                     provided, use it as the display name,\n"
-	"                     otherwise NAME is used. If EXEC is provided,\n"
-	"                     use it as the service executable, otherwise\n"
-	"                     this executable is used. Any additional\n"
-	"                     arguments are passed unchanged to the\n"
-	"                     service at startup.\n"
-	"--uninstall NAME     Uninstall Windows service NAME.\n"
-	"--start NAME [args]  Start Windows service NAME. Any additional\n"
-	"                     arguments are passed unchanged to the\n"
-	"                     service.\n"
-	"--stop NAME          Stop Windows service NAME."
+        "\n"
+        "\n"
+        "--service NAME       Run as the Windows service NAME.\n"
+        "\n"
+        "--install NAME [--display DISP] [--executable EXEC] [args]\n"
+        "                     Install as Windows service NAME. If DISP is\n"
+        "                     provided, use it as the display name,\n"
+        "                     otherwise NAME is used. If EXEC is provided,\n"
+        "                     use it as the service executable, otherwise\n"
+        "                     this executable is used. Any additional\n"
+        "                     arguments are passed unchanged to the\n"
+        "                     service at startup.\n"
+        "--uninstall NAME     Uninstall Windows service NAME.\n"
+        "--start NAME [args]  Start Windows service NAME. Any additional\n"
+        "                     arguments are passed unchanged to the\n"
+        "                     service.\n"
+        "--stop NAME          Stop Windows service NAME."
         );
     }
 #else
@@ -734,10 +770,23 @@ NodeService::usage(const string& appName)
         "\n"
         "--daemon             Run as a daemon.\n"
         "--noclose            Do not close open file descriptors.\n"
-        "--nochdir            Do not change the current working directory."
+        "--nochdir            Do not change the current working directory.\n"
+        "--pidfile FILE       Write process ID into FILE."
     );
 #endif
     print("Usage: " + appName + " [options]\n" + options);
+}
+
+string
+NodeService::trim(const string& s)
+{
+    static const string delims = "\t\r\n ";
+    string::size_type last = s.find_last_not_of(delims);
+    if(last != string::npos)
+    {
+        return s.substr(s.find_first_not_of(delims), last+1);
+    }
+    return s;
 }
 
 int

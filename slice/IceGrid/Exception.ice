@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,7 +33,11 @@ exception ApplicationNotExistException
  **/
 exception ServerNotExistException
 {
-    /** The identifier of the server. */
+    /**
+     *
+     * The identifier of the server.
+     *
+     */
     string id;
 };
 
@@ -44,10 +48,18 @@ exception ServerNotExistException
  **/
 exception ServerStartException
 {
-    /** The identifier of the server. */
+    /**
+     *
+     * The identifier of the server.
+     *
+     **/
     string id;
     
-    /** The reason for the failure. */
+    /**
+     *
+     * The reason for the failure.
+     *
+     **/
     string reason;
 };
 
@@ -58,10 +70,18 @@ exception ServerStartException
  **/
 exception ServerStopException
 {
-    /** The identifier of the server. */
+    /**
+     *
+     * The identifier of the server.
+     *
+     **/
     string id;
 
-    /** The reason for the failure. */
+    /**
+     *
+     * The reason for the failure.
+     *
+     **/
     string reason;
 };
 
@@ -72,7 +92,11 @@ exception ServerStopException
  **/
 exception AdapterNotExistException
 {
-    /** The id of the object adapter. */
+    /**
+     *
+     * The id of the object adapter.
+     *
+     **/
     string id;
 };
 
@@ -83,6 +107,11 @@ exception AdapterNotExistException
  **/
 exception ObjectExistsException
 {
+    /**
+     *
+     * The identity of the object.
+     *
+     **/
     Ice::Identity id;
 };
 
@@ -93,6 +122,11 @@ exception ObjectExistsException
  **/
 exception ObjectNotRegisteredException
 {
+    /**
+     *
+     * The identity of the object.
+     *
+     **/
     Ice::Identity id;
 };
 
@@ -103,12 +137,32 @@ exception ObjectNotRegisteredException
  **/
 exception NodeNotExistException
 {
+    /**
+     *
+     * The node name.
+     *
+     **/
     string name;
 };
 
 /**
  *
- * An exception for deployment failure errors.
+ * This exception is raised if a registry does not exist.
+ *
+ **/
+exception RegistryNotExistException
+{
+    /**
+     *
+     * The registry name.
+     *
+     **/
+    string name;
+};
+
+/**
+ *
+ * An exception for deployment errors.
  *
  **/
 exception DeploymentException
@@ -128,10 +182,40 @@ exception DeploymentException
  **/
 exception NodeUnreachableException
 {
-    /** The name of the node that is not reachable. */
+    /**
+     *
+     * The name of the node that is not reachable.
+     *
+     **/
     string name;
 
-    /** The reason why the node couldn't be reached. */
+    /**
+     *
+     * The reason why the node couldn't be reached.
+     *
+     **/
+    string reason;
+};
+
+/**
+ *
+ * This exception is raised if a registry could not be reached.
+ *
+ **/
+exception RegistryUnreachableException
+{
+    /**
+     *
+     * The name of the registry that is not reachable.
+     *
+     **/
+    string name;
+
+    /**
+     *
+     * The reason why the registry couldn't be reached.
+     *
+     **/
     string reason;
 };
 
@@ -143,6 +227,11 @@ exception NodeUnreachableException
  **/
 exception BadSignalException
 {
+    /**
+     * 
+     * The details of the unknown signal.
+     * 
+     **/
     string reason;
 };
 
@@ -153,18 +242,27 @@ exception BadSignalException
  **/
 exception PatchException
 {
-    /** The reasons why the patch failed. */
+    /**
+     *
+     * The reasons why the patch failed.
+     *
+     **/
     Ice::StringSeq reasons;
 };
 
 /**
  *
- * This exception is raised if an operation can't be performed because
- * the registry lock wasn't acquired or is already acquired by a session.
+ * This exception is raised if a registry lock wasn't
+  * acquired or is already held by a session.
  *
  **/
 exception AccessDeniedException
 {
+    /**
+     *
+     * The id of the user holding the lock (if any).
+     *
+     **/
     string lockUserId;
 };
 
@@ -175,7 +273,11 @@ exception AccessDeniedException
  **/
 exception AllocationException
 {
-    /** The reason why the object couldn't be allocated. */
+    /**
+     *
+     * The reason why the object couldn't be allocated.
+     *
+     **/
     string reason;
 };
 
@@ -206,6 +308,43 @@ exception PermissionDeniedException
      **/
     string reason;
 };
+
+/**
+ *
+ * This exception is raised if an observer is already registered with
+ * the registry.
+ *
+ * @see AdminSession::setObservers
+ * @see AdminSession::setObserversByIdentity
+ *
+ **/
+exception ObserverAlreadyRegisteredException
+{
+    /**
+     *
+     * The identity of the observer.
+     *
+     **/
+    Ice::Identity id;
+};
+
+/**
+ *
+ * This exception is raised if a file is not available.
+ *
+ * @see AdminSession::openServerStdOut
+ * @see AdminSession::openServerStdErr
+ * @see AdminSession::openNodeStdOut
+ * @see AdminSession::openNodeStdErr
+ * @see AdminSession::openRegistryStdOut
+ * @see AdminSession::openRegistryStdErr
+ *
+ **/
+exception FileNotAvailableException
+{
+    string reason;
+};
+
 
 };
 

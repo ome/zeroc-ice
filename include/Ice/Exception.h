@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,7 +31,8 @@ class ICE_API LocalException : public IceUtil::Exception
 public:    
 
     LocalException(const char*, int);
-    virtual const std::string ice_name() const = 0;
+    virtual ~LocalException() throw();
+    virtual std::string ice_name() const = 0;
     virtual Exception* ice_clone() const = 0;
     virtual void ice_throw() const = 0;
 };
@@ -41,7 +42,7 @@ class ICE_API UserException : public IceUtil::Exception
 {
 public:    
 
-    virtual const std::string ice_name() const = 0;
+    virtual std::string ice_name() const = 0;
     virtual Exception* ice_clone() const = 0;
     virtual void ice_throw() const = 0;
 

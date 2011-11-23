@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -37,7 +37,7 @@ IceUtil::Time::now()
     ftime(&tb);
 #  endif
     return Time(static_cast<Int64>(tb.time) * ICE_INT64(1000000) + 
-		tb.millitm * 1000);
+                tb.millitm * 1000);
 #else
     struct timeval tv;
     gettimeofday(&tv, 0);
@@ -132,15 +132,6 @@ IceUtil::Time::toDateTime() const
     os.width(3);
     os << static_cast<long>(_usec % 1000000 / 1000);
     return os.str();
-}
-
-//
-// TODO: toString() is deprecated. Leave for two more releases after 3.0.0 and then remove it.
-//
-std::string
-IceUtil::Time::toString() const
-{
-    return toDateTime();
 }
 
 std::string

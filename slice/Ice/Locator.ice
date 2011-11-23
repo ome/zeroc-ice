@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -67,14 +67,14 @@ interface LocatorRegistry;
 
 /**
  *
- * The &Ice; locator interface. This interface is used by clients to
+ * The Ice locator interface. This interface is used by clients to
  * lookup adapters and objects. It is also used by servers to get the
  * locator registry proxy.
  *
- * <note><para> The [Locator] interface is intended to be used by
- * &Ice; internals and by locator implementations. Regular user code
+ * <p class="Note"> The [Locator] interface is intended to be used by
+ * Ice internals and by locator implementations. Regular user code
  * should not attempt to use any functionality of this interface
- * directly.</para></note>
+ * directly.
  *
  **/
 interface Locator
@@ -91,8 +91,8 @@ interface Locator
      * be found.
      *
      **/
-    ["amd"] nonmutating Object* findObjectById(Ice::Identity id)
-	throws ObjectNotFoundException;
+    ["amd", "nonmutating", "cpp:const"] idempotent Object* findObjectById(Ice::Identity id)
+        throws ObjectNotFoundException;
 
     /**
      *
@@ -107,8 +107,8 @@ interface Locator
      * found.
      *
      **/
-    ["amd"] nonmutating Object* findAdapterById(string id)
-	throws AdapterNotFoundException;
+    ["amd", "nonmutating", "cpp:const"] idempotent Object* findAdapterById(string id)
+        throws AdapterNotFoundException;
 
     /**
      *
@@ -117,18 +117,18 @@ interface Locator
      * @return The locator registry.
      *
      **/
-    nonmutating LocatorRegistry* getRegistry();
+    ["nonmutating", "cpp:const"] idempotent LocatorRegistry* getRegistry();
 };
 
 /**
  *
- * The &Ice; locator registry interface. This interface is used by
+ * The Ice locator registry interface. This interface is used by
  * servers to register adapter endpoints with the locator.
  *
- * <note><para> The [LocatorRegistry] interface is intended to be used
- * by &Ice; internals and by locator implementations. Regular user
+ * <p class="Note"> The [LocatorRegistry] interface is intended to be used
+ * by Ice internals and by locator implementations. Regular user
  * code should not attempt to use any functionality of this interface
- * directly.</para></note>
+ * directly.
  *
  **/
 interface LocatorRegistry
@@ -137,7 +137,7 @@ interface LocatorRegistry
      *
      * Set the adapter endpoints with the locator registry.
      *
-     * @param adapterId The adapter id.
+     * @param id The adapter id.
      *
      * @param proxy The adapter proxy (a dummy direct proxy created
      * by the adapter). The direct proxy contains the adapter
@@ -152,8 +152,8 @@ interface LocatorRegistry
      * id is already active.
      *
      **/
-    ["amd"] idempotent void setAdapterDirectProxy(string id, Object* proxy)
-	throws AdapterNotFoundException, AdapterAlreadyActiveException;
+    ["amd", "ami"] idempotent void setAdapterDirectProxy(string id, Object* proxy)
+        throws AdapterNotFoundException, AdapterAlreadyActiveException;
 
     /**
      *
@@ -163,7 +163,7 @@ interface LocatorRegistry
      *
      * @param replicaGroupId The replica group id.
      *
-     * @param proxy The adapter proxy (a dummy direct proxy created
+     * @param p The adapter proxy (a dummy direct proxy created
      * by the adapter). The direct proxy contains the adapter
      * endpoints.
      *
@@ -180,8 +180,8 @@ interface LocatorRegistry
      * locator registry for this object adapter.
      *
      **/
-    ["amd"] idempotent void setReplicatedAdapterDirectProxy(string adapterId, string replicaGroupId, Object* proxy)
-	throws AdapterNotFoundException, AdapterAlreadyActiveException, InvalidReplicaGroupIdException;
+    ["amd", "ami"] idempotent void setReplicatedAdapterDirectProxy(string adapterId, string replicaGroupId, Object* p)
+        throws AdapterNotFoundException, AdapterAlreadyActiveException, InvalidReplicaGroupIdException;
 
     /**
      *
@@ -196,7 +196,7 @@ interface LocatorRegistry
      *
      **/
     ["amd"] idempotent void setServerProcessProxy(string id, Process* proxy)
-	throws ServerNotFoundException;
+        throws ServerNotFoundException;
 };
 
 };

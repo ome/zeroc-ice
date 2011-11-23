@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2006 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2007 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -40,7 +40,7 @@ public:
 
 protected:
 
-    void __prepare(const Ice::ObjectPrx&, const std::string&, Ice::OperationMode, const Ice::Context&);
+    void __prepare(const Ice::ObjectPrx&, const std::string&, Ice::OperationMode, const Ice::Context*);
     void __send();
 
     virtual void __response(bool) = 0;
@@ -57,6 +57,7 @@ private:
     void cleanup();
 
     ::Ice::ObjectPrx _proxy;
+    ::IceInternal::Handle< ::IceDelegate::Ice::Object> _delegate;
     int _cnt;
     Ice::OperationMode _mode;
 
@@ -76,7 +77,7 @@ public:
     virtual void ice_exception(const Ice::Exception&) = 0;
 
     void __invoke(const Ice::ObjectPrx&, const std::string& operation, OperationMode,
-		  const std::vector<Ice::Byte>&, const Context&);
+                  const std::vector<Ice::Byte>&, const Context*);
 
 protected:
 
@@ -91,7 +92,7 @@ public:
     virtual void ice_exception(const Ice::Exception&) = 0;
 
     void __invoke(const Ice::ObjectPrx&, const std::string& operation, OperationMode,
-		  const std::pair<const Byte*, const Byte*>&, const Context&);
+                  const std::pair<const Byte*, const Byte*>&, const Context*);
 
 protected:
 
