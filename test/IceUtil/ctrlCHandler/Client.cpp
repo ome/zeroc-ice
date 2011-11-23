@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,16 +23,16 @@ void callback(int signal)
 int main()
 {
     {
-	cout << "First ignore CTRL+C and the like for 20 seconds (try it!)" << endl;
+	cout << "First ignore CTRL+C and the like for 10 seconds (try it!)" << endl;
 	CtrlCHandler handler;
-	ThreadControl::sleep(Time::seconds(20));
+	ThreadControl::sleep(Time::seconds(10));
 	
-	cout << "Then handling them for another 20 seconds (try it)" << endl;
+	cout << "Then handling them for another 30 seconds (try it)" << endl;
 	handler.setCallback(callback);
-	ThreadControl::sleep(Time::seconds(20));		 
+	ThreadControl::sleep(Time::seconds(10));		 
     }
-    cout << "And another 20 seconds after ~CtrlCHandler" << endl;
-    ThreadControl::sleep(Time::seconds(20));
+    cout << "And another 10 seconds after ~CtrlCHandler" << endl;
+    ThreadControl::sleep(Time::seconds(10));
 
     cout << "ok" << endl;
     return EXIT_SUCCESS;

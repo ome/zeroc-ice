@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -342,6 +342,28 @@ Ice::CommunicatorI::setDefaultLocator(const LocatorPrx& locator)
 	throw CommunicatorDestroyedException(__FILE__, __LINE__);
     }
     _instance->referenceFactory()->setDefaultLocator(locator);
+}
+
+void
+Ice::CommunicatorI::setDefaultContext(const Context& ctx)
+{
+    RecMutex::Lock sync(*this);
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+    _instance->setDefaultContext(ctx);
+}
+
+Ice::Context
+Ice::CommunicatorI::getDefaultContext() const
+{
+    RecMutex::Lock sync(*this);
+    if(_destroyed)
+    {
+	throw CommunicatorDestroyedException(__FILE__, __LINE__);
+    }
+    return _instance->getDefaultContext();
 }
 
 PluginManagerPtr

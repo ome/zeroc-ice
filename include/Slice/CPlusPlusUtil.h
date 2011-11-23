@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,6 +21,7 @@ struct ToIfdef
     SLICE_API char operator()(char);
 };
 
+SLICE_API std::string normalizePath(const std::string&);
 SLICE_API std::string changeInclude(const std::string&, const std::vector<std::string>&);
 SLICE_API void printHeader(::IceUtil::Output&);
 SLICE_API void printVersionCheck(::IceUtil::Output&);

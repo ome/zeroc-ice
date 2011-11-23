@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -131,7 +131,7 @@ Slice::CsVisitor::writeInheritedOperations(const ClassDefPtr& p)
 
 		_out << sp << nl << "public void " << name << "_async" << spar << params << epar;
 		_out << sb;
-		_out << name << "_async" << spar << args << epar << ';';
+		_out << nl << name << "_async" << spar << args << epar << ';';
 		_out << eb;
 
 		_out << sp << nl << "public abstract void " << name << "_async"
@@ -202,10 +202,27 @@ Slice::CsVisitor::writeDispatch(const ClassDefPtr& p)
 
     _out << sp << nl << "public override bool ice_isA(string s)";
     _out << sb;
-    _out << nl << "if(IceInternal.AssemblyUtil._runtime == IceInternal.AssemblyUtil.Runtime.Mono)"
-                  " // Bug in Mono 1.0 DefaultInvariant";
+    //
+    // TODO: Remove linear search for Mono once this bug is fixed.
+    //
+    _out << nl << "if(IceInternal.AssemblyUtil._runtime == IceInternal.AssemblyUtil.Runtime.Mono)";
     _out << sb;
-    _out << nl << "return _System.Array.BinarySearch(__ids, s) >= 0;";
+    _out << nl << "// Mono bug: System.Array.BinarySearch() uses the wrong collation sequence,";
+    _out << nl << "// so we do a linear search for the time being";
+    _out << nl << "int pos = 0;";
+    _out << nl << "while(pos < __ids.Length)";
+    _out << sb;
+    _out << nl << "if(__ids[pos] == s)";
+    _out << sb;
+    _out << nl << "break;";
+    _out << eb;
+    _out << nl << "++pos;";
+    _out << eb;
+    _out << nl << "if(pos == __ids.Length)";
+    _out << sb;
+    _out << nl << "pos = -1;";
+    _out << eb;
+    _out << nl << "return pos >= 0;";
     _out << eb;
     _out << nl << "else";
     _out << sb;
@@ -215,9 +232,27 @@ Slice::CsVisitor::writeDispatch(const ClassDefPtr& p)
 
     _out << sp << nl << "public override bool ice_isA(string s, Ice.Current __current)";
     _out << sb;
-    _out << nl << "if(_System.Type.GetType(\"Mono.Runtime\", false) != null) // Bug in Mono 1.0 DefaultInvariant";
+    //
+    // TODO: Remove linear search for Mono once this bug is fixed.
+    //
+    _out << nl << "if(IceInternal.AssemblyUtil._runtime == IceInternal.AssemblyUtil.Runtime.Mono)";
     _out << sb;
-    _out << nl << "return _System.Array.BinarySearch(__ids, s) >= 0;";
+    _out << nl << "// Mono bug: System.Array.BinarySearch() uses the wrong collation sequence,";
+    _out << nl << "// so we do a linear search for the time being";
+    _out << nl << "int pos = 0;";
+    _out << nl << "while(pos < __ids.Length)";
+    _out << sb;
+    _out << nl << "if(__ids[pos] == s)";
+    _out << sb;
+    _out << nl << "break;";
+    _out << eb;
+    _out << nl << "++pos;";
+    _out << eb;
+    _out << nl << "if(pos == __ids.Length)";
+    _out << sb;
+    _out << nl << "pos = -1;";
+    _out << eb;
+    _out << nl << "return pos >= 0;";
     _out << eb;
     _out << nl << "else";
     _out << sb;
@@ -576,15 +611,32 @@ Slice::CsVisitor::writeDispatch(const ClassDefPtr& p)
 	     << "__dispatch(IceInternal.Incoming __in, Ice.Current __current)";
 	_out << sb;
 	_out << nl << "int pos;";
-	_out << nl << "if(_System.Type.GetType(\"Mono.Runtime\", false) != null) // Bug in Mono 1.0 DefaultInvariant";
+	//
+	// TODO: Remove linear search for Mono once this bug is fixed.
+	//
+	_out << nl << "if(IceInternal.AssemblyUtil._runtime == IceInternal.AssemblyUtil.Runtime.Mono)";
 	_out << sb;
-	_out << nl << "pos = _System.Array.BinarySearch(__all, __current.operation);";
+	_out << nl << "// Mono bug: System.Array.BinarySearch() uses the wrong collation sequence,";
+	_out << nl << "// so we do a linear search for the time being";
+	_out << nl << "pos = 0;";
+	_out << nl << "while(pos < __all.Length)";
+	_out << sb;
+	_out << nl << "if(__all[pos] == __current.operation)";
+	_out << sb;
+	_out << nl << "break;";
+	_out << eb;
+	_out << nl << "++pos;";
+	_out << eb;
+	_out << nl << "if(pos == __all.Length)";
+	_out << sb;
+	_out << nl << "pos = -1;";
+	_out << eb;
 	_out << eb;
 	_out << nl << "else";
 	_out << sb;
 	_out << nl << "pos = _System.Array.BinarySearch(__all, __current.operation, "
 	     << "_System.Collections.Comparer.DefaultInvariant);";
-	_out << eb;
+    	_out << eb;
 	_out << nl << "if(pos < 0)";
 	_out << sb;
 	_out << nl << "return IceInternal.DispatchStatus.DispatchOperationNotExist;";
@@ -685,7 +737,8 @@ Slice::CsVisitor::getParamsAsync(const OperationPtr& op, bool amd)
     string name = fixId(op->name());
     ContainerPtr container = op->container();
     ClassDefPtr cl = ClassDefPtr::dynamicCast(container); // Get the class containing the op.
-    params.push_back((amd ? "AMD_" : "AMI_") + cl->name() + '_' + op->name() + " __cb");
+    string scope = fixId(cl->scope());
+    params.push_back(scope + (amd ? "AMD_" : "AMI_") + cl->name() + '_' + op->name() + " __cb");
 
     ParamDeclList paramList = op->parameters();
     for(ParamDeclList::const_iterator q = paramList.begin(); q != paramList.end(); ++q)
@@ -980,7 +1033,7 @@ Slice::Gen::printHeader()
     static const char* header =
 "// **********************************************************************\n"
 "//\n"
-"// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.\n"
+"// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.\n"
 "//\n"
 "// This copy of Ice is licensed to you under the terms described in the\n"
 "// ICE_LICENSE file included in this distribution.\n"
@@ -3120,6 +3173,25 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << nl << "return null;";
     _out << eb;
 
+    _out << sp << nl << "public static " << name << "Prx checkedCast(Ice.ObjectPrx b, Ice.Context ctx)";
+    _out << sb;
+    _out << nl << "if(b == null)";
+    _out << sb;
+    _out << nl << "return null;";
+    _out << eb;
+    _out << nl << "if(b is " << name << "Prx)";
+    _out << sb;
+    _out << nl << "return (" << name << "Prx)b;";
+    _out << eb;
+    _out << nl << "if(b.ice_isA(\"" << p->scoped() << "\", ctx))";
+    _out << sb;
+    _out << nl << name << "PrxHelper h = new " << name << "PrxHelper();";
+    _out << nl << "h.__copyFrom(b);";
+    _out << nl << "return h;";
+    _out << eb;
+    _out << nl << "return null;";
+    _out << eb;
+
     _out << sp << nl << "public static " << name << "Prx checkedCast(Ice.ObjectPrx b, string f)";
     _out << sb;
     _out << nl << "if(b == null)";
@@ -3130,6 +3202,28 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << nl << "try";
     _out << sb;
     _out << nl << "if(bb.ice_isA(\"" << p->scoped() << "\"))";
+    _out << sb;
+    _out << nl << name << "PrxHelper h = new " << name << "PrxHelper();";
+    _out << nl << "h.__copyFrom(bb);";
+    _out << nl << "return h;";
+    _out << eb;
+    _out << eb;
+    _out << nl << "catch(Ice.FacetNotExistException)";
+    _out << sb;
+    _out << eb;
+    _out << nl << "return null;";
+    _out << eb;
+
+    _out << sp << nl << "public static " << name << "Prx checkedCast(Ice.ObjectPrx b, string f, Ice.Context ctx)";
+    _out << sb;
+    _out << nl << "if(b == null)";
+    _out << sb;
+    _out << nl << "return null;";
+    _out << eb;
+    _out << nl << "Ice.ObjectPrx bb = b.ice_newFacet(f);";
+    _out << nl << "try";
+    _out << sb;
+    _out << nl << "if(bb.ice_isA(\"" << p->scoped() << "\", ctx))";
     _out << sb;
     _out << nl << name << "PrxHelper h = new " << name << "PrxHelper();";
     _out << nl << "h.__copyFrom(bb);";
@@ -4424,7 +4518,7 @@ Slice::Gen::TieVisitor::visitClassDefStart(const ClassDefPtr& p)
     ClassList bases = p->bases();
     for(ClassList::const_iterator i = bases.begin(); i != bases.end(); ++i)
     {
-        writeInheritedOperations(*i, opNames);
+        writeInheritedOperationsWithOpNames(*i, opNames);
     }
 
     _out << sp << nl << "private _" << name << opIntfName << " _ice_delegate;";
@@ -4439,7 +4533,7 @@ Slice::Gen::TieVisitor::visitClassDefEnd(const ClassDefPtr&)
 }
 
 void
-Slice::Gen::TieVisitor::writeInheritedOperations(const ClassDefPtr& p, NameSet& opNames)
+Slice::Gen::TieVisitor::writeInheritedOperationsWithOpNames(const ClassDefPtr& p, NameSet& opNames)
 {
     OperationList ops = p->operations();
     OperationList::const_iterator r;
@@ -4498,7 +4592,7 @@ Slice::Gen::TieVisitor::writeInheritedOperations(const ClassDefPtr& p, NameSet& 
     ClassList bases = p->bases();
     for(ClassList::const_iterator i = bases.begin(); i != bases.end(); ++i)
     {
-        writeInheritedOperations(*i, opNames);
+        writeInheritedOperationsWithOpNames(*i, opNames);
     }
 }
 

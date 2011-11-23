@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -167,42 +167,42 @@ Slice::Builtin::typeId() const
     {
 	case KindByte:
 	{
-	    return "::Ice::Byte";
+	    return "byte";
 	    break;
 	}
 	case KindBool:
 	{
-	    return "::Ice::Bool";
+	    return "bool";
 	    break;
 	}
 	case KindShort:
 	{
-	    return "::Ice::Short";
+	    return "short";
 	    break;
 	}
 	case KindInt:
 	{
-	    return "::Ice::Int";
+	    return "int";
 	    break;
 	}
 	case KindLong:
 	{
-	    return "::Ice::Long";
+	    return "long";
 	    break;
 	}
 	case KindFloat:
 	{
-	    return "::Ice::Float";
+	    return "float";
 	    break;
 	}
 	case KindDouble:
 	{
-	    return "::Ice::Double";
+	    return "double";
 	    break;
 	}
 	case KindString:
 	{
-	    return "::Ice::String";
+	    return "string";
 	    break;
 	}
 	case KindObject:
@@ -324,6 +324,18 @@ Slice::Contained::scope() const
     string::size_type idx = _scoped.rfind("::");
     assert(idx != string::npos);
     return string(_scoped, 0, idx + 2);
+}
+
+string
+Slice::Contained::flattenedScope() const
+{
+    string s = scope();
+    string flattenedScope;
+    for(string::const_iterator r = s.begin(); r != s.end(); ++r)
+    {
+	flattenedScope += ((*r) == ':') ? '_' : *r;
+    }
+    return flattenedScope;
 }
 
 string

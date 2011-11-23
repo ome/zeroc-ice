@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,6 +18,13 @@ HMODULE Ice::EventLoggerI::_module = NULL;
 Ice::EventLoggerI::EventLoggerI(const string& appName) : 
     _appName(appName), _source(NULL)
 {
+    if(appName.empty())
+    {
+        InitializationException ex(__FILE__, __LINE__);
+        ex.reason = "event logger requires a value for Ice.ProgramName";
+        throw ex;
+    }
+
     //
     // We first need to ensure that there is a registry entry for this application
     // under HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\EventLog\Application.
@@ -86,7 +93,10 @@ Ice::EventLoggerI::EventLoggerI(const string& appName) :
 
     RegCloseKey(hKey);
 
-    _source = RegisterEventSource(NULL, appName.c_str());
+    //
+    // The event source must match the registry key.
+    //
+    _source = RegisterEventSource(NULL, _appName.c_str());
     if(_source == NULL)
     {
         SyscallException ex(__FILE__, __LINE__);
@@ -100,6 +110,19 @@ Ice::EventLoggerI::~EventLoggerI()
     if(_source != NULL)
     {
         DeregisterEventSource(_source);
+    }
+}
+
+void
+Ice::EventLoggerI::print(const string& message)
+{
+    const char* str[1];
+    str[0] = message.c_str();
+    if(!ReportEvent(_source, EVENTLOG_INFORMATION_TYPE, 0, EVENT_LOGGER_MSG, NULL, 1, 0, str, NULL))
+    {
+        SyscallException ex(__FILE__, __LINE__);
+        ex.error = GetLastError();
+        throw ex;
     }
 }
 

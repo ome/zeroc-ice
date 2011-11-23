@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,7 @@
 #include <Freeze/Exception.h>
 #include <Freeze/SharedDb.h>
 #include <Freeze/Util.h>
+#include <Freeze/Catalog.h>
 #include <stdlib.h>
 
 using namespace std;
@@ -57,12 +58,14 @@ Freeze::MapIndexBase::untypedCount(const Key& k) const
 
 Freeze::MapHelper*
 Freeze::MapHelper::create(const Freeze::ConnectionPtr& connection, 
-			  const string& dbName, 
+			  const string& dbName,
+			  const string& key,
+			  const string& value,
 			  const std::vector<MapIndexBasePtr>& indices,
 			  bool createDb)
 {
     Freeze::ConnectionIPtr connectionI = Freeze::ConnectionIPtr::dynamicCast(connection);
-    return new MapHelperI(connectionI, dbName, indices, createDb);
+    return new MapHelperI(connectionI, dbName, key, value, indices, createDb);
 }
 
 Freeze::MapHelper::~MapHelper()
@@ -637,7 +640,7 @@ Freeze::IteratorHelperI::Tx::Tx(const MapHelperI& m) :
 
     try
     {
-	_map._connection->dbEnv()->txn_begin(0, &_txn, 0);
+	_map._connection->dbEnv()->getEnv()->txn_begin(0, &_txn, 0);
     }
     catch(const ::DbException& dx)
     {
@@ -710,11 +713,13 @@ Freeze::IteratorHelperI::Tx::dead()
 
 
 Freeze::MapHelperI::MapHelperI(const ConnectionIPtr& connection, 
-			       const std::string& dbName, 
+			       const string& dbName,
+			       const string& key,
+			       const string& value,
 			       const vector<MapIndexBasePtr>& indices,
 			       bool createDb) :
     _connection(connection),
-    _db(SharedDb::get(connection, dbName, indices, createDb)),
+    _db(SharedDb::get(connection, dbName, key, value, indices, createDb)),
     _dbName(dbName),
     _trace(connection->trace())
 { 
@@ -724,7 +729,9 @@ Freeze::MapHelperI::MapHelperI(const ConnectionIPtr& connection,
 	const MapIndexBasePtr& indexBase = *p;
 	assert(indexBase->_impl != 0);
 	assert(indexBase->_map == 0);
-	bool inserted = 
+#ifndef NDEBUG
+	bool inserted =
+#endif 
 	    _indices.insert(IndexMap::value_type(indexBase->name(), indexBase)).second;
 	assert(inserted);
 	indexBase->_map = this;
@@ -1022,22 +1029,73 @@ Freeze::MapHelperI::clear()
 void
 Freeze::MapHelperI::destroy()
 {
-    DbTxn* txn = _connection->dbTxn();
-    if(txn == 0)
+    if(_dbName == catalogName())
     {
-	closeAllIterators();
+	DatabaseException ex(__FILE__, __LINE__);
+	ex.message = "You cannot destroy the " + catalogName() + " database";
+	throw ex;
     }
+
+    TransactionPtr tx = _connection->currentTransaction();
+    bool ownTx = (tx == 0);
+    if(ownTx)
+    {	
+	tx = _connection->beginTransaction();
+    }
+   
+    DbTxn* txn = _connection->dbTxn();
 
     try
     {
 	close();
-	_connection->dbEnv()->dbremove(txn, _dbName.c_str(), 0, txn != 0 ? 0 : DB_AUTO_COMMIT);
+
+	Catalog catalog(_connection, catalogName());
+	catalog.erase(_dbName);
+	_connection->dbEnv()->getEnv()->dbremove(txn, _dbName.c_str(), 0, 0);
+
+	if(ownTx)
+	{
+	    tx->commit();
+	}
     }
     catch(const ::DbException& dx)
     {
+	if(ownTx)
+	{
+	    tx = _connection->currentTransaction();
+	    if(tx != 0)
+	    {
+		try
+		{
+		    tx->rollback();
+		}
+		catch(...)
+		{
+		}
+	    }
+	}
+
 	DatabaseException ex(__FILE__, __LINE__);
 	ex.message = dx.what();
 	throw ex;
+    }
+    catch(...)
+    {
+	if(ownTx)
+	{
+	    tx = _connection->currentTransaction();
+	    if(tx != 0)
+	    {
+		try
+		{
+		    tx->rollback();
+		}
+		catch(...)
+		{
+		}
+	    }
+	}
+	throw;
     }
 }
 
@@ -1157,7 +1215,7 @@ Freeze::MapIndexI::MapIndexI(const ConnectionIPtr& connection, SharedDb& db,
 {
     assert(txn != 0);
     
-    _db.reset(new Db(connection->dbEnv(), 0));
+    _db.reset(new Db(connection->dbEnv()->getEnv(), 0));
     _db->set_flags(DB_DUP | DB_DUPSORT);
     _db->set_app_private(this);
 

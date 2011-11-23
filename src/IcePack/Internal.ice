@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,7 +38,7 @@ interface ObjectRegistry
      * Remove an object from the registry.
      *
      **/
-    void remove(Object* obj)
+    void remove(Ice::Identity id)
 	throws ObjectNotExistException;
 
     /**
@@ -70,6 +70,13 @@ interface ObjectRegistry
      *
      **/
     nonmutating Ice::ObjectProxySeq findAllWithType(string type);
+
+    /**
+     *
+     * Find all the objects matching the given expression.
+     *
+     **/
+    nonmutating ObjectDescriptorSeq findAll(string expression);
 };
 
 /**
@@ -81,23 +88,40 @@ exception AdapterActiveException
 {
 };
 
+exception AdapterNotActiveException
+{
+    /** True if the adapter can be activated on demand. */
+    bool activatable;
+    
+    /** How long to wait for the adapter to become active. */
+    int timeout;
+};
+
 interface Adapter
 {
+    /**
+     *
+     * Activate this adapter. If this adapter can be activated, this 
+     * will activate the adapter and return the direct proxy of the 
+     * adapter once it's active. If this adapter can be activated on
+     * demand, this will return 0 if the adapter is inactive or the
+     * adapter direct proxy it's active.
+     *
+     **/
+    ["ami", "amd"] Object* activate();    
+
     /**
      *
      * Get the adapter direct proxy. The adapter direct proxy is a
      * proxy created with the object adapter. The proxy contains the
      * last known adapter endpoints.
      *
-     * @param activate If true and if the adapter is not active,
-     * [getDirectProxy] will activate the adapter and wait for its
-     * activation.
-     *
      * @return A direct proxy containing the last known adapter
-     * endpoints.
+     * endpoints if the adapter is already active.
      *
      **/
-    ["amd", "ami"] Object* getDirectProxy(bool activate);
+     ["ami"] nonmutating Object* getDirectProxy()
+	throws AdapterNotActiveException;
 
     /**
      *
@@ -112,7 +136,7 @@ interface Adapter
      * active adapter.
      *
      **/
-    void setDirectProxy(Object* proxy)
+    ["ami"] void setDirectProxy(Object* proxy)
 	throws AdapterActiveException;
 
     /**
@@ -150,10 +174,11 @@ interface AdapterRegistry
 
     /**
      *
-     * Remove an adapter from the registry.
+     * Remove an adapter from the registry. If the given adapter proxy is not null, the adapter will
+     * be removed from the registry only if the proxy matches.
      *
      **/
-    Adapter* remove(string id)
+    Adapter* remove(string id, Adapter* adpt)
 	throws AdapterNotExistException;
     
     /**
@@ -333,7 +358,7 @@ class Server
      * Set the process proxy.
      *
      **/
-    void setProcess(Ice::Process* proc);
+    ["ami"] void setProcess(Ice::Process* proc);
 
     /**
      *
@@ -604,6 +629,13 @@ interface Node
      *
      **/
     nonmutating string getName();    
+
+    /**
+     *
+     * Get the node hostname.
+     *
+     **/
+    nonmutating string getHostname();    
 
     /**
      *

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -21,11 +21,11 @@ SLICE_SRCS	= Test.ice
 
 include $(top_srcdir)/config/Make.rules
 
-CPPFLAGS	:= -I. $(DB_FLAGS) $(CPPFLAGS)
+CPPFLAGS	:= -I. $(CPPFLAGS)
 
 $(CLIENT): $(OBJS) $(COBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(COBJS) -lFreeze $(DB_LIBS) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(COBJS) -lFreeze $(LIBS)
 
 BenchTypes.h BenchTypes.cpp: Test.ice $(SLICE2FREEZE)
 	rm -f BenchTypes.h BenchTypes.cpp

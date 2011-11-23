@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,7 @@
 #include <Ice/LoggerUtil.h>
 #include <Ice/Properties.h>
 #include <Ice/TraceUtil.h>
+#include <Ice/DefaultsAndOverrides.h>
 #include <Ice/Transceiver.h>
 #include <Ice/ThreadPool.h>
 #include <Ice/ConnectionMonitor.h>
@@ -36,45 +37,62 @@ void IceInternal::decRef(ConnectionI* p) { p->__decRef(); }
 void
 Ice::ConnectionI::validate()
 {
-    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+    bool active;
 
-    if(_instance->threadPerConnection() &&
-       _threadPerConnection->getThreadControl() != IceUtil::ThreadControl())
-    {
-	//
-	// In thread per connection mode, this connection's thread
-	// will take care of connection validation. Therefore all we
-	// have to do here is to wait until this thread has completed
-	// validation.
-	//
-	while(_state == StateNotValidated)
-	{
-	    wait();
-	}
-
-	if(_state >= StateClosing)
-	{
-	    assert(_exception.get());
-	    _exception->ice_throw();
-	}
-
-	return;
-    }
-
-    assert(_state == StateNotValidated);
-    
     if(!_endpoint->datagram()) // Datagram connections are always implicitly validated.
     {
-	try
 	{
+	    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+	    
+	    if(_instance->threadPerConnection() &&
+	       _threadPerConnection->getThreadControl() != IceUtil::ThreadControl())
+	    {
+		//
+		// In thread per connection mode, this connection's thread
+		// will take care of connection validation. Therefore all we
+		// have to do here is to wait until this thread has completed
+		// validation.
+		//
+		while(_state == StateNotValidated)
+		{
+		    wait();
+		}
+		
+		if(_state >= StateClosing)
+		{
+		    assert(_exception.get());
+		    _exception->ice_throw();
+		}
+		
+		return;
+	    }
+	    
+	    assert(_state == StateNotValidated);
+	    
 	    if(_adapter)
 	    {
-		IceUtil::Mutex::Lock sendSync(_sendMutex);
+		active = true; // The server side has the active role for connection validation.
+	    }
+	    else
+	    {
+		active = false; // The client side has the passive role for connection validation.
+	    }
+	}
 
-		//
-		// Incoming connections play the active role with respect to
-		// connection validation.
-		//
+	try
+	{
+	    Int timeout;
+	    if(_instance->defaultsAndOverrides()->overrideConnectTimeout)
+	    {
+		timeout = _instance->defaultsAndOverrides()->overrideConnectTimeoutValue;
+	    }
+	    else
+	    {
+		timeout = _endpoint->timeout();
+	    }
+	    
+	    if(active)
+	    {
 		BasicStream os(_instance.get());
 		os.writeBlob(magic, sizeof(magic));
 		os.write(protocolMajor);
@@ -86,18 +104,28 @@ Ice::ConnectionI::validate()
 		os.write(headerSize); // Message size.
 		os.i = os.b.begin();
 		traceHeader("sending validate connection", os, _logger, _traceLevels);
-		_transceiver->write(os, _endpoint->timeout());
+		try
+		{
+		    _transceiver->write(os, timeout);
+		}
+		catch(const TimeoutException&)
+		{
+		    throw ConnectTimeoutException(__FILE__, __LINE__);
+		}
 	    }
 	    else
 	    {
-		//
-		// Outgoing connections play the passive role with respect to
-		// connection validation.
-		//
 		BasicStream is(_instance.get());
 		is.b.resize(headerSize);
 		is.i = is.b.begin();
-		_transceiver->read(is, _endpoint->timeout());
+		try
+		{
+		    _transceiver->read(is, timeout);
+		}
+		catch(const TimeoutException&)
+		{
+		    throw ConnectTimeoutException(__FILE__, __LINE__);
+		}
 		assert(is.i == is.b.end());
 		is.i = is.b.begin();
 		ByteSeq m(sizeof(magic), 0);
@@ -153,21 +181,26 @@ Ice::ConnectionI::validate()
 	}
 	catch(const LocalException& ex)
 	{
+	    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 	    setState(StateClosed, ex);
 	    assert(_exception.get());
 	    _exception->ice_throw();
 	}
     }
 
-    if(_acmTimeout > 0)
     {
-	_acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
+	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+	
+	if(_acmTimeout > 0)
+	{
+	    _acmAbsoluteTimeout = IceUtil::Time::now() + IceUtil::Time::seconds(_acmTimeout);
+	}
+	
+	//
+	// We start out in holding state.
+	//
+	setState(StateHolding);
     }
-
-    //
-    // We start out in holding state.
-    //
-    setState(StateHolding);
 }
 
 void
@@ -209,6 +242,7 @@ void
 Ice::ConnectionI::close(bool force)
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+
     if(force)
     {
 	setState(StateClosed, ForcedCloseConnectionException(__FILE__, __LINE__));
@@ -222,7 +256,13 @@ Ice::ConnectionI::close(bool force)
 bool
 Ice::ConnectionI::isDestroyed() const
 {
+    //
+    // We can not use trylock here, otherwise the outgoing connection
+    // factory might return destroyed (closing or closed) connections,
+    // resulting in connection retry exhaustion.
+    //
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+
     return _state >= StateClosing;
 }
 
@@ -232,9 +272,22 @@ Ice::ConnectionI::isFinished() const
     IceUtil::ThreadPtr threadPerConnection;
 
     {
-	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+	//
+	// We can use trylock here, because as long as there are still
+	// threads operating in this connection object, connection
+	// destruction is considered as not yet finished.
+	//
+	IceUtil::Monitor<IceUtil::Mutex>::TryLock sync(*this);
+	
+	if(!sync.acquired())
+	{
+	    return false;
+	}
 
-	if(_transceiver != 0 || _dispatchCount != 0)
+	if(_transceiver != 0 || _dispatchCount != 0 ||
+	   (_threadPerConnection &&
+	    _threadPerConnection->getThreadControl() != IceUtil::ThreadControl() &&
+	    _threadPerConnection->getThreadControl().isAlive()))
 	{
 	    return false;
 	}
@@ -1074,6 +1127,13 @@ Ice::ConnectionI::setAdapter(const ObjectAdapterPtr& adapter)
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 
+    if(_exception.get())
+    {
+	_exception->ice_throw();
+    }
+    
+    assert(_state < StateClosing);
+
     //
     // Before we set an adapter (or reset it) we wait until the
     // dispatch count with any old adapter is zero.
@@ -1127,8 +1187,7 @@ Ice::ConnectionI::createProxy(const Identity& ident) const
     //
     vector<ConnectionIPtr> connections;
     connections.push_back(const_cast<ConnectionI*>(this));
-    ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), "", Reference::ModeTwoway,
-							     false, true, connections);
+    ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), "", Reference::ModeTwoway, connections);
     return _instance->proxyFactory()->referenceToProxy(ref);
 }
 
@@ -1305,24 +1364,6 @@ Ice::ConnectionI::toString() const
     return _desc; // No mutex lock, _desc is immutable.
 }
 
-bool
-Ice::ConnectionI::operator==(const ConnectionI& r) const
-{
-    return this == &r;
-}
-
-bool
-Ice::ConnectionI::operator!=(const ConnectionI& r) const
-{
-    return this != &r;
-}
-
-bool
-Ice::ConnectionI::operator<(const ConnectionI& r) const
-{
-    return this < &r;
-}
-
 Ice::ConnectionI::ConnectionI(const InstancePtr& instance,
 			      const TransceiverPtr& transceiver,
 			      const EndpointPtr& endpoint,
@@ -1388,56 +1429,73 @@ Ice::ConnectionI::ConnectionI(const InstancePtr& instance,
     replyHdr[8] = replyMsg;
     replyHdr[9] = 0;
 
-    if(_adapter)
+    ObjectAdapterI* adapterImpl = _adapter ? dynamic_cast<ObjectAdapterI*>(_adapter.get()) : 0;
+    if(adapterImpl)
     {
-	_servantManager = dynamic_cast<ObjectAdapterI*>(_adapter.get())->getServantManager();
+	_servantManager = adapterImpl->getServantManager();
     }
 
-    if(!_instance->threadPerConnection())
+    __setNoDelete(true);
+    try
     {
-	//
-	// Only set _threadPool if we really need it, i.e., if we are
-	// not in thread per connection mode. Thread pools have lazy
-	// initialization in Instance, and we don't want them to be
-	// created if they are not needed.
-	//
-	if(_adapter)
+	if(!_instance->threadPerConnection())
 	{
-	    const_cast<ThreadPoolPtr&>(_threadPool) = dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool();
+	    //
+	    // Only set _threadPool if we really need it, i.e., if we are
+	    // not in thread per connection mode. Thread pools have lazy
+	    // initialization in Instance, and we don't want them to be
+	    // created if they are not needed.
+	    //
+	    if(adapterImpl)
+	    {
+		const_cast<ThreadPoolPtr&>(_threadPool) = adapterImpl->getThreadPool();
+	    }
+	    else
+	    {
+		const_cast<ThreadPoolPtr&>(_threadPool) = _instance->clientThreadPool();
+	    }
 	}
 	else
 	{
-	    const_cast<ThreadPoolPtr&>(_threadPool) = _instance->clientThreadPool();
-	}
-    }
-    else
-    {
-	//
-	// If we are in thread per connection mode, create the thread
-	// for this connection.
-	//
-	__setNoDelete(true);
-	try
-	{
+	    //
+	    // If we are in thread per connection mode, create the thread
+	    // for this connection.
+	    //
 	    _threadPerConnection = new ThreadPerConnection(this);
 	    _threadPerConnection->start(_instance->threadPerConnectionStackSize());
 	}
-	catch(const IceUtil::Exception& ex)
+    }
+    catch(const IceUtil::Exception& ex)
+    {
 	{
+	    Error out(_logger);
+	    if(_instance->threadPerConnection())
 	    {
-		Error out(_logger);
 		out << "cannot create thread for connection:\n" << ex;
 	    }
-
-	    _state = StateClosed;
-	    _transceiver = 0;
-	    _threadPerConnection = 0;
-
-	    __setNoDelete(false);
-	    throw;
+	    else
+	    {
+		out << "cannot create thread pool for connection:\n" << ex;
+	    }
 	}
+	
+	_state = StateClosed;
+	
+	try
+	{
+	    _transceiver->close();
+	}
+	catch(const LocalException&)
+	{
+	    // Here we ignore any exceptions in close().
+	}
+	_transceiver = 0;
+	_threadPerConnection = 0;
+	
 	__setNoDelete(false);
+	ex.ice_throw();
     }
+    __setNoDelete(false);
 }
 
 Ice::ConnectionI::~ConnectionI()
@@ -1627,6 +1685,15 @@ Ice::ConnectionI::setState(State state)
 		//
 		registerWithPool();
 		unregisterWithPool();
+
+		//
+		// We must prevent any further writes when _state == StateClosed.
+		// However, functions such as sendResponse cannot acquire the main
+		// mutex in order to check _state. Therefore we shut down the write
+		// end of the transceiver, which causes subsequent write attempts
+		// to fail with an exception.
+		//
+		_transceiver->shutdownWrite();
 	    }
 	    break;
 	}
@@ -1698,7 +1765,15 @@ Ice::ConnectionI::initiateShutdown() const
 	os.i = os.b.begin();
 	traceHeader("sending close connection", os, _logger, _traceLevels);
 	_transceiver->write(os, _endpoint->timeout());
-	_transceiver->shutdownWrite();
+	//
+	// The CloseConnection message should be sufficient. Closing the write
+	// end of the socket is probably an artifact of how things were done
+	// in IIOP. In fact, shutting down the write end of the socket causes
+	// problems on Windows by preventing the peer from using the socket.
+	// For example, the peer is no longer able to continue writing a large
+	// message after the socket is shutdown.
+	//
+	//_transceiver->shutdownWrite();
     }
 }
 
@@ -2156,53 +2231,46 @@ Ice::ConnectionI::invokeAll(BasicStream& stream, Int invokeNum, Int requestId, B
 void
 Ice::ConnectionI::run()
 {
-    try
+    //
+    // For non-datagram connections, the thread-per-connection must
+    // validate and activate this connection, and not in the
+    // connection factory. Please see the comments in the connection
+    // factory for details.
+    //
+    if(!_endpoint->datagram())
     {
-	//
-	// First we must validate and activate this connection. This must
-	// be done here, and not in the connection factory. Please see the
-	// comments in the connection factory for details.
-	//
 	try
 	{
 	    validate();
 	}
 	catch(const LocalException&)
 	{
+	    IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
+	    
+	    assert(_state == StateClosed);
+	    
 	    //
-	    // Ignore all exceptions while validating the
-	    // connection. Warning or error messages for such exceptions
-	    // are printed directly by the validation code.
+	    // We must make sure that nobody is sending when we close
+	    // the transceiver.
 	    //
-	}
-    }
-    catch(const LocalException&)
-    {
-	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-
-	assert(_state == StateClosed);
-
-	//
-	// We must make sure that nobody is sending when we close the
-	// transceiver.
-	//
-	IceUtil::Mutex::Lock sendSync(_sendMutex);
-	
-	try
-	{
-	    _transceiver->close();
-	}
-	catch(const LocalException&)
-	{
-	    // Here we ignore any exceptions in close().
+	    IceUtil::Mutex::Lock sendSync(_sendMutex);
+	    
+	    try
+	    {
+		_transceiver->close();
+	    }
+	    catch(const LocalException&)
+	    {
+		// Here we ignore any exceptions in close().
+	    }
+	    
+	    _transceiver = 0;
+	    notifyAll();
+	    return;
 	}
 	
-	_transceiver = 0;
-	notifyAll();
-	return;
+	activate();
     }
-    
-    activate();
 
     const bool warnUdp = _instance->properties()->getPropertyAsInt("Ice.Warn.Datagrams") > 0;
 

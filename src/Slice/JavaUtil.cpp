@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -135,7 +135,7 @@ Slice::JavaOutput::printHeader()
     static const char* header =
 "// **********************************************************************\n"
 "//\n"
-"// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.\n"
+"// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.\n"
 "//\n"
 "// This copy of Ice is licensed to you under the terms described in the\n"
 "// ICE_LICENSE file included in this distribution.\n"
@@ -455,13 +455,26 @@ Slice::JavaGenerator::typeToString(const TypePtr& type,
     DictionaryPtr dict = DictionaryPtr::dynamicCast(type);
     if(dict)
     {
+        string dictType = findMetaData(metaData);
         if(mode == TypeModeOut)
         {
             return getAbsolute(dict, package, "", "Holder");
         }
         else
         {
-            return "java.util.Map";
+            if(dictType.empty())
+            {
+                StringList l = dict->getMetaData();
+                dictType = findMetaData(l);
+            }
+            if(!dictType.empty())
+            {
+                return dictType;
+            }
+            else
+            {
+		return "java.util.Map";
+	    }
         }
     }
 
@@ -869,12 +882,14 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
     }
     string origContentS = typeToString(origContent, TypeModeIn, package);
 
+    TypePtr type = seq->type();
+
     if(!listType.empty())
     {
         //
         // Marshal/unmarshal a custom sequence type
         //
-        BuiltinPtr b = BuiltinPtr::dynamicCast(seq->type());
+        BuiltinPtr b = BuiltinPtr::dynamicCast(type);
         if(b && b->kind() != Builtin::KindObject && b->kind() != Builtin::KindObjectProxy)
         {
             if(marshal)
@@ -1086,7 +1101,7 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
                 out << nl << "while(" << it << ".hasNext())";
                 out << sb;
                 out << nl << origContentS << " __elem = (" << origContentS << ")" << it << ".next();";
-                writeMarshalUnmarshalCode(out, package, seq->type(), "__elem", true, iter, false);
+                writeMarshalUnmarshalCode(out, package, type, "__elem", true, iter, false);
                 out << eb; // while
                 out << eb; // else
             }
@@ -1101,7 +1116,14 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
                 }
                 out << nl << v << " = new " << listType << "();";
                 out << nl << "final int __len" << iter << " = " << stream << ".readSize();";
-		out << nl << stream << ".startSeq(__len" << iter << ", " << seq->type()->minWireSize() << ");";
+		if(type->isVariableLength())
+		{
+		    out << nl << stream << ".startSeq(__len" << iter << ", " << type->minWireSize() << ");";
+		}
+		else
+		{
+		    out << nl << stream << ".checkFixedSeq(__len" << iter << ", " << type->minWireSize() << ");";
+		}
                 if(isObject)
                 {
                     if(builtin)
@@ -1134,13 +1156,13 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 		    ostringstream patchParams;
 		    patchParams << "new IceInternal.ListPatcher(" << v << ", " << origContentS << ".class, __type"
                                 << iter << ", __i" << iter << ')';
-		    writeMarshalUnmarshalCode(out, package, seq->type(), "__elem", false, iter, false,
-			                      StringList(), patchParams.str());
+		    writeMarshalUnmarshalCode(out, package, type, "__elem", false, iter, false, StringList(),
+					      patchParams.str());
 		}
 		else
 		{
 		    out << nl << origContentS << " __elem;";
-		    writeMarshalUnmarshalCode(out, package, seq->type(), "__elem", false, iter, false);
+		    writeMarshalUnmarshalCode(out, package, type, "__elem", false, iter, false);
 		}
 		if(!isObject)
 		{
@@ -1156,24 +1178,30 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 		// (For fixed-length sequences, we don't need to do this because the prediction of how many
 		// bytes will be taken up by the sequence is accurate.)
 		//
-		if(!SequencePtr::dynamicCast(seq->type()))
+		if(type->isVariableLength())
 		{
-		    //
-		    // No need to check for directly nested sequences because, at the at start of each
-		    // sequence, we check anyway.
-		    //
-		    out << nl << stream << ".checkSeq();";
+		    if(!SequencePtr::dynamicCast(seq->type()))
+		    {
+			//
+			// No need to check for directly nested sequences because, at the at start of each
+			// sequence, we check anyway.
+			//
+			out << nl << stream << ".checkSeq();";
+		    }
+		    out << nl << stream << ".endElement();";
 		}
-		out << nl << stream << ".endElement();";
-                out << eb;
-		out << nl << stream << ".endSeq(__len" << iter << ");";
+		out << eb;
+		if(type->isVariableLength())
+		{
+		    out << nl << stream << ".endSeq(__len" << iter << ");";
+		}
                 iter++;
             }
         }
     }
     else
     {
-        BuiltinPtr b = BuiltinPtr::dynamicCast(seq->type());
+        BuiltinPtr b = BuiltinPtr::dynamicCast(type);
         if(b && b->kind() != Builtin::KindObject && b->kind() != Builtin::KindObjectProxy)
         {
             switch(b->kind())
@@ -1300,7 +1328,7 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
                 ostringstream o;
                 o << v << "[__i" << iter << "]";
                 iter++;
-                writeMarshalUnmarshalCode(out, package, seq->type(), o.str(), true, iter, false);
+                writeMarshalUnmarshalCode(out, package, type, o.str(), true, iter, false);
                 out << eb;
                 out << eb;
             }
@@ -1313,7 +1341,14 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
                     isObject = true;
                 }
                 out << nl << "final int __len" << iter << " = " << stream << ".readSize();";
-		out << nl << stream << ".startSeq(__len" << iter << ", " << seq->type()->minWireSize() << ");";
+		if(type->isVariableLength())
+		{
+		    out << nl << stream << ".startSeq(__len" << iter << ", " << type->minWireSize() << ");";
+		}
+		else
+		{
+		    out << nl << stream << ".checkFixedSeq(__len" << iter << ", " << type->minWireSize() << ");";
+		}
                 if(isObject)
                 {
                     if(b)
@@ -1351,12 +1386,12 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
                 {
                     patchParams << "new IceInternal.SequencePatcher(" << v << ", " << origContentS
                                 << ".class, __type" << iter << ", __i" << iter << ')';
-                    writeMarshalUnmarshalCode(out, package, seq->type(), o.str(), false, iter, false,
-                                              StringList(), patchParams.str());
+                    writeMarshalUnmarshalCode(out, package, type, o.str(), false, iter, false, StringList(),
+					      patchParams.str());
                 }
                 else
                 {
-                    writeMarshalUnmarshalCode(out, package, seq->type(), o.str(), false, iter, false);
+                    writeMarshalUnmarshalCode(out, package, type, o.str(), false, iter, false);
                 }
 
 		//
@@ -1368,9 +1403,9 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 		// (For fixed-length sequences, we don't need to do this because the prediction of how many
 		// bytes will be taken up by the sequence is accurate.)
 		//
-		if(seq->type()->isVariableLength())
+		if(type->isVariableLength())
 		{
-		    if(!SequencePtr::dynamicCast(seq->type()))
+		    if(!SequencePtr::dynamicCast(type))
 		    {
 			//
 			// No need to check for directly nested sequences because, at the at start of each
@@ -1381,7 +1416,10 @@ Slice::JavaGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 		    out << nl << stream << ".endElement();";
 		}
                 out << eb;
-		out << nl << stream << ".endSeq(__len" << iter << ");";
+		if(type->isVariableLength())
+		{
+		    out << nl << stream << ".endSeq(__len" << iter << ");";
+		}
                 iter++;
             }
         }
@@ -2246,95 +2284,23 @@ void
 Slice::JavaGenerator::validateMetaData(const UnitPtr& unit)
 {
     MetaDataVisitor visitor;
-    unit->visit(&visitor, false);
+    unit->visit(&visitor, true);
 }
 
 bool
 Slice::JavaGenerator::MetaDataVisitor::visitModuleStart(const ModulePtr& p)
 {
-    validate(p);
-    return true;
-}
-
-void
-Slice::JavaGenerator::MetaDataVisitor::visitClassDecl(const ClassDeclPtr& p)
-{
-    validate(p);
-}
-
-bool
-Slice::JavaGenerator::MetaDataVisitor::visitClassDefStart(const ClassDefPtr& p)
-{
-    validate(p);
-    return false;
-}
-
-bool
-Slice::JavaGenerator::MetaDataVisitor::visitExceptionStart(const ExceptionPtr& p)
-{
-    validate(p);
-    return false;
-}
-
-bool
-Slice::JavaGenerator::MetaDataVisitor::visitStructStart(const StructPtr& p)
-{
-    validate(p);
-    return false;
-}
-
-void
-Slice::JavaGenerator::MetaDataVisitor::visitOperation(const OperationPtr& p)
-{
-    validate(p);
-}
-
-void
-Slice::JavaGenerator::MetaDataVisitor::visitDataMember(const DataMemberPtr& p)
-{
-    validate(p);
-}
-
-void
-Slice::JavaGenerator::MetaDataVisitor::visitSequence(const SequencePtr& p)
-{
-    validate(p);
-}
-
-void
-Slice::JavaGenerator::MetaDataVisitor::visitDictionary(const DictionaryPtr& p)
-{
-    validate(p);
-}
-
-void
-Slice::JavaGenerator::MetaDataVisitor::visitEnum(const EnumPtr& p)
-{
-    validate(p);
-}
-
-void
-Slice::JavaGenerator::MetaDataVisitor::visitConst(const ConstPtr& p)
-{
-    validate(p);
-}
-
-void
-Slice::JavaGenerator::MetaDataVisitor::validate(const ContainedPtr& cont)
-{
-    DefinitionContextPtr dc = cont->definitionContext();
+    //
+    // Validate global metadata.
+    //
+    DefinitionContextPtr dc = p->definitionContext();
     assert(dc);
     StringList globalMetaData = dc->getMetaData();
     string file = dc->filename();
-
-    StringList localMetaData = cont->getMetaData();
-
-    StringList::const_iterator p;
     static const string prefix = "java:";
-
-    for(p = globalMetaData.begin(); p != globalMetaData.end(); ++p)
+    for(StringList::const_iterator q = globalMetaData.begin(); q != globalMetaData.end(); ++q)
     {
-        string s = *p;
+        string s = *q;
         if(_history.count(s) == 0)
         {
             if(s.find(prefix) == 0)
@@ -2349,24 +2315,172 @@ Slice::JavaGenerator::MetaDataVisitor::validate(const ContainedPtr& cont)
         }
     }
 
-    for(p = localMetaData.begin(); p != localMetaData.end(); ++p)
+    StringList metaData = getMetaData(p);
+    validate(p, metaData, p->definitionContext()->filename(), p->line());
+    return true;
+}
+
+void
+Slice::JavaGenerator::MetaDataVisitor::visitClassDecl(const ClassDeclPtr& p)
+{
+    StringList metaData = getMetaData(p);
+    validate(p, metaData, p->definitionContext()->filename(), p->line());
+}
+
+bool
+Slice::JavaGenerator::MetaDataVisitor::visitClassDefStart(const ClassDefPtr& p)
+{
+    StringList metaData = getMetaData(p);
+    validate(p, metaData, p->definitionContext()->filename(), p->line());
+    return true;
+}
+
+bool
+Slice::JavaGenerator::MetaDataVisitor::visitExceptionStart(const ExceptionPtr& p)
+{
+    StringList metaData = getMetaData(p);
+    validate(p, metaData, p->definitionContext()->filename(), p->line());
+    return true;
+}
+
+bool
+Slice::JavaGenerator::MetaDataVisitor::visitStructStart(const StructPtr& p)
+{
+    StringList metaData = getMetaData(p);
+    validate(p, metaData, p->definitionContext()->filename(), p->line());
+    return true;
+}
+
+void
+Slice::JavaGenerator::MetaDataVisitor::visitOperation(const OperationPtr& p)
+{
+    StringList metaData = getMetaData(p);
+    TypePtr returnType = p->returnType();
+    if(!metaData.empty())
+    {
+	if(!returnType)
+	{
+	    cout << p->definitionContext()->filename() << ":" << p->line()
+		 << ": warning: invalid metadata for operation" << endl;
+	}
+	else
+	{
+	    validate(returnType, metaData, p->definitionContext()->filename(), p->line());
+	}
+    }
+
+    ParamDeclList params = p->parameters();
+    for(ParamDeclList::iterator q = params.begin(); q != params.end(); ++q)
+    {
+	metaData = getMetaData(*q);
+	validate((*q)->type(), metaData, p->definitionContext()->filename(), (*q)->line());
+    }
+}
+
+void
+Slice::JavaGenerator::MetaDataVisitor::visitDataMember(const DataMemberPtr& p)
+{
+    StringList metaData = getMetaData(p);
+    validate(p->type(), metaData, p->definitionContext()->filename(), p->line());
+}
+
+void
+Slice::JavaGenerator::MetaDataVisitor::visitSequence(const SequencePtr& p)
+{
+    StringList metaData = getMetaData(p);
+    validate(p, metaData, p->definitionContext()->filename(), p->line());
+}
+
+void
+Slice::JavaGenerator::MetaDataVisitor::visitDictionary(const DictionaryPtr& p)
+{
+    StringList metaData = getMetaData(p);
+    validate(p, metaData, p->definitionContext()->filename(), p->line());
+}
+
+void
+Slice::JavaGenerator::MetaDataVisitor::visitEnum(const EnumPtr& p)
+{
+    StringList metaData = getMetaData(p);
+    validate(p, metaData, p->definitionContext()->filename(), p->line());
+}
+
+void
+Slice::JavaGenerator::MetaDataVisitor::visitConst(const ConstPtr& p)
+{
+    StringList metaData = getMetaData(p);
+    validate(p, metaData, p->definitionContext()->filename(), p->line());
+}
+
+StringList
+Slice::JavaGenerator::MetaDataVisitor::getMetaData(const ContainedPtr& cont)
+{
+    StringList metaData = cont->getMetaData();
+    DefinitionContextPtr dc = cont->definitionContext();
+    assert(dc);
+    string file = dc->filename();
+
+    StringList result;
+    static const string prefix = "java:";
+
+    for(StringList::const_iterator p = metaData.begin(); p != metaData.end(); ++p)
     {
         string s = *p;
-        if(_history.count(s) == 0)
+        if(_history.count(s) == 0) // Don't complain about the same metadata more than once.
         {
             if(s.find(prefix) == 0)
             {
                 string::size_type pos = s.find(':', prefix.size());
                 if(pos == string::npos)
                 {
-                    cout << file << ": warning: metadata `" << s << "' uses deprecated syntax" << endl;
+		    if(s.size() > prefix.size())
+		    {
+			cout << file << ":" << cont->line() << ": warning: metadata `" << s
+			     << "' uses deprecated syntax" << endl;
+			//
+			// Translate java:X into java:type:X.
+			//
+			result.push_back(prefix + "type:" + s.substr(prefix.size()));
+			continue;
+		    }
                 }
-                else if(s.substr(prefix.size(), pos - prefix.size()) != "type")
+                else if(s.substr(prefix.size(), pos - prefix.size()) == "type")
                 {
-                    cout << file << ": warning: ignoring invalid metadata `" << s << "'" << endl;
+		    result.push_back(s);
+		    continue;
                 }
+
+		cout << file << ":" << cont->line() << ": warning: ignoring invalid metadata `" << s << "'" << endl;
             }
+
             _history.insert(s);
         }
+    }
+
+    return result;
+}
+
+void
+Slice::JavaGenerator::MetaDataVisitor::validate(const SyntaxTreeBasePtr& p, const StringList& metaData,
+						const string& file, const string& line)
+{
+    //
+    // Currently only sequence and dictionary types can be affected by metadata.
+    //
+    if(!metaData.empty() && !SequencePtr::dynamicCast(p) && !DictionaryPtr::dynamicCast(p))
+    {
+	string str;
+	ContainedPtr cont = ContainedPtr::dynamicCast(p);
+	if(cont)
+	{
+	    str = cont->kindOf();
+	}
+	else
+	{
+	    BuiltinPtr b = BuiltinPtr::dynamicCast(p);
+	    assert(b);
+	    str = b->typeId();
+	}
+	cout << file << ":" << line << ": warning: invalid metadata for " << str << endl;
     }
 }

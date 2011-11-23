@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,6 +34,14 @@ ICE_UTIL_API bool unescapeString(const std::string&, std::string::size_type, std
 // std::string::npos is returned.
 //
 ICE_UTIL_API std::string::size_type checkQuote(const std::string&, std::string::size_type = 0);
+
+//
+// Match `s' against the pattern `pat'. A * in the pattern acts
+// as a wildcard: it matches any non-empty sequence of characters
+// other than a period (`.'). We match by hand here because
+// it's portable across platforms (whereas regex() isn't).
+//
+ICE_UTIL_API bool match(const std::string&, const std::string&, bool = false);
 
 }
 

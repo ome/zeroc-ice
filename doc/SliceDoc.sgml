@@ -1,14 +1,14 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
 
  **********************************************************************
 -->
-<!-- Ice version 2.0.0 -->
+<!-- Ice version 2.1.0 -->
 <section>
     <title>Global Module</title>
     <section>
@@ -52,10 +52,10 @@ applications.</para>
 		</listitem>
 	    </varlistentry>
 	    <varlistentry>
-		<term><link linkend="Glacier"><type>Glacier</type></link></term>
+		<term><link linkend="Glacier2"><type>Glacier2</type></link></term>
 		<listitem>
 		    <para>
-&Glacier; is a firewall solution for Ice.</para>
+&Glacier2; is a firewall solution for Ice.</para>
 		</listitem>
 	    </varlistentry>
 	    <varlistentry>
@@ -66,10 +66,11 @@ A messaging service with support for federation.</para>
 		</listitem>
 	    </varlistentry>
 	    <varlistentry>
-		<term><link linkend="IcePatch"><type>IcePatch</type></link></term>
+		<term><link linkend="IcePatch2"><type>IcePatch2</type></link></term>
 		<listitem>
 		    <para>
-A patching service for software distributions.</para>
+&IcePatch2; can be used to update file hiearchies in a simple and
+efficient manner.</para>
 		</listitem>
 	    </varlistentry>
 	</variablelist>
@@ -419,6 +420,13 @@ indicating an illegal indirection during unmarshaling.</para>
 This exception is a specialization of <link linkend="Ice.ProtocolException"><classname>ProtocolException</classname></link>,
 indicating that the message size is illegal, i.e., it is
 less than the minimum required size.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.InitializationException"><classname>InitializationException</classname></link></term>
+		    <listitem>
+			<para>
+This exception is raised when a failure occurs during initialization.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -849,14 +857,11 @@ A sequence of bytes.</para>
 	    <title>Used By</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="Glacier.Starter.startRouter"><function>::Glacier::Starter::startRouter</function></link></member>
-		<member><link linkend="Glacier.Starter.startRouter"><function>::Glacier::Starter::startRouter</function></link></member>
-		<member><link linkend="Glacier.Starter.startRouter"><function>::Glacier::Starter::startRouter</function></link></member>
 		<member><link linkend="Ice.BadMagicException.badMagic"><type>BadMagicException::badMagic</type></link></member>
-		<member><link linkend="IcePatch.Directory.getTotal"><function>::IcePatch::Directory::getTotal</function></link></member>
-		<member><link linkend="IcePatch.FileDesc.md5"><type>::IcePatch::FileDesc::md5</type></link></member>
-		<member><link linkend="IcePatch.Regular.getBZ2"><function>::IcePatch::Regular::getBZ2</function></link></member>
-		<member><link linkend="IcePatch.Regular.getBZ2MD5"><function>::IcePatch::Regular::getBZ2MD5</function></link></member>
+		<member><link linkend="IcePatch2.ByteSeqSeq"><type>::IcePatch2::ByteSeqSeq</type></link></member>
+		<member><link linkend="IcePatch2.FileInfo.checksum"><type>::IcePatch2::FileInfo::checksum</type></link></member>
+		<member><link linkend="IcePatch2.FileServer.getChecksum"><function>::IcePatch2::FileServer::getChecksum</function></link></member>
+		<member><link linkend="IcePatch2.FileServer.getFileCompressed"><function>::IcePatch2::FileServer::getFileCompressed</function></link></member>
 		<member><link linkend="IceSSL.Plugin.addTrustedCertificate"><function>::IceSSL::Plugin::addTrustedCertificate</function></link></member>
 		<member><link linkend="IceSSL.Plugin.getSingleCertVerifier"><function>::IceSSL::Plugin::getSingleCertVerifier</function></link></member>
 		<member><link linkend="IceSSL.Plugin.setRSAKeys"><function>::IceSSL::Plugin::setRSAKeys</function></link></member>
@@ -953,6 +958,8 @@ its implicit final parameter.</para>
 	    <title>Used By</title>
 	    <para>
 	    <simplelist type="inline">
+		<member><link linkend="Ice.Communicator.getDefaultContext"><function>Communicator::getDefaultContext</function></link></member>
+		<member><link linkend="Ice.Communicator.setDefaultContext"><function>Communicator::setDefaultContext</function></link></member>
 		<member><link linkend="Ice.Current.ctx"><type>Current::ctx</type></link></member>
 	    </simplelist></para></section>
     </section>
@@ -1002,10 +1009,8 @@ key/value pairs. Both key and value are <type>string</type>s.</para>
 	    <title>Used By</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="Glacier.Starter.getSliceChecksums"><function>::Glacier::Starter::getSliceChecksums</function></link></member>
 		<member><link linkend="IceBox.ServiceManager.getSliceChecksums"><function>::IceBox::ServiceManager::getSliceChecksums</function></link></member>
 		<member><link linkend="IcePack.Admin.getSliceChecksums"><function>::IcePack::Admin::getSliceChecksums</function></link></member>
-		<member><link linkend="IcePatch.File.getSliceChecksums"><function>::IcePatch::File::getSliceChecksums</function></link></member>
 		<member><link linkend="IceStorm.TopicManager.getSliceChecksums"><function>::IceStorm::TopicManager::getSliceChecksums</function></link></member>
 	    </simplelist></para></section>
     </section>
@@ -1233,6 +1238,13 @@ Flush any pending batch requests for this communicator.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
+		    <term><link linkend="Ice.Communicator.getDefaultContext"><function>getDefaultContext</function></link></term>
+		    <listitem>
+			<para>
+Get the currently-set default context.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
 		    <term><link linkend="Ice.Communicator.getDefaultLocator"><function>getDefaultLocator</function></link></term>
 		    <listitem>
 			<para>
@@ -1286,6 +1298,13 @@ Convert a proxy into a string.</para>
 		    <listitem>
 			<para>
 Remove a servant factory from this communicator.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Communicator.setDefaultContext"><function>setDefaultContext</function></link></term>
+		    <listitem>
+			<para>
+Set a default context on this communicator.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -1531,6 +1550,19 @@ Flush any pending batch requests for this communicator.
 This causes all batch requests that were sent via proxies
 obtained via this communicator to be sent to the server.</para>
     </section>
+    <section id="Ice.Communicator.getDefaultContext">
+	<title><literal>getDefaultContext</literal></title>
+<synopsis><link linkend="Ice.Context"><type>Context</type></link> <function>getDefaultContext</function>();</synopsis>
+	<para>
+Get the currently-set default context.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		The currently established default context. If no
+default context is currently set, <link linkend="Ice.Communicator.getDefaultContext"><function>getDefaultContext</function></link>
+returns an empty context.</para>
+	</section>
+    </section>
     <section id="Ice.Communicator.getDefaultLocator">
 	<title><literal>getDefaultLocator</literal></title>
 <synopsis><classname>Locator*</classname> <function>getDefaultLocator</function>();</synopsis>
@@ -1693,6 +1725,28 @@ or an empty string for the default factory.</para>
 		<member><link linkend="Ice.Communicator.findObjectFactory"><function>findObjectFactory</function></link></member>
 		<member><link linkend="Ice.ObjectFactory"><classname>ObjectFactory</classname></link></member>
 	    </simplelist></para></section>
+    </section>
+    <section id="Ice.Communicator.setDefaultContext">
+	<title><literal>setDefaultContext</literal></title>
+<synopsis><type>void</type> <function>setDefaultContext</function>(<link linkend="Ice.Context"><type>Context</type></link> <parameter>ctx</parameter>);</synopsis>
+	<para>
+Set a default context on this communicator. Once set,
+all proxies that do not explicitly override the context
+on a per-proxy or per-invocation basis send this context
+with every invocation. To clear a context, call
+<literal>setContext</literal> with an empty context.</para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>ctx</parameter></term>
+		    <listitem>
+			<para>
+			    The default context to be set.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
     </section>
     <section id="Ice.Communicator.setDefaultLocator">
 	<title><literal>setDefaultLocator</literal></title>
@@ -2005,7 +2059,7 @@ Close a connection, either gracefully or forcefully.</para>
 		    <term><link linkend="Ice.Connection.createProxy"><function>createProxy</function></link></term>
 		    <listitem>
 			<para>
-Create a proxy that always uses this connection.</para>
+Create a special proxy that always uses this connection.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -2013,6 +2067,22 @@ Create a proxy that always uses this connection.</para>
 		    <listitem>
 			<para>
 Flush any pending batch requests for this connection.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Connection.getAdapter"><function>getAdapter</function></link></term>
+		    <listitem>
+			<para>
+Get the object adapter that dispatches requests for this
+connection.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Connection.setAdapter"><function>setAdapter</function></link></term>
+		    <listitem>
+			<para>
+Explicitly set an object adapter that dispatches requests that
+are received over this connection.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -2067,12 +2137,12 @@ connection is closed gracefully.</para>
 	<title><literal>createProxy</literal></title>
 <synopsis><type>Object*</type> <function>createProxy</function>(<link linkend="Ice.Identity"><structname>Identity</structname></link> <parameter>id</parameter>);</synopsis>
 	<para>
-Create a proxy that always uses this connection. This is
-typically used for reverse communications using connections
-that have been established from a client to an object adapter.
-<note><para> This operation is intended to be used by special
-services, such as <link linkend="Ice.Router"><classname>Router</classname></link> implementations. Regular user code
-should not attempt to use this operation. </para></note></para>
+Create a special proxy that always uses this connection. This
+can be used for callbacks from a server to a client if the
+server cannot directly establish a connection to the client,
+for example because of firewalls. In this case, the server
+would create a proxy using an already established connection
+from the client.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -2095,7 +2165,7 @@ connection.</para>
 	    <title>See Also</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="Ice.Identity"><structname>Identity</structname></link></member>
+		<member><link linkend="Ice.Connection.setAdapter"><function>setAdapter</function></link></member>
 	    </simplelist></para></section>
     </section>
     <section id="Ice.Connection.flushBatchRequests">
@@ -2105,6 +2175,59 @@ connection.</para>
 Flush any pending batch requests for this connection. This
 causes all batch requests that were sent via proxies that use
 this connection to be sent to the server.</para>
+    </section>
+    <section id="Ice.Connection.getAdapter">
+	<title><literal>getAdapter</literal></title>
+<synopsis><link linkend="Ice.ObjectAdapter"><classname>ObjectAdapter</classname></link> <function>getAdapter</function>();</synopsis>
+	<para>
+Get the object adapter that dispatches requests for this
+connection.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		The object adapter that dispatches requests for the
+connection, or null if no adapter is set.</para>
+	</section>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Ice.Connection.setAdapter"><function>setAdapter</function></link></member>
+	    </simplelist></para></section>
+    </section>
+    <section id="Ice.Connection.setAdapter">
+	<title><literal>setAdapter</literal></title>
+<synopsis><type>void</type> <function>setAdapter</function>(<link linkend="Ice.ObjectAdapter"><classname>ObjectAdapter</classname></link> <parameter>adapter</parameter>);</synopsis>
+	<para>
+Explicitly set an object adapter that dispatches requests that
+are received over this connection. A client can invoke an
+operation on a server using a proxy, and then set an object
+adapter for the outgoing connection that is used by the proxy
+in order to receive callbacks. This is useful if the server
+cannot establish a connection back to the client, for example
+because of firewalls.</para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>adapter</parameter></term>
+		    <listitem>
+			<para>
+			    The object adapter that should be used by this
+connection to dispatch requests. The object adapter must be
+activated. When the object adapter is deactivated, it is
+automatically removed from the connection.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Ice.Connection.createProxy"><function>createProxy</function></link></member>
+		<member><link linkend="Ice.Connection.setAdapter"><function>setAdapter</function></link></member>
+	    </simplelist></para></section>
     </section>
     <section id="Ice.Connection.timeout">
 	<title><literal>timeout</literal></title>
@@ -2484,6 +2607,8 @@ object.</para>
 		<member><link linkend="Ice.ObjectAdapter.removeFacet"><function>ObjectAdapter::removeFacet</function></link></member>
 		<member><link linkend="Ice.ObjectDict"><type>ObjectDict</type></link></member>
 		<member><link linkend="Ice.RequestFailedException.id"><type>RequestFailedException::id</type></link></member>
+		<member><link linkend="IcePack.Admin.getObjectDescriptor"><function>::IcePack::Admin::getObjectDescriptor</function></link></member>
+		<member><link linkend="IcePack.Admin.removeObject"><function>::IcePack::Admin::removeObject</function></link></member>
 		<member><link linkend="IcePack.Query.findObjectById"><function>::IcePack::Query::findObjectById</function></link></member>
 	    </simplelist></para></section>
 	<section>
@@ -2604,6 +2729,33 @@ indicating an illegal indirection during unmarshaling.</para>
 This exception is a specialization of <link linkend="Ice.ProtocolException"><classname>ProtocolException</classname></link>,
 indicating that the message size is illegal, i.e., it is
 less than the minimum required size.</para>
+    </section>
+</section>
+<section id="Ice.InitializationException">
+    <title><literal>Ice::InitializationException</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>local exception <classname>InitializationException</classname></synopsis>
+	<para>
+This exception is raised when a failure occurs during initialization.</para>
+	<section>
+	    <title>Data Member Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="Ice.InitializationException.reason"><type>reason</type></link></term>
+		    <listitem>
+			<para>
+The reason for the failure.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="Ice.InitializationException.reason">
+	<title><literal>reason</literal></title>
+<synopsis><type>string</type> <structfield>reason</structfield>;</synopsis>
+	<para>
+The reason for the failure.</para>
     </section>
 </section>
 <section id="Ice.Locator">
@@ -2772,7 +2924,8 @@ Set the process proxy for a server.</para>
     </section>
     <section id="Ice.LocatorRegistry.setAdapterDirectProxy">
 	<title><literal>setAdapterDirectProxy</literal></title>
-<synopsis><type>void</type> <function>setAdapterDirectProxy</function>(<type>string</type> <parameter>id</parameter>,
+<synopsis>[ "amd" ]
+<type>void</type> <function>setAdapterDirectProxy</function>(<type>string</type> <parameter>id</parameter>,
     <type>Object*</type> <parameter>proxy</parameter>)
     throws
 	<link linkend="Ice.AdapterNotFoundException"><classname>AdapterNotFoundException</classname></link>,
@@ -2826,7 +2979,8 @@ id is already active.</para>
     </section>
     <section id="Ice.LocatorRegistry.setServerProcessProxy">
 	<title><literal>setServerProcessProxy</literal></title>
-<synopsis><type>void</type> <function>setServerProcessProxy</function>(<type>string</type> <parameter>id</parameter>,
+<synopsis>[ "amd" ]
+<type>void</type> <function>setServerProcessProxy</function>(<type>string</type> <parameter>id</parameter>,
     <classname>Process*</classname> <parameter>proxy</parameter>)
     throws
 	<link linkend="Ice.ServerNotFoundException"><classname>ServerNotFoundException</classname></link>;</synopsis>
@@ -2888,21 +3042,28 @@ by implementing this interface and installing it in a communicator.</para>
 		    <term><link linkend="Ice.Logger.error"><function>error</function></link></term>
 		    <listitem>
 			<para>
-Log error messages.</para>
+Log an error message.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.Logger.print"><function>print</function></link></term>
+		    <listitem>
+			<para>
+Print a message.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
 		    <term><link linkend="Ice.Logger.trace"><function>trace</function></link></term>
 		    <listitem>
 			<para>
-Log trace messages.</para>
+Log a trace message.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
 		    <term><link linkend="Ice.Logger.warning"><function>warning</function></link></term>
 		    <listitem>
 			<para>
-Log warning messages.</para>
+Log a warning message.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -2912,7 +3073,7 @@ Log warning messages.</para>
 	<title><literal>error</literal></title>
 <synopsis><type>void</type> <function>error</function>(<type>string</type> <parameter>message</parameter>);</synopsis>
 	<para>
-Log error messages.</para>
+Log an error message.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -2932,12 +3093,19 @@ Log error messages.</para>
 		<member><link linkend="Ice.Logger.warning"><function>warning</function></link></member>
 	    </simplelist></para></section>
     </section>
+    <section id="Ice.Logger.print">
+	<title><literal>print</literal></title>
+<synopsis><type>void</type> <function>print</function>(<type>string</type> <parameter>message</parameter>);</synopsis>
+	<para>
+Print a message. The message is printed literally, without
+any decorations such as executable name or time stamp.</para>
+    </section>
     <section id="Ice.Logger.trace">
 	<title><literal>trace</literal></title>
 <synopsis><type>void</type> <function>trace</function>(<type>string</type> <parameter>category</parameter>,
     <type>string</type> <parameter>message</parameter>);</synopsis>
 	<para>
-Log trace messages.</para>
+Log a trace message.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -2962,7 +3130,7 @@ Log trace messages.</para>
 	<title><literal>warning</literal></title>
 <synopsis><type>void</type> <function>warning</function>(<type>string</type> <parameter>message</parameter>);</synopsis>
 	<para>
-Log warning messages.</para>
+Log a warning message.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -3184,6 +3352,8 @@ proxies.</para>
 		<member><link linkend="Freeze.ServantInitializer.initialize"><function>::Freeze::ServantInitializer::initialize</function></link></member>
 		<member><link linkend="Ice.Communicator.createObjectAdapter"><function>Communicator::createObjectAdapter</function></link></member>
 		<member><link linkend="ommunicator.createObjectAdapterWithEndpoints"><function>Communicator::createObjectAdapterWithEndpoints</function></link></member>
+		<member><link linkend="Ice.Connection.getAdapter"><function>Connection::getAdapter</function></link></member>
+		<member><link linkend="Ice.Connection.setAdapter"><function>Connection::setAdapter</function></link></member>
 		<member><link linkend="Ice.Current.adapter"><type>Current::adapter</type></link></member>
 	    </simplelist></para></section>
 	<section>
@@ -3686,10 +3856,7 @@ this object adapter.</para>
 	<para>
 Create a "direct proxy" that matches this object adapter and
 the given identity. A direct proxy always contains the current
-adapter endpoints.
-<note><para> This operation is intended to be used by locator
-implementations. Regular user code should not attempt to use
-this operation.</para></note></para>
+adapter endpoints.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -5274,7 +5441,7 @@ directly.</para></note></para>
 	    <title>Derived Classes and Interfaces</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="Glacier.Router"><type>::Glacier::Router</type></link></member>
+		<member><link linkend="Glacier2.Router"><type>::Glacier2::Router</type></link></member>
 	    </simplelist></para></section>
 	<section>
 	    <title>Operation Index</title>
@@ -6132,6 +6299,14 @@ could not be found.</para>
 	    <title>Struct Index</title>
 	    <variablelist>
 		<varlistentry>
+		    <term><link linkend="Freeze.CatalogData"><structname>CatalogData</structname></link></term>
+		    <listitem>
+			<para>
+The catalog keeps information about  Freeze Maps and Freeze
+evictors in a Berkeley Db environment.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
 		    <term><link linkend="Freeze.ObjectRecord"><structname>ObjectRecord</structname></link></term>
 		    <listitem>
 			<para>
@@ -6179,6 +6354,57 @@ A database key, represented as a sequence of bytes.</para>
 <synopsis>sequence&lt;<type>byte</type>&gt; <type>Value</type>;</synopsis>
 	<para>
 A database value, represented as a sequence of bytes.</para>
+    </section>
+</section>
+<section id="Freeze.CatalogData">
+    <title><literal>Freeze::CatalogData</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>struct <structname>CatalogData</structname></synopsis>
+	<para>
+The catalog keeps information about  Freeze Maps and Freeze
+evictors in a Berkeley Db environment. It is used by FreezeScript.</para>
+	<section>
+	    <title>Data Member Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="Freeze.CatalogData.evictor"><type>evictor</type></link></term>
+		    <listitem>
+			<para>
+</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Freeze.CatalogData.key"><type>key</type></link></term>
+		    <listitem>
+			<para>
+</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Freeze.CatalogData.value"><type>value</type></link></term>
+		    <listitem>
+			<para>
+</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="Freeze.CatalogData.evictor">
+	<title><literal>evictor</literal></title>
+<synopsis><type>bool</type> <structfield>evictor</structfield>;</synopsis>
+	<para></para>
+    </section>
+    <section id="Freeze.CatalogData.key">
+	<title><literal>key</literal></title>
+<synopsis><type>string</type> <structfield>key</structfield>;</synopsis>
+	<para></para>
+    </section>
+    <section id="Freeze.CatalogData.value">
+	<title><literal>value</literal></title>
+<synopsis><type>string</type> <structfield>value</structfield>;</synopsis>
+	<para></para>
     </section>
 </section>
 <section id="Freeze.Connection">
@@ -8117,6 +8343,7 @@ A sequence of object descriptors.</para>
 	    <para>
 	    <simplelist type="inline">
 		<member><link linkend="IcePack.AdapterDescriptor.objects"><type>AdapterDescriptor::objects</type></link></member>
+		<member><link linkend="IcePack.Admin.getAllObjectDescriptors"><function>Admin::getAllObjectDescriptors</function></link></member>
 	    </simplelist></para></section>
     </section>
     <section id="IcePack.PropertyDescriptorSeq">
@@ -8322,6 +8549,14 @@ Get all the &IcePack; nodes currently registered.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
+		    <term><link linkend="IcePack.Admin.getAllObjectDescriptors"><function>getAllObjectDescriptors</function></link></term>
+		    <listitem>
+			<para>
+Get the descriptors of all registered objects whose stringified
+identities match the given expression.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
 		    <term><link linkend="IcePack.Admin.getAllServerNames"><function>getAllServerNames</function></link></term>
 		    <listitem>
 			<para>
@@ -8333,6 +8568,21 @@ Get all the server names registered with &IcePack;.</para>
 		    <listitem>
 			<para>
 Get an application descriptor.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.Admin.getNodeHostname"><function>getNodeHostname</function></link></term>
+		    <listitem>
+			<para>
+Get the hostname of this node.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.Admin.getObjectDescriptor"><function>getObjectDescriptor</function></link></term>
+		    <listitem>
+			<para>
+Get the object descriptor if the object with the given
+identity.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -8466,7 +8716,7 @@ Update a server.</para>
 		    <listitem>
 			<para>
 Write message on server stdout or stderr
-@param name Must match the name of <literal>ServerDescription::name</literal>.</para>
+@param name The name of the server.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8699,6 +8949,33 @@ Get all the &IcePack; nodes currently registered.</para>
 		The node names.</para>
 	</section>
     </section>
+    <section id="IcePack.Admin.getAllObjectDescriptors">
+	<title><literal>getAllObjectDescriptors</literal></title>
+<synopsis><link linkend="IcePack.ObjectDescriptorSeq"><type>ObjectDescriptorSeq</type></link> <function>getAllObjectDescriptors</function>(<type>string</type> <parameter>expr</parameter>);</synopsis>
+	<para>
+Get the descriptors of all registered objects whose stringified
+identities match the given expression.</para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>expr</parameter></term>
+		    <listitem>
+			<para>
+			    The expression to match against the stringified
+identities of registered objects. The expression may contain
+a trailing wildcard (<literal>*</literal>) character.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		All the object descriptors with a stringified identity
+matching the given expression.</para>
+	</section>
+    </section>
     <section id="IcePack.Admin.getAllServerNames">
 	<title><literal>getAllServerNames</literal></title>
 <synopsis><link linkend="Ice.StringSeq"><type>::Ice::StringSeq</type></link> <function>getAllServerNames</function>();</synopsis>
@@ -8753,6 +9030,66 @@ Get an application descriptor.</para>
 	    </variablelist>
 	</section>
     </section>
+    <section id="IcePack.Admin.getNodeHostname">
+	<title><literal>getNodeHostname</literal></title>
+<synopsis><type>string</type> <function>getNodeHostname</function>(<type>string</type> <parameter>name</parameter>)
+    throws
+	<link linkend="IcePack.NodeNotExistException"><classname>NodeNotExistException</classname></link>,
+	<link linkend="IcePack.NodeUnreachableException"><classname>NodeUnreachableException</classname></link>;</synopsis>
+	<para>
+Get the hostname of this node.</para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>name</parameter></term>
+		    <listitem>
+			<para>
+			    The node name.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="IcePack.Admin.getObjectDescriptor">
+	<title><literal>getObjectDescriptor</literal></title>
+<synopsis><link linkend="IcePack.ObjectDescriptor"><structname>ObjectDescriptor</structname></link> <function>getObjectDescriptor</function>(<link linkend="Ice.Identity"><structname>::Ice::Identity</structname></link> <parameter>id</parameter>)
+    throws
+	<link linkend="IcePack.ObjectNotExistException"><classname>ObjectNotExistException</classname></link>;</synopsis>
+	<para>
+Get the object descriptor if the object with the given
+identity.</para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>id</parameter></term>
+		    <listitem>
+			<para>
+			    The identity of the object.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		The object descriptor.</para>
+	</section>
+	<section>
+	    <title>Exceptions</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><literal>ObjectNotExistExcpetion</literal></term>
+		    <listitem>
+			<para>
+			    Raised if the object cannot be
+found.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
     <section id="IcePack.Admin.getServerActivation">
 	<title><literal>getServerActivation</literal></title>
 <synopsis><link linkend="IcePack.ServerActivation"><type>ServerActivation</type></link> <function>getServerActivation</function>(<type>string</type> <parameter>name</parameter>)
@@ -8768,7 +9105,7 @@ Get the server's activation mode.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <literal>ServerDescription::name</literal>.</para>
+			    The name of the server.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8860,7 +9197,7 @@ system dependent.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <literal>ServerDescription::name</literal>.</para>
+			    The name of the server.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8914,7 +9251,7 @@ Get a server's state.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <literal>ServerDescription::name</literal>.</para>
+			    The name of the server.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -9037,7 +9374,7 @@ Remove the given node and associated servers from the &IcePack; registry.</para>
     </section>
     <section id="IcePack.Admin.removeObject">
 	<title><literal>removeObject</literal></title>
-<synopsis><type>void</type> <function>removeObject</function>(<type>Object*</type> <parameter>obj</parameter>)
+<synopsis><type>void</type> <function>removeObject</function>(<link linkend="Ice.Identity"><structname>::Ice::Identity</structname></link> <parameter>id</parameter>)
     throws
 	<link linkend="IcePack.ObjectNotExistException"><classname>ObjectNotExistException</classname></link>;</synopsis>
 	<para>
@@ -9046,10 +9383,11 @@ Remove an object from the object registry.</para>
 	    <title>Parameters</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><parameter>obj</parameter></term>
+		    <term><parameter>id</parameter></term>
 		    <listitem>
 			<para>
-			    The object to be removed from the registry.</para>
+			    The identity of the object to be removed from the
+registry.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -9125,7 +9463,7 @@ Send signal to a server.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <literal>ServerDescription::name</literal>.</para>
+			    The name of the server.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -9183,7 +9521,7 @@ Set the server's activation mode.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <literal>ServerDescription::name</literal>.</para>
+			    The name of the server.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -9232,7 +9570,8 @@ Shut down the &IcePack; registry.</para>
 	<title><literal>shutdownNode</literal></title>
 <synopsis><type>void</type> <function>shutdownNode</function>(<type>string</type> <parameter>name</parameter>)
     throws
-	<link linkend="IcePack.NodeNotExistException"><classname>NodeNotExistException</classname></link>;</synopsis>
+	<link linkend="IcePack.NodeNotExistException"><classname>NodeNotExistException</classname></link>,
+	<link linkend="IcePack.NodeUnreachableException"><classname>NodeUnreachableException</classname></link>;</synopsis>
 	<para>
 Shutdown an &IcePack; node.</para>
 	<section>
@@ -9263,7 +9602,7 @@ Start a server.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <literal>ServerDescription::name</literal>.</para>
+			    The name of the server.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -9311,7 +9650,7 @@ Stop a server.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <literal>ServerDescription::name</literal>.</para>
+			    The name of the server.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -9440,7 +9779,7 @@ Write message on server stdout or stderr</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <literal>ServerDescription::name</literal>.</para>
+			    The name of the server.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -9899,6 +10238,7 @@ An &Ice; object descriptor.</para>
 	    <title>Used By</title>
 	    <para>
 	    <simplelist type="inline">
+		<member><link linkend="IcePack.Admin.getObjectDescriptor"><function>Admin::getObjectDescriptor</function></link></member>
 		<member><link linkend="IcePack.ObjectDescriptorSeq"><type>ObjectDescriptorSeq</type></link></member>
 	    </simplelist></para></section>
 	<section>
@@ -11558,53 +11898,55 @@ An attempt was made to call a method that references a
 <link linkend="IceSSL.ContextType"><type>ContextType</type></link> that is not supported for that operation.</para>
     </section>
 </section>
-<section id="Glacier">
-    <title><literal>Glacier</literal></title>
+<section id="Glacier2">
+    <title><literal>Glacier2</literal></title>
     <section>
 	<title>Overview</title>
-<synopsis>module <classname>Glacier</classname></synopsis>
+<synopsis>module <classname>Glacier2</classname></synopsis>
 	<para>
-&Glacier; is a firewall solution for Ice. &Glacier; authenticates
+&Glacier2; is a firewall solution for Ice. &Glacier2; authenticates
 and filters client requests and allows callbacks to the client in a
-secure fashion. In combination with &IceSSL;, &Glacier; provides a
+secure fashion. In combination with &IceSSL;, &Glacier2; provides a
 security solution that is both non-intrusive and easy to configure.</para>
 	<section>
 	    <title>Interface Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="Glacier.PermissionsVerifier"><type>PermissionsVerifier</type></link></term>
+		    <term><link linkend="Glacier2.Admin"><type>Admin</type></link></term>
 		    <listitem>
 			<para>
-The &Glacier; router starter permissions verifier.</para>
+The &Glacier2; administrative interface.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="Glacier.Router"><type>Router</type></link></term>
+		    <term><link linkend="Glacier2.PermissionsVerifier"><type>PermissionsVerifier</type></link></term>
 		    <listitem>
 			<para>
-The &Glacier; router interface.</para>
+The &Glacier2; permissions verifier.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="Glacier.Session"><type>Session</type></link></term>
+		    <term><link linkend="Glacier2.Router"><type>Router</type></link></term>
 		    <listitem>
 			<para>
-A session object, which is tied to the lifecycle of a <link linkend="Glacier.Router"><classname>Router</classname></link>.</para>
+The &Glacier2; specialization of the standard &Ice; router
+interface.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="Glacier.SessionManager"><type>SessionManager</type></link></term>
+		    <term><link linkend="Glacier2.Session"><type>Session</type></link></term>
 		    <listitem>
 			<para>
-The session manager, which is responsible for managing <link linkend="Glacier.Session"><classname>Session</classname></link>
+A client-visible session object, which is tied to the lifecycle of
+a <link linkend="Glacier2.Router"><classname>Router</classname></link>.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Glacier2.SessionManager"><type>SessionManager</type></link></term>
+		    <listitem>
+			<para>
+The session manager, which is responsible for managing <link linkend="Glacier2.Session"><classname>Session</classname></link>
 objects.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="Glacier.Starter"><type>Starter</type></link></term>
-		    <listitem>
-			<para>
-The &Glacier; router starter.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -11613,107 +11955,142 @@ The &Glacier; router starter.</para>
 	    <title>Exception Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="Glacier.CannotStartRouterException"><classname>CannotStartRouterException</classname></link></term>
+		    <term><link linkend="Glacier2.CannotCreateSessionException"><classname>CannotCreateSessionException</classname></link></term>
 		    <listitem>
 			<para>
-This exception is raised if the router cannot be started.</para>
+This exception is raised if an attempt to create a new session
+failed.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="Glacier.NoSessionManagerException"><classname>NoSessionManagerException</classname></link></term>
+		    <term><link linkend="Glacier2.PermissionDeniedException"><classname>PermissionDeniedException</classname></link></term>
 		    <listitem>
 			<para>
-This exception is raised if no <link linkend="Glacier.SessionManager"><classname>SessionManager</classname></link> object has been
-configured.</para>
+This exception is raised if a client is denied the ability to create
+a session with the router.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="Glacier.PermissionDeniedException"><classname>PermissionDeniedException</classname></link></term>
+		    <term><link linkend="Glacier2.SessionNotExistException"><classname>SessionNotExistException</classname></link></term>
 		    <listitem>
 			<para>
-This exception is raised if router access is denied.</para>
+This exception is raised if a client tries to destroy a session
+with a router, but no session exists for the client.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
 	</section>
     </section>
 </section>
-<section id="Glacier.CannotStartRouterException">
-    <title><literal>Glacier::CannotStartRouterException</literal></title>
+<section id="Glacier2.Admin">
+    <title><literal>Glacier2::Admin</literal></title>
     <section>
 	<title>Overview</title>
-<synopsis>exception <classname>CannotStartRouterException</classname></synopsis>
+<synopsis>interface <classname>Admin</classname></synopsis>
 	<para>
-This exception is raised if the router cannot be started.</para>
-	<section>
-	    <title>Data Member Index</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="Glacier.CannotStartRouterException.reason"><type>reason</type></link></term>
-		    <listitem>
-			<para>
-Details as to why the router could not be started.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="Glacier.CannotStartRouterException.reason">
-	<title><literal>reason</literal></title>
-<synopsis><type>string</type> <structfield>reason</structfield>;</synopsis>
-	<para>
-Details as to why the router could not be started.</para>
-    </section>
-</section>
-<section id="Glacier.NoSessionManagerException">
-    <title><literal>Glacier::NoSessionManagerException</literal></title>
-    <section>
-	<title>Overview</title>
-<synopsis>exception <classname>NoSessionManagerException</classname></synopsis>
-	<para>
-This exception is raised if no <link linkend="Glacier.SessionManager"><classname>SessionManager</classname></link> object has been
-configured.</para>
-    </section>
-</section>
-<section id="Glacier.PermissionDeniedException">
-    <title><literal>Glacier::PermissionDeniedException</literal></title>
-    <section>
-	<title>Overview</title>
-<synopsis>exception <classname>PermissionDeniedException</classname></synopsis>
-	<para>
-This exception is raised if router access is denied.</para>
-	<section>
-	    <title>Data Member Index</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="Glacier.PermissionDeniedException.reason"><type>reason</type></link></term>
-		    <listitem>
-			<para>
-Details as to why access was denied.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="Glacier.PermissionDeniedException.reason">
-	<title><literal>reason</literal></title>
-<synopsis><type>string</type> <structfield>reason</structfield>;</synopsis>
-	<para>
-Details as to why access was denied.</para>
-    </section>
-</section>
-<section id="Glacier.PermissionsVerifier">
-    <title><literal>Glacier::PermissionsVerifier</literal></title>
-    <section>
-	<title>Overview</title>
-<synopsis>interface <classname>PermissionsVerifier</classname></synopsis>
-	<para>
-The &Glacier; router starter permissions verifier.</para>
+The &Glacier2; administrative interface. This must only be
+accessible from inside the firewall.</para>
 	<section>
 	    <title>Operation Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="Glacier.PermissionsVerifier.checkPermissions"><function>checkPermissions</function></link></term>
+		    <term><link linkend="Glacier2.Admin.shutdown"><function>shutdown</function></link></term>
+		    <listitem>
+			<para>
+Shut down the &Glacier2; router.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="Glacier2.Admin.shutdown">
+	<title><literal>shutdown</literal></title>
+<synopsis><type>void</type> <function>shutdown</function>();</synopsis>
+	<para>
+Shut down the &Glacier2; router.</para>
+    </section>
+</section>
+<section id="Glacier2.CannotCreateSessionException">
+    <title><literal>Glacier2::CannotCreateSessionException</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>exception <classname>CannotCreateSessionException</classname></synopsis>
+	<para>
+This exception is raised if an attempt to create a new session
+failed.</para>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Glacier2.Router.createSession"><function>Router::createSession</function></link></member>
+		<member><literal>SessionManager::createSession</literal></member>
+	    </simplelist></para></section>
+	<section>
+	    <title>Data Member Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="Glacier2.CannotCreateSessionException.reason"><type>reason</type></link></term>
+		    <listitem>
+			<para>
+The reason why session creation has failed.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="Glacier2.CannotCreateSessionException.reason">
+	<title><literal>reason</literal></title>
+<synopsis><type>string</type> <structfield>reason</structfield>;</synopsis>
+	<para>
+The reason why session creation has failed.</para>
+    </section>
+</section>
+<section id="Glacier2.PermissionDeniedException">
+    <title><literal>Glacier2::PermissionDeniedException</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>exception <classname>PermissionDeniedException</classname></synopsis>
+	<para>
+This exception is raised if a client is denied the ability to create
+a session with the router.</para>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Glacier2.Router.createSession"><function>Router::createSession</function></link></member>
+	    </simplelist></para></section>
+	<section>
+	    <title>Data Member Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="Glacier2.PermissionDeniedException.reason"><type>reason</type></link></term>
+		    <listitem>
+			<para>
+The reason why permission was denied.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="Glacier2.PermissionDeniedException.reason">
+	<title><literal>reason</literal></title>
+<synopsis><type>string</type> <structfield>reason</structfield>;</synopsis>
+	<para>
+The reason why permission was denied.</para>
+    </section>
+</section>
+<section id="Glacier2.PermissionsVerifier">
+    <title><literal>Glacier2::PermissionsVerifier</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>interface <classname>PermissionsVerifier</classname></synopsis>
+	<para>
+The &Glacier2; permissions verifier.</para>
+	<section>
+	    <title>Operation Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="lacier2.PermissionsVerifier.checkPermissions"><function>checkPermissions</function></link></term>
 		    <listitem>
 			<para>
 Check whether a user has permission to access the router.</para>
@@ -11722,7 +12099,7 @@ Check whether a user has permission to access the router.</para>
 	    </variablelist>
 	</section>
     </section>
-    <section id="Glacier.PermissionsVerifier.checkPermissions">
+    <section id="lacier2.PermissionsVerifier.checkPermissions">
 	<title><literal>checkPermissions</literal></title>
 <synopsis><type>bool</type> <function>checkPermissions</function>(<type>string</type> <parameter>userId</parameter>,
     <type>string</type> <parameter>password</parameter>,
@@ -11762,208 +12139,49 @@ Check whether a user has permission to access the router.</para>
 	</section>
     </section>
 </section>
-<section id="Glacier.Router">
-    <title><literal>Glacier::Router</literal></title>
+<section id="Glacier2.Router">
+    <title><literal>Glacier2::Router</literal></title>
     <section>
 	<title>Overview</title>
 <synopsis>interface <classname>Router</classname>
     extends 
 	<link linkend="Ice.Router"><type>::Ice::Router</type></link></synopsis>
 	<para>
-The &Glacier; router interface.</para>
+The &Glacier2; specialization of the standard &Ice; router
+interface.</para>
 	<section>
 	    <title>Operation Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="Glacier.Router.createSession"><function>createSession</function></link></term>
+		    <term><link linkend="Glacier2.Router.createSession"><function>createSession</function></link></term>
 		    <listitem>
 			<para>
-Create a session, or return a previously created session.</para>
+Create a per-client session with the router.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="Glacier.Router.shutdown"><function>shutdown</function></link></term>
+		    <term><link linkend="Glacier2.Router.destroySession"><function>destroySession</function></link></term>
 		    <listitem>
 			<para>
-Shutdown the router.</para>
+Destroy the calling client's session with this router.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
 	</section>
     </section>
-    <section id="Glacier.Router.createSession">
+    <section id="Glacier2.Router.createSession">
 	<title><literal>createSession</literal></title>
-<synopsis><classname>Session*</classname> <function>createSession</function>()
+<synopsis><classname>Session*</classname> <function>createSession</function>(<type>string</type> <parameter>userId</parameter>,
+    <type>string</type> <parameter>password</parameter>)
     throws
-	<link linkend="Glacier.NoSessionManagerException"><classname>NoSessionManagerException</classname></link>;</synopsis>
+	<link linkend="Glacier2.PermissionDeniedException"><classname>PermissionDeniedException</classname></link>,
+	<link linkend="Glacier2.CannotCreateSessionException"><classname>CannotCreateSessionException</classname></link>;</synopsis>
 	<para>
-Create a session, or return a previously created session. The
-session is automatically shutdown when the Router terminates.</para>
-	<section>
-	    <title>Return Value</title>
-	    <para>
-		A proxy to the session.</para>
-	</section>
-	<section>
-	    <title>Exceptions</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="Glacier.NoSessionManagerException"><classname>NoSessionManagerException</classname></link></term>
-		    <listitem>
-			<para>
-			    if there is no configured
-<link linkend="Glacier.SessionManager"><classname>SessionManager</classname></link>.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="Glacier.Router.shutdown">
-	<title><literal>shutdown</literal></title>
-<synopsis><type>void</type> <function>shutdown</function>();</synopsis>
-	<para>
-Shutdown the router.</para>
-    </section>
-</section>
-<section id="Glacier.Session">
-    <title><literal>Glacier::Session</literal></title>
-    <section>
-	<title>Overview</title>
-<synopsis>interface <classname>Session</classname></synopsis>
-	<para>
-A session object, which is tied to the lifecycle of a <link linkend="Glacier.Router"><classname>Router</classname></link>.</para>
-	<section>
-	    <title>See Also</title>
-	    <para>
-	    <simplelist type="inline">
-		<member><link linkend="Glacier.Router"><classname>Router</classname></link></member>
-		<member><link linkend="Glacier.SessionManager"><classname>SessionManager</classname></link></member>
-	    </simplelist></para></section>
-	<section>
-	    <title>Operation Index</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="Glacier.Session.destroy"><function>destroy</function></link></term>
-		    <listitem>
-			<para>
-Destroy the session.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="Glacier.Session.destroy">
-	<title><literal>destroy</literal></title>
-<synopsis><type>void</type> <function>destroy</function>();</synopsis>
-	<para>
-Destroy the session. This is called automatically when the
-<link linkend="Glacier.Router"><classname>Router</classname></link> is destroyed.</para>
-    </section>
-</section>
-<section id="Glacier.SessionManager">
-    <title><literal>Glacier::SessionManager</literal></title>
-    <section>
-	<title>Overview</title>
-<synopsis>interface <classname>SessionManager</classname></synopsis>
-	<para>
-The session manager, which is responsible for managing <link linkend="Glacier.Session"><classname>Session</classname></link>
-objects. New session objects are created by the <link linkend="Glacier.Router"><classname>Router</classname></link> object.</para>
-	<section>
-	    <title>See Also</title>
-	    <para>
-	    <simplelist type="inline">
-		<member><link linkend="Glacier.Session"><classname>Session</classname></link></member>
-	    </simplelist></para></section>
-	<section>
-	    <title>Operation Index</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="Glacier.SessionManager.create"><function>create</function></link></term>
-		    <listitem>
-			<para>
-Create a new session object.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="Glacier.SessionManager.create">
-	<title><literal>create</literal></title>
-<synopsis><classname>Session*</classname> <function>create</function>(<type>string</type> <parameter>userId</parameter>);</synopsis>
-	<para>
-Create a new session object.</para>
-	<section>
-	    <title>Parameters</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><parameter>userId</parameter></term>
-		    <listitem>
-			<para>
-			    The user id for the session.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-	<section>
-	    <title>Return Value</title>
-	    <para>
-		A proxy to the newly created session.</para>
-	</section>
-    </section>
-</section>
-<section id="Glacier.Starter">
-    <title><literal>Glacier::Starter</literal></title>
-    <section>
-	<title>Overview</title>
-<synopsis>interface <classname>Starter</classname></synopsis>
-	<para>
-The &Glacier; router starter.</para>
-	<section>
-	    <title>Operation Index</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="Glacier.Starter.getSliceChecksums"><function>getSliceChecksums</function></link></term>
-		    <listitem>
-			<para>
-Returns the checksums for the Glacier Slice definitions.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="Glacier.Starter.startRouter"><function>startRouter</function></link></term>
-		    <listitem>
-			<para>
-Start a new &Glacier; router.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="Glacier.Starter.getSliceChecksums">
-	<title><literal>getSliceChecksums</literal></title>
-<synopsis><link linkend="Ice.SliceChecksumDict"><type>::Ice::SliceChecksumDict</type></link> <function>getSliceChecksums</function>();</synopsis>
-	<para>
-Returns the checksums for the Glacier Slice definitions.</para>
-	<section>
-	    <title>Return Value</title>
-	    <para>
-		A dictionary mapping Slice type ids to their checksums.</para>
-	</section>
-    </section>
-    <section id="Glacier.Starter.startRouter">
-	<title><literal>startRouter</literal></title>
-<synopsis><link linkend="Glacier.Router"><classname>Router*</classname></link> <function>startRouter</function>(<type>string</type> <parameter>userId</parameter>,
-    <type>string</type> <parameter>password</parameter>,
-    out <link linkend="Ice.ByteSeq"><type>::Ice::ByteSeq</type></link> <parameter>privateKey</parameter>,
-    out <link linkend="Ice.ByteSeq"><type>::Ice::ByteSeq</type></link> <parameter>publicKey</parameter>,
-    out <link linkend="Ice.ByteSeq"><type>::Ice::ByteSeq</type></link> <parameter>routerCert</parameter>)
-    throws
-	<link linkend="Glacier.PermissionDeniedException"><classname>PermissionDeniedException</classname></link>,
-	<link linkend="Glacier.CannotStartRouterException"><classname>CannotStartRouterException</classname></link>;</synopsis>
-	<para>
-Start a new &Glacier; router. If the password for the given user
-id is incorrect, or if the user isn't allowed access, an
-<link linkend="Glacier.PermissionDeniedException"><classname>PermissionDeniedException</classname></link> is raised. Otherwise a new router is
-started, and a proxy to that router is returned to the caller.</para>
+Create a per-client session with the router. If a
+<link linkend="Glacier2.SessionManager"><classname>SessionManager</classname></link> has been installed, a proxy to a <link linkend="Glacier2.Session"><classname>Session</classname></link>
+object is returned to the client. Otherwise, null is returned
+and only an internal session (i.e., not visible to the client)
+is created.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -11981,28 +12199,150 @@ started, and a proxy to that router is returned to the caller.</para>
 			    The password for the given user id.</para>
 		    </listitem>
 		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		A proxy for the newly created session, or null if no
+<link linkend="Glacier2.SessionManager"><classname>SessionManager</classname></link> has been installed.</para>
+	</section>
+	<section>
+	    <title>Exceptions</title>
+	    <variablelist>
 		<varlistentry>
-		    <term><parameter>privateKey</parameter></term>
+		    <term><link linkend="Glacier2.PermissionDeniedException"><classname>PermissionDeniedException</classname></link></term>
 		    <listitem>
 			<para>
-			    The RSA Private Key (DER encoded) for the
-client to use. (Only for SSL.)</para>
+			    Raised if the password for
+the given user id is not correct, or if the user is not allowed
+access.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><parameter>publicKey</parameter></term>
+		    <term><link linkend="Glacier2.CannotCreateSessionException"><classname>CannotCreateSessionException</classname></link></term>
 		    <listitem>
 			<para>
-			    The RSA Public Key (DER encoded) for the
-client to use. (Only for SSL.)</para>
+			    Raised if the session
+cannot be created.</para>
 		    </listitem>
 		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Glacier2.Session"><classname>Session</classname></link></member>
+		<member><link linkend="Glacier2.SessionManager"><classname>SessionManager</classname></link></member>
+		<member><link linkend="Glacier2.PermissionsVerifier"><classname>PermissionsVerifier</classname></link></member>
+	    </simplelist></para></section>
+    </section>
+    <section id="Glacier2.Router.destroySession">
+	<title><literal>destroySession</literal></title>
+<synopsis>[ "amd" ]
+<type>void</type> <function>destroySession</function>()
+    throws
+	<link linkend="Glacier2.SessionNotExistException"><classname>SessionNotExistException</classname></link>;</synopsis>
+	<para>
+Destroy the calling client's session with this router.</para>
+	<section>
+	    <title>Exceptions</title>
+	    <variablelist>
 		<varlistentry>
-		    <term><parameter>routerCert</parameter></term>
+		    <term><link linkend="Glacier2.SessionNotExistException"><classname>SessionNotExistException</classname></link></term>
 		    <listitem>
 			<para>
-			    The trusted certificate of the router.
-(Only for SSL.)</para>
+			    Raised if no session exists
+for the calling client.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+</section>
+<section id="Glacier2.Session">
+    <title><literal>Glacier2::Session</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>interface <classname>Session</classname></synopsis>
+	<para>
+A client-visible session object, which is tied to the lifecycle of
+a <link linkend="Glacier2.Router"><classname>Router</classname></link>.</para>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Glacier2.Router"><classname>Router</classname></link></member>
+		<member><link linkend="Glacier2.SessionManager"><classname>SessionManager</classname></link></member>
+	    </simplelist></para></section>
+	<section>
+	    <title>Operation Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="Glacier2.Session.destroy"><function>destroy</function></link></term>
+		    <listitem>
+			<para>
+Destroy the session.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="Glacier2.Session.destroy">
+	<title><literal>destroy</literal></title>
+<synopsis><type>void</type> <function>destroy</function>();</synopsis>
+	<para>
+Destroy the session. This is called automatically when the
+<link linkend="Glacier2.Router"><classname>Router</classname></link> is destroyed.</para>
+    </section>
+</section>
+<section id="Glacier2.SessionManager">
+    <title><literal>Glacier2::SessionManager</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>interface <classname>SessionManager</classname></synopsis>
+	<para>
+The session manager, which is responsible for managing <link linkend="Glacier2.Session"><classname>Session</classname></link>
+objects. New session objects are created by the <link linkend="Glacier2.Router"><classname>Router</classname></link> object
+calling on an application-provided session manager. If no session
+manager is provided by the application, no client-visible sessions
+are passed to the client.</para>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Glacier2.Router"><classname>Router</classname></link></member>
+		<member><link linkend="Glacier2.Session"><classname>Session</classname></link></member>
+	    </simplelist></para></section>
+	<section>
+	    <title>Operation Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="Glacier2.SessionManager.create"><function>create</function></link></term>
+		    <listitem>
+			<para>
+Create a new session.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="Glacier2.SessionManager.create">
+	<title><literal>create</literal></title>
+<synopsis><classname>Session*</classname> <function>create</function>(<type>string</type> <parameter>userId</parameter>)
+    throws
+	<link linkend="Glacier2.CannotCreateSessionException"><classname>CannotCreateSessionException</classname></link>;</synopsis>
+	<para>
+Create a new session.</para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>userId</parameter></term>
+		    <listitem>
+			<para>
+			    The user id for the session.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -12010,21 +12350,37 @@ client to use. (Only for SSL.)</para>
 	<section>
 	    <title>Return Value</title>
 	    <para>
-		A proxy to the router that has been started.</para>
+		A proxy to the newly created session.</para>
 	</section>
 	<section>
 	    <title>Exceptions</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="Glacier.PermissionDeniedException"><classname>PermissionDeniedException</classname></link></term>
+		    <term><link linkend="Glacier2.CannotCreateSessionException"><classname>CannotCreateSessionException</classname></link></term>
 		    <listitem>
 			<para>
-			    Raised if the password for the
-given user id is not correct or if the user isn't allowed access.</para>
+			    Raised if the session
+cannot be created.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
 	</section>
+    </section>
+</section>
+<section id="Glacier2.SessionNotExistException">
+    <title><literal>Glacier2::SessionNotExistException</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>exception <classname>SessionNotExistException</classname></synopsis>
+	<para>
+This exception is raised if a client tries to destroy a session
+with a router, but no session exists for the client.</para>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Glacier2.Router.destroySession"><function>Router::destroySession</function></link></member>
+	    </simplelist></para></section>
     </section>
 </section>
 <section id="IceStorm">
@@ -12755,64 +13111,30 @@ Retrieve all topics managed by this topic manager.</para>
 	</section>
     </section>
 </section>
-<section id="IcePatch">
-    <title><literal>IcePatch</literal></title>
+<section id="IcePatch2">
+    <title><literal>IcePatch2</literal></title>
     <section>
 	<title>Overview</title>
-<synopsis>module <classname>IcePatch</classname></synopsis>
+<synopsis>module <classname>IcePatch2</classname></synopsis>
 	<para>
-A patching service for software distributions. &IcePatch; automates
-updating of individual files as well as complete directory
-hierarchies. Only files that have changed are downloaded to the
-client machine, using efficient compression algorithms.</para>
-	<section>
-	    <title>Class Index</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IcePatch.DirectoryDesc"><type>DirectoryDesc</type></link></term>
-		    <listitem>
-			<para>
-Descriptive information for a directory.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePatch.FileDesc"><type>FileDesc</type></link></term>
-		    <listitem>
-			<para>
-Descriptive information common to files and directories.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePatch.RegularDesc"><type>RegularDesc</type></link></term>
-		    <listitem>
-			<para>
-Descriptive information for a regular file.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
+&IcePatch2; can be used to update file hiearchies in a simple and
+efficient manner. Checksums ensure file integrity, and data is
+compressed before download.</para>
 	<section>
 	    <title>Interface Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IcePatch.Directory"><type>Directory</type></link></term>
+		    <term><link linkend="IcePatch2.Admin"><type>Admin</type></link></term>
 		    <listitem>
 			<para>
-The interface for a directory.</para>
+The &IcePatch2; administrative interface.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="IcePatch.File"><type>File</type></link></term>
+		    <term><link linkend="IcePatch2.FileServer"><type>FileServer</type></link></term>
 		    <listitem>
 			<para>
-The base interface for files and directories.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePatch.Regular"><type>Regular</type></link></term>
-		    <listitem>
-			<para>
-The interface for a regular file.</para>
+</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -12821,19 +13143,31 @@ The interface for a regular file.</para>
 	    <title>Exception Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IcePatch.BusyException"><classname>BusyException</classname></link></term>
+		    <term><link linkend="IcePatch2.FileAccessException"><classname>FileAccessException</classname></link></term>
 		    <listitem>
 			<para>
-This exception is raised when the server is busy performing
-housekeeping functions.</para>
+This exception is raised if <literal>getFileCompressed</literal> cannot read the
+contents of a file.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="IcePatch.FileAccessException"><classname>FileAccessException</classname></link></term>
+		    <term><link linkend="IcePatch2.PartitionOutOfRangeException"><classname>PartitionOutOfRangeException</classname></link></term>
 		    <listitem>
 			<para>
-This exception is raised if an error occurs while attempting to
-access a file or directory.</para>
+This exception is raised if the <literal>partition</literal> argument for
+<literal>getFileInfoSeq</literal> is not in the range 0-255.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>Struct Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePatch2.FileInfo"><structname>FileInfo</structname></link></term>
+		    <listitem>
+			<para>
+Basic information about a single file.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -12842,409 +13176,266 @@ access a file or directory.</para>
 	    <title>Sequence Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IcePatch.FileDescSeq"><type>FileDescSeq</type></link></term>
+		    <term><link linkend="IcePatch2.ByteSeqSeq"><type>ByteSeqSeq</type></link></term>
 		    <listitem>
 			<para>
-A sequence of file descriptions.</para>
+A sequence of byte sequences.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePatch2.FileInfoSeq"><type>FileInfoSeq</type></link></term>
+		    <listitem>
+			<para>
+A sequence with information about many files.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
 	</section>
     </section>
-    <section id="IcePatch.FileDescSeq">
-	<title><literal>FileDescSeq</literal></title>
-<synopsis>sequence&lt;<link linkend="IcePatch.FileDesc"><classname>FileDesc</classname></link>&gt; <type>FileDescSeq</type>;</synopsis>
+    <section id="IcePatch2.ByteSeqSeq">
+	<title><literal>ByteSeqSeq</literal></title>
+<synopsis>sequence&lt;<link linkend="Ice.ByteSeq"><type>::Ice::ByteSeq</type></link>&gt; <type>ByteSeqSeq</type>;</synopsis>
 	<para>
-A sequence of file descriptions.</para>
+A sequence of byte sequences. Each element is the checksum for a
+partition.</para>
 	<section>
 	    <title>Used By</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="IcePatch.Directory.getContents"><function>Directory::getContents</function></link></member>
+		<member><link linkend="IcePatch2.FileServer.getChecksumSeq"><function>FileServer::getChecksumSeq</function></link></member>
 	    </simplelist></para></section>
     </section>
-</section>
-<section id="IcePatch.BusyException">
-    <title><literal>IcePatch::BusyException</literal></title>
-    <section>
-	<title>Overview</title>
-<synopsis>exception <classname>BusyException</classname></synopsis>
+    <section id="IcePatch2.FileInfoSeq">
+	<title><literal>FileInfoSeq</literal></title>
+<synopsis>sequence&lt;<link linkend="IcePatch2.FileInfo"><structname>FileInfo</structname></link>&gt; <type>FileInfoSeq</type>;</synopsis>
 	<para>
-This exception is raised when the server is busy performing
-housekeeping functions. The operation should be tried again
-later.</para>
-    </section>
-</section>
-<section id="IcePatch.Directory">
-    <title><literal>IcePatch::Directory</literal></title>
-    <section>
-	<title>Overview</title>
-<synopsis>interface <classname>Directory</classname>
-    extends 
-	<link linkend="IcePatch.File"><type>File</type></link></synopsis>
-	<para>
-The interface for a directory.</para>
+A sequence with information about many files.</para>
 	<section>
-	    <title>Operation Index</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IcePatch.Directory.getContents"><function>getContents</function></link></term>
-		    <listitem>
-			<para>
-Obtain descriptions for the immediate children of the directory.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePatch.Directory.getTotal"><function>getTotal</function></link></term>
-		    <listitem>
-			<para>
-Obtain the total number of bytes to be downloaded for a particular
-configuration.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="IcePatch.Directory.getContents">
-	<title><literal>getContents</literal></title>
-<synopsis><link linkend="IcePatch.FileDescSeq"><type>FileDescSeq</type></link> <function>getContents</function>()
-    throws
-	<link linkend="IcePatch.FileAccessException"><classname>FileAccessException</classname></link>,
-	<link linkend="IcePatch.BusyException"><classname>BusyException</classname></link>;</synopsis>
-	<para>
-Obtain descriptions for the immediate children of the directory.
-This operation does not return the contents of subdirectories.</para>
-	<section>
-	    <title>Return Value</title>
-	    <para>
-		The descriptions, each of which can be downcast to <link linkend="IcePatch.RegularDesc"><classname>RegularDesc</classname></link>
-or <link linkend="IcePatch.DirectoryDesc"><classname>DirectoryDesc</classname></link>.</para>
-	</section>
-	<section>
-	    <title>Exceptions</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IcePatch.FileAccessException"><classname>FileAccessException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if a file or directory cannot
-be accessed.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePatch.BusyException"><classname>BusyException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the server is busy.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="IcePatch.Directory.getTotal">
-	<title><literal>getTotal</literal></title>
-<synopsis><type>long</type> <function>getTotal</function>(<link linkend="Ice.ByteSeq"><type>::Ice::ByteSeq</type></link> <parameter>md5</parameter>)
-    throws
-	<link linkend="IcePatch.FileAccessException"><classname>FileAccessException</classname></link>,
-	<link linkend="IcePatch.BusyException"><classname>BusyException</classname></link>;</synopsis>
-	<para>
-Obtain the total number of bytes to be downloaded for a particular
-configuration.</para>
-	<section>
-	    <title>Parameters</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><parameter>md5</parameter></term>
-		    <listitem>
-			<para>
-			    The message digest of the client's existing configuration.
-If the given sequence is empty, then the return value represents the
-size of the entire directory, including all subdirectories. If the
-sequence is not empty, and the message digest corresponds to a
-configuration that is known by the server, then the return value
-represents the number of bytes to be downloaded in order to update
-the client's directory to match the server's.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-	<section>
-	    <title>Return Value</title>
-	    <para>
-		The sum in bytes of the sizes of all BZ2 files to be
-downloaded for the configuration. If the given message digest does
-not match any known configurations, <literal>-1</literal> is returned.</para>
-	</section>
-	<section>
-	    <title>Exceptions</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IcePatch.FileAccessException"><classname>FileAccessException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if a file or directory cannot
-be accessed.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePatch.BusyException"><classname>BusyException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the server is busy.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-</section>
-<section id="IcePatch.DirectoryDesc">
-    <title><literal>IcePatch::DirectoryDesc</literal></title>
-    <section>
-	<title>Overview</title>
-<synopsis>class <classname>DirectoryDesc</classname>
-    extends 
-	<link linkend="IcePatch.FileDesc"><type>FileDesc</type></link></synopsis>
-	<para>
-Descriptive information for a directory.</para>
-	<section>
-	    <title>Data Member Index</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IcePatch.DirectoryDesc.dir"><type>dir</type></link></term>
-		    <listitem>
-			<para>
-A proxy for the directory object.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="IcePatch.DirectoryDesc.dir">
-	<title><literal>dir</literal></title>
-<synopsis><link linkend="IcePatch.Directory"><classname>Directory*</classname></link> <structfield>dir</structfield>;</synopsis>
-	<para>
-A proxy for the directory object.</para>
-    </section>
-</section>
-<section id="IcePatch.File">
-    <title><literal>IcePatch::File</literal></title>
-    <section>
-	<title>Overview</title>
-<synopsis>interface <classname>File</classname></synopsis>
-	<para>
-The base interface for files and directories.</para>
-	<section>
-	    <title>Derived Classes and Interfaces</title>
+	    <title>Used By</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="IcePatch.Directory"><type>Directory</type></link></member>
-		<member><link linkend="IcePatch.Regular"><type>Regular</type></link></member>
+		<member><link linkend="IcePatch2.FileServer.getFileInfoSeq"><function>FileServer::getFileInfoSeq</function></link></member>
 	    </simplelist></para></section>
+    </section>
+</section>
+<section id="IcePatch2.Admin">
+    <title><literal>IcePatch2::Admin</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>interface <classname>Admin</classname></synopsis>
+	<para>
+The &IcePatch2; administrative interface. This must only be
+accessible from inside the firewall.</para>
 	<section>
 	    <title>Operation Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IcePatch.File.describe"><function>describe</function></link></term>
+		    <term><link linkend="IcePatch2.Admin.shutdown"><function>shutdown</function></link></term>
 		    <listitem>
 			<para>
-Obtain a description of the file or directory.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePatch.File.getSliceChecksums"><function>getSliceChecksums</function></link></term>
-		    <listitem>
-			<para>
-Returns the checksums for the IcePatch Slice definitions.</para>
+Shut down the &IcePatch2; server.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
 	</section>
     </section>
-    <section id="IcePatch.File.describe">
-	<title><literal>describe</literal></title>
-<synopsis><link linkend="IcePatch.FileDesc"><classname>FileDesc</classname></link> <function>describe</function>()
-    throws
-	<link linkend="IcePatch.FileAccessException"><classname>FileAccessException</classname></link>,
-	<link linkend="IcePatch.BusyException"><classname>BusyException</classname></link>;</synopsis>
+    <section id="IcePatch2.Admin.shutdown">
+	<title><literal>shutdown</literal></title>
+<synopsis><type>void</type> <function>shutdown</function>();</synopsis>
 	<para>
-Obtain a description of the file or directory.</para>
-	<section>
-	    <title>Return Value</title>
-	    <para>
-		The description, which can be downcast to <link linkend="IcePatch.RegularDesc"><classname>RegularDesc</classname></link>
-or <link linkend="IcePatch.DirectoryDesc"><classname>DirectoryDesc</classname></link>.</para>
-	</section>
-	<section>
-	    <title>Exceptions</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IcePatch.FileAccessException"><classname>FileAccessException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the file or directory cannot
-be accessed.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePatch.BusyException"><classname>BusyException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the server is busy.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="IcePatch.File.getSliceChecksums">
-	<title><literal>getSliceChecksums</literal></title>
-<synopsis><link linkend="Ice.SliceChecksumDict"><type>::Ice::SliceChecksumDict</type></link> <function>getSliceChecksums</function>();</synopsis>
-	<para>
-Returns the checksums for the IcePatch Slice definitions.</para>
-	<section>
-	    <title>Return Value</title>
-	    <para>
-		A dictionary mapping Slice type ids to their checksums.</para>
-	</section>
+Shut down the &IcePatch2; server.</para>
     </section>
 </section>
-<section id="IcePatch.FileAccessException">
-    <title><literal>IcePatch::FileAccessException</literal></title>
+<section id="IcePatch2.FileAccessException">
+    <title><literal>IcePatch2::FileAccessException</literal></title>
     <section>
 	<title>Overview</title>
 <synopsis>exception <classname>FileAccessException</classname></synopsis>
 	<para>
-This exception is raised if an error occurs while attempting to
-access a file or directory.</para>
+This exception is raised if <literal>getFileCompressed</literal> cannot read the
+contents of a file.</para>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IcePatch.FileAccessException.reason"><type>reason</type></link></term>
+		    <term><link linkend="IcePatch2.FileAccessException.reason"><type>reason</type></link></term>
 		    <listitem>
 			<para>
-A description of the error.</para>
+An explanation of the reason for the failure.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
 	</section>
     </section>
-    <section id="IcePatch.FileAccessException.reason">
+    <section id="IcePatch2.FileAccessException.reason">
 	<title><literal>reason</literal></title>
 <synopsis><type>string</type> <structfield>reason</structfield>;</synopsis>
 	<para>
-A description of the error.</para>
+An explanation of the reason for the failure.</para>
     </section>
 </section>
-<section id="IcePatch.FileDesc">
-    <title><literal>IcePatch::FileDesc</literal></title>
+<section id="IcePatch2.FileInfo">
+    <title><literal>IcePatch2::FileInfo</literal></title>
     <section>
 	<title>Overview</title>
-<synopsis>class <classname>FileDesc</classname></synopsis>
+<synopsis>struct <structname>FileInfo</structname></synopsis>
 	<para>
-Descriptive information common to files and directories.</para>
-	<section>
-	    <title>Derived Classes and Interfaces</title>
-	    <para>
-	    <simplelist type="inline">
-		<member><link linkend="IcePatch.DirectoryDesc"><type>DirectoryDesc</type></link></member>
-		<member><link linkend="IcePatch.RegularDesc"><type>RegularDesc</type></link></member>
-	    </simplelist></para></section>
+Basic information about a single file.</para>
 	<section>
 	    <title>Used By</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="IcePatch.File.describe"><function>File::describe</function></link></member>
-		<member><link linkend="IcePatch.FileDescSeq"><type>FileDescSeq</type></link></member>
+		<member><link linkend="IcePatch2.FileInfoSeq"><type>FileInfoSeq</type></link></member>
 	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IcePatch.FileDesc.md5"><type>md5</type></link></term>
+		    <term><link linkend="IcePatch2.FileInfo.checksum"><type>checksum</type></link></term>
 		    <listitem>
 			<para>
-A sequence of 16 bytes containing the message digest of a
-file or directory computed using the MD5 algorithm.</para>
+The SHA-1 checksum of the file.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePatch2.FileInfo.path"><type>path</type></link></term>
+		    <listitem>
+			<para>
+The pathname.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePatch2.FileInfo.size"><type>size</type></link></term>
+		    <listitem>
+			<para>
+The size of the compressed file in number of bytes.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
 	</section>
     </section>
-    <section id="IcePatch.FileDesc.md5">
-	<title><literal>md5</literal></title>
-<synopsis><link linkend="Ice.ByteSeq"><type>::Ice::ByteSeq</type></link> <structfield>md5</structfield>;</synopsis>
+    <section id="IcePatch2.FileInfo.checksum">
+	<title><literal>checksum</literal></title>
+<synopsis><link linkend="Ice.ByteSeq"><type>::Ice::ByteSeq</type></link> <structfield>checksum</structfield>;</synopsis>
 	<para>
-A sequence of 16 bytes containing the message digest of a
-file or directory computed using the MD5 algorithm. The
-message digest for a directory is computed using the names
-and message digests of each of the files and directories
-it contains.</para>
+The SHA-1 checksum of the file.</para>
+    </section>
+    <section id="IcePatch2.FileInfo.path">
+	<title><literal>path</literal></title>
+<synopsis><type>string</type> <structfield>path</structfield>;</synopsis>
+	<para>
+The pathname.</para>
+    </section>
+    <section id="IcePatch2.FileInfo.size">
+	<title><literal>size</literal></title>
+<synopsis><type>int</type> <structfield>size</structfield>;</synopsis>
+	<para>
+The size of the compressed file in number of bytes.</para>
     </section>
 </section>
-<section id="IcePatch.Regular">
-    <title><literal>IcePatch::Regular</literal></title>
+<section id="IcePatch2.FileServer">
+    <title><literal>IcePatch2::FileServer</literal></title>
     <section>
 	<title>Overview</title>
-<synopsis>interface <classname>Regular</classname>
-    extends 
-	<link linkend="IcePatch.File"><type>File</type></link></synopsis>
-	<para>
-The interface for a regular file.</para>
+<synopsis>interface <classname>FileServer</classname></synopsis>
+	<para></para>
 	<section>
 	    <title>Operation Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IcePatch.Regular.getBZ2"><function>getBZ2</function></link></term>
+		    <term><link linkend="IcePatch2.FileServer.getChecksum"><function>getChecksum</function></link></term>
 		    <listitem>
 			<para>
-Obtains a portion of the compressed file.</para>
+Return the master checksum for all partitions.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="IcePatch.Regular.getBZ2MD5"><function>getBZ2MD5</function></link></term>
+		    <term><link linkend="IcePatch2.FileServer.getChecksumSeq"><function>getChecksumSeq</function></link></term>
 		    <listitem>
 			<para>
-Obtain the message digest for a portion of the compressed file,
-allowing a client to determine whether a partially downloaded
-file is still valid.</para>
+Return the checksums for all partitions.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="IcePatch.Regular.getBZ2Size"><function>getBZ2Size</function></link></term>
+		    <term><link linkend="IcePatch2.FileServer.getFileCompressed"><function>getFileCompressed</function></link></term>
 		    <listitem>
 			<para>
-Obtain the compressed size of the file.</para>
+Read the specified file.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePatch2.FileServer.getFileInfoSeq"><function>getFileInfoSeq</function></link></term>
+		    <listitem>
+			<para>
+Return the <link linkend="IcePatch2.FileInfoSeq"><type>FileInfoSeq</type></link> for the specified partition.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
 	</section>
     </section>
-    <section id="IcePatch.Regular.getBZ2">
-	<title><literal>getBZ2</literal></title>
-<synopsis><link linkend="Ice.ByteSeq"><type>::Ice::ByteSeq</type></link> <function>getBZ2</function>(<type>int</type> <parameter>pos</parameter>,
+    <section id="IcePatch2.FileServer.getChecksum">
+	<title><literal>getChecksum</literal></title>
+<synopsis><link linkend="Ice.ByteSeq"><type>::Ice::ByteSeq</type></link> <function>getChecksum</function>();</synopsis>
+	<para>
+Return the master checksum for all partitions. If this checksum is the same
+as for a previous run, the entire file set is up-to-date.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		The master checksum for the file set.</para>
+	</section>
+    </section>
+    <section id="IcePatch2.FileServer.getChecksumSeq">
+	<title><literal>getChecksumSeq</literal></title>
+<synopsis><link linkend="IcePatch2.ByteSeqSeq"><type>ByteSeqSeq</type></link> <function>getChecksumSeq</function>();</synopsis>
+	<para>
+Return the checksums for all partitions.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		A sequence containing 256 checksums. Partitions with a
+checksum that differs from the previous checksum for the same
+partition contain updated files. Partitions with a checksum
+that is identical to the previous checksum do not contain
+updated files.</para>
+	</section>
+    </section>
+    <section id="IcePatch2.FileServer.getFileCompressed">
+	<title><literal>getFileCompressed</literal></title>
+<synopsis>[ "ami" ]
+<link linkend="Ice.ByteSeq"><type>::Ice::ByteSeq</type></link> <function>getFileCompressed</function>(<type>string</type> <parameter>path</parameter>,
+    <type>int</type> <parameter>pos</parameter>,
     <type>int</type> <parameter>num</parameter>)
     throws
-	<link linkend="IcePatch.FileAccessException"><classname>FileAccessException</classname></link>,
-	<link linkend="IcePatch.BusyException"><classname>BusyException</classname></link>;</synopsis>
+	<link linkend="IcePatch2.FileAccessException"><classname>FileAccessException</classname></link>;</synopsis>
 	<para>
-Obtains a portion of the compressed file.</para>
+Read the specified file. If the read operation fails, the
+operation throws <link linkend="IcePatch2.FileAccessException"><classname>FileAccessException</classname></link>. This operation may only
+return fewer bytes than requested in case there was an
+end-of-file condition.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
 		<varlistentry>
+		    <term><parameter>path</parameter></term>
+		    <listitem>
+			<para>
+			    The pathname (relative to the data directory) for
+the file to be read.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
 		    <term><parameter>pos</parameter></term>
 		    <listitem>
 			<para>
-			    The starting position in bytes. The position must not
-exceed the size of the file.</para>
+			    The file offset at which to begin reading.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
 		    <term><parameter>num</parameter></term>
 		    <listitem>
 			<para>
-			    The maximum number of bytes to return. This number must
-not exceed one megabyte.</para>
+			    The number of bytes to be read.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -13252,49 +13443,27 @@ not exceed one megabyte.</para>
 	<section>
 	    <title>Return Value</title>
 	    <para>
-		The requested bytes. The returned sequence may contain fewer
-bytes than requested if <link linkend="IcePatch.Regular.getBZ2"><function>getBZ2</function></link> exceeds the remaining bytes in the
-file.</para>
-	</section>
-	<section>
-	    <title>Exceptions</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IcePatch.FileAccessException"><classname>FileAccessException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the file cannot be accessed.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePatch.BusyException"><classname>BusyException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the server is busy.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
+		A sequence containing the compressed file contents.</para>
 	</section>
     </section>
-    <section id="IcePatch.Regular.getBZ2MD5">
-	<title><literal>getBZ2MD5</literal></title>
-<synopsis><link linkend="Ice.ByteSeq"><type>::Ice::ByteSeq</type></link> <function>getBZ2MD5</function>(<type>int</type> <parameter>size</parameter>)
+    <section id="IcePatch2.FileServer.getFileInfoSeq">
+	<title><literal>getFileInfoSeq</literal></title>
+<synopsis>[ "ami" ]
+<link linkend="IcePatch2.FileInfoSeq"><type>FileInfoSeq</type></link> <function>getFileInfoSeq</function>(<type>int</type> <parameter>partition</parameter>)
     throws
-	<link linkend="IcePatch.FileAccessException"><classname>FileAccessException</classname></link>,
-	<link linkend="IcePatch.BusyException"><classname>BusyException</classname></link>;</synopsis>
+	<link linkend="IcePatch2.PartitionOutOfRangeException"><classname>PartitionOutOfRangeException</classname></link>;</synopsis>
 	<para>
-Obtain the message digest for a portion of the compressed file,
-allowing a client to determine whether a partially downloaded
-file is still valid.</para>
+Return the <link linkend="IcePatch2.FileInfoSeq"><type>FileInfoSeq</type></link> for the specified partition. If the
+partion number is out of range, the operation throws
+<literal>PartitionOutOfRangException</literal>.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><parameter>size</parameter></term>
+		    <term><parameter>partition</parameter></term>
 		    <listitem>
 			<para>
-			    The number of bytes to use when computing the message
-digest.</para>
+			    The partition number in the range 0-255.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -13302,91 +13471,18 @@ digest.</para>
 	<section>
 	    <title>Return Value</title>
 	    <para>
-		The number of bytes in the compressed representation of the
-file.</para>
-	</section>
-	<section>
-	    <title>Exceptions</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IcePatch.FileAccessException"><classname>FileAccessException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the file cannot be accessed.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePatch.BusyException"><classname>BusyException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the server is busy.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="IcePatch.Regular.getBZ2Size">
-	<title><literal>getBZ2Size</literal></title>
-<synopsis><type>int</type> <function>getBZ2Size</function>()
-    throws
-	<link linkend="IcePatch.FileAccessException"><classname>FileAccessException</classname></link>,
-	<link linkend="IcePatch.BusyException"><classname>BusyException</classname></link>;</synopsis>
-	<para>
-Obtain the compressed size of the file. &IcePatch; compresses files
-using the BZIP2 algorithm.</para>
-	<section>
-	    <title>Return Value</title>
-	    <para>
-		The number of bytes in the compressed representation of the
-file.</para>
-	</section>
-	<section>
-	    <title>Exceptions</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IcePatch.FileAccessException"><classname>FileAccessException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the file cannot be accessed.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePatch.BusyException"><classname>BusyException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the server is busy.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
+		A sequence containing the <link linkend="IcePatch2.FileInfo"><structname>FileInfo</structname></link> structures for
+files in the specified partition.</para>
 	</section>
     </section>
 </section>
-<section id="IcePatch.RegularDesc">
-    <title><literal>IcePatch::RegularDesc</literal></title>
+<section id="IcePatch2.PartitionOutOfRangeException">
+    <title><literal>IcePatch2::PartitionOutOfRangeException</literal></title>
     <section>
 	<title>Overview</title>
-<synopsis>class <classname>RegularDesc</classname>
-    extends 
-	<link linkend="IcePatch.FileDesc"><type>FileDesc</type></link></synopsis>
+<synopsis>exception <classname>PartitionOutOfRangeException</classname></synopsis>
 	<para>
-Descriptive information for a regular file.</para>
-	<section>
-	    <title>Data Member Index</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IcePatch.RegularDesc.reg"><type>reg</type></link></term>
-		    <listitem>
-			<para>
-A proxy for the file object.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="IcePatch.RegularDesc.reg">
-	<title><literal>reg</literal></title>
-<synopsis><link linkend="IcePatch.Regular"><classname>Regular*</classname></link> <structfield>reg</structfield>;</synopsis>
-	<para>
-A proxy for the file object.</para>
+This exception is raised if the <literal>partition</literal> argument for
+<literal>getFileInfoSeq</literal> is not in the range 0-255.</para>
     </section>
 </section>

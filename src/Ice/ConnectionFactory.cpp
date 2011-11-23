@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -300,6 +300,7 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	catch(const LocalException& ex)
 	{
 	    exception = auto_ptr<LocalException>(dynamic_cast<LocalException*>(ex.ice_clone()));
+	    connection = 0; // Necessary for the case where validate() fails.
 	}
 	
 	TraceLevelsPtr traceLevels = _instance->traceLevels();
@@ -308,7 +309,7 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	    Trace out(_instance->logger(), traceLevels->retryCat);
 
 	    out << "connection to endpoint failed";
-	    if(q != endpoints.end())
+	    if(q + 1 != endpoints.end())
 	    {
 		out << ", trying next endpoint\n";
 	    }
@@ -410,7 +411,16 @@ IceInternal::OutgoingConnectionFactory::setRouter(const RouterPrx& router)
 	    
 	    while(pr.first != pr.second)
 	    {
-		pr.first->second->setAdapter(adapter);
+		try
+		{
+		    pr.first->second->setAdapter(adapter);
+		}
+		catch(const Ice::LocalException&)
+		{
+		    //
+		    // Ignore, the connection is being closed or closed.
+		    //
+		}
 		++pr.first;
 	    }
 	}
@@ -431,7 +441,16 @@ IceInternal::OutgoingConnectionFactory::removeAdapter(const ObjectAdapterPtr& ad
     {
 	if(p->second->getAdapter() == adapter)
 	{
-	    p->second->setAdapter(0);
+	    try
+	    {
+		p->second->setAdapter(0);
+	    }
+	    catch(const Ice::LocalException&)
+	    {
+		//
+		// Ignore, the connection is being closed or closed.
+		//
+	    }
 	}
     }
 }
@@ -538,14 +557,13 @@ IceInternal::IncomingConnectionFactory::waitUntilFinished()
 	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
 	
 	//
-	// First we wait until the factory is destroyed.
+	// First we wait until the factory is destroyed. If we are using
+	// an acceptor, we also wait for it to be closed.
 	//
-	while(_acceptor)
+	while(_state != StateClosed || _acceptor)
 	{
 	    wait();
 	}
-	
-	assert(_state == StateClosed);
 
 	threadPerIncomingConnectionFactory = _threadPerIncomingConnectionFactory;
 	_threadPerIncomingConnectionFactory = 0;
@@ -723,10 +741,21 @@ IceInternal::IncomingConnectionFactory::message(BasicStream&, const ThreadPoolPt
 
 	assert(transceiver);
 
-	//
-	// Create a connection object for the connection.
-	//
-	connection = new ConnectionI(_instance, transceiver, _endpoint, _adapter);
+	try
+	{
+	    connection = new ConnectionI(_instance, transceiver, _endpoint, _adapter);
+	}
+	catch(const LocalException&)
+	{
+	    //
+	    // Ignore all exceptions while constructing the
+	    // connection. Warning or error messages for such
+	    // exceptions are printed directly by the connection
+	    // object constructor.
+	    //
+	    return;
+	}
+
 	_connections.push_back(connection);
     }
 
@@ -747,6 +776,7 @@ IceInternal::IncomingConnectionFactory::message(BasicStream&, const ThreadPoolPt
 	// connection. Warning or error messages for such exceptions
 	// are printed directly by the validation code.
 	//
+	return;
     }
 
     connection->activate();
@@ -818,17 +848,22 @@ IceInternal::IncomingConnectionFactory::IncomingConnectionFactory(const Instance
     const_cast<TransceiverPtr&>(_transceiver) = _endpoint->serverTransceiver(const_cast<EndpointPtr&>(_endpoint));
     if(_transceiver)
     {
-	ConnectionIPtr connection = new ConnectionI(_instance, _transceiver, _endpoint, _adapter);
-	
-	//
-	// In thread per connection mode, the connection's thread will
-	// take care of connection validation, and we don't want to
-	// block here waiting until validation is complete. Therefore
-	// we don't call validate() in thread per connection mode.
-	//
-	if(!_instance->threadPerConnection())
+	ConnectionIPtr connection;
+
+	try
 	{
+	    connection = new ConnectionI(_instance, _transceiver, _endpoint, _adapter);
 	    connection->validate();
+	}
+	catch(const LocalException&)
+	{
+	    //
+	    // Ignore all exceptions while constructing or validating
+	    // the connection. Warning or error messages for such
+	    // exceptions are printed directly by the connection
+	    // object constructor and validation code.
+	    //
+	    return;
 	}
 
 	_connections.push_back(connection);
@@ -839,26 +874,16 @@ IceInternal::IncomingConnectionFactory::IncomingConnectionFactory(const Instance
 	assert(_acceptor);
 	_acceptor->listen();
 
-	if(!_instance->threadPerConnection())
+	if(_instance->threadPerConnection())
 	{
-	    //
-	    // Only set _threadPool if we really need it, i.e., if we are
-	    // not in thread per connection mode. Thread pools have lazy
-	    // initialization in Instance, and we don't want them to be
-	    // created if they are not needed.
-	    //
-	    const_cast<ThreadPoolPtr&>(_threadPool) = dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool();
-	}
-	else
-	{
-	    //
-	    // If we are in thread per connection mode, we also use
-	    // one thread per incoming connection factory, that
-	    // accepts new connections on this endpoint.
-	    //
 	    __setNoDelete(true);
 	    try
 	    {
+		//
+		// If we are in thread per connection mode, we also use
+		// one thread per incoming connection factory, that
+		// accepts new connections on this endpoint.
+		//
 		_threadPerIncomingConnectionFactory = new ThreadPerIncomingConnectionFactory(this);
 		_threadPerIncomingConnectionFactory->start(_instance->threadPerConnectionStackSize());
 	    }
@@ -869,12 +894,21 @@ IceInternal::IncomingConnectionFactory::IncomingConnectionFactory(const Instance
 		    out << "cannot create thread for incoming connection factory:\n" << ex;
 		}
 		
+		try
+		{
+		    _acceptor->close();
+		}
+		catch(const LocalException&)
+		{
+		    // Here we ignore any exceptions in close().
+		}
+
 		_state = StateClosed;
 		_acceptor = 0;
 		_threadPerIncomingConnectionFactory = 0;
-
+		
 		__setNoDelete(false);
-		throw;
+		ex.ice_throw();
 	    }
 	    __setNoDelete(false);
 	}
@@ -933,11 +967,14 @@ IceInternal::IncomingConnectionFactory::setState(State state)
 	{
 	    if(_instance->threadPerConnection())
 	    {
-		//
-		// Connect to our own acceptor, which unblocks our
-		// thread per incoming connection factory stuck in accept().
-		//
-		_acceptor->connectToSelf();
+		if(_acceptor)
+		{
+		    //
+		    // Connect to our own acceptor, which unblocks our
+		    // thread per incoming connection factory stuck in accept().
+		    //
+		    _acceptor->connectToSelf();
+		}
 	    }
 	    else
 	    {
@@ -975,7 +1012,7 @@ IceInternal::IncomingConnectionFactory::registerWithPool()
 
     if(_acceptor && !_registeredWithPool)
     {
-	_threadPool->_register(_acceptor->fd(), this);
+	dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool()->_register(_acceptor->fd(), this);
 	_registeredWithPool = true;
     }
 }
@@ -987,7 +1024,7 @@ IceInternal::IncomingConnectionFactory::unregisterWithPool()
 
     if(_acceptor && _registeredWithPool)
     {
-	_threadPool->unregister(_acceptor->fd());
+	dynamic_cast<ObjectAdapterI*>(_adapter.get())->getThreadPool()->unregister(_acceptor->fd());
 	_registeredWithPool = false;
     }
 }
@@ -1078,19 +1115,36 @@ IceInternal::IncomingConnectionFactory::run()
 	    //
 	    // Create a connection object for the connection.
 	    //
-	    assert(transceiver);
-	    connection = new ConnectionI(_instance, transceiver, _endpoint, _adapter);
-	    _connections.push_back(connection);
+	    if(transceiver)
+	    {
+		try
+		{
+		    connection = new ConnectionI(_instance, transceiver, _endpoint, _adapter);
+		}
+		catch(const LocalException&)
+		{
+		    //
+		    // We don't print any errors here, the connection
+		    // constructor is responsible for printing the
+		    // error.
+		    //
+		    return;
+		}
+
+		_connections.push_back(connection);
+	    }
 	}
 	
 	//
 	// In thread per connection mode, the connection's thread will
-	// take care of connection validation. We don't want to block
-	// this thread waiting until validation is complete, because
-	// in contrast to thread pool mode, it is the only thread that
+	// take care of connection validation and activation (for
+	// non-datagram connections). We don't want to block this
+	// thread waiting until validation is complete, because in
+	// contrast to thread pool mode, it is the only thread that
 	// can accept connections with this factory's
-	// acceptor. Therefore we don't call validate() in thread per
-	// connection mode.
+	// acceptor. Therefore we don't call validate() and activate()
+	// from the connection factory in thread per connection mode.
+	//
     }
 }
 

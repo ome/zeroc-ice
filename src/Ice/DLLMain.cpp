@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,7 @@ extern "C"
 {
 
 BOOL WINAPI
-Ice_DLL_Main(HINSTANCE hDLL, DWORD reason, LPVOID reserved)
+ice_DLL_Main(HINSTANCE hDLL, DWORD reason, LPVOID reserved)
 {
     if(!_CRT_INIT(hDLL, reason, reserved))
     {

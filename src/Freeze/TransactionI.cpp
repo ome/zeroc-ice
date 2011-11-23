@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,7 +10,14 @@
 #include <Freeze/TransactionI.h>
 #include <Freeze/ConnectionI.h>
 #include <Freeze/Exception.h>
+#include <Freeze/Initialize.h>
 
+
+DbTxn*
+Freeze::getTxn(const Freeze::TransactionPtr& tx)
+{
+    return dynamic_cast<Freeze::TransactionI*>(tx.get())->dbTxn();
+}
 
 void
 Freeze::TransactionI::commit()
@@ -71,7 +78,7 @@ Freeze::TransactionI::TransactionI(ConnectionI* connection) :
 {
     try
     {
-	_connection->dbEnv()->txn_begin(0, &_txn, 0);
+	_connection->dbEnv()->getEnv()->txn_begin(0, &_txn, 0);
     }
     catch(const ::DbException& dx)
     {

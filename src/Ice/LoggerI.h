@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,6 +22,7 @@ public:
 
     LoggerI(const std::string&, bool);
 
+    virtual void print(const std::string&);
     virtual void trace(const std::string&, const std::string&);
     virtual void warning(const std::string&);
     virtual void error(const std::string&);

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,12 +13,6 @@
 using namespace std;
 using namespace Ice;
 using namespace Demo;
-
-void
-CallbackReceiverI::callback(const Current&)
-{
-    cout << "received callback" << endl;
-}
 
 void
 CallbackI::initiateCallback(const CallbackReceiverPrx& proxy, const Current& current)

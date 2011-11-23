@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -53,7 +53,8 @@ static const Node ICloneableNode =
 
 static const char* ExceptionNames[] =
 		    {
-		        "GetBaseException", "GetObjectData", 0
+		        "GetBaseException", "GetObjectData", "HelpLink", "HResult", "InnerException",
+			"Message", "Source", "StackTrace", "TargetSite", 0
 		    };
 static const Node* ExceptionParents[] =
 		    {

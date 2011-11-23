@@ -1,12 +1,11 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
-
 
 #ifndef LOG_I_H
 #define LOG_I_H
@@ -17,6 +16,7 @@ public:
 
     LogI();
 
+    virtual void print(const std::string&);
     virtual void trace(const std::string&, const std::string&);
     virtual void warning(const std::string&);
     virtual void error(const std::string&);

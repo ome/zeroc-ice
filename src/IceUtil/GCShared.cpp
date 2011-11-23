@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,6 +17,16 @@ GCObjectSet gcObjects;
 }
 
 using namespace IceUtil;
+
+IceUtil::GCShared::GCShared() :
+    _ref(0),
+    _noDelete(false)
+{
+}
+
+IceUtil::GCShared::~GCShared()
+{
+}
 
 void
 IceUtil::GCShared::__incRef()
@@ -39,7 +49,6 @@ IceUtil::GCShared::__decRef()
 	_noDelete = true;
     }
     gcRecMutex._m->unlock();
-
     if(doDelete)
     {
 	delete this;

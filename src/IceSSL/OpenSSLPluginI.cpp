@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -53,6 +53,9 @@ using namespace IceSSL;
 
 void IceInternal::incRef(OpenSSLPluginI* p) { p->__incRef(); }
 void IceInternal::decRef(OpenSSLPluginI* p) { p->__decRef(); }
+
+static IceUtil::StaticMutex staticMutex = ICE_STATIC_MUTEX_INITIALIZER;
+static int instanceCount = 0;
 
 //
 // Plugin factory function
@@ -179,29 +182,38 @@ IceSSL::SslLockKeeper::~SslLockKeeper()
 IceSSL::OpenSSLPluginI::OpenSSLPluginI(const IceInternal::ProtocolPluginFacadePtr& protocolPluginFacade) :
     _protocolPluginFacade(protocolPluginFacade),
     _traceLevels(new TraceLevels(_protocolPluginFacade)),
-    _logger(_protocolPluginFacade->getCommunicator()->getLogger()),
     _properties(_protocolPluginFacade->getCommunicator()->getProperties()),
     _memDebug(_properties->getPropertyAsIntWithDefault("IceSSL.MemoryDebug", 0)),
     _serverContext(new TraceLevels(protocolPluginFacade), protocolPluginFacade->getCommunicator()),
     _clientContext(new TraceLevels(protocolPluginFacade), protocolPluginFacade->getCommunicator()),
     _randSeeded(0)
 {
-    if(_memDebug != 0)
+    //
+    // It is possible for multiple instances of OpenSSLPluginI to be created
+    // (one for each communicator). We use a mutex-protected counter to know
+    // when to initialize and clean up OpenSSL.
+    //
+    IceUtil::StaticMutex::Lock sync(staticMutex);
+    if(instanceCount == 0)
     {
-        CRYPTO_malloc_debug_init();
-        CRYPTO_set_mem_debug_options(V_CRYPTO_MDEBUG_ALL);
-        CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
+	if(_memDebug != 0)
+	{
+	    CRYPTO_malloc_debug_init();
+	    CRYPTO_set_mem_debug_options(V_CRYPTO_MDEBUG_ALL);
+	    CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
+	}
+	else
+	{
+	    CRYPTO_set_mem_debug_functions(0, 0, 0, 0, 0);
+	}
+
+	SSL_library_init();
+
+	SSL_load_error_strings();
+
+	OpenSSL_add_ssl_algorithms();
     }
-    else
-    {
-        CRYPTO_set_mem_debug_functions(0, 0, 0, 0, 0);
-    }
-
-    SSL_library_init();
-
-    SSL_load_error_strings();
-
-    OpenSSL_add_ssl_algorithms();
+    ++instanceCount;
 }
 
 IceSSL::OpenSSLPluginI::~OpenSSLPluginI()
@@ -209,23 +221,28 @@ IceSSL::OpenSSLPluginI::~OpenSSLPluginI()
     _serverContext.cleanUp();
     _clientContext.cleanUp();
 
+    unregisterThreads();
+
+    IceUtil::StaticMutex::Lock sync(staticMutex);
+    if(--instanceCount == 0)
+    {
 #if OPENSSL_VERSION_NUMBER >= 0x0090700fL
-    ENGINE_cleanup();
-    CRYPTO_cleanup_all_ex_data();
+	ENGINE_cleanup();
+	CRYPTO_cleanup_all_ex_data();
 #endif
 
-    // TODO: Introduces a 72byte memory leak, if we kidnap the code from OpenSSL 0.9.7a for
-    //       ENGINE_cleanup(), we can fix that.
+	// TODO: Introduces a 72byte memory leak, if we kidnap the code from OpenSSL 0.9.7a for
+	//       ENGINE_cleanup(), we can fix that.
 
-    ERR_free_strings();
-    unregisterThreads();
-    ERR_remove_state(0);
+	ERR_free_strings();
+	ERR_remove_state(0);
 
-    EVP_cleanup();
+	EVP_cleanup();
 
-    if(_memDebug != 0)
-    {
-        CRYPTO_mem_leaks_fp(stderr);
+	if(_memDebug != 0)
+	{
+	    CRYPTO_mem_leaks_fp(stderr);
+	}
     }
 }
 
@@ -400,7 +417,7 @@ IceSSL::OpenSSLPluginI::loadConfig(ContextType contextType,
         throw configEx;
     }
 
-    ConfigParser sslConfig(configFile, certPath, _traceLevels, _logger);
+    ConfigParser sslConfig(configFile, certPath, _traceLevels, getLogger());
 
     // Actually parse the file now.
     sslConfig.process();
@@ -438,7 +455,7 @@ IceSSL::OpenSSLPluginI::loadConfig(ContextType contextType,
 
             if(_traceLevels->security >= SECURITY_PROTOCOL)
             {
-                Trace out(_logger, _traceLevels->securityCat);
+                Trace out(getLogger(), _traceLevels->securityCat);
 
                 out << "temporary certificates (server)\n";
                 out << "-------------------------------\n";
@@ -529,7 +546,7 @@ IceSSL::OpenSSLPluginI::getRSAKey(int isExport, int keyLength)
         }
         else if(_traceLevels->security >= SECURITY_WARNINGS)
         {
-            Trace out(_logger, _traceLevels->securityCat);
+            Trace out(getLogger(), _traceLevels->securityCat);
             out << "WRN Unable to obtain a " << dec << keyLength << "-bit RSA key.\n";
         }
     }
@@ -605,7 +622,7 @@ IceSSL::OpenSSLPluginI::getDHParams(int isExport, int keyLength)
         }
         else if(_traceLevels->security >= SECURITY_WARNINGS)
         {
-            Trace out(_logger, _traceLevels->securityCat);
+            Trace out(getLogger(), _traceLevels->securityCat);
             out << "WRN Unable to obtain a " << dec << keyLength << "-bit Diffie-Hellman parameter group.\n";
         }
     }
@@ -733,7 +750,11 @@ IceSSL::OpenSSLPluginI::getTraceLevels() const
 LoggerPtr
 IceSSL::OpenSSLPluginI::getLogger() const
 {
-    return _logger;
+    //
+    // Don't cache the logger object. It might not be set on the
+    // communicator when the plug-in is initialized.
+    //
+    return _protocolPluginFacade->getCommunicator()->getLogger();
 }
 
 StatsPtr
@@ -858,7 +879,7 @@ IceSSL::OpenSSLPluginI::initRandSystem(const string& randBytesFiles)
         // In this case, there are two options open to us - specify a random data file using the
         // RANDFILE environment variable, or specify additional random data files in the
         // SSL configuration file.
-        Trace out(_logger, _traceLevels->securityCat);
+        Trace out(getLogger(), _traceLevels->securityCat);
         out << "WRN there is a lack of random data, consider specifying additional random data files";
     }
 

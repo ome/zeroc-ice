@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,6 +38,9 @@ public:
     virtual void removeObjectFactory(const std::string&);
     virtual ObjectFactoryPtr findObjectFactory(const std::string&) const;
 
+    virtual void setDefaultContext(const Context&);
+    virtual Context getDefaultContext() const;
+
     virtual PropertiesPtr getProperties() const;
 
     virtual LoggerPtr getLogger() const;
@@ -73,6 +76,7 @@ private:
 
     bool _destroyed;
     ::IceInternal::InstancePtr _instance;
+    ::Ice::Context _dfltContext;
 
     //
     // We don't want the dynamic libraries to be unloaded until the

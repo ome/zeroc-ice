@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -158,6 +158,34 @@ private:
 
     Ice::ObjectAdapterPtr _adapter;
     Ice::Identity _identity;
+};
+
+class TestCheckedCastI : public Test::TestCheckedCast
+{
+public:
+
+    virtual Ice::Context getContext(const Ice::Current&);
+    void setContext(const Ice::Context& c);
+
+private:
+
+    Ice::Context _ctx;
+};
+
+typedef IceUtil::Handle<TestCheckedCastI> TestCheckedCastIPtr;
+
+class CheckedCastLocator : public Ice::ServantLocator
+{
+public:
+
+    CheckedCastLocator();
+    virtual Ice::ObjectPtr locate(const Ice::Current& c, Ice::LocalObjectPtr&);
+    virtual void finished(const Ice::Current&, const Ice::ObjectPtr&, const Ice::LocalObjectPtr&);
+    virtual void deactivate(const ::std::string&);
+
+private:
+
+    TestCheckedCastIPtr _servant;
 };
 
 #endif

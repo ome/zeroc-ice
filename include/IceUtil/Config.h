@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -32,7 +32,10 @@
 // We are a linux sparc, which forces 32 bit usr land, no matter the architecture
 //
 #   define  ICE_32
-#elif (defined(__sun) && defined(__sparcv9)) || (defined(__linux) && defined(__x86_64)) || (defined(__hppa) && defined(__LP64__)) || (defined(_ARCH_COM) && defined(__64BIT__))
+#elif defined(__sun) && defined(__sparcv9) || \
+      defined(__linux) && defined(__x86_64) || \
+      defined(__hppa) && defined(__LP64__) || \
+      defined(_ARCH_COM) && defined(__64BIT__)
 #   define ICE_64
 #else
 #   define ICE_32
@@ -146,6 +149,13 @@
 #endif
 
 //
+// If we use Visual C++ 6.0, we must use STLport
+//
+#if defined(_MSC_VER) && (_MSC_VER < 1300) && !defined(_STLP_BEGIN_NAMESPACE)
+#   error "Ice for Visual C++ 6.0 requires STLport"
+#endif
+
+//
 // By deriving from this class, other classes are made non-copyable.
 //
 namespace IceUtil
@@ -225,7 +235,7 @@ const Int64 Int64Max = 0x7fffffffffffffffLL;
 //
 // The Ice version.
 //
-#define ICE_STRING_VERSION "2.0.0" // "A.B.C", with A=major, B=minor, C=patch
-#define ICE_INT_VERSION 20000      // AABBCC, with AA=major, BB=minor, CC=patch
+#define ICE_STRING_VERSION "2.1.0" // "A.B.C", with A=major, B=minor, C=patch
+#define ICE_INT_VERSION 20100      // AABBCC, with AA=major, BB=minor, CC=patch
 
 #endif

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -36,7 +36,7 @@ if os.path.exists(tmp_dbdir):
     shutil.rmtree(tmp_dbdir)
 os.mkdir(tmp_dbdir)
 
-print "creating test database... ",
+print "creating test database...",
 sys.stdout.flush()
 
 makedb = os.path.join(directory, "makedb") + " " + directory
@@ -50,7 +50,7 @@ testnew = os.path.join(directory, "TestNew.ice")
 transformxml = os.path.join(directory, "transform.xml")
 checkxml = os.path.join(directory, "check.xml")
 
-print "executing evictor transformations... ",
+print "executing evictor transformations...",
 sys.stdout.flush()
 
 command = transformdb + " -e -p --old " + testold + " --new " + testnew + " -f " + transformxml + " " + dbdir + " evictor.db " + check_dbdir
@@ -59,7 +59,7 @@ stderr.readlines()
 
 print "ok"
 
-print "validating database... ",
+print "validating database...",
 sys.stdout.flush()
 
 command = transformdb + " -e --old " + testnew + " --new " + testnew + " -f " + checkxml + " " + check_dbdir + " evictor.db " + tmp_dbdir

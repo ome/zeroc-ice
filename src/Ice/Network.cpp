@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,7 @@ using namespace Ice;
 using namespace IceInternal;
 
 #ifdef __sun
-#    define INADDR_NONE -1
+#    define INADDR_NONE (unsigned long)-1
 #endif
 
 bool
@@ -231,9 +231,14 @@ IceInternal::shutdownSocketWrite(SOCKET fd)
 	//
 	// Ignore errors indicating that we are shutdown already.
 	//
-#ifdef _WIN32
+#if defined(_WIN32)
 	int error = WSAGetLastError();
 	if(error == WSAENOTCONN)
+	{
+	    return;
+	}
+#elif defined(__APPLE__)
+	if(errno == ENOTCONN || errno == EINVAL)
 	{
 	    return;
 	}
@@ -243,7 +248,6 @@ IceInternal::shutdownSocketWrite(SOCKET fd)
 	    return;
 	}
 #endif
-
 	SocketException ex(__FILE__, __LINE__);
 	ex.error = getSocketErrno();
 	throw ex;
@@ -258,9 +262,14 @@ IceInternal::shutdownSocketReadWrite(SOCKET fd)
 	//
 	// Ignore errors indicating that we are shutdown already.
 	//
-#ifdef _WIN32
+#if defined(_WIN32)
 	int error = WSAGetLastError();
 	if(error == WSAENOTCONN)
+	{
+	    return;
+	}
+#elif defined(__APPLE__)
+	if(errno == ENOTCONN || errno == EINVAL)
 	{
 	    return;
 	}

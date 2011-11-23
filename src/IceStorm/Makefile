@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -41,6 +41,7 @@ SERVICE_OBJS	= IceStorm.o \
 		  Service.o \
 		  QueuedProxy.o \
 		  OnewayProxy.o \
+		  TwowayProxy.o \
 		  LinkProxy.o
 
 AOBJS		= Admin.o \

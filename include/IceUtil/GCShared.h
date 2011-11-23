@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,19 +29,31 @@ class ICE_UTIL_API GCShared : public noncopyable
 {
 public:
 
-    GCShared() : _ref(0), _noDelete(false) {}
-    virtual ~GCShared() {}
+    GCShared();
+    virtual ~GCShared();
+
     virtual void __incRef(); // First derived class with class data members overrides this.
     virtual void __decRef(); // Ditto.
     int __getRef() const;
     void __setNoDelete(bool);
-    void __decRefUnsafe() { --_ref; }
+
+    int __getRefUnsafe() const
+    {
+	return _ref;
+    }
+
+    void __decRefUnsafe()
+    {
+	--_ref;
+    }
+
     virtual void __gcReachable(GCObjectMultiSet&) const = 0;
     virtual void __gcClear() = 0;
 
 protected:
 
     static void __addObject(GCObjectMultiSet&, GCShared*);
+
     int _ref;
     bool _noDelete;
 

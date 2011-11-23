@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -722,7 +722,8 @@ Slice::VbVisitor::getParamsAsync(const OperationPtr& op, bool amd)
     ContainerPtr container = op->container();
     ClassDefPtr cl = ClassDefPtr::dynamicCast(container); // Get the class containing the op.
     string param = "ByVal __cb As ";
-    param += (amd ? "AMD_" : "AMI_") + cl->name() + "_" + op->name();
+    string scope = fixId(cl->scope());
+    param += scope + (amd ? "AMD_" : "AMI_") + cl->name() + "_" + op->name();
     params.push_back(param);
 
     ParamDeclList paramList = op->parameters();
@@ -1019,7 +1020,7 @@ Slice::Gen::printHeader()
     static const char* header =
 "' **********************************************************************\n"
 "'\n"
-"' Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.\n"
+"' Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.\n"
 "'\n"
 "' This copy of Ice is licensed to you under the terms described in the\n"
 "' ICE_LICENSE file included in this distribution.\n"
@@ -3565,6 +3566,31 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out.dec();
     _out << nl << "End Function";
 
+    _out << sp << nl << "Public Shared Function checkedCast(ByVal b As Ice.ObjectPrx, ByVal ctx As Ice.Context) As "
+         << name << "Prx";
+    _out.inc();
+    _out << nl << "If b Is Nothing Then";
+    _out.inc();
+    _out << nl << "Return Nothing";
+    _out.dec();
+    _out << nl << "End If";
+    _out << nl << "If TypeOf b Is " << name << "Prx Then";
+    _out.inc();
+    _out << nl << "Return CType(b, " << name << "Prx)";
+    _out.dec();
+    _out << nl << "End If";
+    _out << nl << "If b.ice_isA(\"" << p->scoped() << "\", ctx) Then";
+    _out.inc();
+    _out << nl << "Dim h As " << name << "PrxHelper = New " << name << "PrxHelper";
+    _out << nl << "h.__copyFrom(b)";
+    _out << nl << "Return h";
+    _out.dec();
+    _out << nl << "End If";
+    _out << nl << "Return Nothing";
+    _out.dec();
+    _out << nl << "End Function";
+
+
     _out << sp << nl << "Public Shared Function checkedCast(ByVal B As Ice.ObjectPrx, ByVal f As String) As "
          << name << "Prx";
     _out.inc();
@@ -3577,6 +3603,31 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     _out << nl << "Try";
     _out.inc();
     _out << nl << "If bb.ice_isA(\"" << p->scoped() << "\") Then";
+    _out.inc();
+    _out << nl << "Dim h As " << name << "PrxHelper = new " << name << "PrxHelper()";
+    _out << nl << "h.__copyFrom(bb)";
+    _out << nl << "Return h";
+    _out.dec();
+    _out << nl << "End If";
+    _out.dec();
+    _out << nl << "Catch __ex As Ice.FacetNotExistException";
+    _out << nl << "End Try";
+    _out << nl << "Return Nothing";
+    _out.dec();
+    _out << nl << "End Function";
+
+    _out << sp << nl << "Public Shared Function checkedCast(ByVal B As Ice.ObjectPrx, ByVal f As String, "
+         << "ByVal ctx As Ice.Context) As " << name << "Prx";
+    _out.inc();
+    _out << nl << "If b Is Nothing Then";
+    _out.inc();
+    _out << nl << "Return Nothing";
+    _out.dec();
+    _out << nl << "End If";
+    _out << nl << "Dim bb As Ice.ObjectPrx = b.ice_newFacet(f)";
+    _out << nl << "Try";
+    _out.inc();
+    _out << nl << "If bb.ice_isA(\"" << p->scoped() << "\", ctx) Then";
     _out.inc();
     _out << nl << "Dim h As " << name << "PrxHelper = new " << name << "PrxHelper()";
     _out << nl << "h.__copyFrom(bb)";
@@ -5021,7 +5072,7 @@ Slice::Gen::TieVisitor::visitClassDefStart(const ClassDefPtr& p)
     ClassList bases = p->bases();
     for(ClassList::const_iterator i = bases.begin(); i != bases.end(); ++i)
     {
-        writeInheritedOperations(*i, opNames);
+        writeInheritedOperationsWithOpNames(*i, opNames);
     }
 
     _out << sp << nl << "Private _ice_delegate As _" << name << opIntfName;
@@ -5037,7 +5088,7 @@ Slice::Gen::TieVisitor::visitClassDefEnd(const ClassDefPtr&)
 }
 
 void
-Slice::Gen::TieVisitor::writeInheritedOperations(const ClassDefPtr& p, NameSet& opNames)
+Slice::Gen::TieVisitor::writeInheritedOperationsWithOpNames(const ClassDefPtr& p, NameSet& opNames)
 {
     OperationList ops = p->operations();
     OperationList::const_iterator r;
@@ -5102,7 +5153,7 @@ Slice::Gen::TieVisitor::writeInheritedOperations(const ClassDefPtr& p, NameSet& 
     ClassList bases = p->bases();
     for(ClassList::const_iterator i = bases.begin(); i != bases.end(); ++i)
     {
-        writeInheritedOperations(*i, opNames);
+        writeInheritedOperationsWithOpNames(*i, opNames);
     }
 }
 

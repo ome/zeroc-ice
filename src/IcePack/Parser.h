@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -98,6 +98,8 @@ public:
     void addObject(const std::list<std::string>&);
     void removeObject(const std::list<std::string>&);
     void findObject(const std::list<std::string>&);
+    void describeObject(const std::list<std::string>&);
+    void listObject(const std::list<std::string>&);
 
     void shutdown();
 

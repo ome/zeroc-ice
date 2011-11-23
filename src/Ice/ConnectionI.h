@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -76,8 +76,8 @@ public:
 
     IceInternal::EndpointPtr endpoint() const;
 
-    void setAdapter(const ObjectAdapterPtr&);
-    ObjectAdapterPtr getAdapter() const;
+    virtual void setAdapter(const ObjectAdapterPtr&); // From Connection.
+    virtual ObjectAdapterPtr getAdapter() const; // From Connection.
     virtual ObjectPrx createProxy(const Identity& ident) const; // From Connection.
 
     //
@@ -92,13 +92,6 @@ public:
     virtual std::string type() const; // From Connection.
     virtual Ice::Int timeout() const; // From Connection.
     virtual std::string toString() const;  // From Connection and EvantHandler.
-
-    //
-    // Compare connections for sorting purposes.
-    //
-    virtual bool operator==(const ConnectionI&) const;
-    virtual bool operator!=(const ConnectionI&) const;
-    virtual bool operator<(const ConnectionI&) const;
 
 private:
 

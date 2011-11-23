@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -388,7 +388,7 @@ secondConstVoidMemFun1(void (T::*p)(A) const)
 // ----------------------------------------------------------------------
 // Extension for STLport: Special versions for bind1st and bind2nd for
 // operations that do not return anything (i.e., return void). Needed
-// for broken compilers, such as Visual C++
+// for broken compilers, such as Visual C++ 6.0.
 // ----------------------------------------------------------------------
 
 #ifdef _STLP_BEGIN_NAMESPACE

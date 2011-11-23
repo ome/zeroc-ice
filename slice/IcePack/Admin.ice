@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -610,7 +610,7 @@ interface Admin
      *
      * Get a server's state.
      *
-     * @param name Must match the name of [ServerDescription::name].
+     * @param name The name of the server.
      *
      * @return The server state.
      * 
@@ -632,7 +632,7 @@ interface Admin
      * Get a server's system process id. The process id is operating
      * system dependent.
      *
-     * @param name Must match the name of [ServerDescription::name].
+     * @param name The name of the server.
      *
      * @return The server process id.
      * 
@@ -653,7 +653,7 @@ interface Admin
      *
      * Get the server's activation mode.
      *
-     * @param name Must match the name of [ServerDescription::name].
+     * @param name The name of the server.
      *
      * @return The server activation mode.
      * 
@@ -674,7 +674,7 @@ interface Admin
      *
      * Set the server's activation mode.
      *
-     * @param name Must match the name of [ServerDescription::name].
+     * @param name The name of the server.
      *
      * @return The server activation mode.
      * 
@@ -695,7 +695,7 @@ interface Admin
      *
      * Start a server.
      *
-     * @param name Must match the name of [ServerDescription::name].
+     * @param name The name of the server.
      *
      * @return True if the server was successfully started, false
      * otherwise.
@@ -714,7 +714,7 @@ interface Admin
      *
      * Stop a server.
      *
-     * @param name Must match the name of [ServerDescription::name].
+     * @param name The name of the server.
      *
      * @throws ServerNotExistException Raised if the server is not
      * found.
@@ -731,7 +731,8 @@ interface Admin
      *
      * Send signal to a server.
      *
-     * @param name Must match the name of [ServerDescription::name].
+     * @param name The name of the server.
+     *
      * @param signal The signal, for example SIGTERM or 15.
      *
      * @throws ServerNotExistException Raised if the server is not
@@ -751,8 +752,10 @@ interface Admin
      *
      * Write message on server stdout or stderr
      *
-     * @param name Must match the name of [ServerDescription::name].
+     * @param name The name of the server.
+     *
      * @param message The message.
+     *
      * @param fd 1 for stdout, 2 for stderr.
      *
      * @throws ServerNotExistException Raised if the server is not
@@ -835,15 +838,47 @@ interface Admin
      *
      * Remove an object from the object registry.
      *
-     * @param obj The object to be removed from the registry.
+     * @param id The identity of the object to be removed from the
+     * registry.
      *
      * @throws ObjectNotExistException Raised if the object cannot be
      * found.
      *
      **/
-    void removeObject(Object* obj) 
+    void removeObject(Ice::Identity id) 
 	throws ObjectNotExistException;
 
+    /**
+     *
+     * Get the object descriptor if the object with the given
+     * identity.
+     *
+     * @param id The identity of the object.
+     *
+     * @return The object descriptor.
+     *
+     * @throws ObjectNotExistExcpetion Raised if the object cannot be
+     * found.
+     *
+     **/
+    nonmutating ObjectDescriptor getObjectDescriptor(Ice::Identity id)
+	throws ObjectNotExistException;
+
+    /**
+     *
+     * Get the descriptors of all registered objects whose stringified
+     * identities match the given expression.
+     *
+     * @param expr The expression to match against the stringified
+     * identities of registered objects. The expression may contain
+     * a trailing wildcard (<literal>*</literal>) character.
+     *
+     * @return All the object descriptors with a stringified identity
+     * matching the given expression.
+     *
+     **/
+    nonmutating ObjectDescriptorSeq getAllObjectDescriptors(string expr);
+    
     /**
      *
      * Ping an &IcePack; node to see if it is active.
@@ -864,7 +899,7 @@ interface Admin
      *
      **/
     idempotent void shutdownNode(string name)
-	throws NodeNotExistException;
+	throws NodeNotExistException, NodeUnreachableException;
 
     /**
      *
@@ -875,6 +910,16 @@ interface Admin
      **/
     idempotent void removeNode(string name)
 	throws NodeNotExistException;
+
+    /**
+     *
+     * Get the hostname of this node.
+     *
+     * @param name The node name.
+     *
+     **/
+    nonmutating string getNodeHostname(string name)
+	throws NodeNotExistException, NodeUnreachableException;
 
     /**
      *

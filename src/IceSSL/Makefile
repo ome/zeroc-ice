@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -15,46 +15,48 @@ LIBNAME		= $(call mklibname,IceSSL)
 
 TARGETS		= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
 
-OBJS		= Plugin.o \
-                  Exception.o \
-                  OpenSSLPluginI.o \
-                  SslEndpoint.o \
-                  SslException.o \
-                  SslConnector.o \
-                  SslAcceptor.o \
-		  SslTransceiver.o \
-		  SslClientTransceiver.o \
-		  SslServerTransceiver.o \
-                  BaseCerts.o \
+OBJS		= BaseCerts.o \
                   CertificateAuthority.o \
                   CertificateDesc.o \
-                  ConfigParser.o \
-                  Context.o \
-                  ClientContext.o \
-                  ServerContext.o \
-                  GeneralConfig.o \
-                  TempCerts.o \
+                  CertificateVerifierF.o \
                   CertificateVerifier.o \
                   CertificateVerifierOpenSSL.o \
-                  OpenSSLJanitors.o \
-                  RSACertificateGen.o \
+                  ClientContext.o \
+                  ConfigParser.o \
+                  Context.o \
                   Convert.o \
+                  DefaultCertificateVerifier.o \
+                  DHParams.o \
+                  Exception.o \
+                  GeneralConfig.o \
+                  OpenSSLJanitors.o \
+                  OpenSSLPluginI.o \
+                  OpenSSLUtils.o \
+    		  PluginF.o \
+    		  Plugin.o \
+                  RSACertificateGen.o \
+                  RSAKeyPair.o \
                   RSAPrivateKey.o \
                   RSAPublicKey.o \
-                  RSAKeyPair.o \
-                  DHParams.o \
-                  OpenSSLUtils.o \
-                  DefaultCertificateVerifier.o \
+                  ServerContext.o \
                   SingleCertificateVerifier.o \
+                  SslAcceptor.o \
+		  SslClientTransceiver.o \
+                  SslConnector.o \
+                  SslEndpoint.o \
+                  SslException.o \
+		  SslServerTransceiver.o \
+		  SslTransceiver.o \
+                  TempCerts.o \
                   TraceLevels.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
 SLICE_SRCS	= $(SDIR)/Exception.ice \
-		  $(SDIR)/Plugin.ice \
 		  $(SDIR)/PluginF.ice \
-	 	  $(SDIR)/CertificateVerifier.ice \
-	 	  $(SDIR)/CertificateVerifierF.ice
+		  $(SDIR)/Plugin.ice \
+	 	  $(SDIR)/CertificateVerifierF.ice \
+	 	  $(SDIR)/CertificateVerifier.ice
 
 HDIR		= $(includedir)/IceSSL
 SDIR		= $(slicedir)/IceSSL
@@ -64,7 +66,7 @@ include $(top_srcdir)/config/Make.rules
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_SSL_API_EXPORTS $(OPENSSL_FLAGS)
 SLICE2CPPFLAGS	:= --ice --include-dir IceSSL --dll-export ICE_SSL_API $(SLICE2CPPFLAGS)
 
-LINKWITH        := -lIceXML -lIce -lIceUtil $(OPENSSL_LIBS)
+LINKWITH        := -lIceXML -lIce -lIceUtil $(OPENSSL_LIBS) $(CXXLIBS)
 
 $(libdir)/$(LIBFILENAME): $(OBJS)
 	rm -f $@

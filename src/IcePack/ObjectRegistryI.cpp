@@ -1,12 +1,14 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <IceUtil/StringUtil.h>
+#include <Ice/IdentityUtil.h>
 #include <IcePack/ObjectRegistryI.h>
 #include <IcePack/TraceLevels.h>
 #include <Freeze/Initialize.h>
@@ -14,24 +16,23 @@
 using namespace std;
 using namespace IcePack;
 
-IcePack::ObjectRegistryI::ObjectRegistryI(const Ice::CommunicatorPtr& communicator,
-					  const string& envName,
-					  const string& objectsDbName,
-					  const string& typesDbName,
-					  const TraceLevelsPtr& traceLevels) :
+const string ObjectRegistryI::_objectsDbName = "objectregistry";
+const string ObjectRegistryI::_typesDbName = "objectregistry-types";
+
+ObjectRegistryI::ObjectRegistryI(const Ice::CommunicatorPtr& communicator,
+				 const string& envName, 
+				 const TraceLevelsPtr& traceLevels) :
     _connectionCache(Freeze::createConnection(communicator, envName)),
-    _objectsCache(_connectionCache, objectsDbName, true),
-    _typesCache(_connectionCache, typesDbName, true),
+    _objectsCache(_connectionCache, _objectsDbName, true),
+    _typesCache(_connectionCache, _typesDbName, true),
     _traceLevels(traceLevels),
     _envName(envName),
-    _communicator(communicator),
-    _objectsDbName(objectsDbName),
-    _typesDbName(typesDbName)
+    _communicator(communicator)
 {
 }
 
 void
-IcePack::ObjectRegistryI::add(const ObjectDescriptor& obj, const Ice::Current&)
+ObjectRegistryI::add(const ObjectDescriptor& obj, const Ice::Current&)
 {
     IceUtil::Mutex::Lock sync(*this);
 
@@ -85,15 +86,13 @@ IcePack::ObjectRegistryI::add(const ObjectDescriptor& obj, const Ice::Current&)
 }
 
 void
-IcePack::ObjectRegistryI::remove(const Ice::ObjectPrx& object, const Ice::Current&)
+ObjectRegistryI::remove(const Ice::Identity& id, const Ice::Current&)
 {
     IceUtil::Mutex::Lock sync(*this);
     
     Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
     IdentityObjectDescDict objects(connection, _objectsDbName);
     StringObjectProxySeqDict types(connection, _typesDbName);
-
-    Ice::Identity id = object->ice_getIdentity();
 
     IdentityObjectDescDict::iterator p = objects.find(id);
     if(p == objects.end())
@@ -148,10 +147,11 @@ IcePack::ObjectRegistryI::remove(const Ice::ObjectPrx& object, const Ice::Curren
 }
 
 ObjectDescriptor
-IcePack::ObjectRegistryI::getObjectDescriptor(const Ice::Identity& id, const Ice::Current&) const
+ObjectRegistryI::getObjectDescriptor(const Ice::Identity& id, const Ice::Current&) const
 {
     Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
     IdentityObjectDescDict objects(connection, _objectsDbName);
+
 
     IdentityObjectDescDict::iterator p = objects.find(id);
     if(p == objects.end())
@@ -163,7 +163,7 @@ IcePack::ObjectRegistryI::getObjectDescriptor(const Ice::Identity& id, const Ice
 }
 
 Ice::ObjectPrx
-IcePack::ObjectRegistryI::findById(const Ice::Identity& id, const Ice::Current&) const
+ObjectRegistryI::findById(const Ice::Identity& id, const Ice::Current&) const
 {
     Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
     IdentityObjectDescDict objects(connection, _objectsDbName);
@@ -178,7 +178,7 @@ IcePack::ObjectRegistryI::findById(const Ice::Identity& id, const Ice::Current&)
 }
 
 Ice::ObjectPrx
-IcePack::ObjectRegistryI::findByType(const string& type, const Ice::Current&) const
+ObjectRegistryI::findByType(const string& type, const Ice::Current&) const
 {
     Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
     StringObjectProxySeqDict types(connection, _typesDbName);
@@ -194,7 +194,7 @@ IcePack::ObjectRegistryI::findByType(const string& type, const Ice::Current&) co
 }
 
 Ice::ObjectProxySeq
-IcePack::ObjectRegistryI::findAllWithType(const string& type, const Ice::Current&) const
+ObjectRegistryI::findAllWithType(const string& type, const Ice::Current&) const
 {
     Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
     StringObjectProxySeqDict types(connection, _typesDbName);
@@ -207,3 +207,22 @@ IcePack::ObjectRegistryI::findAllWithType(const string& type, const Ice::Current
 
     return p->second;
 }
+
+ObjectDescriptorSeq
+ObjectRegistryI::findAll(const string& expression, const Ice::Current&) const
+{
+    Freeze::ConnectionPtr connection = Freeze::createConnection(_communicator, _envName);
+    IdentityObjectDescDict objects(connection, _objectsDbName);
+
+    ObjectDescriptorSeq result;
+    for(IdentityObjectDescDict::const_iterator p = objects.begin(); p != objects.end(); ++p)
+    {
+	if(expression.empty() ||
+	   IceUtil::match(Ice::identityToString(p->second.proxy->ice_getIdentity()), expression, true))
+	{
+	    result.push_back(p->second);
+	}
+    }
+    return result;
+}
+

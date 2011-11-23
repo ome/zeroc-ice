@@ -1,0 +1,1409 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>IceSSL Properties</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Properties"
+HREF="c12907.html"><LINK
+REL="PREVIOUS"
+TITLE="Ice Miscellaneous Properties"
+HREF="x13439.html"><LINK
+REL="NEXT"
+TITLE="IceBox Properties"
+HREF="x13989.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x13439.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Properties</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x13989.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="AEN13698"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+> Properties</A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13701"
+>IceSSL.Trace.Security</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13703"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Trace.Security=<VAR
+CLASS="REPLACEABLE"
+>num</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13707"
+>Description</A
+></H3
+><P
+>The SSL plug-in trace level:
+<DIV
+CLASS="INFORMALTABLE"
+><P
+></P
+><A
+NAME="AEN13710"
+></A
+><TABLE
+BORDER="1"
+BGCOLOR="#E0E0E0"
+CELLSPACING="0"
+CELLPADDING="4"
+CLASS="CALSTABLE"
+><TBODY
+><TR
+><TD
+>0</TD
+><TD
+>No security trace. (default)</TD
+></TR
+><TR
+><TD
+>1</TD
+><TD
+>Trace security warnings (C++), and display the list of selected ciphersuites (Java).</TD
+></TR
+><TR
+><TD
+>2</TD
+><TD
+>Like 1, but more verbose, including warnings during
+configuration file parsing (C++).</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13722"
+>IceSSL.Client.CertPath, IceSSL.Server.CertPath</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13724"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.CertPath=<VAR
+CLASS="REPLACEABLE"
+>path</VAR
+>
+IceSSL.Server.CertPath=<VAR
+CLASS="REPLACEABLE"
+>path</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13729"
+>Description</A
+></H3
+><P
+>Defines the path (relative or absolute) where the SSL plug-in can
+find PEM format certificate files (RSA and DSA) and Diffie-Hellman group
+parameter files. (C++ only)</P
+><P
+>If <TT
+CLASS="LITERAL"
+>IceSSL.Client.Config</TT
+> or
+<TT
+CLASS="LITERAL"
+>IceSSL.Server.Config</TT
+> specify a relative path, that path
+is relative to the value of <TT
+CLASS="LITERAL"
+>IceSSL.Client.CertPath</TT
+>
+and <TT
+CLASS="LITERAL"
+>IceSSL.Server.CertPath</TT
+>, respectively.</P
+><P
+>If not specified, the application uses the current working directory
+as the certificate path.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13738"
+>IceSSL.Client.Config, IceSSL.Server.Config</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13740"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Config=<VAR
+CLASS="REPLACEABLE"
+>config_file</VAR
+>
+IceSSL.Server.Config=<VAR
+CLASS="REPLACEABLE"
+>config_file</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13745"
+>Description</A
+></H3
+><P
+>Defines the XML-based configuration file from which the SSL plug-in
+loads initialization information and certificates. (C++ only)</P
+><P
+>If the property specifies a relative path, the path is interpreted
+relative to the certificate path defined by <TT
+CLASS="LITERAL"
+>IceSSL.Client.CertPath</TT
+>
+and <TT
+CLASS="LITERAL"
+>IceSSL.Server.CertPath</TT
+>, respectively.</P
+><P
+>The XML parser looks for the DTD file in the same directory in which
+it finds the XML configuration file.</P
+><P
+>Depending on whether the application is running in client mode, server mode or
+both modes, a valid value for one or both of these parameters must be specified
+for the proper operation of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+> plug-in.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13754"
+>IceSSL.Client.Handshake.Retries</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13756"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Handshake.Retries=<VAR
+CLASS="REPLACEABLE"
+>num</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13760"
+>Description</A
+></H3
+><P
+>IceSSL clients attempt to perform an entire SSL handshake in the connection
+phase. When attempting this handshake, it is possible for the client to
+time out while waiting for a response from the server. This property specifies
+the number of handshake retries the client attempts before throwing a
+<TT
+CLASS="LITERAL"
+>Ice::ConnectionFailedException</TT
+>. (C++ only)</P
+><P
+>If not specified, the default value for this property is 10 retries.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13765"
+>IceSSL.Client.Passphrase.Retries, IceSSL.Server.Passphrase.Retries</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13767"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Passphrase.Retries=<VAR
+CLASS="REPLACEABLE"
+>num</VAR
+>
+IceSSL.Server.Passphrase.Retries=<VAR
+CLASS="REPLACEABLE"
+>num</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13772"
+>Description</A
+></H3
+><P
+>When <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+> is directed to use a private key in a PEM file that has
+been encrypted, a prompt is displayed <TT
+CLASS="LITERAL"
+>Enter PEM pass
+phrase:</TT
+>. If the passphrase is entered incorrectly, these
+properties determine how many retries the user is allowed before
+<SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+> shuts down. (C++ only)</P
+><P
+>If not specified, the default value for these properties is 5 retries.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13779"
+>IceSSL.Server.Overrides.RSA.PrivateKey, IceSSL.Server.Overrides.RSA.Certificate</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13781"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Server.Overrides.RSA.PrivateKey=<VAR
+CLASS="REPLACEABLE"
+>Base64 encoded DER string</VAR
+>
+IceSSL.Server.Overrides.RSA.Certificate=<VAR
+CLASS="REPLACEABLE"
+>Base64 encoded DER string</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13786"
+>Description</A
+></H3
+><P
+>These properties override the RSA private key and public key (certificate)
+specified in the config file (<TT
+CLASS="LITERAL"
+>IceSSL.Server.Config</TT
+>) for
+the Server context. The value must be the DER representation of the private
+and public keys, base64 encoded. (C++ only)</P
+><P
+>There are no default values for these properties.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13791"
+>IceSSL.Server.Overrides.DSA.PrivateKey, IceSSL.Server.Overrides.DSA.Certificate</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13793"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Server.Overrides.DSA.PrivateKey=<VAR
+CLASS="REPLACEABLE"
+>Base64 encoded DER string</VAR
+>
+IceSSL.Server.Overrides.DSA.Certificate=<VAR
+CLASS="REPLACEABLE"
+>Base64 encoded DER string</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13798"
+>Description</A
+></H3
+><P
+>These properties override the DSA private key and public key (certificate)
+specified in the config file (<TT
+CLASS="LITERAL"
+>IceSSL.Server.Config</TT
+>) for
+the Server context. The value must be the DER representation of the private
+and public keys, base64 encoded. (C++ only)</P
+><P
+>There are no default values for these properties.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13803"
+>IceSSL.Client.Overrides.RSA.PrivateKey, IceSSL.Client.Overrides.RSA.Certificate</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13805"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Overrides.RSA.PrivateKey=<VAR
+CLASS="REPLACEABLE"
+>Base64 encoded DER string</VAR
+>
+IceSSL.Client.Overrides.RSA.Certificate=<VAR
+CLASS="REPLACEABLE"
+>Base64 encoded DER string</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13810"
+>Description</A
+></H3
+><P
+>These properties override the RSA private key and public key (certificate)
+specified in the config file (<TT
+CLASS="LITERAL"
+>IceSSL.Client.Config</TT
+>) for
+the Client context. The value must be the DER representation of the private
+and public keys, base64 encoded. (C++ only)</P
+><P
+>There are no default values for these properties.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13815"
+>IceSSL.Client.Overrides.DSA.PrivateKey, IceSSL.Client.Overrides.DSA.Certificate</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13817"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Overrides.DSA.PrivateKey=<VAR
+CLASS="REPLACEABLE"
+>Base64 encoded DER string</VAR
+>
+IceSSL.Client.Overrides.DSA.Certificate=<VAR
+CLASS="REPLACEABLE"
+>Base64 encoded DER string</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13822"
+>Description</A
+></H3
+><P
+>These properties override the DSA private key and public key (certificate)
+specified in the config file (<TT
+CLASS="LITERAL"
+>IceSSL.Client.Config</TT
+>) for
+the Client context. The value must be the DER representation of the private
+and public keys, base64 encoded. (C++ only)</P
+><P
+>There are no default values for these properties.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13827"
+>IceSSL.Client.Overrides.CACertificate, IceSSL.Server.Overrides.CACertificate</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13829"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Overrides.CACertificate=<VAR
+CLASS="REPLACEABLE"
+>Base64 encoded DER string</VAR
+>
+IceSSL.Server.Overrides.CACertificate=<VAR
+CLASS="REPLACEABLE"
+>Base64 encoded DER string</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13834"
+>Description</A
+></H3
+><P
+>These properties override any trusted Certificate Authority (CA) certificates
+specified in <TT
+CLASS="LITERAL"
+>IceSSL.Server.Config</TT
+> or
+<TT
+CLASS="LITERAL"
+>IceSSL.Client.Config</TT
+>. The new certificate is represented
+as the base64 encoding of the DER binary representation of the certificate. (C++ only)</P
+><P
+>There are no default values for these properties.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13840"
+>IceSSL.Client.IgnoreValidPeriod, IceSSL.Server.IgnoreValidPeriod</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13842"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.IgnoreValidPeriod=<VAR
+CLASS="REPLACEABLE"
+>num</VAR
+>
+IceSSL.Server.IgnoreValidPeriod=<VAR
+CLASS="REPLACEABLE"
+>num</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13847"
+>Description</A
+></H3
+><P
+>If set to 1, these properties cause the default certificate verifier to ignore the
+certificate validity period on peer certificates. The default value for these
+properties is 0, meaning that the certificate validity period is not ignored. (C++ only)</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13850"
+>IceSSL.Client.Certs, IceSSL.Server.Certs</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13852"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Certs=<VAR
+CLASS="REPLACEABLE"
+>keystore</VAR
+>
+IceSSL.Server.Certs=<VAR
+CLASS="REPLACEABLE"
+>keystore</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13857"
+>Description</A
+></H3
+><P
+>Defines the filename of a Java keystore containing trusted certificates.
+If <VAR
+CLASS="REPLACEABLE"
+>keystore</VAR
+> is a relative pathname, it is
+relative to the program's current working directory.</P
+><P
+>If a password is provided in <TT
+CLASS="LITERAL"
+>IceSSL.Client.CertsPassword</TT
+>
+or <TT
+CLASS="LITERAL"
+>IceSSL.Server.CertsPassword</TT
+>, it is used to verify the
+integrity of the keystore.</P
+><P
+>If not specified, the plug-in uses an empty keystore.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13865"
+>IceSSL.Client.CertsPassword, IceSSL.Server.CertsPassword</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13867"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.CertsPassword=<VAR
+CLASS="REPLACEABLE"
+>password</VAR
+>
+IceSSL.Server.CertsPassword=<VAR
+CLASS="REPLACEABLE"
+>password</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13872"
+>Description</A
+></H3
+><P
+>Defines the password used to verify the integrity of the Java keystore provided
+by <TT
+CLASS="LITERAL"
+>IceSSL.Client.Certs</TT
+> or <TT
+CLASS="LITERAL"
+>IceSSL.Server.Certs</TT
+>.</P
+><P
+>If not specified, the plug-in does not verify the keystore's integrity.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13878"
+>IceSSL.Client.Ciphers, IceSSL.Server.Ciphers</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13880"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Ciphers=<VAR
+CLASS="REPLACEABLE"
+>cipher-list</VAR
+>
+IceSSL.Server.Ciphers=<VAR
+CLASS="REPLACEABLE"
+>cipher-list</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13885"
+>Description</A
+></H3
+><P
+>Defines the ciphersuites enabled by the Java plug-in.</P
+><P
+>The property value is interpreted as a list of tokens delimited by whitespace.
+The plug-in executes the tokens in the order of appearance in order to assemble
+the list of enabled ciphersuites. The table below describes the tokens:
+<DIV
+CLASS="INFORMALTABLE"
+><P
+></P
+><A
+NAME="AEN13889"
+></A
+><TABLE
+BORDER="1"
+BGCOLOR="#E0E0E0"
+CELLSPACING="0"
+CELLPADDING="4"
+CLASS="CALSTABLE"
+><TBODY
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>NONE</TT
+></TD
+><TD
+>Disables all ciphersuites. If specified, it must be the first token in the list.</TD
+></TR
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>ALL</TT
+></TD
+><TD
+>Enables all supported ciphersuites. If specified, it must be the first token
+in the list. This token should be used with caution, as it may enable low-security
+ciphersuites.</TD
+></TR
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+><VAR
+CLASS="REPLACEABLE"
+>NAME</VAR
+></TT
+></TD
+><TD
+>Enables the ciphersuite matching the given name.</TD
+></TR
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>!<VAR
+CLASS="REPLACEABLE"
+>NAME</VAR
+></TT
+></TD
+><TD
+>Disables the ciphersuite matching the given name.</TD
+></TR
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>(<VAR
+CLASS="REPLACEABLE"
+>EXP</VAR
+>)</TT
+></TD
+><TD
+>Enables ciphersuites whose names contain the regular expression
+<VAR
+CLASS="REPLACEABLE"
+>EXP</VAR
+>.</TD
+></TR
+><TR
+><TD
+><TT
+CLASS="LITERAL"
+>!(<VAR
+CLASS="REPLACEABLE"
+>EXP</VAR
+>)</TT
+></TD
+><TD
+>Disables ciphersuites whose names contain the regular expression
+<VAR
+CLASS="REPLACEABLE"
+>EXP</VAR
+>.</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+></P
+><P
+>If not specified, the plug-in uses the security provider's default ciphersuites.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13923"
+>IceSSL.Client.Keystore, IceSSL.Server.Keystore</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13925"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Keystore=<VAR
+CLASS="REPLACEABLE"
+>keystore</VAR
+>
+IceSSL.Server.Keystore=<VAR
+CLASS="REPLACEABLE"
+>keystore</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13930"
+>Description</A
+></H3
+><P
+>Defines the filename of a Java keystore containing the private key(s)
+and corresponding certificate(s). If <VAR
+CLASS="REPLACEABLE"
+>keystore</VAR
+>
+is a relative pathname, it is relative to the program's current working
+directory.</P
+><P
+>A password for the private key is defined by <TT
+CLASS="LITERAL"
+>IceSSL.Client.Password</TT
+>
+or <TT
+CLASS="LITERAL"
+>IceSSL.Server.Password</TT
+>. A password used to verify
+the integrity of the keystore is defined by <TT
+CLASS="LITERAL"
+>IceSSL.Client.KeystorePassword</TT
+>
+or <TT
+CLASS="LITERAL"
+>IceSSL.Server.KeystorePassword</TT
+>.</P
+><P
+>If not specified, the plug-in uses an empty keystore.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13940"
+>IceSSL.Client.KeystorePassword, IceSSL.Server.KeystorePassword</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13942"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.KeystorePassword=<VAR
+CLASS="REPLACEABLE"
+>password</VAR
+>
+IceSSL.Server.KeystorePassword=<VAR
+CLASS="REPLACEABLE"
+>password</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13947"
+>Description</A
+></H3
+><P
+>Defines the password used to verify the integrity of the Java keystore provided
+by <TT
+CLASS="LITERAL"
+>IceSSL.Client.Keystore</TT
+> or <TT
+CLASS="LITERAL"
+>IceSSL.Server.Keystore</TT
+>.</P
+><P
+>If not specified, the plug-in does not verify the keystore's integrity.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13953"
+>IceSSL.Client.Password, IceSSL.Server.Password</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13955"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Password=<VAR
+CLASS="REPLACEABLE"
+>password</VAR
+>
+IceSSL.Server.Password=<VAR
+CLASS="REPLACEABLE"
+>password</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13960"
+>Description</A
+></H3
+><P
+>Defines the password of the private key in the Java keystore specified
+by <TT
+CLASS="LITERAL"
+>IceSSL.Client.Keystore</TT
+> or <TT
+CLASS="LITERAL"
+>IceSSL.Server.Keystore</TT
+>.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="./stylesheet-images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+> All of the keys in the keystore must use the same password. </P
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>If not specified, the plug-in uses an empty string.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13968"
+>IceSSL.Server.ClientAuth</A
+></H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13970"
+>Synopsis</A
+></H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Server.ClientAuth=<VAR
+CLASS="REPLACEABLE"
+>num</VAR
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13974"
+>Description</A
+></H3
+><P
+>Defines how a Java server authenticates a client:
+<DIV
+CLASS="INFORMALTABLE"
+><P
+></P
+><A
+NAME="AEN13977"
+></A
+><TABLE
+BORDER="1"
+BGCOLOR="#E0E0E0"
+CELLSPACING="0"
+CELLPADDING="4"
+CLASS="CALSTABLE"
+><TBODY
+><TR
+><TD
+>0</TD
+><TD
+>No certificate is requested from the client. (default)</TD
+></TR
+><TR
+><TD
+>1</TD
+><TD
+>A certificate is requested but is not required.</TD
+></TR
+><TR
+><TD
+>2</TD
+><TD
+>A certificate is required.</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x13439.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x13989.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> Miscellaneous Properties</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c12907.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceBox</SPAN
+></SPAN
+> Properties</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,24 +1,24 @@
-# Microsoft Developer Studio Project File - Name="IceStormS" - Package Owner=<4>
+# Microsoft Developer Studio Project File - Name="icestormS" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Dynamic-Link Library" 0x0102
 
-CFG=IceStormS - Win32 Debug
+CFG=icestormS - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "IceStormS.mak".
+!MESSAGE NMAKE /f "iceStormS.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "IceStormS.mak" CFG="IceStormS - Win32 Debug"
+!MESSAGE NMAKE /f "iceStormS.mak" CFG="icestormS - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "IceStormS - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
-!MESSAGE "IceStormS - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "icestormS - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "icestormS - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 
 # Begin Project
@@ -29,7 +29,7 @@ CPP=cl.exe
 MTL=midl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "IceStormS - Win32 Release"
+!IF  "$(CFG)" == "icestormS - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -54,15 +54,15 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 /nologo /dll /machine:I386 /out:"Release/icestormservice20.dll" /implib:"Release/icestormservice.lib"
+# ADD LINK32 /nologo /dll /incremental:yes /machine:I386 /out:"Release/icestormService21.dll" /implib:"Release/icestormservice.lib"
 # SUBTRACT LINK32 /pdb:none /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\icestormservice.lib ..\..\lib	copy $(OutDir)\icestormservice20.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\icestormService.lib ..\..\lib	copy $(OutDir)\icestormservice21.dll ..\..\bin
 # End Special Build Tool
 
-!ELSEIF  "$(CFG)" == "IceStormS - Win32 Debug"
+!ELSEIF  "$(CFG)" == "icestormS - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 1
@@ -87,20 +87,20 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386
-# ADD LINK32 /nologo /dll /debug /machine:I386 /out:"Debug/icestormservice20d.dll" /implib:"Debug/icestormserviced.lib"
-# SUBTRACT LINK32 /pdb:none /nodefaultlib
+# ADD LINK32 /nologo /dll /debug /machine:I386 /out:"Debug/icestormService21d.dll" /implib:"Debug/icestormserviced.lib"
+# SUBTRACT LINK32 /pdb:none /incremental:no /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Debug
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\icestormserviced.lib ..\..\lib	copy $(OutDir)\icestormservice20d.pdb ..\..\bin	copy $(OutDir)\icestormservice20d.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\icestormServiced.lib ..\..\lib	copy $(OutDir)\icestormservice21d.pdb ..\..\bin	copy $(OutDir)\icestormservice21d.dll ..\..\bin
 # End Special Build Tool
 
 !ENDIF 
 
 # Begin Target
 
-# Name "IceStormS - Win32 Release"
-# Name "IceStormS - Win32 Debug"
+# Name "icestormS - Win32 Release"
+# Name "icestormS - Win32 Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
@@ -114,15 +114,11 @@ SOURCE=.\IceStormInternal.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\PersistentTopicMap.cpp
+SOURCE=.\LinkProxy.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\LinkRecord.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\LinkProxy.cpp
 # End Source File
 # Begin Source File
 
@@ -139,6 +135,10 @@ SOURCE=.\OnewayProxy.cpp
 # Begin Source File
 
 SOURCE=.\OnewaySubscriber.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\PersistentTopicMap.cpp
 # End Source File
 # Begin Source File
 
@@ -168,6 +168,10 @@ SOURCE=.\TopicManagerI.cpp
 
 SOURCE=.\TraceLevels.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=.\TwowayProxy.cpp
+# End Source File
 # End Group
 # Begin Group "Header Files"
 
@@ -194,10 +198,6 @@ SOURCE=.\IceStormInternalI.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\PersistentTopicMap.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\LinkInfo.h
 # End Source File
 # Begin Source File
@@ -211,6 +211,10 @@ SOURCE=.\OnewayBatchSubscriber.h
 # Begin Source File
 
 SOURCE=.\OnewaySubscriber.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\PersistentTopicMap.h
 # End Source File
 # Begin Source File
 
@@ -236,12 +240,11 @@ SOURCE=.\TraceLevels.h
 # Begin Group "Resource Files"
 
 # PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
-
 # Begin Source File
 
 SOURCE=.\IceStormInternal.ice
 
-!IF  "$(CFG)" == "IceStormS - Win32 Release"
+!IF  "$(CFG)" == "icestormS - Win32 Release"
 
 USERDEP__ICEST="..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
 # Begin Custom Build
@@ -257,7 +260,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "IceStormS - Win32 Debug"
+!ELSEIF  "$(CFG)" == "icestormS - Win32 Debug"
 
 USERDEP__ICEST="..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
 # Begin Custom Build
@@ -280,15 +283,15 @@ BuildCmds= \
 
 SOURCE=.\LinkRecord.ice
 
-!IF  "$(CFG)" == "IceStormS - Win32 Release"
+!IF  "$(CFG)" == "icestormS - Win32 Release"
 
-USERDEP__LINKD="..\..\bin\slice2freeze.exe"	"..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
+USERDEP__LINKR="..\..\bin\slice2freeze.exe"	"..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
 # Begin Custom Build
 InputPath=.\LinkRecord.ice
 
 BuildCmds= \
 	..\..\bin\slice2cpp.exe --ice --include-dir IceStorm -I../../slice -I.. LinkRecord.ice \
-	..\..\bin\slice2freeze.exe --ice --include-dir IceStorm  -I../../slice -I.. --dict IceStorm::PersistentTopicMap,string,IceStorm::LinkRecordDict PersistentTopicMap ../IceStorm/LinkRecord.ice  \
+	..\..\bin\slice2freeze.exe --ice --include-dir IceStorm  -I../../slice -I.. --dict IceStorm::PersistentTopicMap,string,IceStorm::LinkRecordDict PersistentTopicMap ../IceStorm/LinkRecord.ice \
 	
 
 "LinkRecord.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -304,15 +307,15 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "IceStormS - Win32 Debug"
+!ELSEIF  "$(CFG)" == "icestormS - Win32 Debug"
 
-USERDEP__LINKD="..\..\bin\slice2freeze.exe"	"..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
+USERDEP__LINKR="..\..\bin\slice2freeze.exe"	"..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
 # Begin Custom Build
 InputPath=.\LinkRecord.ice
 
 BuildCmds= \
 	..\..\bin\slice2cpp.exe --ice --include-dir IceStorm -I../../slice -I.. LinkRecord.ice \
-	..\..\bin\slice2freeze.exe --ice --include-dir IceStorm  -I../../slice -I.. --dict IceStorm::PersistentTopicMap,string,IceStorm::LinkRecordDict PersistentTopicMap ../IceStorm/LinkRecord.ice  \
+	..\..\bin\slice2freeze.exe --ice --include-dir IceStorm  -I../../slice -I.. --dict IceStorm::PersistentTopicMap,string,IceStorm::LinkRecordDict PersistentTopicMap ../IceStorm/LinkRecord.ice \
 	
 
 "LinkRecord.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"

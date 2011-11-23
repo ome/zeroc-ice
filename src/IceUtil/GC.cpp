@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -156,7 +156,7 @@ IceUtil::GC::collectGarbage()
     if(_statsCallback)
     {
 	t = Time::now();
-	stats.examined = gcObjects.size();
+	stats.examined = static_cast<int>(gcObjects.size());
     }
 
     //
@@ -192,7 +192,7 @@ IceUtil::GC::collectGarbage()
 	    //
 	    if(pos == counts.end())
 	    {
-		counts.insert(pos, ObjectCounts::value_type(*i, (*i)->_ref - 1));
+		counts.insert(pos, ObjectCounts::value_type(*i, (*i)->__getRefUnsafe() - 1));
 	    }
 	    else
 	    {
@@ -241,7 +241,7 @@ IceUtil::GC::collectGarbage()
     if(_statsCallback)
     {
 	stats.time = Time::now() - t;
-	stats.collected = counts.size();
+	stats.collected = static_cast<int>(counts.size());
 	_statsCallback(stats);
     }
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -110,10 +110,7 @@ class EvictorI : public Evictor,  public IceUtil::Monitor<IceUtil::Mutex>, publi
 {
 public:
 
-    EvictorI(const Ice::ObjectAdapterPtr&, const std::string&, const std::string&, 
-	     const ServantInitializerPtr&, const std::vector<IndexPtr>&, bool);
-
-    EvictorI(const Ice::ObjectAdapterPtr&, const std::string&, DbEnv&, const std::string&, 
+    EvictorI(const Ice::ObjectAdapterPtr&, const std::string&, DbEnv*, const std::string&, 
 	     const ServantInitializerPtr&, const std::vector<IndexPtr>&, bool);
 
     virtual ~EvictorI();
@@ -155,7 +152,7 @@ public:
 
     DeactivateController& deactivateController();
     const Ice::CommunicatorPtr& communicator() const;
-    DbEnv* dbEnv() const;
+    const SharedDbEnvPtr& dbEnv() const;
     const std::string& filename() const;
 
     bool deadlockWarning() const;
@@ -179,9 +176,9 @@ public:
 
 private:
 
-    void init(const std::string& envName, const std::vector<IndexPtr>&);
-
     Ice::ObjectPtr locateImpl(const Ice::Current&, Ice::LocalObjectPtr&);
+    bool hasFacetImpl(const Ice::Identity&, const std::string&);
+    bool hasAnotherFacet(const Ice::Identity&, const std::string&);
 
     void evict();
     void evict(const EvictorElementPtr&);
@@ -223,8 +220,7 @@ private:
 
     ServantInitializerPtr _initializer;
     
-    DbEnv* _dbEnv;
-    SharedDbEnvPtr _dbEnvHolder;
+    SharedDbEnvPtr _dbEnv;
 
     std::string _filename;
     bool _createDb;
@@ -242,6 +238,8 @@ private:
     IceUtil::Time _savePeriod;
 
     bool _deadlockWarning;
+
+    Ice::ObjectPtr _pingObject;
 };
 
 
@@ -257,7 +255,7 @@ EvictorI::communicator() const
     return _communicator;
 }
 
-inline DbEnv*
+inline const SharedDbEnvPtr&
 EvictorI::dbEnv() const
 {
     return _dbEnv;

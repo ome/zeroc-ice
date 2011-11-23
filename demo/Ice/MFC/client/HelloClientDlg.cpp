@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -64,8 +64,10 @@ CHelloClientDlg::OnInitDialog()
     //
     // Create the proxy.
     //
-    //Ice::ObjectPrx obj = _communicator->stringToProxy("hello:tcp -p 10000:udp -p 10000:ssl -p 10001");
-    Ice::ObjectPrx obj = _communicator->stringToProxy("hello:tcp -p 10000:udp -p 10000");
+    Ice::PropertiesPtr properties = _communicator->getProperties();
+    const char* proxyProperty = "Hello.Proxy";
+    std::string proxy = properties->getProperty(proxyProperty);
+    Ice::ObjectPrx obj = _communicator->stringToProxy(proxy);
     _proxy = Demo::HelloPrx::uncheckedCast(obj);
     _currentProxy = _proxy;
     _status->SetWindowText(CString(" Ready"));

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -588,8 +588,16 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 		    out << nl << "Dim __lenx As Integer = " << stream << ".readSize()";
 		    if(!streamingAPI)
 		    {
-			out << nl << stream << ".startSeq(__len, " << static_cast<unsigned>(builtin->minWireSize())
-			    << ")";
+                        if(builtin->isVariableLength())
+                        {
+                            out << nl << stream << ".startSeq(__lenx, " << static_cast<unsigned>(builtin->minWireSize())
+                                << ")";
+                        }
+                        else
+                        {
+                            out << nl << stream << ".checkFixedSeq(__lenx, "
+                                << static_cast<unsigned>(builtin->minWireSize()) << ")";
+                        }
 		    }
 		    out << nl << param << " = New ";
 		    if(builtin->kind() == Builtin::KindObject)
@@ -629,11 +637,20 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 			}
 			out << nl << "For __ix As Integer = 0 To __lenx - 1";
 			out.inc();
-			out << nl << param << "(__ix) = " << stream << ".readProxy()";
+			if(isArray)
+			{
+			    out << nl << param << "(__ix) = " << stream << ".readProxy()";
+			}
+			else
+			{
+			    out << nl << "Dim __val As Ice.ObjectPrx = New Ice.ObjectPrxHelperBase";
+			    out << nl << "__val = " << stream << ".readProxy()";
+			    out << nl << param << ".Add(__val)";
+			}
 			out.dec();
 			out << nl << "Next";
 		    }
-		    if(!streamingAPI)
+		    if(!streamingAPI && builtin->isVariableLength())
 		    {
 			out << nl << stream << ".checkSeq()";
 			out << nl << stream << ".endElement()";
@@ -702,7 +719,14 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	    out << nl << "Dim szx As Integer = " << stream << ".readSize()";
 	    if(!streamingAPI)
 	    {
-		out << nl << stream << ".startSeq(szx, " << static_cast<unsigned>(type->minWireSize()) << ')';
+                if(type->isVariableLength())
+                {
+                    out << nl << stream << ".startSeq(szx, " << static_cast<unsigned>(type->minWireSize()) << ')';
+                }
+                else
+                {
+                    out << nl << stream << ".checkFixedSeq(szx, " << static_cast<unsigned>(type->minWireSize()) << ')';
+                }
 	    }
 	    out << nl << param << " = New ";
 	    if(isArray)
@@ -725,14 +749,14 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	    {
 		out << nl << stream << ".readObject(spx)";
 	    }
-	    if(!streamingAPI)
+	    if(!streamingAPI && type->isVariableLength())
 	    {
 		out << nl << stream << ".checkSeq()";
 		out << nl << stream << ".endElement()";
 	    }
 	    out.dec();
 	    out << nl << "Next";
-	    if(!streamingAPI)
+	    if(!streamingAPI && type->isVariableLength())
 	    {
 		out << nl << stream << ".endSeq(szx)";
 	    }
@@ -769,7 +793,14 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	    out << nl << "Dim szx As Integer = " << stream << ".readSize()";
 	    if(!streamingAPI)
 	    {
-		out << nl << stream << ".startSeq(szx, " << static_cast<unsigned>(type->minWireSize()) << ')';
+                if(type->isVariableLength())
+                {
+                    out << nl << stream << ".startSeq(szx, " << static_cast<unsigned>(type->minWireSize()) << ')';
+                }
+                else
+                {
+                    out << nl << stream << ".checkFixedSeq(szx, " << static_cast<unsigned>(type->minWireSize()) << ')';
+                }
 	    }
 	    out << nl << param << " = New ";
 	    if(isArray)
@@ -780,17 +811,26 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	    {
 	        out << fixId(seq->scoped()) << "(szx)";
 	    }
-	    out << nl << "For __ix As Integer = 0 To " << param << '.' << limitID << " - 1";
+	    out << nl << "For __ix As Integer = 0 To szx - 1";
 	    out.inc();
-	    out << nl << param << "(__ix).__read(" << stream << ")";
-	    if(st->isVariableLength() && !streamingAPI)
+	    if(isArray)
+	    {
+		out << nl << param << "(__ix).__read(" << stream << ")";
+	    }
+	    else
+	    {
+	        out << nl << "Dim __val As " << typeS << " = New " << typeS;
+		out << nl << "__val.__read(" << stream << ')';
+		out << nl << param << ".Add(__val)";
+	    }
+	    if(!streamingAPI && type->isVariableLength())
 	    {
 		out << nl << stream << ".checkSeq()";
 		out << nl << stream << ".endElement()";
 	    }
 	    out.dec();
 	    out << nl << "Next";
-	    if(!streamingAPI)
+	    if(!streamingAPI && type->isVariableLength())
 	    {
 		out << nl << stream << ".endSeq(szx)";
 	    }
@@ -799,7 +839,6 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	out << nl << "Next";
 	return;
     }
-
 
     EnumPtr en = EnumPtr::dynamicCast(type);
     if(en)
@@ -828,7 +867,7 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	    out << nl << "Dim szx As Integer = " << stream << ".readSize()";
 	    if(!streamingAPI)
 	    {
-		out << nl << stream << ".startSeq(szx, " << static_cast<unsigned>(type->minWireSize()) << ')';
+		out << nl << stream << ".checkFixedSeq(szx, " << static_cast<unsigned>(type->minWireSize()) << ')';
 	    }
 	    out << nl << param << " = New ";
 	    if(isArray)
@@ -851,10 +890,6 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	    }
 	    out.dec();
 	    out << nl << "Next";
-	    if(!streamingAPI)
-	    {
-		out << nl << stream << ".endSeq(szx)";
-	    }
 	}
 	out.dec();
 	out << nl << "Next";
@@ -903,7 +938,14 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	out << nl << "Dim szx As Integer = " << stream << ".readSize()";
 	if(!streamingAPI)
 	{
-	    out << nl << stream << ".startSeq(szx, " << static_cast<unsigned>(type->minWireSize()) << ")";
+            if(type->isVariableLength())
+            {
+                out << nl << stream << ".startSeq(szx, " << static_cast<unsigned>(type->minWireSize()) << ")";
+            }
+            else
+            {
+                out << nl << stream << ".checkFixedSeq(szx, " << static_cast<unsigned>(type->minWireSize()) << ")";
+            }
 	}
 	out << nl << param << " = New ";
 	if(isArray)
@@ -924,20 +966,17 @@ Slice::VbGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
 	{
 	    out << nl << param << ".Add(" << helperName << '.' << func << '(' << stream << "))";
 	}
-	if(type->isVariableLength())
+	if(!streamingAPI && type->isVariableLength())
 	{
-	    if(!SequencePtr::dynamicCast(type) && !streamingAPI)
+	    if(!SequencePtr::dynamicCast(type))
 	    {
 		out << nl << stream << ".checkSeq()";
 	    }
-	    if(!streamingAPI)
-	    {
-		out << nl << stream << ".endElement()";
-	    }
+            out << nl << stream << ".endElement()";
 	}
 	out.dec();
 	out << nl << "Next";
-	if(!streamingAPI)
+	if(!streamingAPI && type->isVariableLength())
 	{
 	    out << nl << stream << ".endSeq(szx)";
 	}
@@ -994,21 +1033,36 @@ bool
 Slice::VbGenerator::MetaDataVisitor::visitClassDefStart(const ClassDefPtr& p)
 {
     validate(p);
-    return false;
+    return true;
+}
+
+void
+Slice::VbGenerator::MetaDataVisitor::visitClassDefEnd(const ClassDefPtr&)
+{
 }
 
 bool
 Slice::VbGenerator::MetaDataVisitor::visitExceptionStart(const ExceptionPtr& p)
 {
     validate(p);
-    return false;
+    return true;
+}
+
+void
+Slice::VbGenerator::MetaDataVisitor::visitExceptionEnd(const ExceptionPtr&)
+{
 }
 
 bool
 Slice::VbGenerator::MetaDataVisitor::visitStructStart(const StructPtr& p)
 {
     validate(p);
-    return false;
+    return true;
+}
+
+void
+Slice::VbGenerator::MetaDataVisitor::visitStructEnd(const StructPtr&)
+{
 }
 
 void
@@ -1100,7 +1154,7 @@ Slice::VbGenerator::MetaDataVisitor::validate(const ContainedPtr& cont)
 		        continue;
 		    }
 		}
-		cout << file << ": warning: ignoring invalid metadata `" << s << "'" << endl;
+		cout << file << ":" << cont->line() << ": warning: ignoring invalid metadata `" << s << "'" << endl;
             }
             _history.insert(s);
         }

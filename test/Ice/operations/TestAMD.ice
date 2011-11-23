@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -153,6 +153,11 @@ dictionary<string, MyEnum> StringMyEnumD;
 ["ami", "amd"] class MyDerivedClass extends MyClass
 {
     void opDerived();
+};
+
+["ami", "amd"] interface TestCheckedCast
+{
+    Ice::Context getContext();
 };
 
 };

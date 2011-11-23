@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -1260,7 +1260,22 @@ Slice::Gen::TieVisitor::visitClassDefStart(const ClassDefPtr& p)
 	ContainerPtr container = (*r)->container();
 	ClassDefPtr cl = ClassDefPtr::dynamicCast(container);
 	bool hasAMD = cl->hasMetaData("amd") || (*r)->hasMetaData("amd");
+#if defined(__SUNPRO_CC) && (__SUNPRO_CC==0x550)
+        //
+        // Work around for Sun CC 5.5 bug #4853566
+        //
+	string opName;
+	if(hasAMD)
+	{
+	    opName = (*r)->name() + "_async";
+	}
+	else
+	{
+	   opName = fixKwd((*r)->name());
+	}
+#else	
         string opName = hasAMD ? (*r)->name() + "_async" : fixKwd((*r)->name());
+#endif
         TypePtr ret = (*r)->returnType();
         string retS = typeToString(ret, TypeModeReturn, package, (*r)->getMetaData());
 
@@ -2880,6 +2895,28 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     out << nl << "return d;";
     out << eb;
 
+    out << sp << nl << "public static " << name << "Prx" << nl << "checkedCast(Ice.ObjectPrx b, java.util.Map ctx)";
+    out << sb;
+    out << nl << name << "Prx d = null;";
+    out << nl << "if(b != null)";
+    out << sb;
+    out << nl << "try";
+    out << sb;
+    out << nl << "d = (" << name << "Prx)b;";
+    out << eb;
+    out << nl << "catch(ClassCastException ex)";
+    out << sb;
+    out << nl << "if(b.ice_isA(\"" << scoped << "\", ctx))";
+    out << sb;
+    out << nl << name << "PrxHelper h = new " << name << "PrxHelper();";
+    out << nl << "h.__copyFrom(b);";
+    out << nl << "d = h;";
+    out << eb;
+    out << eb;
+    out << eb;
+    out << nl << "return d;";
+    out << eb;
+
     out << sp << nl << "public static " << name << "Prx" << nl << "checkedCast(Ice.ObjectPrx b, String f)";
     out << sb;
     out << nl << name << "Prx d = null;";
@@ -2889,6 +2926,29 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
     out << nl << "try";
     out << sb;
     out << nl << "if(bb.ice_isA(\"" << scoped << "\"))";
+    out << sb;
+    out << nl << name << "PrxHelper h = new " << name << "PrxHelper();";
+    out << nl << "h.__copyFrom(bb);";
+    out << nl << "d = h;";
+    out << eb;
+    out << eb;
+    out << nl << "catch(Ice.FacetNotExistException ex)";
+    out << sb;
+    out << eb;
+    out << eb;
+    out << nl << "return d;";
+    out << eb;
+
+    out << sp << nl << "public static " << name << "Prx"
+        << nl << "checkedCast(Ice.ObjectPrx b, String f, java.util.Map ctx)";
+    out << sb;
+    out << nl << name << "Prx d = null;";
+    out << nl << "if(b != null)";
+    out << sb;
+    out << nl << "Ice.ObjectPrx bb = b.ice_newFacet(f);";
+    out << nl << "try";
+    out << sb;
+    out << nl << "if(bb.ice_isA(\"" << scoped << "\", ctx))";
     out << sb;
     out << nl << name << "PrxHelper h = new " << name << "PrxHelper();";
     out << nl << "h.__copyFrom(bb);";
@@ -3131,6 +3191,8 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
         string package = getPackage(p);
         string keyS = typeToString(key, TypeModeIn, package);
         string valueS = typeToString(value, TypeModeIn, package);
+	StringList metaData = p->getMetaData();
+	string dictType = findMetaData(metaData);
         int iter;
         int i;
 
@@ -3320,10 +3382,12 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
 	    out << eb;
 	}
 
-        out << sp << nl << "public static java.util.Map" << nl << "read(IceInternal.BasicStream __is)";
+        out << sp << nl << "public static " << (dictType.empty() ? "java.util.Map" : dictType);
+        out << nl << "read(IceInternal.BasicStream __is)";
         out << sb;
         out << nl << "int __sz = __is.readSize();";
-        out << nl << "java.util.Map __r = new java.util.HashMap(__sz);";
+        out << nl << (dictType.empty() ? "java.util.Map" : dictType) << " __r = new "
+	    << (dictType.empty() ? "java.util.HashMap(__sz)" : dictType + "()") << ';';
         out << nl << "for(int __i = 0; __i < __sz; __i++)";
         out << sb;
         iter = 0;
@@ -3524,10 +3588,12 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
             out << eb;
             out << eb;
 
-            out << sp << nl << "public static java.util.Map" << nl << "read(Ice.InputStream __in)";
+	    out << sp << nl << "public static " << (dictType.empty() ? "java.util.Map" : dictType)
+                << nl << "read(Ice.InputStream __in)";
             out << sb;
             out << nl << "int __sz = __in.readSize();";
-            out << nl << "java.util.Map __r = new java.util.HashMap(__sz);";
+	    out << nl << (dictType.empty() ? "java.util.Map" : dictType) << " __r = new "
+		<< (dictType.empty() ? "java.util.HashMap(__sz)" : dictType + "()") << ';';
             out << nl << "for(int __i = 0; __i < __sz; __i++)";
             out << sb;
             iter = 0;

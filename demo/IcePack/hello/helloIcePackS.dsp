@@ -1,24 +1,24 @@
-# Microsoft Developer Studio Project File - Name="helloIcePackS" - Package Owner=<4>
+# Microsoft Developer Studio Project File - Name="helloicepackS" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Console Application" 0x0103
 
-CFG=helloIcePackS - Win32 Debug
+CFG=helloicepackS - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "helloIcePackS.mak".
+!MESSAGE NMAKE /f "helloicepackS.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "helloIcePackS.mak" CFG="helloIcePackS - Win32 Debug"
+!MESSAGE NMAKE /f "helloicepackS.mak" CFG="helloicepackS - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "helloIcePackS - Win32 Release" (based on "Win32 (x86) Console Application")
-!MESSAGE "helloIcePackS - Win32 Debug" (based on "Win32 (x86) Console Application")
+!MESSAGE "helloicepackS - Win32 Release" (based on "Win32 (x86) Console Application")
+!MESSAGE "helloicepackS - Win32 Debug" (based on "Win32 (x86) Console Application")
 !MESSAGE 
 
 # Begin Project
@@ -28,7 +28,7 @@ CFG=helloIcePackS - Win32 Debug
 CPP=cl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "helloIcePackS - Win32 Release"
+!IF  "$(CFG)" == "helloicepackS - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I "." /I "../../../include" /D "NDEBUG" /D "_CONSOLE" /FD /c
+# ADD CPP /nologo /MD /W3 /WX /GR /GX /O2 /I "." /I "../../../include" /I "../../../include/stlport" /D "NDEBUG" /D "_CONSOLE" /FD /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
@@ -51,10 +51,10 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 IcePack.lib Ice.lib IceUtil.lib /nologo /subsystem:console /machine:I386 /out:"server.exe" /libpath:"../../../lib"
+# ADD LINK32 IcePack.lib Ice.lib IceUtil.lib /nologo /subsystem:console /incremental:yes /machine:I386 /out:"server.exe" /libpath:"../../../lib"
 # SUBTRACT LINK32 /debug /nodefaultlib
 
-!ELSEIF  "$(CFG)" == "helloIcePackS - Win32 Debug"
+!ELSEIF  "$(CFG)" == "helloicepackS - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 1
@@ -68,7 +68,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I "." /I "../../../include" /D "_DEBUG" /D "_CONSOLE" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /WX /Gm /GR /GX /Zi /Od /I "." /I "../../../include" /I "../../../include/stlport" /D "_DEBUG" /D "_CONSOLE" /FD /GZ /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
@@ -78,14 +78,14 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
 # ADD LINK32 IcePackd.lib Iced.lib IceUtild.lib /nologo /subsystem:console /debug /machine:I386 /out:"server.exe" /pdbtype:sept /libpath:"../../../lib"
-# SUBTRACT LINK32 /nodefaultlib
+# SUBTRACT LINK32 /incremental:no /nodefaultlib
 
 !ENDIF 
 
 # Begin Target
 
-# Name "helloIcePackS - Win32 Release"
-# Name "helloIcePackS - Win32 Debug"
+# Name "helloicepackS - Win32 Release"
+# Name "helloicepackS - Win32 Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
@@ -121,7 +121,7 @@ SOURCE=.\HelloI.h
 
 SOURCE=.\Hello.ice
 
-!IF  "$(CFG)" == "helloIcePackS - Win32 Release"
+!IF  "$(CFG)" == "helloicepackS - Win32 Release"
 
 USERDEP__HELLO="..\..\..\bin\slice2cpp.exe"	"..\..\..\lib\slice.lib"	
 # Begin Custom Build
@@ -137,7 +137,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "helloIcePackS - Win32 Debug"
+!ELSEIF  "$(CFG)" == "helloicepackS - Win32 Debug"
 
 USERDEP__HELLO="..\..\..\bin\slice2cpp.exe"	"..\..\..\lib\sliced.lib"	
 # Begin Custom Build

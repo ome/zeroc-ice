@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,70 +17,63 @@ namespace IcePack
 {
 
 //
-// Callback from asynchronous call to adapter->getDirectProxy()
-// invoked in LocatorI::findAdapterById_async().
+// Callback from asynchronous call to adapter->getDirectProxy() invoked in LocatorI::findAdapterById_async().
 //
 class AMI_Adapter_getDirectProxyI : public AMI_Adapter_getDirectProxy
 {
 public:
 
-    AMI_Adapter_getDirectProxyI(const Ice::AMD_Locator_findAdapterByIdPtr& cb) : _cb(cb)
+    AMI_Adapter_getDirectProxyI(const LocatorIPtr& locator, const string& id, const AdapterPrx& adapter) : 
+	_locator(locator), _id(id), _adapter(adapter)
+    {
+    }
+    
+    virtual void ice_response(const ::Ice::ObjectPrx& obj)
+    {
+	assert(obj);
+	_locator->getDirectProxyCallback(_adapter->ice_getIdentity(), obj);
+    }
+
+    virtual void ice_exception(const ::Ice::Exception& ex)
+    {
+	_locator->getDirectProxyException(_adapter, _id, ex);
+    }
+
+private:
+
+    const LocatorIPtr _locator;
+    const string _id;
+    const AdapterPrx _adapter;
+};
+
+class AMI_Adapter_activateI : public AMI_Adapter_activate
+{
+public:
+
+    AMI_Adapter_activateI(const LocatorIPtr& locator, const string& id, const AdapterPrx& adapter) : 
+	_locator(locator), _id(id), _adapter(adapter)
     {
     }
 
     virtual void ice_response(const ::Ice::ObjectPrx& obj)
     {
-	//
-	// Return the adapter dummy direct proxy.
-	//
-	_cb->ice_response(obj);
+	_locator->getDirectProxyCallback(_adapter->ice_getIdentity(), obj);
     }
 
     virtual void ice_exception(const ::Ice::Exception& ex)
     {
-	try
-	{
-	    ex.ice_throw();
-	}
-	catch(const Ice::ObjectNotExistException&)
-	{
-	    //
-	    // Expected if the adapter is destroyed.
-	    //
-	    _cb->ice_exception(Ice::AdapterNotFoundException());
-	    return;
-	}
-	catch(const Ice::LocalException&)
-	{
-	    //
-	    // Expected if we couldn't contact the adapter object
-	    // (possibly because the IcePack node is down). Return a
-	    // null proxy in this case (the client will get empty
-	    // endpoints and throw a NoEndpointException).
-	    //
-	    _cb->ice_response(0);
-	    return;
-	}
-	catch(const Ice::Exception& ex)
-	{
-	    //
-	    // Rethrow unexpected exception.
-	    //
-	    _cb->ice_exception(ex);
-	    return;
-	}
-
-	assert(false);
+	_locator->getDirectProxyException(_adapter, _id, ex);
     }
 
 private:
 
-    Ice::AMD_Locator_findAdapterByIdPtr _cb;
+    const LocatorIPtr _locator;
+    const string _id;
+    const AdapterPrx _adapter;
 };
 
 //
-// Callback from asynchrnous call to LocatorI::findAdapterById_async()
-// invoked in LocatorI::findObjectById_async().
+// Callback from asynchrnous call to LocatorI::findAdapterById_async() invoked in LocatorI::findObjectById_async().
 //
 class AMD_Locator_findAdapterByIdI : public Ice::AMD_Locator_findAdapterById
 {
@@ -151,16 +144,15 @@ public:
 
 private:
     
-    Ice::AMD_Locator_findObjectByIdPtr _cb;
-    Ice::ObjectPrx _obj;
-
+    const Ice::AMD_Locator_findObjectByIdPtr _cb;
+    const Ice::ObjectPrx _obj;
 };
 
 }
 
-IcePack::LocatorI::LocatorI(const AdapterRegistryPtr& adapterRegistry, 
-			    const ObjectRegistryPtr& objectRegistry, 
-			    const Ice::LocatorRegistryPrx& locatorRegistry) :
+LocatorI::LocatorI(const AdapterRegistryPtr& adapterRegistry, 
+		   const ObjectRegistryPtr& objectRegistry, 
+		   const Ice::LocatorRegistryPrx& locatorRegistry) :
     _adapterRegistry(adapterRegistry),
     _objectRegistry(objectRegistry),
     _locatorRegistry(locatorRegistry)
@@ -172,8 +164,9 @@ IcePack::LocatorI::LocatorI(const AdapterRegistryPtr& adapterRegistry,
 // registry.
 //
 void
-IcePack::LocatorI::findObjectById_async(const Ice::AMD_Locator_findObjectByIdPtr& response, const Ice::Identity& id, 
-					const Ice::Current& current) const
+LocatorI::findObjectById_async(const Ice::AMD_Locator_findObjectByIdPtr& cb, 
+			       const Ice::Identity& id, 
+			       const Ice::Current& current) const
 {
     ObjectDescriptor obj;
     try
@@ -186,19 +179,18 @@ IcePack::LocatorI::findObjectById_async(const Ice::AMD_Locator_findObjectByIdPtr
     }
 
     //
-    // OPTIMIZATION: If the object is registered with an adapter id,
-    // try to get the adapter direct proxy (which might caused the
-    // server activation). This will avoid the client to lookup for
+    // OPTIMIZATION: If the object is registered with an adapter id, try to get the adapter direct
+    // proxy (which might caused the server activation). This will avoid the client to lookup for
     // the adapter id endpoints.
     //
     if(!obj.adapterId.empty())
     {
-	Ice::AMD_Locator_findAdapterByIdPtr cb = new AMD_Locator_findAdapterByIdI(response, obj.proxy);
-	findAdapterById_async(cb, obj.adapterId, current);
+	Ice::AMD_Locator_findAdapterByIdPtr amiCB = new AMD_Locator_findAdapterByIdI(cb, obj.proxy);
+	findAdapterById_async(amiCB, obj.adapterId, current);
     }
     else
     {
-	response->ice_response(obj.proxy);
+	cb->ice_response(obj.proxy);
     }
 }
     
@@ -207,22 +199,138 @@ IcePack::LocatorI::findObjectById_async(const Ice::AMD_Locator_findObjectByIdPtr
 // registry. If found, we try to get its direct proxy.
 //
 void
-IcePack::LocatorI::findAdapterById_async(const Ice::AMD_Locator_findAdapterByIdPtr& response,
-					 const string& id, const Ice::Current&) const
+LocatorI::findAdapterById_async(const Ice::AMD_Locator_findAdapterByIdPtr& cb, 
+				const string& id, 
+				const Ice::Current&) const
 {
+    AdapterPrx adapter;
     try
     {
-	AMI_Adapter_getDirectProxyPtr cb = new AMI_Adapter_getDirectProxyI(response);
-	_adapterRegistry->findById(id)->getDirectProxy_async(cb, true);
+	adapter = AdapterPrx::uncheckedCast(_adapterRegistry->findById(id)->ice_collocationOptimization(false));
     }
     catch(const AdapterNotExistException&)
     {
 	throw Ice::AdapterNotFoundException();
     }
+
+    LocatorIPtr self = const_cast<LocatorI*>(this);
+    if(self->getDirectProxyRequest(cb, adapter))
+    {
+	try
+	{
+	    AMI_Adapter_getDirectProxyPtr amiCB = new AMI_Adapter_getDirectProxyI(self, id, adapter);
+	    adapter->getDirectProxy_async(amiCB);
+	}
+	catch(const Ice::LocalException& ex)
+	{
+	    self->getDirectProxyException(adapter, id, ex);
+	}
+    }
 }
 
 Ice::LocatorRegistryPrx
-IcePack::LocatorI::getRegistry(const Ice::Current&) const
+LocatorI::getRegistry(const Ice::Current&) const
 {
     return _locatorRegistry;
+}
+
+bool
+LocatorI::getDirectProxyRequest(const Ice::AMD_Locator_findAdapterByIdPtr& cb, const AdapterPrx& adapter)
+{
+    Lock sync(*this);
+    
+    //
+    // Check if there's already pending requests for this adapter. If that's the case,
+    // we just add this one to the queue. If not, we add it to the queue and initiate
+    // a call on the adapter to get its direct proxy.
+    //
+    PendingRequestsMap::iterator p;
+    p = _pendingRequests.insert(make_pair(adapter->ice_getIdentity(), PendingRequests())).first;
+    p->second.push_back(cb);
+    return p->second.size() == 1;
+}
+
+void
+LocatorI::getDirectProxyException(const AdapterPrx& adapter, const string& id, const Ice::Exception& ex)
+{
+    Lock sync(*this);
+
+    PendingRequestsMap::iterator p = _pendingRequests.find(adapter->ice_getIdentity());
+    assert(p != _pendingRequests.end());
+    try
+    {
+	ex.ice_throw();
+    }
+    catch(const AdapterNotActiveException& ex)
+    {
+	if(ex.activatable)
+	{
+	    //
+	    // Activate the adapter if it can be activated on demand. NOTE: we use the timeout
+	    // provided in the exception to activate the adapter. The timeout correspond to the
+	    // wait time configured for the server.
+	    //
+	    try
+	    {
+		AMI_Adapter_activatePtr amiCB = new AMI_Adapter_activateI(this, id, adapter);
+		AdapterPrx::uncheckedCast(adapter->ice_timeout(ex.timeout))->activate_async(amiCB);
+	    }
+	    catch(const Ice::LocalException& ex)
+	    {
+		getDirectProxyException(adapter, id, ex);
+	    }
+	    return;
+	}
+	else
+	{
+	    for(PendingRequests::const_iterator q = p->second.begin(); q != p->second.end(); ++q)
+	    {
+		(*q)->ice_response(0);
+	    }
+	}
+    }
+    catch(const Ice::ObjectNotExistException&)
+    {
+	//
+	// Expected if the adapter is destroyed, if that's the case, we remove it from the adapter registry.
+	//
+	try
+	{
+	    _adapterRegistry->remove(id, adapter);
+	}
+	catch(const AdapterNotExistException&)
+	{
+	}
+
+	for(PendingRequests::const_iterator q = p->second.begin(); q != p->second.end(); ++q)
+	{
+	    (*q)->ice_exception(Ice::AdapterNotFoundException());
+	}
+    }
+    catch(const Ice::LocalException&)
+    {
+	for(PendingRequests::const_iterator q = p->second.begin(); q != p->second.end(); ++q)
+	{
+	    (*q)->ice_response(0);
+	}
+    }
+    catch(const Ice::Exception&)
+    {
+	assert(false);
+    }
+    _pendingRequests.erase(p);
+}
+
+void
+LocatorI::getDirectProxyCallback(const Ice::Identity& adapterId, const Ice::ObjectPrx& proxy)
+{
+    Lock sync(*this);
+
+    PendingRequestsMap::iterator p = _pendingRequests.find(adapterId);
+    assert(p != _pendingRequests.end());
+    for(PendingRequests::const_iterator q = p->second.begin(); q != p->second.end(); ++q)
+    {
+	(*q)->ice_response(proxy);
+    }
+    _pendingRequests.erase(p);
 }

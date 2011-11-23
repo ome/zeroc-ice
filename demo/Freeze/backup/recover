@@ -2,6 +2,12 @@
 
 case $1 in
   "full" | "incremental") echo "Performing $1 recovery"
+          
+          if [ ! -d $1 ]
+          then
+             mkdir $1
+          fi
+
           echo "====== Save current logs ======"
           if [ ! -d db/logs/save ] ; then mkdir db/logs/save; fi
           \cp db/logs/log.* db/logs/save
@@ -10,7 +16,7 @@ case $1 in
           \cp full/data/IntLongMap db/data
 	  \cp full/logs/log.* db/logs
          
-          if [ $1 == "incremental" ]
+          if [ $1 = "incremental" ]
           then
              echo "====== Restore last incremental backup ======" 
               \cp incremental/logs/log.* db/logs
@@ -24,8 +30,7 @@ case $1 in
           echo "% db_recover -c -h db"
           echo "or"
           echo "client with Freeze.db.DbRecoverFatal=1"
-
-          break ;;
+          ;;
 
   *) echo "Usage: $0 [full | incremental]"
      exit 1 ;;

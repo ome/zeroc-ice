@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,6 +27,17 @@ Ice::UserException::__usesClasses() const
 Ice::LocalException::LocalException(const char* file, int line) :
     Exception(file, line)
 {
+}
+
+void
+Ice::InitializationException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\ninitialization exception";
+    if(!reason.empty())
+    {
+	out << ":\n" << reason;
+    }
 }
 
 void

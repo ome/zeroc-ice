@@ -1,24 +1,24 @@
-# Microsoft Developer Studio Project File - Name="mfcHelloC" - Package Owner=<4>
+# Microsoft Developer Studio Project File - Name="mfchelloC" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Application" 0x0101
 
-CFG=mfcHelloC - Win32 Debug
+CFG=mfchelloC - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "mfcHelloC.mak".
+!MESSAGE NMAKE /f "mfchelloC.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "mfcHelloC.mak" CFG="mfcHelloC - Win32 Debug"
+!MESSAGE NMAKE /f "mfchelloC.mak" CFG="mfchelloC - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "mfcHelloC - Win32 Release" (based on "Win32 (x86) Application")
-!MESSAGE "mfcHelloC - Win32 Debug" (based on "Win32 (x86) Application")
+!MESSAGE "mfchelloC - Win32 Release" (based on "Win32 (x86) Application")
+!MESSAGE "mfchelloC - Win32 Debug" (based on "Win32 (x86) Application")
 !MESSAGE 
 
 # Begin Project
@@ -29,7 +29,7 @@ CPP=cl.exe
 MTL=midl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "mfcHelloC - Win32 Release"
+!IF  "$(CFG)" == "mfchelloC - Win32 Release"
 
 # PROP BASE Use_MFC 6
 # PROP BASE Use_Debug_Libraries 0
@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MD /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "." /I "../../../../include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /YX"stdafx.h" /FD /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "." /I "../../../../include" /I "../../../../include/stlport" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /YX"stdafx.h" /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG" /d "_AFXDLL"
@@ -53,9 +53,9 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 /nologo /subsystem:windows /machine:I386
-# ADD LINK32 Ice.lib IceUtil.lib /nologo /subsystem:windows /machine:I386 /out:"client.exe" /libpath:"../../../../lib"
+# ADD LINK32 Ice.lib IceUtil.lib /nologo /subsystem:windows /incremental:yes /machine:I386 /out:"client.exe" /libpath:"../../../../lib"
 
-!ELSEIF  "$(CFG)" == "mfcHelloC - Win32 Debug"
+!ELSEIF  "$(CFG)" == "mfchelloC - Win32 Debug"
 
 # PROP BASE Use_MFC 6
 # PROP BASE Use_Debug_Libraries 1
@@ -69,7 +69,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_AFXDLL" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "." /I "../../../../include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /YX"stdafx.h" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "." /I "../../../../include" /I "../../../../include/stlport" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /YX"stdafx.h" /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG" /d "_AFXDLL"
@@ -79,14 +79,15 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 Iced.lib IceUtild.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept /out:"client.exe" /libpath:"../../../../lib"
+# ADD LINK32 Iced.lib IceUtild.lib /nologo /subsystem:windows /debug /machine:I386 /out:"client.exe" /pdbtype:sept /libpath:"../../../../lib"
+# SUBTRACT LINK32 /incremental:no
 
 !ENDIF 
 
 # Begin Target
 
-# Name "mfcHelloC - Win32 Release"
-# Name "mfcHelloC - Win32 Debug"
+# Name "mfchelloC - Win32 Release"
+# Name "mfchelloC - Win32 Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
@@ -143,7 +144,7 @@ SOURCE=.\StdAfx.h
 
 SOURCE=.\Hello.ice
 
-!IF  "$(CFG)" == "mfcHelloC - Win32 Release"
+!IF  "$(CFG)" == "mfchelloC - Win32 Release"
 
 USERDEP__HELLO="..\..\..\..\bin\slice2cpp.exe"	"..\..\..\..\lib\slice.lib"	
 # Begin Custom Build
@@ -159,7 +160,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "mfcHelloC - Win32 Debug"
+!ELSEIF  "$(CFG)" == "mfchelloC - Win32 Debug"
 
 USERDEP__HELLO="..\..\..\..\bin\slice2cpp.exe"	"..\..\..\..\lib\sliced.lib"	
 # Begin Custom Build

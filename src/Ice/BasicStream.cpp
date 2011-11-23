@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,24 +22,6 @@
 #include <Ice/TraceLevels.h>
 #include <Ice/LoggerUtil.h>
 
-template<typename InputIter, typename OutputIter>
-inline void
-ice_copy(InputIter first, InputIter last, OutputIter result)
-{
-    std::copy(first, last, result);
-}
-
-template<>
-inline void
-ice_copy(std::vector<Ice::Byte>::const_iterator first, std::vector<Ice::Byte>::const_iterator last,
-	 std::vector<Ice::Byte>::iterator result)
-{
-    if(last != first)
-    {
-	memcpy(&*result, &*first, last - first);
-    }
-}
-
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
@@ -58,14 +40,14 @@ IceInternal::BasicStream::BasicStream(Instance* instance) :
 
 IceInternal::BasicStream::~BasicStream()
 {
-    while(_currentReadEncaps)
+    while(_currentReadEncaps && _currentReadEncaps != &_preAllocatedReadEncaps)
     {
 	ReadEncaps* oldEncaps = _currentReadEncaps;
 	_currentReadEncaps = _currentReadEncaps->previous;
 	delete oldEncaps;
     }
 
-    while(_currentWriteEncaps)
+    while(_currentWriteEncaps && _currentWriteEncaps != &_preAllocatedWriteEncaps)
     {
 	WriteEncaps* oldEncaps = _currentWriteEncaps;
 	_currentWriteEncaps = _currentWriteEncaps->previous;
@@ -93,23 +75,51 @@ IceInternal::BasicStream::swap(BasicStream& other)
 {
     assert(_instance == other._instance);
 
-    b.swap(other.b);
-    std::swap(i, other.i);
-    std::swap(_currentReadEncaps, other._currentReadEncaps);
-    std::swap(_currentWriteEncaps, other._currentWriteEncaps);
-    std::swap(_seqDataStack, other._seqDataStack);
-    std::swap(_objectList, other._objectList);
-}
+    Buffer::swap(other);
 
-void
-IceInternal::BasicStream::reserve(Container::size_type sz)
-{
-    if(sz > _messageSizeMax)
+    //
+    // Swap is never called for BasicStreams that have more than one
+    // encaps.
+    //
+    assert(!_currentReadEncaps || _currentReadEncaps == &_preAllocatedReadEncaps);
+    assert(!_currentWriteEncaps || _currentWriteEncaps == &_preAllocatedWriteEncaps);
+    assert(!other._currentReadEncaps || other._currentReadEncaps == &other._preAllocatedReadEncaps);
+    assert(!other._currentWriteEncaps || other._currentWriteEncaps == &other._preAllocatedWriteEncaps);
+
+    if(_currentReadEncaps || other._currentReadEncaps)
     {
-	throw MemoryLimitException(__FILE__, __LINE__);
+	_preAllocatedReadEncaps.swap(other._preAllocatedReadEncaps);
+
+	if(!_currentReadEncaps)
+	{
+	    _currentReadEncaps = &_preAllocatedReadEncaps;
+	    other._currentReadEncaps = 0;
+	}
+	else if(!other._currentReadEncaps)
+	{
+	    other._currentReadEncaps = &other._preAllocatedReadEncaps;
+	    _currentReadEncaps = 0;
+	}
     }
 
-    b.reserve(sz);
+    if(_currentWriteEncaps || other._currentWriteEncaps)
+    {
+	_preAllocatedWriteEncaps.swap(other._preAllocatedWriteEncaps);
+
+	if(!_currentWriteEncaps)
+	{
+	    _currentWriteEncaps = &_preAllocatedWriteEncaps;
+	    other._currentWriteEncaps = 0;
+	}
+	else if(!other._currentWriteEncaps)
+	{
+	    other._currentWriteEncaps = &other._preAllocatedWriteEncaps;
+	    _currentWriteEncaps = 0;
+	}
+    }
+
+    std::swap(_seqDataStack, other._seqDataStack);
+    std::swap(_objectList, other._objectList);
 }
 
 //
@@ -119,9 +129,12 @@ IceInternal::BasicStream::reserve(Container::size_type sz)
 // allocating sequences with an impossibly large number of elements.
 //
 // The code generator inserts calls to startSeq() and endSeq() around
-// the code to unmarshal a sequence. startSeq() is called immediately
-// after reading the sequence size, and endSeq() is called after
-// reading the final element of a sequence.
+// the code to unmarshal a sequence of a variable-length type. startSeq()
+// is called immediately after reading the sequence size, and endSeq() is
+// called after reading the final element of a sequence.
+//
+// For a sequence of a fixed-length type, the code generator inserts a
+// call to checkFixedSeq(), which does not cause any memory allocations.
 //
 // For sequences that contain constructed types that, in turn, contain
 // sequences, the code generator also inserts a call to endElement()
@@ -150,7 +163,7 @@ IceInternal::BasicStream::reserve(Container::size_type sz)
 // endElement() in the generated code decrements that number whenever
 // a sequence element is unmarshaled.)
 //
-// For sequence that variable-length elements, checkSeq() is called
+// For sequences that have variable-length elements, checkSeq() is called
 // whenever an element is unmarshaled. checkSeq() also checks whether
 // the stream has a sufficient number of bytes remaining.  This means
 // that, for messages with bogus sequence sizes, unmarshaling is
@@ -172,7 +185,7 @@ IceInternal::BasicStream::startSeq(int numElements, int minSize)
     sd->previous = _seqDataStack;
     _seqDataStack = sd;
 
-    int bytesLeft = b.end() - i;
+    int bytesLeft = static_cast<int>(b.end() - i);
     if(_seqDataStack == 0) // Outermost sequence
     {
 	//
@@ -187,7 +200,6 @@ IceInternal::BasicStream::startSeq(int numElements, int minSize)
     {
 	checkSeq(bytesLeft);
     }
-
 }
 
 //
@@ -199,7 +211,7 @@ IceInternal::BasicStream::startSeq(int numElements, int minSize)
 void
 IceInternal::BasicStream::checkSeq()
 {
-    checkSeq(b.end() - i);
+    checkSeq(static_cast<int>(b.end() - i));
 }
 
 void
@@ -237,6 +249,26 @@ IceInternal::BasicStream::endSeq(int sz)
     delete oldSeqData;
 }
 
+void
+IceInternal::BasicStream::checkFixedSeq(int numElements, int elemSize)
+{
+    int bytesLeft = static_cast<int>(b.end() - i);
+    if(_seqDataStack == 0) // Outermost sequence
+    {
+	//
+	// The sequence must fit within the message.
+	//
+	if(numElements * elemSize > bytesLeft) 
+	{
+	    throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
+	}
+    }
+    else // Nested sequence
+    {
+	checkSeq(bytesLeft - numElements * elemSize);
+    }
+}
+
 IceInternal::BasicStream::WriteEncaps::WriteEncaps()
     : writeIndex(0), toBeMarshaledMap(0), marshaledMap(0), typeIdMap(0), typeIdIndex(0), previous(0)
 {
@@ -250,11 +282,47 @@ IceInternal::BasicStream::WriteEncaps::~WriteEncaps()
 }
 
 void
+IceInternal::BasicStream::WriteEncaps::reset()
+{
+    delete toBeMarshaledMap;
+    delete marshaledMap;
+    delete typeIdMap;
+
+    writeIndex = 0;
+    toBeMarshaledMap = 0;
+    marshaledMap = 0;
+    typeIdMap = 0;
+    typeIdIndex = 0;
+    previous = 0;
+}
+
+void
+IceInternal::BasicStream::WriteEncaps::swap(WriteEncaps& other)
+{
+    std::swap(start, other.start);
+
+    std::swap(writeIndex, other.writeIndex);
+    std::swap(toBeMarshaledMap, other.toBeMarshaledMap);
+    std::swap(marshaledMap, other.marshaledMap);
+    std::swap(typeIdMap, other.typeIdMap);
+    std::swap(typeIdIndex, other.typeIdIndex);
+
+    std::swap(previous, other.previous);
+}
+
+void
 IceInternal::BasicStream::startWriteEncaps()
 {
     WriteEncaps* oldEncaps = _currentWriteEncaps;
-    _currentWriteEncaps = new WriteEncaps();
-    _currentWriteEncaps->previous = oldEncaps;
+    if(!oldEncaps) // First allocated encaps?
+    {
+	_currentWriteEncaps = &_preAllocatedWriteEncaps;
+    }
+    else
+    {
+	_currentWriteEncaps = new WriteEncaps();
+	_currentWriteEncaps->previous = oldEncaps;
+    }
     _currentWriteEncaps->start = b.size();
 
     write(Int(0)); // Placeholder for the encapsulation length.
@@ -286,7 +354,14 @@ IceInternal::BasicStream::endWriteEncaps()
 
     WriteEncaps* oldEncaps = _currentWriteEncaps;
     _currentWriteEncaps = _currentWriteEncaps->previous;
-    delete oldEncaps;
+    if(oldEncaps == &_preAllocatedWriteEncaps)
+    {
+	oldEncaps->reset();
+    }
+    else
+    {
+	delete oldEncaps;
+    }
 }
 
 IceInternal::BasicStream::ReadEncaps::ReadEncaps()
@@ -302,11 +377,49 @@ IceInternal::BasicStream::ReadEncaps::~ReadEncaps()
 }
 
 void
+IceInternal::BasicStream::ReadEncaps::reset()
+{
+    delete patchMap;
+    delete unmarshaledMap;
+    delete typeIdMap;
+
+    patchMap = 0;
+    unmarshaledMap = 0;
+    typeIdMap = 0;
+    typeIdIndex = 0;
+    previous = 0;
+}
+
+void
+IceInternal::BasicStream::ReadEncaps::swap(ReadEncaps& other)
+{
+    std::swap(start, other.start);
+    std::swap(sz, other.sz);
+
+    std::swap(encodingMajor, other.encodingMajor);
+    std::swap(encodingMinor, other.encodingMinor);
+
+    std::swap(patchMap, other.patchMap);
+    std::swap(unmarshaledMap, other.unmarshaledMap);
+    std::swap(typeIdMap, other.typeIdMap);
+    std::swap(typeIdIndex, other.typeIdIndex);
+
+    std::swap(previous, other.previous);
+}
+
+void
 IceInternal::BasicStream::startReadEncaps()
 {
     ReadEncaps* oldEncaps = _currentReadEncaps;
-    _currentReadEncaps = new ReadEncaps();
-    _currentReadEncaps->previous = oldEncaps;
+    if(!oldEncaps) // First allocated encaps?
+    {
+	_currentReadEncaps = &_preAllocatedReadEncaps;
+    }
+    else
+    {
+	_currentReadEncaps = new ReadEncaps();
+	_currentReadEncaps->previous = oldEncaps;
+    }
     _currentReadEncaps->start = i - b.begin();
 
     //
@@ -356,7 +469,14 @@ IceInternal::BasicStream::endReadEncaps()
 
     ReadEncaps* oldEncaps = _currentReadEncaps;
     _currentReadEncaps = _currentReadEncaps->previous;
-    delete oldEncaps;
+    if(oldEncaps == &_preAllocatedReadEncaps)
+    {
+	oldEncaps->reset();
+    }
+    else
+    {
+	delete oldEncaps;
+    }
 }
 
 void
@@ -375,7 +495,7 @@ Int
 IceInternal::BasicStream::getReadEncapsSize()
 {
     assert(_currentReadEncaps);
-    return _currentReadEncaps->sz - sizeof(Int) - 2;
+    return _currentReadEncaps->sz - static_cast<Int>(sizeof(Int)) - 2;
 }
 
 void
@@ -532,42 +652,55 @@ IceInternal::BasicStream::readTypeId(string& id)
 void
 IceInternal::BasicStream::writeBlob(const vector<Byte>& v)
 {
-    Container::size_type pos = b.size();
-    resize(pos + v.size());
-    ice_copy(v.begin(), v.end(), b.begin() + pos);
+    if(!v.empty())
+    {
+	Container::size_type pos = b.size();
+	resize(pos + v.size());
+	memcpy(&b[pos], &v[0], v.size());
+    }
 }
 
 void
 IceInternal::BasicStream::readBlob(vector<Byte>& v, Int sz)
 {
-    if(b.end() - i < sz)
+    if(sz > 0)
     {
-	throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
+	if(b.end() - i < sz)
+	{
+	    throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
+	}
+	vector<Byte>(i, i + sz).swap(v);
+	i += sz;
     }
-    Container::iterator begin = i;
-    i += sz;
-    v.resize(sz);
-    ice_copy(begin, i, v.begin());
+    else
+    {
+	v.clear();
+    }
 }
 
 void
-IceInternal::BasicStream::writeBlob(const Ice::Byte* v, Container::size_type len)
+IceInternal::BasicStream::writeBlob(const Ice::Byte* v, Container::size_type sz)
 {
-    Container::size_type pos = b.size();
-    resize(pos + len);
-    ice_copy(&v[0], &v[0 + len], b.begin() + pos);
+    if(sz > 0)
+    {
+	Container::size_type pos = b.size();
+	resize(pos + sz);
+	memcpy(&b[pos], v, sz);
+    }
 }
 
 void
-IceInternal::BasicStream::readBlob(Ice::Byte* v, Container::size_type len)
+IceInternal::BasicStream::readBlob(Ice::Byte* v, Container::size_type sz)
 {
-    if(static_cast<Container::size_type>(b.end() - i) < len)
+    if(sz > 0)
     {
-	throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
+	if(static_cast<Container::size_type>(b.end() - i) < sz)
+	{
+	    throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
+	}
+	memcpy(v, &*i, sz);
+	i += sz;
     }
-    Container::iterator begin = i;
-    i += len;
-    ice_copy(begin, i, &v[0]);
 }
 
 void
@@ -575,9 +708,12 @@ IceInternal::BasicStream::write(const vector<Byte>& v)
 {
     Int sz = static_cast<Int>(v.size());
     writeSize(sz);
-    Container::size_type pos = b.size();
-    resize(pos + sz);
-    ice_copy(v.begin(), v.end(), b.begin() + pos);
+    if(sz > 0)
+    {
+	Container::size_type pos = b.size();
+	resize(pos + sz);
+	memcpy(&b[pos], &v[0], sz);
+    }
 }
 
 void
@@ -585,12 +721,16 @@ IceInternal::BasicStream::read(vector<Byte>& v)
 {
     Int sz;
     readSize(sz);
-    startSeq(sz, 1);
-    Container::iterator begin = i;
-    i += sz;
-    v.resize(sz);
-    ice_copy(begin, i, v.begin());
-    endSeq(sz);
+    if(sz > 0)
+    {
+	checkFixedSeq(sz, 1);
+	vector<Byte>(i, i + sz).swap(v);
+	i += sz;
+    }
+    else
+    {
+	v.clear();
+    }
 }
 
 void
@@ -598,9 +738,12 @@ IceInternal::BasicStream::write(const vector<bool>& v)
 {
     Int sz = static_cast<Int>(v.size());
     writeSize(sz);
-    Container::size_type pos = b.size();
-    resize(pos + sz);
-    ice_copy(v.begin(), v.end(), b.begin() + pos);
+    if(sz > 0)
+    {
+	Container::size_type pos = b.size();
+	resize(pos + sz);
+	copy(v.begin(), v.end(), b.begin() + pos);
+    }
 }
 
 void
@@ -608,12 +751,17 @@ IceInternal::BasicStream::read(vector<bool>& v)
 {
     Int sz;
     readSize(sz);
-    startSeq(sz, 1);
-    Container::iterator begin = i;
-    i += sz;
-    v.resize(sz);
-    ice_copy(begin, i, v.begin());
-    endSeq(sz);
+    if(sz > 0)
+    {
+	checkFixedSeq(sz, 1);
+	v.resize(sz);
+	copy(i, i + sz, v.begin());
+	i += sz;
+    }
+    else
+    {
+	v.clear();
+    }
 }
 
 void
@@ -652,9 +800,7 @@ IceInternal::BasicStream::write(const vector<Short>& v)
 	    src += 2 * sizeof(Short);
 	}
 #else
-	ice_copy(reinterpret_cast<const Byte*>(&v[0]),
-		 reinterpret_cast<const Byte*>(&v[0]) + sz * sizeof(Short),
-		 b.begin() + pos);
+	memcpy(&b[pos], reinterpret_cast<const Byte*>(&v[0]), sz * sizeof(Short));
 #endif
     }
 }
@@ -684,12 +830,12 @@ IceInternal::BasicStream::read(vector<Short>& v)
 {
     Int sz;
     readSize(sz);
-    startSeq(sz, sizeof(Short));
-    Container::iterator begin = i;
-    i += sz * static_cast<int>(sizeof(Short));
-    v.resize(sz);
     if(sz > 0)
     {
+	checkFixedSeq(sz, static_cast<int>(sizeof(Short)));
+	Container::iterator begin = i;
+	i += sz * static_cast<int>(sizeof(Short));
+	v.resize(sz);
 #ifdef ICE_BIG_ENDIAN
 	const Byte* src = &(*begin);
 	Byte* dest = reinterpret_cast<Byte*>(&v[0]) + sizeof(Short) - 1;
@@ -700,10 +846,13 @@ IceInternal::BasicStream::read(vector<Short>& v)
 	    dest += 2 * sizeof(Short);
 	}
 #else
-	ice_copy(begin, i, reinterpret_cast<Byte*>(&v[0]));
+	copy(begin, i, reinterpret_cast<Byte*>(&v[0]));
 #endif
     }
-    endSeq(sz);
+    else
+    {
+	v.clear();
+    }
 }
 
 void
@@ -748,9 +897,7 @@ IceInternal::BasicStream::write(const vector<Int>& v)
 	    src += 2 * sizeof(Int);
 	}
 #else
-	ice_copy(reinterpret_cast<const Byte*>(&v[0]),
-		 reinterpret_cast<const Byte*>(&v[0]) + sz * sizeof(Int),
-		 b.begin() + pos);
+	memcpy(&b[pos], reinterpret_cast<const Byte*>(&v[0]), sz * sizeof(Int));
 #endif
     }
 }
@@ -784,12 +931,12 @@ IceInternal::BasicStream::read(vector<Int>& v)
 {
     Int sz;
     readSize(sz);
-    startSeq(sz, sizeof(Int));
-    Container::iterator begin = i;
-    i += sz * static_cast<int>(sizeof(Int));
-    v.resize(sz);
     if(sz > 0)
     {
+	checkFixedSeq(sz, static_cast<int>(sizeof(Int)));
+	Container::iterator begin = i;
+	i += sz * static_cast<int>(sizeof(Int));
+	v.resize(sz);
 #ifdef ICE_BIG_ENDIAN
 	const Byte* src = &(*begin);
 	Byte* dest = reinterpret_cast<Byte*>(&v[0]) + sizeof(Int) - 1;
@@ -802,10 +949,13 @@ IceInternal::BasicStream::read(vector<Int>& v)
 	    dest += 2 * sizeof(Int);
 	}
 #else
-	ice_copy(begin, i, reinterpret_cast<Byte*>(&v[0]));
+	copy(begin, i, reinterpret_cast<Byte*>(&v[0]));
 #endif
     }
-    endSeq(sz);
+    else
+    {
+	v.clear();
+    }
 }
 
 void
@@ -862,9 +1012,7 @@ IceInternal::BasicStream::write(const vector<Long>& v)
 	    src += 2 * sizeof(Long);
 	}
 #else
-	ice_copy(reinterpret_cast<const Byte*>(&v[0]),
-		 reinterpret_cast<const Byte*>(&v[0]) + sz * sizeof(Long),
-		 b.begin() + pos);
+	memcpy(&b[pos], reinterpret_cast<const Byte*>(&v[0]), sz * sizeof(Long));
 #endif
     }
 }
@@ -906,12 +1054,12 @@ IceInternal::BasicStream::read(vector<Long>& v)
 {
     Int sz;
     readSize(sz);
-    startSeq(sz, sizeof(Long));
-    Container::iterator begin = i;
-    i += sz * static_cast<int>(sizeof(Long));
-    v.resize(sz);
     if(sz > 0)
     {
+	checkFixedSeq(sz, static_cast<int>(sizeof(Long)));
+	Container::iterator begin = i;
+	i += sz * static_cast<int>(sizeof(Long));
+	v.resize(sz);
 #ifdef ICE_BIG_ENDIAN
 	const Byte* src = &(*begin);
 	Byte* dest = reinterpret_cast<Byte*>(&v[0]) + sizeof(Long) - 1;
@@ -928,10 +1076,13 @@ IceInternal::BasicStream::read(vector<Long>& v)
 	    dest += 2 * sizeof(Long);
 	}
 #else
-	ice_copy(begin, i, reinterpret_cast<Byte*>(&v[0]));
+	copy(begin, i, reinterpret_cast<Byte*>(&v[0]));
 #endif
     }
-    endSeq(sz);
+    else
+    {
+	v.clear();
+    }
 }
 
 void
@@ -976,9 +1127,7 @@ IceInternal::BasicStream::write(const vector<Float>& v)
 	    src += 2 * sizeof(Float);
 	}
 #else
-	ice_copy(reinterpret_cast<const Byte*>(&v[0]),
-		 reinterpret_cast<const Byte*>(&v[0]) + sz * sizeof(Float),
-		 b.begin() + pos);
+	memcpy(&b[pos], reinterpret_cast<const Byte*>(&v[0]), sz * sizeof(Float));
 #endif
     }
 }
@@ -1012,12 +1161,12 @@ IceInternal::BasicStream::read(vector<Float>& v)
 {
     Int sz;
     readSize(sz);
-    startSeq(sz, sizeof(Float));
-    Container::iterator begin = i;
-    i += sz * static_cast<int>(sizeof(Float));
-    v.resize(sz);
     if(sz > 0)
     {
+	checkFixedSeq(sz, static_cast<int>(sizeof(Float)));
+	Container::iterator begin = i;
+	i += sz * static_cast<int>(sizeof(Float));
+	v.resize(sz);
 #ifdef ICE_BIG_ENDIAN
 	const Byte* src = &(*begin);
 	Byte* dest = reinterpret_cast<Byte*>(&v[0]) + sizeof(Float) - 1;
@@ -1030,10 +1179,13 @@ IceInternal::BasicStream::read(vector<Float>& v)
 	    dest += 2 * sizeof(Float);
 	}
 #else
-	ice_copy(begin, i, reinterpret_cast<Byte*>(&v[0]));
+	copy(begin, i, reinterpret_cast<Byte*>(&v[0]));
 #endif
     }
-    endSeq(sz);
+    else
+    {
+	v.clear();
+    }
 }
 
 void
@@ -1090,9 +1242,7 @@ IceInternal::BasicStream::write(const vector<Double>& v)
 	    src += 2 * sizeof(Double);
 	}
 #else
-	ice_copy(reinterpret_cast<const Byte*>(&v[0]),
-		 reinterpret_cast<const Byte*>(&v[0]) + sz * sizeof(Double),
-		 b.begin() + pos);
+	memcpy(&b[pos], reinterpret_cast<const Byte*>(&v[0]), sz * sizeof(Double));
 #endif
     }
 }
@@ -1134,12 +1284,12 @@ IceInternal::BasicStream::read(vector<Double>& v)
 {
     Int sz;
     readSize(sz);
-    startSeq(sz, sizeof(Double));
-    Container::iterator begin = i;
-    i += sz * static_cast<int>(sizeof(Double));
-    v.resize(sz);
     if(sz > 0)
     {
+	checkFixedSeq(sz, static_cast<int>(sizeof(Double)));
+	Container::iterator begin = i;
+	i += sz * static_cast<int>(sizeof(Double));
+	v.resize(sz);
 #ifdef ICE_BIG_ENDIAN
 	const Byte* src = &(*begin);
 	Byte* dest = reinterpret_cast<Byte*>(&v[0]) + sizeof(Double) - 1;
@@ -1156,10 +1306,13 @@ IceInternal::BasicStream::read(vector<Double>& v)
 	    dest += 2 * sizeof(Double);
 	}
 #else
-	ice_copy(begin, i, reinterpret_cast<Byte*>(&v[0]));
+	copy(begin, i, reinterpret_cast<Byte*>(&v[0]));
 #endif
     }
-    endSeq(sz);
+    else
+    {
+	v.clear();
+    }
 }
 
 //
@@ -1179,40 +1332,45 @@ IceInternal::BasicStream::write(const char*)
 void
 IceInternal::BasicStream::write(const string& v)
 {
-    Int len = static_cast<Int>(v.size());
-    writeSize(len);
-    if(len > 0)
+    Int sz = static_cast<Int>(v.size());
+    writeSize(sz);
+    if(sz > 0)
     {
 	Container::size_type pos = b.size();
-	resize(pos + len);
-	memcpy(&b[pos], v.c_str(), len);
+	resize(pos + sz);
+	memcpy(&b[pos], v.c_str(), sz);
     }
 }
 
 void
 IceInternal::BasicStream::write(const vector<string>& v)
 {
-    writeSize(Int(v.size()));
-    vector<string>::const_iterator p;
-    for(p = v.begin(); p != v.end(); ++p)
+    Int sz = static_cast<Int>(v.size());
+    writeSize(sz);
+    if(sz > 0)
     {
-	write(*p);
+	vector<string>::const_iterator p;
+	for(p = v.begin(); p != v.end(); ++p)
+	{
+	    write(*p);
+	}
     }
 }
 
 void
 IceInternal::BasicStream::read(string& v)
 {
-    Int len;
-    readSize(len);
-    if(b.end() - i < len)
+    Int sz;
+    readSize(sz);
+    if(sz > 0)
     {
-	throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
-    }
-    if(len > 0)
-    {
-       v.assign(reinterpret_cast<const char*>(&(*i)), len);
-       i += len;
+	if(b.end() - i < sz)
+	{
+	    throw UnmarshalOutOfBoundsException(__FILE__, __LINE__);
+	}
+	string(reinterpret_cast<const char*>(&*i), reinterpret_cast<const char*>(&*i) + sz).swap(v);
+//	v.assign(reinterpret_cast<const char*>(&(*i)), sz);
+	i += sz;
     }
     else
     {
@@ -1225,22 +1383,22 @@ IceInternal::BasicStream::read(vector<string>& v)
 {
     Int sz;
     readSize(sz);
-    startSeq(sz, 1);
-    v.clear();
-
-    //
-    // For efficiency, we use reserve() here to avoid having the
-    // vector reallocate repeatedly.
-    //
-    v.reserve(sz);
-    for(int i = 0; i < sz; ++i)
+    if(sz > 0)
     {
-	v.resize(i + 1);
-	read(v.back());
-	checkSeq();
-	endElement();
+	startSeq(sz, 1);
+	v.resize(sz);
+	for(int i = 0; i < sz; ++i)
+	{
+	    read(v[i]);
+	    checkSeq();
+	    endElement();
+	}
+	endSeq(sz);
     }
-    endSeq(sz);
+    else
+    {
+       v.clear();
+    }
 }
 
 void
@@ -1260,7 +1418,7 @@ IceInternal::BasicStream::write(const ObjectPtr& v)
 {
     if(!_currentWriteEncaps) // Lazy initialization.
     {
-	_currentWriteEncaps = new WriteEncaps();
+	_currentWriteEncaps = &_preAllocatedWriteEncaps;
 	_currentWriteEncaps->start = b.size();
     }
 
@@ -1312,7 +1470,7 @@ IceInternal::BasicStream::read(PatchFunc patchFunc, void* patchAddr)
 {
     if(!_currentReadEncaps) // Lazy initialization.
     {
-	_currentReadEncaps = new ReadEncaps();
+	_currentReadEncaps = &_preAllocatedReadEncaps;
     }
 
     if(!_currentReadEncaps->patchMap) // Lazy initialization.

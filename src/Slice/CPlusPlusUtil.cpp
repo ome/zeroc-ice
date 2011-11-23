@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,24 +27,27 @@ Slice::ToIfdef::operator()(char c)
 }
 
 string
+Slice::normalizePath(const string& path)
+{
+    string result = path;
+    replace(result.begin(), result.end(), '\\', '/');
+    string::size_type pos;
+    while((pos = result.find("//")) != string::npos)
+    {
+        result.replace(pos, 2, "/");
+    }
+    return result;
+}
+
+string
 Slice::changeInclude(const string& orig, const vector<string>& includePaths)
 {
-    string file = orig;
+    string file = normalizePath(orig);
     string::size_type pos;
 
-    //
-    // Our icecpp C++ preprocessor changes "\" into "\\".
-    //
-    while((pos = file.find("\\\\")) != string::npos)
-    {
-	file.erase(pos, 1);
-	file[pos] = '/';
-    }
-    
     for(vector<string>::const_iterator p = includePaths.begin(); p != includePaths.end(); ++p)
     {
-	string includePath = *p;
-	replace(includePath.begin(), includePath.end(), '\\', '/');
+	string includePath = normalizePath(*p);
 
 	if(file.compare(0, includePath.length(), includePath) == 0)
 	{
@@ -70,7 +73,7 @@ Slice::printHeader(Output& out)
     static const char* header =
 "// **********************************************************************\n"
 "//\n"
-"// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.\n"
+"// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.\n"
 "//\n"
 "// This copy of Ice is licensed to you under the terms described in the\n"
 "// ICE_LICENSE file included in this distribution.\n"

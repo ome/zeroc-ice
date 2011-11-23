@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,9 +24,12 @@ IcePack::AdapterFactory::AdapterFactory(const Ice::ObjectAdapterPtr& adapter,
     _adapter(adapter),
     _traceLevels(traceLevels)
 {
+    Ice::PropertiesPtr properties = _adapter->getCommunicator()->getProperties();
+
     //
     // Create and install the freeze evictor for standalone adapter objects.
     //
+    properties->setProperty("Freeze.Evictor." + envName + ".adapter.SaveSizeTrigger", "1");
     _evictor = Freeze::createEvictor(_adapter, envName, "adapter");
     _evictor->setSize(1000);
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -381,8 +381,44 @@ MyDerivedClassI::opContext_async(const Test::AMD_MyClass_opContextPtr& cb, const
 }
 
 void
-MyDerivedClassI::opDerived_async(const Test::AMD_MyDerivedClass_opDerivedPtr& cb,
-				 const Ice::Current&)
+MyDerivedClassI::opDerived_async(const Test::AMD_MyDerivedClass_opDerivedPtr& cb, const Ice::Current&)
 {
     cb->ice_response();
+}
+
+void
+TestCheckedCastI::getContext_async(const Test::AMD_TestCheckedCast_getContextPtr& cb, const Ice::Current&)
+{
+    cb->ice_response(_ctx);
+}
+
+void
+TestCheckedCastI::setContext(const Ice::Context& ctx)
+{
+    _ctx = ctx;
+}
+
+CheckedCastLocator::CheckedCastLocator() :
+    _servant(new TestCheckedCastI)
+{
+}
+
+Ice::ObjectPtr
+CheckedCastLocator::locate(const Ice::Current& c, Ice::LocalObjectPtr&)
+{
+    if(c.operation == "ice_isA")
+    {
+	_servant->setContext(c.ctx);
+    }
+    return _servant;
+}
+
+void
+CheckedCastLocator::finished(const Ice::Current&, const Ice::ObjectPtr&, const Ice::LocalObjectPtr&)
+{
+}
+
+void
+CheckedCastLocator::deactivate(const std::string&)
+{
 }

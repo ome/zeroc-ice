@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -41,7 +41,7 @@ Freeze::createEvictor(const ObjectAdapterPtr& adapter,
 		      const vector<IndexPtr>& indices,
 		      bool createDb)
 {
-    return new EvictorI(adapter, envName, filename, initializer, indices, createDb);
+    return new EvictorI(adapter, envName, 0, filename, initializer, indices, createDb);
 }
 
 Freeze::EvictorPtr
@@ -53,7 +53,7 @@ Freeze::createEvictor(const ObjectAdapterPtr& adapter,
 		      const vector<IndexPtr>& indices,
 		      bool createDb)
 {
-    return new EvictorI(adapter, envName, dbEnv, filename, initializer, indices, createDb);
+    return new EvictorI(adapter, envName, &dbEnv, filename, initializer, indices, createDb);
 }
 
 //
@@ -270,31 +270,7 @@ Freeze::WatchDogThread::terminate()
 
 Freeze::EvictorI::EvictorI(const ObjectAdapterPtr& adapter, 
 			   const string& envName, 
-			   const string& filename,
-			   const ServantInitializerPtr& initializer,
-			   const vector<IndexPtr>& indices,
-			   bool createDb) :
-    _evictorSize(10),
-    _currentEvictorSize(0),
-    _deactivateController(this),
-    _savingThreadDone(false),
-    _adapter(adapter),
-    _communicator(adapter->getCommunicator()),
-    _initializer(initializer),
-    
-    _dbEnv(0),
-    _dbEnvHolder(SharedDbEnv::get(_communicator, envName)),
-    _filename(filename),
-    _createDb(createDb),
-    _trace(0)
-{
-    _dbEnv = _dbEnvHolder.get();
-    init(envName, indices);
-}
-
-Freeze::EvictorI::EvictorI(const ObjectAdapterPtr& adapter, 
-			   const string& envName, 
-			   DbEnv& dbEnv, 
+			   DbEnv* dbEnv, 
 			   const string& filename, 
 			   const ServantInitializerPtr& initializer,
 			   const vector<IndexPtr>& indices,
@@ -307,17 +283,11 @@ Freeze::EvictorI::EvictorI(const ObjectAdapterPtr& adapter,
     _adapter(adapter),
     _communicator(adapter->getCommunicator()),
     _initializer(initializer),
-
-    _dbEnv(&dbEnv),
+    _dbEnv(SharedDbEnv::get(_communicator, envName, dbEnv)),
     _filename(filename),
     _createDb(createDb),
-    _trace(0)
-{
-    init(envName, indices);
-}
-
-void
-Freeze::EvictorI::init(const string& envName, const vector<IndexPtr>& indices)
+    _trace(0),
+    _pingObject(new Ice::Object)
 {
     _trace = _communicator->getProperties()->getPropertyAsInt("Freeze.Trace.Evictor");
     _deadlockWarning = (_communicator->getProperties()->getPropertyAsInt("Freeze.Warn.Deadlocks") != 0);
@@ -1053,9 +1023,18 @@ Freeze::EvictorI::hasObject(const Identity& ident)
 bool
 Freeze::EvictorI::hasFacet(const Identity& ident, const string& facet)
 {
-    checkIdentity(ident);
     DeactivateController::Guard deactivateGuard(_deactivateController);
+    return hasFacetImpl(ident, facet);
+}
 
+bool
+Freeze::EvictorI::hasFacetImpl(const Identity& ident, const string& facet)
+{
+    //
+    // Must be called with _deactivateController locked.
+    //
+
+    checkIdentity(ident);
     ObjectStore* store = 0;
 
     {
@@ -1082,66 +1061,125 @@ Freeze::EvictorI::hasFacet(const Identity& ident, const string& facet)
     return store->dbHasObject(ident);
 }
 
+bool
+Freeze::EvictorI::hasAnotherFacet(const Identity& ident, const string& facet)
+{
+    //
+    // Must be called with _deactivateController locked.
+    //
+
+    //
+    // If the object exists in another store, throw FacetNotExistException 
+    // instead of returning 0 (== ObjectNotExistException)
+    // 
+    StoreMap storeMapCopy;
+    {
+	Lock sync(*this);
+	storeMapCopy = _storeMap;
+    }	    
+	
+    for(StoreMap::iterator p = storeMapCopy.begin(); p != storeMapCopy.end(); ++p)
+    {
+	//
+	// Do not check again the given facet
+	//
+	if((*p).first != facet)
+	{ 
+	    ObjectStore* store = (*p).second;
+	    
+	    bool inCache = false;
+	    {
+		Lock sync(*this);
+		
+		EvictorElementPtr element = store->getIfPinned(ident);
+		if(element != 0)
+		{
+		    inCache = true;
+		    assert(!element->stale);    
+		    
+		    IceUtil::Mutex::Lock lock(element->mutex);
+		    if(element->status != EvictorElement::dead && 
+		       element->status != EvictorElement::destroyed)
+		    {
+			return true;
+		    }
+		}
+	    }
+	    if(!inCache)
+	    {
+		if(store->dbHasObject(ident))
+		{
+		    return true;
+		}
+	    }
+	}
+    }
+    return false;
+}
+    
 
 ObjectPtr
 Freeze::EvictorI::locate(const Current& current, LocalObjectPtr& cookie)
 {
     //
-    // If only Ice calls locate/finished/deactivate, then it cannot be deactivated.
+    // We need this guard because the application may call locate/finished/deactivate
+    // directly.
     //
     DeactivateController::Guard deactivateGuard(_deactivateController);
 
+    //
+    // Special ice_ping() handling
+    //
+    if(current.operation == "ice_ping")
+    {
+	assert(current.mode == Nonmutating);
+
+	if(hasFacetImpl(current.id, current.facet))
+	{
+	    if(_trace >= 3)
+	    {
+		Trace out(_communicator->getLogger(), "Freeze.Evictor");
+		out << "ice_ping found \"" << identityToString(current.id)  
+		    << "\" with facet \"" << current.facet + "\"";
+	    }
+	    
+	    cookie = 0;
+	    return _pingObject;
+	}
+	else if(hasAnotherFacet(current.id, current.facet))
+	{
+	    if(_trace >= 3)
+	    {
+		Trace out(_communicator->getLogger(), "Freeze.Evictor");
+		out << "ice_ping raises FacetNotExistException for \"" << identityToString(current.id)  
+		    << "\" with facet \"" << current.facet + "\"";
+	    }
+	    throw FacetNotExistException(__FILE__, __LINE__);
+	}
+	else
+	{
+	    if(_trace >= 3)
+	    {
+		if(_trace >= 3)
+		{
+		    Trace out(_communicator->getLogger(), "Freeze.Evictor");
+		    out << "ice_ping will raise ObjectNotExistException for \"" << identityToString(current.id)  
+			<< "\" with facet \"" << current.facet + "\"";
+		}
+	    }
+	    return 0;
+	}
+    }
+    
     ObjectPtr result = locateImpl(current, cookie);
     
     if(result == 0)
     {
-	//
-	// If the object exists in another store, throw FacetNotExistException 
-	// instead of returning 0 (== ObjectNotExistException)
-	// 
-	StoreMap storeMapCopy;
+	if(hasAnotherFacet(current.id, current.facet))
 	{
-	    Lock sync(*this);
-	    storeMapCopy = _storeMap;
-	}	    
-	for(StoreMap::iterator p = storeMapCopy.begin(); p != storeMapCopy.end(); ++p)
-	{
-	    //
-	    // Do not check again the current facet
-	    //
-	    if((*p).first != current.facet)
-	    { 
-		ObjectStore* store = (*p).second;
-
-		bool inCache = false;
-		{
-		    Lock sync(*this);
-		    
-		    EvictorElementPtr element = store->getIfPinned(current.id);
-		    if(element != 0)
-		    {
-			inCache = true;
-			assert(!element->stale);    
-			
-			IceUtil::Mutex::Lock lock(element->mutex);
-			if(element->status != EvictorElement::dead && 
-			   element->status != EvictorElement::destroyed)
-			{
-			    throw FacetNotExistException(__FILE__, __LINE__);
-			}
-		    }
-		}
-		if(!inCache)
-		{
-		    if(store->dbHasObject(current.id))
-		    {
-			throw FacetNotExistException(__FILE__, __LINE__);
-		    }
-		}
-	    }
+	    throw FacetNotExistException(__FILE__, __LINE__);
 	}
     }
-    
     return result;
 }
 
@@ -1287,7 +1325,6 @@ Freeze::EvictorI::deactivate(const string&)
 	    }
 	    
 	    _dbEnv = 0;
-	    _dbEnvHolder = 0;
 	    _initializer = 0;
 	}
 	catch(...)
@@ -1557,7 +1594,7 @@ Freeze::EvictorI::run()
 		    try
 		    {
 			DbTxn* tx = 0;
-			_dbEnv->txn_begin(0, &tx, 0);
+			_dbEnv->getEnv()->txn_begin(0, &tx, 0);
 			try
 			{	
 			    for(size_t i = 0; i < txSize; i++)
@@ -1872,7 +1909,7 @@ Freeze::EvictorI::allDbs() const
     
     try
     {
-	Db db(_dbEnv, 0);
+	Db db(_dbEnv->getEnv(), 0);
 	db.open(0, _filename.c_str(), 0, DB_UNKNOWN, DB_RDONLY, 0);
 
 	Dbc* dbc = 0;

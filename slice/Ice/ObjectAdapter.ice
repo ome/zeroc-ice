@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -460,10 +460,6 @@ local interface ObjectAdapter
      * Create a "direct proxy" that matches this object adapter and
      * the given identity. A direct proxy always contains the current
      * adapter endpoints.
-     *
-     * <note><para> This operation is intended to be used by locator
-     * implementations. Regular user code should not attempt to use
-     * this operation.</para></note>
      *
      * @param id The identity for which a proxy is to be created.
      *

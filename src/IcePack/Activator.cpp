@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -621,7 +621,7 @@ Activator::activate(const string& name,
     assert(i == argc);
     argv[argc] = 0;
     
-    int envCount = envs.size();
+    int envCount = static_cast<int>(envs.size());
     char** envArray = new char*[envCount];
     i = 0;
     for(StringSeq::const_iterator q = envs.begin(); q != envs.end(); ++q)
@@ -702,6 +702,12 @@ Activator::activate(const string& name,
     else // Parent process.
     {
 	close(fds[1]);
+
+	for(i = 0; argv[i]; i++)
+	{
+	    free(argv[i]);
+	}
+	free(argv);
 
 	for(i = 0; i < envCount; ++i)
 	{

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -39,7 +39,8 @@ IceSSL::SslServerTransceiver::write(Buffer& buf, int timeout)
     int totalBytesWritten = 0;
     int bytesWritten = 0;
 
-    Buffer::Container::difference_type packetSize = buf.b.end() - buf.i;
+    Buffer::Container::difference_type packetSize = 
+        static_cast<Buffer::Container::difference_type>(buf.b.end() - buf.i);
 
 #ifdef _WIN32
     //
@@ -94,7 +95,7 @@ IceSSL::SslServerTransceiver::write(Buffer& buf, int timeout)
 
                 if(packetSize > buf.b.end() - buf.i)
                 {
-                    packetSize = buf.b.end() - buf.i;
+                    packetSize = static_cast<Buffer::Container::difference_type>(buf.b.end() - buf.i);
                 }
                 continue;
             }

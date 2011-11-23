@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -128,6 +128,8 @@ IceUtil::unescapeString(const string& s, string::size_type start, string::size_t
     assert(end <= s.size());
     assert(start <= end);
 
+    result.reserve(end - start);
+
     while(start < end)
     {
         char ch = s[start];
@@ -252,4 +254,55 @@ IceUtil::checkQuote(const string& s, string::size_type start)
         return string::npos; // Unmatched quote.
     }
     return 0; // Not quoted.
+}
+
+//
+// Match `s' against the pattern `pat'. A * in the pattern acts
+// as a wildcard: it matches any non-empty sequence of characters
+// other than a period (`.'). We match by hand here because
+// it's portable across platforms (whereas regex() isn't).
+//
+bool
+IceUtil::match(const string& s, const string& pat, bool matchPeriod)
+{
+    assert(!s.empty());
+    assert(!pat.empty());
+
+    if(pat.find('*') == string::npos)
+    {
+        return s == pat;
+    }
+
+    string::size_type sIndex = 0;
+    string::size_type patIndex = 0;
+    do
+    {
+        if(pat[patIndex] == '*')
+	{
+	    //
+	    // Don't allow matching x..y against x.*.y if requested -- star matches non-empty sequence only.
+	    //
+	    if(!matchPeriod && s[sIndex] == '.')
+	    {
+		return false;
+	    }
+	    while(sIndex < s.size() && (matchPeriod || s[sIndex] != '.'))
+	    {
+	        ++sIndex;
+	    }
+	    patIndex++;
+	}
+	else
+	{
+	    if(pat[patIndex] != s[sIndex])
+	    {
+		return false;
+	    }
+	    ++sIndex;
+	    ++patIndex;
+	}
+    }
+    while(sIndex < s.size() && patIndex < pat.size());
+
+    return sIndex == s.size() && patIndex == pat.size();
 }

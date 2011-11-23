@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,12 +25,17 @@ IcePack::StandaloneAdapterI::StandaloneAdapterI()
 }
 
 void
-IcePack::StandaloneAdapterI::getDirectProxy_async(const AMD_Adapter_getDirectProxyPtr& cb,
-						  bool activate,
-						  const Ice::Current&)
+StandaloneAdapterI::activate_async(const AMD_Adapter_activatePtr& cb, const Ice::Current&)
 {
     IceUtil::Mutex::Lock sync(*this);
     cb->ice_response(proxy);
+}
+
+Ice::ObjectPrx
+IcePack::StandaloneAdapterI::getDirectProxy(const Ice::Current&) const
+{
+    IceUtil::Mutex::Lock sync(*this);
+    return proxy;
 }
 
 void

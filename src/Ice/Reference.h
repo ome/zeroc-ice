@@ -1,9 +1,9 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
-// ICE_LICENSE file included in this distirbution.
+// ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
@@ -42,13 +42,15 @@ public:
 	ModeLast = ModeBatchDatagram
     };
 
-    Mode getMode() const { return mode; }
-    const Ice::Identity& getIdentity() const { return identity; }
-    const Ice::Context& getContext() const { return context; }
-    const std::string& getFacet() const { return facet; }
-    bool getSecure() const { return secure; }
-    const InstancePtr& getInstance() const { return instance; }
+    Mode getMode() const { return _mode; }
+    const Ice::Identity& getIdentity() const { return _identity; }
+    const std::string& getFacet() const { return _facet; }
+    const InstancePtr& getInstance() const { return _instance; }
+    const Ice::Context& getContext() const;
 
+    ReferencePtr defaultContext() const;
+
+    virtual bool getSecure() const = 0;
     virtual std::vector<EndpointPtr> getEndpoints() const = 0;
     virtual bool getCollocationOptimization() const = 0;
 
@@ -57,21 +59,25 @@ public:
     // a new reference based on the existing one, with the
     // corresponding value changed.
     //
+    ReferencePtr changeContext(const Ice::Context&) const;
     ReferencePtr changeMode(Mode) const;
     ReferencePtr changeIdentity(const Ice::Identity&) const;
-    ReferencePtr changeContext(const Ice::Context&) const;
+    bool hasContext() const { return _hasContext; }
     ReferencePtr changeFacet(const std::string&) const;
-    ReferencePtr changeSecure(bool) const;
 
+    //
+    // Return a reference in the default configuration.
+    //
+    virtual ReferencePtr changeDefault() const;
+
+    virtual ReferencePtr changeSecure(bool) const = 0;
     virtual ReferencePtr changeRouter(const Ice::RouterPrx&) const = 0;
     virtual ReferencePtr changeLocator(const Ice::LocatorPrx&) const = 0;
-    virtual ReferencePtr changeDefault() const = 0;
     virtual ReferencePtr changeCompress(bool) const = 0;
     virtual ReferencePtr changeTimeout(int) const = 0;
     virtual ReferencePtr changeCollocationOptimization(bool) const = 0;
 
-    // TODO: Why virtual?
-    virtual int hash() const; // Conceptually const.
+    int hash() const; // Conceptually const.
 
     //
     // Marshal the reference.
@@ -96,48 +102,47 @@ public:
 
 protected:
 
-    Reference(const InstancePtr&, const Ice::Identity&, const Ice::Context&, const std::string&, Mode, bool);
+    Reference(const InstancePtr&, const Ice::Identity&, const Ice::Context&, const std::string&, Mode);
     Reference(const Reference&);
 
 private:
 
-    // TODO: Add leading underscore for private members.
-    InstancePtr instance;
+    InstancePtr _instance;
 
-    Mode mode;
-    Ice::Identity identity;
-    Ice::Context context;
-    std::string facet;
-    bool secure;
+    Mode _mode;
+    Ice::Identity _identity;
+    bool _hasContext;
+    Ice::Context _context;
+    std::string _facet;
 
-    IceUtil::Mutex hashMutex; // For lazy initialization of hash value.
-    mutable Ice::Int hashValue;
-    mutable bool hashInitialized;
+    IceUtil::Mutex _hashMutex; // For lazy initialization of hash value.
+    mutable Ice::Int _hashValue;
+    mutable bool _hashInitialized;
 };
 
 class FixedReference : public Reference
 {
 public:
 
-    FixedReference(const InstancePtr&, const Ice::Identity&, const Ice::Context&, const std::string&, Mode, bool,
+    FixedReference(const InstancePtr&, const Ice::Identity&, const Ice::Context&, const std::string&, Mode,
 	           const std::vector<Ice::ConnectionIPtr>&);
 
-    const std::vector<Ice::ConnectionIPtr>& getFixedConnections() const { return fixedConnections; }
+    const std::vector<Ice::ConnectionIPtr>& getFixedConnections() const;
 
+    virtual bool getSecure() const;
     virtual std::vector<EndpointPtr> getEndpoints() const;
+    virtual bool getCollocationOptimization() const;
 
-    // TODO: Virtual functions shouldn't be inlined.
-    virtual bool getCollocationOptimization() const { return false; }
-
-    virtual void streamWrite(BasicStream*) const;
-    virtual Ice::ConnectionIPtr getConnection(bool&) const;
-
+    virtual ReferencePtr changeSecure(bool) const;
     virtual ReferencePtr changeRouter(const Ice::RouterPrx&) const;
     virtual ReferencePtr changeLocator(const Ice::LocatorPrx&) const;
-    virtual ReferencePtr changeDefault() const;
     virtual ReferencePtr changeCollocationOptimization(bool) const;
     virtual ReferencePtr changeCompress(bool) const;
     virtual ReferencePtr changeTimeout(int) const;
+
+    virtual void streamWrite(BasicStream*) const;
+
+    virtual Ice::ConnectionIPtr getConnection(bool&) const;
 
     virtual bool operator==(const Reference&) const;
     virtual bool operator!=(const Reference&) const;
@@ -151,21 +156,23 @@ protected:
 
 private:
 
-    // TODO: Add leading underscore for private members.
-    std::vector<Ice::ConnectionIPtr> fixedConnections;
+    std::vector<Ice::ConnectionIPtr> _fixedConnections;
 };
 
 class RoutableReference : public Reference
 {
 public:
 
-    const RouterInfoPtr& getRouterInfo() const { return routerInfo; }
+    const RouterInfoPtr& getRouterInfo() const { return _routerInfo; }
     std::vector<EndpointPtr> getRoutedEndpoints() const;
-    // TODO: Virtual functions shouldn't be inlined.
-    virtual bool getCollocationOptimization() const { return collocationOptimization; }
 
-    virtual ReferencePtr changeRouter(const Ice::RouterPrx&) const;
+    virtual bool getSecure() const;
+    virtual bool getCollocationOptimization() const;
+
     virtual ReferencePtr changeDefault() const;
+
+    virtual ReferencePtr changeSecure(bool) const;
+    virtual ReferencePtr changeRouter(const Ice::RouterPrx&) const;
     virtual ReferencePtr changeCollocationOptimization(bool) const;
 
     virtual Ice::ConnectionIPtr getConnection(bool&) const = 0;
@@ -185,9 +192,9 @@ protected:
 
 private:
 
-    // TODO: Add leading underscore for private members.
-    RouterInfoPtr routerInfo; // Null if no router is used.
-    bool collocationOptimization;
+    bool _secure;
+    RouterInfoPtr _routerInfo; // Null if no router is used.
+    bool _collocationOptimization;
 };
 
 class DirectReference : public RoutableReference
@@ -201,8 +208,9 @@ public:
 
     DirectReferencePtr changeEndpoints(const std::vector<EndpointPtr>&) const;
 
-    virtual ReferencePtr changeLocator(const Ice::LocatorPrx&) const;
     virtual ReferencePtr changeDefault() const;
+
+    virtual ReferencePtr changeLocator(const Ice::LocatorPrx&) const;
     virtual ReferencePtr changeCompress(bool) const;
     virtual ReferencePtr changeTimeout(int) const;
 
@@ -222,8 +230,7 @@ protected:
 
 private:
 
-    // TODO: Add leading underscore for private members.
-    std::vector<EndpointPtr> endpoints;
+    std::vector<EndpointPtr> _endpoints;
 };
 
 class IndirectReference : public RoutableReference
@@ -233,13 +240,14 @@ public:
     IndirectReference(const InstancePtr&, const Ice::Identity&, const Ice::Context&, const std::string&,
                       Mode, bool, const std::string&, const RouterInfoPtr&, const LocatorInfoPtr&, bool);
 
-    const std::string& getAdapterId() const { return adapterId; }
-    const LocatorInfoPtr& getLocatorInfo() const { return locatorInfo; }
+    const std::string& getAdapterId() const { return _adapterId; }
+    const LocatorInfoPtr& getLocatorInfo() const { return _locatorInfo; }
 
     virtual std::vector<EndpointPtr> getEndpoints() const;
 
-    virtual ReferencePtr changeLocator(const Ice::LocatorPrx&) const;
     virtual ReferencePtr changeDefault() const;
+
+    virtual ReferencePtr changeLocator(const Ice::LocatorPrx&) const;
     virtual ReferencePtr changeCompress(bool) const;
     virtual ReferencePtr changeTimeout(int) const;
 
@@ -259,9 +267,8 @@ protected:
 
 private:
 
-    // TODO: Add leading underscore for private members.
-    std::string adapterId;
-    LocatorInfoPtr locatorInfo; // Null if no locator is used.
+    std::string _adapterId;
+    LocatorInfoPtr _locatorInfo;
 };
 
 std::vector<EndpointPtr> filterEndpoints(const std::vector<EndpointPtr>&, Reference::Mode, bool);

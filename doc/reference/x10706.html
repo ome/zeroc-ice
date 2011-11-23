@@ -1,0 +1,350 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>IceSSL::CertificateVerifier</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+REL="HOME"
+TITLE="Ice Reference Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Slice Documentation"
+HREF="c13.html"><LINK
+REL="PREVIOUS"
+TITLE="IceSSL::CertificateVerificationException"
+HREF="x10696.html"><LINK
+REL="NEXT"
+TITLE="IceSSL::CertificateVerifierTypeException"
+HREF="x10767.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x10696.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Slice Documentation</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x10767.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ICESSL.CERTIFICATEVERIFIER"
+><TT
+CLASS="LITERAL"
+>IceSSL::CertificateVerifier</TT
+></A
+></H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN10709"
+>Overview</A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>local interface <CODE
+CLASS="CLASSNAME"
+>CertificateVerifier</CODE
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>The <A
+HREF="x10706.html"
+><CODE
+CLASS="CLASSNAME"
+>CertificateVerifier</CODE
+></A
+> is the base interface for all classes that define
+additional application-specific certificate verification rules.  These rules
+are evaluated during the SSL handshake by an instance of a class derived
+from <A
+HREF="x10706.html"
+><CODE
+CLASS="CLASSNAME"
+>CertificateVerifier</CODE
+></A
+>.  The methods defined in derived interfaces will
+depend upon the requirements of the underlying SSL implementation.
+Default certificate verifier implementations can be obtained via the
+<A
+HREF="x10956.html"
+><CODE
+CLASS="CLASSNAME"
+>Plugin</CODE
+></A
+>.
+As this is simply a base class for purposes of derivation, no methods are
+defined.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN10720"
+>Used By</A
+></H3
+><P
+>	    <A
+HREF="x10956.html#ICESSL.PLUGIN.GETDEFAULTCERTVERIFIER"
+><TT
+CLASS="FUNCTION"
+>Plugin::getDefaultCertVerifier</TT
+></A
+>, <A
+HREF="x10956.html#ICESSL.PLUGIN.GETSINGLECERTVERIFIER"
+><TT
+CLASS="FUNCTION"
+>Plugin::getSingleCertVerifier</TT
+></A
+>, <A
+HREF="x10956.html#ICESSL.PLUGIN.SETCERTIFICATEVERIFIER"
+><TT
+CLASS="FUNCTION"
+>Plugin::setCertificateVerifier</TT
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN10733"
+>See Also</A
+></H3
+><P
+>	    <A
+HREF="x10956.html"
+><CODE
+CLASS="CLASSNAME"
+>Plugin</CODE
+></A
+></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN10740"
+>Operation Index</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+HREF="x10706.html#ICESSL.CERTIFICATEVERIFIER.SETCONTEXT"
+><TT
+CLASS="FUNCTION"
+>setContext</TT
+></A
+></DT
+><DD
+><P
+>Set the context type of this Certificate Verifier.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ICESSL.CERTIFICATEVERIFIER.SETCONTEXT"
+><TT
+CLASS="LITERAL"
+>setContext</TT
+></A
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+><SPAN
+CLASS="TYPE"
+>void</SPAN
+> <TT
+CLASS="FUNCTION"
+>setContext</TT
+>(<A
+HREF="x10865.html"
+><SPAN
+CLASS="TYPE"
+>ContextType</SPAN
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>type</I
+></TT
+>);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Set the context type of this Certificate Verifier.</P
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN10759"
+>Parameters</A
+></H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>type</I
+></TT
+></DT
+><DD
+><P
+>			    The type of context that is using this CertificateVerifier,
+Client, Server or ClientServer.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x10696.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x10767.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceSSL::CertificateVerificationException</TT
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c13.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><TT
+CLASS="LITERAL"
+>IceSSL::CertificateVerifierTypeException</TT
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

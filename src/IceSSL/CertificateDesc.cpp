@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,7 +18,7 @@ using namespace IceSSL;
 
 IceSSL::CertificateFile::CertificateFile() :
                         _fileName(""),
-                        _encoding(0)
+                        _encoding(SSL_FILETYPE_PEM)
 {
 }
 

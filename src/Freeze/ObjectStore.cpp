@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,8 @@
 #include <Freeze/EvictorI.h>
 #include <Freeze/Util.h>
 #include <Freeze/IndexI.h>
+#include <Freeze/Catalog.h>
+#include <Freeze/TransactionI.h>
 
 using namespace std;
 using namespace Ice;
@@ -35,14 +37,28 @@ Freeze::ObjectStore::ObjectStore(const string& facet,
 	_dbName = facet;
     }
 
-    DbTxn* txn = 0;
-    DbEnv* dbEnv = evictor->dbEnv();
+    ConnectionPtr catalogConnection = createConnection(_communicator, evictor->dbEnv()->getEnvName());
+    Catalog catalog(catalogConnection, catalogName());
+    
+    Catalog::iterator p = catalog.find(evictor->filename());
+    if(p != catalog.end())
+    {
+	if(p->second.evictor == false)
+	{
+	    DatabaseException ex(__FILE__, __LINE__);
+	    ex.message = evictor->filename() + " is an evictor database";
+	    throw ex;
+	}
+    }
+
+    DbEnv* dbEnv = evictor->dbEnv()->getEnv();
 
     try
     {
 	_db.reset(new Db(dbEnv, 0));
 
-	dbEnv->txn_begin(0, &txn, 0);
+	TransactionPtr tx = catalogConnection->beginTransaction();
+	DbTxn* txn = getTxn(tx);
 
 	u_int32_t flags = DB_THREAD;
 	if(createDb)
@@ -55,17 +71,24 @@ Freeze::ObjectStore::ObjectStore(const string& facet,
 	{
 	    _indices[i]->_impl->associate(this, txn, createDb, populateEmptyIndices);
 	}
-	DbTxn* toCommit = txn;
-	txn = 0;
-	toCommit->commit(0);
+	
+	if(p == catalog.end())
+	{
+	    CatalogData catalogData;
+	    catalogData.evictor = true;
+	    catalog.put(Catalog::value_type(evictor->filename(), catalogData));
+	}
+
+	tx->commit();
     }
     catch(const DbException& dx)
     {
-	if(txn != 0)
+	TransactionPtr tx = catalogConnection->currentTransaction();
+	if(tx != 0)
 	{
 	    try
 	    {
-		txn->abort();
+		tx->rollback();
 	    }
 	    catch(...)
 	    {
@@ -84,6 +107,21 @@ Freeze::ObjectStore::ObjectStore(const string& facet,
 	    ex.message = dx.what();
 	    throw ex;
 	}
+    }
+    catch(...)
+    {
+	TransactionPtr tx = catalogConnection->currentTransaction();
+	if(tx != 0)
+	{
+	    try
+	    {
+		tx->rollback();
+	    }
+	    catch(...)
+	    {
+	    }
+	}
+	throw;
     }
 }
 
@@ -213,14 +251,13 @@ Freeze::ObjectStore::save(Key& key, Value& value, Byte status, DbTxn* tx)
     }
 }
 
-
 void 
 Freeze::ObjectStore::marshal(const Identity& ident, Key& bytes, const CommunicatorPtr& communicator)
 {
     IceInternal::InstancePtr instance = IceInternal::getInstance(communicator);
     IceInternal::BasicStream stream(instance.get());
     ident.__write(&stream);
-    bytes.swap(stream.b);
+    vector<Byte>(stream.b.begin(), stream.b.end()).swap(bytes);
 }
     
 void 
@@ -228,7 +265,8 @@ Freeze::ObjectStore::unmarshal(Identity& ident, const Key& bytes, const Communic
 {
     IceInternal::InstancePtr instance = IceInternal::getInstance(communicator);
     IceInternal::BasicStream stream(instance.get());
-    stream.b = bytes;
+    stream.b.resize(bytes.size());
+    memcpy(&stream.b[0], &bytes[0], bytes.size());
     stream.i = stream.b.begin();
     ident.__read(&stream);
 }
@@ -242,7 +280,7 @@ Freeze::ObjectStore::marshal(const ObjectRecord& v, Value& bytes, const Communic
     v.__write(&stream);
     stream.writePendingObjects();
     stream.endWriteEncaps();
-    bytes.swap(stream.b);
+    vector<Byte>(stream.b.begin(), stream.b.end()).swap(bytes);
 }
 
 void
@@ -251,7 +289,8 @@ Freeze::ObjectStore::unmarshal(ObjectRecord& v, const Value& bytes, const Commun
     IceInternal::InstancePtr instance = IceInternal::getInstance(communicator);
     IceInternal::BasicStream stream(instance.get());
     stream.sliceObjects(false);
-    stream.b = bytes;
+    stream.b.resize(bytes.size());
+    memcpy(&stream.b[0], &bytes[0], bytes.size());
     stream.i = stream.b.begin();
     stream.startReadEncaps();
     v.__read(&stream);

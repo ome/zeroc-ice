@@ -1,24 +1,24 @@
-# Microsoft Developer Studio Project File - Name="IcePackNode" - Package Owner=<4>
+# Microsoft Developer Studio Project File - Name="icepacknode" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Console Application" 0x0103
 
-CFG=IcePackNode - Win32 Debug
+CFG=icepacknode - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "IcePackNode.mak".
+!MESSAGE NMAKE /f "icepacknode.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "IcePackNode.mak" CFG="IcePackNode - Win32 Debug"
+!MESSAGE NMAKE /f "icepacknode.mak" CFG="icepacknode - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "IcePackNode - Win32 Release" (based on "Win32 (x86) Console Application")
-!MESSAGE "IcePackNode - Win32 Debug" (based on "Win32 (x86) Console Application")
+!MESSAGE "icepacknode - Win32 Release" (based on "Win32 (x86) Console Application")
+!MESSAGE "icepacknode - Win32 Debug" (based on "Win32 (x86) Console Application")
 !MESSAGE 
 
 # Begin Project
@@ -28,7 +28,7 @@ CFG=IcePackNode - Win32 Debug
 CPP=cl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "IcePackNode - Win32 Release"
+!IF  "$(CFG)" == "icepacknode - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -51,16 +51,16 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 ws2_32.lib setargv.obj /nologo /subsystem:console /machine:I386 /libpath:"../../../lib"
+# ADD LINK32 ws2_32.lib setargv.obj /nologo /subsystem:console /incremental:yes /machine:I386 /libpath:"../../../lib"
 # SUBTRACT LINK32 /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
-TargetName=IcePackNode
+TargetName=icepacknode
 SOURCE="$(InputPath)"
 PostBuild_Cmds=copy $(OutDir)\$(TargetName).exe ..\..\bin
 # End Special Build Tool
 
-!ELSEIF  "$(CFG)" == "IcePackNode - Win32 Debug"
+!ELSEIF  "$(CFG)" == "icepacknode - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 1
@@ -84,10 +84,10 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
 # ADD LINK32 ws2_32.lib setargv.obj /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept /libpath:"../../../lib"
-# SUBTRACT LINK32 /nodefaultlib
+# SUBTRACT LINK32 /incremental:no /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Debug
-TargetName=IcePackNode
+TargetName=icepacknode
 SOURCE="$(InputPath)"
 PostBuild_Cmds=copy $(OutDir)\$(TargetName).exe ..\..\bin
 # End Special Build Tool
@@ -96,8 +96,8 @@ PostBuild_Cmds=copy $(OutDir)\$(TargetName).exe ..\..\bin
 
 # Begin Target
 
-# Name "IcePackNode - Win32 Release"
-# Name "IcePackNode - Win32 Debug"
+# Name "icepacknode - Win32 Release"
+# Name "icepacknode - Win32 Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
@@ -139,7 +139,7 @@ SOURCE=.\DescriptorVisitor.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\IcePackNode.cpp
+SOURCE=.\icepacknode.cpp
 # End Source File
 # Begin Source File
 
@@ -345,14 +345,14 @@ SOURCE=.\WaitQueue.h
 
 SOURCE=.\dummy1.ice
 
-!IF  "$(CFG)" == "IcePackNode - Win32 Release"
+!IF  "$(CFG)" == "icepacknode - Win32 Release"
 
 USERDEP__DUMMY="..\..\bin\slice2freeze.exe"	"..\..\lib\slice.lib"	
 # Begin Custom Build
 InputPath=.\dummy1.ice
 
 BuildCmds= \
-	..\..\bin\slice2freeze.exe --ice --include-dir IcePack -I../../slice -I.. --include-dir IcePack  --dict IcePack::IdentityObjectDescDict,Ice::Identity,IcePack::ObjectDescriptor IdentityObjectDescDict ../../slice/Ice/Identity.ice ../IcePack/Internal.ice
+	..\..\bin\slice2freeze.exe --ice --include-dir IcePack -I../../slice -I.. --dict IcePack::IdentityObjectDescDict,Ice::Identity,IcePack::ObjectDescriptor IdentityObjectDescDict ../../slice/Ice/Identity.ice ../IcePack/Internal.ice
 
 "IdentityObjectDescDict.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -361,14 +361,14 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "IcePackNode - Win32 Debug"
+!ELSEIF  "$(CFG)" == "icepacknode - Win32 Debug"
 
 USERDEP__DUMMY="..\..\bin\slice2freeze.exe"	"..\..\lib\sliced.lib"	
 # Begin Custom Build
 InputPath=.\dummy1.ice
 
 BuildCmds= \
-	..\..\bin\slice2freeze.exe --ice --include-dir IcePack -I../../slice -I.. --include-dir IcePack  --dict IcePack::IdentityObjectDescDict,Ice::Identity,IcePack::ObjectDescriptor IdentityObjectDescDict ../../slice/Ice/Identity.ice ../IcePack/Internal.ice
+	..\..\bin\slice2freeze.exe --ice --include-dir IcePack -I../../slice -I.. --dict IcePack::IdentityObjectDescDict,Ice::Identity,IcePack::ObjectDescriptor IdentityObjectDescDict ../../slice/Ice/Identity.ice ../IcePack/Internal.ice
 
 "IdentityObjectDescDict.cpp" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -384,7 +384,7 @@ BuildCmds= \
 
 SOURCE=.\dummy2.ice
 
-!IF  "$(CFG)" == "IcePackNode - Win32 Release"
+!IF  "$(CFG)" == "icepacknode - Win32 Release"
 
 # Begin Custom Build
 InputPath=.\dummy2.ice
@@ -399,7 +399,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "IcePackNode - Win32 Debug"
+!ELSEIF  "$(CFG)" == "icepacknode - Win32 Debug"
 
 USERDEP__DUMMY2="..\..\bin\slice2freeze.exe"	"..\..\lib\sliced.lib"	
 # Begin Custom Build
@@ -422,7 +422,7 @@ BuildCmds= \
 
 SOURCE=.\dummy3.ice
 
-!IF  "$(CFG)" == "IcePackNode - Win32 Release"
+!IF  "$(CFG)" == "icepacknode - Win32 Release"
 
 USERDEP__DUMMY3="..\..\bin\slice2freeze.exe"	"..\..\lib\slice.lib"	
 # Begin Custom Build
@@ -438,7 +438,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "IcePackNode - Win32 Debug"
+!ELSEIF  "$(CFG)" == "icepacknode - Win32 Debug"
 
 USERDEP__DUMMY3="..\..\bin\slice2freeze.exe"	"..\..\lib\sliced.lib"	
 # Begin Custom Build
@@ -461,7 +461,7 @@ BuildCmds= \
 
 SOURCE=.\dummy4.ice
 
-!IF  "$(CFG)" == "IcePackNode - Win32 Release"
+!IF  "$(CFG)" == "icepacknode - Win32 Release"
 
 USERDEP__DUMMY4="..\..\bin\slice2freeze.exe"	"..\..\lib\slice.lib"	
 # Begin Custom Build
@@ -477,7 +477,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "IcePackNode - Win32 Debug"
+!ELSEIF  "$(CFG)" == "icepacknode - Win32 Debug"
 
 USERDEP__DUMMY4="..\..\bin\slice2freeze.exe"	"..\..\lib\sliced.lib"	
 # Begin Custom Build
@@ -500,7 +500,7 @@ BuildCmds= \
 
 SOURCE=.\dummy5.ice
 
-!IF  "$(CFG)" == "IcePackNode - Win32 Release"
+!IF  "$(CFG)" == "icepacknode - Win32 Release"
 
 USERDEP__DUMMY5="..\..\bin\slice2freeze.exe"	"..\..\lib\slice.lib"	
 # Begin Custom Build
@@ -516,7 +516,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "IcePackNode - Win32 Debug"
+!ELSEIF  "$(CFG)" == "icepacknode - Win32 Debug"
 
 USERDEP__DUMMY5="..\..\bin\slice2freeze.exe"	"..\..\lib\sliced.lib"	
 # Begin Custom Build
@@ -539,7 +539,7 @@ BuildCmds= \
 
 SOURCE=.\Internal.ice
 
-!IF  "$(CFG)" == "IcePackNode - Win32 Release"
+!IF  "$(CFG)" == "icepacknode - Win32 Release"
 
 USERDEP__INTER="..\..\bin\slice2cpp.exe"	"..\..\lib\slice.lib"	
 # Begin Custom Build
@@ -555,7 +555,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "IcePackNode - Win32 Debug"
+!ELSEIF  "$(CFG)" == "icepacknode - Win32 Debug"
 
 USERDEP__INTER="..\..\bin\slice2cpp.exe"	"..\..\lib\sliced.lib"	
 # Begin Custom Build

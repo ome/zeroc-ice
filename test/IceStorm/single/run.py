@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -93,7 +93,7 @@ command = publisher + TestUtil.clientOptions + iceStormReference + " 2>&1"
 publisherPipe = os.popen(command)
 print "ok"
 
-TestUtil.printOutputFromPipe(publisherPipe);
+TestUtil.printOutputFromPipe(subscriberPipe);
     
 #
 # Verify that the subscriber has terminated.

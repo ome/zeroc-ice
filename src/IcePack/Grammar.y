@@ -2,7 +2,7 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -211,6 +211,14 @@ command
 {
     parser->findObject($3);
 }
+| ICE_PACK_OBJECT ICE_PACK_LIST optional_strings ';'
+{
+    parser->listObject($3);
+}
+| ICE_PACK_OBJECT ICE_PACK_DESCRIBE optional_strings ';'
+{
+    parser->describeObject($3);
+}
 | ICE_PACK_SHUTDOWN ';'
 {
     parser->shutdown();
@@ -243,6 +251,20 @@ strings
 | ICE_PACK_STRING
 {
     $$ = $1;
+}
+;
+
+// ----------------------------------------------------------------------
+optional_strings
+// ----------------------------------------------------------------------
+: ICE_PACK_STRING optional_strings
+{
+    $$ = $2;
+    $$.push_front($1.front());
+}
+|
+{
+    $$ = YYSTYPE()
 }
 ;
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,10 +8,12 @@
 // **********************************************************************
 
 #include <IceUtil/UUID.h>
+#include <IceUtil/Options.h>
 #include <Ice/Service.h>
 #include <Glacier2/Session.h>
 #include <Glacier2/SessionRouterI.h>
 #include <Glacier2/CryptPermissionsVerifierI.h>
+#include <fstream>
 
 using namespace std;
 using namespace Ice;
@@ -68,24 +70,37 @@ Glacier2::RouterService::RouterService()
 bool
 Glacier2::RouterService::start(int argc, char* argv[])
 {
-    for(int i = 1; i < argc; ++i)
+    IceUtil::Options opts;
+    opts.addOpt("h", "help");
+    opts.addOpt("v", "version");
+
+    vector<string> args;
+    try
     {
-	if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
-	{
-	    usage(argv[0]);
-	    return false;
-	}
-	else if(strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0)
-	{
-	    cout << ICE_STRING_VERSION << endl;
-	    return false;
-	}
-	else
-	{
-	    cerr << argv[0] << ": unknown option `" << argv[i] << "'" << endl;
-	    usage(argv[0]);
-	    return false;
-	}
+    	args = opts.parse(argc, argv);
+    }
+    catch(const IceUtil::Options::BadOpt& e)
+    {
+        error(e.reason);
+	usage(argv[0]);
+	return false;
+    }
+
+    if(opts.isSet("h") || opts.isSet("help"))
+    {
+	usage(argv[0]);
+	return false;
+    }
+    if(opts.isSet("v") || opts.isSet("version"))
+    {
+	print(ICE_STRING_VERSION);
+	return false;
+    }
+
+    if(!args.empty())
+    {
+	usage(argv[0]);
+	return false;
     }
 
     PropertiesPtr properties = communicator()->getProperties();
@@ -93,10 +108,10 @@ Glacier2::RouterService::start(int argc, char* argv[])
     //
     // Initialize the client object adapter.
     //
-    const char* clientEndpointsProperty = "Glacier2.Client.Endpoints";
+    const string clientEndpointsProperty = "Glacier2.Client.Endpoints";
     if(properties->getProperty(clientEndpointsProperty).empty())
     {
-	cerr << argv[0] << ": property `" << clientEndpointsProperty << "' is not set" << endl;
+	error("property `" + clientEndpointsProperty + "' is not set");
 	return false;
     }
     ObjectAdapterPtr clientAdapter = communicator()->createObjectAdapter("Glacier2.Client");
@@ -105,7 +120,7 @@ Glacier2::RouterService::start(int argc, char* argv[])
     // Initialize the server object adapter only if server endpoints
     // are defined.
     //
-    const char* serverEndpointsProperty = "Glacier2.Server.Endpoints";
+    const string serverEndpointsProperty = "Glacier2.Server.Endpoints";
     ObjectAdapterPtr serverAdapter;
     if(!properties->getProperty(serverEndpointsProperty).empty())
     {
@@ -116,7 +131,7 @@ Glacier2::RouterService::start(int argc, char* argv[])
     // Initialize the admin object adapter only if admin endpoints
     // are defined.
     //
-    const char* adminEndpointsProperty = "Glacier2.Admin.Endpoints";
+    const string adminEndpointsProperty = "Glacier2.Admin.Endpoints";
     ObjectAdapterPtr adminAdapter;
     if(!properties->getProperty(adminEndpointsProperty).empty())
     {
@@ -211,7 +226,7 @@ Glacier2::RouterService::start(int argc, char* argv[])
     //
     if(adminAdapter)
     {
-	const char* adminIdProperty = "Glacier2.AdminIdentity";
+	const string adminIdProperty = "Glacier2.AdminIdentity";
 	Identity adminId = stringToIdentity(properties->getPropertyWithDefault(adminIdProperty, "Glacier2/admin"));
 	adminAdapter->add(new AdminI(communicator()), adminId);
     }
@@ -325,8 +340,7 @@ Glacier2::RouterService::usage(const string& appName)
         "--nochdir            Do not change the current working directory."
     );
 #endif
-    cerr << "Usage: " << appName << " [options]" << endl;
-    cerr << options << endl;
+    print("Usage: " + appName + " [options]\n" + options);
 }
 
 int

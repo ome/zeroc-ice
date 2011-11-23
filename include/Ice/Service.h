@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,9 +10,7 @@
 #ifndef ICE_SERVICE_H
 #define ICE_SERVICE_H
 
-#include <Ice/CommunicatorF.h>
-#include <Ice/LoggerF.h>
-#include <fstream>
+#include <Ice/Ice.h>
 
 namespace Ice
 {
@@ -55,12 +53,13 @@ public:
     //
     // If --service or --daemon are specified, the program runs as
     // a service, otherwise the program runs as a regular foreground
-    // process.
+    // process. Any service-specific (and Ice-specific) options
+    // are stripped from argv (just as for Ice::initialize()).
     //
     // The return value is an exit status code: EXIT_FAILURE or
     // EXIT_SUCCESS.
     //
-    int main(int, char*[]);
+    int main(int&, char*[]);
 
     //
     // Returns the communicator created by the service.
@@ -102,7 +101,7 @@ public:
     // The return value is an exit status code: EXIT_FAILURE or
     // EXIT_SUCCESS.
     //
-    int run(int, char*[]);
+    int run(int&, char*[]);
 
 #ifdef _WIN32
 
@@ -195,6 +194,11 @@ protected:
     // Log trace information.
     //
     virtual void trace(const std::string&);
+
+    //
+    // Log a literal message.
+    //
+    virtual void print(const std::string&);
 
     //
     // Enable the CtrlCHandler to invoke interrupt() when a signal occurs.

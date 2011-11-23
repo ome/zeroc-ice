@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -394,7 +394,7 @@ IceXML::Parser::parse(istream& in, Handler& handler)
             {
                 isFinal = 1;
             }
-            if(XML_Parse(parser, buff, in.gcount(), isFinal) != 1)
+            if(XML_Parse(parser, buff, static_cast<int>(in.gcount()), isFinal) != 1)
             {
                 handler.error(XML_ErrorString(XML_GetErrorCode(parser)), XML_GetCurrentLineNumber(parser),
                               XML_GetCurrentColumnNumber(parser));

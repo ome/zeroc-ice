@@ -1,16 +1,25 @@
-To run the demo:
+Users of Unix platforms should read "Unix Note" at the end of this
+file before continuing.
 
-Start the IcePack service:
+To run the demo, first start the IcePack service:
 
-$ ../../../bin/icepacknode --Ice.Config=config --warn
+$ icepacknode --Ice.Config=config --warn
 
 In a separate window:
 
-$ ../../../bin/icepackadmin --Ice.Config=config -e \
-  "application add 'application.xml'"
-$ ./client
+$ icepackadmin --Ice.Config=config -e "application add 'application.xml'"
+$ client
 
 This will deploy the servers described in the file "application.xml"
 and start the client.
 
 Messages will be displayed in the IcePack service window.
+
+Unix Note:
+
+In order to allow the node to start the IceBox service included in
+this example, you must add the current directory to your shared
+library search path (e.g., LD_LIBRARY_PATH on Linux, SHLIB_PATH on
+HP-UX, etc.). Alternatively, you can copy the shared library for the
+example IceBox service (i.e., the file libHelloService.so) to a
+directory that is already in your search path.

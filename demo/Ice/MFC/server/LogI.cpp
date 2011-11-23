@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,6 +15,21 @@ using namespace std;
 LogI::LogI() :
     _log(0)
 {
+}
+
+void
+LogI::print(const string& msg)
+{
+    string s = msg;
+
+    string::size_type idx = 0;
+    while((idx = s.find("\n", idx)) != string::npos)
+    {
+        s.replace(idx, 1, "\r\n  ");
+        idx += 3;
+    }
+
+    message(s);
 }
 
 void

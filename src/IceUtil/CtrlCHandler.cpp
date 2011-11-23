@@ -1,19 +1,20 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#ifdef __sun
+#    define _POSIX_PTHREAD_SEMANTICS
+#endif
+
 #include <IceUtil/CtrlCHandler.h>
 #include <IceUtil/StaticMutex.h>
 
 #ifndef _WIN32
-#   ifdef __sun
-#       define _POSIX_PTHREAD_SEMANTICS
-#   endif
 #   include <signal.h>
 #endif
 
@@ -69,14 +70,7 @@ static BOOL WINAPI handlerRoutine(DWORD dwCtrlType)
     CtrlCHandlerCallback callback = _handler->getCallback();
     if(callback != 0)
     {
-	try
-	{
-	    callback(dwCtrlType);
-	}
-	catch(...)
-	{
-	    assert(0);
-	}
+	callback(dwCtrlType);
     }
     return TRUE;
 }
@@ -153,14 +147,7 @@ sigwaitThread(void*)
 	
 	if(callback != 0)
 	{
-	    try
-	    {
-		callback(signal);
-	    }
-	    catch(...)
-	    {
-		assert(0);
-	    }
+	    callback(signal);
 	}
 
 	rc = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);

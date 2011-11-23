@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -73,7 +73,10 @@ deleteLock(const string& name)
 #ifdef _WIN32
     int ret = _unlink(name.c_str());
 #else
-    int ret = unlink(name.c_str());
+#   ifndef NDEBUG
+    int ret = 
+#   endif
+	unlink(name.c_str());
 #endif
     assert(ret != -1);
 }

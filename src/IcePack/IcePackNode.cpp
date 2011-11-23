@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -137,7 +137,7 @@ IcePack::NodeService::start(int argc, char* argv[])
         }
         else if(strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0)
         {
-            trace(ICE_STRING_VERSION);
+            print(ICE_STRING_VERSION);
             return false;
         }
         else if(strcmp(argv[i], "--nowarn") == 0)
@@ -178,7 +178,6 @@ IcePack::NodeService::start(int argc, char* argv[])
     // termination listener instead?
     //
     properties->setProperty("Ice.ServerIdleTime", "0");
-
     if(properties->getPropertyAsIntWithDefault("Ice.ThreadPool.Server.Size", 5) <= 5)
     {
 	properties->setProperty("Ice.ThreadPool.Server.Size", "5");
@@ -190,8 +189,7 @@ IcePack::NodeService::start(int argc, char* argv[])
     if(properties->getPropertyAsInt("IcePack.Node.CollocateRegistry") > 0)
     {
         //
-        // The node needs a different thread pool to avoid
-        // deadlocks in connection validation.
+        // The node needs a different thread pool.
         //
         if(properties->getPropertyAsInt("IcePack.Node.ThreadPool.Size") == 0)
         {
@@ -207,7 +205,7 @@ IcePack::NodeService::start(int argc, char* argv[])
         }
 
         _registry = auto_ptr<Registry>(new Registry(communicator()));
-        if(!_registry->start(nowarn, true))
+        if(!_registry->start(nowarn))
         {
             return false;
         }
@@ -229,8 +227,8 @@ IcePack::NodeService::start(int argc, char* argv[])
     //
     // Initialize the database environment (first setup the directory structure if needed).
     //
-    string envName;
     string dataPath = properties->getProperty("IcePack.Node.Data");
+    string dbPath;
     if(dataPath.empty())
     {
         error("property `IcePack.Node.Data' is not set");
@@ -242,35 +240,42 @@ IcePack::NodeService::start(int argc, char* argv[])
         struct _stat filestat;
         if(::_stat(dataPath.c_str(), &filestat) != 0 || !S_ISDIR(filestat.st_mode))
         {
-            error("property `IcePack.Node.Data' is not set to a valid directory path");
-            return false;
+	    ostringstream os;
+	    SyscallException ex(__FILE__, __LINE__);
+	    ex.error = getSystemErrno();
+	    os << ex;
+            error("property `IcePack.Node.Data' is set to an invalid path:\n" + os.str());
+	    return false;
         }            
 #else
         struct stat filestat;
         if(::stat(dataPath.c_str(), &filestat) != 0 || !S_ISDIR(filestat.st_mode))
         {
-            error("property `IcePack.Node.Data' is not set to a valid directory path");
-            return false;
+	    ostringstream os;
+	    SyscallException ex(__FILE__, __LINE__);
+	    ex.error = getSystemErrno();
+	    os << ex;
+            error("property `IcePack.Node.Data' is set to an invalid path:\n" + os.str());
+	    return false;
         }            
 #endif
 
         //
-        // Creates subdirectories db and servers in the IcePack.Node.Data
-        // directory if they don't already exist.
+        // Creates subdirectories db and servers in the IcePack.Node.Data directory if they don't already exist.
         //
         if(dataPath[dataPath.length() - 1] != '/')
         {
             dataPath += "/"; 
         }
 
-        envName = dataPath + "db";
+	dbPath = dataPath + "db";
         string serversPath = dataPath + "servers";
 	string tmpPath = dataPath + "tmp";
 
 #ifdef _WIN32
-        if(::_stat(envName.c_str(), &filestat) != 0)
+        if(::_stat(dbPath.c_str(), &filestat) != 0)
         {
-            _mkdir(envName.c_str());
+            _mkdir(dbPath.c_str());
         }
         if(::_stat(serversPath.c_str(), &filestat) != 0)
         {
@@ -281,9 +286,9 @@ IcePack::NodeService::start(int argc, char* argv[])
             _mkdir(tmpPath.c_str());
         }
 #else
-        if(::stat(envName.c_str(), &filestat) != 0)
+        if(::stat(dbPath.c_str(), &filestat) != 0)
         {
-            mkdir(envName.c_str(), 0755);
+            mkdir(dbPath.c_str(), 0755);
         }
         if(::stat(serversPath.c_str(), &filestat) != 0)
         {
@@ -321,11 +326,15 @@ IcePack::NodeService::start(int argc, char* argv[])
     }
 
     //
-    // Set the adapter id for this node and create the node object
-    // adapter.
+    // Setup the Freeze database environment home directory. The name of the database
+    // environment for the IcePack node is the name of the node.
+    //
+    properties->setProperty("Freeze.DbEnv." + name + ".DbHome", dbPath);
+
+    //
+    // Set the adapter id for this node and create the node object adapter.
     //
     properties->setProperty("IcePack.Node.AdapterId", "IcePack.Node." + name);
-
     ObjectAdapterPtr adapter = communicator()->createObjectAdapter("IcePack.Node");
 
     TraceLevelsPtr traceLevels = new TraceLevels(properties, communicator()->getLogger());
@@ -346,19 +355,19 @@ IcePack::NodeService::start(int argc, char* argv[])
     // for the server and server adapter. It also takes care of installing the
     // evictors and object factories necessary to store these objects.
     //
-    ServerFactoryPtr serverFactory = new ServerFactory(adapter, traceLevels, envName, _activator, _waitQueue);
-
-    NodePtr node = new NodeI(_activator, name, serverFactory, properties);
-    NodePrx nodeProxy = NodePrx::uncheckedCast(adapter->addWithUUID(node));
+    ServerFactoryPtr serverFactory = new ServerFactory(adapter, traceLevels, name, _activator, _waitQueue);
+    NodePtr node = new NodeI(_activator, name, serverFactory, communicator(), properties);
+    Identity id = stringToIdentity(IceUtil::generateUUID());
+    adapter->add(node, id);
+    NodePrx nodeProxy = NodePrx::uncheckedCast(adapter->createDirectProxy(id));
 
     //
     // Register this node with the node registry.
     //
     try
     {
-        NodeRegistryPrx nodeRegistry = NodeRegistryPrx::checkedCast(
-            communicator()->stringToProxy("IcePack/NodeRegistry@IcePack.Registry.Internal"));
-        nodeRegistry->add(name, nodeProxy);
+	ObjectPrx nodeRegistry = communicator()->stringToProxy("IcePack/NodeRegistry@IcePack.Registry.Internal");
+	NodeRegistryPrx::uncheckedCast(nodeRegistry)->add(name, nodeProxy);
     }
     catch(const NodeActiveException&)
     {
@@ -385,9 +394,14 @@ IcePack::NodeService::start(int argc, char* argv[])
     _activator->start();
 
     //
-    // We are ready to go! Activate the object adapter.
+    // We are ready to go! Activate the object adapter. NOTE: we don't want the activate call to 
+    // set the direct proxy of the object adapter with the locator registry. This was already 
+    // taken care of by the node registry. Furthermore, this wouldn't work anyway because the 
+    // locator registry proxy would have collocation optimization enabled.
     //
+    adapter->setLocator(0);
     adapter->activate();
+    adapter->setLocator(communicator()->getDefaultLocator());
 
     //
     // Deploy application if a descriptor is passed as a command-line option.
@@ -418,15 +432,13 @@ IcePack::NodeService::start(int argc, char* argv[])
             catch(const DeploymentException& ex)
             {
                 ostringstream ostr;
-                ostr << "failed to deploy application `" << descriptor << "':" << endl
-                     << ex << ": " << ex.reason;
+                ostr << "failed to deploy application `" << descriptor << "':" << endl << ex << ": " << ex.reason;
                 warning(ostr.str());
             }
             catch(const LocalException& ex)
             {
                 ostringstream ostr;
-                ostr << "failed to deploy application `" << descriptor << "':" << endl
-                     << ex;
+                ostr << "failed to deploy application `" << descriptor << "':" << endl << ex;
                 warning(ostr.str());
             }
         }
@@ -435,7 +447,7 @@ IcePack::NodeService::start(int argc, char* argv[])
     string bundleName = properties->getProperty("IcePack.Node.PrintServersReady");
     if(!bundleName.empty())
     {
-	cout << bundleName << " ready" << endl;
+	print(bundleName + " ready");
     }
 
     return true;
@@ -551,8 +563,7 @@ IcePack::NodeService::usage(const string& appName)
         "--nochdir            Do not change the current working directory."
     );
 #endif
-    cerr << "Usage: " << appName << " [options]" << endl;
-    cerr << options << endl;
+    print("Usage: " + appName + " [options]\n" + options);
 }
 
 int

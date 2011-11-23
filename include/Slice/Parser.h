@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -320,6 +320,7 @@ public:
     std::string name() const;
     std::string scoped() const;
     std::string scope() const;
+    std::string flattenedScope() const;
     std::string file() const;
     std::string line() const;
     std::string comment() const;

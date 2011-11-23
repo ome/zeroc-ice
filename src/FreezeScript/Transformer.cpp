@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,6 +15,8 @@
 #include <FreezeScript/Functions.h>
 #include <FreezeScript/Exception.h>
 #include <FreezeScript/Util.h>
+#include <Freeze/Catalog.h>
+#include <Freeze/Initialize.h>
 #include <IceXML/Parser.h>
 #include <db_cxx.h>
 
@@ -61,6 +63,13 @@ struct TransformInfoI : public TransformInfo
     Db* oldDb;
     Db* newDb;
     DbTxn* newDbTxn;
+
+    //
+    // Connection to the new environment; not null only if we want to write into the catalog
+    //
+    Freeze::ConnectionPtr connection;
+    string newDbName;
+
     string facet;
     bool purge;
     ErrorReporterPtr errorReporter;
@@ -1892,7 +1901,8 @@ FreezeScript::RecordDescriptor::execute(const SymbolTablePtr& sym)
             {
                 Ice::ByteSeq outKeyBytes, outValueBytes;
                 transformRecord(inKeyBytes, inValueBytes, outKeyBytes, outValueBytes);
-                Dbt dbNewKey(&outKeyBytes[0], outKeyBytes.size()), dbNewValue(&outValueBytes[0], outValueBytes.size());
+                Dbt dbNewKey(&outKeyBytes[0], static_cast<unsigned>(outKeyBytes.size())),
+			     dbNewValue(&outValueBytes[0], static_cast<unsigned>(outValueBytes.size()));
                 if(_info->newDb->put(_info->newDbTxn, &dbNewKey, &dbNewValue, DB_NOOVERWRITE) == DB_KEYEXIST)
                 {
                     _info->errorReporter->error("duplicate key encountered");
@@ -2085,6 +2095,21 @@ FreezeScript::DatabaseDescriptor::DatabaseDescriptor(const DescriptorPtr& parent
     _info->newKeyType = findType(_info->newUnit, newKeyName);
     _info->oldValueType = findType(_info->oldUnit, oldValueName);
     _info->newValueType = findType(_info->newUnit, newValueName);
+
+    if(_info->connection != 0)
+    {
+	Freeze::Catalog catalog(_info->connection, Freeze::catalogName());
+	Freeze::CatalogData catalogData;
+	catalogData.evictor = false;
+	catalogData.key = _info->newKeyType->typeId(); 
+	catalogData.value = _info->newValueType->typeId();
+	catalog.put(Freeze::Catalog::value_type(_info->newDbName, catalogData));
+    }
+
+    //
+    // TODO: it looks like _info is not destroyed before the new dbEnv is closed.
+    //
+    _info->connection = 0;
 }
 
 void
@@ -2929,8 +2954,8 @@ FreezeScript::assignOrTransform(const DataPtr& dest, const DataPtr& src, bool co
 void
 FreezeScript::transformDatabase(const Ice::CommunicatorPtr& communicator,
                                 const Slice::UnitPtr& oldUnit, const Slice::UnitPtr& newUnit,
-                                Db* oldDb, Db* newDb, DbTxn* newDbTxn, const string& facetName, bool purgeObjects,
-                                ostream& errors, bool suppress, istream& is)
+                                Db* oldDb, Db* newDb, DbTxn* newDbTxn, Freeze::ConnectionPtr connection, const string& newDbName, 
+				const string& facetName, bool purgeObjects, ostream& errors, bool suppress, istream& is)
 {
     TransformInfoIPtr info = new TransformInfoI;
     info->communicator = communicator;
@@ -2939,6 +2964,8 @@ FreezeScript::transformDatabase(const Ice::CommunicatorPtr& communicator,
     info->oldDb = oldDb;
     info->newDb = newDb;
     info->newDbTxn = newDbTxn;
+    info->connection = connection;
+    info->newDbName = newDbName;
     info->facet = facetName;
     info->purge = purgeObjects;
     info->errorReporter = new ErrorReporter(errors, suppress);

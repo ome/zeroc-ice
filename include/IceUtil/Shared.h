@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,7 +31,7 @@ int __atomic_exchange_and_add(atomic_t *v, int i);
 #elif defined(ICE_USE_MUTEX_SHARED)
 #   include <IceUtil/Mutex.h>
 
-#elif (defined(__linux) || defined(__FreeBSD__)) && defined(__i386) && !defined(__ICC)
+#elif (defined(__linux) || defined(__FreeBSD__)) && (defined(__i386) || defined(__x86_64)) && !defined(__ICC)
 #   define ICE_HAS_ATOMIC_FUNCTIONS
 
 // __ICC: The inline assembler causes problems with shared libraries.
@@ -146,24 +146,12 @@ inline int ice_atomic_exchange_add(int i, ice_atomic_t* v)
 namespace IceUtil
 {
 
-//
-// TODO: Not all operations in this class are performance critical,
-// thus not all of them should be inlined.
-//
-
-class SimpleShared : public noncopyable
+class ICE_UTIL_API SimpleShared : public noncopyable
 {
 public:
 
-    SimpleShared() :
-	_ref(0),
-	_noDelete(false)
-    {
-    }
-
-    virtual ~SimpleShared()
-    {
-    }
+    SimpleShared();
+    virtual ~SimpleShared();
 
     void __incRef()
     {
@@ -200,18 +188,66 @@ private:
     bool _noDelete;
 };
 
-class Shared : public noncopyable
+class ICE_UTIL_API Shared : public noncopyable
 {
 public:
 
     Shared();
     virtual ~Shared();
-    void __incRef();
-    void __decRef();
+
+    void __incRef()
+    {
+#if defined(_WIN32)
+	assert(InterlockedExchangeAdd(&_ref, 0) >= 0);
+	InterlockedIncrement(&_ref);
+#elif defined(ICE_HAS_ATOMIC_FUNCTIONS)
+	assert(ice_atomic_exchange_add(0, &_ref) >= 0);
+	ice_atomic_inc(&_ref);
+#else
+	_mutex.lock();
+	assert(_ref >= 0);
+	++_ref;
+	_mutex.unlock();
+#endif
+    }
+
+    void __decRef()
+    {
+#if defined(_WIN32)
+	assert(InterlockedExchangeAdd(&_ref, 0) > 0);
+	if(InterlockedDecrement(&_ref) == 0 && !_noDelete)
+	{
+	    _noDelete = true;
+	    delete this;
+	}
+#elif defined(ICE_HAS_ATOMIC_FUNCTIONS)
+	assert(ice_atomic_exchange_add(0, &_ref) > 0);
+	if(ice_atomic_dec_and_test(&_ref) && !_noDelete)
+	{
+	    _noDelete = true;
+	    delete this;
+	}
+#else
+	_mutex.lock();
+	bool doDelete = false;
+	assert(_ref > 0);
+	if(--_ref == 0)
+	{
+	    doDelete = !_noDelete;
+	    _noDelete = true;
+	}
+	_mutex.unlock();
+	if(doDelete)
+	{
+	    delete this;
+	}
+#endif
+    }
+
     int __getRef() const;
     void __setNoDelete(bool);
 
-private:
+protected:
 
 #if defined(_WIN32)
     LONG _ref;
@@ -224,158 +260,6 @@ private:
     bool _noDelete;
 };
 
-//
-// TODO: Not all operations below are performance critical, thus not
-// all of them should be inlined.
-//
-
-#if defined(_WIN32)
-
-inline
-Shared::Shared() :
-    _ref(0),
-    _noDelete(false)
-{
 }
 
-inline
-Shared::~Shared()
-{
-}
-
-inline void
-Shared::__incRef()
-{
-    assert(InterlockedExchangeAdd(&_ref, 0) >= 0);
-    InterlockedIncrement(&_ref);
-}
-
-inline void
-Shared::__decRef()
-{
-    assert(InterlockedExchangeAdd(&_ref, 0) > 0);
-    if(InterlockedDecrement(&_ref) == 0 && !_noDelete)
-    {
-	_noDelete = true;
-	delete this;
-    }
-}
-
-inline int
-Shared::__getRef() const
-{
-    return InterlockedExchangeAdd(const_cast<LONG*>(&_ref), 0);
-}
-
-inline void
-Shared::__setNoDelete(bool b)
-{
-    _noDelete = b;
-}
-
-#elif defined(ICE_HAS_ATOMIC_FUNCTIONS)
-
-inline
-Shared::Shared() :
-    _noDelete(false)
-{
-    ice_atomic_set(&_ref, 0);
-}
-
-inline
-Shared::~Shared()
-{
-}
-
-inline void
-Shared::__incRef()
-{
-    assert(ice_atomic_exchange_add(0, &_ref) >= 0);
-    ice_atomic_inc(&_ref);
-}
-
-inline void
-Shared::__decRef()
-{
-    assert(ice_atomic_exchange_add(0, &_ref) > 0);
-    if(ice_atomic_dec_and_test(&_ref) && !_noDelete)
-    {
-	_noDelete = true;
-	delete this;
-    }
-}
-
-inline int
-Shared::__getRef() const
-{
-    return ice_atomic_exchange_add(0, const_cast<ice_atomic_t*>(&_ref));
-}
-
-inline void
-Shared::__setNoDelete(bool b)
-{
-    _noDelete = b;
-}
-
-#else
-
-inline
-Shared::Shared() :
-    _ref(0),
-    _noDelete(false)
-{
-}
-
-inline
-Shared::~Shared()
-{
-}
-
-inline void
-Shared::__incRef()
-{
-    _mutex.lock();
-    assert(_ref >= 0);
-    ++_ref;
-    _mutex.unlock();
-}
-
-inline void
-Shared::__decRef()
-{
-    _mutex.lock();
-    bool doDelete = false;
-    assert(_ref > 0);
-    if(--_ref == 0)
-    {
-	doDelete = !_noDelete;
-	_noDelete = true;
-    }
-    _mutex.unlock();
-    if(doDelete)
-    {
-	delete this;
-    }
-}
-
-inline int
-Shared::__getRef() const
-{
-    _mutex.lock();
-    int ref = _ref;
-    _mutex.unlock();
-    return ref;
-}
-
-inline void
-Shared::__setNoDelete(bool b)
-{
-    _mutex.lock();
-    _noDelete = b;
-    _mutex.unlock();
-}
-
-#endif
-
-}
 #endif

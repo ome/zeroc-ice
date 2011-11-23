@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -69,19 +69,47 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 
     cout << "ok" << endl;
 
+    cout << "testing checked cast with context... " << flush;
+    string cref = "test:default -p 12346 -t 10000";
+    Ice::ObjectPrx cbase = communicator->stringToProxy(cref);
+    test(cbase);
+
+    Test::TestCheckedCastPrx tccp = Test::TestCheckedCastPrx::checkedCast(cbase);
+    Ice::Context c = tccp->getContext();
+    test(c.size() == 0);
+
+    c["one"] = "hello";
+    c["two"] = "world";
+    tccp = Test::TestCheckedCastPrx::checkedCast(cbase, c);
+    Ice::Context c2 = tccp->getContext();
+    test(c == c2);
+
+    //
+    // Now with alternate API
+    //
+    tccp = checkedCast<Test::TestCheckedCastPrx>(cbase);
+    c = tccp->getContext();
+    test(c.size() == 0);
+
+    tccp = checkedCast<Test::TestCheckedCastPrx>(cbase, c);
+    c2 = tccp->getContext();
+    test(c == c2);
+
+    cout << "ok" << endl;
+
     cout << "testing twoway operations... " << flush;
-    void twoways(const Test::MyClassPrx&);
-    twoways(cl);
-    twoways(derived);
+    void twoways(const Ice::CommunicatorPtr&, const Test::MyClassPrx&);
+    twoways(communicator, cl);
+    twoways(communicator, derived);
     derived->opDerived();
     cout << "ok" << endl;
 
     if(!collocated)
     {
 	cout << "testing twoway operations with AMI... " << flush;
-	void twowaysAMI(const Test::MyClassPrx&);
-	twowaysAMI(cl);
-	twowaysAMI(derived);
+	void twowaysAMI(const Ice::CommunicatorPtr&, const Test::MyClassPrx&);
+	twowaysAMI(communicator, cl);
+	twowaysAMI(communicator, derived);
 	cout << "ok" << endl;
 
 	cout << "testing batch oneway operations... " << flush;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -73,6 +73,8 @@ public:
     size_t messageSizeMax() const;
     Ice::Int connectionIdleTime() const;
     void flushBatchRequests();
+    void setDefaultContext(const ::Ice::Context&);
+    const ::Ice::Context& getDefaultContext() const;
     
 private:
 
@@ -105,6 +107,7 @@ private:
     EndpointFactoryManagerPtr _endpointFactoryManager;
     DynamicLibraryListPtr _dynamicLibraryList;
     Ice::PluginManagerPtr _pluginManager;
+    Ice::Context _defaultContext;
 };
 
 }

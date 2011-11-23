@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,6 +25,7 @@
 #endif
 
 #include <iterator>
+#include <iomanip>
 
 extern FILE* yyin;
 extern int yydebug;
@@ -115,9 +116,9 @@ ServerDescribe::visitServerStart(const ServerWrapper&, const ServerDescriptorPtr
 	if(!s->jvmOptions.empty())
 	{
 	    _out << nl << "jvmOptions = '";
-	    for(Ice::StringSeq::const_iterator p = s->jvmOptions.begin(); p != s->jvmOptions.end(); ++p)
+	    for(Ice::StringSeq::const_iterator p = s->jvmOptions.begin(); p != s->jvmOptions.end();)
 	    {
-		_out << *p << " ";
+		_out << *p << ((++p != s->jvmOptions.end()) ? " " : "'");
 	    }
 	}
     }
@@ -141,9 +142,9 @@ ServerDescribe::visitServerStart(const ServerWrapper&, const ServerDescriptorPtr
     if(!server->options.empty())
     {
 	_out << nl << "options = '";
-	for(Ice::StringSeq::const_iterator p = server->options.begin(); p != server->options.end(); ++p)
+	for(Ice::StringSeq::const_iterator p = server->options.begin(); p != server->options.end();)
 	{
-	    _out << *p << " ";
+	    _out << *p << ((++p != server->options.end()) ? " " : "'");
 	}
     }
     if(!server->envs.empty())
@@ -322,6 +323,14 @@ IcePack::Parser::usage()
 	"                            optionally specifying its type.\n"
 	"object remove IDENTITY      Remove an object from the object registry.\n"
 	"object find TYPE            Find all objects with the type TYPE.\n"
+	"object describe EXPR        Describe all registered objects whose stringified\n"
+        "                            identities match the expression EXPR. A trailing\n"
+	"                            wildcard is supported in EXPR, for example\n"
+	"                            \"object describe Ice*\".\n"
+	"object list EXPR            List all registered objects whose stringified\n"
+        "                            identities match the expression EXPR. A trailing\n"
+	"                            wildcard is supported in EXPR, for example\n"
+	"                            \"object list Ice*\".\n"
 	"\n"
         "shutdown                    Shut the IcePack registry down.\n"
 #ifdef GPL_BUILD
@@ -1118,7 +1127,14 @@ IcePack::Parser::endpointsAdapter(const list<string>& args)
     try
     {
 	string endpoints = _admin->getAdapterEndpoints(args.front());
-	cout << endpoints << endl;
+	if(endpoints.empty())
+	{
+	    cout << "<inactive>" << endl;
+	}
+	else
+	{
+	    cout << endpoints << endl;
+	}
     }
     catch(const Ice::Exception& ex)
     {
@@ -1194,7 +1210,7 @@ IcePack::Parser::removeObject(const list<string>& args)
 
     try
     {
-	_admin->removeObject(_communicator->stringToProxy((*(args.begin()))));
+	_admin->removeObject(Ice::stringToIdentity((*(args.begin()))));
     }
     catch(const Ice::Exception& ex)
     {
@@ -1230,6 +1246,73 @@ IcePack::Parser::findObject(const list<string>& args)
 }
 
 void
+IcePack::Parser::describeObject(const list<string>& args)
+{
+    try
+    {
+	ObjectDescriptorSeq objects;
+	if(args.size() == 1)
+	{
+	    string arg = *(args.begin());
+	    if(arg.find('*') == string::npos)
+	    {
+		ObjectDescriptor desc = _admin->getObjectDescriptor(Ice::stringToIdentity(arg));
+		cout << "proxy = " << _communicator->proxyToString(desc.proxy) << endl;
+		cout << "type = " << desc.type << endl;
+		return;
+	    }
+	    else
+	    {
+		objects = _admin->getAllObjectDescriptors(arg);
+	    }
+	}
+	else
+	{
+	    objects = _admin->getAllObjectDescriptors("");
+	}
+	
+	for(ObjectDescriptorSeq::const_iterator p = objects.begin(); p != objects.end(); ++p)
+	{
+	    cout << "proxy = `" << _communicator->proxyToString(p->proxy) << "' type = `" << p->type << "'" << endl;
+	}	
+    }
+    catch(const Ice::Exception& ex)
+    {
+	ostringstream s;
+	s << ex;
+	error(s.str());
+    }
+}
+
+void
+IcePack::Parser::listObject(const list<string>& args)
+{
+    try
+    {
+	ObjectDescriptorSeq objects;
+	if(args.size() == 1)
+	{
+	    objects = _admin->getAllObjectDescriptors(*(args.begin()));
+	}
+	else
+	{
+	    objects = _admin->getAllObjectDescriptors("");
+	}
+	
+	for(ObjectDescriptorSeq::const_iterator p = objects.begin(); p != objects.end(); ++p)
+	{
+	    cout << Ice::identityToString(p->proxy->ice_getIdentity()) << endl;
+	}	
+    }
+    catch(const Ice::Exception& ex)
+    {
+	ostringstream s;
+	s << ex;
+	error(s.str());
+    }
+}
+
+void
 IcePack::Parser::shutdown()
 {
     try
@@ -1247,7 +1330,7 @@ IcePack::Parser::shutdown()
 void
 IcePack::Parser::showBanner()
 {
-    cout << "Ice " << ICE_STRING_VERSION << "  Copyright 2003-2004 ZeroC, Inc." << endl;
+    cout << "Ice " << ICE_STRING_VERSION << "  Copyright 2003-2005 ZeroC, Inc." << endl;
 #ifdef GPL_BUILD
     cout << gplBanner << endl;
 #endif

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -131,7 +131,7 @@ Ice::Service::interrupt()
 }
 
 int
-Ice::Service::main(int argc, char* argv[])
+Ice::Service::main(int& argc, char* argv[])
 {
     _name = argv[0];
 
@@ -260,16 +260,16 @@ Ice::Service::main(int argc, char* argv[])
             }
 
             vector<string> args;
-            for(idx = 1; idx < argc; ++idx)
-            {
-                args.push_back(argv[idx]);
-            }
             //
-            // Append the arguments "--service NAME" so that the service
+            // Prepend the arguments "--service NAME" so that the service
             // starts properly.
             //
             args.push_back("--service");
             args.push_back(name);
+            for(idx = 1; idx < argc; ++idx)
+            {
+                args.push_back(argv[idx]);
+            }
             return installService(name, display, executable, args);
         }
         else if(op == "--uninstall")
@@ -348,12 +348,6 @@ Ice::Service::main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    if(!changeDirectory && !daemonize)
-    {
-        cerr << argv[0] << ": --nochdir must be used with --daemon" << endl;
-        return EXIT_FAILURE;
-    }
-
     if(daemonize)
     {
         configureDaemon(changeDirectory, closeFiles);
@@ -404,7 +398,7 @@ Ice::Service::checkSystem() const
 }
 
 int
-Ice::Service::run(int argc, char* argv[])
+Ice::Service::run(int& argc, char* argv[])
 {
     if(_service)
     {
@@ -467,6 +461,24 @@ Ice::Service::run(int argc, char* argv[])
     {
         ostringstream ostr;
         ostr << "service caught unhandled Ice exception:" << endl << ex;
+        error(ostr.str());
+    }
+    catch(const std::exception& ex)
+    {
+        ostringstream ostr;
+        ostr << "service caught unhandled std::exception:" << endl << ex.what();
+        error(ostr.str());
+    }
+    catch(const std::string& msg)
+    {
+        ostringstream ostr;
+        ostr << "service caught unhandled exception:" << endl << msg;
+        error(ostr.str());
+    }
+    catch(const char* msg)
+    {
+        ostringstream ostr;
+        ostr << "service caught unhandled exception:" << endl << msg;
         error(ostr.str());
     }
     catch(...)
@@ -639,12 +651,13 @@ Ice::Service::startService(const string& name, const vector<string>& args)
     }
 
     //
-    // Create argument vector.
+    // Create argument vector. Note that StartService() automatically adds the service name
+    // in argv[0], so the argv that is passed to StartService() must *not* include the
+    // the service name in argv[0].
     //
-    const int argc = args.size() + 1;
+    const int argc = args.size();
     LPCSTR* argv = new LPCSTR[argc];
-    argv[0] = strdup(name.c_str());
-    int i = 1;
+    int i = 0;
     for(vector<string>::const_iterator p = args.begin(); p != args.end(); ++p)
     {
         argv[i++] = strdup(p->c_str());
@@ -765,6 +778,7 @@ Ice::Service::startService(const string& name, const vector<string>& args)
              << "  Check point: " << status.dwCheckPoint << endl
              << "  Wait hint: " << status.dwWaitHint;
         trace(ostr.str());
+	return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;
@@ -964,6 +978,19 @@ Ice::Service::trace(const string& msg)
 }
 
 void
+Ice::Service::print(const string& msg)
+{
+    if(_logger)
+    {
+        _logger->print(msg);
+    }
+    else
+    {
+        cerr << msg << endl;
+    }
+}
+
+void
 Ice::Service::enableInterrupt()
 {
     _ctrlCHandler->setCallback(ctrlCHandlerCallback);
@@ -1102,8 +1129,7 @@ Ice::Service::serviceMain(int argc, char* argv[])
     }
     catch(const Ice::Exception& ex)
     {
-        // TODO: Enable delete when we figure out why it can cause a crash.
-        //delete[] args;
+        delete[] args;
         ostringstream ostr;
         ostr << ex;
         error(ostr.str());
@@ -1168,8 +1194,7 @@ Ice::Service::serviceMain(int argc, char* argv[])
         error("service caught unhandled C++ exception");
     }
 
-    // TODO: Enable delete when we figure out why it can cause a crash.
-    //delete[] args;
+    delete[] args;
 
     try
     {
@@ -1321,7 +1346,7 @@ Ice::Service::runDaemon(int argc, char* argv[])
             size_t pos = 0;
             while(pos < sizeof(msg))
             {
-                int n = read(fds[0], &msg[pos], sizeof(msg) - pos);
+                ssize_t n = read(fds[0], &msg[pos], sizeof(msg) - pos);
                 if(n == -1)
                 {
                     if(IceInternal::interrupted())
@@ -1336,7 +1361,12 @@ Ice::Service::runDaemon(int argc, char* argv[])
                 pos += n;
                 break;
             }
-            cerr << argv[0] << ": failure occurred in daemon:" << endl << msg << endl << flush;
+            cerr << argv[0] << ": failure occurred in daemon";
+	    if(strlen(msg) > 0)
+	    {
+		cerr << ':' << endl << msg;
+	    }
+	    cerr << endl << flush;
             _exit(EXIT_FAILURE);
         }
 
@@ -1404,7 +1434,7 @@ Ice::Service::runDaemon(int argc, char* argv[])
         }
 
         fd_set fdsToClose;
-        int fdMax;
+        int fdMax = 0;
         if(_closeFiles)
         {
             //
@@ -1414,7 +1444,7 @@ Ice::Service::runDaemon(int argc, char* argv[])
             // conveniently allows the Ice.PrintProcessId property to work as expected.
             //
             FD_ZERO(&fdsToClose);
-            fdMax = sysconf(_SC_OPEN_MAX);
+            fdMax = static_cast<int>(sysconf(_SC_OPEN_MAX));
             if(fdMax <= 0)
             {
                 SyscallException ex(__FILE__, __LINE__);
@@ -1450,9 +1480,20 @@ Ice::Service::runDaemon(int argc, char* argv[])
         {
             //
             // Close unnecessary file descriptors.
-            //
+	    //
+	    PropertiesPtr properties = _communicator->getProperties();
+	    string stdOut = properties->getProperty("Ice.StdOut");
+	    string stdErr = properties->getProperty("Ice.StdErr");
+
             for(int i = 0; i < fdMax; ++i)
             {
+		//
+		// NOTE: Do not close stdout if Ice.StdOut is defined. Likewise for Ice.StdErr.
+		//
+		if((i == 1 && !stdOut.empty()) || (i == 2 && !stdErr.empty()))
+		{
+		    continue;
+		}
                 if(FD_ISSET(i, &fdsToClose))
                 {
                     close(i);
@@ -1465,10 +1506,16 @@ Ice::Service::runDaemon(int argc, char* argv[])
             int fd;
             fd = open("/dev/null", O_RDWR);
             assert(fd == 0);
-            fd = dup2(0, 1);
-            assert(fd == 1);
-            fd = dup2(1, 2);
-            assert(fd == 2);
+	    if(stdOut.empty())
+	    {
+		fd = dup2(0, 1);
+		assert(fd == 1);
+	    }
+	    if(stdErr.empty())
+	    {
+		fd = dup2(1, 2);
+		assert(fd == 2);
+	    }
         }
 
         //
@@ -1549,7 +1596,7 @@ Ice::Service::runDaemon(int argc, char* argv[])
         size_t pos = 0;
         while(len > 0)
         {
-            int n = write(fds[1], &msg[pos], len);
+            ssize_t n = write(fds[1], &msg[pos], len);
             if(n == -1)
             {
                 if(IceInternal::interrupted())

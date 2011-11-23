@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -119,16 +119,20 @@ Ice::ObjectAdapterI::activate()
 	{
 	    Identity ident;
 	    ident.name = "dummy";
-	    locatorRegistry->setAdapterDirectProxy(_id, newDirectProxy(ident, ""));
+	    locatorRegistry->setAdapterDirectProxy(_id, createDirectProxy(ident));
 	}
-	catch(const Ice::AdapterNotFoundException&)
+	catch(const ObjectAdapterDeactivatedException&)
+	{
+	    // IGNORE: The object adapter is already inactive.
+	}
+	catch(const AdapterNotFoundException&)
 	{
 	    NotRegisteredException ex(__FILE__, __LINE__);
 	    ex.kindOfObject = "object adapter";
 	    ex.id = _id;
 	    throw ex;
 	}
-	catch(const Ice::AdapterAlreadyActiveException&)
+	catch(const AdapterAlreadyActiveException&)
 	{
 	    ObjectAdapterIdInUseException ex(__FILE__, __LINE__);
 	    ex.id = _id;
@@ -137,21 +141,24 @@ Ice::ObjectAdapterI::activate()
 
         if(registerProcess)
         {
-            ProcessPtr servant = new ProcessI(communicator);
-            ProcessPrx proxy = ProcessPrx::uncheckedCast(addWithUUID(servant));
-
-            try
-            {
-                locatorRegistry->setServerProcessProxy(serverId, proxy);
-            }
-            catch(const ServerNotFoundException&)
-            {
-                NotRegisteredException ex(__FILE__, __LINE__);
-                ex.kindOfObject = "server";
-                ex.id = serverId;
-                throw ex;
-            }
-        }
+	    try
+	    {
+		ProcessPtr servant = new ProcessI(communicator);
+		ProcessPrx proxy = ProcessPrx::uncheckedCast(addWithUUID(servant));
+		locatorRegistry->setServerProcessProxy(serverId, proxy);
+	    }
+	    catch(const ObjectAdapterDeactivatedException&)
+	    {
+		// IGNORE: The object adapter is already inactive.
+	    }
+	    catch(const ServerNotFoundException&)
+	    {
+		NotRegisteredException ex(__FILE__, __LINE__);
+		ex.kindOfObject = "server";
+		ex.id = serverId;
+		throw ex;
+	    }
+	}
     }
 
     if(printAdapterReady)
@@ -466,8 +473,7 @@ Ice::ObjectAdapterI::createReverseProxy(const Identity& ident) const
     // reference.
     //
     vector<EndpointPtr> endpoints;
-    ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), "", Reference::ModeTwoway,
-							     false, true, connections);
+    ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), "", Reference::ModeTwoway, connections);
     return _instance->proxyFactory()->referenceToProxy(ref);
 }
 
@@ -717,11 +723,14 @@ Ice::ObjectAdapterI::ObjectAdapterI(const InstancePtr& instance, const Communica
 	    setLocator(_instance->referenceFactory()->getDefaultLocator());
 	}
 
-	int size = _instance->properties()->getPropertyAsInt(_name + ".ThreadPool.Size");
-	int sizeMax = _instance->properties()->getPropertyAsInt(_name + ".ThreadPool.SizeMax");
-	if(size > 0 || sizeMax > 0)
+	if(!_instance->threadPerConnection())
 	{
-	    _threadPool = new ThreadPool(_instance, _name + ".ThreadPool", 0);
+	    int size = _instance->properties()->getPropertyAsInt(_name + ".ThreadPool.Size");
+	    int sizeMax = _instance->properties()->getPropertyAsInt(_name + ".ThreadPool.SizeMax");
+	    if(size > 0 || sizeMax > 0)
+	    {
+		_threadPool = new ThreadPool(_instance, _name + ".ThreadPool", 0);
+	    }
 	}
     }
     catch(...)

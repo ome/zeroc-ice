@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -299,7 +299,7 @@ Slice::ChecksumVisitor::typeToString(const TypePtr& type)
 void
 Slice::ChecksumVisitor::updateMap(const string& scoped, const string& data)
 {
-    IceUtil::MD5 md5(reinterpret_cast<const unsigned char*>(data.c_str()), data.size());
+    IceUtil::MD5 md5(reinterpret_cast<const unsigned char*>(data.c_str()), static_cast<int>(data.size()));
     vector<unsigned char> bytes;
     bytes.resize(16);
     md5.getDigest(reinterpret_cast<unsigned char*>(&bytes[0]));

@@ -1,3 +1,120 @@
+Changes since version 2.0.0
+---------------------------
+
+- Fixed bug in the code generators for C# and VB: for sequences
+  of structs and sequences of Object*, incorrect code was generated
+  if a ["cs:collection"] or ["vb:collection"] metadata directive
+  was used.
+
+- We do not retry oneway or batch oneway requests anymore, except if
+  there are problems during connection establishment. If we retry a
+  oneway or batch oneway, previous oneways from the same batch, or
+  previous oneways that are buffered by the IP stack implementation,
+  are silently thrown away. This can lead to a situation where the
+  latest oneway succeeds due to retry, but former oneways are
+  discarded.
+
+- Fixed race between connection validation and activation for UDP
+  endpoints in thread-per-connection mode.
+
+- Fixed a deadlock that could occur if a server cannot send data
+  during connection validation.
+
+- Glacier2 could hang if a server is not running. This has been fixed.
+
+- Added support for g++ builds on Solaris.
+
+- Fixed IcePack node and registry database environment names. They
+  have been changed to be the name of the node for IcePack nodes and
+  'Registry' for the IcePack registry. This means that you can now
+  configure the database environment using the properties prefixed
+  with Freeze.DbEnv.<node name> or Freeze.DbEnv.Registry.
+
+- Fixed a bug where the endpoint cache for indirect proxies wasn't
+  always cleared upon a communication failure with an object.
+
+- Fixed a race condition in the IcePack on-demand server activation
+  code which could cause clients to hang under rare conditions if the
+  server couldn't be activated.
+
+- Fixed a small memory leak in the IcePack node that would occur each
+  time a process is forked (Unix only).
+
+- Added 'object list' and 'object describe' IcePack admin commands.
+
+- Changed the signature of IcePack::Admin::removeObject() to take the
+  identity of the object instead of its proxy.
+
+- Connection validation now checks for the timeout specified by the
+  property Ice.Override.ConnectTimeout and will raise
+  Ice::ConnectTimeoutException if the connection validation times out.
+
+- Fixed an assert that could occur during connection establishment if
+  no more file descriptors are available.
+
+- Improved support for on-demand server activation in IcePack.
+
+- Improved the IcePack registry to prevent potential deadlocks caused
+  by thread starvation.
+
+- The Ice manual stated that the IcePack configuration property
+  IcePack.Registry.Internal.Endpoints was only necessary when nodes
+  were being used, but in fact the property is required regardless
+  of whether nodes are used. The manual has been updated accordingly.
+
+- Fixed a bug where Ice::ObjectAdapter::activate() could throw
+  Ice::ObjectAdapterDeactivatedException if the object adapter was
+  deactivated concurrently.
+
+- Fixed a bug where setting the locator proxy on an indirect proxy
+  could cause an assert.
+
+- Fixed a bug in IceSSL when multiple communicators are used.
+
+- Added an optimization to the Freeze evictor for the ice_ping
+  operation. The object is no longer loaded into the cache by this
+  operation; Freeze simply checks if the object is in the cache or
+  the database.
+
+- Fixed a slice2cpp failure when the --output-dir option specified a
+  directory containing backslashes.
+
+- Changed the signature of Ice::Service::main() and
+  Ice::Service::run() to accept a reference to argc (int & argc)
+  rather than passing argc by value (int argc). This is to ensure
+  that, if Ice::initialize() or Ice::Service::initializeCommunicator()
+  rewrites argv, argc reflects the number of elements of the rewritten
+  argument vector.
+
+- Fixed an encoding bug in IceSSL.
+
+- Fixed incorrect logging message if no more endpoints are available
+  for retry.
+
+- Added setDefaultContext() and getDefaultContext() to the
+  Ice::Communicator interface. This allows a default context to be
+  established on a communicator-wide basis. See section 29.9.3 in the
+  doc.
+
+  Added ice_defaultContext to Ice::ObjectProxy. This creates a new
+  proxy that uses the default context established on the communicator.
+
+- Fixed a rare proxy marshaling bug that could cause the receiver to
+  encounter an UnmarshalOutOfBoundsException.
+
+- Overloaded the checkedCast member function of the generated Prx
+  classes to allow a trailing argument of type Ice::Context. This
+  makes it possible to do stateful things that require a context in a
+  servant locator's activate() method.
+
+- Added catalogs for Freeze: each database environment used by Freeze
+  now contains a special dictionary (named __catalog) that keeps track
+  of all evictor and dictionary databases in this environment.
+
+- Fixed a bug in slice2cs and slice2vb: incorrect code was generated
+  if an interface was derived from a base interface in a different
+  module and if the base interface contained an AMD operation.
+
 Changes since version 1.5.1
 ---------------------------
 

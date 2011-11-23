@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -72,8 +72,7 @@ Freeze::EvictorIteratorI::nextBatch()
     vector<EvictorElementPtr> evictorElements;
     evictorElements.reserve(_batchSize);
      
-    Key firstKey;
-    firstKey = _key;
+    Key firstKey = _key;
 
     CommunicatorPtr communicator = _store->communicator();
    

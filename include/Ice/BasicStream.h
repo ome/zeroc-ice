@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -50,23 +50,8 @@ public:
 	    throwMemoryLimitException(__FILE__, __LINE__);
 	}
 	
-	Container::size_type capacity = b.capacity();
-	if(capacity < sz)
-	{
-	    //
-	    // COMPILERBUG: Stupid Visual C++ defines max as a
-	    // macro. But I can't undefine it in a header file,
-	    // because this might cause side effects with other code
-	    // that depends on this macro being defined.
-	    //
-	    //b.reserve(std::max(sz, 2 * capacity));
-	    b.reserve(sz > 2 * capacity ? sz : 2 * capacity);
-	}
-
 	b.resize(sz);
     }
-
-    void reserve(Container::size_type);
 
     void startSeq(int, int);
     void checkSeq();
@@ -77,6 +62,7 @@ public:
 	--_seqDataStack->numElements;
     }
     void endSeq(int);
+    void checkFixedSeq(int, int); // For sequences of fixed-size types.
 
     void startWriteEncaps();
     void endWriteEncaps();
@@ -228,6 +214,8 @@ private:
 
 	ReadEncaps();
 	~ReadEncaps();
+	void reset();
+	void swap(ReadEncaps&);
 
 	Container::size_type start;
 	Ice::Int sz;
@@ -249,6 +237,8 @@ private:
 
 	WriteEncaps();
 	~WriteEncaps();
+	void reset();
+	void swap(WriteEncaps&);
 
 	Container::size_type start;
 
@@ -263,6 +253,10 @@ private:
 
     ReadEncaps* _currentReadEncaps;
     WriteEncaps* _currentWriteEncaps;
+
+    ReadEncaps _preAllocatedReadEncaps;
+    WriteEncaps _preAllocatedWriteEncaps;
+
     Container::size_type _readSlice;
     Container::size_type _writeSlice;
 

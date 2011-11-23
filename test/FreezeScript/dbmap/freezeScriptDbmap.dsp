@@ -1,24 +1,24 @@
-# Microsoft Developer Studio Project File - Name="freezeScriptDbmap" - Package Owner=<4>
+# Microsoft Developer Studio Project File - Name="freezescriptdbmap" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Console Application" 0x0103
 
-CFG=freezeScriptDbmap - Win32 Debug
+CFG=freezescriptdbmap - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "freezeScriptDbmap.mak".
+!MESSAGE NMAKE /f "freezescriptdbmap.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "freezeScriptDbmap.mak" CFG="freezeScriptDbmap - Win32 Debug"
+!MESSAGE NMAKE /f "freezescriptdbmap.mak" CFG="freezescriptdbmap - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "freezeScriptDbmap - Win32 Release" (based on "Win32 (x86) Console Application")
-!MESSAGE "freezeScriptDbmap - Win32 Debug" (based on "Win32 (x86) Console Application")
+!MESSAGE "freezescriptdbmap - Win32 Release" (based on "Win32 (x86) Console Application")
+!MESSAGE "freezescriptdbmap - Win32 Debug" (based on "Win32 (x86) Console Application")
 !MESSAGE 
 
 # Begin Project
@@ -28,7 +28,7 @@ CFG=freezeScriptDbmap - Win32 Debug
 CPP=cl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "freezeScriptDbmap - Win32 Release"
+!IF  "$(CFG)" == "freezescriptdbmap - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -51,10 +51,10 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 /nologo /subsystem:console /machine:I386 /out:"makedb.exe" /libpath:"../../../lib"
+# ADD LINK32 /nologo /subsystem:console /incremental:yes /machine:I386 /out:"makedb.exe" /libpath:"../../../lib"
 # SUBTRACT LINK32 /debug /nodefaultlib
 
-!ELSEIF  "$(CFG)" == "freezeScriptDbmap - Win32 Debug"
+!ELSEIF  "$(CFG)" == "freezescriptdbmap - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 1
@@ -78,14 +78,14 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
 # ADD LINK32 /nologo /subsystem:console /debug /machine:I386 /out:"makedb.exe" /pdbtype:sept /libpath:"../../../lib"
-# SUBTRACT LINK32 /nodefaultlib
+# SUBTRACT LINK32 /incremental:no /nodefaultlib
 
 !ENDIF 
 
 # Begin Target
 
-# Name "freezeScriptDbmap - Win32 Release"
-# Name "freezeScriptDbmap - Win32 Debug"
+# Name "freezescriptdbmap - Win32 Release"
+# Name "freezescriptdbmap - Win32 Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
@@ -95,11 +95,11 @@ SOURCE=.\IntSMap.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\TestOld.cpp
+SOURCE=.\makedb.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\makedb.cpp
+SOURCE=.\TestOld.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -121,15 +121,14 @@ SOURCE=.\TestOld.h
 
 SOURCE=.\TestOld.ice
 
-!IF  "$(CFG)" == "freezeScriptDbmap - Win32 Release"
+!IF  "$(CFG)" == "freezescriptdbmap - Win32 Release"
 
-USERDEP__INTSMAP="..\..\..\bin\slice2freeze.exe"	"..\..\..\lib\slice.lib"	
+USERDEP__TESTO="..\..\..\bin\slice2freeze.exe"	"..\..\..\lib\slice.lib"	
 # Begin Custom Build
-InputPath=TestOld.ice
+InputPath=.\TestOld.ice
 
 BuildCmds= \
-	..\..\..\bin\slice2freeze.exe --dict IntSMap,int,Test::S IntSMap TestOld.ice \
-	
+	..\..\..\bin\slice2freeze.exe --dict IntSMap,int,Test::S IntSMap TestOld.ice
 
 "IntSMap.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -138,15 +137,14 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "freezeScriptDbmap - Win32 Debug"
+!ELSEIF  "$(CFG)" == "freezescriptdbmap - Win32 Debug"
 
-USERDEP__INTSMAP="..\..\..\bin\slice2freeze.exe"	
+USERDEP__TESTO="..\..\..\bin\slice2freeze.exe"	
 # Begin Custom Build
-InputPath=TestOld.ice
+InputPath=.\TestOld.ice
 
 BuildCmds= \
-	..\..\..\bin\slice2freeze.exe --dict IntSMap,int,Test::S IntSMap TestOld.ice \
-	
+	..\..\..\bin\slice2freeze.exe --dict IntSMap,int,Test::S IntSMap TestOld.ice
 
 "IntSMap.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -162,9 +160,9 @@ BuildCmds= \
 
 SOURCE=.\TestOld.ice
 
-!IF  "$(CFG)" == "freezeScriptDbmap - Win32 Release"
+!IF  "$(CFG)" == "freezescriptdbmap - Win32 Release"
 
-USERDEP__TESTOLD="..\..\..\bin\slice2cpp.exe"	"..\..\..\lib\slice.lib"	
+USERDEP__TESTO="..\..\..\bin\slice2cpp.exe"	"..\..\..\lib\slice.lib"	
 # Begin Custom Build
 InputPath=.\TestOld.ice
 
@@ -178,9 +176,9 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "freezeScriptDbmap - Win32 Debug"
+!ELSEIF  "$(CFG)" == "freezescriptdbmap - Win32 Debug"
 
-USERDEP__TESTOLD="..\..\..\bin\slice2cpp.exe"	"..\..\..\lib\sliced.lib"	
+USERDEP__TESTO="..\..\..\bin\slice2cpp.exe"	"..\..\..\lib\sliced.lib"	
 # Begin Custom Build
 InputPath=.\TestOld.ice
 

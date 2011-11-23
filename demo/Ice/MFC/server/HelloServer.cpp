@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -51,10 +51,7 @@ BOOL CHelloServerApp::InitInstance()
     {
         int argc = 0;
         Ice::PropertiesPtr properties = Ice::createProperties();
-        //properties->setProperty("Hello.Endpoints", "tcp -p 10000:udp -p 10000:ssl -p 10001");
-        properties->setProperty("Hello.Endpoints", "tcp -p 10000:udp -p 10000");
-        properties->setProperty("Ice.Trace.Network", "1");
-        properties->setProperty("Ice.Warn.Connections", "1");
+	properties->load("config");
         communicator = Ice::initializeWithProperties(argc, 0, properties);
         log = new LogI;
         communicator->setLogger(log);

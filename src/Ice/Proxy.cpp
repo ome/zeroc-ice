@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -45,10 +45,10 @@ void IceInternal::decRef(::IceDelegateD::Ice::Object* p) { p->__decRef(); }
 IceInternal::checkedCastImpl(const ObjectPrx& b, const string& f, const string& typeId)
 {
 //
-// Without this work-around, release VC7.0 build crash when FacetNotExistException
-// is raised
+// COMPILERBUG: Without this work-around, release VC7.0 and VC7.1
+// build crash when FacetNotExistException is raised
 //
-#if defined(_MSC_VER) && (_MSC_VER == 1300)
+#if defined(_MSC_VER) && (_MSC_VER >= 1300) && (_MSC_VER <= 1310)
     ObjectPrx fooBar;
 #endif
 
@@ -75,6 +75,39 @@ IceInternal::checkedCastImpl(const ObjectPrx& b, const string& f, const string& 
     return 0;
 }
 
+::Ice::ObjectPrx
+IceInternal::checkedCastImpl(const ObjectPrx& b, const string& f, const string& typeId, const Context& ctx)
+{
+//
+// COMPILERBUG: Without this work-around, release VC7.0 build crash
+// when FacetNotExistException is raised
+//
+#if defined(_MSC_VER) && (_MSC_VER == 1300)
+    ObjectPrx fooBar;
+#endif
+
+    if(b)
+    {
+	ObjectPrx bb = b->ice_newFacet(f);
+	try
+	{
+	    if(bb->ice_isA(typeId, ctx))
+	    {
+		return bb;
+	    }
+#ifndef NDEBUG
+	    else
+	    {
+		assert(typeId != "::Ice::Object");
+	    }
+#endif
+	}
+	catch(const FacetNotExistException&)
+	{
+	}
+    }
+    return 0;
+}
 
 bool
 IceProxy::Ice::Object::operator==(const Object& r) const
@@ -288,7 +321,7 @@ IceProxy::Ice::Object::ice_getContext() const
 ObjectPrx
 IceProxy::Ice::Object::ice_newContext(const Context& newContext) const
 {
-    if(newContext == _reference->getContext())
+    if(_reference->hasContext() && newContext == _reference->getContext())
     {
 	return ObjectPrx(const_cast< ::IceProxy::Ice::Object*>(this));
     }
@@ -296,6 +329,21 @@ IceProxy::Ice::Object::ice_newContext(const Context& newContext) const
     {
 	ObjectPrx proxy(new ::IceProxy::Ice::Object());
 	proxy->setup(_reference->changeContext(newContext));
+	return proxy;
+    }
+}
+
+ObjectPrx
+IceProxy::Ice::Object::ice_defaultContext() const
+{
+    if(!_reference->hasContext())
+    {
+	return ObjectPrx(const_cast< ::IceProxy::Ice::Object*>(this));
+    }
+    else
+    {
+	ObjectPrx proxy(new ::IceProxy::Ice::Object());
+	proxy->setup(_reference->defaultContext());
 	return proxy;
     }
 }
@@ -646,6 +694,21 @@ IceProxy::Ice::Object::__handleException(const LocalException& ex, int& cnt)
 	ir->getLocatorInfo()->clearObjectCache(ir);
     }
 
+    if(ice_isOneway() || ice_isBatchOneway())
+    {
+	//
+	// We do not retry oneway or batch oneway requests (except for
+	// problems during connection establishment, which are not
+	// handled here anyway). If we retry a oneway or batch oneway,
+	// previous oneways from the same batch, or previous oneways
+	// that are buffered by the IP stack implementation, are
+	// silently thrown away. This can lead to a situation where
+	// the latest oneway succeeds due to retry, but former oneways
+	// are discarded.
+	//
+        ex.ice_throw();
+    }
+
     ProxyFactoryPtr proxyFactory = _reference->getInstance()->proxyFactory();
     if(proxyFactory)
     {
@@ -653,7 +716,10 @@ IceProxy::Ice::Object::__handleException(const LocalException& ex, int& cnt)
     }
     else
     {
-        ex.ice_throw(); // The communicator is already destroyed, so we cannot retry.
+	//
+	// The communicator is already destroyed, so we cannot retry.
+	//
+        ex.ice_throw();
     }
 }
 

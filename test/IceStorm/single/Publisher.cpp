@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -50,14 +50,13 @@ run(int argc, char* argv[], const CommunicatorPtr& communicator)
     assert(topic);
 
     //
-    // Get a publisher object, create a oneway proxy and then cast to
+    // Get a publisher object, create a twoway proxy and then cast to
     // a Single object.
     //
-    SinglePrx single = SinglePrx::uncheckedCast(topic->getPublisher()->ice_oneway());
-
-    for(int i = 0; i < 10; ++i)
+    SinglePrx single = SinglePrx::uncheckedCast(topic->getPublisher()->ice_twoway());
+    for(int i = 0; i < 1000; ++i)
     {
-	single->event();
+	single->event(i);
     }
 
     //

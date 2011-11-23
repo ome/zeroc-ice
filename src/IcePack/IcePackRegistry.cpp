@@ -1,12 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <IceUtil/Options.h>
 #include <Ice/Ice.h>
 #include <Ice/Service.h>
 #include <IcePack/Registry.h>
@@ -45,35 +46,47 @@ IcePack::RegistryService::RegistryService()
 bool
 IcePack::RegistryService::start(int argc, char* argv[])
 {
-    bool nowarn = false;
-    for(int i = 1; i < argc; ++i)
+    bool nowarn;
+
+    IceUtil::Options opts;
+    opts.addOpt("h", "help");
+    opts.addOpt("v", "version");
+    opts.addOpt("", "nowarn");
+    
+    vector<string> args;
+    try
     {
-        if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
-        {
-            usage(argv[0]);
-            return false;
-        }
-        else if(strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0)
-        {
-            trace(ICE_STRING_VERSION);
-            return false;
-        }
-        else if(strcmp(argv[i], "--nowarn") == 0)
-        {
-            nowarn = true;
-        }
-        else
-        {
-            error("unknown option `" + string(argv[i]) + "'");
-            usage(argv[0]);
-            return false;
-        }
+    	args = opts.parse(argc, argv);
+    }
+    catch(const IceUtil::Options::BadOpt& e)
+    {
+        error(e.reason);
+	usage(argv[0]);
+	return false;
+    }
+
+    if(opts.isSet("h") || opts.isSet("help"))
+    {
+	usage(argv[0]);
+	return false;
+    }
+    if(opts.isSet("v") || opts.isSet("version"))
+    {
+	print(ICE_STRING_VERSION);
+	return false;
+    }
+    nowarn = opts.isSet("nowarn");
+
+    if(!args.empty())
+    {
+	usage(argv[0]);
+	return false;
     }
 
     _registry = auto_ptr<Registry>(new Registry(communicator()));
-    if(!_registry->start(nowarn, false))
+    if(!_registry->start(nowarn))
     {
-        return false;
+	return false;
     }
 
     return true;
@@ -132,8 +145,7 @@ IcePack::RegistryService::usage(const string& appName)
         "--nochdir            Do not change the current working directory."
     );
 #endif
-    cerr << "Usage: " << appName << " [options]" << endl;
-    cerr << options << endl;
+    print("Usage: " + appName + " [options]\n" + options);
 }
 
 int

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -103,6 +103,7 @@ public:
 
     ::Ice::Context ice_getContext() const;
     ::Ice::ObjectPrx ice_newContext(const ::Ice::Context&) const;
+    ::Ice::ObjectPrx ice_defaultContext() const;
 
     const ::std::string& ice_getFacet() const;
     ::Ice::ObjectPrx ice_newFacet(const ::std::string&) const;
@@ -312,6 +313,24 @@ checkedCastImpl(const ::Ice::ObjectPrx& b)
 }
 
 template<typename P> P 
+checkedCastImpl(const ::Ice::ObjectPrx& b, const ::Ice::Context& ctx)
+{
+    P d = 0;
+    if(b.get())
+    {
+	typedef typename P::element_type T;
+
+	d = dynamic_cast<T*>(b.get());
+	if(!d && b->ice_isA(T::ice_staticId(), ctx))
+	{
+	    d = new T;
+	    d->__copyFrom(b);
+	}
+    }
+    return d;
+}
+
+template<typename P> P 
 uncheckedCastImpl(const ::Ice::ObjectPrx& b)
 {
     P d = 0;
@@ -334,9 +353,11 @@ uncheckedCastImpl(const ::Ice::ObjectPrx& b)
 //
 
 //
-// Helper; last parameter = typeId
+// Helper with type ID.
 //
 ICE_API ::Ice::ObjectPrx checkedCastImpl(const ::Ice::ObjectPrx&, const std::string&, const std::string&);
+ICE_API ::Ice::ObjectPrx checkedCastImpl(const ::Ice::ObjectPrx&, const std::string&, const std::string&,
+                                         const ::Ice::Context&);
 
 //
 // Specializations for P = ::Ice::ObjectPrx
@@ -347,6 +368,12 @@ template<> inline ::Ice::ObjectPrx
 checkedCastImpl< ::Ice::ObjectPrx>(const ::Ice::ObjectPrx& b, const std::string& f)
 {
     return checkedCastImpl(b, f, "::Ice::Object");
+}
+
+template<> inline ::Ice::ObjectPrx 
+checkedCastImpl< ::Ice::ObjectPrx>(const ::Ice::ObjectPrx& b, const std::string& f, const ::Ice::Context& ctx)
+{
+    return checkedCastImpl(b, f, "::Ice::Object", ctx);
 }
 
 template<> inline ::Ice::ObjectPrx 
@@ -367,6 +394,22 @@ checkedCastImpl(const ::Ice::ObjectPrx& b, const std::string& f)
 
     typedef typename P::element_type T;
     ::Ice::ObjectPrx bb = checkedCastImpl(b, f, T::ice_staticId());
+
+    if(bb)
+    {
+	d = new T;
+	d->__copyFrom(bb);
+    }
+    return d;
+}
+
+template<typename P> P 
+checkedCastImpl(const ::Ice::ObjectPrx& b, const std::string& f, const ::Ice::Context& ctx)
+{
+    P d = 0;
+
+    typedef typename P::element_type T;
+    ::Ice::ObjectPrx bb = checkedCastImpl(b, f, T::ice_staticId(), ctx);
 
     if(bb)
     {
@@ -405,8 +448,19 @@ checkedCast(const ::IceInternal::ProxyHandle<Y>& b)
 #else
     return ::IceInternal::checkedCastHelper<typename P::element_type>(b, tag);
 #endif
-
 }
+
+template<typename P, typename Y> inline P 
+checkedCast(const ::IceInternal::ProxyHandle<Y>& b, const ::Ice::Context& ctx)
+{
+    Y* tag = 0;
+#if defined(_MSC_VER) && (_MSC_VER < 1300)
+    return ::IceInternal::checkedCastHelper<P::element_type>(b, tag, ctx);
+#else
+    return ::IceInternal::checkedCastHelper<typename P::element_type>(b, tag, ctx);
+#endif
+}
+
 template<typename P, typename Y> inline P
 uncheckedCast(const ::IceInternal::ProxyHandle<Y>& b)
 {
@@ -425,10 +479,15 @@ checkedCast(const ::Ice::ObjectPrx& b, const std::string& f)
 }
 
 template<typename P> inline P 
+checkedCast(const ::Ice::ObjectPrx& b, const std::string& f, const ::Ice::Context& ctx)
+{
+    return ::IceInternal::checkedCastImpl<P>(b, f, ctx);
+}
+
+template<typename P> inline P 
 uncheckedCast(const ::Ice::ObjectPrx& b, const std::string& f)
 {
     return ::IceInternal::checkedCastImpl<P>(b, f);
 }
 
 #endif
-

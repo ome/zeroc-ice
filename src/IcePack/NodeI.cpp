@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,11 @@
 #include <IcePack/NodeI.h>
 #include <IcePack/Activator.h>
 #include <IcePack/ServerFactory.h>
+
+//
+// Just to get the hostname
+//
+#include <Ice/ProtocolPluginFacade.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -26,9 +31,11 @@ using namespace IcePack;
 NodeI::NodeI(const ActivatorPtr& activator, 
 	     const string& name, 
 	     const ServerFactoryPtr& factory, 
+	     const Ice::CommunicatorPtr& communicator,
 	     const Ice::PropertiesPtr& properties) :
     _activator(activator),
     _name(name),
+    _hostname(IceInternal::getProtocolPluginFacade(communicator)->getDefaultHost()),
     _factory(factory)
 {
     _tmpDir = properties->getProperty("IcePack.Node.Data");
@@ -69,6 +76,12 @@ std::string
 NodeI::getName(const Ice::Current&) const
 {
     return _name;
+}
+
+std::string
+NodeI::getHostname(const Ice::Current&) const
+{
+    return _hostname;
 }
 
 void

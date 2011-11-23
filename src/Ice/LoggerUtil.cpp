@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,40 @@
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
+
+Ice::Print::Print(const LoggerPtr& logger) :
+    _logger(logger)
+{
+}
+
+Ice::Print::~Print()
+{
+    flush();
+}
+
+void
+Ice::Print::flush()
+{
+    string s = _str.str();
+    if(!s.empty())
+    {
+	_logger->print(s);
+    }
+    _str.str("");
+}
+
+ostringstream&
+Ice::Print::__str()
+{
+    return _str;
+}
+
+Print&
+Ice::operator<<(Print& out, ios_base& (*val)(ios_base&))
+{
+    out.__str() << val;
+    return out;
+}
 
 Ice::Warning::Warning(const LoggerPtr& logger) :
     _logger(logger)

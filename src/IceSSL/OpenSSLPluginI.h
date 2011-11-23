@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2004 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2005 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -89,7 +89,6 @@ private:
 
     const IceInternal::ProtocolPluginFacadePtr _protocolPluginFacade;
     const TraceLevelsPtr _traceLevels;
-    const Ice::LoggerPtr _logger;
     const Ice::PropertiesPtr _properties;
     const int _memDebug;
 
