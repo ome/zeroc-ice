@@ -11,6 +11,7 @@
 #include <Slice/CPlusPlusUtil.h>
 #include <IceUtil/Functional.h>
 #include <IceUtil/Iterator.h>
+#include <Slice/Checksum.h>
 
 #include <limits>
 #include <sys/stat.h>
@@ -21,14 +22,15 @@ using namespace IceUtil;
 
 Slice::Gen::Gen(const string& name, const string& base,	const string& headerExtension,
 	        const string& sourceExtension, const string& include, const vector<string>& includePaths,
-		const string& dllExport, const string& dir, bool imp) :
+		const string& dllExport, const string& dir, bool imp, bool checksum) :
     _base(base),
     _headerExtension(headerExtension),
     _sourceExtension(sourceExtension),
     _include(include),
     _includePaths(includePaths),
     _dllExport(dllExport),
-    _impl(imp)
+    _impl(imp),
+    _checksum(checksum)
 {
     for(vector<string>::iterator p = _includePaths.begin(); p != _includePaths.end(); ++p)
     {
@@ -69,14 +71,14 @@ Slice::Gen::Gen(const string& name, const string& base,	const string& headerExte
         implH.open(fileImplH.c_str());
         if(!implH)
         {
-            cerr << name << ": can't open `" << fileImplH << "' for writing: " << strerror(errno) << endl;
+            cerr << name << ": can't open `" << fileImplH << "' for writing" << endl;
             return;
         }
         
         implC.open(fileImplC.c_str());
         if(!implC)
         {
-            cerr << name << ": can't open `" << fileImplC << "' for writing: " << strerror(errno) << endl;
+            cerr << name << ": can't open `" << fileImplC << "' for writing" << endl;
             return;
         }
 
@@ -102,14 +104,14 @@ Slice::Gen::Gen(const string& name, const string& base,	const string& headerExte
     H.open(fileH.c_str());
     if(!H)
     {
-	cerr << name << ": can't open `" << fileH << "' for writing: " << strerror(errno) << endl;
+	cerr << name << ": can't open `" << fileH << "' for writing" << endl;
 	return;
     }
     
     C.open(fileC.c_str());
     if(!C)
     {
-	cerr << name << ": can't open `" << fileC << "' for writing: " << strerror(errno) << endl;
+	cerr << name << ": can't open `" << fileC << "' for writing" << endl;
 	return;
     }
 
@@ -215,6 +217,11 @@ Slice::Gen::generate(const UnitPtr& p)
 	H << "\n#include <Ice/FactoryTable.h>";
     }
 
+    if(_checksum)
+    {
+        C << "\n#include <Ice/SliceChecksums.h>";
+    }
+
     StringList includes = p->includeFiles();
 
     for(StringList::const_iterator q = includes.begin(); q != includes.end(); ++q)
@@ -285,6 +292,31 @@ Slice::Gen::generate(const UnitPtr& p)
 
         ImplVisitor implVisitor(implH, implC, _dllExport);
         p->visit(&implVisitor);
+    }
+
+    if(_checksum)
+    {
+        ChecksumMap map = createChecksums(p);
+        if(!map.empty())
+        {
+            C << sp << nl << "static const char* __sliceChecksums[] =";
+            C << sb;
+            for(ChecksumMap::const_iterator p = map.begin(); p != map.end(); ++p)
+            {
+                C << nl << "\"" << p->first << "\", \"";
+                ostringstream str;
+                str.flags(ios_base::hex);
+                str.fill('0');
+                for(vector<unsigned char>::const_iterator q = p->second.begin(); q != p->second.end(); ++q)
+                {
+                    str << (int)(*q);
+                }
+                C << str.str() << "\",";
+            }
+            C << nl << "0";
+            C << eb << ';';
+            C << nl << "static IceInternal::SliceChecksumInit __sliceChecksumInit(__sliceChecksums);";
+        }
     }
 }
 
@@ -1521,7 +1553,7 @@ Slice::Gen::DelegateMVisitor::visitOperation(const OperationPtr& p)
     C << sb;
     C << nl << "static const ::std::string __operation(\"" << p->name() << "\");";
     C << nl << "::IceInternal::Outgoing __out(__connection.get(), __reference.get(), __operation, "
-      << "static_cast< ::Ice::OperationMode>(" << p->mode() << "), __context);";
+      << "static_cast< ::Ice::OperationMode>(" << p->mode() << "), __context, __compress);";
     if(!inParams.empty())
     {
 	C << nl << "::IceInternal::BasicStream* __os = __out.os();";
@@ -1851,7 +1883,7 @@ Slice::Gen::ObjectVisitor::visitClassDefStart(const ClassDefPtr& p)
     H << nl << "public:";
     H.inc();
 
-    if(!p->isAbstract())
+    if(!p->isAbstract() && !p->isLocal())
     {
 	H << sp << nl << "void __copyMembers(" << scoped << "Ptr) const;";
 
@@ -1915,7 +1947,16 @@ Slice::Gen::ObjectVisitor::visitClassDefStart(const ClassDefPtr& p)
     {
 	ClassList allBases = p->allBases();
 	StringList ids;
+#if defined(__IBMCPP__) && defined(NDEBUG)
+//
+// VisualAge C++ 6.0 does not see that ClassDef is a Contained,
+// when inlining is on. The code below issues a warning: better
+// than an error!
+//
+	transform(allBases.begin(), allBases.end(), back_inserter(ids), ::IceUtil::constMemFun<string,ClassDef>(&Contained::scoped));
+#else
 	transform(allBases.begin(), allBases.end(), back_inserter(ids), ::IceUtil::constMemFun(&Contained::scoped));
+#endif
 	StringList other;
 	other.push_back(p->scoped());
 	other.push_back("::Ice::Object");
@@ -2003,8 +2044,16 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	if(!allOps.empty())
 	{
 	    StringList allOpNames;
+#if defined(__IBMCPP__) && defined(NDEBUG)
+//
+// See comment for transform above
+//
 	    transform(allOps.begin(), allOps.end(), back_inserter(allOpNames),
-		      ::IceUtil::constMemFun(&Contained::name));
+		      ::IceUtil::constMemFun<string,Operation>(&Contained::name));
+#else
+	    transform(allOps.begin(), allOps.end(), back_inserter(allOpNames),
+                      ::IceUtil::constMemFun(&Contained::name));
+#endif
 	    allOpNames.push_back("ice_id");
 	    allOpNames.push_back("ice_ids");
 	    allOpNames.push_back("ice_isA");
@@ -2118,9 +2167,15 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	{
 	    H << sp << nl << "static const ::Ice::ObjectFactoryPtr& ice_factory();";
 
+            string flattenedScope;
+
+            for(string::const_iterator r = scope.begin(); r != scope.end(); ++r)
+            {
+                flattenedScope += ((*r) == ':') ? '_' : *r;
+            }
+
 	    string name = fixKwd(p->name());
-	    string factoryName = "__F__";
-	    factoryName += name;
+	    string factoryName = "__F" + flattenedScope + name;
 	    C << sp;
 	    C << nl << "class " << factoryName << " : public ::Ice::ObjectFactory";
 	    C << sb;
@@ -2138,8 +2193,7 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	    C << eb << ';';
 
 	    C << sp;
-	    C << nl << "::Ice::ObjectFactoryPtr " << scoped.substr(2) << "::_factory = new "
-	      << "__F__" << fixKwd(p->name()) << ';';
+	    C << nl << "::Ice::ObjectFactoryPtr " << scoped.substr(2) << "::_factory = new " << factoryName << ';';
 
 	    C << sp << nl << "const ::Ice::ObjectFactoryPtr&" << nl << scoped.substr(2) << "::ice_factory()";
 	    C << sb;
@@ -2166,12 +2220,7 @@ Slice::Gen::ObjectVisitor::visitClassDefEnd(const ClassDefPtr& p)
 	    C << sp;
 	    C << nl << "static " << factoryName << "__Init " << factoryName << "__i;";
 	    C << sp << nl << "#ifdef __APPLE__";
-	    std::string initfuncname = "__F";
-	    for(std::string::const_iterator q = scope.begin(); q != scope.end(); ++q)
-	    {
-		initfuncname += ((*q) == ':') ? '_' : *q;
-	    }
-	    initfuncname += name + "__initializer";
+	    std::string initfuncname = "__F" + flattenedScope + name + "__initializer";
 	    C << nl << "extern \"C\" { void " << initfuncname << "() {} }";
 	    C << nl << "#endif";
 

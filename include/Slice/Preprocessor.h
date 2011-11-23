@@ -33,7 +33,9 @@ public:
     FILE* preprocess(bool);
     bool close();
 
-    void printMakefileDependencies();
+    enum Language { CPlusPlus, Java, CSharp };
+
+    void printMakefileDependencies(Language);
     
     std::string getBaseName();
 

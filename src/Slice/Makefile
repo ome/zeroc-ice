@@ -13,8 +13,7 @@ LIBFILENAME     = $(call mklibfilename,Slice,$(VERSION))
 SONAME          = $(call mksoname,Slice,$(SOVERSION))  
 LIBNAME		= $(call mklibname,Slice)
 
-TARGETS		= $(libdir)/$(LIBFILENAME) $(libdir)/$(SONAME) $(libdir)/$(LIBNAME)
-
+TARGETS		= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
 
 OBJS		= Scanner.o \
 		  Grammar.o \
@@ -22,7 +21,8 @@ OBJS		= Scanner.o \
 		  CPlusPlusUtil.o \
 		  CsUtil.o \
 		  JavaUtil.o \
-		  Preprocessor.o
+		  Preprocessor.o \
+		  Checksum.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
@@ -52,11 +52,7 @@ clean::
 #	rm -f Scanner.cpp
 
 install:: all
-	$(INSTALL_LIBRARY) $(libdir)/$(LIBFILENAME) $(install_libdir)
-	rm -f $(install_libdir)/$(SONAME)
-	ln -s $(LIBFILENAME) $(install_libdir)/$(SONAME)
-	rm -f $(install_libdir)/$(LIBNAME)
-	ln -s $(SONAME) $(install_libdir)/$(LIBNAME)
+	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))
 
 
 include .depend

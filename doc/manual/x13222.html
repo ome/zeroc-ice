@@ -1,0 +1,895 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>IceSSL Properties</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Ice Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Properties"
+HREF="c12506.html"><LINK
+REL="PREVIOUS"
+TITLE="Ice Miscellaneous Properties"
+HREF="x13005.html"><LINK
+REL="NEXT"
+TITLE="IceBox Properties"
+HREF="x13373.html"></HEAD
+><BODY
+CLASS="SECTION"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Ice Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x13005.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Properties</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x13373.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="AEN13222"
+></A
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+> Properties</H1
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13225"
+></A
+>IceSSL.Trace.Security</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13227"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Trace.Security=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13231"
+></A
+>Description</H3
+><P
+>The SSL plug-in trace level:
+<DIV
+CLASS="INFORMALTABLE"
+><A
+NAME="AEN13234"
+></A
+><P
+></P
+><TABLE
+BORDER="1"
+BGCOLOR="#E0E0E0"
+CELLSPACING="0"
+CELLPADDING="4"
+CLASS="CALSTABLE"
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>No security trace. (default)</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>1</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Trace security warnings.</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>2</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Like 1, but more verbose, including warnings during
+configuration file parsing.</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13246"
+></A
+>IceSSL.Client.CertPath, IceSSL.Server.CertPath</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13248"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.CertPath=<TT
+CLASS="REPLACEABLE"
+><I
+>path</I
+></TT
+>
+IceSSL.Server.CertPath=<TT
+CLASS="REPLACEABLE"
+><I
+>path</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13253"
+></A
+>Description</H3
+><P
+>Defines the path (relative or absolute) where the SSL plug-in can
+find PEM format certificate files (RSA and DSA) and Diffie-Hellman group
+parameter files.</P
+><P
+>If <TT
+CLASS="LITERAL"
+>IceSSL.Client.Config</TT
+> or
+<TT
+CLASS="LITERAL"
+>IceSSL.Server.Config</TT
+> specify a relative path, that path
+is relative to the value of <TT
+CLASS="LITERAL"
+>IceSSL.Client.CertPath</TT
+>
+and <TT
+CLASS="LITERAL"
+>IceSSL.Server.CertPath</TT
+>, respectively.</P
+><P
+>If not specified, the application uses the current working directory
+as the certificate path.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13262"
+></A
+>IceSSL.Client.Config, IceSSL.Server.Config</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13264"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Config=<TT
+CLASS="REPLACEABLE"
+><I
+>config_file</I
+></TT
+>
+IceSSL.Server.Config=<TT
+CLASS="REPLACEABLE"
+><I
+>config_file</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13269"
+></A
+>Description</H3
+><P
+>Defines the XML-based configuration file from which the SSL plug-in
+loads initialization information and certificates. If the property
+specifies a relative path, the path is interpreted relative to
+the certificate path defined by <TT
+CLASS="LITERAL"
+>IceSSL.Client.CertPath</TT
+>
+and <TT
+CLASS="LITERAL"
+>IceSSL.Server.CertPath</TT
+>, respectively.</P
+><P
+>The XML parser looks for the DTD file in the same directory in which
+it finds the XML configuration file.</P
+><P
+>Depending on whether the application is running in client mode, server mode or
+both modes, a valid value for one or both of these parameters must be specified
+for the proper operation of the <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+> plug-in.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13277"
+></A
+>IceSSL.Client.Handshake.Retries</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13279"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Handshake.Retries=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13283"
+></A
+>Description</H3
+><P
+>IceSSL clients attempt to perform an entire SSL handshake in the connection
+phase. When attempting this handshake, it is possible that the client
+times out while waiting for a response from the server. This property specifies
+the number of handshake retries the client attempts before throwing a
+<TT
+CLASS="LITERAL"
+>Ice::ConnectionFailedException</TT
+>.</P
+><P
+>If not specified, the default value for this property is 10 retries.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13288"
+></A
+>IceSSL.Client.Passphrase.Retries, IceSSL.Server.Passphrase.Retries</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13290"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Passphrase.Retries=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+>
+IceSSL.Server.Passphrase.Retries=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13295"
+></A
+>Description</H3
+><P
+>When <SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+> is directed to use a private key in a PEM file that has
+been encrypted, a prompt is displayed <TT
+CLASS="LITERAL"
+>Enter PEM pass
+phrase:</TT
+>. If the passphrase is entered incorrectly, these
+properties determine how many retries the user is allowed before
+<SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceSSL</SPAN
+></SPAN
+> shuts down.</P
+><P
+>If not specified, the default value for these properties is 5 retries.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13302"
+></A
+>IceSSL.Server.Overrides.RSA.PrivateKey, IceSSL.Server.Overrides.RSA.Certificate</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13304"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Server.Overrides.RSA.PrivateKey=<TT
+CLASS="REPLACEABLE"
+><I
+>Base64 encoded DER string</I
+></TT
+>
+IceSSL.Server.Overrides.RSA.Certificate=<TT
+CLASS="REPLACEABLE"
+><I
+>Base64 encoded DER string</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13309"
+></A
+>Description</H3
+><P
+>These properties override the RSA private key and public key (certificate)
+specified in the config file (<TT
+CLASS="LITERAL"
+>IceSSL.Server.Config</TT
+>) for
+the Server context. The value must be the DER representation of the private
+and public keys, base64 encoded.</P
+><P
+>There are no default values for these properties.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13314"
+></A
+>IceSSL.Server.Overrides.DSA.PrivateKey, IceSSL.Server.Overrides.DSA.Certificate</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13316"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Server.Overrides.DSA.PrivateKey=<TT
+CLASS="REPLACEABLE"
+><I
+>Base64 encoded DER string</I
+></TT
+>
+IceSSL.Server.Overrides.DSA.Certificate=<TT
+CLASS="REPLACEABLE"
+><I
+>Base64 encoded DER string</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13321"
+></A
+>Description</H3
+><P
+>These properties override the DSA private key and public key (certificate)
+specified in the config file (<TT
+CLASS="LITERAL"
+>IceSSL.Server.Config</TT
+>) for
+the Server context. The value must be the DER representation of the private
+and public keys, base64 encoded.</P
+><P
+>There are no default values for these properties.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13326"
+></A
+>IceSSL.Client.Overrides.RSA.PrivateKey, IceSSL.Client.Overrides.RSA.Certificate</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13328"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Overrides.RSA.PrivateKey=<TT
+CLASS="REPLACEABLE"
+><I
+>Base64 encoded DER string</I
+></TT
+>
+IceSSL.Client.Overrides.RSA.Certificate=<TT
+CLASS="REPLACEABLE"
+><I
+>Base64 encoded DER string</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13333"
+></A
+>Description</H3
+><P
+>These properties provides a method by which the RSA private key and public key (certificate)
+used by the Client context may be overridden from those specified in the config file
+(specified in <TT
+CLASS="LITERAL"
+>IceSSL.Client.Config</TT
+>).  The value must be
+the DER representation of the private and public keys, base64 encoded.</P
+><P
+>There are no default values for these properties.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13338"
+></A
+>IceSSL.Client.Overrides.DSA.PrivateKey, IceSSL.Client.Overrides.DSA.Certificate</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13340"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Overrides.DSA.PrivateKey=<TT
+CLASS="REPLACEABLE"
+><I
+>Base64 encoded DER string</I
+></TT
+>
+IceSSL.Client.Overrides.DSA.Certificate=<TT
+CLASS="REPLACEABLE"
+><I
+>Base64 encoded DER string</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13345"
+></A
+>Description</H3
+><P
+>These properties override the RSA private key and public key (certificate)
+specified in the config file (<TT
+CLASS="LITERAL"
+>IceSSL.Client.Config</TT
+>) for
+the Client context. The value must be the DER representation of the private
+and public keys, base64 encoded.</P
+><P
+>There are no default values for these properties.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13350"
+></A
+>IceSSL.Client.Overrides.CACertificate, IceSSL.Server.Overrides.CACertificate</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13352"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.Overrides.CACertificate=<TT
+CLASS="REPLACEABLE"
+><I
+>Base64 encoded DER string</I
+></TT
+>
+IceSSL.Server.Overrides.CACertificate=<TT
+CLASS="REPLACEABLE"
+><I
+>Base64 encoded DER string</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13357"
+></A
+>Description</H3
+><P
+>These properties override any trusted Certificate Authority (CA) certificates
+specified in <TT
+CLASS="LITERAL"
+>IceSSL.Server.Config</TT
+> or
+<TT
+CLASS="LITERAL"
+>IceSSL.Client.Config</TT
+>. The new certificate is represented
+as the base64 encoding of the DER binary representation of the certificate.</P
+><P
+>There are no default values for these properties.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="AEN13363"
+></A
+>IceSSL.Client.IgnoreValidPeriod, IceSSL.Server.IgnoreValidPeriod</H2
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13365"
+></A
+>Synopsis</H3
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SYNOPSIS"
+>IceSSL.Client.IgnoreValidPeriod=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+>
+IceSSL.Server.IgnoreValidPeriod=<TT
+CLASS="REPLACEABLE"
+><I
+>num</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN13370"
+></A
+>Description</H3
+><P
+>If set to 1, these properties cause the default certificate verifier to ignore the
+certificate validity period on peer certificates. The
+default value for these properties is 0, meaning that the certificate
+validity period is not ignored.</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x13005.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x13373.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>Ice</SPAN
+></SPAN
+> Miscellaneous Properties</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="c12506.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>IceBox</SPAN
+></SPAN
+> Properties</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

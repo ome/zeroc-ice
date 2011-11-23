@@ -26,8 +26,12 @@ protected:
 
     virtual void writeInheritedOperations(const ClassDefPtr&);
     virtual void writeDispatch(const ClassDefPtr&);
-    virtual std::string getParams(const OperationPtr&);
-    virtual std::string getArgs(const OperationPtr&);
+    virtual std::vector<std::string> getParams(const OperationPtr&);
+    virtual std::vector<std::string> getParamsAsync(const OperationPtr&, bool);
+    virtual std::vector<std::string> getParamsAsyncCB(const OperationPtr&);
+    virtual std::vector<std::string> getArgs(const OperationPtr&);
+    virtual std::vector<std::string> getArgsAsync(const OperationPtr&);
+    virtual std::vector<std::string> getArgsAsyncCB(const OperationPtr&);
 
     ::IceUtil::Output& _out;
 };
@@ -39,16 +43,23 @@ public:
     Gen(const std::string&,
         const std::string&,
         const std::vector<std::string>&,
-	const std::string&);
+	const std::string&,
+	bool,
+	bool);
     ~Gen();
 
     bool operator!() const; // Returns true if there was a constructor error
 
     void generate(const UnitPtr&);
+    void generateTie(const UnitPtr&);
+    void generateImpl(const UnitPtr&);
+    void generateImplTie(const UnitPtr&);
+    void generateChecksums(const UnitPtr&);
 
 private:
 
     IceUtil::Output _out;
+    IceUtil::Output _impl;
 
     std::string _base;
     std::vector<std::string> _includePaths;
@@ -99,8 +110,9 @@ private:
 	virtual bool visitModuleStart(const ModulePtr&);
 	virtual void visitModuleEnd(const ModulePtr&);
 	virtual bool visitClassDefStart(const ClassDefPtr&);
-	virtual void visitClassDefEnd(const ClassDefPtr&);
-	virtual void visitOperation(const OperationPtr&);
+
+    private:
+        void writeOperations(const ClassDefPtr&, bool);
     };
 
     class HelperVisitor : public CsVisitor
@@ -158,6 +170,74 @@ private:
     public:
 
         DispatcherVisitor(::IceUtil::Output&);
+
+	virtual bool visitModuleStart(const ModulePtr&);
+	virtual void visitModuleEnd(const ModulePtr&);
+	virtual bool visitClassDefStart(const ClassDefPtr&);
+    };
+
+    class AsyncVisitor : public CsVisitor
+    {
+    public:
+
+        AsyncVisitor(::IceUtil::Output&);
+
+	virtual bool visitModuleStart(const ModulePtr&);
+	virtual void visitModuleEnd(const ModulePtr&);
+	virtual bool visitClassDefStart(const ClassDefPtr&);
+	virtual void visitClassDefEnd(const ClassDefPtr&);
+	virtual void visitOperation(const OperationPtr&);
+    };
+
+    class TieVisitor : public CsVisitor
+    {
+    public:
+
+        TieVisitor(::IceUtil::Output&);
+
+	virtual bool visitModuleStart(const ModulePtr&);
+	virtual void visitModuleEnd(const ModulePtr&);
+	virtual bool visitClassDefStart(const ClassDefPtr&);
+	virtual void visitClassDefEnd(const ClassDefPtr&);
+
+    private:
+
+	typedef ::std::set< ::std::string> NameSet;
+	void writeInheritedOperations(const ClassDefPtr&, NameSet&);
+    };
+
+    class BaseImplVisitor : public CsVisitor
+    {
+    public:
+
+        BaseImplVisitor(::IceUtil::Output&);
+
+    protected:
+
+	void writeOperation(const OperationPtr&, bool, bool, bool);
+
+    private:
+
+	::std::string writeValue(const TypePtr&);
+    };
+
+    class ImplVisitor : public BaseImplVisitor
+    {
+    public:
+
+        ImplVisitor(::IceUtil::Output&);
+
+	virtual bool visitModuleStart(const ModulePtr&);
+	virtual void visitModuleEnd(const ModulePtr&);
+	virtual bool visitClassDefStart(const ClassDefPtr&);
+	virtual void visitClassDefEnd(const ClassDefPtr&);
+    };
+
+    class ImplTieVisitor : public BaseImplVisitor
+    {
+    public:
+
+        ImplTieVisitor(::IceUtil::Output&);
 
 	virtual bool visitModuleStart(const ModulePtr&);
 	virtual void visitModuleEnd(const ModulePtr&);

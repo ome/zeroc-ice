@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <Ice/Application.h>
+#include <Ice/SliceChecksums.h>
 #include <IceStorm/Parser.h>
 
 #include <fstream>
@@ -152,6 +153,17 @@ Client::run(int argc, char* argv[])
     {
 	cerr << appName() << ": `" << managerProxy << "' is not running" << endl;
 	return EXIT_FAILURE;
+    }
+
+    Ice::SliceChecksumDict serverChecksums = manager->getSliceChecksums();
+    Ice::SliceChecksumDict localChecksums = Ice::sliceChecksums();
+    for(Ice::SliceChecksumDict::const_iterator q = localChecksums.begin(); q != localChecksums.end(); ++q)
+    {
+        Ice::SliceChecksumDict::const_iterator r = serverChecksums.find(q->first);
+        if(r == serverChecksums.end() || q->second != r->second)
+        {
+            cerr << appName() << ": server is using different Slice definitions" << endl;
+        }
     }
 
     ParserPtr p = Parser::createParser(communicator(), manager);

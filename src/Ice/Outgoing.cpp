@@ -7,10 +7,20 @@
 //
 // **********************************************************************
 
+#ifdef __INTEL_COMPILER
+//
+// COMPILERBUG: The Ice/exception test fails when this file is built
+// with ICC 8.0.55 with -O1 or -O2. It would be nice to isolate and
+// work-around this bug.
+//
+#pragma optimize("", off)
+#endif
+
 #include <Ice/Outgoing.h>
 #include <Ice/Object.h>
 #include <Ice/Connection.h>
 #include <Ice/Reference.h>
+#include <Ice/Endpoint.h>
 #include <Ice/LocalException.h>
 
 using namespace std;
@@ -35,12 +45,13 @@ IceInternal::NonRepeatable::get() const
 }
 
 IceInternal::Outgoing::Outgoing(Connection* connection, Reference* ref, const string& operation,
-				OperationMode mode, const Context& context) :
+				OperationMode mode, const Context& context, bool compress) :
     _connection(connection),
     _reference(ref),
     _state(StateUnsent),
     _is(ref->instance.get()),
-    _os(ref->instance.get())
+    _os(ref->instance.get()),
+    _compress(compress)
 {
     switch(_reference->mode)
     {
@@ -113,7 +124,7 @@ IceInternal::Outgoing::invoke()
 	    // this object, so we don't need to lock the mutex, keep
 	    // track of state, or save exceptions.
 	    //
-	    _connection->sendRequest(&_os, this);
+	    _connection->sendRequest(&_os, this, _compress);
 	    
 	    //
 	    // Wait until the request has completed, or until the
@@ -220,7 +231,7 @@ IceInternal::Outgoing::invoke()
 	    // propagate to the caller, because such exceptions can be
 	    // retried without violating "at-most-once".
 	    //
-	    _connection->sendRequest(&_os, 0);
+	    _connection->sendRequest(&_os, 0, _compress);
 	    break;
 	}
 
@@ -232,7 +243,7 @@ IceInternal::Outgoing::invoke()
 	    // regular oneways and datagrams (see comment above)
 	    // apply.
 	    //
-	    _connection->finishBatchRequest(&_os);
+	    _connection->finishBatchRequest(&_os, _compress);
 	    break;
 	}
     }

@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Freeze::ObjectRecord</TITLE
+>Freeze::InvalidPositionException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
@@ -14,11 +14,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="Freeze::NotFoundException"
-HREF="x6864.html"><LINK
+TITLE="Freeze::EvictorIterator"
+HREF="x6792.html"><LINK
 REL="NEXT"
-TITLE="Freeze::ServantInitializer"
-HREF="x6916.html"></HEAD
+TITLE="Freeze::NoSuchElementException"
+HREF="x6882.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -46,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x6864.html"
+HREF="x6792.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -60,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x6916.html"
+HREF="x6882.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -74,11 +74,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="FREEZE.OBJECTRECORD"
+NAME="FREEZE.INVALIDPOSITIONEXCEPTION"
 ></A
 ><TT
 CLASS="LITERAL"
->Freeze::ObjectRecord</TT
+>Freeze::InvalidPositionException</TT
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -96,139 +96,16 @@ WIDTH="100%"
 ><TD
 ><PRE
 CLASS="SYNOPSIS"
->struct <SPAN
-CLASS="STRUCTNAME"
->ObjectRecord</SPAN
+>local exception <TT
+CLASS="CLASSNAME"
+>InvalidPositionException</TT
 ></PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->The evictor uses a number of maps <A
-HREF="x2127.html"
-><SPAN
-CLASS="STRUCTNAME"
->::Ice::Identity</SPAN
-></A
-> to <A
-HREF="x6874.html"
-><SPAN
-CLASS="STRUCTNAME"
->ObjectRecord</SPAN
-></A
-> as its
-persistent storage.</P
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN6886"
-></A
->Data Member Index</H3
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
-><A
-HREF="x6874.html#FREEZE.OBJECTRECORD.SERVANT"
-><SPAN
-CLASS="TYPE"
->servant</SPAN
-></A
-></DT
-><DD
-><P
-></P
-></DD
-><DT
-><A
-HREF="x6874.html#FREEZE.OBJECTRECORD.STATS"
-><SPAN
-CLASS="TYPE"
->stats</SPAN
-></A
-></DT
-><DD
-><P
-></P
-></DD
-></DL
-></DIV
-></DIV
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="FREEZE.OBJECTRECORD.SERVANT"
-></A
-><TT
-CLASS="LITERAL"
->servant</TT
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><SPAN
-CLASS="TYPE"
->Object</SPAN
-> <TT
-CLASS="STRUCTFIELD"
-><I
->servant</I
-></TT
->;</PRE
-></TD
-></TR
-></TABLE
-><P
-></P
-></DIV
-><DIV
-CLASS="SECTION"
-><H2
-CLASS="SECTION"
-><A
-NAME="FREEZE.OBJECTRECORD.STATS"
-></A
-><TT
-CLASS="LITERAL"
->stats</TT
-></H2
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SYNOPSIS"
-><A
-HREF="x6988.html"
-><SPAN
-CLASS="STRUCTNAME"
->Statistics</SPAN
-></A
-> <TT
-CLASS="STRUCTFIELD"
-><I
->stats</I
-></TT
->;</PRE
-></TD
-></TR
-></TABLE
-><P
-></P
+>This Freeze Iterator is not on a valid position, for example
+this position has been erased.</P
 ></DIV
 ></DIV
 ><DIV
@@ -247,7 +124,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x6864.html"
+HREF="x6792.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -265,7 +142,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x6916.html"
+HREF="x6882.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -277,7 +154,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Freeze::NotFoundException</TT
+>Freeze::EvictorIterator</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -294,7 +171,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->Freeze::ServantInitializer</TT
+>Freeze::NoSuchElementException</TT
 ></TD
 ></TR
 ></TABLE

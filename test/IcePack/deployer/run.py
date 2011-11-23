@@ -26,6 +26,8 @@ testdir = os.path.join(toplevel, "test", name)
 
 if TestUtil.isWin32():
     os.environ["PATH"] = testdir + ";" + os.getenv("PATH", "")
+elif TestUtil.isAIX():
+    os.environ["LIBPATH"] = testdir + ":" + os.getenv("LIBPATH", "")
 else:
     os.environ["LD_LIBRARY_PATH"] = testdir + ":" + os.getenv("LD_LIBRARY_PATH", "")
     os.environ["LD_LIBRARY_PATH_64"] = testdir + ":" + os.getenv("LD_LIBRARY_PATH_64", "")
@@ -62,13 +64,14 @@ icePackNodeThread = IcePackAdmin.startIcePackNode(testdir)
 # Deploy the application, run the client and remove the application.
 #
 print "deploying application...",
-IcePackAdmin.addApplication(os.path.join(testdir, "application.xml"), "");
+IcePackAdmin.addApplication(os.path.join(testdir, "application.xml"), \
+                            "ice.dir=" + toplevel + " " + "test.dir=" + testdir);
 print "ok"
 
 startClient("")
 
 print "removing application...",
-IcePackAdmin.removeApplication(os.path.join(testdir, "application.xml"));
+IcePackAdmin.removeApplication("test");
 print "ok"    
 
 #
@@ -76,13 +79,14 @@ print "ok"
 # client to test targets (-t options) and remove the application.
 #
 print "deploying application with target...",
-IcePackAdmin.addApplication(os.path.join(testdir, "application.xml"), "debug localnode.Server1.manual")
+IcePackAdmin.addApplication(os.path.join(testdir, "application.xml"), \
+                            "debug test.localnode.Server1.manual ice.dir=" + toplevel + " test.dir=" + testdir)
 print "ok"
 
 startClient("-t")
 
 print "removing application...",
-IcePackAdmin.removeApplication(os.path.join(testdir, "application.xml"));
+IcePackAdmin.removeApplication("test");
 print "ok"
 
 #

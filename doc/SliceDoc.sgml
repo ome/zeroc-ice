@@ -8,7 +8,7 @@
 
  **********************************************************************
 -->
-<!-- Ice version 1.4.0 -->
+<!-- Ice version 1.5.0 -->
 <section>
     <title>Global Module</title>
     <section>
@@ -794,6 +794,13 @@ A simple collection of properties, represented as a dictionary of
 key/value pairs.</para>
 		    </listitem>
 		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="Ice.SliceChecksumDict"><type>SliceChecksumDict</type></link></term>
+		    <listitem>
+			<para>
+</para>
+		    </listitem>
+		</varlistentry>
 	    </variablelist>
 	</section>
 	<section>
@@ -813,15 +820,13 @@ invocation in case of a (potentially) recoverable error.</para>
     </section>
     <section id="Ice.BoolSeq">
 	<title><literal>BoolSeq</literal></title>
-<synopsis>[ "cs:array" ]
-sequence&lt;<type>bool</type>&gt; <type>BoolSeq</type>;</synopsis>
+<synopsis>sequence&lt;<type>bool</type>&gt; <type>BoolSeq</type>;</synopsis>
 	<para>
 A sequence of bools.</para>
     </section>
     <section id="Ice.ByteSeq">
 	<title><literal>ByteSeq</literal></title>
-<synopsis>[ "cs:array" ]
-sequence&lt;<type>byte</type>&gt; <type>ByteSeq</type>;</synopsis>
+<synopsis>sequence&lt;<type>byte</type>&gt; <type>ByteSeq</type>;</synopsis>
 	<para>
 A sequence of bytes.</para>
 	<section>
@@ -844,15 +849,13 @@ A sequence of bytes.</para>
     </section>
     <section id="Ice.DoubleSeq">
 	<title><literal>DoubleSeq</literal></title>
-<synopsis>[ "cs:array" ]
-sequence&lt;<type>double</type>&gt; <type>DoubleSeq</type>;</synopsis>
+<synopsis>sequence&lt;<type>double</type>&gt; <type>DoubleSeq</type>;</synopsis>
 	<para>
 A sequence of doubles.</para>
     </section>
     <section id="Ice.FloatSeq">
 	<title><literal>FloatSeq</literal></title>
-<synopsis>[ "cs:array" ]
-sequence&lt;<type>float</type>&gt; <type>FloatSeq</type>;</synopsis>
+<synopsis>sequence&lt;<type>float</type>&gt; <type>FloatSeq</type>;</synopsis>
 	<para>
 A sequence of floats.</para>
     </section>
@@ -864,15 +867,13 @@ A sequence of identities.</para>
     </section>
     <section id="Ice.IntSeq">
 	<title><literal>IntSeq</literal></title>
-<synopsis>[ "cs:array" ]
-sequence&lt;<type>int</type>&gt; <type>IntSeq</type>;</synopsis>
+<synopsis>sequence&lt;<type>int</type>&gt; <type>IntSeq</type>;</synopsis>
 	<para>
 A sequence of ints.</para>
     </section>
     <section id="Ice.LongSeq">
 	<title><literal>LongSeq</literal></title>
-<synopsis>[ "cs:array" ]
-sequence&lt;<type>long</type>&gt; <type>LongSeq</type>;</synopsis>
+<synopsis>sequence&lt;<type>long</type>&gt; <type>LongSeq</type>;</synopsis>
 	<para>
 A sequence of longs.</para>
     </section>
@@ -896,15 +897,13 @@ A sequence of objects.</para>
     </section>
     <section id="Ice.ShortSeq">
 	<title><literal>ShortSeq</literal></title>
-<synopsis>[ "cs:array" ]
-sequence&lt;<type>short</type>&gt; <type>ShortSeq</type>;</synopsis>
+<synopsis>sequence&lt;<type>short</type>&gt; <type>ShortSeq</type>;</synopsis>
 	<para>
 A sequence of shorts.</para>
     </section>
     <section id="Ice.StringSeq">
 	<title><literal>StringSeq</literal></title>
-<synopsis>[ "cs:array" ]
-sequence&lt;<type>string</type>&gt; <type>StringSeq</type>;</synopsis>
+<synopsis>sequence&lt;<type>string</type>&gt; <type>StringSeq</type>;</synopsis>
 	<para>
 A sequence of strings.</para>
 	<section>
@@ -916,16 +915,14 @@ A sequence of strings.</para>
 		<member><link linkend="Ice.Properties.parseCommandLineOptions"><function>Properties::parseCommandLineOptions</function></link></member>
 		<member><link linkend="Ice.Properties.parseIceCommandLineOptions"><function>Properties::parseIceCommandLineOptions</function></link></member>
 		<member><link linkend="Ice.Properties.parseIceCommandLineOptions"><function>Properties::parseIceCommandLineOptions</function></link></member>
-		<member><link linkend="IceBox.FreezeService.start"><function>::IceBox::FreezeService::start</function></link></member>
 		<member><link linkend="IceBox.Service.start"><function>::IceBox::Service::start</function></link></member>
-		<member><link linkend="IcePack.Admin.addApplication"><function>::IcePack::Admin::addApplication</function></link></member>
-		<member><link linkend="IcePack.Admin.addServer"><function>::IcePack::Admin::addServer</function></link></member>
 		<member><link linkend="IcePack.Admin.getAllAdapterIds"><function>::IcePack::Admin::getAllAdapterIds</function></link></member>
+		<member><link linkend="IcePack.Admin.getAllApplicationNames"><function>::IcePack::Admin::getAllApplicationNames</function></link></member>
 		<member><link linkend="IcePack.Admin.getAllNodeNames"><function>::IcePack::Admin::getAllNodeNames</function></link></member>
 		<member><link linkend="IcePack.Admin.getAllServerNames"><function>::IcePack::Admin::getAllServerNames</function></link></member>
-		<member><link linkend="IcePack.ServerDescription.args"><type>::IcePack::ServerDescription::args</type></link></member>
-		<member><link linkend="IcePack.ServerDescription.envs"><type>::IcePack::ServerDescription::envs</type></link></member>
-		<member><link linkend="IcePack.ServerDescription.targets"><type>::IcePack::ServerDescription::targets</type></link></member>
+		<member><link linkend="IcePack.JavaServerDescriptor.jvmOptions"><type>::IcePack::JavaServerDescriptor::jvmOptions</type></link></member>
+		<member><link linkend="IcePack.ServerDescriptor.envs"><type>::IcePack::ServerDescriptor::envs</type></link></member>
+		<member><link linkend="IcePack.ServerDescriptor.options"><type>::IcePack::ServerDescriptor::options</type></link></member>
 	    </simplelist></para></section>
     </section>
     <section id="Ice.Context">
@@ -979,6 +976,21 @@ key/value pairs. Both key and value are <type>string</type>s.</para>
 	    <para>
 	    <simplelist type="inline">
 		<member><link linkend="Ice.Properties.getPropertiesForPrefix"><function>Properties::getPropertiesForPrefix</function></link></member>
+	    </simplelist></para></section>
+    </section>
+    <section id="Ice.SliceChecksumDict">
+	<title><literal>SliceChecksumDict</literal></title>
+<synopsis>dictionary&lt;<type>string</type>, <type>string</type>&gt; <type>SliceChecksumDict</type>;</synopsis>
+	<para></para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="Glacier.Starter.getSliceChecksums"><function>::Glacier::Starter::getSliceChecksums</function></link></member>
+		<member><link linkend="IceBox.ServiceManager.getSliceChecksums"><function>::IceBox::ServiceManager::getSliceChecksums</function></link></member>
+		<member><link linkend="IcePack.Admin.getSliceChecksums"><function>::IcePack::Admin::getSliceChecksums</function></link></member>
+		<member><link linkend="IcePatch.File.getSliceChecksums"><function>::IcePatch::File::getSliceChecksums</function></link></member>
+		<member><link linkend="IceStorm.TopicManager.getSliceChecksums"><function>::IceStorm::TopicManager::getSliceChecksums</function></link></member>
 	    </simplelist></para></section>
     </section>
 </section>
@@ -1147,7 +1159,6 @@ is language specific, and not specified in Slice code.</para>
 	    <simplelist type="inline">
 		<member><link linkend="Freeze.Connection.getCommunicator"><function>::Freeze::Connection::getCommunicator</function></link></member>
 		<member><link linkend="Ice.ObjectAdapter.getCommunicator"><function>ObjectAdapter::getCommunicator</function></link></member>
-		<member><link linkend="IceBox.FreezeService.start"><function>::IceBox::FreezeService::start</function></link></member>
 		<member><link linkend="IceBox.Service.start"><function>::IceBox::Service::start</function></link></member>
 	    </simplelist></para></section>
 	<section>
@@ -1757,7 +1768,8 @@ Convert a string into a proxy. For example,
 10000</literal> creates a proxy that refers to the &Ice; object
 having an identity with a name "MyObject" and a category
 "MyCategory", with the server running on host "some_host", port
-10000.</para>
+10000. If the string does not parse correctly, the operation
+throws <link linkend="Ice.ProxyParseException"><classname>ProxyParseException</classname></link>.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -7303,24 +7315,10 @@ class.</para>
 	    <title>Interface Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IceBox.FreezeService"><type>FreezeService</type></link></term>
-		    <listitem>
-			<para>
-A Freeze application service managed by a <link linkend="IceBox.ServiceManager"><classname>ServiceManager</classname></link>.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
 		    <term><link linkend="IceBox.Service"><type>Service</type></link></term>
 		    <listitem>
 			<para>
-A standard application service managed by a <link linkend="IceBox.ServiceManager"><classname>ServiceManager</classname></link>.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IceBox.ServiceBase"><type>ServiceBase</type></link></term>
-		    <listitem>
-			<para>
-Base interface for an application service managed by a <link linkend="IceBox.ServiceManager"><classname>ServiceManager</classname></link>.</para>
+An application service managed by a <link linkend="IceBox.ServiceManager"><classname>ServiceManager</classname></link>.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -7375,113 +7373,13 @@ The reason for the failure.</para>
 The reason for the failure.</para>
     </section>
 </section>
-<section id="IceBox.FreezeService">
-    <title><literal>IceBox::FreezeService</literal></title>
-    <section>
-	<title>Overview</title>
-<synopsis>local interface <classname>FreezeService</classname>
-    extends 
-	<link linkend="IceBox.ServiceBase"><type>ServiceBase</type></link></synopsis>
-	<para>
-A Freeze application service managed by a <link linkend="IceBox.ServiceManager"><classname>ServiceManager</classname></link>.</para>
-	<section>
-	    <title>See Also</title>
-	    <para>
-	    <simplelist type="inline">
-		<member><link linkend="IceBox.ServiceBase"><classname>ServiceBase</classname></link></member>
-	    </simplelist></para></section>
-	<section>
-	    <title>Operation Index</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IceBox.FreezeService.start"><function>start</function></link></term>
-		    <listitem>
-			<para>
-Start the service.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="IceBox.FreezeService.start">
-	<title><literal>start</literal></title>
-<synopsis><type>void</type> <function>start</function>(<type>string</type> <parameter>name</parameter>,
-    <link linkend="Ice.Communicator"><classname>::Ice::Communicator</classname></link> <parameter>communicator</parameter>,
-    <link linkend="Ice.StringSeq"><type>::Ice::StringSeq</type></link> <parameter>args</parameter>,
-    <type>string</type> <parameter>envName</parameter>);</synopsis>
-	<para>
-Start the service. The given communiator is created by the
-<link linkend="IceBox.ServiceManager"><classname>ServiceManager</classname></link> for use by the service. This communicator may
-also be used by other services, depending on the service
-configuration. The database environment is created by the
-<link linkend="IceBox.ServiceManager"><classname>ServiceManager</classname></link> for the exclusive use of the service.
-<note><para>The <link linkend="IceBox.ServiceManager"><classname>ServiceManager</classname></link> owns the communiator and the
-database environment, and is responsible for destroying
-them.</para></note></para>
-	<section>
-	    <title>Parameters</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><parameter>name</parameter></term>
-		    <listitem>
-			<para>
-			    The service's name, as determined by the
-configuration.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><parameter>communicator</parameter></term>
-		    <listitem>
-			<para>
-			    A communiator for use by the service.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><parameter>args</parameter></term>
-		    <listitem>
-			<para>
-			    The service arguments that were not converted into
-properties.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><parameter>envName</parameter></term>
-		    <listitem>
-			<para>
-			    The name of the Freeze database environment.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-	<section>
-	    <title>Exceptions</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IceBox.FailureException"><classname>FailureException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if <link linkend="IceBox.FreezeService.start"><function>start</function></link> failed.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-</section>
 <section id="IceBox.Service">
     <title><literal>IceBox::Service</literal></title>
     <section>
 	<title>Overview</title>
-<synopsis>local interface <classname>Service</classname>
-    extends 
-	<link linkend="IceBox.ServiceBase"><type>ServiceBase</type></link></synopsis>
+<synopsis>local interface <classname>Service</classname></synopsis>
 	<para>
-A standard application service managed by a <link linkend="IceBox.ServiceManager"><classname>ServiceManager</classname></link>.</para>
-	<section>
-	    <title>See Also</title>
-	    <para>
-	    <simplelist type="inline">
-		<member><link linkend="IceBox.ServiceBase"><classname>ServiceBase</classname></link></member>
-	    </simplelist></para></section>
+An application service managed by a <link linkend="IceBox.ServiceManager"><classname>ServiceManager</classname></link>.</para>
 	<section>
 	    <title>Operation Index</title>
 	    <variablelist>
@@ -7490,6 +7388,13 @@ A standard application service managed by a <link linkend="IceBox.ServiceManager
 		    <listitem>
 			<para>
 Start the service.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IceBox.Service.stop"><function>stop</function></link></term>
+		    <listitem>
+			<para>
+Stop the service.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -7548,43 +7453,7 @@ properties.</para>
 	    </variablelist>
 	</section>
     </section>
-</section>
-<section id="IceBox.ServiceBase">
-    <title><literal>IceBox::ServiceBase</literal></title>
-    <section>
-	<title>Overview</title>
-<synopsis>local interface <classname>ServiceBase</classname></synopsis>
-	<para>
-Base interface for an application service managed by a <link linkend="IceBox.ServiceManager"><classname>ServiceManager</classname></link>.</para>
-	<section>
-	    <title>Derived Classes and Interfaces</title>
-	    <para>
-	    <simplelist type="inline">
-		<member><link linkend="IceBox.FreezeService"><type>FreezeService</type></link></member>
-		<member><link linkend="IceBox.Service"><type>Service</type></link></member>
-	    </simplelist></para></section>
-	<section>
-	    <title>See Also</title>
-	    <para>
-	    <simplelist type="inline">
-		<member><link linkend="IceBox.ServiceManager"><classname>ServiceManager</classname></link></member>
-		<member><link linkend="IceBox.Service"><classname>Service</classname></link></member>
-		<member><link linkend="IceBox.FreezeService"><classname>FreezeService</classname></link></member>
-	    </simplelist></para></section>
-	<section>
-	    <title>Operation Index</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IceBox.ServiceBase.stop"><function>stop</function></link></term>
-		    <listitem>
-			<para>
-Stop the service.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="IceBox.ServiceBase.stop">
+    <section id="IceBox.Service.stop">
 	<title><literal>stop</literal></title>
 <synopsis><type>void</type> <function>stop</function>();</synopsis>
 	<para>
@@ -7608,6 +7477,13 @@ Administers a set of <link linkend="IceBox.Service"><classname>Service</classnam
 	    <title>Operation Index</title>
 	    <variablelist>
 		<varlistentry>
+		    <term><link linkend="IceBox.ServiceManager.getSliceChecksums"><function>getSliceChecksums</function></link></term>
+		    <listitem>
+			<para>
+Returns the checksums for the IceBox Slice definitions.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
 		    <term><link linkend="IceBox.ServiceManager.shutdown"><function>shutdown</function></link></term>
 		    <listitem>
 			<para>
@@ -7617,11 +7493,22 @@ Shutdown all services.</para>
 	    </variablelist>
 	</section>
     </section>
+    <section id="IceBox.ServiceManager.getSliceChecksums">
+	<title><literal>getSliceChecksums</literal></title>
+<synopsis><link linkend="Ice.SliceChecksumDict"><type>::Ice::SliceChecksumDict</type></link> <function>getSliceChecksums</function>();</synopsis>
+	<para>
+Returns the checksums for the IceBox Slice definitions.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		A dictionary mapping Slice type ids to their checksums.</para>
+	</section>
+    </section>
     <section id="IceBox.ServiceManager.shutdown">
 	<title><literal>shutdown</literal></title>
 <synopsis><type>void</type> <function>shutdown</function>();</synopsis>
 	<para>
-Shutdown all services. This will cause <literal>Service::stop</literal> to be
+Shutdown all services. This will cause <link linkend="IceBox.Service.stop"><function>Service::stop</function></link> to be
 invoked on all configured services.</para>
     </section>
 </section>
@@ -7634,6 +7521,60 @@ invoked on all configured services.</para>
 &IcePack; is a server activation and deployment tool. &IcePack;,
 simplifies the complex task of deploying applications in a
 heterogenous computer network.</para>
+	<section>
+	    <title>Class Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePack.ApplicationDescriptor"><type>ApplicationDescriptor</type></link></term>
+		    <listitem>
+			<para>
+An application descriptor.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ComponentDescriptor"><type>ComponentDescriptor</type></link></term>
+		    <listitem>
+			<para>
+A component descriptor.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.CppIceBoxDescriptor"><type>CppIceBoxDescriptor</type></link></term>
+		    <listitem>
+			<para>
+A C++ &IceBox; server descriptor.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.JavaIceBoxDescriptor"><type>JavaIceBoxDescriptor</type></link></term>
+		    <listitem>
+			<para>
+A Java &IceBox; server descriptor.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.JavaServerDescriptor"><type>JavaServerDescriptor</type></link></term>
+		    <listitem>
+			<para>
+A Java &Ice; server descriptor.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ServerDescriptor"><type>ServerDescriptor</type></link></term>
+		    <listitem>
+			<para>
+An &Ice; server descriptor.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ServiceDescriptor"><type>ServiceDescriptor</type></link></term>
+		    <listitem>
+			<para>
+An &IceBox; service descriptor.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
 	<section>
 	    <title>Interface Index</title>
 	    <variablelist>
@@ -7657,18 +7598,17 @@ The &IcePack; query interface.</para>
 	    <title>Exception Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IcePack.AdapterDeploymentException"><classname>AdapterDeploymentException</classname></link></term>
-		    <listitem>
-			<para>
-This exception is raised if an error occurs during adapter
-registration.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
 		    <term><link linkend="IcePack.AdapterNotExistException"><classname>AdapterNotExistException</classname></link></term>
 		    <listitem>
 			<para>
 This exception is raised if an adapter does not exist.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ApplicationNotExistException"><classname>ApplicationNotExistException</classname></link></term>
+		    <listitem>
+			<para>
+This exception is raised if an application does not exist.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -7702,14 +7642,6 @@ This exception is raised if a node could not be reached.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="IcePack.ObjectDeploymentException"><classname>ObjectDeploymentException</classname></link></term>
-		    <listitem>
-			<para>
-This exception is raised if an error occurs during object
-registration.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
 		    <term><link linkend="IcePack.ObjectExistsException"><classname>ObjectExistsException</classname></link></term>
 		    <listitem>
 			<para>
@@ -7721,22 +7653,6 @@ This exception is raised if an object already exists.</para>
 		    <listitem>
 			<para>
 This exception is raised if an object does not exist.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePack.ParserDeploymentException"><classname>ParserDeploymentException</classname></link></term>
-		    <listitem>
-			<para>
-This exception is raised if an error occurs while parsing the
-XML descriptor of a component.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePack.ServerDeploymentException"><classname>ServerDeploymentException</classname></link></term>
-		    <listitem>
-			<para>
-This exception is raised if an error occurs while deploying a
-server.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -7752,10 +7668,78 @@ This exception is raised if a server does not exist.</para>
 	    <title>Struct Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IcePack.ServerDescription"><structname>ServerDescription</structname></link></term>
+		    <term><link linkend="IcePack.AdapterDescriptor"><structname>AdapterDescriptor</structname></link></term>
 		    <listitem>
 			<para>
-The server description.</para>
+An &Ice; object adapter descriptor.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.DbEnvDescriptor"><structname>DbEnvDescriptor</structname></link></term>
+		    <listitem>
+			<para>
+A &Freeze; database environment descriptor.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ObjectDescriptor"><structname>ObjectDescriptor</structname></link></term>
+		    <listitem>
+			<para>
+An &Ice; object descriptor.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.PropertyDescriptor"><structname>PropertyDescriptor</structname></link></term>
+		    <listitem>
+			<para>
+A configuration property descriptor.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>Sequence Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePack.AdapterDescriptorSeq"><type>AdapterDescriptorSeq</type></link></term>
+		    <listitem>
+			<para>
+A sequence of adapter descriptors.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.DbEnvDescriptorSeq"><type>DbEnvDescriptorSeq</type></link></term>
+		    <listitem>
+			<para>
+A sequence of database environment descriptors.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ObjectDescriptorSeq"><type>ObjectDescriptorSeq</type></link></term>
+		    <listitem>
+			<para>
+A sequence of object descriptors.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.PropertyDescriptorSeq"><type>PropertyDescriptorSeq</type></link></term>
+		    <listitem>
+			<para>
+A sequence of property descriptors.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ServerDescriptorSeq"><type>ServerDescriptorSeq</type></link></term>
+		    <listitem>
+			<para>
+A sequence of server descriptors.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ServiceDescriptorSeq"><type>ServiceDescriptorSeq</type></link></term>
+		    <listitem>
+			<para>
+A sequence of service descriptors.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -7780,35 +7764,164 @@ An enumeration representing the state of the server.</para>
 	    </variablelist>
 	</section>
     </section>
+    <section id="IcePack.AdapterDescriptorSeq">
+	<title><literal>AdapterDescriptorSeq</literal></title>
+<synopsis>sequence&lt;<link linkend="IcePack.AdapterDescriptor"><structname>AdapterDescriptor</structname></link>&gt; <type>AdapterDescriptorSeq</type>;</synopsis>
+	<para>
+A sequence of adapter descriptors.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.ComponentDescriptor.adapters"><type>ComponentDescriptor::adapters</type></link></member>
+	    </simplelist></para></section>
+    </section>
+    <section id="IcePack.DbEnvDescriptorSeq">
+	<title><literal>DbEnvDescriptorSeq</literal></title>
+<synopsis>sequence&lt;<link linkend="IcePack.DbEnvDescriptor"><structname>DbEnvDescriptor</structname></link>&gt; <type>DbEnvDescriptorSeq</type>;</synopsis>
+	<para>
+A sequence of database environment descriptors.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.ComponentDescriptor.dbEnvs"><type>ComponentDescriptor::dbEnvs</type></link></member>
+	    </simplelist></para></section>
+    </section>
+    <section id="IcePack.ObjectDescriptorSeq">
+	<title><literal>ObjectDescriptorSeq</literal></title>
+<synopsis>sequence&lt;<link linkend="IcePack.ObjectDescriptor"><structname>ObjectDescriptor</structname></link>&gt; <type>ObjectDescriptorSeq</type>;</synopsis>
+	<para>
+A sequence of object descriptors.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.AdapterDescriptor.objects"><type>AdapterDescriptor::objects</type></link></member>
+	    </simplelist></para></section>
+    </section>
+    <section id="IcePack.PropertyDescriptorSeq">
+	<title><literal>PropertyDescriptorSeq</literal></title>
+<synopsis>sequence&lt;<link linkend="IcePack.PropertyDescriptor"><structname>PropertyDescriptor</structname></link>&gt; <type>PropertyDescriptorSeq</type>;</synopsis>
+	<para>
+A sequence of property descriptors.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.ComponentDescriptor.properties"><type>ComponentDescriptor::properties</type></link></member>
+		<member><link linkend="IcePack.DbEnvDescriptor.properties"><type>DbEnvDescriptor::properties</type></link></member>
+	    </simplelist></para></section>
+    </section>
+    <section id="IcePack.ServerDescriptorSeq">
+	<title><literal>ServerDescriptorSeq</literal></title>
+<synopsis>sequence&lt;<link linkend="IcePack.ServerDescriptor"><classname>ServerDescriptor</classname></link>&gt; <type>ServerDescriptorSeq</type>;</synopsis>
+	<para>
+A sequence of server descriptors.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.ApplicationDescriptor.servers"><type>ApplicationDescriptor::servers</type></link></member>
+	    </simplelist></para></section>
+    </section>
+    <section id="IcePack.ServiceDescriptorSeq">
+	<title><literal>ServiceDescriptorSeq</literal></title>
+<synopsis>sequence&lt;<link linkend="IcePack.ServiceDescriptor"><classname>ServiceDescriptor</classname></link>&gt; <type>ServiceDescriptorSeq</type>;</synopsis>
+	<para>
+A sequence of service descriptors.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.CppIceBoxDescriptor.services"><type>CppIceBoxDescriptor::services</type></link></member>
+		<member><link linkend="IcePack.JavaIceBoxDescriptor.services"><type>JavaIceBoxDescriptor::services</type></link></member>
+	    </simplelist></para></section>
+    </section>
 </section>
-<section id="IcePack.AdapterDeploymentException">
-    <title><literal>IcePack::AdapterDeploymentException</literal></title>
+<section id="IcePack.AdapterDescriptor">
+    <title><literal>IcePack::AdapterDescriptor</literal></title>
     <section>
 	<title>Overview</title>
-<synopsis>exception <classname>AdapterDeploymentException</classname>
-    extends 
-	<link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link></synopsis>
+<synopsis>struct <structname>AdapterDescriptor</structname></synopsis>
 	<para>
-This exception is raised if an error occurs during adapter
-registration.</para>
+An &Ice; object adapter descriptor.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.AdapterDescriptorSeq"><type>AdapterDescriptorSeq</type></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IcePack.AdapterDeploymentException.id"><type>id</type></link></term>
+		    <term><link linkend="IcePack.AdapterDescriptor.endpoints"><type>endpoints</type></link></term>
 		    <listitem>
 			<para>
-The id of the adapter that could not be registered.</para>
+The object adapter endpoints.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.AdapterDescriptor.id"><type>id</type></link></term>
+		    <listitem>
+			<para>
+The object adapter id.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.AdapterDescriptor.name"><type>name</type></link></term>
+		    <listitem>
+			<para>
+The object adapter name.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.AdapterDescriptor.objects"><type>objects</type></link></term>
+		    <listitem>
+			<para>
+The object descriptor associated to this object adapter descriptor.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.AdapterDescriptor.registerProcess"><type>registerProcess</type></link></term>
+		    <listitem>
+			<para>
+Flag to specify if the object adapter will register a process object.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
 	</section>
     </section>
-    <section id="IcePack.AdapterDeploymentException.id">
+    <section id="IcePack.AdapterDescriptor.endpoints">
+	<title><literal>endpoints</literal></title>
+<synopsis><type>string</type> <structfield>endpoints</structfield>;</synopsis>
+	<para>
+The object adapter endpoints.</para>
+    </section>
+    <section id="IcePack.AdapterDescriptor.id">
 	<title><literal>id</literal></title>
 <synopsis><type>string</type> <structfield>id</structfield>;</synopsis>
 	<para>
-The id of the adapter that could not be registered.</para>
+The object adapter id.</para>
+    </section>
+    <section id="IcePack.AdapterDescriptor.name">
+	<title><literal>name</literal></title>
+<synopsis><type>string</type> <structfield>name</structfield>;</synopsis>
+	<para>
+The object adapter name.</para>
+    </section>
+    <section id="IcePack.AdapterDescriptor.objects">
+	<title><literal>objects</literal></title>
+<synopsis><link linkend="IcePack.ObjectDescriptorSeq"><type>ObjectDescriptorSeq</type></link> <structfield>objects</structfield>;</synopsis>
+	<para>
+The object descriptor associated to this object adapter descriptor.</para>
+    </section>
+    <section id="IcePack.AdapterDescriptor.registerProcess">
+	<title><literal>registerProcess</literal></title>
+<synopsis><type>bool</type> <structfield>registerProcess</structfield>;</synopsis>
+	<para>
+Flag to specify if the object adapter will register a process object.</para>
     </section>
 </section>
 <section id="IcePack.AdapterNotExistException">
@@ -7876,6 +7989,13 @@ Get all the adapter ids registered with &IcePack;.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
+		    <term><link linkend="IcePack.Admin.getAllApplicationNames"><function>getAllApplicationNames</function></link></term>
+		    <listitem>
+			<para>
+Get all the &IcePack; applications currently registered.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
 		    <term><link linkend="IcePack.Admin.getAllNodeNames"><function>getAllNodeNames</function></link></term>
 		    <listitem>
 			<para>
@@ -7890,6 +8010,13 @@ Get all the server names registered with &IcePack;.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
+		    <term><link linkend="IcePack.Admin.getApplicationDescriptor"><function>getApplicationDescriptor</function></link></term>
+		    <listitem>
+			<para>
+Get an application descriptor.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
 		    <term><link linkend="IcePack.Admin.getServerActivation"><function>getServerActivation</function></link></term>
 		    <listitem>
 			<para>
@@ -7897,10 +8024,10 @@ Get the server's activation mode.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="IcePack.Admin.getServerDescription"><function>getServerDescription</function></link></term>
+		    <term><link linkend="IcePack.Admin.getServerDescriptor"><function>getServerDescriptor</function></link></term>
 		    <listitem>
 			<para>
-Get a server's description.</para>
+Get a server descriptor.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -7918,6 +8045,13 @@ Get a server's state.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
+		    <term><link linkend="IcePack.Admin.getSliceChecksums"><function>getSliceChecksums</function></link></term>
+		    <listitem>
+			<para>
+Returns the checksums for the IcePack Slice definitions.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
 		    <term><link linkend="IcePack.Admin.pingNode"><function>pingNode</function></link></term>
 		    <listitem>
 			<para>
@@ -7929,6 +8063,13 @@ Ping an &IcePack; node to see if it is active.</para>
 		    <listitem>
 			<para>
 Remove an application from &IcePack;.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.Admin.removeNode"><function>removeNode</function></link></term>
+		    <listitem>
+			<para>
+Remove the given node and associated servers from the &IcePack; registry.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -7988,11 +8129,25 @@ Stop a server.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
+		    <term><link linkend="IcePack.Admin.updateApplication"><function>updateApplication</function></link></term>
+		    <listitem>
+			<para>
+Update an application.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.Admin.updateServer"><function>updateServer</function></link></term>
+		    <listitem>
+			<para>
+Update a server.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
 		    <term><link linkend="IcePack.Admin.writeMessage"><function>writeMessage</function></link></term>
 		    <listitem>
 			<para>
 Write message on server stdout or stderr
-@param name Must match the name of <link linkend="IcePack.ServerDescription.name"><type>ServerDescription::name</type></link>.</para>
+@param name Must match the name of <literal>ServerDescription::name</literal>.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8000,13 +8155,11 @@ Write message on server stdout or stderr
     </section>
     <section id="IcePack.Admin.addApplication">
 	<title><literal>addApplication</literal></title>
-<synopsis><type>void</type> <function>addApplication</function>(<type>string</type> <parameter>descriptor</parameter>,
-    <link linkend="Ice.StringSeq"><type>::Ice::StringSeq</type></link> <parameter>targets</parameter>)
+<synopsis><type>void</type> <function>addApplication</function>(<link linkend="IcePack.ApplicationDescriptor"><classname>ApplicationDescriptor</classname></link> <parameter>descriptor</parameter>)
     throws
 	<link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link>;</synopsis>
 	<para>
-Add an application to &IcePack;. An application is a set of
-servers.</para>
+Add an application to &IcePack;. An application is a set of servers.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -8015,16 +8168,6 @@ servers.</para>
 		    <listitem>
 			<para>
 			    The application descriptor.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><parameter>targets</parameter></term>
-		    <listitem>
-			<para>
-			    The optional targets to deploy. A target is a
-list of components separated by dots and a target name. For
-example, the "debug" target of "service1" in "server1" will be
-deployed if the target "server1.service1.debug" is specified.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8053,7 +8196,7 @@ deployed if the target "server1.service1.debug" is specified.</para>
 <synopsis><type>void</type> <function>addObject</function>(<type>Object*</type> <parameter>obj</parameter>)
     throws
 	<link linkend="IcePack.ObjectExistsException"><classname>ObjectExistsException</classname></link>,
-	<link linkend="IcePack.ObjectDeploymentException"><classname>ObjectDeploymentException</classname></link>;</synopsis>
+	<link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link>;</synopsis>
 	<para>
 Add an object to the object registry. &IcePack; will get the
 object type by calling <literal>ice_id</literal> on the given proxy. The object
@@ -8073,16 +8216,6 @@ must be reachable.</para>
 	<section>
 	    <title>Exceptions</title>
 	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IcePack.ObjectDeploymentException"><classname>ObjectDeploymentException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if an error occurred
-while trying to register this object. This can occur if the
-type of the object cannot be determined because the object is not
-reachable.</para>
-		    </listitem>
-		</varlistentry>
 		<varlistentry>
 		    <term><link linkend="IcePack.ObjectExistsException"><classname>ObjectExistsException</classname></link></term>
 		    <listitem>
@@ -8138,71 +8271,19 @@ registered.</para>
     </section>
     <section id="IcePack.Admin.addServer">
 	<title><literal>addServer</literal></title>
-<synopsis><type>void</type> <function>addServer</function>(<type>string</type> <parameter>node</parameter>,
-    <type>string</type> <parameter>name</parameter>,
-    <type>string</type> <parameter>path</parameter>,
-    <type>string</type> <parameter>libraryPath</parameter>,
-    <type>string</type> <parameter>descriptor</parameter>,
-    <link linkend="Ice.StringSeq"><type>::Ice::StringSeq</type></link> <parameter>targets</parameter>)
+<synopsis><type>void</type> <function>addServer</function>(<link linkend="IcePack.ServerDescriptor"><classname>ServerDescriptor</classname></link> <parameter>server</parameter>)
     throws
-	<link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link>,
-	<link linkend="IcePack.NodeUnreachableException"><classname>NodeUnreachableException</classname></link>;</synopsis>
+	<link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link>;</synopsis>
 	<para>
 Add a server to an &IcePack; node.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><parameter>node</parameter></term>
-		    <listitem>
-			<para>
-			    The name of the node where the server will be
-deployed.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><parameter>name</parameter></term>
-		    <listitem>
-			<para>
-			    The server name.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><parameter>path</parameter></term>
-		    <listitem>
-			<para>
-			    The server path. For C++ servers, this is the path
-of the executable. For C++ icebox, this is the path of the C++
-icebox executable or, if empty, &IcePack; will rely on the PATH
-to find it. For a Java server or Java icebox, this is the path
-of the <literal>java</literal> command or, if empty, &IcePack;
-will rely on the PATH to find it.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><parameter>librarypath</parameter></term>
-		    <listitem>
-			<para>
-			    Specify the
-<literal>LD_LIBRARY_PATH</literal> value for C++ servers or the
-<literal>CLASSPATH</literal> value for Java servers.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
 		    <term><parameter>descriptor</parameter></term>
 		    <listitem>
 			<para>
 			    The server deployment descriptor.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><parameter>targets</parameter></term>
-		    <listitem>
-			<para>
-			    The optional targets to deploy. A target is a
-list of components separated by dots and a target name. For
-example, the "debug" target of "service1" in "server1" will be
-deployed if the target "server1.service1.debug" is specified.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8217,14 +8298,6 @@ deployed if the target "server1.service1.debug" is specified.</para>
 			    Raised if server deployment failed.</para>
 		    </listitem>
 		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePack.NodeUnreachableException"><classname>NodeUnreachableException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the node could not be
-reached.</para>
-		    </listitem>
-		</varlistentry>
 	    </variablelist>
 	</section>
 	<section>
@@ -8232,6 +8305,7 @@ reached.</para>
 	    <para>
 	    <simplelist type="inline">
 		<member><link linkend="IcePack.Admin.removeServer"><function>removeServer</function></link></member>
+		<member><link linkend="IcePack.Admin.updateServer"><function>updateServer</function></link></member>
 	    </simplelist></para></section>
     </section>
     <section id="IcePack.Admin.getAdapterEndpoints">
@@ -8284,6 +8358,17 @@ Get all the adapter ids registered with &IcePack;.</para>
 		The adapter ids.</para>
 	</section>
     </section>
+    <section id="IcePack.Admin.getAllApplicationNames">
+	<title><literal>getAllApplicationNames</literal></title>
+<synopsis><link linkend="Ice.StringSeq"><type>::Ice::StringSeq</type></link> <function>getAllApplicationNames</function>();</synopsis>
+	<para>
+Get all the &IcePack; applications currently registered.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		The application names.</para>
+	</section>
+    </section>
     <section id="IcePack.Admin.getAllNodeNames">
 	<title><literal>getAllNodeNames</literal></title>
 <synopsis><link linkend="Ice.StringSeq"><type>::Ice::StringSeq</type></link> <function>getAllNodeNames</function>();</synopsis>
@@ -8309,9 +8394,45 @@ Get all the server names registered with &IcePack;.</para>
 	    <title>See Also</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="IcePack.Admin.getServerDescription"><function>getServerDescription</function></link></member>
 		<member><link linkend="IcePack.Admin.getServerState"><function>getServerState</function></link></member>
 	    </simplelist></para></section>
+    </section>
+    <section id="IcePack.Admin.getApplicationDescriptor">
+	<title><literal>getApplicationDescriptor</literal></title>
+<synopsis><link linkend="IcePack.ApplicationDescriptor"><classname>ApplicationDescriptor</classname></link> <function>getApplicationDescriptor</function>(<type>string</type> <parameter>name</parameter>)
+    throws
+	<link linkend="IcePack.ApplicationNotExistException"><classname>ApplicationNotExistException</classname></link>;</synopsis>
+	<para>
+Get an application descriptor.</para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>name</parameter></term>
+		    <listitem>
+			<para>
+			    The application name.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		s The application descriptor.</para>
+	</section>
+	<section>
+	    <title>Exceptions</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePack.ApplicationNotExistException"><classname>ApplicationNotExistException</classname></link></term>
+		    <listitem>
+			<para>
+			    Raised if the application doesn't exist.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
     </section>
     <section id="IcePack.Admin.getServerActivation">
 	<title><literal>getServerActivation</literal></title>
@@ -8328,7 +8449,7 @@ Get the server's activation mode.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <link linkend="IcePack.ServerDescription.name"><type>ServerDescription::name</type></link>.</para>
+			    Must match the name of <literal>ServerDescription::name</literal>.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8363,19 +8484,17 @@ reached.</para>
 	    <title>See Also</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="IcePack.Admin.getServerDescription"><function>getServerDescription</function></link></member>
 		<member><link linkend="IcePack.Admin.getServerState"><function>getServerState</function></link></member>
 		<member><link linkend="IcePack.Admin.getAllServerNames"><function>getAllServerNames</function></link></member>
 	    </simplelist></para></section>
     </section>
-    <section id="IcePack.Admin.getServerDescription">
-	<title><literal>getServerDescription</literal></title>
-<synopsis><link linkend="IcePack.ServerDescription"><structname>ServerDescription</structname></link> <function>getServerDescription</function>(<type>string</type> <parameter>name</parameter>)
+    <section id="IcePack.Admin.getServerDescriptor">
+	<title><literal>getServerDescriptor</literal></title>
+<synopsis><link linkend="IcePack.ServerDescriptor"><classname>ServerDescriptor</classname></link> <function>getServerDescriptor</function>(<type>string</type> <parameter>name</parameter>)
     throws
-	<link linkend="IcePack.ServerNotExistException"><classname>ServerNotExistException</classname></link>,
-	<link linkend="IcePack.NodeUnreachableException"><classname>NodeUnreachableException</classname></link>;</synopsis>
+	<link linkend="IcePack.ServerNotExistException"><classname>ServerNotExistException</classname></link>;</synopsis>
 	<para>
-Get a server's description.</para>
+Get a server descriptor.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
@@ -8383,7 +8502,7 @@ Get a server's description.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <link linkend="IcePack.ServerDescription.name"><type>ServerDescription::name</type></link>.</para>
+			    The server name.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8391,7 +8510,7 @@ Get a server's description.</para>
 	<section>
 	    <title>Return Value</title>
 	    <para>
-		The server description.</para>
+		s The server descriptor.</para>
 	</section>
 	<section>
 	    <title>Exceptions</title>
@@ -8400,28 +8519,11 @@ Get a server's description.</para>
 		    <term><link linkend="IcePack.ServerNotExistException"><classname>ServerNotExistException</classname></link></term>
 		    <listitem>
 			<para>
-			    Raised if the server is not
-found.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePack.NodeUnreachableException"><classname>NodeUnreachableException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the node could not be
-reached.</para>
+			    Raised if the server doesn't exist.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
 	</section>
-	<section>
-	    <title>See Also</title>
-	    <para>
-	    <simplelist type="inline">
-		<member><link linkend="IcePack.Admin.getServerState"><function>getServerState</function></link></member>
-		<member><link linkend="IcePack.Admin.getServerPid"><function>getServerPid</function></link></member>
-		<member><link linkend="IcePack.Admin.getAllServerNames"><function>getAllServerNames</function></link></member>
-	    </simplelist></para></section>
     </section>
     <section id="IcePack.Admin.getServerPid">
 	<title><literal>getServerPid</literal></title>
@@ -8439,7 +8541,7 @@ system dependent.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <link linkend="IcePack.ServerDescription.name"><type>ServerDescription::name</type></link>.</para>
+			    Must match the name of <literal>ServerDescription::name</literal>.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8474,7 +8576,6 @@ reached.</para>
 	    <title>See Also</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="IcePack.Admin.getServerDescription"><function>getServerDescription</function></link></member>
 		<member><link linkend="IcePack.Admin.getServerState"><function>getServerState</function></link></member>
 		<member><link linkend="IcePack.Admin.getAllServerNames"><function>getAllServerNames</function></link></member>
 	    </simplelist></para></section>
@@ -8494,7 +8595,7 @@ Get a server's state.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <link linkend="IcePack.ServerDescription.name"><type>ServerDescription::name</type></link>.</para>
+			    Must match the name of <literal>ServerDescription::name</literal>.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8529,10 +8630,20 @@ reached.</para>
 	    <title>See Also</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="IcePack.Admin.getServerDescription"><function>getServerDescription</function></link></member>
 		<member><link linkend="IcePack.Admin.getServerPid"><function>getServerPid</function></link></member>
 		<member><link linkend="IcePack.Admin.getAllServerNames"><function>getAllServerNames</function></link></member>
 	    </simplelist></para></section>
+    </section>
+    <section id="IcePack.Admin.getSliceChecksums">
+	<title><literal>getSliceChecksums</literal></title>
+<synopsis><link linkend="Ice.SliceChecksumDict"><type>::Ice::SliceChecksumDict</type></link> <function>getSliceChecksums</function>();</synopsis>
+	<para>
+Returns the checksums for the IcePack Slice definitions.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		A dictionary mapping Slice type ids to their checksums.</para>
+	</section>
     </section>
     <section id="IcePack.Admin.pingNode">
 	<title><literal>pingNode</literal></title>
@@ -8542,6 +8653,18 @@ reached.</para>
 	<para>
 Ping an &IcePack; node to see if it is active.</para>
 	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>name</parameter></term>
+		    <listitem>
+			<para>
+			    The node name.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
 	    <title>Return Value</title>
 	    <para>
 		true if the node ping succeeded, false otherwise.</para>
@@ -8549,19 +8672,19 @@ Ping an &IcePack; node to see if it is active.</para>
     </section>
     <section id="IcePack.Admin.removeApplication">
 	<title><literal>removeApplication</literal></title>
-<synopsis><type>void</type> <function>removeApplication</function>(<type>string</type> <parameter>descriptor</parameter>)
+<synopsis><type>void</type> <function>removeApplication</function>(<type>string</type> <parameter>name</parameter>)
     throws
-	<link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link>;</synopsis>
+	<link linkend="IcePack.ApplicationNotExistException"><classname>ApplicationNotExistException</classname></link>;</synopsis>
 	<para>
 Remove an application from &IcePack;.</para>
 	<section>
 	    <title>Parameters</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><parameter>descriptor</parameter></term>
+		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    The application descriptor.</para>
+			    The application name.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8572,6 +8695,26 @@ Remove an application from &IcePack;.</para>
 	    <simplelist type="inline">
 		<member><link linkend="IcePack.Admin.addApplication"><function>addApplication</function></link></member>
 	    </simplelist></para></section>
+    </section>
+    <section id="IcePack.Admin.removeNode">
+	<title><literal>removeNode</literal></title>
+<synopsis><type>void</type> <function>removeNode</function>(<type>string</type> <parameter>name</parameter>)
+    throws
+	<link linkend="IcePack.NodeNotExistException"><classname>NodeNotExistException</classname></link>;</synopsis>
+	<para>
+Remove the given node and associated servers from the &IcePack; registry.</para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>name</parameter></term>
+		    <listitem>
+			<para>
+			    The node name.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
     </section>
     <section id="IcePack.Admin.removeObject">
 	<title><literal>removeObject</literal></title>
@@ -8610,9 +8753,8 @@ found.</para>
 	<title><literal>removeServer</literal></title>
 <synopsis><type>void</type> <function>removeServer</function>(<type>string</type> <parameter>name</parameter>)
     throws
-	<link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link>,
 	<link linkend="IcePack.ServerNotExistException"><classname>ServerNotExistException</classname></link>,
-	<link linkend="IcePack.NodeUnreachableException"><classname>NodeUnreachableException</classname></link>;</synopsis>
+	<link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link>;</synopsis>
 	<para>
 Remove a server from an &IcePack; node.</para>
 	<section>
@@ -8622,7 +8764,7 @@ Remove a server from an &IcePack; node.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <link linkend="IcePack.ServerDescription.name"><type>ServerDescription::name</type></link>.</para>
+			    The server name.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8631,27 +8773,10 @@ Remove a server from an &IcePack; node.</para>
 	    <title>Exceptions</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the server deployer
-failed to remove the server.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
 		    <term><link linkend="IcePack.ServerNotExistException"><classname>ServerNotExistException</classname></link></term>
 		    <listitem>
 			<para>
-			    Raised if the server is not
-found.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePack.NodeUnreachableException"><classname>NodeUnreachableException</classname></link></term>
-		    <listitem>
-			<para>
-			    Raised if the node could not be
-reached.</para>
+			    Raised if the server doesn't exist.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8661,6 +8786,7 @@ reached.</para>
 	    <para>
 	    <simplelist type="inline">
 		<member><link linkend="IcePack.Admin.addServer"><function>addServer</function></link></member>
+		<member><link linkend="IcePack.Admin.updateServer"><function>updateServer</function></link></member>
 	    </simplelist></para></section>
     </section>
     <section id="IcePack.Admin.sendSignal">
@@ -8680,7 +8806,7 @@ Send signal to a server.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <link linkend="IcePack.ServerDescription.name"><type>ServerDescription::name</type></link>.</para>
+			    Must match the name of <literal>ServerDescription::name</literal>.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -8738,7 +8864,7 @@ Set the server's activation mode.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <link linkend="IcePack.ServerDescription.name"><type>ServerDescription::name</type></link>.</para>
+			    Must match the name of <literal>ServerDescription::name</literal>.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8773,7 +8899,6 @@ reached.</para>
 	    <title>See Also</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="IcePack.Admin.getServerDescription"><function>getServerDescription</function></link></member>
 		<member><link linkend="IcePack.Admin.getServerState"><function>getServerState</function></link></member>
 		<member><link linkend="IcePack.Admin.getAllServerNames"><function>getAllServerNames</function></link></member>
 	    </simplelist></para></section>
@@ -8791,6 +8916,18 @@ Shut down the &IcePack; registry.</para>
 	<link linkend="IcePack.NodeNotExistException"><classname>NodeNotExistException</classname></link>;</synopsis>
 	<para>
 Shutdown an &IcePack; node.</para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>name</parameter></term>
+		    <listitem>
+			<para>
+			    The node name.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
     </section>
     <section id="IcePack.Admin.startServer">
 	<title><literal>startServer</literal></title>
@@ -8807,7 +8944,7 @@ Start a server.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <link linkend="IcePack.ServerDescription.name"><type>ServerDescription::name</type></link>.</para>
+			    Must match the name of <literal>ServerDescription::name</literal>.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8855,7 +8992,7 @@ Stop a server.</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <link linkend="IcePack.ServerDescription.name"><type>ServerDescription::name</type></link>.</para>
+			    Must match the name of <literal>ServerDescription::name</literal>.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
@@ -8882,6 +9019,91 @@ reached.</para>
 	    </variablelist>
 	</section>
     </section>
+    <section id="IcePack.Admin.updateApplication">
+	<title><literal>updateApplication</literal></title>
+<synopsis><type>void</type> <function>updateApplication</function>(<link linkend="IcePack.ApplicationDescriptor"><classname>ApplicationDescriptor</classname></link> <parameter>descriptor</parameter>)
+    throws
+	<link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link>;</synopsis>
+	<para>
+Update an application. An application is a set of servers.</para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>descriptor</parameter></term>
+		    <listitem>
+			<para>
+			    The application descriptor.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>Exceptions</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link></term>
+		    <listitem>
+			<para>
+			    Raised if application deployment failed.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.Admin.removeApplication"><function>removeApplication</function></link></member>
+	    </simplelist></para></section>
+    </section>
+    <section id="IcePack.Admin.updateServer">
+	<title><literal>updateServer</literal></title>
+<synopsis><type>void</type> <function>updateServer</function>(<link linkend="IcePack.ServerDescriptor"><classname>ServerDescriptor</classname></link> <parameter>server</parameter>)
+    throws
+	<link linkend="IcePack.ServerNotExistException"><classname>ServerNotExistException</classname></link>,
+	<link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link>;</synopsis>
+	<para>
+Update a server.</para>
+	<section>
+	    <title>Parameters</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><parameter>descriptor</parameter></term>
+		    <listitem>
+			<para>
+			    The server deployment descriptor.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>Exceptions</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link></term>
+		    <listitem>
+			<para>
+			    Raised if server deployment failed.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ServerNotExistException"><classname>ServerNotExistException</classname></link></term>
+		    <listitem>
+			<para>
+			    Raised if the server doesn't exist.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+	<section>
+	    <title>See Also</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.Admin.addServer"><function>addServer</function></link></member>
+		<member><link linkend="IcePack.Admin.removeServer"><function>removeServer</function></link></member>
+	    </simplelist></para></section>
+    </section>
     <section id="IcePack.Admin.writeMessage">
 	<title><literal>writeMessage</literal></title>
 <synopsis><type>void</type> <function>writeMessage</function>(<type>string</type> <parameter>name</parameter>,
@@ -8899,7 +9121,7 @@ Write message on server stdout or stderr</para>
 		    <term><parameter>name</parameter></term>
 		    <listitem>
 			<para>
-			    Must match the name of <link linkend="IcePack.ServerDescription.name"><type>ServerDescription::name</type></link>.</para>
+			    Must match the name of <literal>ServerDescription::name</literal>.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
@@ -8941,6 +9163,76 @@ reached.</para>
 	</section>
     </section>
 </section>
+<section id="IcePack.ApplicationDescriptor">
+    <title><literal>IcePack::ApplicationDescriptor</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>class <classname>ApplicationDescriptor</classname></synopsis>
+	<para>
+An application descriptor.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.Admin.addApplication"><function>Admin::addApplication</function></link></member>
+		<member><link linkend="IcePack.Admin.getApplicationDescriptor"><function>Admin::getApplicationDescriptor</function></link></member>
+		<member><link linkend="IcePack.Admin.updateApplication"><function>Admin::updateApplication</function></link></member>
+	    </simplelist></para></section>
+	<section>
+	    <title>Data Member Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePack.ApplicationDescriptor.comment"><type>comment</type></link></term>
+		    <listitem>
+			<para>
+Some comments on the application.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ApplicationDescriptor.name"><type>name</type></link></term>
+		    <listitem>
+			<para>
+The application name.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ApplicationDescriptor.servers"><type>servers</type></link></term>
+		    <listitem>
+			<para>
+The application servers.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="IcePack.ApplicationDescriptor.comment">
+	<title><literal>comment</literal></title>
+<synopsis><type>string</type> <structfield>comment</structfield>;</synopsis>
+	<para>
+Some comments on the application.</para>
+    </section>
+    <section id="IcePack.ApplicationDescriptor.name">
+	<title><literal>name</literal></title>
+<synopsis><type>string</type> <structfield>name</structfield>;</synopsis>
+	<para>
+The application name.</para>
+    </section>
+    <section id="IcePack.ApplicationDescriptor.servers">
+	<title><literal>servers</literal></title>
+<synopsis><link linkend="IcePack.ServerDescriptorSeq"><type>ServerDescriptorSeq</type></link> <structfield>servers</structfield>;</synopsis>
+	<para>
+The application servers.</para>
+    </section>
+</section>
+<section id="IcePack.ApplicationNotExistException">
+    <title><literal>IcePack::ApplicationNotExistException</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>exception <classname>ApplicationNotExistException</classname></synopsis>
+	<para>
+This exception is raised if an application does not exist.</para>
+    </section>
+</section>
 <section id="IcePack.BadSignalException">
     <title><literal>IcePack::BadSignalException</literal></title>
     <section>
@@ -8949,6 +9241,196 @@ reached.</para>
 	<para>
 This exception is raised if an unknown signal was sent to
 to a server.</para>
+    </section>
+</section>
+<section id="IcePack.ComponentDescriptor">
+    <title><literal>IcePack::ComponentDescriptor</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>class <classname>ComponentDescriptor</classname></synopsis>
+	<para>
+A component descriptor. A component is either an &Ice; server or
+an &IceBox; service.</para>
+	<section>
+	    <title>Derived Classes and Interfaces</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.ServerDescriptor"><type>ServerDescriptor</type></link></member>
+		<member><link linkend="IcePack.ServiceDescriptor"><type>ServiceDescriptor</type></link></member>
+	    </simplelist></para></section>
+	<section>
+	    <title>Data Member Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePack.ComponentDescriptor.adapters"><type>adapters</type></link></term>
+		    <listitem>
+			<para>
+The component object adapters.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ComponentDescriptor.comment"><type>comment</type></link></term>
+		    <listitem>
+			<para>
+Some comments on the component.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ComponentDescriptor.dbEnvs"><type>dbEnvs</type></link></term>
+		    <listitem>
+			<para>
+The component database environments.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ComponentDescriptor.name"><type>name</type></link></term>
+		    <listitem>
+			<para>
+The component nane.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ComponentDescriptor.properties"><type>properties</type></link></term>
+		    <listitem>
+			<para>
+The component configuration properties.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="IcePack.ComponentDescriptor.adapters">
+	<title><literal>adapters</literal></title>
+<synopsis><link linkend="IcePack.AdapterDescriptorSeq"><type>AdapterDescriptorSeq</type></link> <structfield>adapters</structfield>;</synopsis>
+	<para>
+The component object adapters.</para>
+    </section>
+    <section id="IcePack.ComponentDescriptor.comment">
+	<title><literal>comment</literal></title>
+<synopsis><type>string</type> <structfield>comment</structfield>;</synopsis>
+	<para>
+Some comments on the component.</para>
+    </section>
+    <section id="IcePack.ComponentDescriptor.dbEnvs">
+	<title><literal>dbEnvs</literal></title>
+<synopsis><link linkend="IcePack.DbEnvDescriptorSeq"><type>DbEnvDescriptorSeq</type></link> <structfield>dbEnvs</structfield>;</synopsis>
+	<para>
+The component database environments.</para>
+    </section>
+    <section id="IcePack.ComponentDescriptor.name">
+	<title><literal>name</literal></title>
+<synopsis><type>string</type> <structfield>name</structfield>;</synopsis>
+	<para>
+The component nane.</para>
+    </section>
+    <section id="IcePack.ComponentDescriptor.properties">
+	<title><literal>properties</literal></title>
+<synopsis><link linkend="IcePack.PropertyDescriptorSeq"><type>PropertyDescriptorSeq</type></link> <structfield>properties</structfield>;</synopsis>
+	<para>
+The component configuration properties.</para>
+    </section>
+</section>
+<section id="IcePack.CppIceBoxDescriptor">
+    <title><literal>IcePack::CppIceBoxDescriptor</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>class <classname>CppIceBoxDescriptor</classname>
+    extends 
+	<link linkend="IcePack.ServerDescriptor"><type>ServerDescriptor</type></link></synopsis>
+	<para>
+A C++ &IceBox; server descriptor.</para>
+	<section>
+	    <title>Data Member Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePack.CppIceBoxDescriptor.endpoints"><type>endpoints</type></link></term>
+		    <listitem>
+			<para>
+The endpoints of the &IceBox; service manager interface.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.CppIceBoxDescriptor.services"><type>services</type></link></term>
+		    <listitem>
+			<para>
+The &IceBox; C++ services.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="IcePack.CppIceBoxDescriptor.endpoints">
+	<title><literal>endpoints</literal></title>
+<synopsis><type>string</type> <structfield>endpoints</structfield>;</synopsis>
+	<para>
+The endpoints of the &IceBox; service manager interface.</para>
+    </section>
+    <section id="IcePack.CppIceBoxDescriptor.services">
+	<title><literal>services</literal></title>
+<synopsis><link linkend="IcePack.ServiceDescriptorSeq"><type>ServiceDescriptorSeq</type></link> <structfield>services</structfield>;</synopsis>
+	<para>
+The &IceBox; C++ services.</para>
+    </section>
+</section>
+<section id="IcePack.DbEnvDescriptor">
+    <title><literal>IcePack::DbEnvDescriptor</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>struct <structname>DbEnvDescriptor</structname></synopsis>
+	<para>
+A &Freeze; database environment descriptor.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.DbEnvDescriptorSeq"><type>DbEnvDescriptorSeq</type></link></member>
+	    </simplelist></para></section>
+	<section>
+	    <title>Data Member Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePack.DbEnvDescriptor.dbHome"><type>dbHome</type></link></term>
+		    <listitem>
+			<para>
+The home of the database environment (i.e.: the directory where the database file
+will be stored).</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.DbEnvDescriptor.name"><type>name</type></link></term>
+		    <listitem>
+			<para>
+The name of the database environment.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.DbEnvDescriptor.properties"><type>properties</type></link></term>
+		    <listitem>
+			<para>
+The configuration properties of the database environment.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="IcePack.DbEnvDescriptor.dbHome">
+	<title><literal>dbHome</literal></title>
+<synopsis><type>string</type> <structfield>dbHome</structfield>;</synopsis>
+	<para>
+The home of the database environment (i.e.: the directory where the database file
+will be stored).</para>
+    </section>
+    <section id="IcePack.DbEnvDescriptor.name">
+	<title><literal>name</literal></title>
+<synopsis><type>string</type> <structfield>name</structfield>;</synopsis>
+	<para>
+The name of the database environment.</para>
+    </section>
+    <section id="IcePack.DbEnvDescriptor.properties">
+	<title><literal>properties</literal></title>
+<synopsis><link linkend="IcePack.PropertyDescriptorSeq"><type>PropertyDescriptorSeq</type></link> <structfield>properties</structfield>;</synopsis>
+	<para>
+The configuration properties of the database environment.</para>
     </section>
 </section>
 <section id="IcePack.DeploymentException">
@@ -8960,25 +9442,8 @@ to a server.</para>
 A generic exception base for all kinds of deployment error
 exception.</para>
 	<section>
-	    <title>Derived Exceptions</title>
-	    <para>
-	    <simplelist type="inline">
-		<member><link linkend="IcePack.AdapterDeploymentException"><classname>AdapterDeploymentException</classname></link></member>
-		<member><link linkend="IcePack.ObjectDeploymentException"><classname>ObjectDeploymentException</classname></link></member>
-		<member><link linkend="IcePack.ParserDeploymentException"><classname>ParserDeploymentException</classname></link></member>
-		<member><link linkend="IcePack.ServerDeploymentException"><classname>ServerDeploymentException</classname></link></member>
-	    </simplelist></para></section>
-	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IcePack.DeploymentException.component"><type>component</type></link></term>
-		    <listitem>
-			<para>
-The path of the component that caused the deployment to
-fail.</para>
-		    </listitem>
-		</varlistentry>
 		<varlistentry>
 		    <term><link linkend="IcePack.DeploymentException.reason"><type>reason</type></link></term>
 		    <listitem>
@@ -8989,20 +9454,101 @@ The reason for the failure.</para>
 	    </variablelist>
 	</section>
     </section>
-    <section id="IcePack.DeploymentException.component">
-	<title><literal>component</literal></title>
-<synopsis><type>string</type> <structfield>component</structfield>;</synopsis>
-	<para>
-The path of the component that caused the deployment to
-fail. The path is a dot-separated list of component names. It
-always starts with the node name, followed by the server name,
-and finally the service name.</para>
-    </section>
     <section id="IcePack.DeploymentException.reason">
 	<title><literal>reason</literal></title>
 <synopsis><type>string</type> <structfield>reason</structfield>;</synopsis>
 	<para>
 The reason for the failure.</para>
+    </section>
+</section>
+<section id="IcePack.JavaIceBoxDescriptor">
+    <title><literal>IcePack::JavaIceBoxDescriptor</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>class <classname>JavaIceBoxDescriptor</classname>
+    extends 
+	<link linkend="IcePack.JavaServerDescriptor"><type>JavaServerDescriptor</type></link></synopsis>
+	<para>
+A Java &IceBox; server descriptor.</para>
+	<section>
+	    <title>Data Member Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePack.JavaIceBoxDescriptor.endpoints"><type>endpoints</type></link></term>
+		    <listitem>
+			<para>
+The endpoints of the &IceBox; service manager interface.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.JavaIceBoxDescriptor.services"><type>services</type></link></term>
+		    <listitem>
+			<para>
+The &IceBox; Java services.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="IcePack.JavaIceBoxDescriptor.endpoints">
+	<title><literal>endpoints</literal></title>
+<synopsis><type>string</type> <structfield>endpoints</structfield>;</synopsis>
+	<para>
+The endpoints of the &IceBox; service manager interface.</para>
+    </section>
+    <section id="IcePack.JavaIceBoxDescriptor.services">
+	<title><literal>services</literal></title>
+<synopsis><link linkend="IcePack.ServiceDescriptorSeq"><type>ServiceDescriptorSeq</type></link> <structfield>services</structfield>;</synopsis>
+	<para>
+The &IceBox; Java services.</para>
+    </section>
+</section>
+<section id="IcePack.JavaServerDescriptor">
+    <title><literal>IcePack::JavaServerDescriptor</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>class <classname>JavaServerDescriptor</classname>
+    extends 
+	<link linkend="IcePack.ServerDescriptor"><type>ServerDescriptor</type></link></synopsis>
+	<para>
+A Java &Ice; server descriptor.</para>
+	<section>
+	    <title>Derived Classes and Interfaces</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.JavaIceBoxDescriptor"><type>JavaIceBoxDescriptor</type></link></member>
+	    </simplelist></para></section>
+	<section>
+	    <title>Data Member Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePack.JavaServerDescriptor.className"><type>className</type></link></term>
+		    <listitem>
+			<para>
+The name of the Java class containing the main function.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.JavaServerDescriptor.jvmOptions"><type>jvmOptions</type></link></term>
+		    <listitem>
+			<para>
+The command line options to pass to the JVM.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="IcePack.JavaServerDescriptor.className">
+	<title><literal>className</literal></title>
+<synopsis><type>string</type> <structfield>className</structfield>;</synopsis>
+	<para>
+The name of the Java class containing the main function.</para>
+    </section>
+    <section id="IcePack.JavaServerDescriptor.jvmOptions">
+	<title><literal>jvmOptions</literal></title>
+<synopsis><link linkend="Ice.StringSeq"><type>::Ice::StringSeq</type></link> <structfield>jvmOptions</structfield>;</synopsis>
+	<para>
+The command line options to pass to the JVM.</para>
     </section>
 </section>
 <section id="IcePack.NodeNotExistException">
@@ -9023,34 +9569,63 @@ This exception is raised if a node does not exist.</para>
 This exception is raised if a node could not be reached.</para>
     </section>
 </section>
-<section id="IcePack.ObjectDeploymentException">
-    <title><literal>IcePack::ObjectDeploymentException</literal></title>
+<section id="IcePack.ObjectDescriptor">
+    <title><literal>IcePack::ObjectDescriptor</literal></title>
     <section>
 	<title>Overview</title>
-<synopsis>exception <classname>ObjectDeploymentException</classname>
-    extends 
-	<link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link></synopsis>
+<synopsis>struct <structname>ObjectDescriptor</structname></synopsis>
 	<para>
-This exception is raised if an error occurs during object
-registration.</para>
+An &Ice; object descriptor.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.ObjectDescriptorSeq"><type>ObjectDescriptorSeq</type></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IcePack.ObjectDeploymentException.proxy"><type>proxy</type></link></term>
+		    <term><link linkend="IcePack.ObjectDescriptor.adapterId"><type>adapterId</type></link></term>
 		    <listitem>
 			<para>
-The object that could not be registered.</para>
+The object adapter id.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ObjectDescriptor.proxy"><type>proxy</type></link></term>
+		    <listitem>
+			<para>
+The object proxy.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.ObjectDescriptor.type"><type>type</type></link></term>
+		    <listitem>
+			<para>
+The object type.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
 	</section>
     </section>
-    <section id="IcePack.ObjectDeploymentException.proxy">
+    <section id="IcePack.ObjectDescriptor.adapterId">
+	<title><literal>adapterId</literal></title>
+<synopsis><type>string</type> <structfield>adapterId</structfield>;</synopsis>
+	<para>
+The object adapter id.</para>
+    </section>
+    <section id="IcePack.ObjectDescriptor.proxy">
 	<title><literal>proxy</literal></title>
 <synopsis><type>Object*</type> <structfield>proxy</structfield>;</synopsis>
 	<para>
-The object that could not be registered.</para>
+The object proxy.</para>
+    </section>
+    <section id="IcePack.ObjectDescriptor.type">
+	<title><literal>type</literal></title>
+<synopsis><type>string</type> <structfield>type</structfield>;</synopsis>
+	<para>
+The object type.</para>
     </section>
 </section>
 <section id="IcePack.ObjectExistsException">
@@ -9071,16 +9646,50 @@ This exception is raised if an object already exists.</para>
 This exception is raised if an object does not exist.</para>
     </section>
 </section>
-<section id="IcePack.ParserDeploymentException">
-    <title><literal>IcePack::ParserDeploymentException</literal></title>
+<section id="IcePack.PropertyDescriptor">
+    <title><literal>IcePack::PropertyDescriptor</literal></title>
     <section>
 	<title>Overview</title>
-<synopsis>exception <classname>ParserDeploymentException</classname>
-    extends 
-	<link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link></synopsis>
+<synopsis>struct <structname>PropertyDescriptor</structname></synopsis>
 	<para>
-This exception is raised if an error occurs while parsing the
-XML descriptor of a component.</para>
+A configuration property descriptor.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.PropertyDescriptorSeq"><type>PropertyDescriptorSeq</type></link></member>
+	    </simplelist></para></section>
+	<section>
+	    <title>Data Member Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePack.PropertyDescriptor.name"><type>name</type></link></term>
+		    <listitem>
+			<para>
+The name of the property.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePack.PropertyDescriptor.value"><type>value</type></link></term>
+		    <listitem>
+			<para>
+The value of the property.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="IcePack.PropertyDescriptor.name">
+	<title><literal>name</literal></title>
+<synopsis><type>string</type> <structfield>name</structfield>;</synopsis>
+	<para>
+The name of the property.</para>
+    </section>
+    <section id="IcePack.PropertyDescriptor.value">
+	<title><literal>value</literal></title>
+<synopsis><type>string</type> <structfield>value</structfield>;</synopsis>
+	<para>
+The value of the property.</para>
     </section>
 </section>
 <section id="IcePack.Query">
@@ -9246,6 +9855,7 @@ The server activation mode.</para>
 	    <simplelist type="inline">
 		<member><link linkend="IcePack.Admin.getServerActivation"><function>Admin::getServerActivation</function></link></member>
 		<member><link linkend="IcePack.Admin.setServerActivation"><function>Admin::setServerActivation</function></link></member>
+		<member><link linkend="IcePack.ServerDescriptor.activation"><type>ServerDescriptor::activation</type></link></member>
 	    </simplelist></para></section>
 	<section>
 	    <title>Enumerator Index</title>
@@ -9286,175 +9896,127 @@ The server is activated manually through the administrative
 interface.</para>
     </section>
 </section>
-<section id="IcePack.ServerDeploymentException">
-    <title><literal>IcePack::ServerDeploymentException</literal></title>
+<section id="IcePack.ServerDescriptor">
+    <title><literal>IcePack::ServerDescriptor</literal></title>
     <section>
 	<title>Overview</title>
-<synopsis>exception <classname>ServerDeploymentException</classname>
+<synopsis>class <classname>ServerDescriptor</classname>
     extends 
-	<link linkend="IcePack.DeploymentException"><classname>DeploymentException</classname></link></synopsis>
+	<link linkend="IcePack.ComponentDescriptor"><type>ComponentDescriptor</type></link></synopsis>
 	<para>
-This exception is raised if an error occurs while deploying a
-server.</para>
+An &Ice; server descriptor.</para>
 	<section>
-	    <title>Data Member Index</title>
-	    <variablelist>
-		<varlistentry>
-		    <term><link linkend="IcePack.ServerDeploymentException.server"><type>server</type></link></term>
-		    <listitem>
-			<para>
-The name of the server that could not be deployed.</para>
-		    </listitem>
-		</varlistentry>
-	    </variablelist>
-	</section>
-    </section>
-    <section id="IcePack.ServerDeploymentException.server">
-	<title><literal>server</literal></title>
-<synopsis><type>string</type> <structfield>server</structfield>;</synopsis>
-	<para>
-The name of the server that could not be deployed.</para>
-    </section>
-</section>
-<section id="IcePack.ServerDescription">
-    <title><literal>IcePack::ServerDescription</literal></title>
-    <section>
-	<title>Overview</title>
-<synopsis>struct <structname>ServerDescription</structname></synopsis>
-	<para>
-The server description.</para>
+	    <title>Derived Classes and Interfaces</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.CppIceBoxDescriptor"><type>CppIceBoxDescriptor</type></link></member>
+		<member><link linkend="IcePack.JavaServerDescriptor"><type>JavaServerDescriptor</type></link></member>
+	    </simplelist></para></section>
 	<section>
 	    <title>Used By</title>
 	    <para>
 	    <simplelist type="inline">
-		<member><link linkend="IcePack.Admin.getServerDescription"><function>Admin::getServerDescription</function></link></member>
+		<member><link linkend="IcePack.Admin.addServer"><function>Admin::addServer</function></link></member>
+		<member><link linkend="IcePack.Admin.getServerDescriptor"><function>Admin::getServerDescriptor</function></link></member>
+		<member><link linkend="IcePack.Admin.updateServer"><function>Admin::updateServer</function></link></member>
+		<member><link linkend="IcePack.ServerDescriptorSeq"><type>ServerDescriptorSeq</type></link></member>
 	    </simplelist></para></section>
 	<section>
 	    <title>Data Member Index</title>
 	    <variablelist>
 		<varlistentry>
-		    <term><link linkend="IcePack.ServerDescription.args"><type>args</type></link></term>
+		    <term><link linkend="IcePack.ServerDescriptor.activation"><type>activation</type></link></term>
 		    <listitem>
 			<para>
-The server arguments.</para>
+The server initial activation mode.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="IcePack.ServerDescription.descriptor"><type>descriptor</type></link></term>
+		    <term><link linkend="IcePack.ServerDescriptor.application"><type>application</type></link></term>
 		    <listitem>
 			<para>
-The path of the deployment descriptor used to deploy the
-server.</para>
+The name of the application this server belongs to.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="IcePack.ServerDescription.envs"><type>envs</type></link></term>
+		    <term><link linkend="IcePack.ServerDescriptor.envs"><type>envs</type></link></term>
 		    <listitem>
 			<para>
 The server environment variables.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="IcePack.ServerDescription.name"><type>name</type></link></term>
+		    <term><link linkend="IcePack.ServerDescriptor.exe"><type>exe</type></link></term>
 		    <listitem>
 			<para>
-Server name.</para>
+The path of the server executable.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="IcePack.ServerDescription.node"><type>node</type></link></term>
+		    <term><link linkend="IcePack.ServerDescriptor.node"><type>node</type></link></term>
 		    <listitem>
 			<para>
-The name of the node where the server is deployed.</para>
+The &IcePack node on which the server is deployed.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="IcePack.ServerDescription.path"><type>path</type></link></term>
+		    <term><link linkend="IcePack.ServerDescriptor.options"><type>options</type></link></term>
 		    <listitem>
 			<para>
-The server path.</para>
+The command line options to pass to the server executable.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
-		    <term><link linkend="IcePack.ServerDescription.pwd"><type>pwd</type></link></term>
+		    <term><link linkend="IcePack.ServerDescriptor.pwd"><type>pwd</type></link></term>
 		    <listitem>
 			<para>
-The server working directory.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePack.ServerDescription.serviceManager"><type>serviceManager</type></link></term>
-		    <listitem>
-			<para>
-The &IceBox; service manager proxy if the server is an
-&IceBox; service, otherwise a null proxy.</para>
-		    </listitem>
-		</varlistentry>
-		<varlistentry>
-		    <term><link linkend="IcePack.ServerDescription.targets"><type>targets</type></link></term>
-		    <listitem>
-			<para>
-Targets used to deploy the server.</para>
+The path to the server working directory.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
 	</section>
     </section>
-    <section id="IcePack.ServerDescription.args">
-	<title><literal>args</literal></title>
-<synopsis><link linkend="Ice.StringSeq"><type>::Ice::StringSeq</type></link> <structfield>args</structfield>;</synopsis>
+    <section id="IcePack.ServerDescriptor.activation">
+	<title><literal>activation</literal></title>
+<synopsis><link linkend="IcePack.ServerActivation"><type>ServerActivation</type></link> <structfield>activation</structfield>;</synopsis>
 	<para>
-The server arguments.</para>
+The server initial activation mode.</para>
     </section>
-    <section id="IcePack.ServerDescription.descriptor">
-	<title><literal>descriptor</literal></title>
-<synopsis><type>string</type> <structfield>descriptor</structfield>;</synopsis>
+    <section id="IcePack.ServerDescriptor.application">
+	<title><literal>application</literal></title>
+<synopsis><type>string</type> <structfield>application</structfield>;</synopsis>
 	<para>
-The path of the deployment descriptor used to deploy the
-server.</para>
+The name of the application this server belongs to.</para>
     </section>
-    <section id="IcePack.ServerDescription.envs">
+    <section id="IcePack.ServerDescriptor.envs">
 	<title><literal>envs</literal></title>
 <synopsis><link linkend="Ice.StringSeq"><type>::Ice::StringSeq</type></link> <structfield>envs</structfield>;</synopsis>
 	<para>
 The server environment variables.</para>
     </section>
-    <section id="IcePack.ServerDescription.name">
-	<title><literal>name</literal></title>
-<synopsis><type>string</type> <structfield>name</structfield>;</synopsis>
+    <section id="IcePack.ServerDescriptor.exe">
+	<title><literal>exe</literal></title>
+<synopsis><type>string</type> <structfield>exe</structfield>;</synopsis>
 	<para>
-Server name.</para>
+The path of the server executable.</para>
     </section>
-    <section id="IcePack.ServerDescription.node">
+    <section id="IcePack.ServerDescriptor.node">
 	<title><literal>node</literal></title>
 <synopsis><type>string</type> <structfield>node</structfield>;</synopsis>
 	<para>
-The name of the node where the server is deployed.</para>
+The &IcePack node on which the server is deployed.</para>
     </section>
-    <section id="IcePack.ServerDescription.path">
-	<title><literal>path</literal></title>
-<synopsis><type>string</type> <structfield>path</structfield>;</synopsis>
+    <section id="IcePack.ServerDescriptor.options">
+	<title><literal>options</literal></title>
+<synopsis><link linkend="Ice.StringSeq"><type>::Ice::StringSeq</type></link> <structfield>options</structfield>;</synopsis>
 	<para>
-The server path.</para>
+The command line options to pass to the server executable.</para>
     </section>
-    <section id="IcePack.ServerDescription.pwd">
+    <section id="IcePack.ServerDescriptor.pwd">
 	<title><literal>pwd</literal></title>
 <synopsis><type>string</type> <structfield>pwd</structfield>;</synopsis>
 	<para>
-The server working directory.</para>
-    </section>
-    <section id="IcePack.ServerDescription.serviceManager">
-	<title><literal>serviceManager</literal></title>
-<synopsis><link linkend="IceBox.ServiceManager"><classname>::IceBox::ServiceManager*</classname></link> <structfield>serviceManager</structfield>;</synopsis>
-	<para>
-The &IceBox; service manager proxy if the server is an
-&IceBox; service, otherwise a null proxy.</para>
-    </section>
-    <section id="IcePack.ServerDescription.targets">
-	<title><literal>targets</literal></title>
-<synopsis><link linkend="Ice.StringSeq"><type>::Ice::StringSeq</type></link> <structfield>targets</structfield>;</synopsis>
-	<para>
-Targets used to deploy the server.</para>
+The path to the server working directory.</para>
     </section>
 </section>
 <section id="IcePack.ServerNotExistException">
@@ -9566,6 +10128,41 @@ The server is being destroyed.</para>
 <synopsis><constant>Destroyed</constant></synopsis>
 	<para>
 The server is destroyed.</para>
+    </section>
+</section>
+<section id="IcePack.ServiceDescriptor">
+    <title><literal>IcePack::ServiceDescriptor</literal></title>
+    <section>
+	<title>Overview</title>
+<synopsis>class <classname>ServiceDescriptor</classname>
+    extends 
+	<link linkend="IcePack.ComponentDescriptor"><type>ComponentDescriptor</type></link></synopsis>
+	<para>
+An &IceBox; service descriptor.</para>
+	<section>
+	    <title>Used By</title>
+	    <para>
+	    <simplelist type="inline">
+		<member><link linkend="IcePack.ServiceDescriptorSeq"><type>ServiceDescriptorSeq</type></link></member>
+	    </simplelist></para></section>
+	<section>
+	    <title>Data Member Index</title>
+	    <variablelist>
+		<varlistentry>
+		    <term><link linkend="IcePack.ServiceDescriptor.entry"><type>entry</type></link></term>
+		    <listitem>
+			<para>
+The entry point of the &IceBox; service.</para>
+		    </listitem>
+		</varlistentry>
+	    </variablelist>
+	</section>
+    </section>
+    <section id="IcePack.ServiceDescriptor.entry">
+	<title><literal>entry</literal></title>
+<synopsis><type>string</type> <structfield>entry</structfield>;</synopsis>
+	<para>
+The entry point of the &IceBox; service.</para>
     </section>
 </section>
 <section id="IceSSL">
@@ -11006,6 +11603,13 @@ The &Glacier; router starter.</para>
 	    <title>Operation Index</title>
 	    <variablelist>
 		<varlistentry>
+		    <term><link linkend="Glacier.Starter.getSliceChecksums"><function>getSliceChecksums</function></link></term>
+		    <listitem>
+			<para>
+Returns the checksums for the Glacier Slice definitions.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
 		    <term><link linkend="Glacier.Starter.startRouter"><function>startRouter</function></link></term>
 		    <listitem>
 			<para>
@@ -11013,6 +11617,17 @@ Start a new &Glacier; router.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
+	</section>
+    </section>
+    <section id="Glacier.Starter.getSliceChecksums">
+	<title><literal>getSliceChecksums</literal></title>
+<synopsis><link linkend="Ice.SliceChecksumDict"><type>::Ice::SliceChecksumDict</type></link> <function>getSliceChecksums</function>();</synopsis>
+	<para>
+Returns the checksums for the Glacier Slice definitions.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		A dictionary mapping Slice type ids to their checksums.</para>
 	</section>
     </section>
     <section id="Glacier.Starter.startRouter">
@@ -11699,6 +12314,13 @@ Create a new topic.</para>
 		    </listitem>
 		</varlistentry>
 		<varlistentry>
+		    <term><link linkend="IceStorm.TopicManager.getSliceChecksums"><function>getSliceChecksums</function></link></term>
+		    <listitem>
+			<para>
+Returns the checksums for the IceStorm Slice definitions.</para>
+		    </listitem>
+		</varlistentry>
+		<varlistentry>
 		    <term><link linkend="IceStorm.TopicManager.retrieve"><function>retrieve</function></link></term>
 		    <listitem>
 			<para>
@@ -11752,6 +12374,17 @@ exists.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
+	</section>
+    </section>
+    <section id="IceStorm.TopicManager.getSliceChecksums">
+	<title><literal>getSliceChecksums</literal></title>
+<synopsis><link linkend="Ice.SliceChecksumDict"><type>::Ice::SliceChecksumDict</type></link> <function>getSliceChecksums</function>();</synopsis>
+	<para>
+Returns the checksums for the IceStorm Slice definitions.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		A dictionary mapping Slice type ids to their checksums.</para>
 	</section>
     </section>
     <section id="IceStorm.TopicManager.retrieve">
@@ -12098,6 +12731,13 @@ The base interface for files and directories.</para>
 Obtain a description of the file or directory.</para>
 		    </listitem>
 		</varlistentry>
+		<varlistentry>
+		    <term><link linkend="IcePatch.File.getSliceChecksums"><function>getSliceChecksums</function></link></term>
+		    <listitem>
+			<para>
+Returns the checksums for the IcePatch Slice definitions.</para>
+		    </listitem>
+		</varlistentry>
 	    </variablelist>
 	</section>
     </section>
@@ -12134,6 +12774,17 @@ be accessed.</para>
 		    </listitem>
 		</varlistentry>
 	    </variablelist>
+	</section>
+    </section>
+    <section id="IcePatch.File.getSliceChecksums">
+	<title><literal>getSliceChecksums</literal></title>
+<synopsis><link linkend="Ice.SliceChecksumDict"><type>::Ice::SliceChecksumDict</type></link> <function>getSliceChecksums</function>();</synopsis>
+	<para>
+Returns the checksums for the IcePatch Slice definitions.</para>
+	<section>
+	    <title>Return Value</title>
+	    <para>
+		A dictionary mapping Slice type ids to their checksums.</para>
 	</section>
     </section>
 </section>

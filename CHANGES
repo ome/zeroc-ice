@@ -1,3 +1,73 @@
+Changes since version 1.4.0
+---------------------------
+
+- Added support for generating checksums of Slice definitions,
+  enabling peers to verify that they share the same client-server
+  contract. See the manual for more information.
+
+- Fixed a bug that could cause an assert or exception in some rare
+  circumstances, if an operation is invoked after the object adapter
+  for the Ice object has been deactivated.
+
+- Fixed a bug in the C++ translator that caused compile errors when
+  two Slice classes with the same name appeared in different modules
+  in the same file.
+
+- Changed the names of Windows executables to lower case, for
+  consistency with non-Windows platforms. The following executables
+  have been renamed:
+
+    DumpDB.exe		-> dumpdb.exe
+    GlacierRouter.exe	-> glacierrouter.exe
+    GlacierStarter.exe	-> glacierstarter.exe
+    IcePackNode.exe	-> icepacknode.exe
+    IcePackRegistry.exe	-> icepackregistry.exe
+    IcePatchCalc.exe	-> icepatchcalc.exe
+    TransformDB.exe	-> transformdb.exe
+
+  All library names have also been renamed accordingly.
+
+- Changed the default behavior of the IcePatch client to dynamically
+  calculate the unique signatures of local files in order to reduce
+  the number of cache files, and added the property IcePatch.Dynamic
+  to control this behavior.
+
+- AIX 5.2/VisualAge 6.0 port.
+
+- Changed the --depend option of slice2java. If you get dependencies
+  for a file x.ice that includes y.ice, the dependency line that is
+  written now is "x.ice: y.ice". (Previously, it was "x.cpp: x.ice
+  y.ice".) If a Slice file does not include any other Slice file, no
+  dependency is printed. With some post-processing, this is sufficient
+  to generate dependencies for tools such as ant and make.
+
+- Removed IceBox::ServiceBase and IceBox::FreezeService. There's now a
+  single IceBox::Service interface.
+
+- IcePack descriptors have been redesigned. See the manual for more
+  information on the new descriptor format.
+
+- Some IcePack improvements:
+  
+  * Descriptors are now parsed only by the icepackadmin tool,
+    therefore it is no longer necessary to store the descriptor files
+    on each IcePack node or registry host.
+  
+  * It is now possible to update an application or server deployment
+    by modifying its XML descriptor and using the `application update'
+    or `server update' commands in icepackadmin.
+
+  * It is now possible to define variables from the icepackadmin
+    command line when deploying or updating an application or server.
+
+  * An icepackadmin `node remove' command has been added to clean up
+    resources associated with a given node.
+
+  * A command line option `--checkdb' has been added to the
+    icepacknode executable. When the node is started with this option,
+    it performs a consistency check on its database to remove servers
+    that are no longer registered with the IcePack registry.
+
 Changes since version 1.3.0
 ---------------------------
 

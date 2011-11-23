@@ -9,6 +9,7 @@
 
 #include <IcePatch/IcePatchI.h>
 #include <IcePatch/Util.h>
+#include <Ice/SliceChecksums.h>
 #include <fstream>
 
 using namespace std;
@@ -30,6 +31,12 @@ IcePatch::FileI::FileI(const ObjectAdapterPtr& adapter, const string& dir) :
     {
 	const_cast<string&>(_dir) += '/';
     }
+}
+
+SliceChecksumDict
+IcePatch::FileI::getSliceChecksums(const Current&) const
+{
+    return sliceChecksums();
 }
 
 ByteSeq
@@ -108,12 +115,7 @@ IcePatch::DirectoryI::describe(const Current& current) const
     // No mutex lock necessary.
     DirectoryDescPtr desc = new DirectoryDesc;
     desc->md5 = readMD5(current);
-    
-    //
-    // We want compression for directories, to compress directory
-    // listings on the fly.
-    //
-    desc->dir = DirectoryPrx::uncheckedCast(_adapter->createProxy(current.id));//->ice_compress(true));
+    desc->dir = DirectoryPrx::uncheckedCast(_adapter->createProxy(current.id));
     return desc;
 }
 
@@ -244,7 +246,7 @@ IcePatch::RegularI::describe(const Current& current) const
     // We do not want compression for regular files, because we
     // download pre-compressed files.
     //
-    desc->reg = RegularPrx::uncheckedCast(_adapter->createProxy(current.id));//->ice_compress(false));
+    desc->reg = RegularPrx::uncheckedCast(_adapter->createProxy(current.id)->ice_compress(false));
 
     return desc;
 }

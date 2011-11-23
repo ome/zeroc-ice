@@ -16,8 +16,8 @@ LIBNAME		= $(call mklibname,Glacier)
 ROUTER		= $(top_srcdir)/bin/glacierrouter
 STARTER		= $(top_srcdir)/bin/glacierstarter
 
-TARGETS		= $(libdir)/$(LIBFILENAME) $(libdir)/$(SONAME) $(libdir)/$(LIBNAME) \
-                  $(ROUTER) $(STARTER)
+LIBTARGETS      = $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
+TARGETS         = $(LIBTARGETS) $(ROUTER) $(STARTER)
 
 OBJS		= Starter.o \
 		  Router.o \
@@ -53,7 +53,7 @@ SDIR		= $(slicedir)/Glacier
 include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DGLACIER_API_EXPORTS $(OPENSSL_FLAGS) 
-SLICE2CPPFLAGS	:= --include-dir Glacier --dll-export GLACIER_API $(SLICE2CPPFLAGS)
+SLICE2CPPFLAGS	:= --checksum --include-dir Glacier --dll-export GLACIER_API $(SLICE2CPPFLAGS)
 LINKWITH	:= -lIce -lIceUtil
 
 $(libdir)/$(LIBFILENAME): $(OBJS)
@@ -68,20 +68,16 @@ $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 	rm -f $@
 	ln -s $(SONAME) $@
 
-$(ROUTER): $(ROBJS) $(libdir)/$(LIBNAME)
+$(ROUTER): $(ROBJS) $(LIBTARGETS)
 	rm -f $@
 	$(CXX) $(LDFLAGS) -o $@ $(ROBJS) -lGlacier -lIceSSL $(LIBS) $(OPENSSL_LIBS) $(EXPAT_LIBS)
 
-$(STARTER): $(SOBJS) $(libdir)/$(LIBNAME)
+$(STARTER): $(SOBJS) $(LIBTARGETS)
 	rm -f $@
 	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) -lGlacier -lIceSSL $(LIBS) $(OPENSSL_LIBS) $(EXPAT_LIBS)
 
 install:: all
-	$(INSTALL_LIBRARY) $(libdir)/$(LIBFILENAME) $(install_libdir)
-	rm -f $(install_libdir)/$(SONAME)
-	ln -s $(LIBFILENAME) $(install_libdir)/$(SONAME)
-	rm -f $(install_libdir)/$(LIBNAME)
-	ln -s $(SONAME) $(install_libdir)/$(LIBNAME)
+	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))
 	$(INSTALL_PROGRAM) $(ROUTER) $(install_bindir)
 	$(INSTALL_PROGRAM) $(STARTER) $(install_bindir)
 

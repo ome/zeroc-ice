@@ -42,6 +42,7 @@ public:
     void setUseTab(bool); // Should we output tabs?
 
     void open(const char*); // Open output stream.
+    bool isOpen(); // Is a file stream open?
 
     virtual void print(const char*); // Print a string.
 
@@ -119,7 +120,7 @@ private:
 };
 
 template<typename T>
-Output&
+inline Output&
 operator<<(Output& out, const T& val)
 {
     std::ostringstream s;
@@ -129,7 +130,7 @@ operator<<(Output& out, const T& val)
 }
 
 template<typename T>
-Output&
+inline Output&
 operator<<(Output& out, const std::vector<T>& val)
 {
     for(typename std::vector<T>::const_iterator p = val.begin(); p != val.end(); ++p)
@@ -147,7 +148,7 @@ operator<<(Output& out, const std::vector<T>& val)
 //
 
 template<typename T>
-Output&
+inline Output&
 operator<<(Output& out, std::vector<T>& val)
 {
     for(typename std::vector<T>::const_iterator p = val.begin(); p != val.end(); ++p)
@@ -269,7 +270,7 @@ private:
 };
 
 template<typename T>
-XMLOutput&
+inline XMLOutput&
 operator<<(XMLOutput& out, const T& val)
 {
     std::ostringstream s;

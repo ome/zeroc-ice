@@ -251,7 +251,7 @@ Ice.Warn.Connections=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-Ice applications will print warning messages for certain exceptional
+Ice applications print warning messages for certain exceptional
 conditions in connections. The default value is 0.
 </para>
 </section>
@@ -267,7 +267,7 @@ Ice.Warn.Datagrams=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-servers will print a warning message if they receive a datagram that exceeds the
+servers print a warning message if they receive a datagram that exceeds the
 servers' receive buffer size. (Note that this condition is not detected
 by all UDP implementations -- some implementations silently drop received
 datagrams that are too large.) The default value is 0.
@@ -285,7 +285,7 @@ Ice.Warn.Dispatch=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-Ice applications will print warning messages for certain exceptions
+Ice applications print warning messages for certain exceptions
 that are raised while an incoming request is dispatched.
 <informaltable>
 <tgroup cols=2>
@@ -341,7 +341,7 @@ Ice.Warn.Leaks=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-the <literal>Ice::Communicator</literal> destructor will print a
+the <literal>Ice::Communicator</literal> destructor prints a
 warning if some other Ice-related C++ objects are still in memory. The
 default value is 1. (C++ only.)
 </para>
@@ -354,7 +354,7 @@ default value is 1. (C++ only.)
 <section><title>&Ice; Object Adapter Properties</title>
 <!-- ********************************************************************** -->
 
-<section><title><replaceable>name</replaceable>.AdapterId</title>
+<section id="adapter.AdapterId"><title><replaceable>name</replaceable>.AdapterId</title>
 <section><title>Synopsis</title>
 <synopsis>
 <replaceable>name</replaceable>.AdapterId=<replaceable>id</replaceable>
@@ -368,7 +368,7 @@ Specifies an identifier for the object adapter with the name
 all object adapters using the same locator instance. If a locator
 proxy is defined using
 <literal><replaceable>name</replaceable>.Locator</literal> or
-<literal>Ice.Default.Locator</literal>, this object adapter will set
+<literal>Ice.Default.Locator</literal>, this object adapter sets
 its endpoints with the locator registry upon activation.
 </para>
 </section>
@@ -406,7 +406,7 @@ to the &Ice; locator interface.
 </section>
 </section>
 
-<section><title><replaceable>name</replaceable>.RegisterProcess</title>
+<section id="adapter.RegisterProcess"><title><replaceable>name</replaceable>.RegisterProcess</title>
 <section><title>Synopsis</title>
 <synopsis>
 <replaceable>name</replaceable>.RegisterProcess=<replaceable>num</replaceable>
@@ -459,7 +459,7 @@ outgoing connections from this process to the router, thereby avoiding
 the need for the router to establish a connection back to the object
 adapter.
 <note><para> A router can only be assigned to one object adapter.
-Specifying the same router for more than one object adapter will result
+Specifying the same router for more than one object adapter results
 in undefined behavior. The default value is no router. </para></note>
 </para>
 </section>
@@ -512,8 +512,8 @@ C linkage.
 For example, the entry point <literal>MyPlugin,2.3:create</literal> would
 imply a shared library name of <literal>libMyPlugin.so.2.3</literal>
 on Unix and <literal>MyPlugin23.dll</literal> on Windows. Furthermore,
-if &Ice; is built on Windows with debugging, a <literal>d</literal> will
-be automatically appended to the version (e.g., <literal>MyPlugin23d.dll</literal>).
+if &Ice; is built on Windows with debugging, a <literal>d</literal> is
+automatically appended to the version (e.g., <literal>MyPlugin23d.dll</literal>).
 </para>
 <para>
 In Java, <replaceable>entry_point</replaceable> is the name of a class.
@@ -527,7 +527,7 @@ In Java, <replaceable>entry_point</replaceable> is the name of a class.
 <section><title>&Ice; Thread Pool Properties</title>
 <!-- ********************************************************************** -->
 
-<section><title><replaceable>name</replaceable>.Size</title>
+<section id="threadpool.Size"><title><replaceable>name</replaceable>.Size</title>
 <section><title>Synopsis</title>
 <synopsis>
 <replaceable>name</replaceable>.Size=<replaceable>num</replaceable>
@@ -565,7 +565,7 @@ one. </para></note>
 </section>
 </section>
 
-<section><title><replaceable>name</replaceable>.SizeMax</title>
+<section id="threadpool.SizeMax"><title><replaceable>name</replaceable>.SizeMax</title>
 <section><title>Synopsis</title>
 <synopsis>
 <replaceable>name</replaceable>.SizeMax=<replaceable>num</replaceable>
@@ -589,7 +589,7 @@ grow dynamically.
 </section>
 </section>
 
-<section><title><replaceable>name</replaceable>.SizeWarn</title>
+<section id="threadpool.SizeWarn"><title><replaceable>name</replaceable>.SizeWarn</title>
 <section><title>Synopsis</title>
 <synopsis>
 <replaceable>name</replaceable>.SizeWarn=<replaceable>num</replaceable>
@@ -680,10 +680,10 @@ locator.
 </para>
 <note><para>The &IcePack; locator's object identity is
 <literal>IcePack/Locator</literal>. It is listening on the &IcePack;
-client endpoints. For example if
+client endpoints. For example, if
 <literal>IcePack.Registry.Client.Endpoints</literal> is set to
 <literal>tcp -p 12000 -h localhost</literal>, the stringified proxy
-for the &IcePack; locator will be <literal>IcePack/Locator:tcp -p
+for the &IcePack; locator is <literal>IcePack/Locator:tcp -p
 12000 -h localhost</literal>.</para></note>
 </section>
 </section>
@@ -734,6 +734,21 @@ If set, this property overrides compression settings in all
 proxies. If <replaceable>num</replaceable> is set to a value larger
 than zero, compression is enabled. If zero, compression is disabled.
 </para>
+<para>
+The setting of this property is ignored in the server role.
+</para>
+<para>
+Note that, if a client sets <literal>Ice.Override.Compress=1</literal>
+and the server does not support compression (as for Java), requests will fail due to
+marshaling errors.
+</para>
+<para>
+If a Java client sets <literal>Ice.Override.Compress=1</literal>, the setting
+is ignored with a warning message on <literal>stderr</literal>.
+</para>
+<para>Regardless of the setting of this property, requests smaller than 100
+bytes are never compressed.
+</para>
 </section>
 </section>
 
@@ -771,11 +786,11 @@ Ice.RetryIntervals=<replaceable>num [num ...]</replaceable>
 <para>
 This property defines the number of times an operation is re-tried and
 the delay between each retry. For example, if the property is set to
-<replaceable>0 100 500</replaceable>, the operation will be re-tried 3
-times: immediately re-tried upon the first failure, after waiting 100
-(ms) upon the second failure, after waiting 500 (ms) upon the third
+<replaceable>0 100 500</replaceable>, the operation is re-tried 3
+times: immediately upon the first failure, again after waiting 100
+(ms) upon the second failure, and again after waiting 500 (ms) upon the third
 failure. The default value is to retry once immediately (0). If set to
--1, no retry will occur.
+-1, no retry occurs.
 </para>
 </section>
 </section>
@@ -790,7 +805,7 @@ Ice.MessageSizeMax=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 This property controls the maximum size (in kilobytes) of a protocol
-message that will be accepted or sent by the &Ice; run time.
+message that is accepted or sent by the &Ice; run time.
 The size includes the size of the Ice protocol header. Messages larger
 than this size cause a [MemoryLimitException].
 The default size is 1024 (1 Megabyte).
@@ -814,7 +829,7 @@ Ice.ChangeUser=<replaceable>user</replaceable>
 <section>
 <title>Description</title>
 <para>
-If set, &Ice; will change the user and group id to the respective ids
+If set, &Ice; changes the user and group id to the respective ids
 of <replaceable>user</replaceable> in
 <literal>/etc/passwd</literal>. This only works if the &Ice;
 application is executed by the super-user. (Unix only.)
@@ -852,7 +867,7 @@ Ice.MonitorConnections=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-&Ice; will start a thread that monitors connections. This thread is
+&Ice; starts a thread that monitors connections. This thread is
 responsible for shutting down idle connections (see
 <literal>Ice.ConnectionIdleTime</literal>), as well as for enforcing
 AMI timeouts. The default value is the value of
@@ -906,7 +921,7 @@ Ice.ServerId=<replaceable>id</replaceable>
 The value <replaceable>id</replaceable> is used as the server id when
 an object adapter registers the server with the locator registry.
 Refer to the description of the object adapter property
-<literal><replaceable>adapter</replaceable>.RegisterProcess</literal>
+<link linkend="adapter.RegisterProcess"><replaceable>adapter</replaceable>.RegisterProcess</link>
 for more information.
 </para>
 </section>
@@ -922,12 +937,12 @@ Ice.ServerIdleTime=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-&Ice; will automatically call
-<literal>Communicator::shutdown</literal> after the Communicator has
-been idle for <replaceable>num</replaceable> seconds. This will shut
-down the Communicator's server side, and all threads waiting in
-<literal>Communicator::waitForShutdown</literal> will return. After
-that, a server will typically do some cleanup work, and then exit. The
+&Ice; automatically calls
+<literal>Communicator::shutdown</literal> once the Communicator has
+been idle for <replaceable>num</replaceable> seconds. This shuts
+down the Communicator's server side and causes all threads waiting in
+<literal>Communicator::waitForShutdown</literal> to return. After
+that, a server will typically do some cleanup work before exiting. The
 default value is zero, meaning that the server will not shut down
 automatically.
 </para>
@@ -978,7 +993,7 @@ Ice.Logger.Timestamp=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-the output of the default logger will include timestamps.
+the output of the default logger includes timestamps.
 </para>
 </section>
 </section>
@@ -1118,13 +1133,13 @@ find PEM format certificate files (RSA and DSA) and Diffie-Hellman group
 parameter files.
 </para>
 <para>
-In the case that the <literal>IceSSL.Client.Config</literal> or
-<literal>IceSSL.Server.Config</literal> is a relative path, it
-will be relative to the value of <literal>IceSSL.Client.CertPath</literal>
-or <literal>IceSSL.Server.CertPath</literal>.
+If <literal>IceSSL.Client.Config</literal> or
+<literal>IceSSL.Server.Config</literal> specify a relative path, that path
+is relative to the value of <literal>IceSSL.Client.CertPath</literal>
+and <literal>IceSSL.Server.CertPath</literal>, respectively.
 </para>
 <para>
-If not specified, the application will use the current working directory
+If not specified, the application uses the current working directory
 as the certificate path.
 </para>
 </section>
@@ -1140,11 +1155,11 @@ IceSSL.Server.Config=<replaceable>config_file</replaceable>
 <section>
 <title>Description</title>
 <para>
-Defines the XML-based configuration file from which the SSL plug-in will
-load initialization information and certificates. If the property
-contains a relative path, the path will be interpreted relative to
+Defines the XML-based configuration file from which the SSL plug-in
+loads initialization information and certificates. If the property
+specifies a relative path, the path is interpreted relative to
 the certificate path defined by <literal>IceSSL.Client.CertPath</literal>
-or <literal>IceSSL.Server.CertPath</literal>.
+and <literal>IceSSL.Server.CertPath</literal>, respectively.
 </para>
 <para>
 The XML parser looks for the DTD file in the same directory in which
@@ -1168,8 +1183,8 @@ IceSSL.Client.Handshake.Retries=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 IceSSL clients attempt to perform an entire SSL handshake in the connection
-phase. When attempting this handshake, it is possible that the client will
-timeout waiting for a response from the server. This property specifies
+phase. When attempting this handshake, it is possible that the client
+times out while waiting for a response from the server. This property specifies
 the number of handshake retries the client attempts before throwing a
 <literal>Ice::ConnectionFailedException</literal>.
 </para>
@@ -1192,7 +1207,7 @@ IceSSL.Server.Passphrase.Retries=<replaceable>num</replaceable>
 When &IceSSL; is directed to use a private key in a PEM file that has
 been encrypted, a prompt is displayed <literal>Enter PEM pass
 phrase:</literal>. If the passphrase is entered incorrectly, these
-properties determine how many retries the user will be allowed before
+properties determine how many retries the user is allowed before
 &IceSSL; shuts down.
 </para>
 <para>
@@ -1316,8 +1331,8 @@ IceSSL.Server.IgnoreValidPeriod=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-These properties will cause the default certificate verifier to ignore the
-certificate validity period on peer certificates if set to 1. The
+If set to 1, these properties cause the default certificate verifier to ignore the
+certificate validity period on peer certificates. The
 default value for these properties is 0, meaning that the certificate
 validity period is not ignored.
 </para>
@@ -1329,6 +1344,22 @@ validity period is not ignored.
 <!-- ********************************************************************** -->
 <section><title>&IceBox; Properties</title>
 <!-- ********************************************************************** -->
+
+<section><title>IceBox.ServiceManager.AdapterId</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceBox.ServiceManager.AdapterId=<replaceable>id</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="adapter.AdapterId"><replaceable>adapter</replaceable>.AdapterId</link>
+for the object adapter named <literal>IceBox.ServiceManager</literal>.
+</para>
+</section>
+</section>
 
 <section><title>IceBox.ServiceManager.Endpoints</title>
 <section><title>Synopsis</title>
@@ -1361,19 +1392,66 @@ default value <literal>ServiceManager</literal> is used.
 </section>
 </section>
 
-<section><title>IceBox.PrintServicesReady</title>
+<section><title>IceBox.ServiceManager.RegisterProcess</title>
 <section><title>Synopsis</title>
 <synopsis>
-IceBox.PrintServicesReady=<replaceable>token</replaceable>
+IceBox.ServiceManager.RegisterProcess=<replaceable>num</replaceable>
 </synopsis>
 </section>
 <section>
 <title>Description</title>
 <para>
-The service manager will print "<replaceable>token</replaceable>
-ready" on standard output after initialization of all the services is
-done. This is useful for scripts that wish to wait until all services
-are ready to be used.
+Defines the value of the property
+<link linkend="adapter.RegisterProcess"><replaceable>adapter</replaceable>.RegisterProcess</link>
+for the object adapter named <literal>IceBox.ServiceManager</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IceBox.ServiceManager.ThreadPool.Size</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceBox.ServiceManager.ThreadPool.Size=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.Size"><replaceable>adapter</replaceable>.ThreadPool.Size</link>
+for the object adapter named <literal>IceBox.ServiceManager</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IceBox.ServiceManager.ThreadPool.SizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceBox.ServiceManager.ThreadPool.SizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeMax"><replaceable>adapter</replaceable>.ThreadPool.SizeMax</link>
+for the object adapter named <literal>IceBox.ServiceManager</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IceBox.ServiceManager.ThreadPool.SizeWarn</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceBox.ServiceManager.ThreadPool.SizeWarn=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeWarn"><replaceable>adapter</replaceable>.ThreadPool.SizeWarn</link>
+for the object adapter named <literal>IceBox.ServiceManager</literal>.
 </para>
 </section>
 </section>
@@ -1393,6 +1471,24 @@ loads the services in the order they appear in
 by a comma or whitespace. Any services not mentioned in
 <replaceable>names</replaceable> are loaded afterward, in an undefined
 order.
+</para>
+</section>
+</section>
+
+<section><title>IceBox.PrintServicesReady</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceBox.PrintServicesReady=<replaceable>token</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If this property is set to a value greater than zero, the service
+manager prints "<replaceable>token</replaceable> ready"
+on standard output once initialization of all the services is
+complete. This is useful for scripts that wish to wait until all services
+are ready to be used.
 </para>
 </section>
 </section>
@@ -1422,21 +1518,6 @@ service implementation class.
 </section>
 </section>
 
-<section><title>IceBox.DBEnvName.<replaceable>name</replaceable></title>
-<section><title>Synopsis</title>
-<synopsis>
-IceBox.DBEnvName.<replaceable>name</replaceable>=<replaceable>db</replaceable>
-</synopsis>
-</section>
-<section>
-<title>Description</title>
-<para>
-Defines the database environment directory for the &Freeze; service
-with the name <replaceable>name</replaceable>.
-</para>
-</section>
-</section>
-
 <section><title>IceBox.UseSharedCommunicator.<replaceable>name</replaceable></title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -1447,8 +1528,8 @@ IceBox.UseSharedCommunicator.<replaceable>name</replaceable>=<replaceable>num</r
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-the service manager will supply the service with the name
-<replaceable>name</replaceable> a communicator which might be shared by
+the service manager supplies the service with the name
+<replaceable>name</replaceable> of a communicator that might be shared by
 other services.
 </para>
 </section>
@@ -1459,6 +1540,22 @@ other services.
 <!-- ********************************************************************** -->
 <section><title>&IcePack; Properties</title>
 <!-- ********************************************************************** -->
+
+<section><title>IcePack.Registry.Client.AdapterId</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Client.AdapterId=<replaceable>id</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="adapter.AdapterId"><replaceable>adapter</replaceable>.AdapterId</link>
+for the object adapter named <literal>IcePack.Registry.Client</literal>.
+</para>
+</section>
+</section>
 
 <section><title>IcePack.Registry.Client.Endpoints</title>
 <section><title>Synopsis</title>
@@ -1472,6 +1569,70 @@ IcePack.Registry.Client.Endpoints=<replaceable>endpoints</replaceable>
 Defines the endpoints of the &IcePack; client interface. The client
 endpoints must be accessible to &Ice; clients that are using &IcePack;
 to locate objects (see <literal>Ice.Default.Locator</literal>).
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Client.ThreadPool.Size</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Client.ThreadPool.Size=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.Size"><replaceable>adapter</replaceable>.ThreadPool.Size</link>
+for the object adapter named <literal>IcePack.Registry.Client</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Client.ThreadPool.SizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Client.ThreadPool.SizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeMax"><replaceable>adapter</replaceable>.ThreadPool.SizeMax</link>
+for the object adapter named <literal>IcePack.Registry.Client</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Client.ThreadPool.SizeWarn</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Client.ThreadPool.SizeWarn=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeWarn"><replaceable>adapter</replaceable>.ThreadPool.SizeWarn</link>
+for the object adapter named <literal>IcePack.Registry.Client</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Server.AdapterId</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Server.AdapterId=<replaceable>id</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="adapter.AdapterId"><replaceable>adapter</replaceable>.AdapterId</link>
+for the object adapter named <literal>IcePack.Registry.Server</literal>.
 </para>
 </section>
 </section>
@@ -1492,6 +1653,70 @@ to register their object adapter endpoints.
 </section>
 </section>
 
+<section><title>IcePack.Registry.Server.ThreadPool.Size</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Server.ThreadPool.Size=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.Size"><replaceable>adapter</replaceable>.ThreadPool.Size</link>
+for the object adapter named <literal>IcePack.Registry.Server</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Server.ThreadPool.SizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Server.ThreadPool.SizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeMax"><replaceable>adapter</replaceable>.ThreadPool.SizeMax</link>
+for the object adapter named <literal>IcePack.Registry.Server</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Server.ThreadPool.SizeWarn</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Server.ThreadPool.SizeWarn=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeWarn"><replaceable>adapter</replaceable>.ThreadPool.SizeWarn</link>
+for the object adapter named <literal>IcePack.Registry.Server</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Admin.AdapterId</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Admin.AdapterId=<replaceable>id</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="adapter.AdapterId"><replaceable>adapter</replaceable>.AdapterId</link>
+for the object adapter named <literal>IcePack.Registry.Admin</literal>.
+</para>
+</section>
+</section>
+
 <section><title>IcePack.Registry.Admin.Endpoints</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -1508,7 +1733,71 @@ which are using the &IcePack; administrative interface, such as the
 </para>
 <note><para>Allowing access to the &IcePack; admin interface is a
 security risk! If this property is not defined, the admin interface
-will be disabled.</para></note>
+is disabled.</para></note>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Admin.ThreadPool.Size</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Admin.ThreadPool.Size=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.Size"><replaceable>adapter</replaceable>.ThreadPool.Size</link>
+for the object adapter named <literal>IcePack.Registry.Admin</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Admin.ThreadPool.SizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Admin.ThreadPool.SizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeMax"><replaceable>adapter</replaceable>.ThreadPool.SizeMax</link>
+for the object adapter named <literal>IcePack.Registry.Admin</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Admin.ThreadPool.SizeWarn</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Admin.ThreadPool.SizeWarn=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeWarn"><replaceable>adapter</replaceable>.ThreadPool.SizeWarn</link>
+for the object adapter named <literal>IcePack.Registry.Admin</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Internal.AdapterId</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Internal.AdapterId=<replaceable>id</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="adapter.AdapterId"><replaceable>adapter</replaceable>.AdapterId</link>
+for the object adapter named <literal>IcePack.Registry.Internal</literal>.
+</para>
 </section>
 </section>
 
@@ -1524,6 +1813,54 @@ IcePack.Registry.Internal.Endpoints=<replaceable>endpoints</replaceable>
 Defines the endpoints of the &IcePack; internal interface. The
 internal endpoints must be accessible to &IcePack; nodes. Nodes use
 this interface to communicate with the registry.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Internal.ThreadPool.Size</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Internal.ThreadPool.Size=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.Size"><replaceable>adapter</replaceable>.ThreadPool.Size</link>
+for the object adapter named <literal>IcePack.Registry.Internal</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Internal.ThreadPool.SizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Internal.ThreadPool.SizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeMax"><replaceable>adapter</replaceable>.ThreadPool.SizeMax</link>
+for the object adapter named <literal>IcePack.Registry.Internal</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Registry.Internal.ThreadPool.SizeWarn</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Registry.Internal.ThreadPool.SizeWarn=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeWarn"><replaceable>adapter</replaceable>.ThreadPool.SizeWarn</link>
+for the object adapter named <literal>IcePack.Registry.Internal</literal>.
 </para>
 </section>
 </section>
@@ -1552,8 +1889,8 @@ IcePack.Registry.DynamicRegistration=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-the locator registry will allow &Ice; servers to set endpoints for
-object adapters which have not been previously registered.
+the locator registry allows &Ice; servers to set endpoints for
+object adapters that have not been previously registered.
 </para>
 </section>
 </section>
@@ -1670,6 +2007,22 @@ The object registry trace level:
 </section>
 </section>
 
+<section><title>IcePack.Node.AdapterId</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.AdapterId=<replaceable>id</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="adapter.AdapterId"><replaceable>adapter</replaceable>.AdapterId</link>
+for the object adapter named <literal>IcePack.Node</literal>.
+</para>
+</section>
+</section>
+
 <section><title>IcePack.Node.Endpoints</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -1686,6 +2039,22 @@ uses this interface to communicate with the node.
 </section>
 </section>
 
+<section><title>IcePack.Node.AdapterId</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.AdapterId=<replaceable>id</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="adapter.AdapterId"><replaceable>adapter</replaceable>.AdapterId</link>
+for the object adapter named <literal>IcePack.Node</literal>.
+</para>
+</section>
+</section>
+
 <section><title>IcePack.Node.Name</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -1696,8 +2065,8 @@ IcePack.Node.Name=<replaceable>name</replaceable>
 <title>Description</title>
 <para>
 Defines the name of the &IcePack; node. All nodes using the same
-registry must have unique names. The node will refuse to start if
-there is a node with the same name already running.
+registry must have unique names; a node refuses to start if
+there is a node with the same name running already.
 </para>
 <note><para>The default value is the hostname as returned by
 <literal>gethostname()</literal>.</para></note>
@@ -1713,8 +2082,8 @@ IcePack.Node.Data=<replaceable>path</replaceable>
 <section>
 <title>Description</title>
 <para>
-Defines the path of the &IcePack; node data directory. The node will
-create <literal>db</literal> and <literal>servers</literal>
+Defines the path of the &IcePack; node data directory. The node
+creates <literal>db</literal> and <literal>servers</literal>
 subirectories in this directory if they do not already exist. The
 <literal>db</literal> directory contains the node database. The
 <literal>servers</literal> directory contains configuration data for
@@ -1733,10 +2102,10 @@ IcePack.Node.Output=<replaceable>path</replaceable>
 <title>Description</title>
 <para>
 Defines the path of the &IcePack; node output directory. If set, the 
-node will redirect the stdout and stderr output of the started
+node redirects the <literal>stdout</literal> and <literal>stderr</literal> output of the started
 servers to files named <replaceable>server</replaceable>.out and 
 <replaceable>server</replaceable>.err in this directory. Otherwise, 
-the started servers share the stdout and stderr of the &IcePack; node.
+the started servers share the <literal>stdout</literal> and <literal>stderr</literal> of the &IcePack; node.
 </para>
 </section>
 </section>
@@ -1769,7 +2138,7 @@ IcePack.Node.RedirectErrToOut=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-the stderr of each started server is redirected to the server's stdout.
+the <literal>stderr</literal> of each started server is redirected to the server's <literal>stdout</literal>.
 </para>
 </section>
 </section>
@@ -1783,15 +2152,15 @@ IcePack.Node.WaitTime=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-Defines the interval in seconds that &IcePack; will wait for server
+Defines the interval in seconds that &IcePack; waits for server
 activation and deactivation.</para>
 <para>If a server is automatically activated and does not register its object
-adapter endpoints within this time interval, the node will assume there is a
+adapter endpoints within this time interval, the node assumes there is a
 problem with the server and return an emtpy set of endpoints to the client.
 </para>
 <para>If a server is being gracefully deactivated and &IcePack; does not
 detect the server deactivation during this time interval, &IcePack;
-will kill the server.</para>
+kills the server.</para>
 <note><para>The default value is 60 seconds.</para></note>
 </section>
 </section>
@@ -1806,7 +2175,7 @@ IcePack.Node.CollocateRegistry=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-the node will also collocate the &IcePack; registry.
+the node collocates the &IcePack; registry.
 </para>
 <note><para>The collocated registry is configured with the same
 properties as the standalone &IcePack; registry.</para></note>
@@ -1822,10 +2191,58 @@ IcePack.Node.PrintServersReady=<replaceable>token</replaceable>
 <section>
 <title>Description</title>
 <para>
-The &IcePack; node will print "<replaceable>token</replaceable> ready"
+The &IcePack; node prints "<replaceable>token</replaceable> ready"
 on standard output after all the servers managed by the node are
 ready. This is useful for scripts that wish to wait until all servers
 are ready to be used.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Node.ThreadPool.Size</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.ThreadPool.Size=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.Size"><replaceable>adapter</replaceable>.ThreadPool.Size</link>
+for the object adapter named <literal>IcePack.Node</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Node.ThreadPool.SizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.ThreadPool.SizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeMax"><replaceable>adapter</replaceable>.ThreadPool.SizeMax</link>
+for the object adapter named <literal>IcePack.Node</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IcePack.Node.ThreadPool.SizeWarn</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePack.Node.ThreadPool.SizeWarn=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeWarn"><replaceable>adapter</replaceable>.ThreadPool.SizeWarn</link>
+for the object adapter named <literal>IcePack.Node</literal>.
 </para>
 </section>
 </section>
@@ -1951,6 +2368,22 @@ activated process).</entry>
 <section><title>&IceStorm; Properties</title>
 <!-- ********************************************************************** -->
 
+<section><title>IceStorm.TopicManager.AdapterId</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.TopicManager.AdapterId=<replaceable>id</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="adapter.AdapterId"><replaceable>adapter</replaceable>.AdapterId</link>
+for the object adapter named <literal>IceStorm.TopicManager</literal>.
+</para>
+</section>
+</section>
+
 <section><title>IceStorm.TopicManager.Endpoints</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -1965,6 +2398,86 @@ Defines the endpoints for the &IceStorm; topic manager and topic objects.
 </section>
 </section>
 
+<section><title>IceStorm.TopicManager.RegisterProcess</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.TopicManager.RegisterProcess=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="adapter.RegisterProcess"><replaceable>adapter</replaceable>.RegisterProcess</link>
+for the object adapter named <literal>IceStorm.TopicManager</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.TopicManager.ThreadPool.Size</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.TopicManager.ThreadPool.Size=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.Size"><replaceable>adapter</replaceable>.ThreadPool.Size</link>
+for the object adapter named <literal>IceStorm.TopicManager</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.TopicManager.ThreadPool.SizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.TopicManager.ThreadPool.SizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeMax"><replaceable>adapter</replaceable>.ThreadPool.SizeMax</link>
+for the object adapter named <literal>IceStorm.TopicManager</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.TopicManager.ThreadPool.SizeWarn</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.TopicManager.ThreadPool.SizeWarn=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeWarn"><replaceable>adapter</replaceable>.ThreadPool.SizeWarn</link>
+for the object adapter named <literal>IceStorm.TopicManager</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.Publish.AdapterId</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.Publish.AdapterId=<replaceable>id</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="adapter.AdapterId"><replaceable>adapter</replaceable>.AdapterId</link>
+for the object adapter named <literal>IceStorm.Publish</literal>.
+</para>
+</section>
+</section>
+
 <section><title>IceStorm.Publish.Endpoints</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -1975,6 +2488,70 @@ IceStorm.Publish.Endpoints=<replaceable>endpoints</replaceable>
 <title>Description</title>
 <para>
 Defines the endpoints for the &IceStorm; publisher objects.
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.Publish.RegisterProcess</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.Publish.RegisterProcess=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="adapter.RegisterProcess"><replaceable>adapter</replaceable>.RegisterProcess</link>
+for the object adapter named <literal>IceStorm.Publish</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.Publish.ThreadPool.Size</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.Publish.ThreadPool.Size=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.Size"><replaceable>adapter</replaceable>.ThreadPool.Size</link>
+for the object adapter named <literal>IceStorm.Publish</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.Publish.ThreadPool.SizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.Publish.ThreadPool.SizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeMax"><replaceable>adapter</replaceable>.ThreadPool.SizeMax</link>
+for the object adapter named <literal>IceStorm.Publish</literal>.
+</para>
+</section>
+</section>
+
+<section><title>IceStorm.Publish.ThreadPool.SizeWarn</title>
+<section><title>Synopsis</title>
+<synopsis>
+IceStorm.Publish.ThreadPool.SizeWarn=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeWarn"><replaceable>adapter</replaceable>.ThreadPool.SizeWarn</link>
+for the object adapter named <literal>IceStorm.Publish</literal>.
 </para>
 </section>
 </section>
@@ -2135,6 +2712,25 @@ the &IceStorm; administration tool, and may also be used by applications.
 <!-- ********************************************************************** -->
 <section><title>&Glacier; Router Properties</title>
 <!-- ********************************************************************** -->
+
+<section><title>Glacier.Router.AdapterId, Glacier.Router.Client.AdapterId, Glacier.Router.Server.AdapterId</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.AdapterId=<replaceable>id</replaceable>
+Glacier.Router.Client.AdapterId=<replaceable>id</replaceable>
+Glacier.Router.Server.AdapterId=<replaceable>id</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="adapter.AdapterId"><replaceable>adapter</replaceable>.AdapterId</link>
+for the object adapters named <literal>Glacier.Router</literal>, <literal>Glacier.Router.Client</literal> and
+<literal>Glacier.Router.Server</literal>.
+</para>
+</section>
+</section>
 
 <section><title>Glacier.Router.Endpoints, Glacier.Router.Client.Endpoints, Glacier.Router.Server.Endpoints</title>
 <section><title>Synopsis</title>
@@ -2367,7 +2963,7 @@ Glacier.Router.Server.Throttle.Twoways=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 <replaceable>num</replaceable> is the maximum number of twoway
-requests that the router will forward simultaneously. The default is
+requests that the router forwards simultaneously. The default is
 zero, meaning no limit. Enabling twoway message throttling is
 useful to prevent a router from consuming too many resources of
 backend services.
@@ -2434,9 +3030,153 @@ Glacier.Router.AcceptCert=<replaceable>base64 encoded certificate string</replac
 A base64 encoded certificate (which can be obtained by calling certToBase64()
 on an existing IceSSL::RSAKeyPair).
 
-The &Glacier; Router will use this certificate, when in SSL mode, to restrict
+The &Glacier; Router uses this certificate, when in SSL mode, to restrict
 those clients that may connect to it.  Only clients that use this certificate
-may connect, others will be rejected.
+may connect; others are rejected.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.ThreadPool.Size</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.ThreadPool.Size=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.Size"><replaceable>adapter</replaceable>.ThreadPool.Size</link>
+for the object adapter named <literal>Glacier.Router</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.ThreadPool.SizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.ThreadPool.SizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeMax"><replaceable>adapter</replaceable>.ThreadPool.SizeMax</link>
+for the object adapter named <literal>Glacier.Router</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.ThreadPool.SizeWarn</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.ThreadPool.SizeWarn=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeWarn"><replaceable>adapter</replaceable>.ThreadPool.SizeWarn</link>
+for the object adapter named <literal>Glacier.Router</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.Client.ThreadPool.Size</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Client.ThreadPool.Size=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.Size"><replaceable>adapter</replaceable>.ThreadPool.Size</link>
+for the object adapter named <literal>Glacier.Router.Client</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.Client.ThreadPool.SizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Client.ThreadPool.SizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeMax"><replaceable>adapter</replaceable>.ThreadPool.SizeMax</link>
+for the object adapter named <literal>Glacier.Router.Client</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.Client.ThreadPool.SizeWarn</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Client.ThreadPool.SizeWarn=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeWarn"><replaceable>adapter</replaceable>.ThreadPool.SizeWarn</link>
+for the object adapter named <literal>Glacier.Router.Client</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.Server.ThreadPool.Size</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Server.ThreadPool.Size=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.Size"><replaceable>adapter</replaceable>.ThreadPool.Size</link>
+for the object adapter named <literal>Glacier.Router.Server</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.Server.ThreadPool.SizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Server.ThreadPool.SizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeMax"><replaceable>adapter</replaceable>.ThreadPool.SizeMax</link>
+for the object adapter named <literal>Glacier.Router.Server</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.Server.ThreadPool.SizeWarn</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.Server.ThreadPool.SizeWarn=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeWarn"><replaceable>adapter</replaceable>.ThreadPool.SizeWarn</link>
+for the object adapter named <literal>Glacier.Router.Server</literal>.
 </para>
 </section>
 </section>
@@ -2447,6 +3187,22 @@ may connect, others will be rejected.
 <!-- ********************************************************************** -->
 <section><title>&Glacier; Router Starter Properties</title>
 <!-- ********************************************************************** -->
+
+<section><title>Glacier.Starter.AdapterId</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.AdapterId=<replaceable>id</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="adapter.AdapterId"><replaceable>adapter</replaceable>.AdapterId</link>
+for the object adapter named <literal>Glacier.Starter</literal>.
+</para>
+</section>
+</section>
 
 <section><title>Glacier.Starter.Endpoints</title>
 <section><title>Synopsis</title>
@@ -2462,17 +3218,65 @@ Defines the endpoints of the &Glacier; router starter. (Unix only.)
 </section>
 </section>
 
-<section><title>Glacier.Starter.PasswordVerifier</title>
+<section><title>Glacier.Starter.ThreadPool.Size</title>
 <section><title>Synopsis</title>
 <synopsis>
-Glacier.Starter.PasswordVerifier=<replaceable>proxy</replaceable>
+Glacier.Starter.ThreadPool.Size=<replaceable>num</replaceable>
 </synopsis>
 </section>
 <section>
 <title>Description</title>
 <para>
-If set, the specified password verifier will be used. If not set, a
-built-in <literal>crypt</literal>-based password verifier will be used.
+Defines the value of the property
+<link linkend="threadpool.Size"><replaceable>adapter</replaceable>.ThreadPool.Size</link>
+for the object adapter named <literal>Glacier.Starter</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.ThreadPool.SizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.ThreadPool.SizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeMax"><replaceable>adapter</replaceable>.ThreadPool.SizeMax</link>
+for the object adapter named <literal>Glacier.Starter</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.ThreadPool.SizeWarn</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.ThreadPool.SizeWarn=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+Defines the value of the property
+<link linkend="threadpool.SizeWarn"><replaceable>adapter</replaceable>.ThreadPool.SizeWarn</link>
+for the object adapter named <literal>Glacier.Starter</literal>.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Starter.PermissionsVerifier</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Starter.PermissionsVerifier=<replaceable>proxy</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If set, the specified permissions verifier is used. If not set, a
+built-in <literal>crypt</literal>-based verifier is used.
 </para>
 </section>
 </section>
@@ -2548,7 +3352,7 @@ Glacier.Starter.StartupTimeout=<replaceable>num</replaceable>
 <title>Description</title>
 <para>
 <replaceable>num</replaceable> is the number of seconds the &Glacier;
-router starter will wait for the router to start up. If this timeout
+router starter waits for the router to start up. If this timeout
 expires, a <literal>Glacier::CannotStartRouterException</literal> is
 returned to the caller. The default value is 10 seconds. Timeout
 values smaller than one second are silently changed to 1 second. (Unix
@@ -2635,7 +3439,7 @@ Glacier.Starter.Certificate.Country=<replaceable>country code</replaceable>
 <title>Description</title>
 <para>
 This property specifies the country code portion of the Distinguished Name
-(DN) values that will be present in certificates generated by the Glacier
+(DN) values that are placed into certificates generated by the Glacier
 Router Starter for client applications and the Glacier Router itself.
 Examples of valid values for this field are "US" for the United States and
 "CA" for Canada. The default value is "US".
@@ -2653,7 +3457,7 @@ Glacier.Starter.Certificate.StateProvince=<replaceable>state/province code</repl
 <title>Description</title>
 <para>
 This property specifies the state or province code portion of the
-Distinguished Name (DN) values that will be present in certificates generated
+Distinguished Name (DN) values that are placed into certificates generated
 by the Glacier Router Starter for client applications and the Glacier Router
 itself. Examples of valid values for this field are "CA" for California and
 "British Columbia" for British Columbia, Canada. The default value is "DC".
@@ -2671,7 +3475,7 @@ Glacier.Starter.Certificate.Locality=<replaceable>city or town name</replaceable
 <title>Description</title>
 <para>
 This property specifies the locality portion of the Distinguished Name (DN)
-values that will be present in certificates generated by the Glacier Router
+values that are placed into certificates generated by the Glacier Router
 Starter for client applications and the Glacier Router itself. The locality
 is usually the name of the city or town. The default value is "Washington".
 </para>
@@ -2688,7 +3492,7 @@ Glacier.Starter.Certificate.Organization=<replaceable>organization or company na
 <title>Description</title>
 <para>
 This property specifies the organization portion of the Distinguished Name
-(DN) values that will be present in certificates generated by the Glacier
+(DN) values that are placed into certificates generated by the Glacier
 Router Starter for client applications and the Glacier Router itself. The
 organization is usually the name of the company or organization to which
 the certificate has been granted. The default value is "Some Company Inc.".
@@ -2706,7 +3510,7 @@ Glacier.Starter.Certificate.OrganizationalUnit=<replaceable>department</replacea
 <title>Description</title>
 <para>
 This property specifies the organizational unit portion of the Distinguished
-Name (DN) values that will be present in certificates generated by the
+Name (DN) values are placed into certificates generated by the
 Glacier Router Starter for client applications and the Glacier Router itself.
 The organization unit is usually the name of the department within the
 company or organization structure to which the certificate has been
@@ -2725,7 +3529,7 @@ Glacier.Starter.Certificate.CommonName=<replaceable>contact name</replaceable>
 <title>Description</title>
 <para>
 This property specifies the common name portion of the Distinguished Name
-(DN) values that will be present in certificates generated by the Glacier
+(DN) values that are placed into certificates generated by the Glacier
 Router Starter for client applications and the Glacier Router itself. The
 common name is usually the name of the contact (a person's name) within
 the company and department to which the certificate has been granted. The
@@ -2743,7 +3547,7 @@ Glacier.Starter.Certificate.BitStrength=<replaceable>number of bits</replaceable
 <section>
 <title>Description</title>
 <para>
-This property specifies the bit strength which will be used in the generation
+This property specifies the bit strength that is used in the generation
 of certificates by the Glacier Router Starter for client applications and the
 Glacier Router itself. This value is the modulus size of the RSA key.
 </para>
@@ -2767,7 +3571,7 @@ Glacier.Starter.Certificate.SecondsValid=<replaceable>seconds</replaceable>
 <title>Description</title>
 <para>
 This property specifies the number of seconds that certificates generated
-by the Glacier Router Starter are valid before they will expire. The default
+by the Glacier Router Starter are valid before they expire. The default
 value of 1 day (86,400 seconds).
 </para>
 </section>
@@ -2782,11 +3586,11 @@ Glacier.Starter.Certificate.IssuedAdjust=<replaceable>(+/-) seconds</replaceable
 <section>
 <title>Description</title>
 <para>
-This property adjusts the issued timestamp on dynamically generated
+This property adjusts the issued timestamp on dynamically-generated
 certificates for the Glacier Router. The default value is 0, which
 sets the issued time based on the system time when the certificate is
-actually created. Positive adjustments will adjust the timestamp into the
-future, and negative adjustments will cause the timestamp to be in the past
+actually created. Positive values adjust the timestamp into the
+future, and negative values adjust the timestamp into the past
 by the number of seconds indicated. This adjustment is relative to server
 time.
 </para>
@@ -2841,7 +3645,7 @@ Freeze.DbEnv.<replaceable>env-name</replaceable>.DbPrivate=<replaceable>num</rep
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-&Freeze; will instruct Berkeley DB to use process private memory instead of shared
+&Freeze; instructs Berkeley DB to use process private memory instead of shared
 memory. The default value is 1. Set it to 0 in order to run db_archive (or another Berkeley DB utility) on a running environment.
 </para>
 </section>
@@ -2857,7 +3661,7 @@ Freeze.DbEnv.<replaceable>env-name</replaceable>.DbRecoverFatal=<replaceable>num
 <title>Description</title>
 <para>
 If <replaceable>num</replaceable> is set to a value larger than zero,
-"fatal" recovery will be performed when the environment is opened. The default value is 0.
+"fatal" recovery is performed when the environment is opened. The default value is 0.
 </para>
 </section>
 </section>
@@ -3072,6 +3876,37 @@ counting of the underlying database.</entry>
 </section>
 </section>
 
+<section><title>Freeze.Warn.Deadlocks</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.Warn.Deadlocks=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+&Freeze; logs a warning message when a deadlock occur. The default value is 0.
+</para>
+</section>
+</section>
+
+<section><title>Freeze.Warn.CloseInFinalize</title>
+<section><title>Synopsis</title>
+<synopsis>
+Freeze.Warn.CloseInFinalize=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+&Freeze; logs a warning message when an application neglects to explicitly
+close a map iterator. The default value is 1. (Java only)
+</para>
+</section>
+</section>
+
 
 </section>
 
@@ -3192,6 +4027,24 @@ If <replaceable>num</replaceable> is set to a value larger than zero,
 the IcePatch client performs a thorough comparison of each local
 directory to that of the server. The default value of 0 causes the
 client to skip a directory if its unique signature matches the server's.
+</para>
+</section>
+</section>
+
+<section><title>IcePatch.Dynamic</title>
+<section><title>Synopsis</title>
+<synopsis>
+IcePatch.Dynamic=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+the IcePatch client dynamically calculates the unique signatures of
+local files rather than caching the signatures. This reduces the
+number of local cache files at the expense of more processing when
+comparing directories with the server. The default value is 1.
 </para>
 </section>
 </section>

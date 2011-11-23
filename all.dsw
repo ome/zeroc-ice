@@ -194,9 +194,6 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name IceUtil
     End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name Freeze
-    End Project Dependency
 }}}
 
 ###############################################################################
@@ -241,6 +238,9 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name IceBox
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceXML
     End Project Dependency
 }}}
 
@@ -346,27 +346,6 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name IceSSL
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "IcePatchCalc"=.\src\IcePatch\IcePatchCalc.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name Ice
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IcePatch
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IceUtil
     End Project Dependency
 }}}
 
@@ -990,16 +969,25 @@ Package=<4>
     Project_Dep_Name freezeScriptEvictor
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name sliceexAMDS
-    End Project Dependency
-    Begin Project Dependency
     Project_Dep_Name TransformDB
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name DumpDB
     End Project Dependency
     Begin Project Dependency
+    Project_Dep_Name slice2cs
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name sliceexAMDS
+    End Project Dependency
+    Begin Project Dependency
     Project_Dep_Name sliceobAMDS
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name checksumC
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name checksumS
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name simpleIcePackC
@@ -1009,12 +997,6 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name simpleIcePackSvc
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IcePatchCalc
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name slice2cs
     End Project Dependency
 }}}
 
@@ -1162,6 +1144,42 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name IceSSL
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "checksumC"=.\test\Ice\checksum\client\checksumC.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "checksumS"=.\test\Ice\checksum\server\checksumS.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Ice
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IceUtil
     End Project Dependency
 }}}
 
@@ -2195,18 +2213,6 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name TransformDB
     End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name DumpDB
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name slice2freezej
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name slice2java
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name IcePatchCalc
-    End Project Dependency
 }}}
 
 ###############################################################################
@@ -2560,6 +2566,9 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name IceBox
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name IcePack
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name IceUtil

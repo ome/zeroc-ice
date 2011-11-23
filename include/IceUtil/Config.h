@@ -18,7 +18,7 @@
 //
 #if defined(__i386) || defined(_M_IX86) || defined (__x86_64)
 #   define ICE_LITTLE_ENDIAN
-#elif defined(__sparc) || defined(__sparc__) || defined(__hppa) || defined(__ppc__)
+#elif defined(__sparc) || defined(__sparc__) || defined(__hppa) || defined(__ppc__) || defined(_ARCH_COM)
 #   define ICE_BIG_ENDIAN
 #else
 #   error "Unknown architecture"
@@ -32,7 +32,7 @@
 // We are a linux sparc, which forces 32 bit usr land, no matter the architecture
 //
 #   define  ICE_32
-#elif (defined(__sun) && defined(__sparcv9)) || (defined(__linux) && defined(__x86_64)) || (defined(__hppa) && defined(__LP64__))
+#elif (defined(__sun) && defined(__sparcv9)) || (defined(__linux) && defined(__x86_64)) || (defined(__hppa) && defined(__LP64__)) || (defined(_ARCH_COM) && defined(__64BIT__))
 #   define ICE_64
 #else
 #   define ICE_32
@@ -101,7 +101,7 @@
 // necessary.
 // 
 #   ifndef _WINSOCKAPI_
-#      include <winsock.h>
+#      include <winsock2.h>
 #   endif
 
 // '...' : forcing value to bool 'true' or 'false' (performance warning)
@@ -213,7 +213,7 @@ const Int64 Int64Max = INT64_MAX;
 //
 // The Ice version.
 //
-#define ICE_STRING_VERSION "1.4.0" // "A.B.C", with A=major, B=minor, C=patch
-#define ICE_INT_VERSION 10400      // AABBCC, with AA=major, BB=minor, CC=patch
+#define ICE_STRING_VERSION "1.5.0" // "A.B.C", with A=major, B=minor, C=patch
+#define ICE_INT_VERSION 10500      // AABBCC, with AA=major, BB=minor, CC=patch
 
 #endif

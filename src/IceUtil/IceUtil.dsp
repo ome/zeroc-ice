@@ -54,12 +54,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 rpcrt4.lib /nologo /dll /machine:I386 /out:"Release/iceutil14.dll" /implib:"Release/iceutil.lib"
+# ADD LINK32 rpcrt4.lib /nologo /dll /machine:I386 /out:"Release/iceutil15.dll" /implib:"Release/iceutil.lib"
 # SUBTRACT LINK32 /pdb:none /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\iceutil.lib ..\..\lib	copy $(OutDir)\iceutil14.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\iceutil.lib ..\..\lib	copy $(OutDir)\iceutil15.dll ..\..\bin
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "IceUtil - Win32 Debug"
@@ -87,12 +87,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386
-# ADD LINK32 rpcrt4.lib /nologo /dll /debug /machine:I386 /out:"Debug/iceutil14d.dll" /implib:"Debug/iceutild.lib"
+# ADD LINK32 rpcrt4.lib /nologo /dll /debug /machine:I386 /out:"Debug/iceutil15d.dll" /implib:"Debug/iceutild.lib"
 # SUBTRACT LINK32 /pdb:none /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Debug
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\iceutild.lib ..\..\lib	copy $(OutDir)\iceutil14d.pdb ..\..\bin	copy $(OutDir)\iceutil14d.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\iceutild.lib ..\..\lib	copy $(OutDir)\iceutil15d.pdb ..\..\bin	copy $(OutDir)\iceutil15d.dll ..\..\bin
 # End Special Build Tool
 
 !ENDIF 
@@ -139,6 +139,14 @@ SOURCE=.\GCShared.cpp
 # Begin Source File
 
 SOURCE=.\InputUtil.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\MD5.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\MD5I.cpp
 # End Source File
 # Begin Source File
 
@@ -243,6 +251,14 @@ SOURCE=..\..\include\IceUtil\InputUtil.h
 # Begin Source File
 
 SOURCE=..\..\include\IceUtil\Lock.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\include\IceUtil\MD5.h
+# End Source File
+# Begin Source File
+
+SOURCE=MD5I.h
 # End Source File
 # Begin Source File
 

@@ -13,7 +13,7 @@ LIBFILENAME     = $(call mklibfilename,Ice,$(VERSION))
 SONAME          = $(call mksoname,Ice,$(SOVERSION))  
 LIBNAME		= $(call mklibname,Ice)
 
-TARGETS		= $(libdir)/$(LIBFILENAME) $(libdir)/$(SONAME) $(libdir)/$(LIBNAME)
+TARGETS		= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
 
 OBJS		= Initialize.o \
 		  Application.o \
@@ -87,7 +87,9 @@ OBJS		= Initialize.o \
 		  FactoryTable.o \
 		  Service.o \
 		  Process.o \
-		  FacetMap.o
+		  FacetMap.o \
+		  SliceChecksumDict.o \
+		  SliceChecksums.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
@@ -117,7 +119,8 @@ SLICE_SRCS	= $(SDIR)/LocalException.ice \
                   $(SDIR)/Stats.ice \
                   $(SDIR)/Process.ice \
                   $(SDIR)/ProcessF.ice \
-		  $(SDIR)/FacetMap.ice
+		  $(SDIR)/FacetMap.ice \
+		  $(SDIR)/SliceChecksumDict.ice
 
 HDIR		= $(includedir)/Ice
 SDIR		= $(slicedir)/Ice
@@ -142,10 +145,6 @@ $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 	ln -s $(SONAME) $@
 
 install:: all
-	$(INSTALL_LIBRARY) $(libdir)/$(LIBFILENAME) $(install_libdir)
-	rm -f $(install_libdir)/$(SONAME)
-	ln -s $(LIBFILENAME) $(install_libdir)/$(SONAME)
-	rm -f $(install_libdir)/$(LIBNAME)
-	ln -s $(SONAME) $(install_libdir)/$(LIBNAME)
+	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))
 
 include .depend

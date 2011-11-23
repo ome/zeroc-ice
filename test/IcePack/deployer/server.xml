@@ -1,4 +1,6 @@
-<server kind="cpp">
+<icepack>
+
+<server name="${name}" kind="cpp" exe="${test.dir}/server" activation="on-demand">
 
   <variable name="var0" value="val0"/>
 
@@ -6,12 +8,13 @@
   <option>--Test.Test1=0</option>
 
   <target name="manual">
-    <activation mode="manual"/>
-    <property name="Mode" value="manual"/>
+    <properties>
+      <property name="Mode" value="manual"/>
+    </properties>
   </target>
 
   <adapters>
-    <adapter name="Server" endpoints="default" register="true">
+    <adapter name="Server" endpoints="default">
       <object identity="${name}" type="::Test"/>
     </adapter>
   </adapters>
@@ -38,6 +41,13 @@
       <property name="Variable2" value="${var0}"/>
       <property name="Target2" value="1"/>
     </properties>    
+  
+    <target name="target22">
+      <properties>
+        <property name="Target2" value="2"/>
+      </properties>    
+    </target>
+
   </target>
 
   <envs>
@@ -45,3 +55,5 @@
   </envs>
 
 </server>
+
+</icepack>

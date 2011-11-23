@@ -16,8 +16,8 @@ LIBNAME		= $(call mklibname,IceBox)
 SERVER		= $(top_srcdir)/bin/icebox
 ADMIN		= $(top_srcdir)/bin/iceboxadmin
 
-TARGETS		= $(libdir)/$(LIBFILENAME) $(libdir)/$(SONAME) $(libdir)/$(LIBNAME) \
-                  $(SERVER) $(ADMIN)
+LIBTARGETS      = $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
+TARGETS         = $(LIBTARGETS) $(SERVER) $(ADMIN)
 
 OBJS		= IceBox.o \
 		  Exception.o
@@ -40,7 +40,7 @@ SDIR		= $(slicedir)/IceBox
 include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_BOX_API_EXPORTS $(DB_FLAGS) 
-SLICE2CPPFLAGS	:= --ice --dll-export ICE_BOX_API --include-dir IceBox $(SLICE2CPPFLAGS)
+SLICE2CPPFLAGS	:= --checksum --ice --dll-export ICE_BOX_API --include-dir IceBox $(SLICE2CPPFLAGS)
 LINKWITH	:= -lIce -lIceUtil
 
 $(libdir)/$(LIBFILENAME): $(OBJS)
@@ -55,20 +55,16 @@ $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 	rm -f $@
 	ln -s $(SONAME) $@
 
-$(SERVER): $(SOBJS) $(libdir)/$(LIBNAME)
+$(SERVER): $(SOBJS) $(LIBTARGETS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) -lIceBox -lFreeze $(DB_LIBS) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) -lIceBox $(LIBS)
 
-$(ADMIN): $(AOBJS) $(libdir)/$(LIBNAME)
+$(ADMIN): $(AOBJS) $(LIBTARGETS)
 	rm -f $@
 	$(CXX) $(LDFLAGS) -o $@ $(AOBJS) -lIceBox $(LIBS)
 
 install:: all
-	$(INSTALL_LIBRARY) $(libdir)/$(LIBFILENAME) $(install_libdir)
-	rm -f $(install_libdir)/$(SONAME)
-	ln -s $(LIBFILENAME) $(install_libdir)/$(SONAME)
-	rm -f $(install_libdir)/$(LIBNAME)
-	ln -s $(SONAME) $(install_libdir)/$(LIBNAME)
+	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))
 	$(INSTALL_PROGRAM) $(SERVER) $(install_bindir)
 	$(INSTALL_PROGRAM) $(ADMIN) $(install_bindir)
 

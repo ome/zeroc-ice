@@ -17,8 +17,8 @@ CLIENT		= $(top_srcdir)/bin/icepatchclient
 CALC		= $(top_srcdir)/bin/icepatchcalc
 SERVER		= $(top_srcdir)/bin/icepatchserver
 
-TARGETS		= $(libdir)/$(LIBFILENAME) $(libdir)/$(SONAME) $(libdir)/$(LIBNAME) \
-                  $(CLIENT) $(CALC) $(SERVER)
+LIBTARGETS      = $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
+TARGETS         = $(LIBTARGETS) $(CLIENT) $(CALC) $(SERVER)
 
 OBJS		= IcePatch.o \
 		  FileDescFactory.o \
@@ -46,7 +46,7 @@ SDIR		= $(slicedir)/IcePatch
 include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_PATCH_API_EXPORTS $(OPENSSL_FLAGS) $(BZIP2_FLAGS)
-SLICE2CPPFLAGS	:= --ice --include-dir IcePatch --dll-export ICE_PATCH_API $(SLICE2CPPFLAGS)
+SLICE2CPPFLAGS	:= --checksum --ice --include-dir IcePatch --dll-export ICE_PATCH_API $(SLICE2CPPFLAGS)
 
 LINKWITH        := -lIce -lIceUtil $(OPENSSL_LIBS) $(BZIP2_LIBS)
 
@@ -62,24 +62,20 @@ $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 	rm -f $@
 	ln -s $(SONAME) $@
 
-$(CLIENT): $(CLIENT_OBJS) $(libdir)/$(LIBNAME)
+$(CLIENT): $(CLIENT_OBJS) $(LIBTARGETS)
 	rm -f $@
 	$(CXX) $(LDFLAGS) -o $@ $(CLIENT_OBJS) -lIcePatch -lGlacier -lIceSSL $(LIBS) $(OPENSSL_LIBS) $(EXPAT_LIBS)
 
-$(CALC): $(CALC_OBJS) $(libdir)/$(LIBNAME)
+$(CALC): $(CALC_OBJS) $(LIBTARGETS)
 	rm -f $@
 	$(CXX) $(LDFLAGS) -o $@ $(CALC_OBJS) -lIcePatch $(LIBS) $(OPENSSL_LIBS)
 
-$(SERVER): $(SERVER_OBJS) $(libdir)/$(LIBNAME)
+$(SERVER): $(SERVER_OBJS) $(LIBTARGETS)
 	rm -f $@
 	$(CXX) $(LDFLAGS) -o $@ $(SERVER_OBJS) -lIcePatch $(LIBS) $(OPENSSL_LIBS)
 
 install:: all
-	$(INSTALL_LIBRARY) $(libdir)/$(LIBFILENAME) $(install_libdir)
-	rm -f $(install_libdir)/$(SONAME)
-	ln -s $(LIBFILENAME) $(install_libdir)/$(SONAME)
-	rm -f $(install_libdir)/$(LIBNAME)
-	ln -s $(SONAME) $(install_libdir)/$(LIBNAME)
+	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))
 	$(INSTALL_PROGRAM) $(CLIENT) $(install_bindir)
 	$(INSTALL_PROGRAM) $(CALC) $(install_bindir)
 	$(INSTALL_PROGRAM) $(SERVER) $(install_bindir)

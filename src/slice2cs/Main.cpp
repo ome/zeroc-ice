@@ -32,6 +32,7 @@ usage(const char* n)
 	"--depend                Generate Makefile dependencies.\n"
         "-d, --debug             Print debug messages.\n"
         "--ice                   Permit `Ice' prefix (for building Ice source code only)\n"
+        "--checksum              Generate checksums for Slice definitions.\n"
         ;
     // Note: --case-sensitive is intentionally not shown here!
 }
@@ -49,6 +50,7 @@ main(int argc, char* argv[])
     bool ice = false;
     bool caseSensitive = false;
     bool depend = false;
+    bool checksum = false;
 
     int idx = 1;
     while(idx < argc)
@@ -175,6 +177,15 @@ main(int argc, char* argv[])
 	    }
 	    --argc;
 	}
+	else if(strcmp(argv[idx], "--checksum") == 0)
+	{
+	    checksum = true;
+	    for(int i = idx ; i + 1 < argc ; ++i)
+	    {
+		argv[i] = argv[i + 1];
+	    }
+	    --argc;
+	}
         else if(argv[idx][0] == '-')
         {
             cerr << argv[0] << ": unknown option `" << argv[idx] << "'"
@@ -209,7 +220,7 @@ main(int argc, char* argv[])
 	if(depend)
 	{
 	    Preprocessor icecpp(argv[0], argv[idx], cppArgs);
-	    icecpp.printMakefileDependencies();
+	    icecpp.printMakefileDependencies(Preprocessor::CSharp);
 	}
 	else
 	{
@@ -235,14 +246,13 @@ main(int argc, char* argv[])
 	    }
 	    else
 	    {
-		Gen gen(argv[0], icecpp.getBaseName(), includePaths, output);
+		Gen gen(argv[0], icecpp.getBaseName(), includePaths, output, impl, implTie);
 		if(!gen)
 		{
 		    p->destroy();
 		    return EXIT_FAILURE;
 		}
 		gen.generate(p);
-#if 0
 		if(tie)
 		{
 		    gen.generateTie(p);
@@ -255,7 +265,10 @@ main(int argc, char* argv[])
 		{
 		    gen.generateImplTie(p);
 		}
-#endif
+                if(checksum)
+                {
+		    gen.generateChecksums(p);
+                }
 	    }
 
 	    p->destroy();

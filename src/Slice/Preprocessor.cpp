@@ -85,7 +85,7 @@ Slice::Preprocessor::preprocess(bool keepComments)
 }
 
 void
-Slice::Preprocessor::printMakefileDependencies()
+Slice::Preprocessor::printMakefileDependencies(Language lang)
 {
     if(!checkInputFile())
     {
@@ -99,18 +99,143 @@ Slice::Preprocessor::printMakefileDependencies()
 	return;
     }
     
-    cmd += " -M " + _args + " " +_fileName;
+    cmd += " -M " + _args + " " + _fileName;
 
-    //
-    // Open a pipe for writing to redirect icecpp output to the standard output.
-    //
-#ifndef _WIN32
-    FILE* cppHandle = popen(cmd.c_str(), "w");
-    pclose(cppHandle);
+#ifdef _WIN32
+    FILE* cppHandle = _popen(cmd.c_str(), "r");
 #else
-    FILE* cppHandle = _popen(cmd.c_str(), "w");
-    _pclose(cppHandle);
+    FILE* cppHandle = popen(cmd.c_str(), "r");
 #endif
+
+    /*
+     * icecpp emits dependencies in any of the following formats, depending on the
+     * length of the filenames:
+     *
+     * x.cpp: /path/x.ice /path/y.ice
+     *
+     * x.cpp: /path/x.ice \ 
+     *	/path/y.ice
+     *
+     * x.cpp: /path/x.ice /path/y.ice \ 
+     *	/path/z.ice
+     *
+     * x.cpp: \ 
+     *	/path/x.ice
+     *
+     * x.cpp: \ 
+     *	/path/x.ice \ 
+     *	/path/y.ice
+     *
+     * Spaces embedded within filenames are escaped with a backslash. Note that
+     * Windows filenames may contain colons.
+     *
+     */
+    switch(lang)
+    {
+        case CPlusPlus:
+	{
+	    char buf[1024];
+	    while(fgets(buf, sizeof(buf), cppHandle) != NULL)
+	    {
+	        fputs(buf, stdout);
+	    }
+	    break;
+	}
+	case Java:
+	{
+            //
+            // We want to shift the files left one position, so that
+            // "x.cpp: x.ice y.ice" becomes "x.ice: y.ice".
+            //
+            // Since the pipe input can be returned a line at a time, we collect
+            // all of the output into one string before manipulating it.
+            //
+            string deps;
+	    char buf[1024];
+	    while(fgets(buf, sizeof(buf), cppHandle) != NULL)
+	    {
+                deps.append(buf, strlen(buf));
+            }
+
+            //
+            // Remove the first file.
+            //
+            string::size_type start = deps.find(".cpp:");
+            assert(start != string::npos);
+            start = deps.find_first_not_of(" \t\r\n\\", start + 5); // Skip to beginning of next file.
+            assert(start != string::npos);
+            deps.erase(0, start);
+
+            //
+            // Find end of next file.
+            //
+            string::size_type pos = 0;
+            while((pos = deps.find_first_of(" :\t\r\n\\", pos + 1)) != string::npos)
+            {
+                if(deps[pos] == ':')
+                {
+                    deps.insert(pos, 1, '\\'); // Escape colons.
+                    ++pos;
+                }
+                else if(deps[pos] == '\\') // Ignore escaped characters.
+                {
+                    ++pos;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if(pos == string::npos)
+            {
+                deps.append(":");
+            }
+            else
+            {
+                deps.insert(pos, 1, ':');
+            }
+
+            fputs(deps.c_str(), stdout);
+	    break;
+	}
+	case CSharp:
+	{
+	    //
+	    // Change .cpp suffix to .cs suffix.
+	    //
+	    char buf[1024];
+	    while(fgets(buf, sizeof(buf), cppHandle) != NULL)
+	    {
+		char* dot;
+		char* colon = strchr(buf, ':');
+		if(colon != NULL)
+		{
+		    *colon = '\0';
+		    dot = strrchr(buf, '.');
+		    *colon = ':';
+		    if(dot != NULL)
+		    {
+			if(strncmp(dot, ".cpp:", 5) == 0)
+			{
+			    *dot = '\0';
+			    fputs(buf, stdout);
+			    fputs(".cs", stdout);
+			    fputs(colon, stdout);
+			    continue;
+			}
+		    }
+		}
+		fputs(buf, stdout);
+	    }
+	    break;
+	}
+	default:
+	{
+	    abort();
+	    break;
+	}
+    }
 }
 
 bool
@@ -159,7 +284,7 @@ Slice::Preprocessor::checkInputFile()
     ifstream test(_fileName.c_str());
     if(!test)
     {
-	cerr << _path << ": can't open `" << _fileName << "' for reading: " << strerror(errno) << endl;
+	cerr << _path << ": can't open `" << _fileName << "' for reading" << endl;
 	return false;
     }
     test.close();

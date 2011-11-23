@@ -19,9 +19,9 @@ SVCLIBNAME	= $(call mklibname,IceStormService)
 
 ADMIN		= $(top_srcdir)/bin/icestormadmin
 
-TARGETS		= $(libdir)/$(LIBFILENAME) $(libdir)/$(SONAME) $(libdir)/$(LIBNAME) \
-                  $(libdir)/$(SVCLIBFILENAME) $(libdir)/$(SVCSONAME) $(libdir)/$(SVCLIBNAME) \
-                  $(ADMIN)
+LIBTARGETS	= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
+SVCLIBTARGETS   = $(call mklibtargets,$(libdir)/$(SVCLIBFILENAME),$(libdir)/$(SVCSONAME),$(libdir)/$(SVCLIBNAME))
+TARGETS         = $(LIBTARGETS) $(SVCLIBTARGETS) $(ADMIN)
 
 OBJS		= IceStorm.o
 
@@ -67,7 +67,7 @@ include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_STORM_API_EXPORTS $(READLINE_FLAGS) 
 ICECPPFLAGS	:= -I.. $(ICECPPFLAGS)
-SLICE2CPPFLAGS	:= --ice --dll-export ICE_STORM_API --include-dir IceStorm $(SLICE2CPPFLAGS)
+SLICE2CPPFLAGS	:= --checksum --ice --dll-export ICE_STORM_API --include-dir IceStorm $(SLICE2CPPFLAGS)
 LINKWITH	:= -lIce -lIceUtil
 SVCLINKWITH	:= -lFreeze -lIce -lIceUtil
 
@@ -97,7 +97,7 @@ $(libdir)/$(SVCLIBNAME): $(libdir)/$(SVCSONAME)
 	ln -s $(SVCSONAME) $@
 
 
-$(ADMIN): $(AOBJS) $(libdir)/$(LIBNAME)
+$(ADMIN): $(AOBJS) $(LIBTARGETS)
 	rm -f $@
 	$(CXX) $(LDFLAGS) -o $@ $(AOBJS) -lIceStorm -lIceXML $(READLINE_LIBS) $(LIBS) $(EXPAT_LIBS)
 
@@ -117,16 +117,8 @@ clean::
 #	-rm -f Scanner.cpp
 
 install:: all
-	$(INSTALL_LIBRARY) $(libdir)/$(LIBFILENAME) $(install_libdir)
-	rm -f $(install_libdir)/$(SONAME)
-	ln -s $(LIBFILENAME) $(install_libdir)/$(SONAME)
-	rm -f $(install_libdir)/$(LIBNAME)
-	ln -s $(SONAME) $(install_libdir)/$(LIBNAME)
-	$(INSTALL_LIBRARY) $(libdir)/$(SVCLIBFILENAME) $(install_libdir)
-	rm -f $(install_libdir)/$(SVCSONAME)
-	ln -s $(SVCLIBFILENAME) $(install_libdir)/$(SVCSONAME)
-	rm -f $(install_libdir)/$(SVCLIBNAME)
-	ln -s $(SVCSONAME) $(install_libdir)/$(SVCLIBNAME)
+	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))
+	$(call installlib,$(install_libdir),$(libdir),$(SVCLIBFILENAME),$(SVCSONAME),$(SVCLIBNAME))
 	$(INSTALL_PROGRAM) $(ADMIN) $(install_bindir)
 
 include .depend

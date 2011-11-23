@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <Gen.h>
+#include <Slice/Checksum.h>
 #include <IceUtil/Functional.h>
 #include <IceUtil/Algorithm.h>
 #include <IceUtil/Iterator.h>
@@ -852,6 +853,65 @@ Slice::Gen::generateImplTie(const UnitPtr& p)
     p->visit(&implTieVisitor);
 }
 
+void
+Slice::Gen::writeChecksumClass(const string& checksumClass, const string& dir, const ChecksumMap& m)
+{
+    //
+    // Attempt to open the source file for the checksum class.
+    //
+    JavaOutput out;
+    if(!out.openClass(checksumClass, dir))
+    {
+        cerr << "can't open class `" << checksumClass << "' for writing: " << strerror(errno) << endl;
+        return;
+    }
+
+    //
+    // Get the class name.
+    //
+    string className;
+    string::size_type pos = checksumClass.rfind('.');
+    if(pos == string::npos)
+    {
+        className = checksumClass;
+    }
+    else
+    {
+        className = checksumClass.substr(pos + 1);
+    }
+
+    //
+    // Emit the class.
+    //
+    out << sp << nl << "public class " << className;
+    out << sb;
+
+    //
+    // Use a static initializer to populate the checksum map.
+    //
+    out << sp << nl << "public static java.util.Map checksums;";
+    out << sp << nl << "static";
+    out << sb;
+    out << nl << "java.util.Map map = new java.util.HashMap();";
+    for(ChecksumMap::const_iterator p = m.begin(); p != m.end(); ++p)
+    {
+        out << nl << "map.put(\"" << p->first << "\", \"";
+        ostringstream str;
+        str.flags(ios_base::hex);
+        str.fill('0');
+        for(vector<unsigned char>::const_iterator q = p->second.begin(); q != p->second.end(); ++q)
+        {
+            str << (int)(*q);
+        }
+        out << str.str() << "\");";
+    }
+    out << nl << "checksums = java.util.Collections.unmodifiableMap(map);";
+
+    out << eb;
+    out << eb;
+    out << nl;
+}
+
 Slice::Gen::OpsVisitor::OpsVisitor(const string& dir) :
     JavaVisitor(dir)
 {
@@ -999,16 +1059,16 @@ Slice::Gen::TieVisitor::visitClassDefStart(const ClassDefPtr& p)
     {
         if(p->isLocal())
         {
-            out << " implements " << name;
+            out << " implements " << name << ", Ice.TieBase";
         }
         else
         {
-            out << " extends " << '_' << name << "Disp";
+            out << " extends " << '_' << name << "Disp implements Ice.TieBase";
         }
     }
     else
     {
-        out << " extends " << name;
+        out << " extends " << name << " implements Ice.TieBase";
     }
 
     out << sb;
@@ -1022,14 +1082,14 @@ Slice::Gen::TieVisitor::visitClassDefStart(const ClassDefPtr& p)
     out << nl << "_ice_delegate = delegate;";
     out << eb;
 
-    out << sp << nl << "public " << '_' << name << "Operations" << nl << "ice_delegate()";
+    out << sp << nl << "public java.lang.Object" << nl << "ice_delegate()";
     out << sb;
     out << nl << "return _ice_delegate;";
     out << eb;
 
-    out << sp << nl << "public void" << nl << "ice_delegate(" << '_' << name << "Operations delegate)";
+    out << sp << nl << "public void" << nl << "ice_delegate(java.lang.Object delegate)";
     out << sb;
-    out << nl << "_ice_delegate = delegate;";
+    out << nl << "_ice_delegate = (_" << name << "Operations)delegate;";
     out << eb;
 
     out << sp << nl << "public boolean" << nl << "equals(java.lang.Object rhs)";
@@ -1231,7 +1291,7 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
     //
     // Default factory for non-abstract classes.
     //
-    if(!p->isAbstract())
+    if(!p->isAbstract() && !p->isLocal())
     {
         out << sp;
         out << nl << "private static class __F extends Ice.LocalObjectImpl implements Ice.ObjectFactory";
@@ -1924,6 +1984,10 @@ Slice::Gen::TypesVisitor::visitEnum(const EnumPtr& p)
         {
             out << nl << "int __v = __is.readInt();";
         }
+        out << nl << "if(__v < 0 || __v >= " << sz << ')';
+        out << sb;
+        out << nl << "throw new Ice.MarshalException();";
+        out << eb;
         out << nl << "return " << name << ".convert(__v);";
         out << eb;
 
@@ -3445,11 +3509,23 @@ Slice::Gen::BaseImplVisitor::writeOperation(Output& out, const string& package, 
         ExceptionList throws = op->throws();
         throws.sort();
         throws.unique();
+
+	//
+	// Arrange exceptions into most-derived to least-derived order. If we don't
+	// do this, a base exception handler can appear before a derived exception
+	// handler, causing compiler warnings and resulting in the base exception
+	// being marshaled instead of the derived exception.
+	//
+#if defined(__SUNPRO_CC)
+	throws.sort(Slice::derivedToBaseCompare);
+#else
+	throws.sort(Slice::DerivedToBaseCompare());
+#endif
         writeThrowsClause(package, throws);
 
         out << sb;
 
-        string result = "r";
+        string result = "__r";
         ParamDeclList paramList = op->parameters();
         ParamDeclList::const_iterator q;
         for(q = paramList.begin(); q != paramList.end(); ++q)
@@ -3504,6 +3580,18 @@ Slice::Gen::BaseImplVisitor::writeOperation(Output& out, const string& package, 
         ExceptionList throws = op->throws();
         throws.sort();
         throws.unique();
+
+	//
+	// Arrange exceptions into most-derived to least-derived order. If we don't
+	// do this, a base exception handler can appear before a derived exception
+	// handler, causing compiler warnings and resulting in the base exception
+	// being marshaled instead of the derived exception.
+	//
+#if defined(__SUNPRO_CC)
+	throws.sort(Slice::derivedToBaseCompare);
+#else
+	throws.sort(Slice::DerivedToBaseCompare());
+#endif
         writeThrowsClause(package, throws);
 
         out << sb;
@@ -3713,6 +3801,18 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
         ExceptionList throws = p->throws();
         throws.sort();
         throws.unique();
+
+	//
+	// Arrange exceptions into most-derived to least-derived order. If we don't
+	// do this, a base exception handler can appear before a derived exception
+	// handler, causing compiler warnings and resulting in the base exception
+	// being marshaled instead of the derived exception.
+	//
+#if defined(__SUNPRO_CC)
+	throws.sort(Slice::derivedToBaseCompare);
+#else
+	throws.sort(Slice::DerivedToBaseCompare());
+#endif
 
         TypeStringList::const_iterator q;
         int iter;

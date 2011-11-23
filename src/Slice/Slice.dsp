@@ -54,12 +54,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 /nologo /dll /machine:I386 /out:"Release/slice14.dll" /implib:"Release/slice.lib"
+# ADD LINK32 /nologo /dll /machine:I386 /out:"Release/slice15.dll" /implib:"Release/slice.lib"
 # SUBTRACT LINK32 /pdb:none /debug /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Release
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\slice.lib ..\..\lib	copy $(OutDir)\slice14.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\slice.lib ..\..\lib	copy $(OutDir)\slice15.dll ..\..\bin
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Slice - Win32 Debug"
@@ -87,12 +87,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386
-# ADD LINK32 /nologo /dll /debug /machine:I386 /out:"Debug/slice14d.dll" /implib:"Debug/sliced.lib"
+# ADD LINK32 /nologo /dll /debug /machine:I386 /out:"Debug/slice15d.dll" /implib:"Debug/sliced.lib"
 # SUBTRACT LINK32 /pdb:none /nodefaultlib
 # Begin Special Build Tool
 OutDir=.\Debug
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy $(OutDir)\sliced.lib ..\..\lib	copy $(OutDir)\slice14d.pdb ..\..\bin	copy $(OutDir)\slice14d.dll ..\..\bin
+PostBuild_Cmds=copy $(OutDir)\sliced.lib ..\..\lib	copy $(OutDir)\slice15d.pdb ..\..\bin	copy $(OutDir)\slice15d.dll ..\..\bin
 # End Special Build Tool
 
 !ENDIF 
@@ -104,6 +104,10 @@ PostBuild_Cmds=copy $(OutDir)\sliced.lib ..\..\lib	copy $(OutDir)\slice14d.pdb .
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+# Begin Source File
+
+SOURCE=.\Checksum.cpp
+# End Source File
 # Begin Source File
 
 SOURCE=.\CPlusPlusUtil.cpp
@@ -136,6 +140,10 @@ SOURCE=.\Scanner.cpp
 # Begin Group "Header Files"
 
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
+# Begin Source File
+
+SOURCE=..\..\incluce\Slice\Checksum.h
+# End Source File
 # Begin Source File
 
 SOURCE=..\..\incluce\Slice\CPlusPlusUtil.h

@@ -17,8 +17,8 @@ ADMIN		= $(top_srcdir)/bin/icepackadmin
 NODE_SERVER	= $(top_srcdir)/bin/icepacknode
 REGISTRY_SERVER	= $(top_srcdir)/bin/icepackregistry
 
-TARGETS		= $(libdir)/$(LIBFILENAME) $(libdir)/$(SONAME) $(libdir)/$(LIBNAME) \
-                  $(NODE_SERVER) $(REGISTRY_SERVER) $(ADMIN)
+LIBTARGETS	= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
+TARGETS         = $(LIBTARGETS) $(NODE_SERVER) $(REGISTRY_SERVER) $(ADMIN)
 
 LIB_OBJS	= Admin.o \
 		  Query.o \
@@ -27,38 +27,40 @@ LIB_OBJS	= Admin.o \
 ADMIN_OBJS	= Grammar.o \
 		  Scanner.o \
 		  Parser.o \
+                  DescriptorVisitor.o \
+                  DescriptorParser.o \
+                  DescriptorUtil.o \
 		  Client.o
 
 COMMON_OBJS	= Internal.o \
-		  TraceLevels.o \
-		  ComponentBuilder.o
+		  TraceLevels.o
 
-NODE_OBJS	= NodeInfo.o \
-		  NodeI.o \
-		  ServiceBuilder.o \
-		  ServerBuilder.o \
+NODE_OBJS	= NodeI.o \
+	          ServerFactory.o \
 		  ServerI.o \
 		  ServerAdapterI.o \
-		  ServerFactory.o \
-		  ServerDeployerI.o \
 	          Activator.o \
-		  ActivatorI.o \
-		  WaitQueue.o
+		  WaitQueue.o \
+                  DescriptorParser.o
 
 REGISTRY_OBJS   = Registry.o \
 	 	  ObjectRegistryI.o \
 		  AdapterRegistryI.o \
 		  ServerRegistryI.o \
 		  NodeRegistryI.o \
+	          ApplicationRegistryI.o \
 		  StringObjectProxyDict.o \
 		  StringObjectProxySeqDict.o \
+		  StringServerDescriptorDict.o \
+                  StringStringSeqDict.o \
 		  IdentityObjectDescDict.o \
 		  LocatorI.o \
 		  LocatorRegistryI.o \
-		  ApplicationBuilder.o \
 		  AdapterFactory.o \
 		  AdapterI.o \
 		  AdminI.o \
+		  DescriptorVisitor.o \
+                  DescriptorUtil.o \
 		  QueryI.o
 
 NODE_SVR_OBJS 	= $(COMMON_OBJS) \
@@ -82,8 +84,7 @@ SRCS		= $(LIB_OBJS:.o=.cpp) \
 SLICE_SRCS	= $(SDIR)/Admin.ice \
                   $(SDIR)/Exception.ice \
                   $(SDIR)/Query.ice \
-		  Internal.ice \
-		  Activator.ice
+		  Internal.ice
 
 HDIR		= $(includedir)/IcePack
 LOCAL_HDIR	= ../IcePack
@@ -96,7 +97,7 @@ include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DICE_PACK_API_EXPORTS $(READLINE_FLAGS)
 ICECPPFLAGS	:= -I.. $(ICECPPFLAGS)
-SLICE2CPPFLAGS 	:= --ice --include-dir IcePack --dll-export ICE_PACK_API $(SLICE2CPPFLAGS)
+SLICE2CPPFLAGS 	:= --checksum --ice --include-dir IcePack --dll-export ICE_PACK_API $(SLICE2CPPFLAGS)
 LINKWITH        := -lIceBox -lIce -lIceUtil
 
 $(libdir)/$(LIBFILENAME): $(LIB_OBJS)
@@ -111,18 +112,17 @@ $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 	rm -f $@
 	ln -s $(SONAME) $@
 
-$(ADMIN): $(ADMIN_OBJS) $(libdir)/$(LIBNAME)
+$(ADMIN): $(ADMIN_OBJS) $(LIBTARGETS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(ADMIN_OBJS) -lIcePack -lIceBox $(LIBS) $(READLINE_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(ADMIN_OBJS) -lIceXML -lIcePack -lIceBox $(LIBS) $(READLINE_LIBS) $(EXPAT_LIBS)
 
-$(REGISTRY_SERVER): $(REGISTRY_SVR_OBJS) $(libdir)/$(LIBNAME)
+$(REGISTRY_SERVER): $(REGISTRY_SVR_OBJS) $(LIBTARGETS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(REGISTRY_SVR_OBJS) -lIcePack -lIceBox -lFreeze -lIceXML $(LIBS) $(DB_LIBS) \
-	$(EXPAT_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(REGISTRY_SVR_OBJS) -lIcePack -lIceBox -lFreeze -lIceXML $(LIBS) $(DB_LIBS)
 
-$(NODE_SERVER): $(NODE_SVR_OBJS) $(libdir)/$(LIBNAME)
+$(NODE_SERVER): $(NODE_SVR_OBJS) $(LIBTARGETS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(NODE_SVR_OBJS) -lIcePack -lIceBox -lFreeze -lIceXML $(LIBS) $(DB_LIBS) $(EXPAT_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(NODE_SVR_OBJS) -lIcePack -lIceBox -lFreeze -lIceXML $(LIBS) $(DB_LIBS)
 
 $(LOCAL_HDIR)/%.h %.cpp: $(SDIR)/%.ice $(SLICE2CPP)
 	rm -f $(HDIR)/$(*F).h $(*F).cpp
@@ -136,9 +136,25 @@ $(LOCAL_HDIR)/StringObjectProxyDict.h StringObjectProxyDict.cpp: $(SLICE2FREEZE)
 clean::
 	rm -f StringObjectProxyDict.h StringObjectProxyDict.cpp
 
+$(LOCAL_HDIR)/StringStringSeqDict.h StringStringSeqDict.cpp: $(SLICE2FREEZE)
+	rm -f StringStringSeqDict.h StringStringSeqDict.cpp
+	$(SLICE2FREEZECMD) --dict IcePack::StringStringSeqDict,string,Ice::StringSeq \
+	StringStringSeqDict ../../slice/Ice/BuiltinSequences.ice
+
+clean::
+	rm -f StringStringSeqDict.h StringStringSeqDict.cpp
+
+$(LOCAL_HDIR)/StringServerDescriptorDict.h StringServerDescriptorDict.cpp: $(SLICE2FREEZE)
+	rm -f StringServerDescriptorDict.h StringServerDescriptorDict.cpp
+	$(SLICE2FREEZECMD) --dict IcePack::StringServerDescriptorDict,string,IcePacK::ServerDescriptor \
+	StringServerDescriptorDict ../../slice/IcePack/Admin.ice
+
+clean::
+	rm -f StringServerDescriptorDict.h StringServerDescriptorDict.cpp
+
 $(LOCAL_HDIR)/IdentityObjectDescDict.h IdentityObjectDescDict.cpp: $(SLICE2FREEZE)
 	rm -f IdentityObjectDescDict.h IdentityObjectDescDict.cpp
-	$(SLICE2FREEZECMD) --dict IcePack::IdentityObjectDescDict,Ice::Identity,IcePack::ObjectDescription \
+	$(SLICE2FREEZECMD) --dict IcePack::IdentityObjectDescDict,Ice::Identity,IcePack::ObjectDescriptor \
 	IdentityObjectDescDict ../../slice/Ice/Identity.ice $(LOCAL_SDIR)/Internal.ice
 
 clean::
@@ -160,11 +176,7 @@ clean::
 ###	rm -f Scanner.cpp
 
 install:: all
-	$(INSTALL_LIBRARY) $(libdir)/$(LIBFILENAME) $(install_libdir)
-	rm -f $(install_libdir)/$(SONAME)
-	ln -s $(LIBFILENAME) $(install_libdir)/$(SONAME)
-	rm -f $(install_libdir)/$(LIBNAME)
-	ln -s $(SONAME) $(install_libdir)/$(LIBNAME)
+	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))
 	$(INSTALL_PROGRAM) $(ADMIN) $(install_bindir)
 	$(INSTALL_PROGRAM) $(NODE_SERVER) $(install_bindir)
 	$(INSTALL_PROGRAM) $(REGISTRY_SERVER) $(install_bindir)

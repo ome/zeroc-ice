@@ -27,13 +27,15 @@ public:
     ServiceManagerI(::Ice::Application*, int&, char*[]);
     virtual ~ServiceManagerI();
 
+    virtual Ice::SliceChecksumDict getSliceChecksums(const Ice::Current&) const;
+
     virtual void shutdown(const ::Ice::Current&);
 
     int run();
 
     struct ServiceInfo
     {
-        ServiceBasePtr service;
+        ServicePtr service;
         ::IceInternal::DynamicLibraryPtr library;
 	::Ice::CommunicatorPtr communicator;
 	::std::string envName;

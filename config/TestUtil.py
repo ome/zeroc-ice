@@ -91,7 +91,13 @@ def isHpUx():
         return 1
    else:
         return 0
-     
+
+def isAIX():
+   if sys.platform in ['aix4', 'aix5']:
+        return 1
+   else:
+        return 0
+  
 def isDarwin():
 
    if sys.platform == "darwin":
@@ -104,11 +110,19 @@ def killServers():
 
     global serverPids
 
+    if isCygwin():
+	print "killServers(): not implemented for cygwin python."
+
+	#
+	# TODO: Michi: Not sure why exit(1) was here. This means that, when
+	# we run the test suite with allTests.py under Cygwin, the first sub-test that
+	# calls killServers will return non-zero exit status and, therefore,
+	# terminate allTests.py, so the subsequence tests are never run.
+	#
+	#sys.exit(1)
+
     for pid in serverPids:
-        if isCygwin():
-            print "killServers(): not implemented for cygwin python."
-            sys.exit(1)
-        elif isWin32():
+        if isWin32():
             try:
                 import win32api
                 handle = win32api.OpenProcess(1, 0, pid)
@@ -145,7 +159,7 @@ def getAdapterReady(serverPipe):
 
 def waitServiceReady(pipe, token):
 
-    while True:
+    while 1:
 
         output = pipe.readline().strip()
 
@@ -158,14 +172,14 @@ def waitServiceReady(pipe, token):
 
 def printOutputFromPipe(pipe):
 
-    while True:
+    while 1:
 
-        line = pipe.readline()
+        c = pipe.read(1)
 
-        if not line:
+        if c == "":
             break
 
-        os.write(1, line)
+        os.write(1, c)
 
 for toplevel in [".", "..", "../..", "../../..", "../../../.."]:
     toplevel = os.path.normpath(toplevel)
@@ -183,6 +197,8 @@ elif isHpUx():
     os.environ["SHLIB_PATH"] = os.path.join(toplevel, "lib") + ":" + os.getenv("SHLIB_PATH", "")
 elif isDarwin():
     os.environ["DYLD_LIBRARY_PATH"] = os.path.join(toplevel, "lib") + ":" + os.getenv("DYLD_LIBRRARY_PATH", "")
+elif isAIX():
+    os.environ["LIBPATH"] = os.path.join(toplevel, "lib") + ":" + os.getenv("LIBPATH", "")
 else:
     os.environ["LD_LIBRARY_PATH"] = os.path.join(toplevel, "lib") + ":" + os.getenv("LD_LIBRARY_PATH", "")
     os.environ["LD_LIBRARY_PATH_64"] = os.path.join(toplevel, "lib") + ":" + os.getenv("LD_LIBRARY_PATH_64", "")
@@ -233,7 +249,7 @@ def clientServerTestWithOptionsAndNames(name, additionalServerOptions, additiona
     testdir = os.path.join(toplevel, "test", name)
     server = os.path.join(testdir, serverName)
     client = os.path.join(testdir, clientName)
-
+ 
     print "starting " + serverName + "...",
     serverPipe = os.popen(server + serverOptions + additionalServerOptions + " 2>&1")
     getServerPid(serverPipe)

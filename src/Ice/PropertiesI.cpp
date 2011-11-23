@@ -128,11 +128,11 @@ static const string iceProps[] =
     "ThreadPool.Server.SizeMax",
     "ThreadPool.Server.SizeWarn",
     "Trace.GC",
+    "Trace.Location",
     "Trace.Network",
     "Trace.Protocol",
     "Trace.Retry",
     "Trace.Slicing",
-    "Trace.Location",
     "UDP.RcvSize",
     "UDP.SndSize",
     "UseEventLog",
@@ -146,7 +146,6 @@ static const string iceProps[] =
 
 static const string iceBoxProps[] =
 {
-    "DBEnvName.*",
     "LoadOrder",
     "PrintServicesReady",
     "Service.*",
@@ -154,6 +153,9 @@ static const string iceBoxProps[] =
     "ServiceManager.Endpoints",
     "ServiceManager.Identity",
     "ServiceManager.RegisterProcess",
+    "ServiceManager.ThreadPool.Size",
+    "ServiceManager.ThreadPool.SizeMax",
+    "ServiceManager.ThreadPool.SizeWarn",
     "UseSharedCommunicator.*"
 };
 
@@ -162,25 +164,41 @@ static const string icePackProps[] =
     "Node.AdapterId",
     "Node.CollocateRegistry",
     "Node.Data",
-    "Node.Output",
-    "Node.RedirectErrToOut",
     "Node.Endpoints",
     "Node.Name",
+    "Node.Output",
     "Node.PrintServersReady",
     "Node.PropertiesOverride",
+    "Node.RedirectErrToOut",
     "Node.ThreadPool.Size",
+    "Node.ThreadPool.SizeMax",
+    "Node.ThreadPool.SizeWarn",
     "Node.Trace.Activator",
     "Node.Trace.Adapter",
     "Node.Trace.Server",
     "Node.WaitTime",
     "Registry.Admin.AdapterId",
     "Registry.Admin.Endpoints",
+    "Registry.Admin.ThreadPool.Size",
+    "Registry.Admin.ThreadPool.SizeMax",
+    "Registry.Admin.ThreadPool.SizeWarn",
+    "Registry.Client.AdapterId",
     "Registry.Client.Endpoints",
+    "Registry.Client.ThreadPool.Size",
+    "Registry.Client.ThreadPool.SizeMax",
+    "Registry.Client.ThreadPool.SizeWarn",
     "Registry.Data",
     "Registry.DynamicRegistration",
     "Registry.Internal.AdapterId",
     "Registry.Internal.Endpoints",
+    "Registry.Internal.ThreadPool.Size",
+    "Registry.Internal.ThreadPool.SizeMax",
+    "Registry.Internal.ThreadPool.SizeWarn",
+    "Registry.Server.AdapterId",
     "Registry.Server.Endpoints",
+    "Registry.Server.ThreadPool.Size",
+    "Registry.Server.ThreadPool.SizeMax",
+    "Registry.Server.ThreadPool.SizeWarn",
     "Registry.Trace.AdapterRegistry",
     "Registry.Trace.NodeRegistry",
     "Registry.Trace.ObjectRegistry",
@@ -189,13 +207,14 @@ static const string icePackProps[] =
 
 static const string icePatchProps[] =
 {
-    "Endpoints",
     "BusyTimeout",
+    "Directory",
+    "Dynamic",
+    "Endpoints",
     "RemoveOrphaned",
     "Thorough",
     "Trace.Files",
-    "UpdatePeriod",
-    "Directory"
+    "UpdatePeriod"
 };
 
 static const string iceSSLProps[] =
@@ -225,11 +244,19 @@ static const string iceSSLProps[] =
 static const string iceStormProps[] =
 {
     "Flush.Timeout",
-    "Publish.Endpoints",
     "Publish.AdapterId",
-    "TopicManager.Endpoints",
+    "Publish.Endpoints",
+    "Publish.RegisterProcess",
+    "Publish.ThreadPool.Size",
+    "Publish.ThreadPool.SizeMax",
+    "Publish.ThreadPool.SizeWarn",
     "TopicManager.AdapterId",
+    "TopicManager.Endpoints",
     "TopicManager.Proxy",
+    "TopicManager.RegisterProcess",
+    "TopicManager.ThreadPool.Size",
+    "TopicManager.ThreadPool.SizeMax",
+    "TopicManager.ThreadPool.SizeWarn",
     "Trace.Flush",
     "Trace.Subscriber",
     "Trace.Topic",
@@ -239,7 +266,9 @@ static const string iceStormProps[] =
 static const string glacierProps[] =
 {
     "Router.AcceptCert",
+    "Router.AdapterId",
     "Router.AllowCategories",
+    "Router.Client.AdapterId",
     "Router.Client.Endpoints",
     "Router.Client.ForwardContext",
     "Router.Client.SleepTime",
@@ -253,6 +282,7 @@ static const string glacierProps[] =
     "Router.ThreadPool.SizeWarn",
     "Router.Identity",
     "Router.PrintProxyOnFd",
+    "Router.Server.AdapterId",
     "Router.Server.Endpoints",
     "Router.Server.ForwardContext",
     "Router.Server.SleepTime",
@@ -266,6 +296,7 @@ static const string glacierProps[] =
     "Router.Trace.Server",
     "Router.Trace.Throttle",
     "Router.UserId",
+    "Starter.AdapterId",
     "Starter.AddUserToAllowCategories",
     "Starter.Certificate.BitStrength",
     "Starter.Certificate.CommonName",
@@ -282,17 +313,21 @@ static const string glacierProps[] =
     "Starter.PropertiesOverride",
     "Starter.RouterPath",
     "Starter.StartupTimeout",
+    "Starter.ThreadPool.Size",
+    "Starter.ThreadPool.SizeMax",
+    "Starter.ThreadPool.SizeWarn",
     "Starter.Trace"
 };
 
 static const string freezeProps[] =
 {
-    "Warn.Deadlocks",
-    "Trace.DbEnv",
-    "Trace.Map",
-    "Trace.Evictor",
+    "DbEnv.*",
     "Evictor.*",
-    "DbEnv.*"
+    "Trace.DbEnv",
+    "Trace.Evictor",
+    "Trace.Map",
+    "Warn.CloseInFinalize",
+    "Warn.Deadlocks"
 };
 
 struct PropertyValues

@@ -32,6 +32,8 @@
 # define	ICE_PACK_SHOW	281
 # define	ICE_PACK_COPYING	282
 # define	ICE_PACK_WARRANTY	283
+# define	ICE_PACK_DIFF	284
+# define	ICE_PACK_UPDATE	285
 
 
 #endif /* not BISON_GRAMMAR_TAB_H */

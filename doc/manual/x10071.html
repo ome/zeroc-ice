@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->IceSSL::PrivateKeyException</TITLE
+>IceSSL::CertificateParseException</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
@@ -14,11 +14,11 @@ REL="UP"
 TITLE="Slice Documentation"
 HREF="c13.html"><LINK
 REL="PREVIOUS"
-TITLE="IceSSL::Plugin"
-HREF="x9721.html"><LINK
+TITLE="IceSSL::CertificateLoadException"
+HREF="x10060.html"><LINK
 REL="NEXT"
-TITLE="IceSSL::PrivateKeyLoadException"
-HREF="x10088.html"></HEAD
+TITLE="IceSSL::CertificateSignatureException"
+HREF="x10081.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -46,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="x9721.html"
+HREF="x10060.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -60,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x10088.html"
+HREF="x10081.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -74,11 +74,11 @@ CLASS="SECTION"
 ><H1
 CLASS="SECTION"
 ><A
-NAME="ICESSL.PRIVATEKEYEXCEPTION"
+NAME="ICESSL.CERTIFICATEPARSEEXCEPTION"
 ></A
 ><TT
 CLASS="LITERAL"
->IceSSL::PrivateKeyException</TT
+>IceSSL::CertificateParseException</TT
 ></H1
 ><DIV
 CLASS="SECTION"
@@ -98,38 +98,22 @@ WIDTH="100%"
 CLASS="SYNOPSIS"
 >local exception <TT
 CLASS="CLASSNAME"
->PrivateKeyException</TT
+>CertificateParseException</TT
 >
     extends 
 	<A
-HREF="x10139.html"
+HREF="x10026.html"
 ><TT
 CLASS="CLASSNAME"
->SslException</TT
+>CertificateException</TT
 ></A
 ></PRE
 ></TD
 ></TR
 ></TABLE
 ><P
->A root exception class for all exceptions related to private keys.</P
-><DIV
-CLASS="SECTION"
-><H3
-CLASS="SECTION"
-><A
-NAME="AEN10081"
-></A
->Derived Exceptions</H3
-><P
->	    <A
-HREF="x10099.html"
-><TT
-CLASS="CLASSNAME"
->PrivateKeyParseException</TT
-></A
-></P
-></DIV
+>Indicates that IceSSL was unable to parse the provided public key
+certificate into a form usable by the underlying SSL implementation.</P
 ></DIV
 ></DIV
 ><DIV
@@ -148,7 +132,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="x9721.html"
+HREF="x10060.html"
 ACCESSKEY="P"
 >&#60;&#60;&#60; Previous</A
 ></TD
@@ -166,7 +150,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x10088.html"
+HREF="x10081.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -178,7 +162,7 @@ ALIGN="left"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->IceSSL::Plugin</TT
+>IceSSL::CertificateLoadException</TT
 ></TD
 ><TD
 WIDTH="34%"
@@ -195,7 +179,7 @@ ALIGN="right"
 VALIGN="top"
 ><TT
 CLASS="LITERAL"
->IceSSL::PrivateKeyLoadException</TT
+>IceSSL::CertificateSignatureException</TT
 ></TD
 ></TR
 ></TABLE

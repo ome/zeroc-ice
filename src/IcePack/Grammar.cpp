@@ -30,6 +30,8 @@
 # define	ICE_PACK_SHOW	281
 # define	ICE_PACK_COPYING	282
 # define	ICE_PACK_WARRANTY	283
+# define	ICE_PACK_DIFF	284
+# define	ICE_PACK_UPDATE	285
 
 #line 1 "Grammar.y"
 
@@ -74,12 +76,12 @@ yyerror(const char* s)
 
 
 
-#define	YYFINAL		90
+#define	YYFINAL		107
 #define	YYFLAG		-32768
-#define	YYNTBASE	31
+#define	YYNTBASE	33
 
 /* YYTRANSLATE(YYLEX) -- Bison token number corresponding to YYLEX. */
-#define YYTRANSLATE(x) ((unsigned)(x) <= 283 ? yytranslate[x] : 35)
+#define YYTRANSLATE(x) ((unsigned)(x) <= 285 ? yytranslate[x] : 37)
 
 /* YYTRANSLATE[YYLEX] -- Bison token number corresponding to YYLEX. */
 static const char yytranslate[] =
@@ -89,7 +91,7 @@ static const char yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,    30,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,    32,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -112,34 +114,38 @@ static const char yytranslate[] =
        2,     2,     2,     2,     2,     2,     1,     3,     4,     5,
        6,     7,     8,     9,    10,    11,    12,    13,    14,    15,
       16,    17,    18,    19,    20,    21,    22,    23,    24,    25,
-      26,    27,    28,    29
+      26,    27,    28,    29,    30,    31
 };
 
 #if YYDEBUG
 static const short yyprhs[] =
 {
        0,     0,     2,     3,     6,     8,    11,    14,    19,    24,
-      29,    34,    38,    43,    48,    53,    58,    63,    68,    73,
-      78,    83,    88,    93,    97,   102,   106,   111,   116,   121,
-     124,   128,   132,   135,   137,   140
+      29,    34,    39,    43,    48,    53,    58,    62,    67,    72,
+      77,    82,    87,    92,    97,   102,   107,   112,   117,   122,
+     126,   131,   135,   140,   145,   150,   153,   157,   161,   164,
+     166,   169
 };
 static const short yyrhs[] =
 {
-      32,     0,     0,    32,    33,     0,    33,     0,     3,    30,
-       0,     4,    30,     0,     5,    10,    34,    30,     0,     5,
-      11,    34,    30,     0,     6,     9,    34,    30,     0,     6,
-      13,    34,    30,     0,     6,    12,    30,     0,     7,    10,
-      34,    30,     0,     7,    15,    34,    30,     0,     7,    16,
-      34,    30,     0,     7,    17,    34,    30,     0,     7,    18,
-      34,    30,     0,     7,    19,    34,    30,     0,     7,    20,
-      34,    30,     0,     7,    21,    34,    30,     0,     7,    22,
-      34,    30,     0,     7,    24,    34,    30,     0,     7,    11,
-      34,    30,     0,     7,    12,    30,     0,     8,    23,    34,
-      30,     0,     8,    12,    30,     0,    25,    10,    34,    30,
-       0,    25,    11,    34,    30,     0,    25,    26,    34,    30,
-       0,    13,    30,     0,    27,    28,    30,     0,    27,    29,
-      30,     0,     1,    30,     0,    30,     0,    14,    34,     0,
-      14,     0
+      34,     0,     0,    34,    35,     0,    35,     0,     3,    32,
+       0,     4,    32,     0,     5,    10,    36,    32,     0,     5,
+      11,    36,    32,     0,     5,    30,    36,    32,     0,     5,
+      31,    36,    32,     0,     5,    20,    36,    32,     0,     5,
+      12,    32,     0,     6,     9,    36,    32,     0,     6,    13,
+      36,    32,     0,     6,    11,    36,    32,     0,     6,    12,
+      32,     0,     7,    10,    36,    32,     0,     7,    31,    36,
+      32,     0,     7,    20,    36,    32,     0,     7,    15,    36,
+      32,     0,     7,    16,    36,    32,     0,     7,    17,    36,
+      32,     0,     7,    18,    36,    32,     0,     7,    19,    36,
+      32,     0,     7,    21,    36,    32,     0,     7,    22,    36,
+      32,     0,     7,    24,    36,    32,     0,     7,    11,    36,
+      32,     0,     7,    12,    32,     0,     8,    23,    36,    32,
+       0,     8,    12,    32,     0,    25,    10,    36,    32,     0,
+      25,    11,    36,    32,     0,    25,    26,    36,    32,     0,
+      13,    32,     0,    27,    28,    32,     0,    27,    29,    32,
+       0,     1,    32,     0,    32,     0,    14,    36,     0,    14,
+       0
 };
 
 #endif
@@ -148,10 +154,11 @@ static const short yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined. */
 static const short yyrline[] =
 {
-       0,    70,    73,    81,    84,    92,    96,   100,   104,   108,
-     112,   116,   120,   124,   128,   132,   136,   140,   144,   148,
-     152,   156,   160,   164,   168,   172,   176,   180,   184,   188,
-     192,   196,   200,   204,   212,   217
+       0,    72,    75,    83,    86,    94,    98,   102,   106,   110,
+     114,   118,   122,   126,   130,   134,   138,   142,   146,   150,
+     154,   158,   162,   166,   170,   174,   178,   182,   186,   190,
+     194,   198,   202,   206,   210,   214,   218,   222,   226,   230,
+     238,   243
 };
 #endif
 
@@ -169,26 +176,29 @@ static const char *const yytname[] =
   "ICE_PACK_STDERR", "ICE_PACK_DESCRIBE", "ICE_PACK_STATE", 
   "ICE_PACK_PID", "ICE_PACK_ENDPOINTS", "ICE_PACK_ACTIVATION", 
   "ICE_PACK_OBJECT", "ICE_PACK_FIND", "ICE_PACK_SHOW", "ICE_PACK_COPYING", 
-  "ICE_PACK_WARRANTY", "';'", "start", "commands", "command", "strings", 0
+  "ICE_PACK_WARRANTY", "ICE_PACK_DIFF", "ICE_PACK_UPDATE", "';'", "start", 
+  "commands", "command", "strings", 0
 };
 #endif
 
 /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives. */
 static const short yyr1[] =
 {
-       0,    31,    31,    32,    32,    33,    33,    33,    33,    33,
-      33,    33,    33,    33,    33,    33,    33,    33,    33,    33,
-      33,    33,    33,    33,    33,    33,    33,    33,    33,    33,
-      33,    33,    33,    33,    34,    34
+       0,    33,    33,    34,    34,    35,    35,    35,    35,    35,
+      35,    35,    35,    35,    35,    35,    35,    35,    35,    35,
+      35,    35,    35,    35,    35,    35,    35,    35,    35,    35,
+      35,    35,    35,    35,    35,    35,    35,    35,    35,    35,
+      36,    36
 };
 
 /* YYR2[YYN] -- Number of symbols composing right hand side of rule YYN. */
 static const short yyr2[] =
 {
        0,     1,     0,     2,     1,     2,     2,     4,     4,     4,
-       4,     3,     4,     4,     4,     4,     4,     4,     4,     4,
-       4,     4,     4,     3,     4,     3,     4,     4,     4,     2,
-       3,     3,     2,     1,     2,     1
+       4,     4,     3,     4,     4,     4,     3,     4,     4,     4,
+       4,     4,     4,     4,     4,     4,     4,     4,     4,     3,
+       4,     3,     4,     4,     4,     2,     3,     3,     2,     1,
+       2,     1
 };
 
 /* YYDEFACT[S] -- default rule to reduce with in state S when YYTABLE
@@ -197,71 +207,77 @@ static const short yyr2[] =
 static const short yydefact[] =
 {
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,    33,     0,     4,    32,     5,     6,     0,     0,     0,
+       0,    39,     0,     4,    38,     5,     6,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,    29,     0,     0,     0,
-       0,     0,     3,    35,     0,     0,     0,    11,     0,     0,
-       0,    23,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,    25,     0,     0,     0,     0,    30,    31,    34,     7,
-       8,     9,    10,    12,    22,    13,    14,    15,    16,    17,
-      18,    19,    20,    21,    24,    26,    27,    28,     0,     0,
-       0
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,    35,     0,     0,     0,     0,     0,     3,    41,
+       0,     0,    12,     0,     0,     0,     0,     0,    16,     0,
+       0,     0,    29,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,    31,     0,     0,     0,     0,    36,    37,
+      40,     7,     8,    11,     9,    10,    13,    15,    14,    17,
+      28,    20,    21,    22,    23,    24,    19,    25,    26,    27,
+      18,    30,    32,    33,    34,     0,     0,     0
 };
 
 static const short yydefgoto[] =
 {
-      88,    12,    13,    44
+     105,    12,    13,    50
 };
 
 static const short yypact[] =
 {
-       0,   -28,   -20,    -9,    12,    19,    63,    -3,    -4,    51,
-       5,-32768,    11,-32768,-32768,-32768,-32768,    15,    15,    15,
-       7,    15,    15,    15,    25,    15,    15,    15,    15,    15,
-      15,    15,    15,    15,    27,    15,-32768,    15,    15,    15,
-      33,    35,-32768,    15,    36,    37,    38,-32768,    39,    40,
-      41,-32768,    42,    46,    56,    58,    59,    60,    61,    62,
-      64,-32768,    65,    66,    67,    68,-32768,-32768,-32768,-32768,
+       0,   -30,    -9,    -4,    10,    74,    60,    14,    -3,    23,
+     -19,-32768,    11,-32768,-32768,-32768,-32768,    17,    17,     3,
+      17,    17,    17,    17,    17,     7,    17,    17,    17,    21,
+      17,    17,    17,    17,    17,    17,    17,    17,    17,    17,
+      32,    17,-32768,    17,    17,    17,    34,    42,-32768,    17,
+      56,    57,-32768,    58,    61,    62,    63,    64,-32768,    65,
+      66,    67,-32768,    68,    69,    70,    71,    72,    73,    75,
+      76,    77,    78,-32768,    79,    80,    81,    82,-32768,-32768,
   -32768,-32768,-32768,-32768,-32768,-32768,-32768,-32768,-32768,-32768,
-  -32768,-32768,-32768,-32768,-32768,-32768,-32768,-32768,    45,    93,
-  -32768
+  -32768,-32768,-32768,-32768,-32768,-32768,-32768,-32768,-32768,-32768,
+  -32768,-32768,-32768,-32768,-32768,    92,   106,-32768
 };
 
 static const short yypgoto[] =
 {
-  -32768,-32768,    23,    21
+  -32768,-32768,   103,    24
 };
 
 
-#define	YYLAST		98
+#define	YYLAST		115
 
 
 static const short yytable[] =
 {
-      -2,     1,    14,     2,     3,     4,     5,     6,     7,    34,
-      15,    -1,     1,     8,     2,     3,     4,     5,     6,     7,
-      35,    16,    17,    18,     8,     9,    36,    10,    19,    43,
-      11,    20,    21,    40,    41,    42,     9,    47,    10,    45,
-      46,    11,    48,    49,    50,    89,    52,    53,    54,    55,
-      56,    57,    58,    59,    60,    51,    62,    61,    63,    64,
-      65,    37,    38,    66,    68,    67,    69,    70,    71,    72,
-      73,    74,    75,    22,    23,    24,    76,    39,    25,    26,
-      27,    28,    29,    30,    31,    32,    77,    33,    78,    79,
-      80,    81,    82,    90,    83,    84,    85,    86,    87
+      -2,     1,    14,     2,     3,     4,     5,     6,     7,    46,
+      47,    -1,     1,     8,     2,     3,     4,     5,     6,     7,
+      17,    18,    19,    15,     8,     9,    40,    10,    16,    42,
+      20,    49,    11,    43,    44,    52,     9,    41,    10,    58,
+      21,    22,    51,    11,    53,    54,    55,    56,    57,    45,
+      59,    60,    61,    62,    63,    64,    65,    66,    67,    68,
+      69,    70,    71,    72,    73,    74,    78,    75,    76,    77,
+      27,    28,    29,    80,    79,    30,    31,    32,    33,    34,
+      35,    36,    37,    23,    38,    24,    25,    26,    81,    82,
+      83,    39,   106,    84,    85,    86,    87,    88,    89,    90,
+      91,    92,    93,    94,    95,    96,   107,    97,    98,    99,
+     100,   101,   102,   103,   104,    48
 };
 
 static const short yycheck[] =
 {
-       0,     1,    30,     3,     4,     5,     6,     7,     8,    12,
-      30,     0,     1,    13,     3,     4,     5,     6,     7,     8,
-      23,    30,    10,    11,    13,    25,    30,    27,     9,    14,
-      30,    12,    13,    28,    29,    12,    25,    30,    27,    18,
-      19,    30,    21,    22,    23,     0,    25,    26,    27,    28,
-      29,    30,    31,    32,    33,    30,    35,    30,    37,    38,
-      39,    10,    11,    30,    43,    30,    30,    30,    30,    30,
-      30,    30,    30,    10,    11,    12,    30,    26,    15,    16,
-      17,    18,    19,    20,    21,    22,    30,    24,    30,    30,
-      30,    30,    30,     0,    30,    30,    30,    30,    30
+       0,     1,    32,     3,     4,     5,     6,     7,     8,    28,
+      29,     0,     1,    13,     3,     4,     5,     6,     7,     8,
+      10,    11,    12,    32,    13,    25,    12,    27,    32,    32,
+      20,    14,    32,    10,    11,    32,    25,    23,    27,    32,
+      30,    31,    18,    32,    20,    21,    22,    23,    24,    26,
+      26,    27,    28,    32,    30,    31,    32,    33,    34,    35,
+      36,    37,    38,    39,    32,    41,    32,    43,    44,    45,
+      10,    11,    12,    49,    32,    15,    16,    17,    18,    19,
+      20,    21,    22,     9,    24,    11,    12,    13,    32,    32,
+      32,    31,     0,    32,    32,    32,    32,    32,    32,    32,
+      32,    32,    32,    32,    32,    32,     0,    32,    32,    32,
+      32,    32,    32,    32,    32,    12
 };
 #define YYPURE 1
 
@@ -973,207 +989,243 @@ yyreduce:
   switch (yyn) {
 
 case 1:
-#line 71 "Grammar.y"
+#line 73 "Grammar.y"
 {
 ;
     break;}
 case 2:
-#line 74 "Grammar.y"
+#line 76 "Grammar.y"
 {
 ;
     break;}
 case 3:
-#line 82 "Grammar.y"
+#line 84 "Grammar.y"
 {
 ;
     break;}
 case 4:
-#line 85 "Grammar.y"
+#line 87 "Grammar.y"
 {
 ;
     break;}
 case 5:
-#line 93 "Grammar.y"
+#line 95 "Grammar.y"
 {
     parser->usage();
 ;
     break;}
 case 6:
-#line 97 "Grammar.y"
+#line 99 "Grammar.y"
 {
     return 0;
 ;
     break;}
 case 7:
-#line 101 "Grammar.y"
+#line 103 "Grammar.y"
 {
     parser->addApplication(yyvsp[-1]);
 ;
     break;}
 case 8:
-#line 105 "Grammar.y"
+#line 107 "Grammar.y"
 {
     parser->removeApplication(yyvsp[-1]);
 ;
     break;}
 case 9:
-#line 109 "Grammar.y"
+#line 111 "Grammar.y"
+{
+    parser->diffApplication(yyvsp[-1]);
+;
+    break;}
+case 10:
+#line 115 "Grammar.y"
+{
+    parser->updateApplication(yyvsp[-1]);
+;
+    break;}
+case 11:
+#line 119 "Grammar.y"
+{
+    parser->describeApplication(yyvsp[-1]);
+;
+    break;}
+case 12:
+#line 123 "Grammar.y"
+{
+    parser->listAllApplications();
+;
+    break;}
+case 13:
+#line 127 "Grammar.y"
 {
     parser->pingNode(yyvsp[-1]);
 ;
     break;}
-case 10:
-#line 113 "Grammar.y"
+case 14:
+#line 131 "Grammar.y"
 {
     parser->shutdownNode(yyvsp[-1]);
 ;
     break;}
-case 11:
-#line 117 "Grammar.y"
+case 15:
+#line 135 "Grammar.y"
+{
+    parser->removeNode(yyvsp[-1]);
+;
+    break;}
+case 16:
+#line 139 "Grammar.y"
 {
     parser->listAllNodes();
 ;
     break;}
-case 12:
-#line 121 "Grammar.y"
+case 17:
+#line 143 "Grammar.y"
 {
     parser->addServer(yyvsp[-1]);
 ;
     break;}
-case 13:
-#line 125 "Grammar.y"
-{
-    parser->startServer(yyvsp[-1]);
-;
-    break;}
-case 14:
-#line 129 "Grammar.y"
-{
-    parser->stopServer(yyvsp[-1]);
-;
-    break;}
-case 15:
-#line 133 "Grammar.y"
-{
-    parser->signalServer(yyvsp[-1]);
-;
-    break;}
-case 16:
-#line 137 "Grammar.y"
-{
-    parser->writeMessage(yyvsp[-1], 1);
-;
-    break;}
-case 17:
-#line 141 "Grammar.y"
-{
-    parser->writeMessage(yyvsp[-1], 2);
-;
-    break;}
 case 18:
-#line 145 "Grammar.y"
+#line 147 "Grammar.y"
+{
+    parser->updateServer(yyvsp[-1]);
+;
+    break;}
+case 19:
+#line 151 "Grammar.y"
 {
     parser->describeServer(yyvsp[-1]);
 ;
     break;}
-case 19:
-#line 149 "Grammar.y"
+case 20:
+#line 155 "Grammar.y"
+{
+    parser->startServer(yyvsp[-1]);
+;
+    break;}
+case 21:
+#line 159 "Grammar.y"
+{
+    parser->stopServer(yyvsp[-1]);
+;
+    break;}
+case 22:
+#line 163 "Grammar.y"
+{
+    parser->signalServer(yyvsp[-1]);
+;
+    break;}
+case 23:
+#line 167 "Grammar.y"
+{
+    parser->writeMessage(yyvsp[-1], 1);
+;
+    break;}
+case 24:
+#line 171 "Grammar.y"
+{
+    parser->writeMessage(yyvsp[-1], 2);
+;
+    break;}
+case 25:
+#line 175 "Grammar.y"
 {
     parser->stateServer(yyvsp[-1]);
 ;
     break;}
-case 20:
-#line 153 "Grammar.y"
+case 26:
+#line 179 "Grammar.y"
 {
     parser->pidServer(yyvsp[-1]);
 ;
     break;}
-case 21:
-#line 157 "Grammar.y"
+case 27:
+#line 183 "Grammar.y"
 {
     parser->activationServer(yyvsp[-1]);
 ;
     break;}
-case 22:
-#line 161 "Grammar.y"
+case 28:
+#line 187 "Grammar.y"
 {
     parser->removeServer(yyvsp[-1]);
 ;
     break;}
-case 23:
-#line 165 "Grammar.y"
+case 29:
+#line 191 "Grammar.y"
 {
     parser->listAllServers();
 ;
     break;}
-case 24:
-#line 169 "Grammar.y"
+case 30:
+#line 195 "Grammar.y"
 {
     parser->endpointsAdapter(yyvsp[-1]);
 ;
     break;}
-case 25:
-#line 173 "Grammar.y"
+case 31:
+#line 199 "Grammar.y"
 {
     parser->listAllAdapters();
 ;
     break;}
-case 26:
-#line 177 "Grammar.y"
+case 32:
+#line 203 "Grammar.y"
 {
     parser->addObject(yyvsp[-1]);
 ;
     break;}
-case 27:
-#line 181 "Grammar.y"
+case 33:
+#line 207 "Grammar.y"
 {
     parser->removeObject(yyvsp[-1]);
 ;
     break;}
-case 28:
-#line 185 "Grammar.y"
+case 34:
+#line 211 "Grammar.y"
 {
     parser->findObject(yyvsp[-1]);
 ;
     break;}
-case 29:
-#line 189 "Grammar.y"
+case 35:
+#line 215 "Grammar.y"
 {
     parser->shutdown();
 ;
     break;}
-case 30:
-#line 193 "Grammar.y"
+case 36:
+#line 219 "Grammar.y"
 {
     parser->showCopying();
 ;
     break;}
-case 31:
-#line 197 "Grammar.y"
+case 37:
+#line 223 "Grammar.y"
 {
     parser->showWarranty();
 ;
     break;}
-case 32:
-#line 201 "Grammar.y"
+case 38:
+#line 227 "Grammar.y"
 {
     yyerrok;
 ;
     break;}
-case 33:
-#line 205 "Grammar.y"
+case 39:
+#line 231 "Grammar.y"
 {
 ;
     break;}
-case 34:
-#line 213 "Grammar.y"
+case 40:
+#line 239 "Grammar.y"
 {
     yyval = yyvsp[0];
     yyval.push_front(yyvsp[-1].front());
 ;
     break;}
-case 35:
-#line 218 "Grammar.y"
+case 41:
+#line 244 "Grammar.y"
 {
     yyval = yyvsp[0];
 ;
@@ -1411,5 +1463,5 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 223 "Grammar.y"
+#line 249 "Grammar.y"
 

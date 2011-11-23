@@ -94,7 +94,7 @@ IceInternal::OutgoingConnectionFactory::waitUntilFinished()
 }
 
 ConnectionPtr
-IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts)
+IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts, bool& compress)
 {
     assert(!endpts.empty());
     vector<EndpointPtr> endpoints = endpts;
@@ -126,41 +126,56 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	//
 	// Modify endpoints with overrides.
 	//
-	DefaultsAndOverridesPtr defaultsAndOverrides = _instance->defaultsAndOverrides();
 	vector<EndpointPtr>::iterator q;
 	for(q = endpoints.begin(); q != endpoints.end(); ++q)
 	{
-	    if(defaultsAndOverrides->overrideTimeout)
+	    if(_instance->defaultsAndOverrides()->overrideTimeout)
 	    {
-		*q = (*q)->timeout(defaultsAndOverrides->overrideTimeoutValue);
+		*q = (*q)->timeout(_instance->defaultsAndOverrides()->overrideTimeoutValue);
 	    }
 
-	    if(defaultsAndOverrides->overrideCompress)
-	    {
-		*q = (*q)->compress(defaultsAndOverrides->overrideCompressValue);
-	    }
+	    //
+	    // The Connection object does not take the compression flag of
+	    // endpoints into account, but instead gets the information
+	    // about whether messages should be compressed or not from
+	    // other sources. In order to allow connection sharing for
+	    // endpoints that differ in the value of the compression flag
+	    // only, we always set the compression flag to false here in
+	    // this connection factory.
+	    //
+	    *q = (*q)->compress(false);
 	}
 
 	//
 	// Search for existing connections.
 	//
-	for(q = endpoints.begin(); q != endpoints.end(); ++q)
+	vector<EndpointPtr>::const_iterator r;
+	for(q = endpoints.begin(), r = endpts.begin(); q != endpoints.end(); ++q, ++r)
 	{
 	    pair<multimap<EndpointPtr, ConnectionPtr>::iterator,
-		 multimap<EndpointPtr, ConnectionPtr>::iterator> r = _connections.equal_range(*q);
+		 multimap<EndpointPtr, ConnectionPtr>::iterator> pr = _connections.equal_range(*q);
 	    
-	    while(r.first != r.second)
+	    while(pr.first != pr.second)
 	    {
 		//
 		// Don't return connections for which destruction has
 		// been initiated.
 		//
-		if(!r.first->second->isDestroyed())
+		if(!pr.first->second->isDestroyed())
 		{
-		    return r.first->second;
+		    if(_instance->defaultsAndOverrides()->overrideCompress)
+		    {
+			compress = _instance->defaultsAndOverrides()->overrideCompressValue;
+		    }
+		    else
+		    {
+			compress = (*r)->compress();
+		    }
+
+		    return pr.first->second;
 		}
 
-		++r.first;
+		++pr.first;
 	    }
 	}
 
@@ -201,23 +216,32 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	//
 	if(searchAgain)
 	{	
-	    for(q = endpoints.begin(); q != endpoints.end(); ++q)
+	    for(q = endpoints.begin(), r = endpts.begin(); q != endpoints.end(); ++q, ++r)
 	    {
 		pair<multimap<EndpointPtr, ConnectionPtr>::iterator,
- 		     multimap<EndpointPtr, ConnectionPtr>::iterator> r = _connections.equal_range(*q);
+ 		     multimap<EndpointPtr, ConnectionPtr>::iterator> pr = _connections.equal_range(*q);
 		
-		while(r.first != r.second)
+		while(pr.first != pr.second)
 		{
 		    //
 		    // Don't return connections for which destruction has
 		    // been initiated.
 		    //
-		    if(!r.first->second->isDestroyed())
+		    if(!pr.first->second->isDestroyed())
 		    {
-			return r.first->second;
+			if(_instance->defaultsAndOverrides()->overrideCompress)
+			{
+			    compress = _instance->defaultsAndOverrides()->overrideCompressValue;
+			}
+			else
+			{
+			    compress = (*r)->compress();
+			}
+
+			return pr.first->second;
 		    }
 
-		    ++r.first;
+		    ++pr.first;
 		}
 	    }
 	}
@@ -235,7 +259,8 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
     auto_ptr<LocalException> exception;
     
     vector<EndpointPtr>::const_iterator q;
-    for(q = endpoints.begin(); q != endpoints.end(); ++q)
+    vector<EndpointPtr>::const_iterator r;
+    for(q = endpoints.begin(), r = endpts.begin(); q != endpoints.end(); ++q, ++r)
     {
 	EndpointPtr endpoint = *q;
 	
@@ -248,10 +273,9 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 		assert(connector);
 
 		Int timeout;
-		DefaultsAndOverridesPtr defaultsAndOverrides = _instance->defaultsAndOverrides();
-		if(defaultsAndOverrides->overrideConnectTimeout)
+		if(_instance->defaultsAndOverrides()->overrideConnectTimeout)
 		{
-		    timeout = defaultsAndOverrides->overrideConnectTimeoutValue;
+		    timeout = _instance->defaultsAndOverrides()->overrideConnectTimeoutValue;
 		}
 		// It is not necessary to check for overrideTimeout,
 		// the endpoint has already been modified with this
@@ -266,6 +290,14 @@ IceInternal::OutgoingConnectionFactory::create(const vector<EndpointPtr>& endpts
 	    }	    
 	    connection = new Connection(_instance, transceiver, endpoint, 0);
 	    connection->validate();
+	    if(_instance->defaultsAndOverrides()->overrideCompress)
+	    {
+		compress = _instance->defaultsAndOverrides()->overrideCompressValue;
+	    }
+	    else
+	    {
+		compress = (*r)->compress();
+	    }
 	    break;
 	}
 	catch(const LocalException& ex)
@@ -351,29 +383,37 @@ IceInternal::OutgoingConnectionFactory::setRouter(const RouterPrx& router)
 	//
 	ObjectPrx proxy = routerInfo->getClientProxy();
 	ObjectAdapterPtr adapter = routerInfo->getAdapter();
-	DefaultsAndOverridesPtr defaultsAndOverrides = _instance->defaultsAndOverrides();
 	vector<EndpointPtr>::const_iterator p;
 	for(p = proxy->__reference()->endpoints.begin(); p != proxy->__reference()->endpoints.end(); ++p)
 	{
 	    EndpointPtr endpoint = *p;
 
-	    if(defaultsAndOverrides->overrideTimeout)
+	    //
+	    // Modify endpoints with overrides.
+	    //
+	    if(_instance->defaultsAndOverrides()->overrideTimeout)
 	    {
-		endpoint = endpoint->timeout(defaultsAndOverrides->overrideTimeoutValue);
+		endpoint = endpoint->timeout(_instance->defaultsAndOverrides()->overrideTimeoutValue);
 	    }
 
-	    if(defaultsAndOverrides->overrideCompress)
-	    {
-		endpoint = endpoint->compress(defaultsAndOverrides->overrideCompressValue);
-	    }
+	    //
+	    // The Connection object does not take the compression flag of
+	    // endpoints into account, but instead gets the information
+	    // about whether messages should be compressed or not from
+	    // other sources. In order to allow connection sharing for
+	    // endpoints that differ in the value of the compression flag
+	    // only, we always set the compression flag to false here in
+	    // this connection factory.
+	    //
+	    endpoint = endpoint->compress(false);
 
 	    pair<multimap<EndpointPtr, ConnectionPtr>::iterator,
-		 multimap<EndpointPtr, ConnectionPtr>::iterator> r = _connections.equal_range(endpoint);
+		 multimap<EndpointPtr, ConnectionPtr>::iterator> pr = _connections.equal_range(endpoint);
 	    
-	    while(r.first != r.second)
+	    while(pr.first != pr.second)
 	    {
-		r.first->second->setAdapter(adapter);
-		++r.first;
+		pr.first->second->setAdapter(adapter);
+		++pr.first;
 	    }
 	}
     }    
@@ -743,16 +783,16 @@ IceInternal::IncomingConnectionFactory::IncomingConnectionFactory(const Instance
     _warn(_instance->properties()->getPropertyAsInt("Ice.Warn.Connections") > 0),
     _state(StateHolding)
 {
-    DefaultsAndOverridesPtr defaultsAndOverrides = _instance->defaultsAndOverrides();
-
-    if(defaultsAndOverrides->overrideTimeout)
+    if(_instance->defaultsAndOverrides()->overrideTimeout)
     {
-	const_cast<EndpointPtr&>(_endpoint) = _endpoint->timeout(defaultsAndOverrides->overrideTimeoutValue);
+	const_cast<EndpointPtr&>(_endpoint) =
+	    _endpoint->timeout(_instance->defaultsAndOverrides()->overrideTimeoutValue);
     }
 
-    if(defaultsAndOverrides->overrideCompress)
+    if(_instance->defaultsAndOverrides()->overrideCompress)
     {
-	const_cast<EndpointPtr&>(_endpoint) = _endpoint->compress(defaultsAndOverrides->overrideCompressValue);
+	const_cast<EndpointPtr&>(_endpoint) =
+	    _endpoint->compress(_instance->defaultsAndOverrides()->overrideCompressValue);
     }
 
     const_cast<TransceiverPtr&>(_transceiver) = _endpoint->serverTransceiver(const_cast<EndpointPtr&>(_endpoint));

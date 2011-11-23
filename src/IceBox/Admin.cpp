@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <Ice/Application.h>
+#include <Ice/SliceChecksums.h>
 #include <IceBox/IceBox.h>
 
 using namespace std;
@@ -115,6 +116,17 @@ Client::run(int argc, char* argv[])
     {
         cerr << appName() << ": `" << managerProxy << "' is not running" << endl;
         return EXIT_FAILURE;
+    }
+
+    Ice::SliceChecksumDict serverChecksums = manager->getSliceChecksums();
+    Ice::SliceChecksumDict localChecksums = Ice::sliceChecksums();
+    for(Ice::SliceChecksumDict::const_iterator p = localChecksums.begin(); p != localChecksums.end(); ++p)
+    {
+        Ice::SliceChecksumDict::const_iterator q = serverChecksums.find(p->first);
+        if(q == serverChecksums.end() || p->second != q->second)
+        {
+            cerr << appName() << ": server is using different Slice definitions" << endl;
+        }
     }
 
     vector<string>::const_iterator r;
