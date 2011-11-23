@@ -20,6 +20,7 @@
 #include <Ice/Buffer.h>
 #include <Ice/Network.h>
 #include <Ice/LocalException.h>
+#include <Ice/Properties.h>
 
 using namespace std;
 using namespace Ice;
@@ -55,15 +56,19 @@ void
 IceInternal::UdpTransceiver::write(Buffer& buf, int)
 {
     assert(buf.i == buf.b.begin());
-#ifndef NDEBUG
-    const int packetSize = 64 * 1024; // TODO: configurable
-    assert(packetSize >= static_cast<int>(buf.b.size())); // TODO: exception
-#endif
+    const int packetSize = min(_maxPacketSize, _sndSize - _udpOverhead);
+    if(packetSize < static_cast<int>(buf.b.size()))
+    {
+	//
+	// We don't log a warning here because the client gets an exception anyway.
+	//
+	throw Ice::DatagramLimitException(__FILE__, __LINE__);
+    }
 
 repeat:
 
     assert(_fd != INVALID_SOCKET);
-    ssize_t ret = ::send(_fd, &buf.b[0], buf.b.size(), 0);
+    ssize_t ret = ::send(_fd, reinterpret_cast<const char*>(&buf.b[0]), buf.b.size(), 0);
     
     if(ret == SOCKET_ERROR)
     {
@@ -119,8 +124,21 @@ void
 IceInternal::UdpTransceiver::read(Buffer& buf, int)
 {
     assert(buf.i == buf.b.begin());
-    const int packetSize = 64 * 1024; // TODO: configurable
-    assert(packetSize >= static_cast<int>(buf.b.size())); // TODO: exception
+
+    const int packetSize = min(_maxPacketSize, _rcvSize - _udpOverhead);
+    if(packetSize < static_cast<int>(buf.b.size()))
+    {
+	//
+	// We log a warning here because this is the server side -- without the
+	// the warning, there would only be silence.
+	//
+	if(_warn)
+	{
+	    Warning out(_logger);
+	    out << "DatagramLimitException: maximum size of " << packetSize << " exceeded";
+	}
+	throw Ice::DatagramLimitException(__FILE__, __LINE__);
+    }
     buf.b.resize(packetSize);
     buf.i = buf.b.begin();
 
@@ -137,7 +155,8 @@ repeat:
 	memset(&peerAddr, 0, sizeof(struct sockaddr_in));
 	socklen_t len = static_cast<socklen_t>(sizeof(peerAddr));
 	assert(_fd != INVALID_SOCKET);
-	ret = recvfrom(_fd, &buf.b[0], packetSize, 0, reinterpret_cast<struct sockaddr*>(&peerAddr), &len);
+	ret = recvfrom(_fd, reinterpret_cast<char*>(&buf.b[0]), packetSize,
+		       0, reinterpret_cast<struct sockaddr*>(&peerAddr), &len);
 	if(ret != SOCKET_ERROR)
 	{
 	    doConnect(_fd, peerAddr, -1);
@@ -153,7 +172,7 @@ repeat:
     else
     {
 	assert(_fd != INVALID_SOCKET);
-	ret = ::recv(_fd, &buf.b[0], packetSize, 0);
+	ret = ::recv(_fd, reinterpret_cast<char*>(&buf.b[0]), packetSize, 0);
     }
     
     if(ret == SOCKET_ERROR)
@@ -184,6 +203,18 @@ repeat:
 	    }
 	    
 	    goto repeat;
+	}
+
+	if(recvTruncated())
+	{
+	    DatagramLimitException ex(__FILE__, __LINE__);
+	    if(_warn)
+	    {
+		Warning out(_logger);
+		out << "DatagramLimitException: maximum size of " << packetSize << " exceeded";
+	    }
+	    throw ex;
+
 	}
 
 	SocketException ex(__FILE__, __LINE__);
@@ -221,7 +252,7 @@ IceInternal::UdpTransceiver::equivalent(const string& host, int port) const
 }
 
 int
-IceInternal::UdpTransceiver::effectivePort()
+IceInternal::UdpTransceiver::effectivePort() const
 {
     return ntohs(_addr.sin_port);
 }
@@ -230,11 +261,13 @@ IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const s
     _traceLevels(instance->traceLevels()),
     _logger(instance->logger()),
     _incoming(false),
-    _connect(true)
+    _connect(true),
+    _warn(instance->properties()->getPropertyAsInt("Ice.Warn.Datagrams") > 0)
 {
     try
     {
 	_fd = createSocket(true);
+	setBufSize(instance);
 	setBlock(_fd, false);
 	getAddress(host, port, _addr);
 	doConnect(_fd, _addr, -1);
@@ -262,11 +295,13 @@ IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const s
     _stats(instance->stats()),
     _name("udp"),
     _incoming(true),
-    _connect(connect)
+    _connect(connect),
+    _warn(instance->properties()->getPropertyAsInt("Ice.Warn.Datagrams") > 0)
 {
     try
     {
 	_fd = createSocket(true);
+	setBufSize(instance);
 	setBlock(_fd, false);
 	getAddress(host, port, _addr);
 	if(_traceLevels->network >= 2)
@@ -295,4 +330,97 @@ IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const s
 IceInternal::UdpTransceiver::~UdpTransceiver()
 {
     assert(_fd == INVALID_SOCKET);
+} 
+
+//
+// Set UDP receive and send buffer sizes.
+//
+
+void
+IceInternal::UdpTransceiver::setBufSize(const InstancePtr& instance)
+{
+    assert(_fd != INVALID_SOCKET);
+
+    for(int i = 0; i < 2; ++i)
+    {
+	string direction;
+	string prop;
+	int* addr;
+	int dfltSize;
+	if(i == 0)
+	{
+	    direction = "receive";
+	    prop = "Ice.UDP.RcvSize";
+	    addr = &_rcvSize;
+	    dfltSize = getRecvBufferSize(_fd);
+	    _rcvSize = dfltSize;
+	}
+	else
+	{
+	    direction = "send";
+	    prop = "Ice.UDP.SndSize";
+	    addr = &_sndSize;
+	    dfltSize = getSendBufferSize(_fd);
+	    _sndSize = dfltSize;
+	}
+
+	//
+	// Get property for buffer size and check for sanity.
+	//
+	Int sizeRequested = instance->properties()->getPropertyAsIntWithDefault(prop, dfltSize);
+	if(sizeRequested < _udpOverhead)
+	{
+	    Warning out(_logger);
+	    out << "Invalid " << prop << " value of " << sizeRequested << " adjusted to " << dfltSize;
+	    sizeRequested = dfltSize;
+	}
+
+	//
+	// Ice.MessageSizeMax overrides UDP buffer sizes if Ice.MessageSizeMax + _udpOverhead is less.
+	//
+	size_t messageSizeMax = instance->messageSizeMax();
+	if(static_cast<size_t>(sizeRequested) > messageSizeMax + _udpOverhead)
+	{
+	    Warning out(_logger);
+	    out << "UDP " << direction << " buffer size: requested size of " << sizeRequested << " adjusted to ";
+	    sizeRequested = min(messageSizeMax, static_cast<size_t>(_maxPacketSize)) + _udpOverhead;
+	    out << sizeRequested << " (Ice.MessageSizeMax takes precendence)";
+	}
+	    
+	if(sizeRequested != dfltSize)
+	{
+	    //
+	    // Try to set the buffer size. The kernel will silently adjust
+	    // the size to an acceptable value. Then read the size back to
+	    // get the size that was actually set.
+	    //
+	    if(i == 0)
+	    {
+		setRecvBufferSize(_fd, sizeRequested);
+		*addr = getRecvBufferSize(_fd);
+	    }
+	    else
+	    {
+		setSendBufferSize(_fd, sizeRequested);
+		*addr = getSendBufferSize(_fd);
+	    }
+
+	    //
+	    // Warn if the size that was set is less than the requested size.
+	    //
+	    if(*addr < sizeRequested)
+	    {
+		Warning out(_logger);
+		out << "UDP " << direction << " buffer size: requested size of "
+		    << sizeRequested << " adjusted to " << *addr;
+	    }
+	}
+    }
 }
+
+//
+// The maximum IP datagram size is 65535. Subtract 20 bytes for the IP header and 8 bytes for the UDP header
+// to get the maximum payload.
+//
+const int IceInternal::UdpTransceiver::_udpOverhead = 20 + 8;
+const int IceInternal::UdpTransceiver::_maxPacketSize = 65535 - _udpOverhead;

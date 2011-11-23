@@ -13,6 +13,7 @@
 // **********************************************************************
 
 #include <Ice/FactoryTable.h>
+#include <Ice/UserExceptionFactory.h>
 
 //
 // This constructor initializes the single global Ice::factoryTable instance

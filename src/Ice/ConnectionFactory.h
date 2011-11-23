@@ -51,6 +51,7 @@ public:
     ConnectionPtr create(const std::vector<EndpointPtr>&);
     void setRouter(const ::Ice::RouterPrx&);
     void removeAdapter(const ::Ice::ObjectAdapterPtr&);
+    void flushBatchRequests();
 
 private:
 
@@ -78,10 +79,12 @@ public:
     EndpointPtr endpoint() const;
     bool equivalent(const EndpointPtr&) const;
     std::list<ConnectionPtr> connections() const;
+    void flushBatchRequests();
 
     //
     // Operations from EventHandler
     //
+    virtual bool datagram() const;
     virtual bool readable() const;
     virtual void read(BasicStream&);
     virtual void message(BasicStream&, const ThreadPoolPtr&);

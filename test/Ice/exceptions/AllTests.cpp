@@ -28,7 +28,7 @@ public:
 
     virtual Ice::ObjectPtr locate(const Ice::Current&, Ice::LocalObjectPtr&) { return 0; }
     virtual void finished(const Ice::Current&, const Ice::ObjectPtr&, const Ice::LocalObjectPtr&) {}
-    virtual void deactivate() {}
+    virtual void deactivate(const string&) {}
 };
 
 class ObjectFactoryI : virtual public Ice::ObjectFactory
@@ -600,18 +600,6 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 	    adapter->addServantLocator(loc, "x");
 	}
 	catch(const Ice::AlreadyRegisteredException&)
-	{
-	    gotException = true;
-	}
-	test(gotException);
-
-	gotException = false;
-	adapter->removeServantLocator("x");
-	try
-	{
-	    adapter->removeServantLocator("x");
-	}
-	catch(const Ice::NotRegisteredException&)
 	{
 	    gotException = true;
 	}

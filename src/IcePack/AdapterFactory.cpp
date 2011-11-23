@@ -14,9 +14,8 @@
 
 #include <Ice/Ice.h>
 #include <IceUtil/UUID.h>
-#include <Freeze/DB.h>
 #include <Freeze/Evictor.h>
-#include <Freeze/Strategy.h>
+#include <Freeze/Initialize.h>
 #include <IcePack/AdapterFactory.h>
 #include <IcePack/AdapterI.h>
 #include <IcePack/TraceLevels.h>
@@ -26,15 +25,14 @@ using namespace IcePack;
 
 IcePack::AdapterFactory::AdapterFactory(const Ice::ObjectAdapterPtr& adapter, 
 					const TraceLevelsPtr& traceLevels, 
-					const Freeze::DBEnvironmentPtr& dbEnv) :
+					const string& envName) :
     _adapter(adapter),
     _traceLevels(traceLevels)
 {
     //
     // Create and install the freeze evictor for standalone adapter objects.
     //
-    Freeze::DBPtr dbAdapters = dbEnv->openDB("adapters", true);
-    _evictor = dbAdapters->createEvictor(dbAdapters->createEvictionStrategy());
+    _evictor = Freeze::createEvictor(_adapter->getCommunicator(), envName, "adapter");
     _evictor->setSize(1000);
 
     //
@@ -101,7 +99,7 @@ IcePack::AdapterFactory::destroy(const Ice::Identity& id)
     {
 	_evictor->destroyObject(id);
     }
-    catch(const Freeze::DBException& ex)
+    catch(const Freeze::DatabaseException& ex)
     {
 	ostringstream os;
 	os << "couldn't destroy standalone adapter:\n" << ex;

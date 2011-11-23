@@ -19,12 +19,11 @@ include $(top_srcdir)/config/Make.rules
 SUBDIRS		= IceUtil \
 		  Ice \
                   IceSSL \
-		  IceXML \
 		  IceStorm \
 		  IcePack \
 		  Freeze \
 		  Glacier \
-		  XMLTransform
+		  Transform
 
 $(EVERYTHING)::
 	@for subdir in $(SUBDIRS); \

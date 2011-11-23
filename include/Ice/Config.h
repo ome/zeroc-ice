@@ -65,11 +65,10 @@ namespace IceInternal
 #   endif
 #endif
 
-
 namespace Ice
 {
 
-typedef char Byte;
+typedef unsigned char Byte;
 typedef short Short;
 typedef int Int;
 typedef IceUtil::Int64 Long;

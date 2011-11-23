@@ -23,14 +23,17 @@
 #include <IceUtil/Shared.h>
 #include <IceUtil/Unicode.h>
 #include <IceUtil/UUID.h>
+#include <IceUtil/AbstractMutex.h>
 #include <IceUtil/Mutex.h>
 #include <IceUtil/RecMutex.h>
 #include <IceUtil/RWRecMutex.h>
+#include <IceUtil/StaticMutex.h>
 #include <IceUtil/Monitor.h>
 #include <IceUtil/Thread.h>
 #include <IceUtil/Base64.h>
 #include <IceUtil/Time.h>
 #include <IceUtil/InputUtil.h>
 #include <IceUtil/OutputUtil.h>
+#include <IceUtil/GC.h>
 
 #endif

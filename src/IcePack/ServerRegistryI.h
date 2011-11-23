@@ -28,7 +28,7 @@ class ServerRegistryI : public ServerRegistry
 {
 public:
 
-    ServerRegistryI(const Freeze::DBPtr&, const TraceLevelsPtr&);
+    ServerRegistryI(const Ice::CommunicatorPtr&, const std::string&, const std::string&, const TraceLevelsPtr&);
 
     virtual void add(const std::string&, const ServerPrx&, const ::Ice::Current&);
     virtual void remove(const std::string&, const ::Ice::Current&);
@@ -38,8 +38,12 @@ public:
 
 private:
 
-    StringObjectProxyDict _dict;
+    Freeze::ConnectionPtr _connectionCache;
+    StringObjectProxyDict _dictCache;
     TraceLevelsPtr _traceLevels;
+    const std::string _envName;
+    const Ice::CommunicatorPtr _communicator;
+    const std::string _dbName;
 };
 
 }

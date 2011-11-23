@@ -54,8 +54,12 @@ SliceDoc.sgml: $(SLICEFILES) $(SLICE2DOCBOOK)
 	rm -f $@
 	$(SLICE2DOCBOOK) --ice -I$(top_srcdir)/slice $@ $(SLICEFILES)
 
-clean::
+appendix:
 	rm -f SliceDoc.sgml
+	$(SLICE2DOCBOOK) --noindex --ice -I$(top_srcdir)/slice SliceDoc.sgml $(SLICEFILES)
+
+clean::
+	rm -f SliceDoc.sgml appendix.sgml
 
 install::
 	@if test -f manual/index.html ; \

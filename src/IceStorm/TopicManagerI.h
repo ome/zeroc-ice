@@ -49,7 +49,7 @@ class TopicManagerI : public TopicManager, public IceUtil::Mutex
 public:
 
     TopicManagerI(const Ice::CommunicatorPtr&, const Ice::ObjectAdapterPtr&, const Ice::ObjectAdapterPtr&,
-                  const TraceLevelsPtr&, const Freeze::DBEnvironmentPtr&, const Freeze::DBPtr&);
+                  const TraceLevelsPtr&, const std::string&, const std::string&);
     ~TopicManagerI();
 
     virtual TopicPrx create(const std::string&, const Ice::Current&);
@@ -57,6 +57,8 @@ public:
     virtual TopicDict retrieveAll(const Ice::Current&) const;
 
     void reap();
+
+    void shutdown();
 
 private:
 
@@ -70,7 +72,8 @@ private:
     TopicIMap _topicIMap;
     FlusherPtr _flusher;
     SubscriberFactoryPtr _factory;
-    Freeze::DBEnvironmentPtr _dbEnv;
+    std::string _envName;
+    Freeze::ConnectionPtr _connection;
     StringBoolDict _topics;
 };
 

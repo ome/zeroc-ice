@@ -34,13 +34,17 @@ testOptions = " --IceSSL.Client.CertPath=" + os.path.join(toplevel, "test", "Ice
               " --IceSSL.Server.CertPath=" + os.path.join(toplevel, "test", "IceSSL", "certs") + \
               " --IceSSL.Server.Config= "
 
-TestUtil.clientOptions += " --IceSSL.Test.Client.CertPath=" + \
+oldClientOptions = TestUtil.clientOptions
+oldServerOptions = TestUtil.serverOptions
+oldClientServerOptions = TestUtil.clientServerOptions
+
+TestUtil.clientOptions += " --TestSSL.Client.CertPath=" + \
                           os.path.join(toplevel, "test", "IceSSL", "certs")
-TestUtil.serverOptions += " --IceSSL.Test.Server.CertPath=" + \
+TestUtil.serverOptions += " --TestSSL.Server.CertPath=" + \
                           os.path.join(toplevel, "test", "IceSSL", "certs")
-TestUtil.clientServerOptions += " --IceSSL.Test.Client.CertPath=" + \
+TestUtil.clientServerOptions += " --TestSSL.Client.CertPath=" + \
                                 os.path.join(toplevel, "test", "IceSSL", "certs") + \
-                                " --IceSSL.Test.Server.CertPath=" + \
+                                " --TestSSL.Server.CertPath=" + \
                                 os.path.join(toplevel, "test", "IceSSL", "certs")
 
 name = os.path.join("IceSSL", "certificateVerification")
@@ -50,8 +54,12 @@ print "testing default certificate verifier."
 TestUtil.clientServerTest(name)
 
 print "testing single-certificate certificate verifier."
-TestUtil.clientOptions += " --IceSSL.Client.CertificateVerifier=singleCert"
-TestUtil.serverOptions += " --IceSSL.Server.CertificateVerifier=singleCert"
+TestUtil.clientOptions += " --TestSSL.Client.CertificateVerifier=singleCert"
+TestUtil.serverOptions += " --TestSSL.Server.CertificateVerifier=singleCert"
 TestUtil.clientServerTest(name)
+
+TestUtil.clientOptions = oldClientOptions
+TestUtil.serverOptions = oldServerOptions
+TestUtil.clientServerOptions = oldClientServerOptions
 
 sys.exit(0)

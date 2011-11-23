@@ -54,6 +54,10 @@ void IceInternal::decRef(::IceDelegateD::Ice::Object* p) { p->__decRef(); }
 void
 IceInternal::checkedCast(const ObjectPrx& b, ObjectPrx& d)
 {
+    if(b)
+    {
+        b->__checkTwowayOnly("checkedCast");
+    }
     d = b;
 }
 
@@ -121,6 +125,12 @@ IceProxy::Ice::Object::ice_hash() const
 }
 
 bool
+IceProxy::Ice::Object::ice_isA(const string& __id)
+{
+    return ice_isA(__id, _reference->context);
+}
+
+bool
 IceProxy::Ice::Object::ice_isA(const string& __id, const Context& __context)
 {
     int __cnt = 0;
@@ -128,6 +138,7 @@ IceProxy::Ice::Object::ice_isA(const string& __id, const Context& __context)
     {
 	try
 	{
+	    __checkTwowayOnly("ice_isA");
 	    Handle< ::IceDelegate::Ice::Object> __del = __getDelegate();
 	    return __del->ice_isA(__id, __context);
 	}
@@ -140,6 +151,12 @@ IceProxy::Ice::Object::ice_isA(const string& __id, const Context& __context)
 	    __handleException(__ex, __cnt);
 	}
     }
+}
+
+void
+IceProxy::Ice::Object::ice_ping()
+{
+    ice_ping(_reference->context);
 }
 
 void
@@ -166,6 +183,12 @@ IceProxy::Ice::Object::ice_ping(const Context& __context)
 }
 
 vector<string>
+IceProxy::Ice::Object::ice_ids()
+{
+    return ice_ids(_reference->context);
+}
+
+vector<string>
 IceProxy::Ice::Object::ice_ids(const Context& __context)
 {
     int __cnt = 0;
@@ -173,6 +196,7 @@ IceProxy::Ice::Object::ice_ids(const Context& __context)
     {
 	try
 	{
+	    __checkTwowayOnly("ice_ids");
 	    Handle< ::IceDelegate::Ice::Object> __del = __getDelegate();
 	    return __del->ice_ids(__context);
 	}
@@ -188,6 +212,12 @@ IceProxy::Ice::Object::ice_ids(const Context& __context)
 }
 
 string
+IceProxy::Ice::Object::ice_id()
+{
+    return ice_id(_reference->context);
+}
+
+string
 IceProxy::Ice::Object::ice_id(const Context& __context)
 {
     int __cnt = 0;
@@ -195,6 +225,7 @@ IceProxy::Ice::Object::ice_id(const Context& __context)
     {
 	try
 	{
+	    __checkTwowayOnly("ice_id");
 	    Handle< ::IceDelegate::Ice::Object> __del = __getDelegate();
 	    return __del->ice_id(__context);
 	}
@@ -210,6 +241,12 @@ IceProxy::Ice::Object::ice_id(const Context& __context)
 }
 
 FacetPath
+IceProxy::Ice::Object::ice_facets()
+{
+    return ice_facets(_reference->context);
+}
+
+FacetPath
 IceProxy::Ice::Object::ice_facets(const Context& __context)
 {
     int __cnt = 0;
@@ -217,6 +254,7 @@ IceProxy::Ice::Object::ice_facets(const Context& __context)
     {
 	try
 	{
+	    __checkTwowayOnly("ice_facets");
 	    Handle< ::IceDelegate::Ice::Object> __del = __getDelegate();
 	    return __del->ice_facets(__context);
 	}
@@ -229,6 +267,15 @@ IceProxy::Ice::Object::ice_facets(const Context& __context)
 	    __handleException(__ex, __cnt);
 	}
     }
+}
+
+bool
+IceProxy::Ice::Object::ice_invoke(const string& operation,
+				  OperationMode mode,
+				  const vector<Byte>& inParams,
+				  vector<Byte>& outParams)
+{
+    return ice_invoke(operation, mode, inParams, outParams, _reference->context);
 }
 
 bool
@@ -269,6 +316,15 @@ void
 IceProxy::Ice::Object::ice_invoke_async(const AMI_Object_ice_invokePtr& cb,
 					const string& operation,
 					OperationMode mode,
+					const vector<Byte>& inParams)
+{
+    ice_invoke_async(cb, operation, mode, inParams, _reference->context);
+}
+
+void
+IceProxy::Ice::Object::ice_invoke_async(const AMI_Object_ice_invokePtr& cb,
+					const string& operation,
+					OperationMode mode,
 					const vector<Byte>& inParams,
 					const Context& context)
 {
@@ -285,6 +341,27 @@ IceProxy::Ice::Object::ice_invoke_async(const AMI_Object_ice_invokePtr& cb,
 	{
 	    __handleException(__ex, __cnt);
 	}
+    }
+}
+
+Context
+IceProxy::Ice::Object::ice_getContext() const
+{
+    return _reference->context;
+}
+
+ObjectPrx
+IceProxy::Ice::Object::ice_newContext(const Context& newContext) const
+{
+    if(newContext == _reference->context)
+    {
+	return ObjectPrx(const_cast< ::IceProxy::Ice::Object*>(this));
+    }
+    else
+    {
+	ObjectPrx proxy(new ::IceProxy::Ice::Object());
+	proxy->setup(_reference->changeContext(newContext));
+	return proxy;
     }
 }
 
@@ -562,29 +639,6 @@ IceProxy::Ice::Object::ice_default() const
     }
 }
 
-void
-IceProxy::Ice::Object::ice_flush()
-{
-    //
-    // Retry is necessary for ice_flush in case the current connection
-    // is closed. If that's the case we need to get a new connection.
-    //
-    int __cnt = 0;
-    while(true)
-    {
-	try
-	{
-	    Handle< ::IceDelegate::Ice::Object> __del = __getDelegate();
-	    __del->ice_flush();
-	    return;
-	}
-	catch(const LocalException& __ex)
-	{
-	    __handleException(__ex, __cnt);
-	}
-    }
-}
-
 ReferencePtr
 IceProxy::Ice::Object::__reference() const
 {
@@ -712,6 +766,19 @@ IceProxy::Ice::Object::__rethrowException(const LocalException& ex)
     ex.ice_throw();
 }
 
+void
+IceProxy::Ice::Object::__checkTwowayOnly(const char* name) const
+{
+    IceUtil::Mutex::Lock sync(*this);
+
+    if(!ice_isTwoway())
+    {
+        TwowayOnlyException ex(__FILE__, __LINE__);
+	ex.operation = name;
+	throw ex;
+    }
+}
+
 Handle< ::IceDelegate::Ice::Object>
 IceProxy::Ice::Object::__getDelegate()
 {
@@ -761,6 +828,12 @@ Handle< ::IceDelegateD::Ice::Object>
 IceProxy::Ice::Object::__createDelegateD()
 {
     return Handle< ::IceDelegateD::Ice::Object>(new ::IceDelegateD::Ice::Object);
+}
+
+const Context&
+IceProxy::Ice::Object::__defaultContext() const
+{
+    return _reference->context;
 }
 
 void
@@ -924,12 +997,6 @@ IceDelegateM::Ice::Object::ice_invoke_async(const AMI_Object_ice_invokePtr& cb,
     BasicStream* __os = cb->__os();
     __os->writeBlob(inParams);
     cb->__invoke();
-}
-
-void
-IceDelegateM::Ice::Object::ice_flush()
-{
-    __connection->flushBatchRequest();
 }
 
 void
@@ -1237,12 +1304,6 @@ IceDelegateD::Ice::Object::ice_invoke_async(const AMI_Object_ice_invokePtr&,
 					    const Context&)
 {
     throw CollocationOptimizationException(__FILE__, __LINE__);
-}
-
-void
-IceDelegateD::Ice::Object::ice_flush()
-{
-    // Nothing to do for direct delegates.
 }
 
 void

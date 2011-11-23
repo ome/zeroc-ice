@@ -18,40 +18,52 @@
 module Test
 {
 
+exception AlreadyRegisteredException
+{
+};
+
+exception NotRegisteredException
+{
+};
+
 class Servant
 {
     nonmutating int getValue();
-
     void setValue(int value);
-    ["ami", "amd"] void setValueAsync(int value);
 
+    ["ami", "amd"] void setValueAsync(int value);
     nonmutating void releaseAsync();
+
+    nonmutating void addFacet(string name, string data) throws AlreadyRegisteredException;
+    nonmutating void removeFacet(string name) throws NotRegisteredException;
+    nonmutating void removeAllFacets();
 
     void destroy();
 
     int value;
 };
 
+class Facet extends Servant
+{
+    nonmutating string getData();
+    void setData(string data);
+
+    string data;
+};
+
 interface RemoteEvictor
 {
     void setSize(int size);
-    Servant* createServant(int value);
-    nonmutating int getLastSavedValue();
-    void clearLastSavedValue();
-    nonmutating int getLastEvictedValue();
-    void clearLastEvictedValue();
-    void deactivate();
-};
+    Servant* createServant(int id, int value);
+    Servant* getServant(int id);
 
-enum Strategy
-{
-    Eviction,
-    Idle
+    void deactivate();
+    void destroyAllServants();
 };
 
 interface RemoteEvictorFactory
 {
-    RemoteEvictor* createEvictor(string name, Strategy s);
+    RemoteEvictor* createEvictor(string name);
     void shutdown();
 };
 

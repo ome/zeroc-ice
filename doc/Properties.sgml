@@ -16,8 +16,99 @@ string is interpreted as zero.
 </para>
 
 <!-- ********************************************************************** -->
-<section><title>&Ice; Tracing Properties</title>
+<section><title>&Ice; Configuration Property</title>
 <!-- ********************************************************************** -->
+
+<section><title>Ice.Config</title>
+<section><title>Synopsis</title>
+<synopsis>
+--Ice.Config
+--Ice.Config=1
+--Ice.Config=<replaceable>config_file</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property must be set from the command line with the <literal>--Ice.Config</literal>,
+<literal>--Ice.Config=1</literal>, or <literal>--Ice.Config=</literal><replaceable>config_file</replaceable> option.
+</para>
+<para>
+If the <literal>Ice.Config</literal> property is empty or set to <literal>1</literal>,
+the Ice run time examines the contents of the <literal>ICE_CONFIG</literal> environment
+variable to retrieve the pathname of a configuration file. Otherwise, <literal>Ice.Config</literal>
+must be set to the pathname of a configuration file. (Pathnames can be relative or absolute.)
+Further property values are read from the configuration file thus specified.
+</para>
+
+<section><title>Configuration File Syntax</title>
+<para>
+A configuration file contains a number of property settings, one setting per line.
+Property settings have one of the forms
+</para>
+<synopsis>
+<literal><replaceable>property_name</replaceable>=      # Set property to the empty string or zero</literal>
+</synopsis>
+<synopsis>
+<literal><replaceable>property_name</replaceable>=<replaceable>value</replaceable> # Assign value to property</literal>
+</synopsis>
+<para>
+The <literal>#</literal> character indicates a comment: the
+<literal>#</literal> character and anything following the <literal>#</literal> character on the same
+line are ignored. A line that has the <literal>#</literal> character as its first non-white space character
+is ignored in its entirety.
+</para>
+<para>
+A configuration file is free-form: blank, tab, and newline characters
+serve as token delimiters and are otherwise ignored.
+</para>
+<para>
+Any setting of the <literal>Ice.Config</literal> property inside the configuration file itself is ignored.
+</para>
+</section>
+
+</section>
+
+</section>
+
+</section>
+
+<!-- ********************************************************************** -->
+<section><title>&Ice; Trace Properties</title>
+<!-- ********************************************************************** -->
+
+<section><title>Ice.Trace.GC</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Trace.GC=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+The garbage collector trace level:
+<informaltable>
+<tgroup cols=2>
+<tbody>
+<row>
+<entry>0</entry>
+<entry>No garbage collector trace. (default)</entry>
+</row>
+<row>
+<entry>1</entry>
+<entry>Show the total number of instances collected, the total number of instances examined, the time spent
+in the collector in milliseconds, and the total number of runs of the collector.</entry>
+</row>
+<row>
+<entry>2</entry>
+<entry>Like 1, but also produces a trace message for each run of the collector.</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</para>
+</section>
+</section>
 
 <section><title>Ice.Trace.Network</title>
 <section><title>Synopsis</title>
@@ -34,7 +125,7 @@ The network trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No network tracing. (default)</entry>
+<entry>No network trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -70,7 +161,7 @@ The protocol trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No protocol tracing. (default)</entry>
+<entry>No protocol trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -98,7 +189,7 @@ The request retry trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No request retry tracing. (default)</entry>
+<entry>No request retry trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -115,8 +206,6 @@ The request retry trace level:
 </section>
 </section>
 
-<!-- 
-
 <section><title>Ice.Trace.Slicing</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -132,7 +221,7 @@ The slicing trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No tracing of slicing activity. (default)</entry>
+<entry>No trace of slicing activity. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -144,8 +233,6 @@ The slicing trace level:
 </para>
 </section>
 </section>
-
--->
 
 </section>
 
@@ -165,6 +252,24 @@ Ice.Warn.Connections=<replaceable>num</replaceable>
 If <replaceable>num</replaceable> is set to a value larger than zero,
 Ice applications will print warning messages for certain exceptional
 conditions in connections. The default value is 0.
+</para>
+</section>
+</section>
+
+<section><title>Ice.Warn.Datagrams</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Warn.Datagrams=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+servers will print a warning message if they receive a datagram that exceeds the
+servers' receive buffer size. (Note that this condition is not detected
+by all UDP implementations -- some implementations silently drop received
+datagrams that are too large.) The default value is 0.
 </para>
 </section>
 </section>
@@ -584,6 +689,23 @@ than zero, compression is enabled. If zero, compression is disabled.
 <section><title>&Ice; Miscellaneous Properties</title>
 <!-- ********************************************************************** -->
 
+<section><title>Ice.GC.Interval</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.GC.Interval=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property determines the frequency with which the class garbage
+collector runs. If the interval is set to zero (the default), no
+collector thread is created. Otherwise, the collector thread runs
+every <replaceable>num</replaceable> seconds.
+</para>
+</section>
+</section>
+
 <section><title>Ice.RetryIntervals</title>
 <section><title>Synopsis</title>
 <synopsis>
@@ -600,6 +722,31 @@ times: immediately re-tried upon the first failure, after waiting 100
 (ms) upon the second failure, after waiting 500 (ms) upon the third
 failure. The default value is to retry once immediately (0). If set to
 -1, no retry will occur.
+</para>
+</section>
+</section>
+
+<section><title>Ice.MessageSizeMax</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.MessageSizeMax=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+This property controls the maximum size (in kilobytes) of a protocol
+message that will be accepted or sent by the &Ice; run time.
+The size includes the size of the Ice protocol header. Messages larger
+than this size cause a [MemoryLimitException].
+The default size is 1024 (1 Megabyte).
+Settings with a value less than 1 are ignored.
+</para>
+<para>
+This property adjusts the value of <literal>Ice.UDP.RcvSize</literal> and <literal>Ice.UDP.SndSize</literal>, that
+is, if <literal>Ice.UDP.RcvSize</literal> or <literal>Ice.UDP.SndSize</literal> are larger than
+<literal>Ice.MessageSizeMax * 1024 + 28</literal>, they are adjusted to
+<literal>Ice.MessageSizeMax * 1024 + 28</literal>.
 </para>
 </section>
 </section>
@@ -783,6 +930,65 @@ causes the program to abort immediately instead of raising
 </section>
 </section>
 
+<section><title>Ice.Nohup</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.Nohup=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+If <replaceable>num</replaceable> is set to a value larger than zero,
+the C++ <literal>Ice::Application</literal> class ignores <literal>SIGHUP</literal>
+(for UNIX) and <literal>CTRL_LOGOFF_EVENT</literal> (for Windows). As a
+result, an application that sets <literal>Ice.Nohup</literal> continues
+to run if the user that started the application logs off. (C++ only.)
+</para>
+</section>
+</section>
+
+<section><title>Ice.UDP.RcvSize, Ice.UDP.SndSize</title>
+<section><title>Synopsis</title>
+<synopsis>
+Ice.UDP.RcvSize=<replaceable>num</replaceable>
+Ice.UDP.SndSize=<replaceable>num</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+These properties set the UDP receive and send buffer sizes to the specified value
+in bytes. Ice messages larger than <literal><replaceable>num</replaceable> - 28</literal> bytes
+cause a <literal>DatagramLimitException</literal>. The default value depends on the configuration
+of the local UDP stack. (Common default values are <literal>65535</literal> and <literal>8192</literal> bytes.)
+</para>
+<para>
+The OS may impose lower and upper limits on the receive and send buffer sizes or otherwise adjust the buffer sizes.
+If a limit is requested that is lower than the OS-imposed minimum, the value is silently adjusted to the
+OS-imposed minimum. If a limit is requested that is larger than the OS-imposed maximum, the value is adjusted
+to the OS-imposed maximum; in addition, &Ice; logs a warning showing the requested size and the adjusted size.
+</para>
+<para>
+Settings of these properties less than <literal>28</literal> are ignored.
+</para>
+<para>
+Note that, on many operating systems, it is possible to set buffer sizes greater than <literal>65535</literal>.
+Such settings do not change the hard limit of <literal>65507</literal> bytes for the payload of a UDP packet,
+but merely affect how much data can be buffered by the kernel.
+</para>
+<para>
+Settings less than <literal>65535</literal> limit the size of &Ice; datagrams as well as adjust the kernel
+buffer sizes.
+</para>
+<para>
+If <literal>Ice.MessageSizeMax</literal> is set and <literal>Ice.MessageSizeMax * 1024 + 28</literal>
+is smaller than the UDP receive or send buffer size, the corresponding UDP buffer size is reduced to
+<literal>Ice.MessageSizeMax * 1024 + 28</literal>.
+</para>
+</section>
+</section>
+
 </section>
 
 <!-- ********************************************************************** -->
@@ -798,13 +1004,13 @@ IceSSL.Trace.Security=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The SSL plug-in tracing level:
+The SSL plug-in trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No security tracing. (default)</entry>
+<entry>No security trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1250,13 +1456,13 @@ IcePack.Registry.Trace.ServerRegistry=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The server registry tracing level:
+The server registry trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No server registry tracing. (default)</entry>
+<entry>No server registry trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1278,13 +1484,13 @@ IcePack.Registry.Trace.AdapterRegistry=<replaceable>num</replaceable>
 <section>
 <title>Description</title>
 <para>
-The object adapter registry tracing level:
+The object adapter registry trace level:
 <informaltable>
 <tgroup cols=2>
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No object adapter registry tracing. (default)</entry>
+<entry>No object adapter registry trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1312,7 +1518,7 @@ The node registry trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No node registry tracing. (default)</entry>
+<entry>No node registry trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1340,7 +1546,7 @@ The object registry trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No object registry tracing. (default)</entry>
+<entry>No object registry trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1419,7 +1625,7 @@ Defines a list of properties which override the properties defined in
 server deployment descriptors. For example, in some cases it is desirable
 to set the property <literal>Ice.Default.Host</literal> for servers, but
 not in server deployment descriptors. The property definitions should
-be separated by whitespace.
+be separated by white space.
 </para>
 </section>
 </section>
@@ -1495,7 +1701,7 @@ The server trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No server tracing. (default)</entry>
+<entry>No server trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1533,7 +1739,7 @@ The object adapter trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No object adapter tracing. (default)</entry>
+<entry>No object adapter trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1571,7 +1777,7 @@ The activator trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No activator tracing. (default)</entry>
+<entry>No activator trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1644,7 +1850,7 @@ The topic manager trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No topic manager tracing. (default)</entry>
+<entry>No topic manager trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1672,7 +1878,7 @@ The topic trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No topic tracing. (default)</entry>
+<entry>No topic trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1706,7 +1912,7 @@ Trace information on the thread that flushes batch reliability events to subscri
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No flush tracing. (default)</entry>
+<entry>No flush trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1734,7 +1940,7 @@ The subscriber trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No subscriber tracing. (default)</entry>
+<entry>No subscriber trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1857,7 +2063,7 @@ The client interface trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No client interface tracing. (default)</entry>
+<entry>No client interface trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1892,7 +2098,7 @@ The server interface trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No server interface tracing. (default)</entry>
+<entry>No server interface trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -1927,7 +2133,7 @@ The routing table trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No routing table tracing. (default)</entry>
+<entry>No routing table trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -2016,9 +2222,28 @@ Glacier.Router.AllowCategories=<replaceable>list</replaceable>
 <section>
 <title>Description</title>
 <para>
-A whitespace separated list of categories. If this property is set,
+A white space separated list of categories. If this property is set,
 then requests are only permitted to &Ice; objects with an identity
 that matches one of the categories from this list.
+</para>
+</section>
+</section>
+
+<section><title>Glacier.Router.AcceptCert</title>
+<section><title>Synopsis</title>
+<synopsis>
+Glacier.Router.AcceptCert=<replaceable>base64 encoded certificate string</replaceable>
+</synopsis>
+</section>
+<section>
+<title>Description</title>
+<para>
+A base64 encoded certificate (which can be obtained by calling certToBase64()
+on an existing IceSSL::RSAKeyPair).
+
+The &Glacier; Router will use this certificate, when in SSL mode, to restrict
+those clients that may connect to it.  Only clients that use this certificate
+may connect, others will be rejected.
 </para>
 </section>
 </section>
@@ -2108,7 +2333,7 @@ exact same property set as for the router
 starter. <replaceable>overrides</replaceable> can contain a list
 of properties for the router, which are used in addition to the router
 starter's properties, or which override the router starter's properties.
-The property definitions should be separated by whitespace.
+The property definitions should be separated by white space.
 </para>
 <para>
 For example, in many cases it is desirable to set the property
@@ -2188,7 +2413,7 @@ The router starter trace level: (Unix only.)
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No router starter tracing. (default)</entry>
+<entry>No router starter trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -2396,7 +2621,7 @@ The &Freeze; database activity trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No database activity tracing. (default)</entry>
+<entry>No database activity trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>
@@ -2428,7 +2653,7 @@ The &Freeze; evictor activity trace level:
 <tbody>
 <row>
 <entry>0</entry>
-<entry>No evictor activity tracing. (default)</entry>
+<entry>No evictor activity trace. (default)</entry>
 </row>
 <row>
 <entry>1</entry>

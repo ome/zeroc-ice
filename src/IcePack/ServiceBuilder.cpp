@@ -15,7 +15,6 @@
 #include <Ice/Ice.h>
 #include <IcePack/ServiceBuilder.h>
 #include <IcePack/ServerBuilder.h>
-#include <Ice/Xerces.h>
 
 using namespace std;
 using namespace IcePack;
@@ -29,7 +28,7 @@ public:
 
     ServiceHandler(ServiceBuilder&);
 
-    virtual void startElement(const XMLCh *const name, ICE_XERCES_NS AttributeList &attrs); 
+    virtual void startElement(const string&, const IceXML::Attributes&, int, int);
 
 private:
 
@@ -45,18 +44,16 @@ IcePack::ServiceHandler::ServiceHandler(ServiceBuilder& builder) :
 }
 
 void 
-IcePack::ServiceHandler::startElement(const XMLCh *const name, ICE_XERCES_NS AttributeList &attrs)
+IcePack::ServiceHandler::startElement(const string& name, const IceXML::Attributes& attrs, int line, int column)
 {
-    ComponentHandler::startElement(name, attrs);
+    ComponentHandler::startElement(name, attrs, line, column);
 
     if(!isCurrentTargetDeployable())
     {
 	return;
     }
 
-    string str = toString(name);
-
-    if(str == "service")
+    if(name == "service")
     {
 	string basedir = getAttributeValueWithDefault(attrs, "basedir", "");
 	if(!basedir.empty())
@@ -78,11 +75,12 @@ IcePack::ServiceHandler::startElement(const XMLCh *const name, ICE_XERCES_NS Att
 	_builder.createConfigFile(_builder.substitute("/config/config_${name}"));
 	_builder.setEntryPoint(getAttributeValue(attrs, "entry"));
     }
-    else if(str == "adapter")
+    else if(name == "adapter")
     {
 	assert(!_currentAdapterId.empty());
 	string adapterName = getAttributeValue(attrs, "name");
-	_builder.getServerBuilder().registerAdapter(adapterName, getAttributeValue(attrs, "endpoints"), _currentAdapterId);
+	_builder.getServerBuilder().registerAdapter(adapterName, getAttributeValue(attrs, "endpoints"),
+                                                    _currentAdapterId);
     }
 }
 
@@ -137,7 +135,7 @@ IcePack::ServiceBuilder::setDBEnv(const string& dir)
 {
     if(_kind != ServiceKindFreeze)
     {
-	throw DeploySAXParseException("database environment is only allowed for Freeze services", _locator);
+	throw IceXML::ParserException(__FILE__, __LINE__, "database environment is only allowed for Freeze services");
     }
 
     string path;
@@ -158,7 +156,9 @@ IcePack::ServiceBuilder::setDBEnv(const string& dir)
     {
 	path = toLocation(dir);
     }
-    _serverBuilder.addProperty("IceBox.DBEnvName." + getVariable("name"), path);
+    _serverBuilder.addProperty("IceBox.DBEnvName." + getVariable("name"), getVariable("name"));
+    addProperty("Freeze.DbEnv." + getVariable("name") + ".DbHome", path);
+    
 }
 
 //

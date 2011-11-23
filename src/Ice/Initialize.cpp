@@ -12,6 +12,7 @@
 //
 // **********************************************************************
 
+#include <IceUtil/GC.h>
 #include <Ice/CommunicatorI.h>
 #include <Ice/PropertiesI.h>
 #include <Ice/Initialize.h>
@@ -20,6 +21,22 @@
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
+
+namespace IceInternal
+{
+
+extern IceUtil::Handle<IceUtil::GC> theCollector;
+
+}
+
+void
+Ice::collectGarbage()
+{
+    if(theCollector)
+    {
+	theCollector->collectGarbage();
+    }
+}
 
 CommunicatorPtr
 Ice::initialize(int& argc, char* argv[], Int version)
@@ -147,6 +164,14 @@ Ice::stringSeqToArgs(const StringSeq& args, int& argc, char* argv[])
         {
             ++i;
         }
+    }
+
+    //
+    // Make sure that argv[argc] == 0, the ISO C++ standard requires this.
+    //
+    if(argv)
+    {
+	argv[argc] = 0;
     }
 }
 

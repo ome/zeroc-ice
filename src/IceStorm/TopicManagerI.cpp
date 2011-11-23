@@ -17,6 +17,7 @@
 #include <IceStorm/TopicI.h>
 #include <IceStorm/Flusher.h>
 #include <IceStorm/TraceLevels.h>
+#include <Freeze/Initialize.h>
 
 #include <functional>
 #include <ctype.h>
@@ -26,16 +27,17 @@ using namespace std;
 
 TopicManagerI::TopicManagerI(const Ice::CommunicatorPtr& communicator, const Ice::ObjectAdapterPtr& topicAdapter,
                              const Ice::ObjectAdapterPtr& publishAdapter, const TraceLevelsPtr& traceLevels,
-                             const Freeze::DBEnvironmentPtr& dbEnv, const Freeze::DBPtr& db) :
+                             const string& envName, const string& dbName) :
     _communicator(communicator),
     _topicAdapter(topicAdapter),
     _publishAdapter(publishAdapter),
     _traceLevels(traceLevels),
-    _dbEnv(dbEnv),
-    _topics(db)
+    _envName(envName),
+    _connection(Freeze::createConnection(_communicator, envName)),
+    _topics(_connection, dbName)
 {
     _flusher = new Flusher(_communicator, _traceLevels);
-    _factory = new SubscriberFactory(_traceLevels, _flusher);
+    _factory = new SubscriberFactory(_communicator, _traceLevels, _flusher);
 
     //
     // Recreate each of the topics in the dictionary. If the topic
@@ -52,7 +54,7 @@ TopicManagerI::TopicManagerI(const Ice::CommunicatorPtr& communicator, const Ice
 	    installTopic("recreate", p->first, false);
 	    ++p;
 	}
-	catch(const Freeze::DBNotFoundException& ex)
+	catch(const Freeze::NotFoundException& ex)
 	{
 	    if(_traceLevels->topicMgr > 0)
 	    {
@@ -87,7 +89,7 @@ TopicManagerI::create(const string& name, const Ice::Current&)
     }
 
     installTopic("create", name, true);
-    _topics.insert(pair<const string, const bool>(name, true));
+    _topics.put(pair<const string, const bool>(name, true));
 
     //
     // The identity is the name of the Topic.
@@ -195,6 +197,13 @@ TopicManagerI::reap()
 }
 
 void
+TopicManagerI::shutdown()
+{
+    IceUtil::Mutex::Lock sync(*this);
+    reap(); 
+}
+
+void
 TopicManagerI::installTopic(const string& message, const string& name, bool create)
 {
     if(_traceLevels->topicMgr > 0)
@@ -206,20 +215,17 @@ TopicManagerI::installTopic(const string& message, const string& name, bool crea
     //
     // Prepend "topic-" to the topic name in order to form a
     // unique name for the Freeze database. Since the name we
-    // supply to openDB is also used as a filename, we call
-    // getDatabaseName to obtain a name with any questionable
-    // filename characters converted to hex.
+    // supply is also used as a filename, we call getDatabaseName 
+    // to obtain a name with any questionable filename characters converted to hex.
     //
     // TODO: instance
     // TODO: failure? cleanup database?
     //
-    string dbName = "topic-" + getDatabaseName(name);
-    Freeze::DBPtr db = _dbEnv->openDB(dbName, create);
-    
+    string dbName = "topic-" + getDatabaseName(name);  
     //
     // Create topic implementation
     //
-    TopicIPtr topicI = new TopicI(_publishAdapter, _traceLevels, name, _factory, db);
+    TopicIPtr topicI = new TopicI(_publishAdapter, _traceLevels, name, _factory, _envName, dbName, create);
     
     //
     // The identity is the name of the Topic.

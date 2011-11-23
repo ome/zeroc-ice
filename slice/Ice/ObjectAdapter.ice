@@ -239,30 +239,11 @@ local interface ObjectAdapter
      * not belong to any specific category.
      *
      * @see Identity
-     * @see removeServantLocator
      * @see findServantLocator
      * @see ServantLocator
      *
      **/
     void addServantLocator(ServantLocator locator, string category);
-
-    /**
-     *
-     * Remove a Servant Locator from this object adapter. Removing
-     * a category for which no servant locator is registered throws
-     * [NotRegisteredException].
-     *
-     * @param category The category for which the Servant Locator can
-     * locate Servants, or an empty string if the Servant Locator does
-     * not belong to any specific category.
-     *
-     * @see Identity
-     * @see addServantLocator
-     * @see findServantLocator
-     * @see ServantLocator
-     *
-     **/
-    void removeServantLocator(string category);
 
     /**
      *
@@ -277,7 +258,6 @@ local interface ObjectAdapter
      *
      * @see Identity
      * @see addServantLocator
-     * @see removeServantLocator
      * @see ServantLocator
      *
      **/
@@ -387,9 +367,9 @@ local interface ObjectAdapter
      * the router. This avoids the need for the router to establish
      * a separate connection back to this object adapter.
      *
-     * <note><para> You can only add a particular router to one single
-     * object adapter. Adding a router to more than one object adapter
-     * will result in undefined behavior. However, it is possible to
+     * <note><para> You can add a particular router to only a single
+     * object adapter. Adding the same router to more than one object adapter
+     * results in undefined behavior. However, it is possible to
      * add different routers to different object
      * adapters. </para></note>
      *

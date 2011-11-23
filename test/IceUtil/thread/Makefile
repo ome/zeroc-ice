@@ -24,6 +24,7 @@ OBJS		= TestBase.o \
 		  StartTest.o \
 		  RWRecMutexTest.o \
 		  RecMutexTest.o \
+		  StaticMutexTest.o \
 		  MutexTest.o \
 		  MonitorMutexTest.o \
 		  MonitorRecMutexTest.o \

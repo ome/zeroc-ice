@@ -57,7 +57,6 @@ public:
     virtual void remove(const Identity&);
 
     virtual void addServantLocator(const ServantLocatorPtr&, const std::string&);
-    virtual void removeServantLocator(const std::string&);
     virtual ServantLocatorPtr findServantLocator(const std::string&);
 
     virtual ObjectPtr identityToServant(const Identity&);
@@ -74,6 +73,8 @@ public:
     bool isLocal(const ObjectPrx&) const;
 
     std::list<IceInternal::ConnectionPtr> getIncomingConnections() const;
+
+    void flushBatchRequests();
 
     void incDirectCount();
     void decDirectCount();

@@ -80,8 +80,18 @@
 
 #if defined(_WIN32)
 
-// Necessary for TryEnterCriticalSection.
-#   define _WIN32_WINNT 0x0400
+
+//
+// Comment out the following block if you want to run on Windows 9x
+// or Windows NT 3.51.
+//
+#   ifndef _WIN32_WINNT
+        //
+        // Necessary for TryEnterCriticalSection.
+        //
+#       define _WIN32_WINNT 0x0400
+#   endif
+
 
 #   if !defined(_UNICODE)
 #       error "Only unicode libraries can be used with Ice!"
@@ -204,7 +214,7 @@ const Int64 Int64Max = INT64_MAX;
 //
 // The Ice version.
 //
-#define ICE_STRING_VERSION "1.1.1" // "A.B.C", with A=major, B=minor, C=patch
-#define ICE_INT_VERSION 10101      // AABBCC, with AA=major, BB=minor, CC=patch
+#define ICE_STRING_VERSION "1.2.0" // "A.B.C", with A=major, B=minor, C=patch
+#define ICE_INT_VERSION 10200      // AABBCC, with AA=major, BB=minor, CC=patch
 
 #endif

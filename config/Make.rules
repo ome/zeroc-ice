@@ -88,12 +88,12 @@ USE_READLINE            := yes
 KERBEROS_HOME		?= /usr/kerberos
 
 #
-# If Xerces-C++ is not installed in a standard location where the
-# compiler can find it, set XERCESC_HOME to the Xerces-C++
+# If expat is not installed in a standard location where the
+# compiler can find it, set EXPAT_HOME to the expat
 # installation directory.
 #
 
-#XERCESC_HOME		?= /opt/xerces-c
+#EXPAT_HOME		?= /opt/expat
 
 
 #
@@ -111,8 +111,8 @@ KERBEROS_HOME		?= /usr/kerberos
 # ----------------------------------------------------------------------
 
 SHELL			= /bin/sh
-VERSION			= 1.1.1
-SOVERSION               = 11
+VERSION			= 1.2.0
+SOVERSION               = 12
 bindir			= $(top_srcdir)/bin
 libdir			= $(top_srcdir)/lib
 includedir		= $(top_srcdir)/include
@@ -183,18 +183,18 @@ endif
 
 ifneq ($(DB_HOME),)
     DB_FLAGS		= -I$(DB_HOME)/include
-    DB_LIBS		= -L$(DB_HOME)/$(libsubdir) -ldb
+    DB_LIBS		= -L$(DB_HOME)/$(libsubdir) -ldb_cxx
 else
     DB_FLAGS		=
-    DB_LIBS		= -ldb
+    DB_LIBS		= -ldb_cxx
 endif
 
-ifneq ($(XERCESC_HOME),)
-    XERCESC_FLAGS	= -I$(XERCESC_HOME)/include
-    XERCESC_LIBS	= -L$(XERCESC_HOME)/$(libsubdir) -lxerces-c
+ifneq ($(EXPAT_HOME),)
+    EXPAT_FLAGS		= -I$(EXPAT_HOME)/include
+    EXPAT_LIBS		= -L$(EXPAT_HOME)/$(libsubdir) -lexpat
 else
-    XERCESC_FLAGS	=
-    XERCESC_LIBS	= -lxerces-c
+    EXPAT_FLAGS		=
+    EXPAT_LIBS		= -lexpat
 endif
 
 ifeq ($(PLATFORM_HAS_READLINE),yes)
@@ -248,6 +248,7 @@ ifeq ($(mkshlib),)
     $(error You need to define mkshlib in Make.rules.$(UNAME)) 
 endif
 
+SLICEPARSERLIB		= $(libdir)/$(call mklibfilename,Slice,$(VERSION))
 SLICE2CPP		= $(bindir)/slice2cpp
 SLICE2XSD		= $(bindir)/slice2xsd
 SLICE2FREEZE		= $(bindir)/slice2freeze
@@ -265,18 +266,18 @@ EVERYTHING		= all depend clean install
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
 
 
-$(HDIR)/%F.h: $(SDIR)/%F.ice $(SLICE2CPP)
+$(HDIR)/%F.h: $(SDIR)/%F.ice $(SLICE2CPP) $(SLICEPARSERLIB)
 	rm -f $(HDIR)/$(*F)F.h $(*F)F.cpp
 	$(SLICE2CPP) $(SLICE2CPPFLAGS) $<
 	mv $(*F)F.h $(HDIR)
 	rm -f $(*F)F.cpp
 
-$(HDIR)/%.h %.cpp: $(SDIR)/%.ice $(SLICE2CPP)
+$(HDIR)/%.h %.cpp: $(SDIR)/%.ice $(SLICE2CPP) $(SLICEPARSERLIB)
 	rm -f $(HDIR)/$(*F).h $(*F).cpp
 	$(SLICE2CPP) $(SLICE2CPPFLAGS) $<
 	mv $(*F).h $(HDIR)
 
-%.h %.cpp: %.ice $(SLICE2CPP)
+%.h %.cpp: %.ice $(SLICE2CPP) $(SLICEPARSERLIB)
 	rm -f $(*F).h $(*F).cpp
 	$(SLICE2CPP) $(SLICE2CPPFLAGS) $(*F).ice	
 

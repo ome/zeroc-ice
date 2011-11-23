@@ -94,11 +94,271 @@ Ice::PropertiesI::getPropertiesForPrefix(const string& prefix)
     return result;
 }
 
+//
+// Valid properties for each application.
+// A '*' character is a wildcard. If used, it must appear at the end of the string.
+// Examples: "Ice.Foo.*" allows all properties with that prefix, such as "Ice.Foo.Bar".
+//           "Ice.Foo*" allows properties such as "Ice.Foo.Bar" and "Ice.FooBar".
+//
+static const string iceProps[] =
+{
+    "ChangeUser",
+    "Config",
+    "ConnectionIdleTime",
+    "Daemon",
+    "DaemonNoChdir",
+    "DaemonNoClose",
+    "Default.Host",
+    "Default.Locator",
+    "Default.Protocol",
+    "Default.Router",
+    "GC.Interval",
+    "Logger.Timestamp",
+    "MessageSizeMax",
+    "MonitorConnections",
+    "Nohup",
+    "NullHandleAbort",
+    "Override.Compress",
+    "Override.Timeout",
+    "Plugin.*",
+    "PrintAdapterReady",
+    "PrintProcessId",
+    "ProgramName",
+    "RetryIntervals",
+    "ServerIdleTime",
+    "ThreadPool.Client.Size",
+    "ThreadPool.Client.SizeMax",
+    "ThreadPool.Client.SizeWarn",
+    "ThreadPool.Server.Size",
+    "ThreadPool.Server.SizeMax",
+    "ThreadPool.Server.SizeWarn",
+    "Trace.GC",
+    "Trace.Network",
+    "Trace.Protocol",
+    "Trace.Retry",
+    "Trace.Slicing",
+    "Trace.Location",
+    "UDP.RcvSize",
+    "UDP.SndSize",
+    "UseSyslog",
+    "Warn.AMICallback",
+    "Warn.Connections",
+    "Warn.Datagrams",
+    "Warn.Dispatch",
+    "Warn.Leaks"
+};
+
+static const string iceBoxProps[] =
+{
+    "DBEnvName.*",
+    "PrintServicesReady",
+    "Service.*",
+    "ServiceManager.AdapterId",
+    "ServiceManager.Endpoints",
+    "ServiceManager.Identity",
+    "UseSharedCommunicator.*"
+};
+
+static const string icePackProps[] =
+{
+    "Node.AdapterId",
+    "Node.CollocateRegistry",
+    "Node.Data",
+    "Node.Endpoints",
+    "Node.Name",
+    "Node.PrintServersReady",
+    "Node.PropertiesOverride",
+    "Node.ThreadPool.Size",
+    "Node.Trace.Activator",
+    "Node.Trace.Adapter",
+    "Node.Trace.Server",
+    "Node.WaitTime",
+    "Registry.Admin.AdapterId",
+    "Registry.Admin.Endpoints",
+    "Registry.Client.Endpoints",
+    "Registry.Data",
+    "Registry.DynamicRegistration",
+    "Registry.Internal.AdapterId",
+    "Registry.Internal.Endpoints",
+    "Registry.Server.Endpoints",
+    "Registry.Trace.AdapterRegistry",
+    "Registry.Trace.NodeRegistry",
+    "Registry.Trace.ObjectRegistry",
+    "Registry.Trace.ServerRegistry"
+};
+
+static const string icePatchProps[] =
+{
+    "Endpoints",
+    "BusyTimeout",
+    "RemoveOrphaned",
+    "Thorough",
+    "Trace.Files",
+    "UpdatePeriod",
+    "Directory"
+};
+
+static const string iceSSLProps[] =
+{
+    "Client.CertPath*",
+    "Client.Config",
+    "Client.Handshake.Retries",
+    "Client.Overrides.CACertificate",
+    "Client.Overrides.DSA.Certificate",
+    "Client.Overrides.DSA.PrivateKey",
+    "Client.Overrides.RSA.Certificate",
+    "Client.Overrides.RSA.PrivateKey",
+    "Client.Passphrase.Retries",
+    "Server.CertPath*",
+    "Server.Config",
+    "Server.Overrides.CACertificate",
+    "Server.Overrides.DSA.Certificate",
+    "Server.Overrides.DSA.PrivateKey",
+    "Server.Overrides.RSA.Certificate",
+    "Server.Overrides.RSA.PrivateKey",
+    "Server.Passphrase.Retries",
+    "Trace.Security"
+};
+
+static const string iceStormProps[] =
+{
+    "Flush.Timeout",
+    "Publish.Endpoints",
+    "TopicManager.Endpoints",
+    "TopicManager.Proxy",
+    "Trace.Flush",
+    "Trace.Subscriber",
+    "Trace.Topic",
+    "Trace.TopicManager"
+};
+
+static const string glacierProps[] =
+{
+    "Router.AcceptCert",
+    "Router.AllowCategories",
+    "Router.Client.BatchSleepTime",
+    "Router.Client.Endpoints",
+    "Router.Client.ThreadPool.Size",
+    "Router.Client.ThreadPool.SizeMax",
+    "Router.Client.ThreadPool.SizeWarn",
+    "Router.Client.ForwardContext",
+    "Router.Endpoints",
+    "Router.ThreadPool.Size",
+    "Router.ThreadPool.SizeMax",
+    "Router.ThreadPool.SizeWarn",
+    "Router.Identity",
+    "Router.PrintProxyOnFd",
+    "Router.Server.BatchSleepTime",
+    "Router.Server.Endpoints",
+    "Router.Server.ThreadPool.Size",
+    "Router.Server.ThreadPool.SizeMax",
+    "Router.Server.ThreadPool.SizeWarn",
+    "Router.Server.ForwardContext",
+    "Router.SessionManager",
+    "Router.Trace.Client",
+    "Router.Trace.RoutingTable",
+    "Router.Trace.Server",
+    "Router.UserId",
+    "Starter.AddUserToAllowCategories",
+    "Starter.Certificate.BitStrength",
+    "Starter.Certificate.CommonName",
+    "Starter.Certificate.Country",
+    "Starter.Certificate.IssuedAdjust",
+    "Starter.Certificate.Locality",
+    "Starter.Certificate.Organization",
+    "Starter.Certificate.OrganizationalUnit",
+    "Starter.Certificate.SecondsValid",
+    "Starter.Certificate.StateProvince",
+    "Starter.CryptPasswords",
+    "Starter.Endpoints",
+    "Starter.PasswordVerifier",
+    "Starter.PropertiesOverride",
+    "Starter.RouterPath",
+    "Starter.StartupTimeout",
+    "Starter.Trace"
+};
+
+static const string freezeProps[] =
+{
+    "Trace.DbEnv",
+    "Trace.Map",
+    "Trace.Evictor",
+    "Evictor.*",
+    "DbEnv.*"
+};
+
+struct PropertyValues
+{
+    string prefix;
+    const string* props;
+    size_t propsSize;
+
+    PropertyValues(string pf, const string* p, size_t s) :
+	prefix(pf), props(p), propsSize(s)
+    {
+    }
+};
+
+//
+// Array of valid properties for each application.
+//
+static const PropertyValues validProps[] =
+{
+    PropertyValues("Freeze", freezeProps, sizeof(freezeProps) / sizeof(freezeProps[0])),
+    PropertyValues("Glacier", glacierProps, sizeof(glacierProps) / sizeof(glacierProps[0])),
+    PropertyValues("IceBox", iceBoxProps, sizeof(iceBoxProps) / sizeof(iceBoxProps[0])),
+    PropertyValues("Ice", iceProps, sizeof(iceProps) / sizeof(iceProps[0])),
+    PropertyValues("IcePack", icePackProps, sizeof(icePackProps) / sizeof(icePackProps[0])),
+    PropertyValues("IcePatch", icePatchProps, sizeof(icePatchProps) / sizeof(icePatchProps[0])),
+    PropertyValues("IceSSL", iceSSLProps, sizeof(iceSSLProps) / sizeof(iceSSLProps[0])),
+    PropertyValues("IceStorm", iceStormProps, sizeof(iceStormProps) / sizeof(iceStormProps[0]))
+};
+
+static const size_t validPropsSize = sizeof(validProps) / sizeof(validProps[0]);
+
 void
 Ice::PropertiesI::setProperty(const string& key, const string& value)
 {
+    //
+    // Check if the property is legal. (We write to cerr instead of
+    // using a logger because no logger may be established at the time
+    // the property is parsed.)
+    //
+    string::size_type dotPos = key.find('.');
+    if(dotPos != string::npos)
+    {
+	string prefix = key.substr(0, dotPos);
+        bool found = false;
+	for(size_t i = 0; i != validPropsSize && !found; ++i)
+	{
+	    if(validProps[i].prefix == prefix)
+	    {
+		string suffix = key.substr(++dotPos, string::npos);
+		for(size_t j = 0; j != validProps[i].propsSize && !found; ++j)
+		{
+		    string::size_type starPos = validProps[i].props[j].find('*');
+		    if(starPos == string::npos)
+		    {
+			found = validProps[i].props[j].compare(suffix) == 0;
+		    }
+		    else
+		    {
+			found = validProps[i].props[j].compare(0, starPos - 1, suffix.substr(0, starPos - 1)) == 0;
+		    }
+		}
+		if(!found)
+		{
+		    cerr << "warning: unknown property: " << key << endl;
+		}
+	    }
+	}
+    }
+
     IceUtil::Mutex::Lock sync(*this);
 
+    //
+    // Set or clear the property.
+    //
     if(!key.empty())
     {
 	if(!value.empty())
@@ -157,6 +417,25 @@ Ice::PropertiesI::parseCommandLineOptions(const string& prefix, const StringSeq&
         }
     }
     return result;
+}
+
+StringSeq
+Ice::PropertiesI::parseIceCommandLineOptions(const StringSeq& options)
+{
+    StringSeq args;
+    args = parseCommandLineOptions("Ice", options);
+    args = parseCommandLineOptions("Freeze", args);
+    args = parseCommandLineOptions("Glacier", args);
+    args = parseCommandLineOptions("IceBox", args);
+    args = parseCommandLineOptions("IcePack", args);
+    args = parseCommandLineOptions("IcePatch", args);
+    args = parseCommandLineOptions("IceStorm", args);
+    return args;
+
+    //
+    // IceSSL is *not* in the above list because IceSSL is a plug-in. The properties for plug-ins are
+    // initialized by PluginManager, so there is no need to initialize them here.
+    //
 }
 
 void

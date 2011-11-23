@@ -604,6 +604,17 @@ local exception MarshalException extends ProtocolException
 
 /**
  *
+ * This exception is a specialization of [ProtocolException] that is
+ * raised if a datagram exceeds the configured send or receive buffer
+ * size, or exceeds the maximum payload size of a UDP packet (65507 bytes).
+ *
+ **/
+local exception DatagramLimitException extends ProtocolException
+{
+};
+
+/**
+ *
  * This exception is a specialization of [MarshalException] that is
  * raised if no suitable object factory was found during object
  * unmarshaling.
@@ -743,8 +754,8 @@ local exception AlreadyRegisteredException
 /**
  *
  * This exception is raised if an attempt is made to remove a servant,
- * servant locator, facet, object factory, plug-in, object adapter,
- * object, or user exception factory that is not currently registered.
+ * facet, object factory, plug-in, object adapter, object, or user
+ * exception factory that is not currently registered.
  *
  **/
 local exception NotRegisteredException
@@ -752,8 +763,8 @@ local exception NotRegisteredException
     /**
      *
      * The kind of object that could not be removed: "servant",
-     * "servant locator", "facet", "object factory", "plug-in",
-     * "object adapter", "object", or "user exception factory".
+     * "facet", "object factory", "plug-in", "object adapter",
+     * "object", or "user exception factory".
      *
      **/
     string kindOfObject;

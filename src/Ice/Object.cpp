@@ -15,7 +15,6 @@
 #include <Ice/Object.h>
 #include <Ice/Incoming.h>
 #include <Ice/IncomingAsync.h>
-#include <Ice/Stream.h>
 #include <Ice/LocalException.h>
 
 using namespace std;
@@ -98,11 +97,29 @@ Ice::Object::ice_facets(const Current&) const
     return v;
 }
 
-
 const ::std::string&
 Ice::Object::ice_staticId()
 {
     return __ids[0];
+}
+
+void
+Ice::Object::__copyMembers(ObjectPtr to) const
+{
+    IceUtil::Mutex::Lock sync(_activeFacetMapMutex);
+    to->_activeFacetMap = _activeFacetMap;
+}
+
+ObjectPtr
+Ice::Object::ice_clone() const
+{
+    ObjectPtr __p = new Ice::Object;
+#ifdef _WIN32
+    Object::__copyMembers(__p);
+#else
+    ::Ice::Object::__copyMembers(__p);
+#endif
+    return __p;
 }
 
 DispatchStatus
@@ -201,17 +218,24 @@ Ice::Object::__dispatch(Incoming& in, const Current& current)
 }
 
 void
-Ice::Object::__write(BasicStream* __os) const
+Ice::Object::__write(BasicStream* __os, bool __marshalFacets) const
 {
     IceUtil::Mutex::Lock sync(_activeFacetMapMutex);
     
     __os->writeTypeId(ice_staticId());
     __os->startWriteSlice();
-    __os->writeSize(Int(_activeFacetMap.size()));
-    for(map<string, ObjectPtr>::const_iterator p = _activeFacetMap.begin(); p != _activeFacetMap.end(); ++p)
+    if(__marshalFacets)
     {
-	__os->write(p->first);
-	__os->write(p->second);
+        __os->writeSize(Int(_activeFacetMap.size()));
+        for(map<string, ObjectPtr>::const_iterator p = _activeFacetMap.begin(); p != _activeFacetMap.end(); ++p)
+        {
+            __os->write(p->first);
+            __os->write(p->second);
+        }
+    }
+    else
+    {
+        __os->writeSize(0);
     }
     __os->endWriteSlice();
 }
@@ -248,54 +272,29 @@ Ice::Object::__read(BasicStream* __is, bool __rid)
 }
 
 void
-Ice::Object::__marshal(const ::Ice::StreamPtr& __os) const
+Ice::Object::__gcReachable(::IceUtil::GCObjectMultiSet& c) const
 {
-    IceUtil::Mutex::Lock sync(_activeFacetMapMutex);
+    ::IceUtil::Mutex::Lock sync(_activeFacetMapMutex);
 
-    __os->startWriteDictionary("ice:facets", static_cast<Int>(_activeFacetMap.size()));
-    for(map<string, ObjectPtr>::const_iterator p = _activeFacetMap.begin(); p != _activeFacetMap.end(); ++p)
+    for(map<std::string, ObjectPtr>::const_iterator i = _activeFacetMap.begin(); i != _activeFacetMap.end(); ++i)
     {
-	__os->startWriteDictionaryElement();
-	__os->writeString("ice:key", p->first);
-	__os->writeObject("ice:value", p->second);
-	__os->endWriteDictionaryElement();
+	__addObject(c, i->second.get());
     }
-    __os->endWriteDictionary();
 }
 
-
 void
-Ice::Object::__unmarshal(const ::Ice::StreamPtr& __is)
+Ice::Object::__gcClear()
 {
-    IceUtil::Mutex::Lock sync(_activeFacetMapMutex);
- 
-    Int sz = __is->startReadDictionary("ice:facets");
-    
-    _activeFacetMap.clear();
-    _activeFacetMapHint = _activeFacetMap.end();
-    
-    while(sz-- > 0)
+    ::IceUtil::Mutex::Lock sync(_activeFacetMapMutex);
+
+    for(map<std::string, ObjectPtr>::iterator i = _activeFacetMap.begin(); i != _activeFacetMap.end(); ++i)
     {
-	__is->startReadDictionaryElement();
-	pair<const string, ObjectPtr> v;
-	const_cast<string&>(v.first) = __is->readString("ice:key");
-	v.second = __is->readObject("ice:value", "", 0);
-	_activeFacetMapHint = _activeFacetMap.insert(_activeFacetMapHint, v);
-	__is->endReadDictionaryElement();
+	if(i->second)
+	{
+	    i->second->__decRefUnsafe();
+	    i->second.__clearHandleUnsafe();
+	}
     }
-    __is->endReadDictionary();
-}
-
-void
-Ice::Object::ice_marshal(const string& name, const ::Ice::StreamPtr& stream)
-{
-    stream->writeObject(name, this);
-}
-
-void
-Ice::Object::ice_unmarshal(const string& name, const ::Ice::StreamPtr& stream, ObjectPtr& value)
-{
-    value = stream->readObject(name, "", 0);
 }
 
 void
@@ -356,6 +355,40 @@ Ice::Object::ice_removeFacet(const string& name)
 	_activeFacetMap.erase(p);
     }
 
+    return result;
+}
+
+ObjectPtr
+Ice::Object::ice_updateFacet(const ObjectPtr& facet, const string& name)
+{
+    IceUtil::Mutex::Lock sync(_activeFacetMapMutex);
+
+    ObjectPtr result;
+
+    map<string, ObjectPtr>::iterator p = _activeFacetMap.end();
+    if(_activeFacetMapHint != _activeFacetMap.end())
+    {
+	if(_activeFacetMapHint->first == name)
+	{
+	    p = _activeFacetMapHint;
+	}
+    }
+    
+    if(p == _activeFacetMap.end())
+    {
+	p = _activeFacetMap.find(name);
+	if(p == _activeFacetMap.end())
+	{
+	    NotRegisteredException ex(__FILE__, __LINE__);
+	    ex.kindOfObject = _kindOfObject;
+	    ex.id = name;
+	    throw ex;
+	}
+    }
+    assert(p != _activeFacetMap.end());
+    
+    result = p->second;
+    p->second = facet;
     return result;
 }
 

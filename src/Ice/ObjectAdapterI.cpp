@@ -278,16 +278,6 @@ Ice::ObjectAdapterI::addServantLocator(const ServantLocatorPtr& locator, const s
     _servantManager->addServantLocator(locator, prefix);
 }
 
-void
-Ice::ObjectAdapterI::removeServantLocator(const string& prefix)
-{
-    IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
-
-    checkForDeactivation();
-
-    _servantManager->removeServantLocator(prefix);
-}
-
 ServantLocatorPtr
 Ice::ObjectAdapterI::findServantLocator(const string& prefix)
 {
@@ -355,7 +345,7 @@ Ice::ObjectAdapterI::createReverseProxy(const Identity& ident)
     // reference.
     //
     vector<EndpointPtr> endpoints;
-    ReferencePtr ref = _instance->referenceFactory()->create(ident, vector<string>(), Reference::ModeTwoway,
+    ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), vector<string>(), Reference::ModeTwoway,
 							     false, "", endpoints, 0, 0, this, true);
     return _instance->proxyFactory()->referenceToProxy(ref);
 }
@@ -473,6 +463,17 @@ Ice::ObjectAdapterI::getIncomingConnections() const
 	connections.splice(connections.end(), cons);
     }
     return connections;
+}
+
+void
+Ice::ObjectAdapterI::flushBatchRequests()
+{
+    std::vector<IceInternal::IncomingConnectionFactoryPtr> f;
+    {
+	IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+	f = _incomingConnectionFactories;
+    }
+    for_each(f.begin(), f.end(), Ice::voidMemFun(&IncomingConnectionFactory::flushBatchRequests));
 }
 
 void
@@ -662,8 +663,9 @@ Ice::ObjectAdapterI::newProxy(const Identity& ident) const
 	// Create a reference with the adapter id.
 	//
 	vector<EndpointPtr> endpoints;
-	ReferencePtr ref = _instance->referenceFactory()->create(ident, vector<string>(), Reference::ModeTwoway,
-								 false, _id, endpoints, 0, _locatorInfo, 0, true);
+	ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), vector<string>(),
+								 Reference::ModeTwoway, false, _id,
+								 endpoints, 0, _locatorInfo, 0, true);
 
 	//
 	// Return a proxy for the reference. 
@@ -694,7 +696,7 @@ Ice::ObjectAdapterI::newDirectProxy(const Identity& ident) const
     //
     // Create a reference and return a proxy for this reference.
     //
-    ReferencePtr ref = _instance->referenceFactory()->create(ident, vector<string>(), Reference::ModeTwoway,
+    ReferencePtr ref = _instance->referenceFactory()->create(ident, Context(), vector<string>(), Reference::ModeTwoway,
 							     false, "", endpoints, 0, _locatorInfo, 0, true);
     return _instance->proxyFactory()->referenceToProxy(ref);
 

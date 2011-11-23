@@ -117,7 +117,8 @@ local interface Properties
 
     /**
      *
-     * Set a property.
+     * Set a property. To unset a property, set it to
+     * the empty string.
      *
      * @param key The property key.
      * @param value The property value.
@@ -152,11 +153,26 @@ local interface Properties
      *
      * @param options The command-line options.
      *
-     * @return The command-line options that were not converted,
-     * in the same order.
+     * @return The command-line options that do not start with the specified
+     * prefix, in their original order.
      *
      **/
     StringSeq parseCommandLineOptions(string prefix, StringSeq options);
+
+    /**
+     *
+     * Convert a sequence of command-line options into properties.
+     * All options that begin with one of the following prefixes
+     * are converted into properties: [--Ice], [--IceBox], [--IcePack],
+     * [--IcePatch], [--IceSSL], [--IceStorm], [--Freeze], and [--Glacier].
+     *
+     * @param options The command-line options.
+     *
+     * @return The command-line options that do not start with one of
+     * the listed prefixes, in their original order.
+     *
+     **/
+    StringSeq parseIceCommandLineOptions(StringSeq options);
 
     /**
      *

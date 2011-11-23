@@ -16,15 +16,18 @@
 #define LIBRARY_I_H
 
 #include <IceUtil/RWRecMutex.h>
-
+#include <Freeze/Evictor.h>
 #include <Library.h>
 #include <LibraryTypes.h>
+#include <IceUtil/AbstractMutex.h>
 
 class LibraryI : public Library, public IceUtil::RWRecMutex
 {
 public:
 
-    LibraryI(const Ice::ObjectAdapterPtr&, const Freeze::DBPtr&, const Freeze::EvictorPtr&);
+    LibraryI(const Ice::CommunicatorPtr& communicator,
+	     const std::string& envName, const std::string& dbName,
+	     const Freeze::EvictorPtr& evictor);
     virtual ~LibraryI();
 
     virtual ::BookPrx createBook(const ::BookDescription&, const Ice::Current&);
@@ -37,9 +40,9 @@ public:
 
 private:
 
-    Ice::ObjectAdapterPtr _adapter;
     Freeze::EvictorPtr _evictor;
 
+    Freeze::ConnectionPtr _connection;
     //
     // This is a dictionary of authors to a sequence of isbn numbers
     // for efficient lookup of books by authors.
@@ -49,7 +52,7 @@ private:
 
 typedef IceUtil::Handle<LibraryI> LibraryIPtr;
 
-class BookI : public Book, public IceUtil::RWRecMutex
+class BookI : public Book, public IceUtil::AbstractMutexReadI<IceUtil::RWRecMutex>
 {
 public:
 

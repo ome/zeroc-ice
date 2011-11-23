@@ -35,7 +35,7 @@ CPPFLAGS	:= -I. -I../../include $(DB_FLAGS) $(CPPFLAGS)
 
 $(CLIENT): $(OBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) -lFreeze -lIceXML $(LIBS) $(DB_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJS) -lFreeze $(LIBS) $(DB_LIBS)
 
 ComplexDict.h ComplexDict.cpp: Complex.ice $(SLICE2FREEZE)
 	rm -f ComplexDict.h ComplexDict.cpp
@@ -47,5 +47,8 @@ clean::
 clean::
 #	rm -f Grammar.cpp Grammar.h
 #	rm -f Scanner.cpp
+
+clean::
+	rm -f db/test db/log.*
 
 include .depend

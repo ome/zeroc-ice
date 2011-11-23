@@ -12,23 +12,28 @@
 //
 // **********************************************************************
 
-#include <Freeze/Application.h>
+#include <Ice/Application.h>
 #include <BookFactory.h>
+#include <Freeze/Freeze.h>
 
 using namespace std;
 using namespace Ice;
 using namespace Freeze;
 
-class LibraryServer : public Freeze::Application
+class LibraryServer : public Ice::Application
 {
 public:
     
-    LibraryServer(const string& dbEnvName) :
-	Freeze::Application(dbEnvName)
+    LibraryServer(const string& envName) :
+	_envName(envName)
     {
     }
 
-    virtual int runFreeze(int argc, char* argv[], const DBEnvironmentPtr&);
+    virtual int run(int argc, char* argv[]);
+
+private:
+
+    const string _envName;
 };
 
 int
@@ -39,26 +44,15 @@ main(int argc, char* argv[])
 }
 
 int
-LibraryServer::runFreeze(int argc, char* argv[], const DBEnvironmentPtr& dbEnv)
+LibraryServer::run(int argc, char* argv[])
 {
     PropertiesPtr properties = communicator()->getProperties();
-    
-    DBPtr dbBooks = dbEnv->openDB("books", true);
-    DBPtr dbAuthors = dbEnv->openDB("authors", true);
-    
+
     //
-    // Create an Evictor for books.
+    // Create an evictor for books.
     //
-    PersistenceStrategyPtr strategy;
-    if(properties->getPropertyAsInt("Library.IdleStrategy") > 0)
-    {
-        strategy = dbBooks->createIdleStrategy();
-    }
-    else
-    {
-        strategy = dbBooks->createEvictionStrategy();
-    }
-    EvictorPtr evictor = dbBooks->createEvictor(strategy);
+    Freeze::EvictorPtr evictor = Freeze::createEvictor(communicator(), _envName, "books");
+
     Int evictorSize = properties->getPropertyAsInt("Library.EvictorSize");
     if(evictorSize > 0)
     {
@@ -66,19 +60,19 @@ LibraryServer::runFreeze(int argc, char* argv[], const DBEnvironmentPtr& dbEnv)
     }
     
     //
-    // Create an Object Adapter, use the Evictor as Servant Locator.
+    // Create an object adapter, use the evictor as servant Locator.
     //
     ObjectAdapterPtr adapter = communicator()->createObjectAdapter("Library");
     adapter->addServantLocator(evictor, "book");
     
     //
-    // Create the library, and add it to the Object Adapter.
+    // Create the library, and add it to the object adapter.
     //
-    LibraryIPtr library = new LibraryI(adapter, dbAuthors, evictor);
+    LibraryIPtr library = new LibraryI(communicator(), _envName, "authors", evictor);
     adapter->add(library, stringToIdentity("library"));
     
     //
-    // Create and install a factory and initializer for books.
+    // Create and install a factory for books.
     //
     ObjectFactoryPtr bookFactory = new BookFactory(library);
     communicator()->addObjectFactory(bookFactory, "::Book");

@@ -1,3 +1,364 @@
+Changes since version 1.1.1
+---------------------------
+
+- Added a garbage collector for class graphs that form cycles. (See
+  the C++ mapping chapter in the documentation for details.)
+
+- Manual retry in the exception() callback of asynchronous requests
+  didn't work. This has been fixed.
+
+- Fixed a crash that could happen during shutdown.
+
+- Fixed a deadlock that could happen during connection establishment.
+
+- Fixed deadlock during shutdown that can happen if a thread pool with
+  only one thread is used.
+
+- Moved UserExceptionFactory from Ice namespace to IceInternal namespace
+  because UserExceptionFactory is no longer an interface for use
+  by applications.
+
+- Bi-directional connections are now handled by the client-side thread
+  pool instead of the server-side thread pool.
+
+- Fixed a bug in the generated code that caused "at-most-once"
+  semantics to be ignored for collocated invocations.
+
+- Removed all Ice dependencies on Xerces. Added a simple C++ wrapper
+  around the expat XML parser as IceXML/Parser.h.
+
+- Implemented TwowayOnlyException. That exception is raised if an
+  attempt is made to invoke an operation that has a return value,
+  out parameters, or an exception specification via a oneway or
+  datagram proxy.
+
+- Removed ice_flush() on the proxy base class. Batch requests are
+  now flushed by calling Communicator::flushBatchRequests(). This
+  flushes all requests that are currently batched in the communicator,
+  (for all connections).
+
+- Added back the connection closure timeout, but only for misbehaving
+  peers. If a timeout is set, and a peer doesn't react to a close
+  connection message, the connection is forcefully closed after the
+  timeout. However, it is never forcefully closed if requests are
+  still outstanding. Doing so would violate ordering guarantees for
+  finished() and deactivate() on servant locators.
+
+- Fixed a bug in the slice2java code generator: if a parameter was
+  named "current", illegal code was generated.
+
+- Fixed a bug in the slice2java code generator: tie classes were not
+  generated correctly for operations with an "amd" metadata directive.
+
+- On Windows, you can now build IceUtil in such a way that mutexes 
+  are used instead of critical sections. See IceUtil/Config.h.
+
+- Fixed a bug where Ice would print a dispatch warning for
+  Ice::RequestFailedException even if the Ice.Warn.Dispatch property
+  was set to 1.
+
+- Added per-proxy contexts. The change is source-code compatible with
+  the previous approach, that is, it is still possible to pass an
+  explicit Ice::Context to an operation call as an additional,
+  trailing parameter. However, IceProxy::Ice::Object now contains two
+  new operations:
+
+  - ice_getContext()
+
+    This returns the context currently associated with a particular
+    proxy by value. (By default, the context associated with proxies
+    is empty.)
+
+  - ice_newContext(const ::Ice::Context& context)
+
+    This creates a new proxy that is associated with the passed
+    context. Thereafter, calls via the new proxy always pass the
+    context that was passed to ice_newContext() when that proxy was
+    created.
+
+  The net effect of this is that it is now possible to establish the
+  context for a proxy once and, thereafter, have that same context
+  sent automatically whenever an operation is invoked via the proxy
+  (instead of having to pass an explicit context parameter on every
+  call).
+
+- Added Ice::Properties::parseIceCommandLineOptions(). This operation
+  converts to properties all options that start with one of the
+  following prefixes: --Ice, --IceBox, --IcePack, --IcePatch,
+  --IceSSL, --IceStorm, --Freeze, and --Glacier.
+
+- Added ice_clone() member function to non-abstract classes.
+  ice_clone() polymorphically copies a class instance. The copy is a
+  deep copy for all types except for class members; class members are
+  copied shallow, that is, if a class contains a class member, the
+  original and the clone contain a Ptr that points at the same single
+  class instance.
+
+- Improved marshaling performance for built-in types (byte, bool,
+  short, int, long, float, double, and string). This is noticeable in
+  particular when transmitting sequences of these types, sequences of
+  structures containing these types, or large dictionaries containing
+  these types.
+
+- Added menu with several options to throughput demo.
+
+- Major Freeze update:
+
+  - Removed support for the XML encoding. Freeze now always uses the
+    binary encoding.
+
+  - Removed the lowest Freeze layer. You should now use Berkeley
+    DB directly.
+
+  - Replaced the database transformation tool with one that supports
+    the binary encoding.
+
+  - For Freeze Maps and Evictors, the underlying Berkeley DB
+    environment is now always transactional. New configuration
+    variables:
+
+      - Freeze.DbEnv.<envName>.DbHome provides the path to the DB home, 
+        and defaults to <envName>.
+
+      - Freeze.DbEnv.<envName>.DbRecoverFatal triggers "fatal recovery" 
+        when set to a value other than 0 (defaults to 0).
+
+      - Freeze.DbEnv.<envName>.DbPrivate when set to a value other than 0
+        tells Berkeley DB to use process private memory instead of
+        shared memory. Defaults to 1. Set it to 0 when you want to run
+        db_archive (or another Berkeley DB utility) on a running
+        environment.
+
+      - Freeze.DbEnv.<envName>.DbCheckpointPeriod: each Berkeley DB
+        environment created by Freeze has an associated thread that
+        checkpoints this environment every DbCheckpointPeriod seconds.
+        Defaults to 120 seconds.
+
+      - Freeze.DbEnv.<envName>.PeriodicCheckpointMinSize defines the 
+        minimum size in kbytes for the periodic checkpoint (see above). 
+        This value is passed to Berkeley DB's checkpoint function. Defaults
+        to 0 (no minimum).
+
+      - Freeze.DbEnv.<envName>.OldLogsAutoDelete: when set to a value 
+        other than 0, old transactional logs no longer in use are deleted
+        after each periodic checkpoint. Defaults to 1.
+
+       - Freeze.Trace.Map: trace the Map operations
+
+       - Freeze.Trace.DbEnv: trace the operations on the DbEnv, which
+         is shared between Maps and Evictors.
+
+     Such a Freeze-created Berkeley DB environment is created and
+     opened when the first Freeze Map or Evictor using it is created,
+     and is closed when the last Freeze Map or Evictor using it is
+     closed.
+
+  - Freeze Map update:
+
+    Freeze Maps are now opened/created directly using their constructor:
+
+    C++: Map(const Freeze::ConnectionPtr& connection, 
+             const std::string& dbName, 
+             bool createDb = true);
+
+    Java: public
+          Map(Connection connection, 
+              String dbName, 
+              boolean createDb);
+
+    Connection is a new local interface similar to the DBEnvironment
+    local interface (which was removed). However, Connection is not
+    thread-safe: access to a given Connection object must be serialized.
+    A connection can be used to create a Transaction (similar to the
+    old DBTransaction); likewise, a Transaction is not thread-safe. 
+
+    To access concurrently the "same" map, you should create multiple
+    connections and associated maps.
+
+    In Java, it is necessary to call close() on the Map if you want to
+    close the underlying Berkeley DB database (and indirectly the
+    environment) before the Map is finalized.
+
+    As a consequence of using a transactional Berkeley DB environment,
+    all Map writes are now transactional:
+
+    - Non-iterator writes use DB_AUTO_COMMIT.
+
+    - Writable iterators (non-const C++ iterators, Java Iterators)
+      have an associated transaction that is committed when the
+      iterator is closed.
+
+    Concurrent reads and writes to the same underlyding Map can
+    generate deadlocks, even with a single writer. Berkeley DB detects
+    such deadlocks and "kills" one locker (iterator or transaction) to
+    resolve it. For non-iterator access, Freeze handles this situation
+    and retries transparently. When using iterators, a DeadlockException
+    is raised to the application, which is responsible for closing the
+    affected iterator(s) or transaction, and retrying.
+
+    Serialized access or concurrent reads never produce deadlocks.
+
+    In C++, the copy constructor and assignment operator of Freeze Map
+    iterators duplicate the source iterator. When the source iterator
+    is non-const, the duplicate iterator will use the same transaction.
+    This transaction is committed only when its last associated iterator
+    is closed (i.e., destroyed or assigned end()).
+
+    In both C++ and Java, write operations that are not within a user-
+    controlled transaction automatically close all open iterators
+    in the target Map. This reduces the likelihood of self-deadlocks.
+  
+ - Freeze Evictor update:
+
+   Freeze Evictors are now created directly using a static createEvictor
+   function:
+
+    C++: Freeze::EvictorPtr
+         Freeze::createEvictor(const Ice::CommunicatorPtr& communicator, 
+                               const std::string& envName, 
+                               const std::string& dbName,
+                               const std::vector<IndexPtr> indices = 
+                                     std::vector<IndexPtr>(), 
+                               bool createDb = true);
+
+    Java (in class Freeze.Util): 
+         public static Evictor
+         createEvictor(Ice.Communicator communicator, 
+                       String envName, 
+                       String dbName,
+                       Index[] indices, 
+                       boolean createDb);
+
+   The persistence strategies have been removed. 
+
+   Ice objects are now saved by a background thread, controlled by
+   the following configuration variables.
+
+     - Freeze.Evictor.<envName>.<dbName>.SaveSizeTrigger: as soon as
+       SaveSizeTrigger objects have been created, modified or
+       destroyed, the background thread wakes up to save them. When set
+       to a negative value, there is no size trigger. Defaults to 10.
+
+     - Freeze.Evictor.<envName>.<dbName>.SavePeriod: the saving thread
+       wakes up every SavePeriod ms and saves any created, modified or
+       destroyed object. When set to 0, there is no periodic wake up.
+       Defaults to 1 minute (60,000 ms).
+
+     - Freeze.Evictor.<envName>.<dbName>.MaxTxSize: the saving thread
+       saves objects (facets) using transactions. MaxTxSize sets the 
+       maximum number of objects saved by a single transaction.
+       Defaults to 10 * SaveSizeTrigger; if the provided or default
+       value is negative, the actual value is set to 100.
+ 
+    And instead of saving full objects, Freeze now saves on a per facet
+    basis -- but still loads complete objects (with all their facets).
+    Once a persistent object has been created using the Freeze Evictor,
+    it is possible to add or remove persistent facets to this object
+    using the following new Evictor operations:
+  
+      void addFacet(Ice::Identity identity, Ice::FacetPath facet, 
+                    Object servant);
+      void removeFacet(Ice::Identity identity, Ice::FacetPath facet);
+      void removeAllFacets(Ice::Identity identity);
+
+    When saving an object (facet), the background saving thread locks 
+    this object. In Java, it locks the object itself; in C++, the object 
+    is expected to implement IceUtil::AbstractMutex. Naturally the
+    application must use the same synchronization to access the
+    persistent state of the object.
+ 
+    The EvictorIterator also changed slightly: the destroy operation
+    has been removed. More importantly, identities are now retrieved
+    in batch (internally) and the application can request that
+    the corresponding servants be loaded. This is achieved with
+    the new parameters of Evictor::getIterator:
+
+      EvictorIterator getIterator(int batchSize, bool loadServants);
+
+    You can also define Evictor indices for fast secondary key 
+    lookups: see the Freeze/phonebook demo.
+
+ - Freeze now requires Berkeley DB 4.1. It no longer compiles with older
+   Berkeley DB releases.
+
+   With Visual C++, you need to use the same project directory
+   settings when building Berkeley DB and Ice. In particular, if you
+   build Ice with STLPort, you need to build Berkeley DB with the same
+   STLPort.
+
+ - Added Freeze hot backup demo.
+
+- Added new C++ AbstractMutex class, and helper templates
+  (AbstractMutexI, AbstractMutexReadI, AbstractMutexWriteI) to easily
+  implement AbstractMutex using Mutex, RecMutex, Monitor or
+  RWRecMutex.
+
+- Fixed a bug in the implementation of StaticMutex on Windows, which
+  could result in a crash at exit.
+
+- Added Ice.UDP.RcvSize and Ice.UDP.SndSize properties. These
+  properties control the size of the UDP receive and send buffers as
+  well as controlling the maximum size of a datagram invocation. If a
+  datagram exceeds the configured size, the Ice run time throws a
+  DatagramLimitException. (Note that, on the receiving size, detection
+  of this condition is dependent on the local UDP implementation --
+  some UDP implementations silently drop datagrams that are too large
+  to fit into the receive buffer instead of reporting the error or
+  delivering a truncated datagram.)
+
+- Added Ice.Warn.Datagrams. This property prints a warning on the
+  server side if a DatagramLimitException is thrown.
+
+- Added Ice.MessageSizeMax property. This property controls the
+  maximum message size accepted by the Ice protocol in kiloBytes. The
+  default value is 1024 (1 MB).
+
+- Fixed a number of incorrect property settings in the config files
+  for the demos.
+
+- Added new property: Ice.Trace.Slicing. When set to a value > 0,
+  unknown exception and class types that are sliced emit a warning.
+
+- Added destroyOnInterrupt() to the Application class.
+  destroyOnInterrupt() is now the default behavior, because
+  shutdownOnInterrupt() only shuts down the server side of an
+  application, and therefore doesn't work with pure clients.
+
+- ObjectAdapter::removeServantLocator() no longer exists. The life
+  cycle of servant locators that are registered with an object adapter
+  ends when the adapter is destroyed.
+
+- Changed Ice::ServantLocator::deactivate to be passed the category
+  for which a servant locator is being deactivated.
+
+- Added --noindex option to slice2docbook to suppress generation of
+  index pages for pdf version of documentation.
+
+- Changed the behavior of Freeze::Map::insert to match the insert
+  behavior on associative containers in the C++ standard: if the
+  element is already there, it is not updated. Added Freeze::Map::put
+  function, to insert or replace an element, like the old insert. This
+  corresponds to the behavior of Berkeley DB's DB->put().
+
+- Added a test to the Slice parser to complain if an operation on a
+  local interface or class has an exception specification.
+
+- Added a test to the property parsing code to print a warning on
+  stderr if a property is not recognized. This prevents silly typos,
+  such as "Ice.config=MyFile" (instead of "Ice.Config=MyFile") from
+  slipping through undetected.
+
+- Changed the mapping of the Slice byte type: Ice::Byte is now a
+  typedef for unsigned char. (Previously, Ice::Byte was a typedef to
+  char.) This change guarantees that byte values are always in the
+  range 0..255 (instead of either -128..127 or 0..255, depending on
+  the CPU architecture). This change also permits function overloading
+  for Ice::Byte and char (which can be useful if you use both strings
+  and byte sequences).
+
+- Changed the python code for printing output from test clients, so
+  that you get each line as it comes.
+
 Changes since version 1.1.0
 ---------------------------
 

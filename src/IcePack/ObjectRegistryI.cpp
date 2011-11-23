@@ -14,14 +14,19 @@
 
 #include <IcePack/ObjectRegistryI.h>
 #include <IcePack/TraceLevels.h>
+#include <Freeze/Initialize.h>
 
 using namespace std;
 using namespace IcePack;
 
-IcePack::ObjectRegistryI::ObjectRegistryI(const Freeze::DBPtr& objDb, const Freeze::DBPtr& typeDb, 
+IcePack::ObjectRegistryI::ObjectRegistryI(const Ice::CommunicatorPtr& communicator,
+					  const string& envName,
+					  const string& objectsDbName,
+					  const string& typesDbName,
 					  const TraceLevelsPtr& traceLevels) :
-    _objects(objDb),
-    _types(typeDb),
+    _connection(Freeze::createConnection(communicator, envName)),
+    _objects(_connection, objectsDbName, true),
+    _types(_connection, typesDbName, true),
     _traceLevels(traceLevels)
 {
 }
@@ -42,7 +47,7 @@ IcePack::ObjectRegistryI::add(const ObjectDescription& obj, const Ice::Current&)
     //
     // Add the object to the object dictionary.
     //
-    _objects.insert(pair<const Ice::Identity, const ObjectDescription>(id, obj));
+    _objects.put(pair<const Ice::Identity, const ObjectDescription>(id, obj));
 
     //
     // Add the object to the interface dictionary.
@@ -61,7 +66,7 @@ IcePack::ObjectRegistryI::add(const ObjectDescription& obj, const Ice::Current&)
 	
 	if(q == _types.end())
 	{
-	    _types.insert(pair<const string, const Ice::ObjectProxySeq>(obj.type, seq));
+	    _types.put(pair<const string, const Ice::ObjectProxySeq>(obj.type, seq));
 	}
 	else
 	{

@@ -44,20 +44,20 @@ tests = [ \
     "Ice/adapterDeactivation", \
     "Ice/slicing/exceptions", \
     "Ice/slicing/objects", \
+    "Ice/gc", \
     "IceSSL/configuration", \
     "IceSSL/loadPEM", \
     "IceSSL/certificateAndKeyParsing", \
     "IceSSL/certificateVerifier", \
     "IceSSL/certificateVerification", \
-    "IceXML/encoding", \
-    "Freeze/cursor", \
     "Freeze/dbmap", \
     "Freeze/complex", \
     "Freeze/evictor", \
     "IceStorm/single", \
     "IceStorm/federation", \
     "IceStorm/federation2", \
-    "XMLTransform/transform", \
+    "Transform/dbmap", \
+    "Transform/evictor", \
     ]
 
 #

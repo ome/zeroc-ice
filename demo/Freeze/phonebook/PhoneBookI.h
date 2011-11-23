@@ -19,7 +19,7 @@
 #include <Ice/Ice.h>
 #include <Freeze/Freeze.h>
 #include <PhoneBook.h>
-#include <NameIdentitiesDict.h>
+#include <NameIndex.h>
 
 class PhoneBookI;
 typedef IceUtil::Handle<PhoneBookI> PhoneBookIPtr;
@@ -27,13 +27,12 @@ typedef IceUtil::Handle<PhoneBookI> PhoneBookIPtr;
 class ContactI;
 typedef IceUtil::Handle<ContactI> ContactIPtr;
 
-class ContactI : public Contact, public IceUtil::RWRecMutex
+class ContactI : public Contact, 
+		 public IceUtil::AbstractMutexReadI<IceUtil::RWRecMutex>
 {
 public:
 
-    ContactI(const PhoneBookIPtr&, const Freeze::EvictorPtr&);
-
-    void setIdentity(const Ice::Identity&);
+    ContactI(const Freeze::EvictorPtr&);
 
     virtual std::string getName(const Ice::Current&) const;
     virtual void setName(const std::string&, const Ice::Current&);
@@ -48,35 +47,24 @@ public:
 
 private:
 
-    PhoneBookIPtr _phoneBook;
     Freeze::EvictorPtr _evictor;
-    Ice::Identity _identity;
-    bool _destroyed;
 };
 
-class PhoneBookI : public PhoneBook, public IceUtil::RWRecMutex
+class PhoneBookI : public PhoneBook
 {
 public: 
 
-    PhoneBookI(const Ice::ObjectAdapterPtr&, const Freeze::DBPtr&, const Freeze::EvictorPtr&);
+    PhoneBookI(const Freeze::EvictorPtr& evictor, const NameIndexPtr& index);
 
     virtual ContactPrx createContact(const Ice::Current&);
     virtual Contacts findContacts(const std::string&, const Ice::Current&) const;
     virtual void setEvictorSize(Ice::Int, const Ice::Current&);
     virtual void shutdown(const Ice::Current&) const;
-    
-    void remove(const Ice::Identity&, const std::string&);
-    void move(const Ice::Identity&, const std::string&, const std::string&);
-    Ice::Identity getNewIdentity();
 
 private:
 
-    void removeI(const Ice::Identity&, const std::string&);
-
-    Ice::ObjectAdapterPtr _adapter;
-    Freeze::DBPtr _db;
     Freeze::EvictorPtr _evictor;
-    NameIdentitiesDict _nameIdentitiesDict;
+    NameIndexPtr _index;
 };
 
 #endif

@@ -14,9 +14,8 @@
 
 #include <Ice/Ice.h>
 #include <IceUtil/UUID.h>
-#include <Freeze/DB.h>
 #include <Freeze/Evictor.h>
-#include <Freeze/Strategy.h>
+#include <Freeze/Initialize.h>
 #include <IcePack/ServerFactory.h>
 #include <IcePack/ServerI.h>
 #include <IcePack/ServerAdapterI.h>
@@ -59,7 +58,7 @@ public:
 
 IcePack::ServerFactory::ServerFactory(const Ice::ObjectAdapterPtr& adapter, 
 				      const TraceLevelsPtr& traceLevels, 
-				      const Freeze::DBEnvironmentPtr& dbEnv,
+				      const string& envName,
 				      const ActivatorPtr& activator,
 				      const WaitQueuePtr& waitQueue) :
     _adapter(adapter),
@@ -75,16 +74,14 @@ IcePack::ServerFactory::ServerFactory(const Ice::ObjectAdapterPtr& adapter,
     //
     // Create and install the freeze evictor for server objects.
     //
-    Freeze::DBPtr dbServers = dbEnv->openDB("servers", true);
-    _serverEvictor = dbServers->createEvictor(dbServers->createEvictionStrategy());
+    _serverEvictor = Freeze::createEvictor(_adapter->getCommunicator(), envName, "servers");
     _serverEvictor->setSize(10000);
     _serverEvictor->installServantInitializer(initializer);
 
     //
     // Create and install the freeze evictor for server adapter objects.
     //
-    Freeze::DBPtr dbServerAdapters = dbEnv->openDB("serveradapters", true);
-    _serverAdapterEvictor = dbServerAdapters->createEvictor(dbServerAdapters->createEvictionStrategy());
+    _serverAdapterEvictor = Freeze::createEvictor(_adapter->getCommunicator(), envName, "serveradapters");
     _serverAdapterEvictor->setSize(10000);
     _serverAdapterEvictor->installServantInitializer(initializer);
 
@@ -231,7 +228,7 @@ IcePack::ServerFactory::destroy(const ServerPtr& server, const Ice::Identity& id
 	    out << "destroyed server `" << server->description.name << "'";
 	}
     }
-    catch(const Freeze::DBException& ex)
+    catch(const Freeze::DatabaseException& ex)
     {
 	ostringstream os;
 	os << "couldn't destroy server `" << server->description.name << "':\n" << ex;
@@ -258,7 +255,7 @@ IcePack::ServerFactory::destroy(const ServerAdapterPtr& adapter, const Ice::Iden
 	    out << "destroyed server adapter `" << adapter->id << "'";
 	}
     }
-    catch(const Freeze::DBException& ex)
+    catch(const Freeze::DatabaseException& ex)
     {
 	ostringstream os;
 	os << "couldn't destroy server adapter `" << adapter->id << "':\n" << ex;

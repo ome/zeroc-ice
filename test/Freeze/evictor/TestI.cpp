@@ -35,23 +35,33 @@ Test::ServantI::init(const RemoteEvictorIPtr& remoteEvictor, const Freeze::Evict
 {
     _remoteEvictor = remoteEvictor;
     _evictor = evictor;
+
+    vector<string> facets = ice_facets();
+    for(size_t i = 0; i < facets.size(); i++)
+    {
+	dynamic_cast<Test::ServantI*>(ice_findFacet(facets[i]).get())->init(remoteEvictor, evictor);
+    }
 }
 
 Int
 Test::ServantI::getValue(const Current&) const
 {
+    Lock sync(*this);
     return value;
 }
 
 void
 Test::ServantI::setValue(Int val, const Current&)
 {
+    Lock sync(*this);
     value = val;
 }
+
 
 void
 Test::ServantI::setValueAsync_async(const AMD_Servant_setValueAsyncPtr& __cb, Int value, const Current&)
 {
+    Lock sync(*this);
     _setValueAsyncCB = __cb;
     _setValueAsyncValue = value;
 }
@@ -61,10 +71,51 @@ Test::ServantI::releaseAsync(const Current& current) const
 {
     if(_setValueAsyncCB)
     {
+	Lock sync(*this);
         const_cast<Int&>(value) = _setValueAsyncValue;
         _setValueAsyncCB->ice_response();
         const_cast<AMD_Servant_setValueAsyncPtr&>(_setValueAsyncCB) = 0;
     }
+}
+
+void
+Test::ServantI::addFacet(const string& name, const string& data, const Current& current) const
+{
+    FacetPath facetPath(current.facet);
+    facetPath.push_back(name);
+
+    FacetPtr facet = new FacetI(_remoteEvictor, _evictor, value, data);
+
+    try
+    {
+	_evictor->addFacet(current.id, facetPath, facet);
+    }
+    catch(const Ice::AlreadyRegisteredException&)
+    {
+	throw Test::AlreadyRegisteredException();
+    }
+}
+
+void
+Test::ServantI::removeFacet(const string& name, const Current& current) const
+{
+    FacetPath facetPath(current.facet);
+    facetPath.push_back(name);
+    try
+    {
+	_evictor->removeFacet(current.id, facetPath);
+    }
+     catch(const Ice::NotRegisteredException&)
+    {
+	throw Test::NotRegisteredException();
+    }
+   
+}
+
+void
+Test::ServantI::removeAllFacets(const Current& current) const
+{
+    _evictor->removeAllFacets(current.id);
 }
 
 void
@@ -73,32 +124,45 @@ Test::ServantI::destroy(const Current& current)
     _evictor->destroyObject(current.id);
 }
 
-void
-Test::ServantI::__write(IceInternal::BasicStream* os) const
+
+Test::FacetI::FacetI()
 {
-    assert(_remoteEvictor);
-    _remoteEvictor->setLastSavedValue(value);
-    Servant::__write(os);
+}
+
+Test::FacetI::FacetI(const RemoteEvictorIPtr& remoteEvictor, const Freeze::EvictorPtr& evictor, Ice::Int val,
+                     const string& d) :
+    ServantI(remoteEvictor, evictor, val)
+{
+    data = d;
+}
+
+string
+Test::FacetI::getData(const Current&) const
+{
+    Lock sync(*this);
+    return data;
 }
 
 void
-Test::ServantI::__marshal(const StreamPtr& os) const
+Test::FacetI::setData(const string& d, const Current&)
 {
-    assert(_remoteEvictor);
-    _remoteEvictor->setLastSavedValue(value);
-    Servant::__marshal(os);
+    Lock sync(*this);
+    data = d;
 }
 
-Test::RemoteEvictorI::RemoteEvictorI(const ObjectAdapterPtr& adapter, const string& category, const Freeze::DBPtr& db,
-                                     const StrategyIPtr& strategy, const Freeze::EvictorPtr& evictor) :
+Test::RemoteEvictorI::RemoteEvictorI(const ObjectAdapterPtr& adapter, const string& category,
+				     const Freeze::EvictorPtr& evictor) :
     _adapter(adapter),
     _category(category),
-    _db(db),
-    _strategy(strategy),
-    _evictor(evictor),
-    _lastSavedValue(-1)
+    _evictor(evictor)
 {
+    CommunicatorPtr communicator = adapter->getCommunicator();
+    _evictorAdapter = communicator->createObjectAdapterWithEndpoints(IceUtil::generateUUID(), "default");
+    _evictorAdapter->addServantLocator(evictor, category);
+    _evictorAdapter->activate();
 }
+
+
 
 void
 Test::RemoteEvictorI::setSize(Int size, const Current&)
@@ -107,56 +171,51 @@ Test::RemoteEvictorI::setSize(Int size, const Current&)
 }
 
 Test::ServantPrx
-Test::RemoteEvictorI::createServant(Int value, const Current&)
+Test::RemoteEvictorI::createServant(Int id, Int value, const Current&)
 {
-    Identity id;
-    id.category = _category;
+    Identity ident;
+    ident.category = _category;
     ostringstream ostr;
-    ostr << value;
-    id.name = ostr.str();
+    ostr << id;
+    ident.name = ostr.str();
     ServantPtr servant = new ServantI(this, _evictor, value);
-    _evictor->createObject(id, servant);
-    return ServantPrx::uncheckedCast(_adapter->createProxy(id));
+    _evictor->createObject(ident, servant);
+    return ServantPrx::uncheckedCast(_evictorAdapter->createProxy(ident));
 }
 
-Int
-Test::RemoteEvictorI::getLastSavedValue(const Current&) const
+Test::ServantPrx
+Test::RemoteEvictorI::getServant(Int id, const Current&)
 {
-    Int result = _lastSavedValue;
-    (const_cast<RemoteEvictorI*>(this))->_lastSavedValue = -1;
-    return result;
+    Identity ident;
+    ident.category = _category;
+    ostringstream ostr;
+    ostr << id;
+    ident.name = ostr.str();
+    return ServantPrx::uncheckedCast(_evictorAdapter->createProxy(ident));
 }
 
-void
-Test::RemoteEvictorI::clearLastSavedValue(const Current&)
-{
-    _lastSavedValue = -1;
-}
-
-Int
-Test::RemoteEvictorI::getLastEvictedValue(const Current&) const
-{
-    return _strategy->getLastEvictedValue();
-}
-
-void
-Test::RemoteEvictorI::clearLastEvictedValue(const Current&)
-{
-    _strategy->clearLastEvictedValue();
-}
 
 void
 Test::RemoteEvictorI::deactivate(const Current& current)
 {
-    _adapter->removeServantLocator(_category);
+    _evictorAdapter->deactivate();
+    _evictorAdapter->waitForDeactivate();
     _adapter->remove(stringToIdentity(_category));
-    _db->close();
 }
 
 void
-Test::RemoteEvictorI::setLastSavedValue(Int value)
+Test::RemoteEvictorI::destroyAllServants(const Current&)
 {
-    _lastSavedValue = value;
+    //
+    // Don't use such a small value in real applications!
+    //
+    Ice::Int batchSize = 1;
+
+    Freeze::EvictorIteratorPtr p = _evictor->getIterator(batchSize, true);
+    while(p->hasNext())
+    {
+	_evictor->destroyObject(p->next());
+    }
 }
 
 class Initializer : public Freeze::ServantInitializer
@@ -183,33 +242,18 @@ private:
 };
 
 Test::RemoteEvictorFactoryI::RemoteEvictorFactoryI(const ObjectAdapterPtr& adapter,
-                                                   const Freeze::DBEnvironmentPtr& dbEnv) :
+                                                   const std::string& envName) :
     _adapter(adapter),
-    _dbEnv(dbEnv)
+    _envName(envName)
 {
 }
 
 ::Test::RemoteEvictorPrx
-Test::RemoteEvictorFactoryI::createEvictor(const string& name,
-                                           Test::Strategy mode,
-                                           const Current& current)
+Test::RemoteEvictorFactoryI::createEvictor(const string& name, const Current& current)
 {
-    Freeze::DBPtr db = _dbEnv->openDB(name, true);
+    Freeze::EvictorPtr evictor = Freeze::createEvictor(_adapter->getCommunicator(), _envName, name);
 
-    Freeze::PersistenceStrategyPtr delegate;
-    if(mode == Test::Eviction)
-    {
-        delegate = db->createEvictionStrategy();
-    }
-    else
-    {
-        delegate = db->createIdleStrategy();
-    }
-    StrategyIPtr strategy = new StrategyI(delegate);
-    Freeze::EvictorPtr evictor = db->createEvictor(strategy);
-    _adapter->addServantLocator(evictor, name);
-
-    RemoteEvictorIPtr remoteEvictor = new RemoteEvictorI(_adapter, name, db, strategy, evictor);
+    RemoteEvictorIPtr remoteEvictor = new RemoteEvictorI(_adapter, name, evictor);
     Freeze::ServantInitializerPtr initializer = new Initializer(remoteEvictor, evictor);
     evictor->installServantInitializer(initializer);
     return RemoteEvictorPrx::uncheckedCast(_adapter->add(remoteEvictor, stringToIdentity(name)));
@@ -218,75 +262,5 @@ Test::RemoteEvictorFactoryI::createEvictor(const string& name,
 void
 Test::RemoteEvictorFactoryI::shutdown(const Current&)
 {
-    _dbEnv->getCommunicator()->shutdown();
-}
-
-Test::StrategyI::StrategyI(const Freeze::PersistenceStrategyPtr& delegate) :
-    _delegate(delegate), _lastEvictedValue(-1)
-{
-}
-
-LocalObjectPtr
-Test::StrategyI::activatedObject(const Identity& ident,
-                                 const ObjectPtr& servant)
-{
-    return _delegate->activatedObject(ident, servant);
-}
-
-void
-Test::StrategyI::destroyedObject(const Identity& ident, const LocalObjectPtr& cookie)
-{
-    _delegate->destroyedObject(ident, cookie);
-}
-
-void
-Test::StrategyI::evictedObject(const Freeze::ObjectStorePtr& store,
-                               const Identity& ident,
-                               const ObjectPtr& servant,
-                               const LocalObjectPtr& cookie)
-{
-    ServantIPtr s = ServantIPtr::dynamicCast(servant);
-    _lastEvictedValue = s->getValue();
-
-    _delegate->evictedObject(store, ident, servant, cookie);
-}
-
-void
-Test::StrategyI::preOperation(const Freeze::ObjectStorePtr& store,
-                              const Identity& ident,
-                              const ObjectPtr& servant,
-                              bool mutating,
-                              const LocalObjectPtr& cookie)
-{
-    _delegate->preOperation(store, ident, servant, mutating, cookie);
-}
-
-void
-Test::StrategyI::postOperation(const Freeze::ObjectStorePtr& store,
-                               const Identity& ident,
-                               const ObjectPtr& servant,
-                               bool mutating,
-                               const LocalObjectPtr& cookie)
-{
-    _delegate->postOperation(store, ident, servant, mutating, cookie);
-}
-
-void
-Test::StrategyI::destroy()
-{
-    _delegate->destroy();
-}
-
-Int
-Test::StrategyI::getLastEvictedValue()
-{
-    Int result = _lastEvictedValue;
-    _lastEvictedValue = -1;
-    return result;
-}
-
-void
-Test::StrategyI::clearLastEvictedValue()
-{
-    _lastEvictedValue = -1;
+    _adapter->getCommunicator()->shutdown();
 }

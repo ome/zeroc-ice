@@ -22,10 +22,57 @@
 #include <Ice/LoggerUtil.h>
 #include <Ice/LocalException.h>
 #include <Ice/DefaultsAndOverrides.h>
+#include <Ice/TraceLevels.h>
+#include <IceUtil/GC.h>
 
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
+
+namespace IceInternal
+{
+
+IceUtil::Handle<IceUtil::GC> theCollector = 0;
+
+}
+
+struct GarbageCollectorStats
+{
+    GarbageCollectorStats() :
+	runs(0), examined(0), collected(0), msec(0.0)
+    {
+    }
+    int runs;
+    int examined;
+    int collected;
+    double msec;
+};
+
+static int communicatorCount = 0;
+static IceUtil::StaticMutex gcMutex = ICE_STATIC_MUTEX_INITIALIZER;
+static GarbageCollectorStats gcStats;
+static int gcTraceLevel;
+static string gcTraceCat;
+static LoggerPtr gcLogger;
+
+static void
+printGCStats(const ::IceUtil::GCStats& stats)
+{
+    IceUtil::StaticMutex::Lock l(gcMutex);
+
+    if(gcTraceLevel)
+    {
+	if(gcTraceLevel > 1)
+	{
+	    Trace out(gcLogger, gcTraceCat);
+	    out << stats.collected << "/" << stats.examined << ", " << stats.msec << "ms";
+	}
+	++gcStats.runs;
+	gcStats.examined += stats.examined;
+	gcStats.collected += stats.collected;
+	gcStats.msec += stats.msec;
+    }
+}
 
 void
 Ice::CommunicatorI::destroy()
@@ -41,7 +88,42 @@ Ice::CommunicatorI::destroy()
 	    instance = _instance;
 	}
     }
-    
+
+    bool last;
+    {
+	IceUtil::StaticMutex::Lock sync(gcMutex);
+        last = (--communicatorCount == 0);
+    }
+
+    if(last)
+    {
+	//
+	// Wait for the collector thread to stop if this is the last communicator
+	// to be destroyed.
+	//
+	theCollector->stop();
+    }
+
+    theCollector->collectGarbage(); // Collect whenever a communicator is destroyed.
+
+    if(last)
+    {
+	IceUtil::StaticMutex::Lock l(gcMutex);
+
+	if(gcTraceLevel)
+	{
+	    Trace out(gcLogger, gcTraceCat);
+	    out << "totals: " << gcStats.collected << "/" << gcStats.examined << ", "
+		<< gcStats.msec << "ms" << ", " << gcStats.runs << " run";
+	    if(gcStats.runs != 1)
+	    {
+		out << "s";
+	    }
+	}
+	gcTraceLevel = 0;
+	gcLogger = 0;
+    }
+
     if(instance)
     {
 	instance->destroy();
@@ -257,6 +339,12 @@ Ice::CommunicatorI::getPluginManager()
     return _instance->pluginManager();
 }
 
+void
+Ice::CommunicatorI::flushBatchRequests()
+{
+    _instance->flushBatchRequests();
+}
+
 Ice::CommunicatorI::CommunicatorI(int& argc, char* argv[], const PropertiesPtr& properties) :
     _destroyed(false)
 {
@@ -278,6 +366,25 @@ Ice::CommunicatorI::CommunicatorI(int& argc, char* argv[], const PropertiesPtr& 
 	throw;
     }
     __setNoDelete(false);
+
+    {
+	//
+	// If this is the first communicator that is created, use that communicator's
+	// property settings to determine whether to start the garbage collector.
+	// We remember that communicator's trace and logger settings so the garbage
+	// collector can continue to log messages even if the first communicator that
+	// is created isn't the last communicator to be destroyed.
+	//
+	IceUtil::StaticMutex::Lock sync(gcMutex);
+	if(++communicatorCount == 1)
+	{
+	    gcTraceLevel = _instance->traceLevels()->gc;
+	    gcTraceCat = _instance->traceLevels()->gcCat;
+	    gcLogger = _instance->logger();
+	    theCollector = new IceUtil::GC(properties->getPropertyAsInt("Ice.GC.Interval"), printGCStats);
+	    theCollector->start();
+	}
+    }
 }
 
 Ice::CommunicatorI::~CommunicatorI()

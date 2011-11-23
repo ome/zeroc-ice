@@ -17,9 +17,6 @@
 #include <Ice/Application.h>
 #include <IcePack/Registry.h>
 
-#include <Ice/Xerces.h>
-#include <xercesc/util/PlatformUtils.hpp>
-
 using namespace std;
 using namespace IcePack;
 
@@ -35,20 +32,8 @@ public:
 int
 main(int argc, char* argv[])
 {
-    try
-    {
-	ICE_XERCES_NS XMLPlatformUtils::Initialize();
-    }
-    catch(const ICE_XERCES_NS XMLException& e)
-    {
-	cout << e.getMessage() << endl;
-	return EXIT_FAILURE;
-    }
-
     RegistryServer app;
     int rc = app.main(argc, argv);
-
-    ICE_XERCES_NS XMLPlatformUtils::Terminate();
 
     return rc;
 }
@@ -68,13 +53,6 @@ RegistryServer::usage()
 int
 RegistryServer::run(int argc, char* argv[])
 {
-    Ice::PropertiesPtr properties = communicator()->getProperties();    
-    
-    Ice::StringSeq args = Ice::argsToStringSeq(argc, argv);
-    args = properties->parseCommandLineOptions("IcePack", args);
-    args = properties->parseCommandLineOptions("Freeze", args);
-    Ice::stringSeqToArgs(args, argc, argv);
-
     bool nowarn = false;
     for(int i = 1; i < argc; ++i)
     {

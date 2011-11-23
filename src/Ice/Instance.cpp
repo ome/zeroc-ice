@@ -353,6 +353,35 @@ IceInternal::Instance::pluginManager()
     return _pluginManager;
 }
 
+size_t
+IceInternal::Instance::messageSizeMax() const
+{
+    // No mutex lock, immutable.
+    return _messageSizeMax;
+}
+
+void
+IceInternal::Instance::flushBatchRequests()
+{
+    OutgoingConnectionFactoryPtr connectionFactory;
+    ObjectAdapterFactoryPtr adapterFactory;
+
+    {
+	IceUtil::RecMutex::Lock sync(*this);
+
+	if(_destroyed)
+	{
+	    throw CommunicatorDestroyedException(__FILE__, __LINE__);
+	}
+
+	connectionFactory = _outgoingConnectionFactory;
+	adapterFactory = _objectAdapterFactory;
+    }
+
+    connectionFactory->flushBatchRequests();
+    adapterFactory->flushBatchRequests();
+}
+
 IceInternal::Instance::Instance(const CommunicatorPtr& communicator, int& argc, char* argv[],
                                 const PropertiesPtr& properties) :
     _destroyed(false),
@@ -362,10 +391,10 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, int& argc, 
     ++_globalStateCounter;
 
     //
-    // Convert command-line options beginning with --Ice. to properties.
+    // Convert command-line options to properties.
     //
     StringSeq args = argsToStringSeq(argc, argv);
-    args = _properties->parseCommandLineOptions("Ice", args);
+    args = _properties->parseIceCommandLineOptions(args);
     stringSeqToArgs(args, argc, argv);
 
     try
@@ -460,6 +489,21 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, int& argc, 
 	const_cast<TraceLevelsPtr&>(_traceLevels) = new TraceLevels(_properties);
 
 	const_cast<DefaultsAndOverridesPtr&>(_defaultsAndOverrides) = new DefaultsAndOverrides(_properties);
+
+	static const int defaultMessageSizeMax = 1024;
+	Int num = _properties->getPropertyAsIntWithDefault("Ice.MessageSizeMax", defaultMessageSizeMax);
+	if(num < 1)
+	{
+	    _messageSizeMax = defaultMessageSizeMax * 1024; // Ignore stupid values.
+	}
+	else if(static_cast<size_t>(num) > (size_t)(0x7fffffff / 1024))
+	{
+	    _messageSizeMax = static_cast<size_t>(0x7fffffff);
+	}
+	else
+	{
+	    _messageSizeMax = static_cast<size_t>(num) * 1024; // Property is in kilobytes, _messageSizeMax in bytes.
+	}
 
 	_routerManager = new RouterManager;
 

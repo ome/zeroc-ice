@@ -591,4 +591,29 @@ twoways(const Test::MyClassPrx& p)
 	    }
 	}
     }
+
+    {
+	Ice::Context ctx;
+	ctx["one"] = "ONE";
+	ctx["two"] = "TWO";
+	ctx["three"] = "THREE";
+	{
+	    Test::StringStringD r = p->opContext();
+	    test(p->ice_getContext().empty());
+	    test(r != ctx);
+	}
+	{
+	    Test::StringStringD r = p->opContext(ctx);
+	    test(p->ice_getContext().empty());
+	    test(r == ctx);
+	}
+	{
+	    Test::MyClassPrx p2 = Test::MyClassPrx::checkedCast(p->ice_newContext(ctx));
+	    test(p2->ice_getContext() == ctx);
+	    Test::StringStringD r = p2->opContext();
+	    test(r == ctx);
+	    r = p2->opContext(ctx);
+	    test(r == ctx);
+	}
+    }
 }

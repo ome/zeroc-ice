@@ -228,7 +228,10 @@ private:
 
     private:
 
-	void emitClassBase(const ClassDefPtr&, const std::string&, const std::string&);
+	void emitClassBase(const ClassDefPtr&, const std::string&, const std::string&, const std::string& = "");
+	void emitGCFunctions(const ClassDefPtr&);
+	void emitGCInsertCode(const TypePtr&, const std::string&, const std::string&, int);
+	void emitGCClearCode(const TypePtr&, const std::string&, const std::string&, int);
 
 	::IceUtil::Output& H;
 	::IceUtil::Output& C;

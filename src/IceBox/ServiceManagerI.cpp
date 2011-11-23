@@ -15,7 +15,7 @@
 #include <Ice/Ice.h>
 #include <Ice/DynamicLibrary.h>
 #include <IceBox/ServiceManagerI.h>
-#include <Freeze/Initialize.h>
+#include <Freeze/Exception.h>
 
 using namespace Ice;
 using namespace IceBox;
@@ -261,7 +261,7 @@ IceBox::ServiceManagerI::start(const string& service, const string& entryPoint, 
 	    PropertiesPtr fileProperties = createProperties(serviceArgs);
 	    properties->parseCommandLineOptions("", fileProperties->getCommandLineOptions());
 
-	    serviceArgs = properties->parseCommandLineOptions("Ice", serviceArgs);
+	    serviceArgs = properties->parseIceCommandLineOptions(serviceArgs);
 	    serviceArgs = properties->parseCommandLineOptions(service, serviceArgs);
 	}
 	else
@@ -284,7 +284,7 @@ IceBox::ServiceManagerI::start(const string& service, const string& entryPoint, 
 	    PropertiesPtr fileProperties = createProperties(serviceArgs);
 	    serviceProperties->parseCommandLineOptions("", fileProperties->getCommandLineOptions());
 
-	    serviceArgs = serviceProperties->parseCommandLineOptions("Ice", serviceArgs);
+	    serviceArgs = serviceProperties->parseIceCommandLineOptions(serviceArgs);
 	    serviceArgs = serviceProperties->parseCommandLineOptions(service, serviceArgs);
 
 	    info.communicator = initializeWithProperties(argc, argv, serviceProperties);
@@ -311,15 +311,15 @@ IceBox::ServiceManagerI::start(const string& service, const string& entryPoint, 
 	    //
             FreezeServicePtr fs = FreezeServicePtr::dynamicCast(info.service);
 
-	    info.dbEnv = ::Freeze::initialize(communicator, properties->getProperty("IceBox.DBEnvName." + service));
+	    info.envName = properties->getProperty("IceBox.DBEnvName." + service);
 
-            fs->start(service, communicator, serviceArgs, info.dbEnv);
+            fs->start(service, communicator, serviceArgs, info.envName);
 	}
 
         info.library = library;
         _services[service] = info;
     }
-    catch(const Freeze::DBException& ex)
+    catch(const Freeze::DatabaseException& ex)
     {
 	ostringstream s;
 	s << "ServiceManager: database exception while starting service " << service << ":\n";
@@ -372,20 +372,6 @@ IceBox::ServiceManagerI::stopAll()
             Warning out(_logger);
 	    out << "ServiceManager: unknown exception in stop for service " << p->first;
 	}
-
-	if(info.dbEnv)
-	{
-	    try
-	    {
-		info.dbEnv->sync();
-	    }
-	    catch(const Ice::Exception& ex)
-	    {
-		Warning out(_logger);
-		out << "ServiceManager: exception in stop for service " << p->first << ":\n";
-		out << ex;
-	    }
-	}
     }
 
     for(p = _services.begin(); p != _services.end(); ++p)
@@ -405,21 +391,6 @@ IceBox::ServiceManagerI::stopAll()
 		// Ignore, the service might have already destroyed
 		// the communicator for its own reasons.
 		//
-	    }
-	    catch(const Ice::Exception& ex)
-	    {
-		Warning out(_logger);
-		out << "ServiceManager: exception in stop for service " << p->first << ":\n";
-		out << ex;
-	    }
-	}
-
-	if(info.dbEnv)
-	{
-	    try
-	    {
-		info.dbEnv->close();
-		info.dbEnv = 0;
 	    }
 	    catch(const Ice::Exception& ex)
 	    {

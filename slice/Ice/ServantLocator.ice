@@ -28,7 +28,6 @@ module Ice
  *
  * @see ObjectAdapter
  * @see ObjectAdapter::addServantLocator
- * @see ObjectAdapter::removeServantLocator
  * @see ObjectAdapter::findServantLocator
  *
  **/
@@ -72,7 +71,7 @@ local interface ServantLocator
      * operation can be used for cleanup purposes after a request.
      *
      * @param curr Information about the current operation call for
-     * which a servant was lcoated by [locate].
+     * which a servant was located by [locate].
      *
      * @param servant The servant that was returned by [locate].
      *
@@ -90,12 +89,15 @@ local interface ServantLocator
      * Called when the object adapter in which this servant locator is
      * installed is deactivated.
      *
+     * @param category Indicates for which category the servant locator
+     * is being deactivated.
+     *
      * @see ObjectAdapter::deactivate
      * @see Communicator::shutdown
      * @see Communicator::destroy
      *
      **/
-    void deactivate();
+    void deactivate(string category);
 };
 
 };

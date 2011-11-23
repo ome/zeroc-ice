@@ -32,7 +32,10 @@ OBJS		= Exception.o \
 		  Time.o \
 		  InputUtil.o \
 		  OutputUtil.o \
-                  Base64.o
+                  Base64.o \
+		  GCShared.o \
+		  GCRecMutex.o \
+		  GC.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
@@ -70,3 +73,8 @@ install:: all
 	ln -s $(SONAME) $(install_libdir)/$(LIBNAME)
 
 include .depend
+
+parser: parser.o
+	rm -f $@
+	$(CXX) $(LDFLAGS) -o $@ parser.o $(BASELIBS)
+

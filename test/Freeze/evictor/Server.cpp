@@ -13,8 +13,8 @@
 // **********************************************************************
 
 #include <IceUtil/IceUtil.h>
-#include <Freeze/Freeze.h>
 #include <TestI.h>
+#include <Ice/Ice.h>
 
 using namespace std;
 
@@ -35,18 +35,38 @@ public:
     }
 };
 
-int
-run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator, const Freeze::DBEnvironmentPtr& dbEnv)
+
+class FacetFactory : public Ice::ObjectFactory
 {
-    communicator->getProperties()->setProperty("Evictor.Endpoints", "default -p 12345 -t 2000");
+public:
 
-    Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("Evictor");
+    virtual Ice::ObjectPtr
+    create(const string& type)
+    {
+        assert(type == "::Test::Facet");
+        return new Test::FacetI;
+    }
 
-    Test::RemoteEvictorFactoryPtr factory = new Test::RemoteEvictorFactoryI(adapter, dbEnv);
+    virtual void
+    destroy()
+    {
+    }
+};
+int
+run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator, const string& envName)
+{
+    communicator->getProperties()->setProperty("Factory.Endpoints", "default -p 12345 -t 2000");
+
+    Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("Factory");
+
+    Test::RemoteEvictorFactoryPtr factory = new Test::RemoteEvictorFactoryI(adapter, envName);
     adapter->add(factory, Ice::stringToIdentity("factory"));
 
     Ice::ObjectFactoryPtr servantFactory = new ServantFactory;
     communicator->addObjectFactory(servantFactory, "::Test::Servant");
+
+    Ice::ObjectFactoryPtr facetFactory = new FacetFactory;
+    communicator->addObjectFactory(facetFactory, "::Test::Facet");
 
     adapter->activate();
 
@@ -60,31 +80,17 @@ main(int argc, char* argv[])
 {
     int status;
     Ice::CommunicatorPtr communicator;
-    Freeze::DBEnvironmentPtr dbEnv;
-    string dbEnvDir = "db";
+    string envName = "db";
 
     try
     {
         communicator = Ice::initialize(argc, argv);
-        if(argc != 1)
-        {
-            dbEnvDir = argv[1];
-            dbEnvDir += "/";
-            dbEnvDir += "db";
-        }
-        dbEnv = Freeze::initialize(communicator, dbEnvDir);
-        status = run(argc, argv, communicator, dbEnv);
+        status = run(argc, argv, communicator, envName);
     }
     catch(const Ice::Exception& ex)
     {
         cerr << ex << endl;
         status = EXIT_FAILURE;
-    }
-
-    if(dbEnv)
-    {
-        dbEnv->close();
-        dbEnv = 0;
     }
 
     if(communicator)

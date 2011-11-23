@@ -43,6 +43,8 @@ ICE_API StringSeq argsToStringSeq(int, char*[]);
 //
 ICE_API void stringSeqToArgs(const StringSeq&, int&, char*[]);
 
+ICE_API void collectGarbage();
+
 }
 
 namespace IceInternal

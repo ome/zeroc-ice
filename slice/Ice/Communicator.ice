@@ -76,7 +76,6 @@ local interface Communicator
      * requests. </para></note>
      *
      * @see destroy
-     * @see signalShutdown
      * @see waitForShutdown
      * @see ObjectAdapter::deactivate
      *
@@ -96,7 +95,6 @@ local interface Communicator
      * exits the application.
      *
      * @see shutdown
-     * @see signalShutdown
      * @see destroy
      * @see ObjectAdapter::waitForDeactivate
      *
@@ -354,6 +352,13 @@ local interface Communicator
      *
      **/
     PluginManager getPluginManager();
+
+    /**
+     * Flush any pending batch requests for this communicator.
+     * This causes all batch requests that were sent via proxies
+     * obtained via this communicator to be sent to the server.
+     **/
+    void flushBatchRequests();
 };
 
 };

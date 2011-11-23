@@ -18,7 +18,9 @@
 #include <IceStorm/SubscriberFactory.h>
 #include <IceStorm/Subscriber.h>
 #include <IceStorm/TraceLevels.h>
+#include <Freeze/Initialize.h>
 #include <algorithm>
+
 
 using namespace IceStorm;
 using namespace std;
@@ -294,14 +296,15 @@ TopicLinkI::forward(const string& op, Ice::OperationMode mode, const ByteSeq& da
 }
 
 TopicI::TopicI(const Ice::ObjectAdapterPtr& adapter, const TraceLevelsPtr& traceLevels, const string& name,
-	       const SubscriberFactoryPtr& factory, const Freeze::DBPtr& db) :
+	       const SubscriberFactoryPtr& factory, 
+	       const string& envName, const string& dbName, bool createDb) :
     _adapter(adapter),
     _traceLevels(traceLevels),
     _name(name),
     _factory(factory),
     _destroyed(false),
-    _links(db),
-    _linksDb(db)
+    _connection(Freeze::createConnection(adapter->getCommunicator(), envName)),
+    _links(_connection, dbName, createDb)
 {
     _subscribers = new TopicSubscribers(_traceLevels);
 
@@ -401,8 +404,7 @@ TopicI::destroy(const Ice::Current&)
 
     _adapter->remove(id);
 
-    _linksDb->remove();
-    _linksDb = 0;
+    _links.destroy();
 }
 
 void
@@ -504,7 +506,7 @@ TopicI::link(const TopicPrx& topic, Ice::Int cost, const Ice::Current&)
     dbInfo.info.theTopic = topic;
     dbInfo.info.name = name;
     dbInfo.info.cost = cost;
-    _links.insert(pair<const Ice::Identity, const LinkDB>(ident, dbInfo));
+    _links.put(pair<const Ice::Identity, const LinkDB>(ident, dbInfo));
 
     //
     // Create the subscriber object and add it to the set of subscribers.

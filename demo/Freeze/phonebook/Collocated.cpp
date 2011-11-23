@@ -12,7 +12,7 @@
 //
 // **********************************************************************
 
-#include <Freeze/Application.h>
+#include <Ice/Application.h>
 #include <ContactFactory.h>
 #include <Parser.h>
 
@@ -20,16 +20,19 @@ using namespace std;
 using namespace Ice;
 using namespace Freeze;
 
-class PhoneBookCollocated : public Freeze::Application
+class PhoneBookCollocated : public Ice::Application
 {
 public:
     
-    PhoneBookCollocated(const string& dbEnvName) :
-	Freeze::Application(dbEnvName)
+    PhoneBookCollocated(const string& envName) :
+	_envName(envName)
     {
     }
 
-    virtual int runFreeze(int argc, char* argv[], const DBEnvironmentPtr&);
+    virtual int run(int argc, char* argv[]);
+
+private:
+    const string _envName;
 };
 
 int
@@ -40,27 +43,22 @@ main(int argc, char* argv[])
 }
 
 int
-PhoneBookCollocated::runFreeze(int argc, char* argv[], const DBEnvironmentPtr& dbEnv)
+PhoneBookCollocated::run(int argc, char* argv[])
 {
     PropertiesPtr properties = communicator()->getProperties();
-    string value;
-    
-    DBPtr dbPhoneBook = dbEnv->openDB("phonebook", true);
-    DBPtr dbContacts = dbEnv->openDB("contacts", true);
-    
+
+    //
+    // Create the name index.
+    //
+    NameIndexPtr index = new NameIndex("name");
+    vector<Freeze::IndexPtr> indices;
+    indices.push_back(index);
+
     //
     // Create an Evictor for contacts.
     //
-    PersistenceStrategyPtr strategy;
-    if(properties->getPropertyAsInt("PhoneBook.IdleStrategy") > 0)
-    {
-        strategy = dbContacts->createIdleStrategy();
-    }
-    else
-    {
-        strategy = dbContacts->createEvictionStrategy();
-    }
-    EvictorPtr evictor = dbContacts->createEvictor(strategy);
+    Freeze::EvictorPtr evictor = Freeze::createEvictor(communicator(), _envName, "contacts", indices);
+
     Int evictorSize = properties->getPropertyAsInt("PhoneBook.EvictorSize");
     if(evictorSize > 0)
     {
@@ -76,16 +74,14 @@ PhoneBookCollocated::runFreeze(int argc, char* argv[], const DBEnvironmentPtr& d
     //
     // Create the phonebook, and add it to the Object Adapter.
     //
-    PhoneBookIPtr phoneBook = new PhoneBookI(adapter, dbPhoneBook, evictor);
+    PhoneBookIPtr phoneBook = new PhoneBookI(evictor, index);
     adapter->add(phoneBook, stringToIdentity("phonebook"));
     
     //
-    // Create and install a factory and initializer for contacts.
+    // Create and install a factory for contacts.
     //
-    ObjectFactoryPtr contactFactory = new ContactFactory(phoneBook, evictor);
-    ServantInitializerPtr contactInitializer = ServantInitializerPtr::dynamicCast(contactFactory);
+    ObjectFactoryPtr contactFactory = new ContactFactory(evictor);
     communicator()->addObjectFactory(contactFactory, "::Contact");
-    evictor->installServantInitializer(contactInitializer);
     
     //
     // Everything ok, let's go.

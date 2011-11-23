@@ -37,7 +37,7 @@ public:
     
     virtual Ice::ObjectPtr locate(const Ice::Current&, Ice::LocalObjectPtr&);
     virtual void finished(const Ice::Current&, const Ice::ObjectPtr&, const Ice::LocalObjectPtr&);
-    virtual void deactivate();
+    virtual void deactivate(const string&);
 
 private:
 
@@ -72,7 +72,7 @@ Glacier::ServantLocator::finished(const Current&, const ObjectPtr&, const LocalO
 }
 
 void
-Glacier::ServantLocator::deactivate()
+Glacier::ServantLocator::deactivate(const string&)
 {
     ClientBlobject* clientBlobject = dynamic_cast<ClientBlobject*>(_blobject.get());
     if(clientBlobject)
@@ -295,20 +295,7 @@ main(int argc, char* argv[])
     //
     // Make sure that this process doesn't use a router.
     //
-    PropertiesPtr defaultProperties;
-    try
-    {
-	defaultProperties = getDefaultProperties(argc, argv);
-        StringSeq args = argsToStringSeq(argc, argv);
-        args = defaultProperties->parseCommandLineOptions("Ice", args);
-        args = defaultProperties->parseCommandLineOptions("Glacier.Router", args);
-        stringSeqToArgs(args, argc, argv);
-    }
-    catch(const Exception& ex)
-    {
-	cerr << argv[0] << ": " << ex << endl;
-	return EXIT_FAILURE;
-    }
+    PropertiesPtr defaultProperties = getDefaultProperties(argc, argv);
     defaultProperties->setProperty("Ice.Default.Router", "");
 
     Glacier::RouterApp app;

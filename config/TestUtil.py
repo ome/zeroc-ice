@@ -137,6 +137,13 @@ def waitServiceReady(pipe, token):
         if output == token + " ready":
             break
 
+def printOutputFromPipe(pipe):
+    while 1:
+        line = pipe.readline()
+        if not line:
+            break
+        os.write(1, line)
+
 for toplevel in [".", "..", "../..", "../../..", "../../../.."]:
     toplevel = os.path.normpath(toplevel)
     if os.path.exists(os.path.join(toplevel, "config", "TestUtil.py")):
@@ -145,7 +152,10 @@ else:
     raise "can't find toplevel directory!"
 
 if isWin32():
-    os.environ["PATH"] = os.path.join(toplevel, "bin") + ";" + os.getenv("PATH", "")
+    if isCygwin():
+	os.environ["PATH"] = os.path.join(toplevel, "bin") + ":" + os.getenv("PATH", "")
+    else:
+	os.environ["PATH"] = os.path.join(toplevel, "bin") + ";" + os.getenv("PATH", "")
 else:
     os.environ["LD_LIBRARY_PATH"] = os.path.join(toplevel, "lib") + ":" + os.getenv("LD_LIBRARY_PATH", "")
     os.environ["LD_LIBRARY_PATH_64"] = os.path.join(toplevel, "lib") + ":" + os.getenv("LD_LIBRARY_PATH_64", "")
@@ -179,7 +189,7 @@ else:
     defaultHost = ""
 
 commonServerOptions = " --Ice.PrintProcessId --Ice.PrintAdapterReady --Ice.ThreadPool.Server.Size=3" + \
-                      " --Ice.Warn.Connections --Ice.ServerIdleTime=30"
+                      " --Ice.Warn.Connections "
 
 clientOptions = clientProtocol + defaultHost
 serverOptions = serverProtocol + defaultHost + commonServerOptions
@@ -203,8 +213,7 @@ def clientServerTestWithOptionsAndNames(name, additionalServerOptions, additiona
     clientPipe = os.popen(client + clientOptions + additionalClientOptions)
     print "ok"
 
-    for output in clientPipe.xreadlines():
-	print output,
+    printOutputFromPipe(clientPipe)
 
     clientStatus = clientPipe.close()
     serverStatus = serverPipe.close()
@@ -239,8 +248,7 @@ def mixedClientServerTestWithOptions(name, additionalServerOptions, additionalCl
     getAdapterReady(clientPipe)
     print "ok"
 
-    for output in clientPipe.xreadlines():
-	print output,
+    printOutputFromPipe(clientPipe)
 
     clientStatus = clientPipe.close()
     serverStatus = serverPipe.close()
@@ -262,8 +270,7 @@ def collocatedTestWithOptions(name, additionalOptions):
     collocatedPipe = os.popen(collocated + collocatedOptions + additionalOptions)
     print "ok"
 
-    for output in collocatedPipe.xreadlines():
-	print output,
+    printOutputFromPipe(collocatedPipe)
 
     collocatedStatus = collocatedPipe.close()
 

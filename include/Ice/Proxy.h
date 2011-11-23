@@ -90,20 +90,32 @@ public:
     bool operator<(const Object&) const;
     ::Ice::Int ice_hash() const;
 
-    bool ice_isA(const ::std::string&, const ::Ice::Context& = ::Ice::Context());
-    void ice_ping(const ::Ice::Context& = ::Ice::Context());
-    ::std::vector< ::std::string> ice_ids(const ::Ice::Context& = ::Ice::Context());
-    ::std::string ice_id(const ::Ice::Context& = ::Ice::Context());
-    ::Ice::FacetPath ice_facets(const ::Ice::Context& = ::Ice::Context());
+    bool ice_isA(const ::std::string&);
+    bool ice_isA(const ::std::string&, const ::Ice::Context&);
+    void ice_ping();
+    void ice_ping(const ::Ice::Context&);
+    ::std::vector< ::std::string> ice_ids();
+    ::std::vector< ::std::string> ice_ids(const ::Ice::Context&);
+    ::std::string ice_id();
+    ::std::string ice_id(const ::Ice::Context&);
+    ::Ice::FacetPath ice_facets();
+    ::Ice::FacetPath ice_facets(const ::Ice::Context&);
+    bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
+	            ::std::vector< ::Ice::Byte>&); // Returns true if ok, false if user exception.
     bool ice_invoke(const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 	            ::std::vector< ::Ice::Byte>&,
-		    const ::Ice::Context& = ::Ice::Context()); // Returns true if ok, false if user exception.
+		    const ::Ice::Context&); // Returns true if ok, false if user exception.
+    void ice_invoke_async(const ::Ice::AMI_Object_ice_invokePtr&,
+			  const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&);
     void ice_invoke_async(const ::Ice::AMI_Object_ice_invokePtr&,
 			  const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
-			  const ::Ice::Context& = ::Ice::Context());
+			  const ::Ice::Context&);
 
     ::Ice::Identity ice_getIdentity() const;
     ::Ice::ObjectPrx ice_newIdentity(const ::Ice::Identity&) const;
+
+    ::Ice::Context ice_getContext() const;
+    ::Ice::ObjectPrx ice_newContext(const ::Ice::Context&) const;
 
     ::Ice::FacetPath ice_getFacet() const;
     ::Ice::ObjectPrx ice_newFacet(const ::Ice::FacetPath&) const;
@@ -128,12 +140,11 @@ public:
     ::Ice::ObjectPrx ice_collocationOptimization(bool) const;
     ::Ice::ObjectPrx ice_default() const;
 
-    void ice_flush(); // Flush batch messages
-
     ::IceInternal::ReferencePtr __reference() const;
     void __copyFrom(const ::Ice::ObjectPrx&);
     void __handleException(const ::Ice::LocalException&, int&);
     void __rethrowException(const ::Ice::LocalException&);
+    void __checkTwowayOnly(const char*) const;
 
     ::IceInternal::Handle< ::IceDelegate::Ice::Object> __getDelegate();
 
@@ -141,6 +152,8 @@ protected:
 
     virtual ::IceInternal::Handle< ::IceDelegateM::Ice::Object> __createDelegateM();
     virtual ::IceInternal::Handle< ::IceDelegateD::Ice::Object> __createDelegateD();
+
+    const ::Ice::Context& __defaultContext() const;
 
 private:
 
@@ -170,7 +183,6 @@ public:
     virtual void ice_invoke_async(const ::Ice::AMI_Object_ice_invokePtr&,
 				  const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 				  const ::Ice::Context&) = 0;
-    virtual void ice_flush() = 0;
 };
 
 } }
@@ -194,7 +206,6 @@ public:
     virtual void ice_invoke_async(const ::Ice::AMI_Object_ice_invokePtr&,
 				  const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 				  const ::Ice::Context&);
-    virtual void ice_flush();
 
     void __copyFrom(const ::IceInternal::Handle< ::IceDelegateM::Ice::Object>&);
 
@@ -231,8 +242,6 @@ public:
     virtual void ice_invoke_async(const ::Ice::AMI_Object_ice_invokePtr&,
 				  const ::std::string&, ::Ice::OperationMode, const ::std::vector< ::Ice::Byte>&,
 				  const ::Ice::Context&);
-    virtual void ice_flush();
-
     void __copyFrom(const ::IceInternal::Handle< ::IceDelegateD::Ice::Object>&);
 
 protected:

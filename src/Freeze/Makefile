@@ -22,31 +22,38 @@ TARGETS		= $(libdir)/$(LIBFILENAME) $(libdir)/$(SONAME) $(libdir)/$(LIBNAME)
 
 
 OBJS		= DB.o \
-		  DBException.o \
+                  Exception.o \
 		  Evictor.o \
-		  ObjectRecord.o \
-		  Strategy.o \
-	  	  DBI.o \
+		  EvictorF.o \
+		  EvictorStorage.o \
+                  Connection.o \
+                  ConnectionF.o \
+                  ConnectionI.o \
+                  Transaction.o \
+                  TransactionI.o \
+                  SharedDb.o \
+	  	  MapI.o \
+                  Util.o \
 		  EvictorI.o \
-		  StrategyI.o \
-		  IdentityObjectRecordDict.o \
-		  Application.o
+                  EvictorIteratorI.o \
+                  Index.o \
+                  IndexI.o \
+                  SharedDbEnv.o \
+                  TransactionHolder.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
 SLICE_SRCS	= $(SDIR)/DB.ice \
-		  $(SDIR)/DBF.ice \
-		  $(SDIR)/DBException.ice \
+                  $(SDIR)/Exception.ice \
+                  $(SDIR)/Connection.ice \
+                  $(SDIR)/ConnectionF.ice \
+                  $(SDIR)/Transaction.ice \
 		  $(SDIR)/Evictor.ice \
 		  $(SDIR)/EvictorF.ice \
-		  $(SDIR)/ObjectRecord.ice \
-		  $(SDIR)/Strategy.ice \
-		  $(SDIR)/StrategyF.ice
+		  $(SDIR)/EvictorStorage.ice
 
 HDIR		= $(includedir)/Freeze
 SDIR		= $(slicedir)/Freeze
-
-SLICE2FREEZECMD = $(SLICE2FREEZE) --ice --include-dir Freeze $(ICECPPFLAGS)
 
 include $(top_srcdir)/config/Make.rules
 
@@ -64,14 +71,6 @@ $(libdir)/$(SONAME): $(libdir)/$(LIBFILENAME)
 $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 	rm -f $@
 	ln -s $(SONAME) $@
-
-../Freeze/IdentityObjectRecordDict.h IdentityObjectRecordDict.cpp: $(SLICE2FREEZE)
-	rm -f IdentityObjectRecordDict.h IdentityObjectRecordDict.cpp
-	$(SLICE2FREEZECMD) --dict Freeze::IdentityObjectRecordDict,Ice::Identity,Freeze::ObjectRecord \
-	    IdentityObjectRecordDict $(slicedir)/Ice/Identity.ice $(slicedir)/Freeze/ObjectRecord.ice
-
-clean::
-	rm -f IdentityObjectRecordDict.h IdentityObjectRecordDict.cpp
 
 install:: all
 	$(INSTALL_LIBRARY) $(libdir)/$(LIBFILENAME) $(install_libdir)

@@ -21,6 +21,12 @@
 #include <stdlib.h>
 #include <math.h>
 
+#ifdef _WIN32
+// I get these warnings from some flex versions:
+// warning C4003: not enough actual parameters for macro 'yywrap'
+#   pragma warning( disable : 4003 )
+#endif
+
 using namespace std;
 using namespace Slice;
 
@@ -45,6 +51,8 @@ int checkKeyword(string&);
 
 %option noyywrap
 %option never-interactive
+%option prefix="slice_"
+%option outfile="lex.yy.c"
 
 identifier		\\?[[:alpha:]_][[:alnum:]_]*
 integer_constant	(\+|-)?((0[0-7]+)|(0x[[:xdigit:]]+)|([[:digit:]]+))

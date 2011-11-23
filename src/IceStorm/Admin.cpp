@@ -15,9 +15,6 @@
 #include <Ice/Application.h>
 #include <IceStorm/Parser.h>
 
-#include <Ice/Xerces.h>
-#include <xercesc/util/PlatformUtils.hpp>
-
 #include <fstream>
 
 using namespace std;
@@ -35,21 +32,8 @@ public:
 int
 main(int argc, char* argv[])
 {
-    try
-    {
-	ICE_XERCES_NS XMLPlatformUtils::Initialize();
-    }
-    catch(const ICE_XERCES_NS XMLException& e)
-    {
-	cout << e.getMessage() << endl;
-	return EXIT_FAILURE;
-    }
-
     Client app;
     int rc = app.main(argc, argv);
-
-    ICE_XERCES_NS XMLPlatformUtils::Terminate();
-
     return rc;
 }
 
@@ -73,12 +57,6 @@ Client::usage()
 int
 Client::run(int argc, char* argv[])
 {
-    PropertiesPtr properties = communicator()->getProperties();
-
-    StringSeq args = argsToStringSeq(argc, argv);
-    args = properties->parseCommandLineOptions("IceStorm", args);
-    stringSeqToArgs(args, argc, argv);
-
     string cpp("cpp");
     string commands;
     bool debug = false;
@@ -164,6 +142,7 @@ Client::run(int argc, char* argv[])
 	return EXIT_FAILURE;
     }
 
+    PropertiesPtr properties = communicator()->getProperties();
     const char* managerProxyProperty = "IceStorm.TopicManager.Proxy";
     string managerProxy = properties->getProperty(managerProxyProperty);
     if(managerProxy.empty())

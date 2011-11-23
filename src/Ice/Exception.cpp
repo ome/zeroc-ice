@@ -15,7 +15,6 @@
 #include <Ice/Exception.h>
 #include <Ice/LocalException.h>
 #include <Ice/Network.h>
-#include <Ice/Stream.h>
 #include <Ice/IdentityUtil.h>
 #include <Ice/StringUtil.h>
 #include <Ice/Plugin.h>
@@ -29,14 +28,6 @@ bool
 Ice::UserException::__usesClasses() const
 {
     return false;
-}
-
-void
-Ice::UserException::ice_marshal(const ::std::string& __name, const ::Ice::StreamPtr& __os)
-{
-    __os->startWriteException(__name);
-    __marshal(__os);
-    __os->endWriteException();
 }
 
 Ice::LocalException::LocalException(const char* file, int line) :
@@ -379,6 +370,13 @@ Ice::MarshalException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\nprotocol error: error during unmarshaling";
+}
+
+void
+Ice::DatagramLimitException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\nprotocol error: maximum datagram payload size exceeded";
 }
 
 void

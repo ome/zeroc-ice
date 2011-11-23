@@ -105,6 +105,10 @@ SOURCE=.\Throughput.cpp
 
 SOURCE=.\Throughput.h
 # End Source File
+# Begin Source File
+
+SOURCE=.\ThroughputI.h
+# End Source File
 # End Group
 # Begin Group "Resource Files"
 
@@ -115,7 +119,7 @@ SOURCE=.\Throughput.ice
 
 !IF  "$(CFG)" == "throughputS - Win32 Release"
 
-USERDEP__THROU="../../../bin/slice2cpp.exe"	
+USERDEP__THROU="..\..\..\bin\slice2cpp.exe"	"..\..\..\lib\slice.lib"	
 # Begin Custom Build
 InputPath=.\Throughput.ice
 
@@ -131,7 +135,7 @@ BuildCmds= \
 
 !ELSEIF  "$(CFG)" == "throughputS - Win32 Debug"
 
-USERDEP__THROU="../../../bin/slice2cpp.exe"	
+USERDEP__THROU="..\..\..\bin\slice2cpp.exe"	"..\..\..\lib\sliced.lib"	
 # Begin Custom Build
 InputPath=.\Throughput.ice
 

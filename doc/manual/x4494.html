@@ -18,7 +18,7 @@ TITLE="Ice::Router"
 HREF="x4414.html"><LINK
 REL="NEXT"
 TITLE="Ice::SocketException"
-HREF="x4680.html"></HEAD
+HREF="x4687.html"></HEAD
 ><BODY
 CLASS="SECTION"
 BGCOLOR="#FFFFFF"
@@ -60,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="x4680.html"
+HREF="x4687.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -116,7 +116,7 @@ NAME="AEN4502"
 >Derived Classes and Interfaces</H3
 ><P
 >	    <A
-HREF="x9209.html"
+HREF="x5458.html"
 ><SPAN
 CLASS="TYPE"
 >::Freeze::Evictor</SPAN
@@ -133,13 +133,13 @@ NAME="AEN4509"
 >Used By</H3
 ><P
 >	    <A
-HREF="x2737.html#ICE.OBJECTADAPTER.ADDSERVANTLOCATOR"
+HREF="x2747.html#ICE.OBJECTADAPTER.ADDSERVANTLOCATOR"
 ><TT
 CLASS="FUNCTION"
 >ObjectAdapter::addServantLocator</TT
 ></A
 >, <A
-HREF="x2737.html#ICE.OBJECTADAPTER.FINDSERVANTLOCATOR"
+HREF="x2747.html#ICE.OBJECTADAPTER.FINDSERVANTLOCATOR"
 ><TT
 CLASS="FUNCTION"
 >ObjectAdapter::findServantLocator</TT
@@ -156,25 +156,19 @@ NAME="AEN4519"
 >See Also</H3
 ><P
 >	    <A
-HREF="x2737.html"
+HREF="x2747.html"
 ><TT
 CLASS="CLASSNAME"
 >ObjectAdapter</TT
 ></A
 >, <A
-HREF="x2737.html#ICE.OBJECTADAPTER.ADDSERVANTLOCATOR"
+HREF="x2747.html#ICE.OBJECTADAPTER.ADDSERVANTLOCATOR"
 ><TT
 CLASS="FUNCTION"
 >ObjectAdapter::addServantLocator</TT
 ></A
 >, <A
-HREF="x2737.html#ICE.OBJECTADAPTER.REMOVESERVANTLOCATOR"
-><TT
-CLASS="FUNCTION"
->ObjectAdapter::removeServantLocator</TT
-></A
->, <A
-HREF="x2737.html#ICE.OBJECTADAPTER.FINDSERVANTLOCATOR"
+HREF="x2747.html#ICE.OBJECTADAPTER.FINDSERVANTLOCATOR"
 ><TT
 CLASS="FUNCTION"
 >ObjectAdapter::findServantLocator</TT
@@ -186,7 +180,7 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN4535"
+NAME="AEN4532"
 ></A
 >Operation Index</H3
 ><P
@@ -263,7 +257,15 @@ CLASS="TYPE"
 > <TT
 CLASS="FUNCTION"
 >deactivate</TT
->();</PRE
+>(<SPAN
+CLASS="TYPE"
+>string</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>category</I
+></TT
+>);</PRE
 ></TD
 ></TR
 ></TABLE
@@ -275,24 +277,52 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN4563"
+NAME="AEN4562"
+></A
+>Parameters</H3
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>category</I
+></TT
+></DT
+><DD
+><P
+>			    Indicates for which category the servant locator
+is being deactivated.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H3
+CLASS="SECTION"
+><A
+NAME="AEN4570"
 ></A
 >See Also</H3
 ><P
 >	    <A
-HREF="x2737.html#ICE.OBJECTADAPTER.DEACTIVATE"
+HREF="x2747.html#ICE.OBJECTADAPTER.DEACTIVATE"
 ><TT
 CLASS="FUNCTION"
 >ObjectAdapter::deactivate</TT
 ></A
 >, <A
-HREF="x1081.html#ICE.COMMUNICATOR.SHUTDOWN"
+HREF="x1074.html#ICE.COMMUNICATOR.SHUTDOWN"
 ><TT
 CLASS="FUNCTION"
 >Communicator::shutdown</TT
 ></A
 >, <A
-HREF="x1081.html#ICE.COMMUNICATOR.DESTROY"
+HREF="x1074.html#ICE.COMMUNICATOR.DESTROY"
 ><TT
 CLASS="FUNCTION"
 >Communicator::destroy</TT
@@ -325,17 +355,8 @@ CLASS="TYPE"
 > <TT
 CLASS="FUNCTION"
 >finished</TT
->(<SPAN
-CLASS="TYPE"
->LocalObject</SPAN
-> <TT
-CLASS="PARAMETER"
-><I
->cookie</I
-></TT
->,
-    <A
-HREF="x1880.html"
+>(<A
+HREF="x1876.html"
 ><SPAN
 CLASS="STRUCTNAME"
 >Current</SPAN
@@ -353,6 +374,15 @@ CLASS="TYPE"
 CLASS="PARAMETER"
 ><I
 >servant</I
+></TT
+>,
+    <SPAN
+CLASS="TYPE"
+>LocalObject</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>cookie</I
 ></TT
 >);</PRE
 ></TD
@@ -374,7 +404,7 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN4592"
+NAME="AEN4599"
 ></A
 >Parameters</H3
 ><P
@@ -392,7 +422,7 @@ CLASS="PARAMETER"
 ><DD
 ><P
 >			    Information about the current operation call for
-which a servant was lcoated by <A
+which a servant was located by <A
 HREF="x4494.html#ICE.SERVANTLOCATOR.LOCATE"
 ><TT
 CLASS="FUNCTION"
@@ -442,18 +472,18 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN4616"
+NAME="AEN4623"
 ></A
 >See Also</H3
 ><P
 >	    <A
-HREF="x2737.html"
+HREF="x2747.html"
 ><TT
 CLASS="CLASSNAME"
 >ObjectAdapter</TT
 ></A
 >, <A
-HREF="x1880.html"
+HREF="x1876.html"
 ><SPAN
 CLASS="STRUCTNAME"
 >Current</SPAN
@@ -492,17 +522,8 @@ CLASS="TYPE"
 > <TT
 CLASS="FUNCTION"
 >locate</TT
->(out <SPAN
-CLASS="TYPE"
->LocalObject</SPAN
-> <TT
-CLASS="PARAMETER"
-><I
->cookie</I
-></TT
->,
-    <A
-HREF="x1880.html"
+>(<A
+HREF="x1876.html"
 ><SPAN
 CLASS="STRUCTNAME"
 >Current</SPAN
@@ -511,6 +532,15 @@ CLASS="STRUCTNAME"
 CLASS="PARAMETER"
 ><I
 >curr</I
+></TT
+>,
+    out <SPAN
+CLASS="TYPE"
+>LocalObject</SPAN
+> <TT
+CLASS="PARAMETER"
+><I
+>cookie</I
 ></TT
 >);</PRE
 ></TD
@@ -561,7 +591,7 @@ servant, provided that a non-null servant was
 returned. Otherwise you will get undefined behavior if you use
 Servant Locators such as the
 <A
-HREF="x9209.html"
+HREF="x5458.html"
 ><TT
 CLASS="CLASSNAME"
 >::Freeze::Evictor</TT
@@ -577,7 +607,7 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN4649"
+NAME="AEN4656"
 ></A
 >Parameters</H3
 ><P
@@ -622,7 +652,7 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN4664"
+NAME="AEN4671"
 ></A
 >Return Value</H3
 ><P
@@ -634,18 +664,18 @@ CLASS="SECTION"
 ><H3
 CLASS="SECTION"
 ><A
-NAME="AEN4667"
+NAME="AEN4674"
 ></A
 >See Also</H3
 ><P
 >	    <A
-HREF="x2737.html"
+HREF="x2747.html"
 ><TT
 CLASS="CLASSNAME"
 >ObjectAdapter</TT
 ></A
 >, <A
-HREF="x1880.html"
+HREF="x1876.html"
 ><SPAN
 CLASS="STRUCTNAME"
 >Current</SPAN
@@ -694,7 +724,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="x4680.html"
+HREF="x4687.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD

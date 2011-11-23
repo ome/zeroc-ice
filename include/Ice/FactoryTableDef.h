@@ -12,13 +12,13 @@
 //
 // **********************************************************************
 
-#ifndef ICE_FACTORYTABLEDEF_H
-#define ICE_FACTORYTABLEDEF_H
+#ifndef ICE_FACTORY_TABLE_DEF_H
+#define ICE_FACTORY_TABLE_DEF_H
 
 #include <IceUtil/StaticMutex.h>
 #include <IceUtil/Mutex.h>
-#include <Ice/UserExceptionFactory.h>
-#include <Ice/ObjectFactory.h>
+#include <Ice/UserExceptionFactoryF.h>
+#include <Ice/ObjectFactoryF.h>
 #include <string>
 #include <map>
 
@@ -29,8 +29,8 @@ class ICE_API FactoryTableDef : public IceUtil::noncopyable
 {
 public:
 
-    void addExceptionFactory(const ::std::string&, const Ice::UserExceptionFactoryPtr&);
-    Ice::UserExceptionFactoryPtr getExceptionFactory(const ::std::string&) const;
+    void addExceptionFactory(const ::std::string&, const IceInternal::UserExceptionFactoryPtr&);
+    IceInternal::UserExceptionFactoryPtr getExceptionFactory(const ::std::string&) const;
     void removeExceptionFactory(const ::std::string&);
 
     void addObjectFactory(const ::std::string&, const Ice::ObjectFactoryPtr&);
@@ -41,7 +41,7 @@ private:
 
     IceUtil::Mutex _m;
 
-    typedef ::std::pair<Ice::UserExceptionFactoryPtr, int> EFPair;
+    typedef ::std::pair<IceInternal::UserExceptionFactoryPtr, int> EFPair;
     typedef ::std::map< ::std::string, EFPair> EFTable;
     EFTable _eft;
 

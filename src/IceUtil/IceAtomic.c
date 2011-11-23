@@ -5,7 +5,7 @@
  */
 
 /* Recreated as
- * $Id: IceAtomic.c,v 1.1.2.1 2003/08/05 20:19:02 bernard Exp $
+ * $Id: IceAtomic.c,v 1.2 2003/08/05 21:01:03 bernard Exp $
  * for use with -Ice-.
  *
  * Build with

@@ -12,11 +12,15 @@
 //
 // **********************************************************************
 
-#include <Freeze/Application.h>
+#include <Ice/Application.h>
+#include <Freeze/Freeze.h>
 #include <BenchTypes.h>
 #include <cstdlib>
 
+using namespace Freeze;
+using namespace Ice;
 using namespace std;
+
 
 static void
 testFailed(const char* expr, const char* file, unsigned int line)
@@ -140,48 +144,52 @@ private:
     int _current;
 };
 
-class TestApp : public Freeze::Application
+class TestApp : public Ice::Application
 {
 public:
     
     TestApp(const string&);
 
-    virtual int runFreeze(int, char*[], const Freeze::DBEnvironmentPtr&);
+    virtual int run(int, char*[]);
 
 private:
 
-    void IntIntMapTest(const Freeze::DBEnvironmentPtr&);
+    void IntIntMapTest();
     void generatedRead(IntIntMap&, int, const GeneratorPtr&);
-    void Struct1Struct2MapTest(const Freeze::DBEnvironmentPtr&);
-    void Struct1Class1MapTest(const Freeze::DBEnvironmentPtr&);
-    void Struct1ObjectMapTest(const Freeze::DBEnvironmentPtr&);
-    void IntIntMapReadTest(const Freeze::DBEnvironmentPtr&);
+    void Struct1Struct2MapTest();
+    void Struct1Class1MapTest();
+    void Struct1ObjectMapTest();
+    void IntIntMapReadTest();
 
+    const string _envName;
+    ConnectionPtr _connection;
     StopWatch _watch;
     int _repetitions;
 };
 
-TestApp::TestApp(const string& dbEnvName) :
-    Freeze::Application(dbEnvName),
+TestApp::TestApp(const string& envName) :
+    _envName(envName),
     _repetitions(10000)
 {
 }
 
 void
-TestApp::IntIntMapTest(const Freeze::DBEnvironmentPtr& dbEnv)
+TestApp::IntIntMapTest()
 {
-    Freeze::DBPtr db = dbEnv->openDB("IntIntMap", true);
-
-    IntIntMap m(db);
+    IntIntMap m(_connection, "IntIntMap");
 
     //
     // Populate the database.
     //
     int i;
     _watch.start();
-    for(i = 0; i < _repetitions; ++i)
     {
-	m.insert(IntIntMap::value_type(i, i));
+	TransactionHolder txHolder(_connection);
+	for(i = 0; i < _repetitions; ++i)
+	{
+	    m.put(IntIntMap::value_type(i, i));
+	}
+	txHolder.commit();
     }
     double total = _watch.stop();
     double perRecord = total / _repetitions;
@@ -209,17 +217,19 @@ TestApp::IntIntMapTest(const Freeze::DBEnvironmentPtr& dbEnv)
     // Remove each record.
     //
     _watch.start();
-    for(i = 0; i < _repetitions; ++i)
     {
-	m.erase(i);
+	TransactionHolder txHolder(_connection);
+	for(i = 0; i < _repetitions; ++i)
+	{
+	    m.erase(i);
+	}
+	txHolder.commit();
     }
     total = _watch.stop();
     perRecord = total / _repetitions;
 
     cout << "\ttime for " << _repetitions << " removes: " << total  << "ms" << endl;
     cout << "\ttime per remove: " << perRecord << "ms" << endl;
-
-    db->close();
 }
 
 void
@@ -242,20 +252,22 @@ TestApp::generatedRead(IntIntMap& m, int reads , const GeneratorPtr& gen)
 }
 
 void
-TestApp::IntIntMapReadTest(const Freeze::DBEnvironmentPtr& dbEnv)
+TestApp::IntIntMapReadTest()
 {
-    Freeze::DBPtr db = dbEnv->openDB("IntIntMap", true);
-
-    IntIntMap m(db);
+    IntIntMap m(_connection, "IntIntMap");
 
     //
     // Populate the database.
     //
     int i;
     _watch.start();
-    for(i = 0; i < _repetitions; ++i)
     {
-	m.insert(IntIntMap::value_type(i, i));
+	TransactionHolder txHolder(_connection);
+	for(i = 0; i < _repetitions; ++i)
+	{
+	    m.put(IntIntMap::value_type(i, i));
+	}
+	txHolder.commit();
     }
     double total = _watch.stop();
     double perRecord = total / _repetitions;
@@ -295,15 +307,12 @@ TestApp::IntIntMapReadTest(const Freeze::DBEnvironmentPtr& dbEnv)
     cout << "\ttime per remove: " << perRecord << "ms" << endl;
 */
 
-    db->close();
 }
 
 void
-TestApp::Struct1Struct2MapTest(const Freeze::DBEnvironmentPtr& dbEnv)
+TestApp::Struct1Struct2MapTest()
 {
-    Freeze::DBPtr db = dbEnv->openDB("Struct1Struct2", true);
-
-    Struct1Struct2Map m(db);
+    Struct1Struct2Map m(_connection, "Struct1Struct2");
 
     //
     // Populate the database.
@@ -312,13 +321,17 @@ TestApp::Struct1Struct2MapTest(const Freeze::DBEnvironmentPtr& dbEnv)
     Struct2 s2;
     int i;
     _watch.start();
-    for(i = 0; i < _repetitions; ++i)
     {
-	s1.l = i;
-	ostringstream os;
-	os << i;
-	s2.s = os.str();
-	m.insert(Struct1Struct2Map::value_type(s1, s2));
+	TransactionHolder txHolder(_connection);
+	for(i = 0; i < _repetitions; ++i)
+	{
+	    s1.l = i;
+	    ostringstream os;
+	    os << i;
+	    s2.s = os.str();
+	    m.put(Struct1Struct2Map::value_type(s1, s2));
+	}
+	txHolder.commit();
     }
     double total = _watch.stop();
     double perRecord = total / _repetitions;
@@ -349,25 +362,25 @@ TestApp::Struct1Struct2MapTest(const Freeze::DBEnvironmentPtr& dbEnv)
     // Remove each record.
     //
     _watch.start();
-    for(i = 0; i < _repetitions; ++i)
     {
-	s1.l = i;
-	m.erase(s1);
+	TransactionHolder txHolder(_connection);
+	for(i = 0; i < _repetitions; ++i)
+	{
+	    s1.l = i;
+	    m.erase(s1);
+	}
+	txHolder.commit();
     }
     total = _watch.stop();
     perRecord = total / _repetitions;
 
     cout << "\ttime for " << _repetitions << " removes: " << total  << "ms" << endl;
     cout << "\ttime per remove: " << perRecord << "ms" << endl;
-
-    db->close();
 }
 void
-TestApp::Struct1Class1MapTest(const Freeze::DBEnvironmentPtr& dbEnv)
+TestApp::Struct1Class1MapTest()
 {
-    Freeze::DBPtr db = dbEnv->openDB("Struct1Class1", true);
-
-    Struct1Class1Map m(db);
+    Struct1Class1Map m(_connection, "Struct1Class1");
 
     //
     // Populate the database.
@@ -376,14 +389,18 @@ TestApp::Struct1Class1MapTest(const Freeze::DBEnvironmentPtr& dbEnv)
     Class1Ptr c1 = new Class1();
     int i;
     _watch.start();
-    for(i = 0; i < _repetitions; ++i)
-    {
-	s1.l = i;
-	ostringstream os;
-	os << i;
-	c1->s = os.str();
-	m.insert(Struct1Class1Map::value_type(s1, c1));
-    }
+     {
+	TransactionHolder txHolder(_connection);
+	for(i = 0; i < _repetitions; ++i)
+	{
+	    s1.l = i;
+	    ostringstream os;
+	    os << i;
+	    c1->s = os.str();
+	    m.put(Struct1Class1Map::value_type(s1, c1));
+	}
+	txHolder.commit();
+     }
     double total = _watch.stop();
     double perRecord = total / _repetitions;
 
@@ -413,26 +430,26 @@ TestApp::Struct1Class1MapTest(const Freeze::DBEnvironmentPtr& dbEnv)
     // Remove each record.
     //
     _watch.start();
-    for(i = 0; i < _repetitions; ++i)
     {
-	s1.l = i;
-	m.erase(s1);
+	TransactionHolder txHolder(_connection);
+	for(i = 0; i < _repetitions; ++i)
+	{
+	    s1.l = i;
+	    m.erase(s1);
+	}
+	txHolder.commit();
     }
     total = _watch.stop();
     perRecord = total / _repetitions;
 
     cout << "\ttime for " << _repetitions << " removes: " << total  << "ms" << endl;
     cout << "\ttime per remove: " << perRecord << "ms" << endl;
-
-    db->close();
 }
 
 void
-TestApp::Struct1ObjectMapTest(const Freeze::DBEnvironmentPtr& dbEnv)
+TestApp::Struct1ObjectMapTest()
 {
-    Freeze::DBPtr db = dbEnv->openDB("Struct1Object", true);
-
-    Struct1ObjectMap m(db);
+    Struct1ObjectMap m(_connection, "Struct1Object");
 
     //
     // Populate the database.
@@ -444,22 +461,26 @@ TestApp::Struct1ObjectMapTest(const Freeze::DBEnvironmentPtr& dbEnv)
     c2->obj = c1;
     int i;
     _watch.start();
-    for(i = 0; i < _repetitions; ++i)
     {
-	s1.l = i;
-	Ice::ObjectPtr o;
-	if((i % 2) == 0)
+	TransactionHolder txHolder(_connection);
+	for(i = 0; i < _repetitions; ++i)
 	{
-	    o = c2;
+	    s1.l = i;
+	    Ice::ObjectPtr o;
+	    if((i % 2) == 0)
+	    {
+		o = c2;
+	    }
+	    else
+	    {
+		o = c1;
+	    }
+	    ostringstream os;
+	    os << i;
+	    c1->s = os.str();
+	    m.put(Struct1ObjectMap::value_type(s1, o));
 	}
-	else
-	{
-	    o = c1;
-	}
-	ostringstream os;
-	os << i;
-	c1->s = os.str();
-	m.insert(Struct1ObjectMap::value_type(s1, o));
+	txHolder.commit();
     }
     double total = _watch.stop();
     double perRecord = total / _repetitions;
@@ -504,10 +525,14 @@ TestApp::Struct1ObjectMapTest(const Freeze::DBEnvironmentPtr& dbEnv)
     // Remove each record.
     //
     _watch.start();
-    for(i = 0; i < _repetitions; ++i)
     {
-	s1.l = i;
-	m.erase(s1);
+	TransactionHolder txHolder(_connection);
+	for(i = 0; i < _repetitions; ++i)
+	{
+	    s1.l = i;
+	    m.erase(s1);
+	}
+	txHolder.commit();
     }
     total = _watch.stop();
     perRecord = total / _repetitions;
@@ -515,7 +540,6 @@ TestApp::Struct1ObjectMapTest(const Freeze::DBEnvironmentPtr& dbEnv)
     cout << "\ttime for " << _repetitions << " removes: " << total  << "ms" << endl;
     cout << "\ttime per remove: " << perRecord << "ms" << endl;
 
-    db->close();
 }
 
 class MyFactory : public Ice::ObjectFactory
@@ -551,25 +575,29 @@ public:
 typedef IceUtil::Handle<MyFactory> MyFactoryPtr;
 
 int
-TestApp::runFreeze(int argc, char* argv[], const Freeze::DBEnvironmentPtr& dbEnv)
+TestApp::run(int argc, char* argv[])
 {
+    _connection = createConnection(communicator(), _envName);
+
     cout <<"IntIntMap" << endl;
-    IntIntMapTest(dbEnv);
+    IntIntMapTest();
     
     cout <<"Struct1Struct2Map" << endl;
-    Struct1Struct2MapTest(dbEnv);
+    Struct1Struct2MapTest();
     
     cout <<"Struct1Class1Map" << endl;
-    Struct1Class1MapTest(dbEnv);
+    Struct1Class1MapTest();
     
     MyFactoryPtr factory = new MyFactory();
-    factory->install(dbEnv->getCommunicator());
+    factory->install(communicator());
     
     cout <<"Struct1ObjectMap" << endl;
-    Struct1ObjectMapTest(dbEnv);
+    Struct1ObjectMapTest();
     
     cout <<"IntIntMap (read test)" << endl;
-    IntIntMapReadTest(dbEnv);
+    IntIntMapReadTest();
+
+    _connection->close();
     
     return EXIT_SUCCESS;
 }

@@ -388,12 +388,18 @@ char *yytext;
 #include <Grammar.h>
 #include <NodeI.h>
 
+#ifdef _WIN32
+// I get these warnings from some flex versions:
+// warning C4003: not enough actual parameters for macro 'yywrap'
+#   pragma warning( disable : 4003 )
+#endif
+
 using namespace std;
 using namespace Ice;
 
 #define YY_INPUT(buf, result, maxSize) parser->getInput(buf, result, maxSize)
 
-#line 396 "lex.yy.c"
+#line 402 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -544,10 +550,10 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 35 "Scanner.l"
+#line 41 "Scanner.l"
 
 
-#line 550 "lex.yy.c"
+#line 556 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -632,7 +638,7 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 37 "Scanner.l"
+#line 43 "Scanner.l"
 {
     *yylvalp = new Complex::NumberNodeI(atoi(yytext));
     return TOK_NUMBER;
@@ -640,20 +646,20 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 42 "Scanner.l"
+#line 48 "Scanner.l"
 /* eat whitespace */
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 44 "Scanner.l"
+#line 50 "Scanner.l"
 { return *yytext; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 46 "Scanner.l"
+#line 52 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 656 "lex.yy.c"
+#line 662 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1535,5 +1541,5 @@ int main()
 	return 0;
 	}
 #endif
-#line 46 "Scanner.l"
+#line 52 "Scanner.l"
 

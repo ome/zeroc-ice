@@ -18,7 +18,6 @@
 #include <Ice/BuiltinSequences.ice>
 #include <Ice/CommunicatorF.ice>
 #include <Ice/PropertiesF.ice>
-#include <Freeze/DB.ice>
 
 /**
  *
@@ -97,8 +96,7 @@ local interface Service extends ServiceBase
      * @throws FailureException Raised if [start] failed.
      *
      **/
-    void start(string name, Ice::Communicator communicator, Ice::StringSeq args)
-        throws FailureException;
+    void start(string name, Ice::Communicator communicator, Ice::StringSeq args);
 };
 
 /**
@@ -113,7 +111,7 @@ local interface FreezeService extends ServiceBase
     /**
      *
      * Start the service. The given communiator is created by the
-     * [ServiceManager] for use by the service. This communiator may
+     * [ServiceManager] for use by the service. This communicator may
      * also be used by other services, depending on the service
      * configuration. The database environment is created by the
      * [ServiceManager] for the exclusive use of the service.
@@ -130,13 +128,12 @@ local interface FreezeService extends ServiceBase
      * @param args The service arguments that were not converted into
      * properties.
      *
-     * @param dbEnv The Freeze database environment.
+     * @param envName The name of the Freeze database environment.
      *
      * @throws FailureException Raised if [start] failed.
      *
      **/
-    void start(string name, Ice::Communicator communicator, Ice::StringSeq args, Freeze::DBEnvironment dbEnv)
-        throws FailureException;
+    void start(string name, Ice::Communicator communicator, Ice::StringSeq args, string envName);
 };
 
 /**

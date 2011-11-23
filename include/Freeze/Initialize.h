@@ -16,13 +16,38 @@
 #define FREEZE_INITIALIZE_H
 
 #include <Ice/Ice.h>
-#include <Freeze/DBF.h>
+#include <Freeze/EvictorF.h>
+#include <Freeze/ConnectionF.h>
+#include <Freeze/Index.h>
+
+//
+// Berkeley DB's DbEnv
+//
+class DbEnv;
 
 namespace Freeze
 {
 
-FREEZE_API DBEnvironmentPtr initialize(const ::Ice::CommunicatorPtr&, const std::string&);
-FREEZE_API DBEnvironmentPtr initializeWithTxn(const ::Ice::CommunicatorPtr&, const std::string&);
+FREEZE_API EvictorPtr createEvictor(const Ice::CommunicatorPtr& communicator,
+				    const std::string& envName, 
+				    const std::string& dbName,
+				    const std::vector<Freeze::IndexPtr>& indices = std::vector<Freeze::IndexPtr>(),
+				    bool createDb = true);
+
+FREEZE_API EvictorPtr createEvictor(const Ice::CommunicatorPtr& communicator,
+				    const std::string& envName,
+				    DbEnv& dbEnv, 
+				    const std::string& dbName, 
+				    const std::vector<Freeze::IndexPtr>& indices = std::vector<Freeze::IndexPtr>(),
+				    bool createDb = true);
+
+
+FREEZE_API ConnectionPtr createConnection(const Ice::CommunicatorPtr& communicator,
+					  const std::string& envName);
+
+FREEZE_API ConnectionPtr createConnection(const Ice::CommunicatorPtr& communicator,
+					  const std::string& envName, 
+					  DbEnv& dbEnv);
 
 }
 

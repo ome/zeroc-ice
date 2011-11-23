@@ -477,13 +477,19 @@ char *yytext;
 #include <IcePack/Parser.h>
 #include <IcePack/Grammar.h>
 
+#ifdef _WIN32
+// I get these warnings from some flex versions:
+// warning C4003: not enough actual parameters for macro 'yywrap'
+#   pragma warning( disable : 4003 )
+#endif
+
 using namespace std;
 using namespace Ice;
 using namespace IcePack;
 
 #define YY_INPUT(buf, result, maxSize) parser->getInput(buf, result, maxSize)
 
-#line 486 "lex.yy.c"
+#line 492 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -637,10 +643,10 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 34 "Scanner.l"
+#line 40 "Scanner.l"
 
 
-#line 643 "lex.yy.c"
+#line 649 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -729,7 +735,7 @@ case 1:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 36 "Scanner.l"
+#line 42 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
@@ -739,7 +745,7 @@ case 2:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 40 "Scanner.l"
+#line 46 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
@@ -749,7 +755,7 @@ case 3:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 44 "Scanner.l"
+#line 50 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
@@ -759,14 +765,14 @@ case 4:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 48 "Scanner.l"
+#line 54 "Scanner.l"
 {
     parser->scanPosition(yytext);
 }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 52 "Scanner.l"
+#line 58 "Scanner.l"
 {
     // C++-style comment
     int c;
@@ -783,7 +789,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 66 "Scanner.l"
+#line 72 "Scanner.l"
 {
     // C-style comment
     while(true)
@@ -815,133 +821,133 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 95 "Scanner.l"
+#line 101 "Scanner.l"
 {
     return ICE_PACK_HELP;
 }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 99 "Scanner.l"
+#line 105 "Scanner.l"
 {
     return ICE_PACK_EXIT;
 }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 103 "Scanner.l"
+#line 109 "Scanner.l"
 {
     return ICE_PACK_APPLICATION;
 }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 107 "Scanner.l"
+#line 113 "Scanner.l"
 {
     return ICE_PACK_SERVER;
 }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 111 "Scanner.l"
+#line 117 "Scanner.l"
 {
     return ICE_PACK_ADAPTER;
 }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 115 "Scanner.l"
+#line 121 "Scanner.l"
 {
     return ICE_PACK_ADD;
 }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 119 "Scanner.l"
+#line 125 "Scanner.l"
 {
     return ICE_PACK_REMOVE;
 }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 123 "Scanner.l"
+#line 129 "Scanner.l"
 {
     return ICE_PACK_LIST;
 }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 127 "Scanner.l"
+#line 133 "Scanner.l"
 {
     return ICE_PACK_SHUTDOWN;
 }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 131 "Scanner.l"
+#line 137 "Scanner.l"
 {
     return ICE_PACK_DESCRIBE;
 }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 135 "Scanner.l"
+#line 141 "Scanner.l"
 {
     return ICE_PACK_STATE;
 }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 139 "Scanner.l"
+#line 145 "Scanner.l"
 {
     return ICE_PACK_PID;
 }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 143 "Scanner.l"
+#line 149 "Scanner.l"
 {
     return ICE_PACK_ENDPOINTS;
 }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 147 "Scanner.l"
+#line 153 "Scanner.l"
 {
     return ICE_PACK_START;
 }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 151 "Scanner.l"
+#line 157 "Scanner.l"
 {
     return ICE_PACK_STOP;
 }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 155 "Scanner.l"
+#line 161 "Scanner.l"
 {
     return ICE_PACK_NODE;
 }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 159 "Scanner.l"
+#line 165 "Scanner.l"
 {
     return ICE_PACK_PING;
 }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 163 "Scanner.l"
+#line 169 "Scanner.l"
 {
     return ICE_PACK_ACTIVATION;
 }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 167 "Scanner.l"
+#line 173 "Scanner.l"
 {
     return ICE_PACK_OBJECT;
 
@@ -949,14 +955,14 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 171 "Scanner.l"
+#line 177 "Scanner.l"
 {
     return ICE_PACK_FIND;
 }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 175 "Scanner.l"
+#line 181 "Scanner.l"
 {
     size_t len = strlen(yytext);
     for(size_t i = 0; i < len; ++i)
@@ -974,7 +980,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 190 "Scanner.l"
+#line 196 "Scanner.l"
 {
     size_t len = strlen(yytext);
     for(size_t i = 0; i < len; ++i)
@@ -989,7 +995,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 202 "Scanner.l"
+#line 208 "Scanner.l"
 {
     // "..."-type strings
     string s;
@@ -1071,7 +1077,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 281 "Scanner.l"
+#line 287 "Scanner.l"
 {
     // '...'-type strings
     string s;
@@ -1104,7 +1110,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 311 "Scanner.l"
+#line 317 "Scanner.l"
 {
     // Simple strings
     string s;
@@ -1131,10 +1137,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 335 "Scanner.l"
+#line 341 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 1137 "lex.yy.c"
+#line 1143 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2018,5 +2024,5 @@ int main()
 	return 0;
 	}
 #endif
-#line 335 "Scanner.l"
+#line 341 "Scanner.l"
 

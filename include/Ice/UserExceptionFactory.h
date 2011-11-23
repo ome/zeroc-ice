@@ -12,14 +12,14 @@
 //
 // **********************************************************************
 
-#ifndef ICE_USEREXCEPTIONFACTORY_H
-#define ICE_USEREXCEPTIONFACTORY_H
+#ifndef ICE_USER_EXCEPTION_FACTORY_H
+#define ICE_USER_EXCEPTION_FACTORY_H
 
 #include <IceUtil/Shared.h>
 #include <IceUtil/Handle.h>
 #include <Ice/Config.h>
 
-namespace Ice
+namespace IceInternal
 {
 
 class ICE_API UserExceptionFactory : public IceUtil::Shared
