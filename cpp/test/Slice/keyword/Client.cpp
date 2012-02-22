@@ -73,6 +73,9 @@ public:
     virtual void ice_response(Ice::Int)  {}
     virtual void ice_exception(const ::Ice::Exception&) {}
 };
+
+template<typename T>
+void unused(T const &) { }
    
 //
 // This section of the test is present to ensure that the C++ types
@@ -86,6 +89,7 @@ testtypes()
 
     _cpp_and::_cpp_auto b;
     b._cpp_default = 0;
+    unused(b);
 
     _cpp_and::deletePtr c = new _cpp_and::_cpp_delete();
     c->_cpp_else = "";

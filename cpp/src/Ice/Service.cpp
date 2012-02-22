@@ -2136,17 +2136,26 @@ Ice::Service::runDaemon(int argc, char* argv[], const InitializationData& initDa
             //
             // Associate stdin, stdout and stderr with /dev/null.
             //
+#ifndef NDEBUG
             int fd;
-            fd = open("/dev/null", O_RDWR);
+            fd = 
+#endif
+            open("/dev/null", O_RDWR);
             assert(fd == 0);
             if(stdOut.empty())
             {
-                fd = dup2(0, 1);
+#ifndef NDEBUG
+                fd = 
+#endif
+                dup2(0, 1);
                 assert(fd == 1);
             }
             if(stdErr.empty())
             {
-                fd = dup2(1, 2);
+#ifndef NDEBUG
+                fd = 
+#endif
+                dup2(1, 2);
                 assert(fd == 2);
             }
         }

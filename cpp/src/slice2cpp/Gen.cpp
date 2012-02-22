@@ -1944,8 +1944,10 @@ Slice::Gen::ProxyDeclVisitor::visitClassDecl(const ClassDeclPtr& p)
     }
 
     string name = fixKwd(p->name());
+    string scoped = fixKwd(p->scoped());
 
     H << sp << nl << "class " << name << ';';
+    H << nl << _dllExport << "::IceProxy::Ice::Object* upCast(::IceProxy" << scoped << "*);";
 }
 
 Slice::Gen::ProxyVisitor::ProxyVisitor(Output& h, Output& c, const string& dllExport) :
@@ -3691,10 +3693,22 @@ void
 Slice::Gen::ObjectDeclVisitor::visitClassDecl(const ClassDeclPtr& p)
 {
     string name = fixKwd(p->name());
+    string scoped = fixKwd(p->scoped());
 
     H << sp << nl << "class " << name << ';';
     H << nl << "bool operator==(const " << name << "&, const " << name << "&);";
     H << nl << "bool operator<(const " << name << "&, const " << name << "&);";
+
+    H << sp;
+
+    if(!p->isLocal())
+    {
+        H << nl << _dllExport << "::Ice::Object* upCast(" << scoped << "*);";
+    }
+    else
+    {
+        H << nl << _dllExport << "::Ice::LocalObject* upCast(" << scoped << "*);";
+    }
 }
 
 void
@@ -4922,13 +4936,13 @@ Slice::Gen::ObjectVisitor::emitGCInsertCode(const TypePtr& p, const string& pref
 {
     if((BuiltinPtr::dynamicCast(p) && BuiltinPtr::dynamicCast(p)->kind() == Builtin::KindObject)
        || ClassDeclPtr::dynamicCast(p))
-    {
-        C << nl << "if(" << prefix << name << ')';
+    {        C << nl << "if(" << prefix << name << ')';
         C << sb;
         ClassDeclPtr decl = ClassDeclPtr::dynamicCast(p);
         if(decl)
         {
-            C << nl << "::IceInternal::upCast(" << prefix << name << ".get())->__addObject(_c);";
+            string scope = fixKwd(decl->scope());
+            C << nl << scope << "upCast(" << prefix << name << ".get())->__addObject(_c);";
         }
         else
         {
@@ -4991,9 +5005,10 @@ Slice::Gen::ObjectVisitor::emitGCClearCode(const TypePtr& p, const string& prefi
         ClassDeclPtr decl = ClassDeclPtr::dynamicCast(p);
         if(decl)
         {
-            C << nl << "if(" << "::IceInternal::upCast(" << prefix << name << ".get())->__usesClasses())";
+            string scope = fixKwd(decl->scope());
+            C << nl << "if(" << scope << "upCast(" << prefix << name << ".get())->__usesClasses())";
             C << sb;
-            C << nl << "::IceInternal::upCast(" << prefix << name << ".get())->__decRefUnsafe();";
+            C << nl << scope << "upCast(" << prefix << name << ".get())->__decRefUnsafe();";
             C << nl << prefix << name << ".__clearHandleUnsafe();";
 
         }
@@ -5629,40 +5644,30 @@ Slice::Gen::IceInternalVisitor::visitClassDecl(const ClassDeclPtr& p)
 {
     string scoped = fixKwd(p->scoped());
 
-    H << sp;
-
-    if(!p->isLocal())
-    {
-        H << nl << _dllExport << "::Ice::Object* upCast(" << scoped << "*);";
-        H << nl << _dllExport << "::IceProxy::Ice::Object* upCast(::IceProxy" << scoped << "*);";
-    }
-    else
-    {
-        H << nl << _dllExport << "::Ice::LocalObject* upCast(" << scoped << "*);";
-    }
 }
 
 bool
 Slice::Gen::IceInternalVisitor::visitClassDefStart(const ClassDefPtr& p)
 {
     string scoped = fixKwd(p->scoped());
+    string scope = fixKwd(p->scope());
 
     C << sp;
     if(!p->isLocal())
     {
         C << nl
 	  << (_dllExport.empty() ? "" : "ICE_DECLSPEC_EXPORT ")
-	  << "::Ice::Object* IceInternal::upCast(" << scoped << "* p) { return p; }";
+	  << "::Ice::Object* " << scope << "upCast(" << scoped << "* p) { return p; }";
         C << nl
 	  << (_dllExport.empty() ? "" : "ICE_DECLSPEC_EXPORT ")
-	  << "::IceProxy::Ice::Object* IceInternal::upCast(::IceProxy" << scoped
+	  << "::IceProxy::Ice::Object* IceProxy" << scope << "upCast(::IceProxy" << scoped
           << "* p) { return p; }";
     }
     else
     {
         C << nl
 	  << (_dllExport.empty() ? "" : "ICE_DECLSPEC_EXPORT ")
-	  << "::Ice::LocalObject* IceInternal::upCast(" << scoped << "* p) { return p; }";
+	  << "::Ice::LocalObject* " << scope << "upCast(" << scoped << "* p) { return p; }";
     }
 
     return true;

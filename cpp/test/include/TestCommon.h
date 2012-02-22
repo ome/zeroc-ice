@@ -17,6 +17,22 @@
 #include <stdlib.h>
 #endif
 
+#if defined(__FreeBSD__)
+#  include <sys/types.h>
+#  include <sys/sysctl.h>
+inline bool inFreeBSDJail()
+{
+    int jailed;
+    size_t size = sizeof(jailed);
+    return (sysctlbyname("security.jail.jailed", &jailed, &size, NULL, 0) != -1 || jailed);
+}
+#else
+inline bool inFreeBSDJail()
+{
+    return false;
+}
+#endif
+
 void
 inline testFailed(const char* expr, const char* file, unsigned int line)
 {

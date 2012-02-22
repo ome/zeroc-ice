@@ -26,6 +26,10 @@
 #  include <dir.h>
 #endif
 
+#ifdef __FreeBSD__
+#  include <unistd.h>
+#endif
+
 using namespace std;
 
 //

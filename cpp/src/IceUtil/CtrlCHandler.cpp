@@ -219,18 +219,27 @@ CtrlCHandler::CtrlCHandler(CtrlCHandlerCallback callback)
         sigaddset(&ctrlCLikeSignals, SIGHUP);
         sigaddset(&ctrlCLikeSignals, SIGINT);
         sigaddset(&ctrlCLikeSignals, SIGTERM);
-        int rc = pthread_sigmask(SIG_BLOCK, &ctrlCLikeSignals, 0);
+#ifndef NDEBUG
+        int rc = 
+#endif        
+        pthread_sigmask(SIG_BLOCK, &ctrlCLikeSignals, 0);
         assert(rc == 0);
 
         // Joinable thread
-        rc = pthread_create(&_tid, 0, sigwaitThread, 0);
+#ifndef NDEBUG
+        rc = 
+#endif
+        pthread_create(&_tid, 0, sigwaitThread, 0);
         assert(rc == 0);
     }
 }
 
 CtrlCHandler::~CtrlCHandler()
 {
-    int rc = pthread_cancel(_tid);
+#ifndef NDEBUG
+    int rc = 
+#endif
+    pthread_cancel(_tid);
     assert(rc == 0);
 #if defined(__APPLE__)
     //
@@ -241,7 +250,10 @@ CtrlCHandler::~CtrlCHandler()
     //assert(rc == 0); For some reaosns, this assert is sometime triggered
 #endif
     void* status = 0;
-    rc = pthread_join(_tid, &status);
+#ifndef NDEBUG
+    rc = 
+#endif
+    pthread_join(_tid, &status);
     assert(rc == 0);
 #if !defined(__APPLE__)
     assert(status == PTHREAD_CANCELED);

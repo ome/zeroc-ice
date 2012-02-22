@@ -229,6 +229,7 @@ IceInternal::ProxyFactory::checkRetryAfterException(const LocalException& ex,
     } 
     else if(cnt > static_cast<int>(_retryIntervals.size()))
     {
+        interval = 0; // apeace compiler
         if(traceLevels->retry >= 1)
         {
             Trace out(logger, traceLevels->retryCat);

@@ -17,18 +17,7 @@ namespace Ice
 {
 
 class Object;
-
-}
-
-namespace IceInternal
-{
-
 ICE_API IceUtil::Shared* upCast(::Ice::Object*);
-
-}
-
-namespace Ice
-{
 
 typedef IceInternal::Handle< Object > ObjectPtr;
 

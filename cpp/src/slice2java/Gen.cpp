@@ -1246,7 +1246,7 @@ Slice::JavaVisitor::writeConstantValue(Output& out, const TypePtr& type, const S
     {
         BuiltinPtr bp;
         EnumPtr ep;
-        if(bp = BuiltinPtr::dynamicCast(type))
+        if((bp = BuiltinPtr::dynamicCast(type)))
         {
             switch(bp->kind())
             {
@@ -1349,7 +1349,7 @@ Slice::JavaVisitor::writeConstantValue(Output& out, const TypePtr& type, const S
             }
 
         }
-        else if(ep = EnumPtr::dynamicCast(type))
+        else if((ep = EnumPtr::dynamicCast(type)))
         {
             string val = value;
             string::size_type pos = val.rfind(':');

@@ -19,13 +19,13 @@ namespace Ice
 
 class AsyncResult;
 typedef IceInternal::Handle<AsyncResult> AsyncResultPtr;
+ICE_API IceUtil::Shared* upCast(::Ice::AsyncResult*);
 
 }
 
 namespace IceInternal
 {
 
-ICE_API IceUtil::Shared* upCast(::Ice::AsyncResult*);
 
 class OutgoingAsync;
 ICE_API IceUtil::Shared* upCast(OutgoingAsync*);

@@ -15,6 +15,10 @@
 #   include <io.h>
 #endif
 
+#ifdef __FreeBSD__
+#   include <unistd.h>
+#endif
+
 using namespace IceUtil;
 using namespace std;
 

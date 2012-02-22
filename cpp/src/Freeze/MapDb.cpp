@@ -229,7 +229,11 @@ Freeze::MapDb::MapDb(const ConnectionIPtr& connection,
 #ifndef NDEBUG
                 bool inserted = 
 #endif
-                    _indices.insert(IndexMap::value_type(indexBase->name(), indexI.get())).second;
+                    _indices.insert(IndexMap::value_type(indexBase->name(), indexI.get()))
+#ifndef NDEBUG                    
+                    .second
+#endif
+                ;
                 assert(inserted);
                 
                 indexBase->_impl = indexI.release();

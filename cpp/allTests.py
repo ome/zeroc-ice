@@ -25,6 +25,7 @@ from scripts import *
 # List of all basic tests.
 #
 tests = [ 
+
     ("IceUtil/condvar", ["once", "win32only"]),
     ("IceUtil/thread",  ["once"]),
     ("IceUtil/unicode", ["once"]),
@@ -62,7 +63,7 @@ tests = [
     ("Ice/servantLocator", ["core"]),
     ("Ice/interceptor", ["core"]),
     ("Ice/stringConverter", ["core"]),
-    ("Ice/udp", ["core"]),
+    ("Ice/udp", ["core", "nofreebsdjail"]),
     ("Ice/defaultServant", ["core"]),
     ("Ice/defaultValue", ["core"]),
     ("Ice/invoke", ["core", "novc6"]),
@@ -106,8 +107,8 @@ tests = [
 #
 if TestUtil.isWin32() or os.getuid() == 0:
     tests += [
-        ("IceUtil/priority", ["core", "nodarwin"]),
-        ("Ice/threadPoolPriority", ["core", "nodarwin"])
+        ("IceUtil/priority", ["core", "nodarwin", "nofreebsd"]),
+        ("Ice/threadPoolPriority", ["core", "nodarwin", "nofreebsd"])
         ]
 
 if __name__ == "__main__":

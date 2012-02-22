@@ -48,7 +48,7 @@ protected:
 
     virtual Ice::Int hashInit() const;
 #if !defined(_MSC_VER) || _MSC_VER > 1300
-    using IceInternal::EndpointI::connectors;
+    using ::IceInternal::EndpointI::connectors;
 #endif
     
 private:

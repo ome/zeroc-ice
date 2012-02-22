@@ -1281,7 +1281,7 @@ Slice::CsVisitor::writeConstantValue(const TypePtr& type, const SyntaxTreeBasePt
         {
             _out << value << "F";
         }
-        else if(ep = EnumPtr::dynamicCast(type))
+        else if((ep = EnumPtr::dynamicCast(type)))
         {
             string enumName = fixId(ep->scoped());
             string::size_type colon = value.rfind(':');
@@ -3914,16 +3914,6 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
     ClassDefPtr cl = ClassDefPtr::dynamicCast(p->container());
     string name = fixId(p->name(), DotNet::ICloneable, true);
     vector<string> params = getParams(p);
-    bool hasOutParams = false;
-    ParamDeclList paramList = p->parameters();
-    for(ParamDeclList::const_iterator pli = paramList.begin(); pli != paramList.end(); ++pli)
-    {
-        if((*pli)->isOutParam())
-        {
-            hasOutParams = true;
-            break;
-        }
-    }
 
     _out << sp;
 

@@ -141,9 +141,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
         test(info->adapterName.empty());
         test(info->localPort > 0);
         test(info->remotePort == 12010);
-        test(info->remoteAddress == defaultHost);
-        test(info->localAddress == defaultHost);
-
+        if (!inFreeBSDJail())
+        {
+            test(info->remoteAddress == defaultHost);
+            test(info->localAddress == defaultHost);
+        }
         ostringstream os;
 
         Ice::Context ctx = testIntf->getConnectionInfoAsContext();
@@ -163,8 +165,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
         test(info->adapterName.empty());
         test(info->localPort > 0);
         test(info->remotePort == 12010);
-        test(info->remoteAddress ==defaultHost);
-        test(info->localAddress == defaultHost);
+        if (!inFreeBSDJail())
+        {
+            test(info->remoteAddress == defaultHost);
+            test(info->localAddress == defaultHost);
+        }
     }
     cout << "ok" << endl;
 

@@ -8,10 +8,19 @@
 // **********************************************************************
 
 #include <Ice/Stream.h>
+#include <Ice/LocalException.h>
 
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
 
-IceUtil::Shared* IceInternal::upCast(InputStream* p) { return p; }
-IceUtil::Shared* IceInternal::upCast(OutputStream* p) { return p; }
+IceUtil::Shared* Ice::upCast(InputStream* p) { return p; }
+IceUtil::Shared* Ice::upCast(OutputStream* p) { return p; }
+
+namespace IceInternal
+{
+  void delegateThrowMarshalException(const char* file, int line , const ::std::string& message)
+  {
+    throw Ice::MarshalException(file, line, message);
+  }
+}

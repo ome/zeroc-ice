@@ -10,6 +10,7 @@
 #ifndef ICEE_BUFFER_H
 #define ICEE_BUFFER_H
 
+#include <cstddef>
 #include <Ice/Config.h>
 
 namespace IceInternal
