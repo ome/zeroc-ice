@@ -22,6 +22,11 @@ namespace Ice
 {
 
 class Object;
+inline ::IceProxy::Ice::Object* 
+upCast(::IceProxy::Ice::Object* o)
+{
+    return o;
+}
 
 }
 
@@ -34,6 +39,11 @@ namespace Ice
 {
 
 class Object;
+inline ::IceDelegate::Ice::Object*
+upCast(::IceDelegate::Ice::Object* o)
+{
+    return o;
+}
 
 }
 
@@ -47,6 +57,12 @@ namespace Ice
 
 class Object;
 
+inline ::IceDelegateM::Ice::Object*
+upCast(::IceDelegateM::Ice::Object* o)
+{
+    return o;
+}
+
 }
 
 }
@@ -58,36 +74,12 @@ namespace Ice
 {
 
 class Object;
-
-}
-
-}
-
-namespace IceInternal
-{
-
-inline ::IceProxy::Ice::Object* 
-upCast(::IceProxy::Ice::Object* o)
-{
-    return o;
-}
-
-inline ::IceDelegate::Ice::Object*
-upCast(::IceDelegate::Ice::Object* o)
-{
-    return o;
-}
-
 inline ::IceDelegateD::Ice::Object*
 upCast(::IceDelegateD::Ice::Object* o)
 {
     return o;
 }
 
-inline ::IceDelegateM::Ice::Object*
-upCast(::IceDelegateM::Ice::Object* o)
-{
-    return o;
 }
 
 }

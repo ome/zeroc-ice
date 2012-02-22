@@ -225,10 +225,16 @@ IconvStringConverter<charT>::cleanupKey(void* val)
 template<typename charT> /*static*/ void
 IconvStringConverter<charT>::close(std::pair<iconv_t, iconv_t> cdp)
 {
-    int rs = iconv_close(cdp.first);
+#ifndef NDEBUG
+    int rs = 
+#endif
+    iconv_close(cdp.first);
     assert(rs == 0);
 
-    rs = iconv_close(cdp.second);
+#ifndef NDEBUG
+    rs = 
+#endif
+    iconv_close(cdp.second);
     assert(rs == 0);
 }
  

@@ -44,10 +44,16 @@ IceUtilInternal::CountDownLatch::~CountDownLatch()
 #ifdef _WIN32
     CloseHandle(_event);
 #else
+#ifndef NDEBUG
     int rc = 0;
-    rc = pthread_mutex_destroy(&_mutex);
+    rc = 
+#endif
+    pthread_mutex_destroy(&_mutex);
     assert(rc == 0);
-    rc = pthread_cond_destroy(&_cond);
+#ifndef NDEBUG
+    rc = 
+#endif
+    pthread_cond_destroy(&_cond);
     assert(rc == 0);
 #endif
 }

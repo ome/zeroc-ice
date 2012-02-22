@@ -18,13 +18,13 @@ namespace IceSSL
 {
 
 class TrustManager;
+IceUtil::Shared* upCast(IceSSL::TrustManager*);
 
 }
 
 namespace IceInternal
 {
 
-IceUtil::Shared* upCast(IceSSL::TrustManager*);
 
 }
 

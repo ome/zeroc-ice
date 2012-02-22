@@ -24,6 +24,7 @@ from scripts import *
 # List of all basic tests.
 #
 tests = [ 
+
     ("IceUtil/condvar", ["once", "win32only"]),
     ("IceUtil/thread",  ["once"]),
     ("IceUtil/unicode", ["once"]),
@@ -55,7 +56,7 @@ tests = [
     ("Ice/servantLocator", ["core"]),
     ("Ice/interceptor", ["core"]),
     ("Ice/stringConverter", ["core"]),
-    ("Ice/udp", ["core"]),
+    ("Ice/udp", ["core", "nofreebsdjail"]),
     ("IceSSL/configuration", ["once", "novalgrind"]), # valgrind doesn't work well with openssl
     ("IceBox/configuration", ["core", "noipv6"]),
     ("Freeze/dbmap", ["once"]),
@@ -89,5 +90,17 @@ tests = [
     ("Glacier2/staticFiltering", ["service", "noipv6"]),
     ]
 
+<<<<<<< HEAD
+=======
+#
+# Run priority tests only if running as root on Unix.
+#
+if TestUtil.isWin32() or os.getuid() == 0:
+    tests += [
+        ("IceUtil/priority", ["core", "nodarwin", "nofreebsd"]),
+        ("Ice/threadPoolPriority", ["core", "nodarwin", "nofreebsd"])
+        ]
+
+>>>>>>> 9ff440a... User patch for Ice 3.4.2: support clang
 if __name__ == "__main__":
     TestUtil.run(tests)

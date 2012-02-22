@@ -18,13 +18,13 @@ namespace IceSSL
 {
 
 class Instance;
+IceUtil::Shared* upCast(IceSSL::Instance*);
 
 }
 
 namespace IceInternal
 {
 
-IceUtil::Shared* upCast(IceSSL::Instance*);
 
 }
 

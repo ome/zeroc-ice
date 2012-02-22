@@ -117,8 +117,11 @@ IceUtil::RecMutex::RecMutex() :
 IceUtil::RecMutex::~RecMutex()
 {
     assert(_count == 0);
+#ifndef NDEBUG
     int rc = 0;
-    rc = pthread_mutex_destroy(&_mutex);
+    rc = 
+#endif
+    pthread_mutex_destroy(&_mutex);
     assert(rc == 0);
 }
 
@@ -165,8 +168,11 @@ IceUtil::RecMutex::unlock() const
 {
     if(--_count == 0)
     {
+#ifndef NDEBUG
         int rc = 0; // Prevent warnings when NDEBUG is defined.
-        rc = pthread_mutex_unlock(&_mutex);
+        rc = 
+#endif
+        pthread_mutex_unlock(&_mutex);
         assert(rc == 0);
     }
 }

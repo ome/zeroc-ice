@@ -21,13 +21,13 @@ namespace IceSSL
 {
 
 class DHParams;
+IceUtil::Shared* upCast(IceSSL::DHParams*);
 
 }
 
 namespace IceInternal
 {
 
-IceUtil::Shared* upCast(IceSSL::DHParams*);
 
 }
 

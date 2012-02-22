@@ -28,12 +28,6 @@ namespace Ice
 
 class AMD_Object_ice_invoke;
 class AMD_Array_Object_ice_invoke;
-
-}
-
-namespace IceInternal
-{
-
 ICE_API IceUtil::Shared* upCast(::Ice::AMD_Object_ice_invoke*);
 ICE_API IceUtil::Shared* upCast(::Ice::AMD_Array_Object_ice_invoke*);
 

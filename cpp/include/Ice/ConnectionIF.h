@@ -17,13 +17,13 @@ namespace Ice
 {
 
 class ConnectionI;
+ICE_API Ice::LocalObject* upCast(Ice::ConnectionI*);
 
 }
 
 namespace IceInternal
 {
 
-ICE_API Ice::LocalObject* upCast(Ice::ConnectionI*);
 
 }
 

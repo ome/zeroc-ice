@@ -643,7 +643,7 @@ Slice::writeMarshalUnmarshalCode(Output& out, const TypePtr& type, const string&
         string scope = fixKwd(cl->scope());
         if(marshal)
         {
-            out << nl << stream << deref << "write(::Ice::ObjectPtr(::IceInternal::upCast(" << fixedParam 
+            out << nl << stream << deref << "write(::Ice::ObjectPtr(" << scope << "upCast(" << fixedParam 
                 << ".get())));";
         }
         else
@@ -661,7 +661,7 @@ Slice::writeMarshalUnmarshalCode(Output& out, const TypePtr& type, const string&
         string scope = fixKwd(px->_class()->scope());
         if(marshal)
         {
-            out << nl << stream << deref << "write(::Ice::ObjectPrx(::IceInternal::upCast(" << fixedParam 
+            out << nl << stream << deref << "write(::Ice::ObjectPrx(::IceProxy" << scope << "upCast(" << fixedParam 
                 << ".get())));";
         }
         else

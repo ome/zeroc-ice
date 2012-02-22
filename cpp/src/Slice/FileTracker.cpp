@@ -17,6 +17,10 @@
 #   include <direct.h>
 #endif
 
+#ifdef __FreeBSD__
+#   include <unistd.h>
+#endif
+
 using namespace std;
 
 Slice::FileException::FileException(const char* file, int line, const string& r) :

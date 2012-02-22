@@ -31,7 +31,7 @@ using namespace std;
 using namespace Ice;
 using namespace IceSSL;
 
-IceUtil::Shared* IceInternal::upCast(IceSSL::Instance* p) { return p; }
+IceUtil::Shared* IceSSL::upCast(IceSSL::Instance* p) { return p; }
 
 static IceUtil::StaticMutex staticMutex = ICE_STATIC_MUTEX_INITIALIZER;
 static int instanceCount = 0;

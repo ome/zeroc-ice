@@ -200,8 +200,11 @@ Mutex::Mutex()
 inline
 Mutex::~Mutex()
 {
+#ifndef NDEBUG
     int rc = 0;
-    rc = pthread_mutex_destroy(&_mutex);
+    rc = 
+#endif    
+    pthread_mutex_destroy(&_mutex);
     assert(rc == 0);
 }
 

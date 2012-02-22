@@ -16,8 +16,15 @@
 #include <Ice/Exception.h>
 #include <IceUtil/Shared.h>
 
+namespace IceInternal
+{
+    // Forward declaration required for writer specializations.
+    void delegateThrowMarshalException(const char*, int, const ::std::string&);
+}
+
 namespace Ice
 {
+    
 
 class ICE_API ReadObjectCallback : public ::IceUtil::Shared
 {

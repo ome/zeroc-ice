@@ -49,7 +49,12 @@ IceGrid::AdminCallbackRouter::addMapping(const string& category, const Connectio
 #ifndef NDEBUG
     bool inserted =
 #endif
-        _categoryToConnection.insert(map<string, ConnectionPtr>::value_type(category, con)).second;
+        _categoryToConnection.insert(map<string, ConnectionPtr>::value_type(category, con))
+#ifndef NDEBUG
+        .second
+#endif
+        ;
+
     
     assert(inserted == true);
 }

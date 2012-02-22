@@ -8,6 +8,7 @@
 // **********************************************************************
 
 #include <Ice/Stream.h>
+#include <Ice/LocalException.h>
 
 using namespace std;
 using namespace Ice;

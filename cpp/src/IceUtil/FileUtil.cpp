@@ -9,6 +9,10 @@
 
 #include <IceUtil/FileUtil.h>
 
+#ifdef __FreeBSD__
+#  include <unistd.h>
+#endif
+
 using namespace std;
 
 //

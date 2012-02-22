@@ -19,12 +19,6 @@ namespace Ice
 
 class InputStream;
 class OutputStream;
-
-}
-
-namespace IceInternal
-{
-
 ICE_API IceUtil::Shared* upCast(::Ice::InputStream*);
 ICE_API IceUtil::Shared* upCast(::Ice::OutputStream*);
 
