@@ -14,8 +14,8 @@ using namespace std;
 using namespace Ice;
 using namespace IceInternal;
 
-IceUtil::Shared* IceInternal::upCast(InputStream* p) { return p; }
-IceUtil::Shared* IceInternal::upCast(OutputStream* p) { return p; }
+IceUtil::Shared* Ice::upCast(InputStream* p) { return p; }
+IceUtil::Shared* Ice::upCast(OutputStream* p) { return p; }
 
 Ice::ReadObjectCallbackI::ReadObjectCallbackI(PatchFunc func, void* arg) :
     _func(func), _arg(arg)

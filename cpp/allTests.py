@@ -90,17 +90,5 @@ tests = [
     ("Glacier2/staticFiltering", ["service", "noipv6"]),
     ]
 
-<<<<<<< HEAD
-=======
-#
-# Run priority tests only if running as root on Unix.
-#
-if TestUtil.isWin32() or os.getuid() == 0:
-    tests += [
-        ("IceUtil/priority", ["core", "nodarwin", "nofreebsd"]),
-        ("Ice/threadPoolPriority", ["core", "nodarwin", "nofreebsd"])
-        ]
-
->>>>>>> 9ff440a... User patch for Ice 3.4.2: support clang
 if __name__ == "__main__":
     TestUtil.run(tests)

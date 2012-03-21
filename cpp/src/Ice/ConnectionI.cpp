@@ -573,7 +573,6 @@ Ice::ConnectionI::sendAsyncRequest(const OutgoingAsyncPtr& out, bool compress, b
     }
     catch(const LocalException& ex)
     {
-        status = IceInternal::AsyncStatusQueued; // this is only to apeace the compiler
         setState(StateClosed, ex);
         assert(_exception.get());
         _exception->ice_throw();
@@ -884,7 +883,6 @@ Ice::ConnectionI::flushAsyncBatchRequests(const BatchOutgoingAsyncPtr& outAsync)
     }
     catch(const Ice::LocalException& ex)
     {
-        status = IceInternal::AsyncStatusQueued; // this is only to apeace the compiler
         setState(StateClosed, ex);
         assert(_exception.get());
         _exception->ice_throw();

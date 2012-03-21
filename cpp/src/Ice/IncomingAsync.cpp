@@ -23,8 +23,8 @@ using namespace Ice;
 using namespace IceInternal;
 
 IceUtil::Shared* IceInternal::upCast(IncomingAsync* p) { return p; }
-IceUtil::Shared* IceInternal::upCast(AMD_Object_ice_invoke* p) { return p; }
-IceUtil::Shared* IceInternal::upCast(AMD_Array_Object_ice_invoke* p) { return p; }
+IceUtil::Shared* Ice::upCast(AMD_Object_ice_invoke* p) { return p; }
+IceUtil::Shared* Ice::upCast(AMD_Array_Object_ice_invoke* p) { return p; }
 
 IceInternal::IncomingAsync::IncomingAsync(Incoming& in) :
     IncomingBase(in),
