@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -109,6 +109,12 @@ public class SharedDbEnv implements com.sleepycat.db.ErrorHandler, Runnable
     getCommunicator()
     {
         return _key.communicator;
+    }
+
+    public Ice.EncodingVersion
+    getEncoding()
+    {
+        return _encoding;
     }
 
     public com.sleepycat.db.Environment
@@ -273,6 +279,11 @@ public class SharedDbEnv implements com.sleepycat.db.ErrorHandler, Runnable
 
         String propertyPrefix = "Freeze.DbEnv." + _key.envName;
         String dbHome = properties.getPropertyWithDefault(propertyPrefix + ".DbHome", _key.envName);
+
+        String encoding = properties.getPropertyWithDefault(
+            propertyPrefix + ".EncodingVersion", Ice.Util.encodingVersionToString(Ice.Util.currentEncoding()));
+        _encoding = Ice.Util.stringToEncodingVersion(encoding);
+        IceInternal.Protocol.checkSupportedEncoding(_encoding);
 
         java.io.File dir = new java.io.File(dbHome);
         if(!dir.exists())
@@ -534,7 +545,9 @@ public class SharedDbEnv implements com.sleepycat.db.ErrorHandler, Runnable
         public int
         hashCode()
         {
-            return envName.hashCode() ^ communicator.hashCode();
+            int h = 5381;
+            h = IceInternal.HashUtil.hashAdd(h, envName);
+            return IceInternal.HashUtil.hashAdd(h, communicator);
         }
     }
 
@@ -549,6 +562,7 @@ public class SharedDbEnv implements com.sleepycat.db.ErrorHandler, Runnable
     private long _checkpointPeriod = 0;
     private int _kbyte = 0;
     private Thread _thread;
+    private Ice.EncodingVersion _encoding;
 
     private java.util.Map<Thread, TransactionalEvictorContext> _ctxMap =
         new java.util.HashMap<Thread, TransactionalEvictorContext>();

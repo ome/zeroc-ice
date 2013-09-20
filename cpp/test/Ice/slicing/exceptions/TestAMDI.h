@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -48,6 +48,46 @@ public:
                                             const ::Ice::Current&);
     virtual void unknownMostDerived2AsBase_async(
                     const ::Test::AMD_TestIntf_unknownMostDerived2AsBasePtr&,
+                    const ::Ice::Current&);
+
+    virtual void unknownMostDerived2AsBaseCompact_async(
+                    const ::Test::AMD_TestIntf_unknownMostDerived2AsBaseCompactPtr&,
+                    const ::Ice::Current&);
+
+    virtual void knownPreservedAsBase_async(
+                    const ::Test::AMD_TestIntf_knownPreservedAsBasePtr&,
+                    const ::Ice::Current&);
+
+    virtual void knownPreservedAsKnownPreserved_async(
+                    const ::Test::AMD_TestIntf_knownPreservedAsKnownPreservedPtr&,
+                    const ::Ice::Current&);
+
+    virtual void relayKnownPreservedAsBase_async(
+                    const ::Test::AMD_TestIntf_relayKnownPreservedAsBasePtr&,
+                    const ::Test::RelayPrx&,
+                    const ::Ice::Current&);
+
+    virtual void relayKnownPreservedAsKnownPreserved_async(
+                    const ::Test::AMD_TestIntf_relayKnownPreservedAsKnownPreservedPtr&,
+                    const ::Test::RelayPrx&,
+                    const ::Ice::Current&);
+
+    virtual void unknownPreservedAsBase_async(
+                    const ::Test::AMD_TestIntf_unknownPreservedAsBasePtr&,
+                    const ::Ice::Current&);
+
+    virtual void unknownPreservedAsKnownPreserved_async(
+                    const ::Test::AMD_TestIntf_unknownPreservedAsKnownPreservedPtr&,
+                    const ::Ice::Current&);
+
+    virtual void relayUnknownPreservedAsBase_async(
+                    const ::Test::AMD_TestIntf_relayUnknownPreservedAsBasePtr&,
+                    const ::Test::RelayPrx&,
+                    const ::Ice::Current&);
+
+    virtual void relayUnknownPreservedAsKnownPreserved_async(
+                    const ::Test::AMD_TestIntf_relayUnknownPreservedAsKnownPreservedPtr&,
+                    const ::Test::RelayPrx&,
                     const ::Ice::Current&);
 
     virtual void shutdown_async(const ::Test::AMD_TestIntf_shutdownPtr&, const ::Ice::Current&);

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -43,13 +43,23 @@ Freeze::IndexI::untypedFindFirst(const Key& bytes, Int firstN) const
 
     Dbt dbKey;
     initializeInDbt(bytes, dbKey);
+#if (DB_VERSION_MAJOR <= 4) || (DB_VERSION_MAJOR == 5 && DB_VERSION_MINOR <= 1)
     //
     // When we have a custom-comparison function, Berkeley DB returns
     // the key on-disk (when it finds one). We disable this behavior:
     // (ref Oracle SR 5925672.992)
     //
     dbKey.set_flags(DB_DBT_USERMEM | DB_DBT_PARTIAL);
-
+#else
+    //
+    // In DB > 5.1 we can not set DB_DBT_PARTIAL in the key Dbt,
+    // when using DB_SET, we must resize the Dbt key param to hold enought
+    // space or Dbc::get fails with DB_BUFFER_SMALL.
+    //
+    dbKey.set_flags(DB_DBT_USERMEM);
+    dbKey.set_ulen(static_cast<u_int32_t>(bytes.size()));
+#endif
+                
     Key pkey(1024);
     Dbt pdbKey;
     initializeOutDbt(pkey, pdbKey);
@@ -57,7 +67,8 @@ Freeze::IndexI::untypedFindFirst(const Key& bytes, Int firstN) const
     Dbt dbValue;
     dbValue.set_flags(DB_DBT_USERMEM | DB_DBT_PARTIAL);
 
-    Ice::CommunicatorPtr communicator = _store->communicator();
+    const Ice::CommunicatorPtr& communicator = _store->communicator();
+    const Ice::EncodingVersion& encoding = _store->encoding();
 
     TransactionIPtr transaction = _store->evictor()->beforeQuery();
     DbTxn* tx = transaction == 0 ? 0 : transaction->dbTxn();
@@ -99,7 +110,7 @@ Freeze::IndexI::untypedFindFirst(const Key& bytes, Int firstN) const
                                 pkey.resize(pdbKey.get_size());
                                 
                                 Ice::Identity ident;
-                                ObjectStoreBase::unmarshal(ident, pkey, communicator);
+                                ObjectStoreBase::unmarshal(ident, pkey, communicator, encoding);
                                 identities.push_back(ident);
                                 flags = DB_NEXT_DUP;
                             }
@@ -200,12 +211,22 @@ Freeze::IndexI::untypedCount(const Key& bytes) const
 
     Dbt dbKey;
     initializeInDbt(bytes, dbKey);
+#if (DB_VERSION_MAJOR <= 4) || (DB_VERSION_MAJOR == 5 && DB_VERSION_MINOR <= 1)
     //
     // When we have a custom-comparison function, Berkeley DB returns
     // the key on-disk (when it finds one). We disable this behavior:
     // (ref Oracle SR 5925672.992)
     //
     dbKey.set_flags(DB_DBT_USERMEM | DB_DBT_PARTIAL);
+#else
+    //
+    // In DB > 5.1 we can not set DB_DBT_PARTIAL in the key Dbt,
+    // when using DB_SET, we must resize the Dbt key param to hold enought
+    // space or Dbc::get fails with DB_BUFFER_SMALL.
+    //
+    dbKey.set_flags(DB_DBT_USERMEM);
+    dbKey.set_ulen(static_cast<u_int32_t>(bytes.size()));
+#endif
     
     Dbt dbValue;
     dbValue.set_flags(DB_DBT_USERMEM | DB_DBT_PARTIAL);
@@ -315,6 +336,7 @@ Freeze::IndexI::associate(ObjectStoreBase* store, DbTxn* txn,
     assert(txn != 0);
     _store = store;
     _index._communicator = store->communicator();
+    _index._encoding = store->encoding();
     
     _db.reset(new Db(store->evictor()->dbEnv()->getEnv(), 0));
     _db->set_flags(DB_DUP | DB_DUPSORT);
@@ -374,15 +396,16 @@ Freeze::IndexI::associate(ObjectStoreBase* store, DbTxn* txn,
 }
 
 int
-Freeze::IndexI::secondaryKeyCreate(Db* secondary, const Dbt* dbKey, 
+Freeze::IndexI::secondaryKeyCreate(Db* /*secondary*/, const Dbt* /*dbKey*/, 
                                    const Dbt* dbValue, Dbt* result)
 {
-    Ice::CommunicatorPtr communicator = _store->communicator();
+    const Ice::CommunicatorPtr& communicator = _store->communicator();
+    const Ice::EncodingVersion& encoding = _store->encoding();
 
     ObjectRecord rec;
     Byte* first = static_cast<Byte*>(dbValue->get_data());
     Value value(first, first + dbValue->get_size());
-    ObjectStoreBase::unmarshal(rec, value, communicator);
+    ObjectStoreBase::unmarshal(rec, value, communicator, encoding, _store->keepStats());
 
     Key bytes;
     if(_index.marshalKey(rec.servant, bytes))

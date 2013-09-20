@@ -1,12 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
 #include <AMDInterceptorI.h>
 #include <Test.h>
 #include <TestCommon.h>
@@ -26,11 +27,6 @@ AMDInterceptorI::dispatch(Ice::Request& request)
     class CallbackI : public Ice::DispatchInterceptorAsyncCallback
     {
     public:
-        
-        CallbackI(AMDInterceptorI& interceptor) :
-            _interceptor(interceptor)
-        {
-        }
         
         virtual bool response(bool ok)
         {
@@ -52,17 +48,13 @@ AMDInterceptorI::dispatch(Ice::Request& request)
             test(false);
             return false;
         }
-
-    private:
-        
-        AMDInterceptorI& _interceptor;
     };
 
 
     Ice::Current& current = const_cast<Ice::Current&>(request.getCurrent());
     _lastOperation = current.operation;
     
-    Ice::DispatchInterceptorAsyncCallbackPtr cb = new CallbackI(*this);
+    Ice::DispatchInterceptorAsyncCallbackPtr cb = new CallbackI();
 
     if(_lastOperation == "amdAddWithRetry")
     {

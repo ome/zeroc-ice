@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,10 +15,7 @@
 #include <Ice/TraceLevelsF.h>
 #include <Ice/LoggerF.h>
 #include <Ice/Acceptor.h>
-
-#ifndef _WIN32
-#   include <sys/socket.h> // For struct sockaddr_storage
-#endif
+#include <Ice/Network.h>
 
 namespace IceInternal
 {
@@ -40,6 +37,7 @@ public:
     virtual void startAccept();
     virtual void finishAccept();
 #endif
+
     virtual TransceiverPtr accept();
     virtual std::string toString() const;
 
@@ -47,14 +45,14 @@ public:
 
 private:
 
-    TcpAcceptor(const InstancePtr&, const std::string&, int, ProtocolSupport);
+    TcpAcceptor(const InstancePtr&, const std::string&, int);
     virtual ~TcpAcceptor();
     friend class TcpEndpointI;
 
     const InstancePtr _instance;
     const TraceLevelsPtr _traceLevels;
     const ::Ice::LoggerPtr _logger;
-    const struct sockaddr_storage _addr;
+    const Address _addr;
 
     int _backlog;
 #ifdef ICE_USE_IOCP
@@ -66,5 +64,5 @@ private:
 };
 
 }
-
 #endif
+

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -45,7 +45,7 @@ main(int argc, char* argv[])
 }
 
 int
-CallbackClient::run(int argc, char* argv[])
+CallbackClient::run(int, char**)
 {
     ObjectPrx routerBase = communicator()->stringToProxy("Glacier2/router:default -p 12347");
     Glacier2::RouterPrx router = Glacier2::RouterPrx::checkedCast(routerBase);
@@ -132,7 +132,7 @@ CallbackClient::run(int argc, char* argv[])
             oneway->initiateCallbackWithPayload(onewayR, ctx);
             oneway->initiateCallbackWithPayload(onewayR, ctx);
             oneway->initiateCallback(twowayR, 0);
-            IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(200));
+            IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(200 + nRetry * 200));
             callbackReceiverImpl->activate();
             test(callbackReceiverImpl->callbackOK(1, 0) == 0);
             count = callbackReceiverImpl->callbackWithPayloadOK(0);
@@ -155,21 +155,21 @@ CallbackClient::run(int argc, char* argv[])
         callbackReceiverImpl->activate();
         test(callbackReceiverImpl->callbackWithPayloadOK(4) == 0);
         
-	int remainingCallbacks = callbackReceiverImpl->callbackOK(1, 0);
-	//
-	// Occasionally, Glacier2 flushes in the middle of our 5
-	// callbacks, so we get more than 1 callback
-	// (in theory we could get up to 5 total - more than 1 extra is extremely unlikely)
-	//
-	// The sleep above is also important as we want to have enough
-	// time to receive this (these) extra callback(s).
-	//
-	test(remainingCallbacks <= 4);
-	if(remainingCallbacks > 0)
-	{
-	    test(callbackReceiverImpl->callbackOK(remainingCallbacks, 0) == 0);
-	}
-	
+        int remainingCallbacks = callbackReceiverImpl->callbackOK(1, 0);
+        //
+        // Occasionally, Glacier2 flushes in the middle of our 5
+        // callbacks, so we get more than 1 callback
+        // (in theory we could get up to 5 total - more than 1 extra is extremely unlikely)
+        //
+        // The sleep above is also important as we want to have enough
+        // time to receive this (these) extra callback(s).
+        //
+        test(remainingCallbacks <= 4);
+        if(remainingCallbacks > 0)
+        {
+            test(callbackReceiverImpl->callbackOK(remainingCallbacks, 0) == 0);
+        }
+        
         ctx["_fwd"] = "O";
 
         oneway->initiateCallbackWithPayload(twowayR);

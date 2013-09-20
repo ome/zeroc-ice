@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,7 +24,7 @@ using namespace Ice;
 using namespace IceInternal;
 
 IceUtil::Shared* IceInternal::upCast(IncomingAsync* p) { return p; }
-IceUtil::Shared* IceInternal::upCast(AMD_Object_ice_invoke* p) { return p; }
+IceUtil::Shared* Ice::upCast(AMD_Object_ice_invoke* p) { return p; }
 
 namespace
 {
@@ -81,7 +81,7 @@ IceInternal::IncomingAsync::__deactivate(Incoming& in)
         _active = false;
     }
 
-    in.adopt(*this);
+    in.__adopt(*this);
 }
 
 void
@@ -187,7 +187,7 @@ IceInternal::IncomingAsync::ice_exception()
 }
 
 void
-IceInternal::IncomingAsync::__response(bool ok)
+IceInternal::IncomingAsync::__response()
 {
     try
     {
@@ -200,17 +200,7 @@ IceInternal::IncomingAsync::__response(bool ok)
 
         if(_response)
         {
-            _os.endWriteEncaps();
-            
-            if(ok)
-            {
-                *(_os.b.begin() + headerSize + 4) = replyOK;
-            }
-            else
-            {
-                *(_os.b.begin() + headerSize + 4) = replyUserException;
-            }
-
+            _observer.reply(static_cast<Int>(_os.b.size() - headerSize - 4));
             _connection->sendResponse(&_os, _compress);
         }
         else
@@ -218,6 +208,7 @@ IceInternal::IncomingAsync::__response(bool ok)
             _connection->sendNoResponse();
         }
 
+        _observer.detach();
         _connection = 0;
     }
     catch(const LocalException& ex)
@@ -306,37 +297,44 @@ IceAsync::Ice::AMD_Object_ice_invoke::AMD_Object_ice_invoke(Incoming& in) :
 }
 
 void
-IceAsync::Ice::AMD_Object_ice_invoke::ice_response(bool ok, const vector<Byte>& outParams)
+IceAsync::Ice::AMD_Object_ice_invoke::ice_response(bool ok, const vector<Byte>& outEncaps)
 {
     if(__validateResponse(ok))
     {
         try
         {
-            __os()->writeBlob(outParams);
+            if(outEncaps.empty())
+            {
+                __writeParamEncaps(0, 0, ok);
+            }
+            else
+            {
+                __writeParamEncaps(&outEncaps[0], static_cast< ::Ice::Int>(outEncaps.size()), ok);
+            }
         }
         catch(const LocalException& ex)
         {
             __exception(ex);
             return;
         }
-        __response(ok);
+        __response();
     }
 }
 
 void
-IceAsync::Ice::AMD_Object_ice_invoke::ice_response(bool ok, const pair<const Byte*, const Byte*>& outParams)
+IceAsync::Ice::AMD_Object_ice_invoke::ice_response(bool ok, const pair<const Byte*, const Byte*>& outEncaps)
 {
     if(__validateResponse(ok))
     {
         try
         {
-            __os()->writeBlob(outParams.first, static_cast<Int>(outParams.second - outParams.first));
+            __writeParamEncaps(outEncaps.first, static_cast<Int>(outEncaps.second - outEncaps.first), ok);
         }
         catch(const LocalException& ex)
         {
             __exception(ex);
             return;
         }
-        __response(ok);
+        __response();
     }
 }

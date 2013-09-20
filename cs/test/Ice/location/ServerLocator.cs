@@ -1,11 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+using System.Diagnostics;
 
 public class ServerLocator : Test.TestLocatorDisp_
 {
@@ -20,6 +22,13 @@ public class ServerLocator : Test.TestLocatorDisp_
                                                Ice.Current current)
     {
         ++_requestCount;
+        if(adapter.Equals("TestAdapter10") || adapter.Equals("TestAdapter10-2"))
+        {
+            Debug.Assert(current.encoding.Equals(Ice.Util.Encoding_1_0));
+            response.ice_response(_registry.getAdapter("TestAdapter"));
+            return;
+        }
+
         // We add a small delay to make sure locator request queuing gets tested when
         // running the test on a fast machine
         System.Threading.Thread.Sleep(1);

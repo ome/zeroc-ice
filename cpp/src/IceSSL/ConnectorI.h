@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,13 +13,9 @@
 #include <Ice/LoggerF.h>
 #include <Ice/TransceiverF.h>
 #include <Ice/Connector.h>
+#include <Ice/Protocol.h>
 #include <IceSSL/InstanceF.h>
-
-#ifdef _WIN32
-#   include <winsock2.h>
-#else
-#   include <sys/socket.h> // For struct sockaddr_storage
-#endif
+#include <Ice/Network.h>
 
 namespace IceSSL
 {
@@ -41,14 +37,14 @@ public:
 
 private:
     
-    ConnectorI(const InstancePtr&, const std::string&, const struct sockaddr_storage&, Ice::Int, const std::string&);
+    ConnectorI(const InstancePtr&, const std::string&, const IceInternal::Address&, Ice::Int, const std::string&);
     virtual ~ConnectorI();
     friend class EndpointI;
 
     const InstancePtr _instance;
     const Ice::LoggerPtr _logger;
     const std::string _host;
-    struct sockaddr_storage _addr;
+    IceInternal::Address _addr;
     const Ice::Int _timeout;
     const std::string _connectionId;
 };

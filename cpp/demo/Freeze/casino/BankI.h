@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -53,14 +53,6 @@ public:
 private:
 
     std::vector<CasinoStore::PersistentBetPrx> getBets(const Ice::ObjectAdapterPtr&) const;
-
-#if (defined(_MSC_VER) && (_MSC_VER < 1300)) || defined(__BCPLUSPLUS__)
-//
-// Some compilers don't let local classes access private data members
-//
-public:
-#endif
-
     CasinoStore::PersistentBankPrx _prx;
     Freeze::TransactionalEvictorPtr _evictor;
     Freeze::TransactionalEvictorPtr _playerEvictor;

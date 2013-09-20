@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -125,6 +125,24 @@ public class AllTests
         {
             test(ex.unknown.indexOf("java.lang.RuntimeException: message") >= 0);
         }
+        catch(Ice.OperationNotExistException ex)
+        {
+        }
+        catch(Throwable ex)
+        {
+            //System.err.println(ex);
+            test(false);
+        }
+
+        try
+        {
+            obj.unknownExceptionWithServantException();
+            test(false);
+        }
+        catch(UnknownException ex)
+        {
+            test(ex.unknown.equals("reason"));
+        }
         catch(Throwable ex)
         {
             test(false);
@@ -194,7 +212,7 @@ public class AllTests
     public static TestIntfPrx
     allTests(Ice.Communicator communicator, boolean collocated, PrintWriter out)
     {
-		out.print("testing stringToProxy... ");
+                out.print("testing stringToProxy... ");
         out.flush();
         String ref = "asm:default -p 12010";
         Ice.ObjectPrx base = communicator.stringToProxy(ref);

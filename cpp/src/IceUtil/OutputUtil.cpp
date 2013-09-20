@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -35,11 +35,11 @@ IceUtilInternal::int64ToString(Int64 val)
 {
     char buf[64];
 #ifdef _WIN32
-#if defined(_MSC_VER) && (_MSC_VER >= 1400)
+#   if defined(_MSC_VER)
     sprintf_s(buf, sizeof(buf), "%I64d", val);
-#else
+#   else
     sprintf(buf, "%I64d", val);
-#endif
+#   endif
 #elif defined(ICE_64)
     sprintf(buf, "%ld", val); // Avoids a format warning from GCC.
 #else

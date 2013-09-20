@@ -1,7 +1,7 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
@@ -11,17 +11,28 @@
 <icegrid>
 
   <application name="DemoIceStorm">
+
+     <properties id="mx">
+       <property name="IceMX.Metrics.Debug.GroupBy" value="id"/>
+       <property name="IceMX.Metrics.Debug.Disabled" value="1"/>
+       <property name="IceMX.Metrics.ByParent.GroupBy" value="parent"/>
+       <property name="IceMX.Metrics.ByParent.Disabled" value="1"/>
+     </properties>
    
      <server-template id="IceStorm">
        <parameter name="index"/>
-       <parameter name="topic-manager-endpoints" default="default"/>
-       <parameter name="publish-endpoints" default="default"/>
-       <parameter name="node-endpoints" default="default"/>
+       <parameter name="topic-manager-endpoints" default="default -h localhost"/>
+       <parameter name="publish-endpoints" default="default -h localhost"/>
+       <parameter name="node-endpoints" default="default -h localhost"/>
        <parameter name="instance-name"/>
 
        <icebox id="${instance-name}-${index}" exe="icebox" activation="on-demand">
 
-         <service name="IceStorm" entry="IceStormService,34:createIceStorm">
+         <properties>
+           <properties refid="mx"/>
+         </properties>
+      
+         <service name="IceStorm" entry="IceStormService,35:createIceStorm">
 
            <dbenv name="${service}"/>
 
@@ -35,20 +46,18 @@
 
      	   <adapter name="${service}.Node" 
                     endpoints="${node-endpoints}"/>
-
+           
            <properties>
+             <properties refid="mx"/>
              <property name="${service}.InstanceName" value="${instance-name}"/>
              <property name="${service}.Trace.TopicManager" value="2"/>
              <property name="${service}.Trace.Topic" value="1"/>
              <property name="${service}.Trace.Subscriber" value="1"/>
              <property name="${service}.Trace.Election" value="1"/>
              <property name="${service}.NodeId" value="${index}"/>
-             <property name="${service}.SQL.DatabaseType" value="QSQLITE"/>
-             <property name="${service}.SQL.DatabaseName" value="db/${instance-name}-${index}.db"/>
            </properties>
 
          </service>
-
        </icebox>
      </server-template>
 

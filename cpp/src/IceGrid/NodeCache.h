@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -54,9 +54,11 @@ public:
 
     bool canRemove();
     
-    void loadServer(const ServerEntryPtr&, const ServerInfo&, const SessionIPtr&, int);
+    void loadServer(const ServerEntryPtr&, const ServerInfo&, const SessionIPtr&, int, bool);
     void destroyServer(const ServerEntryPtr&, const ServerInfo&, int);
+
     ServerInfo getServerInfo(const ServerInfo&, const SessionIPtr&);
+    InternalServerDescriptorPtr getInternalServerDescriptor(const ServerInfo&, const SessionIPtr&);
     
     void __incRef();
     void __decRef();

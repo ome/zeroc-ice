@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,7 +14,19 @@ public class OutputStreamI implements OutputStream
     public
     OutputStreamI(Communicator communicator)
     {
-        this(communicator, new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), false, false));
+        _communicator = communicator;
+        IceInternal.Instance instance = IceInternal.Util.getInstance(communicator);
+        _os = new IceInternal.BasicStream(instance, instance.defaultsAndOverrides().defaultEncoding, true, false);
+        _os.closure(this);
+    }
+
+    public
+    OutputStreamI(Communicator communicator, EncodingVersion v)
+    {
+        _communicator = communicator;
+        IceInternal.Instance instance = IceInternal.Util.getInstance(communicator);
+        _os = new IceInternal.BasicStream(instance, v, true, false);
+        _os.closure(this);
     }
 
     public
@@ -157,9 +169,9 @@ public class OutputStreamI implements OutputStream
     }
 
     public void
-    writeTypeId(String id)
+    writeEnum(int v, int maxValue)
     {
-        _os.writeTypeId(id);
+        _os.writeEnum(v, maxValue);
     }
 
     public void
@@ -169,15 +181,45 @@ public class OutputStreamI implements OutputStream
     }
 
     public void
-    startSlice()
+    startObject(SlicedData slicedData)
     {
-        _os.startWriteSlice();
+        _os.startWriteObject(slicedData);
+    }
+
+    public void
+    endObject()
+    {
+        _os.endWriteObject();
+    }
+
+    public void
+    startException(SlicedData slicedData)
+    {
+        _os.startWriteException(slicedData);
+    }
+
+    public void
+    endException()
+    {
+        _os.endWriteException();
+    }
+
+    public void
+    startSlice(String typeId, int compactId, boolean last)
+    {
+        _os.startWriteSlice(typeId, compactId, last);
     }
 
     public void
     endSlice()
     {
         _os.endWriteSlice();
+    }
+
+    public void
+    startEncapsulation(Ice.EncodingVersion encoding, Ice.FormatType format)
+    {
+        _os.startWriteEncaps(encoding, format);
     }
 
     public void
@@ -192,10 +234,46 @@ public class OutputStreamI implements OutputStream
         _os.endWriteEncapsChecked();
     }
 
+    public EncodingVersion
+    getEncoding()
+    {
+        return _os.getWriteEncoding();
+    }
+
     public void
     writePendingObjects()
     {
         _os.writePendingObjects();
+    }
+
+    public boolean
+    writeOptional(int tag, Ice.OptionalFormat format)
+    {
+        return _os.writeOpt(tag, format);
+    }
+
+    public int
+    pos()
+    {
+        return _os.pos();
+    }
+
+    public void
+    rewrite(int sz, int pos)
+    {
+        _os.rewriteInt(sz, pos);
+    }
+
+    public void
+    startSize()
+    {
+        _os.startSize();
+    }
+
+    public void
+    endSize()
+    {
+        _os.endSize();
     }
 
     public byte[]

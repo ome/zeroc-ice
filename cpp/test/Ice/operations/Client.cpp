@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,16 +11,17 @@
 #include <TestCommon.h>
 #include <Test.h>
 
+DEFINE_TEST("client")
+
 using namespace std;
 
 int
-run(int argc, char* argv[], 
-    const Ice::CommunicatorPtr& communicator,
-    const Ice::InitializationData& initData)
+run(int, char**, const Ice::CommunicatorPtr& communicator, const Ice::InitializationData&)
 {
     Test::MyClassPrx allTests(const Ice::CommunicatorPtr&, bool);
     Test::MyClassPrx myClass = allTests(communicator, false);
 
+#ifndef ICE_OS_WINRT
     cout << "testing server shutdown... " << flush;
     myClass->shutdown();
     try
@@ -32,7 +33,13 @@ run(int argc, char* argv[],
     {
         cout << "ok" << endl;
     }
-
+#else
+    //
+    // When using SSL the run.py script starts a new server after shutdown
+    // and the call to opVoid will success.
+    //
+    myClass->shutdown();
+#endif
     return EXIT_SUCCESS;
 }
 

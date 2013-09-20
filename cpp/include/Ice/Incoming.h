@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,6 +18,9 @@
 #include <Ice/Object.h>
 #include <Ice/Current.h>
 #include <Ice/IncomingAsyncF.h>
+#include <Ice/ObserverHelper.h>
+
+
 #include <deque>
 
 namespace IceInternal
@@ -27,13 +30,19 @@ class ICE_API IncomingBase : private IceUtil::noncopyable
 {
 public:
 
-    void adopt(IncomingBase&);
+    void __adopt(IncomingBase&);
+
+    BasicStream* __startWriteParams(Ice::FormatType);
+    void __endWriteParams(bool);
+    void __writeEmptyParams();
+    void __writeParamEncaps(const Ice::Byte*, Ice::Int, bool);
+    void __writeUserException(const Ice::UserException&, Ice::FormatType);
 
 protected:
 
     IncomingBase(Instance*, Ice::ConnectionI*, const Ice::ObjectAdapterPtr&, bool, Ice::Byte, Ice::Int);
     IncomingBase(IncomingBase&); // Adopts the argument. It must not be used afterwards.
-    
+
     void __warning(const Ice::Exception&) const;
     void __warning(const std::string&) const;
 
@@ -46,7 +55,7 @@ protected:
     Ice::ObjectPtr _servant;
     Ice::ServantLocatorPtr _locator;
     Ice::LocalObjectPtr _cookie;
-
+    DispatchObserver _observer;
     bool _response;
     Ice::Byte _compress;
 
@@ -83,15 +92,34 @@ public:
         return _inParamPos != 0;
     }
 
-    void invoke(const ServantManagerPtr&);
+    void invoke(const ServantManagerPtr&, BasicStream*);
 
     // Inlined for speed optimization.
-    BasicStream* is() { return &_is; }
-    BasicStream* os() { return &_os; }
+    BasicStream* startReadParams()
+    {
+        //
+        // Remember the encoding used by the input parameters, we'll
+        // encode the response parameters with the same encoding.
+        //
+        _current.encoding = _is->startReadEncaps();
+        return _is;
+    }
+    void endReadParams() const
+    {
+        _is->endReadEncaps();
+    }
+    void readEmptyParams()
+    {
+        _current.encoding = _is->skipEmptyEncaps();
+    }
+    void readParamEncaps(const Ice::Byte*& v, Ice::Int& sz)
+    {
+        _current.encoding = _is->readEncaps(v, sz);
+    }
 
 private:
 
-    BasicStream _is;
+    BasicStream* _is;
     
     IncomingAsyncPtr _cb;
     Ice::Byte* _inParamPos;

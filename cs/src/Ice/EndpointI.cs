@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@ namespace IceInternal
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
+    using System;
 
     public interface EndpointI_connectors
     {
@@ -20,8 +21,17 @@ namespace IceInternal
         void exception(Ice.LocalException ex);
     }
 
-    public abstract class EndpointI : Ice.Endpoint, System.IComparable
+    public abstract class EndpointI : Ice.Endpoint, System.IComparable<EndpointI>
     {    
+        public EndpointI(string connectionId)
+        {
+            connectionId_ = connectionId;
+        }
+
+        public EndpointI()
+        {
+        }
+
         public override string ToString()
         {
             return ice_toString_();
@@ -29,7 +39,32 @@ namespace IceInternal
 
         public abstract string ice_toString_();
         public abstract Ice.EndpointInfo getInfo();
-        public abstract int CompareTo(object obj);
+
+        public override bool Equals(object obj)
+        {
+            if(!(obj is EndpointI))
+            {
+                return false;
+            }
+            return CompareTo((EndpointI)obj) == 0;
+        }
+
+        public override int GetHashCode()
+        {
+            int h = 5381;
+            IceInternal.HashUtil.hashAdd(ref h, connectionId_);
+            return h;
+        }
+
+        public virtual int CompareTo(EndpointI p)
+        {
+            if(!connectionId_.Equals(p.connectionId_))
+            {
+                return string.Compare(connectionId_, p.connectionId_, StringComparison.Ordinal);
+            }
+
+            return 0;
+        }
 
         //
         // Marshal the endpoint.
@@ -40,6 +75,11 @@ namespace IceInternal
         // Return the endpoint type.
         //
         public abstract short type();
+
+        //
+        // Return the protocol name.
+        //
+        public abstract string protocol();
 
         //
         // Return the timeout for the endpoint in milliseconds. 0 means
@@ -83,6 +123,14 @@ namespace IceInternal
         public abstract bool secure();
 
         //
+        // Return the connection ID.
+        //
+        public string connectionId()
+        {
+            return connectionId_;
+        }
+
+        //
         // Return a server side transceiver for this endpoint, or null if a
         // transceiver can only be created by an acceptor. In case a
         // transceiver is created, this operation also returns a new
@@ -95,8 +143,8 @@ namespace IceInternal
         // Return a connector for this endpoint, or empty list if no connector
         // is available.
         //
-        public abstract List<Connector> connectors();
-        public abstract void connectors_async(EndpointI_connectors callback);
+        public abstract List<Connector> connectors(Ice.EndpointSelectionType selType);
+        public abstract void connectors_async(Ice.EndpointSelectionType selType, EndpointI_connectors callback);
 
         //
         // Return an acceptor for this endpoint, or null if no acceptors
@@ -119,11 +167,60 @@ namespace IceInternal
         //
         public abstract bool equivalent(EndpointI endpoint);
 
-        public virtual List<Connector> connectors(List<IPEndPoint> addresses)
+        public virtual List<Connector> connectors(List<EndPoint> addresses)
         {
             Debug.Assert(false);
             return null;
         }
+
+        protected void
+        parseOption(string option, string arg, string desc, string str)
+        {
+            if(option.Equals("-v"))
+            {
+                if(arg == null)
+                {
+                    throw new Ice.EndpointParseException("no argument provided for -v option in endpoint `" +
+                                                         desc + " "+ str + "'");
+                }
+
+                try
+                {
+                    protocol_ = Ice.Util.stringToProtocolVersion(arg);
+                }
+                catch(Ice.VersionParseException e)
+                {
+                    throw new Ice.EndpointParseException("invalid protocol version `" + arg + "' in endpoint `" +
+                                                         desc + " "+ str + "':\n" + e.str);
+                }
+            }            
+            else if(option.Equals("-e"))
+            {
+                if(arg == null)
+                {
+                    throw new Ice.EndpointParseException("no argument provided for -e option in endpoint `" +
+                                                         desc + " " + str + "'");
+                }
+            
+                try
+                {
+                    encoding_ = Ice.Util.stringToEncodingVersion(arg);
+                }
+                catch(Ice.VersionParseException e)
+                {
+                    throw new Ice.EndpointParseException("invalid encoding version `" + arg + "' in endpoint `" +
+                                                         desc + " "+ str + "':\n" + e.str);
+                }
+            }
+            else
+            {
+                throw new Ice.EndpointParseException("unknown option `" + option + "' in `" + desc + " " + str + "'");
+            }
+        }
+
+        protected Ice.ProtocolVersion protocol_;
+        protected Ice.EncodingVersion encoding_;
+        protected string connectionId_ = "";
     }
 
 }

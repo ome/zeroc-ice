@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,7 @@ void
 TestI::deactivate(const Current& current)
 {
     current.adapter->deactivate();
-    IceUtil::ThreadControl::sleep(IceUtil::Time::seconds(1));
+    IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(100));
 }
 
 string

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -115,7 +115,8 @@ handleEndpointFreeStorage(void* p TSRMLS_DC)
 {
     Wrapper<Ice::EndpointPtr>* obj = static_cast<Wrapper<Ice::EndpointPtr>*>(p);
     delete obj->ptr;
-    zend_objects_free_object_storage(static_cast<zend_object*>(p) TSRMLS_CC);
+    zend_object_std_dtor(static_cast<zend_object*>(p) TSRMLS_CC);
+    efree(p);
 }
 
 ZEND_METHOD(Ice_EndpointInfo, __construct)
@@ -213,18 +214,26 @@ handleEndpointInfoFreeStorage(void* p TSRMLS_DC)
 {
     Wrapper<Ice::EndpointInfoPtr>* obj = static_cast<Wrapper<Ice::EndpointInfoPtr>*>(p);
     delete obj->ptr;
-    zend_objects_free_object_storage(static_cast<zend_object*>(p) TSRMLS_CC);
+    zend_object_std_dtor(static_cast<zend_object*>(p) TSRMLS_CC);
+    efree(p);
 }
 
-static function_entry _interfaceMethods[] =
+static zend_function_entry _interfaceMethods[] =
 {
     {0, 0, 0}
 };
 
 //
+// Necessary to suppress warnings from zend_function_entry in php-5.2.
+//
+#if defined(__GNUC__)
+#  pragma GCC diagnostic ignored "-Wwrite-strings"
+#endif
+
+//
 // Predefined methods for Endpoint.
 //
-static function_entry _endpointMethods[] =
+static zend_function_entry _endpointMethods[] =
 {
     ZEND_ME(Ice_Endpoint, __construct, NULL, ZEND_ACC_PRIVATE|ZEND_ACC_CTOR)
     ZEND_ME(Ice_Endpoint, __toString, NULL, ZEND_ACC_PUBLIC)
@@ -236,7 +245,7 @@ static function_entry _endpointMethods[] =
 //
 // Predefined methods for EndpointInfo.
 //
-static function_entry _endpointInfoMethods[] =
+static zend_function_entry _endpointInfoMethods[] =
 {
     ZEND_ME(Ice_EndpointInfo, __construct, NULL, ZEND_ACC_PRIVATE|ZEND_ACC_CTOR)
     ZEND_ME(Ice_EndpointInfo, type, NULL, ZEND_ACC_PUBLIC)
@@ -244,6 +253,13 @@ static function_entry _endpointInfoMethods[] =
     ZEND_ME(Ice_EndpointInfo, secure, NULL, ZEND_ACC_PUBLIC)
     {0, 0, 0}
 };
+
+//
+// enable warning again
+//
+#if defined(__GNUC__)
+#  pragma GCC diagnostic error "-Wwrite-strings"
+#endif
 
 bool
 IcePHP::endpointInit(TSRMLS_D)
@@ -325,14 +341,6 @@ IcePHP::endpointInit(TSRMLS_D)
 #endif
     ce.create_object = handleEndpointInfoAlloc;
     udpEndpointInfoClassEntry = zend_register_internal_class_ex(&ce, ipEndpointInfoClassEntry, NULL TSRMLS_CC);
-    zend_declare_property_long(udpEndpointInfoClassEntry, STRCAST("protocolMajor"), sizeof("protocolMajor") - 1, 0,
-                               ZEND_ACC_PUBLIC TSRMLS_CC);
-    zend_declare_property_long(udpEndpointInfoClassEntry, STRCAST("protocolMinor"), sizeof("protocolMinor") - 1, 0,
-                               ZEND_ACC_PUBLIC TSRMLS_CC);
-    zend_declare_property_long(udpEndpointInfoClassEntry, STRCAST("encodingMajor"), sizeof("encodingMajor") - 1, 0,
-                               ZEND_ACC_PUBLIC TSRMLS_CC);
-    zend_declare_property_long(udpEndpointInfoClassEntry, STRCAST("encodingMinor"), sizeof("encodingMinor") - 1, 0,
-                               ZEND_ACC_PUBLIC TSRMLS_CC);
     zend_declare_property_string(udpEndpointInfoClassEntry, STRCAST("mcastInterface"), sizeof("mcastInterface") - 1,
                                  STRCAST(""), ZEND_ACC_PUBLIC TSRMLS_CC);
     zend_declare_property_long(udpEndpointInfoClassEntry, STRCAST("mcastTtl"), sizeof("mcastTtl") - 1, 0,
@@ -348,6 +356,8 @@ IcePHP::endpointInit(TSRMLS_D)
 #endif
     ce.create_object = handleEndpointInfoAlloc;
     opaqueEndpointInfoClassEntry = zend_register_internal_class_ex(&ce, endpointInfoClassEntry, NULL TSRMLS_CC);
+    zend_declare_property_null(opaqueEndpointInfoClassEntry, STRCAST("rawEncoding"), sizeof("rawEncoding") - 1,
+                               ZEND_ACC_PUBLIC TSRMLS_CC);
     zend_declare_property_null(opaqueEndpointInfoClassEntry, STRCAST("rawBytes"), sizeof("rawBytes") - 1,
                                ZEND_ACC_PUBLIC TSRMLS_CC);
 
@@ -408,10 +418,6 @@ IcePHP::createEndpointInfo(zval* zv, const Ice::EndpointInfoPtr& p TSRMLS_DC)
         Ice::UDPEndpointInfoPtr info = Ice::UDPEndpointInfoPtr::dynamicCast(p);
         if((status = object_init_ex(zv, udpEndpointInfoClassEntry)) == SUCCESS)
         {
-            add_property_long(zv, STRCAST("protocolMajor"), static_cast<long>(info->protocolMajor));
-            add_property_long(zv, STRCAST("protocolMinor"), static_cast<long>(info->protocolMinor));
-            add_property_long(zv, STRCAST("encodingMajor"), static_cast<long>(info->encodingMajor));
-            add_property_long(zv, STRCAST("encodingMinor"), static_cast<long>(info->encodingMinor));
             add_property_string(zv, STRCAST("mcastInterface"), const_cast<char*>(info->mcastInterface.c_str()), 1);
             add_property_long(zv, STRCAST("mcastTtl"), static_cast<long>(info->mcastTtl));
         }
@@ -421,6 +427,12 @@ IcePHP::createEndpointInfo(zval* zv, const Ice::EndpointInfoPtr& p TSRMLS_DC)
         Ice::OpaqueEndpointInfoPtr info = Ice::OpaqueEndpointInfoPtr::dynamicCast(p);
         if((status = object_init_ex(zv, opaqueEndpointInfoClassEntry)) == SUCCESS)
         {
+            zval* rawEncoding;
+            MAKE_STD_ZVAL(rawEncoding);
+            createEncodingVersion(rawEncoding, info->rawEncoding TSRMLS_CC);
+            add_property_zval(zv, STRCAST("rawEncoding"), rawEncoding);
+            zval_ptr_dtor(&rawEncoding); // add_property_zval increased the refcount of rawEncoding
+
             zval* rawBytes;
             MAKE_STD_ZVAL(rawBytes);
             array_init(rawBytes);

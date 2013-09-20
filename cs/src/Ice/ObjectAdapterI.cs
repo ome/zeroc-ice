@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -919,6 +919,44 @@ namespace Ice
             }
         }
 
+        public void updateConnectionObservers()
+        {
+            List<IceInternal.IncomingConnectionFactory> f;
+            _m.Lock();
+            try
+            {
+                f = new List<IceInternal.IncomingConnectionFactory>(_incomingConnectionFactories);
+            }
+            finally
+            {
+                _m.Unlock();
+            }
+
+            foreach(IceInternal.IncomingConnectionFactory p in f)
+            {
+                p.updateConnectionObservers();
+            }
+        }
+    
+        public void  updateThreadObservers()
+        {
+            IceInternal.ThreadPool threadPool = null;
+            _m.Lock();
+            try
+            {
+                threadPool = _threadPool;
+            }
+            finally
+            {
+                _m.Unlock();
+            }
+
+            if(threadPool != null)
+            {
+                threadPool.updateObservers();
+            }
+        }
+
         public void incDirectCount()
         {
             _m.Lock();
@@ -972,7 +1010,7 @@ namespace Ice
             }
             else
             {
-                return instance_.serverThreadPool();
+                return instance_.serverThreadPool(true);
             }
             
         }
@@ -1047,12 +1085,12 @@ namespace Ice
             if(unknownProps.Count != 0 && properties.getPropertyAsIntWithDefault("Ice.Warn.UnknownProperties", 1) > 0)
             {
                 StringBuilder message = new StringBuilder("found unknown properties for object adapter `");
-		message.Append(_name);
-		message.Append("':");
+                message.Append(_name);
+                message.Append("':");
                 foreach(string s in unknownProps)
                 {
                     message.Append("\n    ");
-		    message.Append(s);
+                    message.Append(s);
                 }
                 instance_.initializationData().logger.warning(message.ToString());
             }
@@ -1457,8 +1495,8 @@ namespace Ice
             if(instance_.traceLevels().network >= 1)
             {
                  StringBuilder s = new StringBuilder("published endpoints for object adapter `");
-		 s.Append(_name);
-		 s.Append("':\n");
+                 s.Append(_name);
+                 s.Append("':\n");
                  bool first = true;
                  foreach(IceInternal.EndpointI endpoint in endpoints)
                  {
@@ -1662,6 +1700,7 @@ namespace Ice
             "AdapterId",
             "Endpoints",
             "Locator",
+            "Locator.EncodingVersion",
             "Locator.EndpointSelection",
             "Locator.ConnectionCached",
             "Locator.PreferSecure",
@@ -1671,6 +1710,7 @@ namespace Ice
             "RegisterProcess",
             "ReplicaGroupId",
             "Router",
+            "Router.EncodingVersion",
             "Router.EndpointSelection",
             "Router.ConnectionCached",
             "Router.PreferSecure",

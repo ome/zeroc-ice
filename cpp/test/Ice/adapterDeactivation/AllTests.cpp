@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -54,6 +54,19 @@ allTests(const CommunicatorPtr& communicator)
     cout << "creating/activating/deactivating object adapter in one operation... " << flush;
     obj->transient();
     cout << "ok" << endl;
+
+    {
+        cout << "testing connection closure... " << flush;
+        for(int i = 0; i < 10; ++i)
+        {
+            Ice::InitializationData initData;
+            initData.properties = communicator->getProperties()->clone();
+            Ice::CommunicatorPtr comm = Ice::initialize(initData);
+            comm->stringToProxy("test:default -p 12010")->begin_ice_ping();
+            comm->destroy();
+        }
+        cout << "ok" << endl;
+    }
 
     cout << "deactivating object adapter in the server... " << flush;
     obj->deactivate();

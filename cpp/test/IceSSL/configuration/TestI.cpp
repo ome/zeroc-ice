@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -72,7 +72,7 @@ ServerI::destroy()
 }
 
 Test::ServerPrx
-ServerFactoryI::createServer(const Test::Properties& props, const Current& current)
+ServerFactoryI::createServer(const Test::Properties& props, const Current&)
 {
     InitializationData initData;
     initData.properties = createProperties();

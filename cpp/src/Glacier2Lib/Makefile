@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -13,18 +13,20 @@ LIBFILENAME     = $(call mklibfilename,Glacier2,$(VERSION))
 SONAME          = $(call mksoname,Glacier2,$(SOVERSION))  
 LIBNAME		= $(call mklibname,Glacier2)
 
-
 TARGETS         = $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
 
 OBJS		= PermissionsVerifier.o \
 		  Router.o \
 		  SSLInfo.o \
 		  Session.o \
-		  Application.o
+		  Application.o \
+		  Metrics.o \
+		  SessionHelper.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
-SLICE_SRCS	= $(SDIR)/PermissionsVerifierF.ice \
+SLICE_SRCS	= $(SDIR)/Metrics.ice \
+		  $(SDIR)/PermissionsVerifierF.ice \
 		  $(SDIR)/PermissionsVerifier.ice \
 		  $(SDIR)/Router.ice \
 		  $(SDIR)/RouterF.ice \
@@ -36,8 +38,8 @@ SDIR		= $(slicedir)/Glacier2
 
 include $(top_srcdir)/config/Make.rules
 
-CPPFLAGS	:= -I.. $(CPPFLAGS) $(OPENSSL_FLAGS)
-SLICE2CPPFLAGS	:= --include-dir Glacier2 --dll-export GLACIER2_API $(SLICE2CPPFLAGS)
+CPPFLAGS	:= -I.. $(CPPFLAGS) $(OPENSSL_FLAGS) -DGLACIER2_API_EXPORTS
+SLICE2CPPFLAGS	:= --ice --include-dir Glacier2 --dll-export GLACIER2_API $(SLICE2CPPFLAGS)
 LINKWITH        := $(BZIP2_RPATH_LINK) -lIce -lIceUtil
 
 $(libdir)/$(LIBFILENAME): $(OBJS) $(HDIR)/PermissionsVerifierF.h $(HDIR)/RouterF.h

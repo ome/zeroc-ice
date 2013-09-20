@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,6 +26,8 @@ using namespace Test;
 
 
 // #define SHOW_EXCEPTIONS 1
+#define CONCURRENT_TIME 3
+
 
 #ifdef __SUNPRO_CC
 extern
@@ -70,7 +72,7 @@ populateDB(const Freeze::ConnectionPtr& connection, ByteIntMap& m)
             TransactionHolder txHolder(connection);
             for(size_t j = 0; j < length; ++j)
             {
-	        m.put(ByteIntMap::value_type(localAlphabet[j], static_cast<Int>(j)));
+                m.put(ByteIntMap::value_type(localAlphabet[j], static_cast<Int>(j)));
             }
             txHolder.commit();
             break;
@@ -95,14 +97,17 @@ public:
 
     ReadThread(const CommunicatorPtr& communicator, const string& envName, const string& dbName) :
         _connection(createConnection(communicator, envName)),
-        _map(_connection, dbName)
+        _map(_connection, dbName),
+        _done(false)
     {
     }
 
     virtual void
     run()
     {
-        for(int i = 0; i < 10; ++i)
+        bool more = false;
+
+        do
         {
             for(;;)
             {
@@ -110,7 +115,7 @@ public:
                 {
                     for(ByteIntMap::iterator p = _map.begin(); p != _map.end(); ++p)
                     {
-                        test(p->first == p->second + 'a');
+                        test((p->first == p->second + 'a') || (p->first == p->second + 'A'));
                         IceUtil::ThreadControl::yield();
                     }
                     break; // for(;;)
@@ -132,14 +137,30 @@ public:
                     break;
                 }
             }
-        }
+
+            {
+                IceUtil::Mutex::Lock lock(_doneMutex);
+                more = !_done;
+            }
+
+        } while(more);
+    }
+
+    void stop()
+    {
+        IceUtil::Mutex::Lock lock(_doneMutex);
+        _done = true;
     }
 
 private:
 
     Freeze::ConnectionPtr _connection;
     ByteIntMap  _map;
+    bool _done;
+    IceUtil::Mutex _doneMutex;
 };
+
+typedef IceUtil::Handle<ReadThread> ReadThreadPtr;
 
 
 class WriteThread : public IceUtil::Thread
@@ -148,17 +169,20 @@ public:
 
     WriteThread(const CommunicatorPtr& communicator, const string& envName, const string& dbName) :
         _connection(createConnection(communicator, envName)),
-        _map(_connection, dbName)
+        _map(_connection, dbName),
+        _done(false)
     {
     }
 
     virtual void
     run()
     {
+        bool more = false;
+
         //
         // Delete an recreate each object
         //
-        for(int i = 0; i < 4; ++i)
+        do
         {
             for(;;)
             {
@@ -170,8 +194,8 @@ public:
                         p.set(p->second + 1);
                         _map.erase(p);
                     }
-                    break; // for(;;)
                     txHolder.commit();
+                    break; // for (;;)
                 }
                 catch(const DeadlockException&)
                 {
@@ -191,14 +215,93 @@ public:
                 }
             }
             populateDB(_connection, _map);
-        }
+
+            
+            //
+            // Now update without a transaction
+            //
+               
+            for(char c = 'a'; c != 'd'; ++c)
+            {
+                for(;;)
+                {
+                    bool thrownBySet = false;
+                    try
+                    {
+                        ByteIntMap::iterator p = _map.find(c);
+                        try
+                        {
+                            if(p != _map.end())
+                            {
+                                if(p->first == p->second + 'a')
+                                {
+                                    p.set(p->first - 'A');
+                                }
+                                else
+                                {
+                                    p.set(p->first - 'a');
+                                }   
+                            }
+                        }
+                        catch(const DeadlockException&)
+                        {
+                            thrownBySet = true;
+                            throw;
+                        }
+                        break; // for (;;)
+                    }    
+                    catch(const DeadlockException&)
+                    {
+                        if(!thrownBySet)
+                        {
+                            cerr << "DeadlockException thrown by destructor!" << endl;
+                            test(false);
+                        }
+                        
+#ifdef SHOW_EXCEPTIONS
+                        if(thrownBySet)
+                        {
+                            cerr << "S" << flush;
+                        }
+                        else
+                        {
+                            cerr << "D" << flush;
+                        }
+#endif
+                        // Try again
+                    }
+                    catch(const InvalidPositionException&)
+                    {
+#ifdef SHOW_EXCEPTIONS
+                        cerr << "I" << flush;
+#endif
+                        break;
+                    }
+                }
+            }
+
+            {
+                IceUtil::Mutex::Lock lock(_doneMutex);
+                more = !_done;
+            }
+        } while(more);
+    }
+
+    void stop()
+    {
+        IceUtil::Mutex::Lock lock(_doneMutex);
+        _done = true;
     }
 
 private:
 
     Freeze::ConnectionPtr _connection;
     ByteIntMap  _map;
+    bool _done;
+    IceUtil::Mutex _doneMutex;
 };
+
+typedef IceUtil::Handle<WriteThread> WriteThreadPtr;
 
 
 int
@@ -388,23 +491,13 @@ run(const CommunicatorPtr& communicator, const string& envName)
     test(p != m.end() && p->second == 3);
 
     test(m.find('a') == m.end());
-    ByteIntMap::value_type i1('a', 1);
-
-    m.put(i1);
-    //
-    // Note: VC++ won't accept this
-    //
-    //m.put(ByteIntMap::value_type('a', 1));
+    m.put(ByteIntMap::value_type('a', 1));
 
     p = m.find('a');
     test(p != m.end() && p->second == 1);
 
-    ByteIntMap::value_type i2('a', 0);
-    m.put(i2);
-    //
-    // Note: VC++ won't accept this
-    //
-    //m.put(ByteIntMap::value_type('a', 0));
+    
+    m.put(ByteIntMap::value_type('a', 0));
     
     p = m.find('a');
     test(p != m.end() && p->second == 0);
@@ -519,6 +612,12 @@ run(const CommunicatorPtr& communicator, const string& envName)
     }
     cout << "ok" << endl;
 
+    cout << "testing clear... " << flush;
+    test(m.size() > 0);
+    m.clear();
+    test(m.size() == 0);
+    cout << "ok" << endl;
+
     cout << "testing index ... " << flush;
     m.clear();
     populateDB(connection, m);
@@ -599,7 +698,7 @@ run(const CommunicatorPtr& communicator, const string& envName)
     test(count == 4);
     cout << "ok " << endl;
 
-    cout << "Testing unreferenced connection+transaction... " << flush;
+    cout << "testing unreferenced connection+transaction... " << flush;
     {
         Freeze::ConnectionPtr c2 = createConnection(communicator, envName);
         ByteIntMap m2(c2, dbName);
@@ -629,13 +728,32 @@ run(const CommunicatorPtr& communicator, const string& envName)
     populateDB(connection, m);
 
     vector<IceUtil::ThreadControl> controls;
+    vector<ReadThreadPtr> readThreads;
+    vector<WriteThreadPtr> writeThreads;
+
     for(int i = 0; i < 5; ++i)
     {
-        IceUtil::ThreadPtr rt = new ReadThread(communicator, envName, dbName);
+        ReadThreadPtr rt = new ReadThread(communicator, envName, dbName);
         controls.push_back(rt->start());
-        IceUtil::ThreadPtr wt = new WriteThread(communicator, envName, dbName);
+        readThreads.push_back(rt);
+
+        WriteThreadPtr wt = new WriteThread(communicator, envName, dbName);
         controls.push_back(wt->start());
+        writeThreads.push_back(wt);
     }
+
+    IceUtil::ThreadControl::sleep(IceUtil::Time::seconds(CONCURRENT_TIME));
+
+    for(vector<WriteThreadPtr>::iterator q = writeThreads.begin(); q != writeThreads.end(); ++q)
+    {
+        (*q)->stop();
+    }
+
+    for(vector<ReadThreadPtr>::iterator q = readThreads.begin(); q != readThreads.end(); ++q)
+    {
+        (*q)->stop();
+    }
+
     for(vector<IceUtil::ThreadControl>::iterator q = controls.begin(); q != controls.end(); ++q)
     {
         q->join();

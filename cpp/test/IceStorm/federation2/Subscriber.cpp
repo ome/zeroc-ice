@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,7 +38,7 @@ public:
     }
 
     virtual void
-    pub(const string& data, const Ice::Current&)
+    pub(const string&, const Ice::Current&)
     {
         IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(_countMutex);
 

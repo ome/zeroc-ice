@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -55,7 +55,12 @@ CtrlCHandlerException::CtrlCHandlerException(const char* file, int line) :
 {
 }
 
-static const char* ctrlCHandlerName = "IceUtil::CtrlCHandlerException";
+namespace
+{
+
+const char* ctrlCHandlerName = "IceUtil::CtrlCHandlerException";
+
+}
 
 string
 CtrlCHandlerException::ice_name() const
@@ -63,7 +68,7 @@ CtrlCHandlerException::ice_name() const
     return ctrlCHandlerName;
 }
 
-Exception*
+CtrlCHandlerException*
 CtrlCHandlerException::ice_clone() const
 {
     return new CtrlCHandlerException(*this);
@@ -93,7 +98,15 @@ CtrlCHandler::getCallback() const
 
 static BOOL WINAPI handlerRoutine(DWORD dwCtrlType)
 {
-    CtrlCHandlerCallback callback = _handler->getCallback();
+    CtrlCHandlerCallback callback;
+    {
+        IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(globalMutex);
+        if(!_handler) // The handler is destroyed.
+        {
+            return FALSE;
+        }
+        callback = _callback;
+    }
     if(callback != 0)
     {
         callback(dwCtrlType);
@@ -145,42 +158,36 @@ sigwaitThread(void*)
     sigaddset(&ctrlCLikeSignals, SIGTERM);
 
     //
-    // Run until I'm cancelled (in sigwait())
+    // Run until the handler is destroyed (_handler == 0)
     //
     for(;;)
     {
         int signal = 0;
         int rc = sigwait(&ctrlCLikeSignals, &signal);
-#if defined(__APPLE__)
-        //
-        // WORKAROUND: sigwait is not a cancelation point on MacOS X. To cancel this thread, the 
-        // destructor cancels the thread and send a signal to the thread to unblock sigwait, then
-        // we explicitly test for cancellation.
-        //
-        pthread_testcancel();
-#endif
-        //
-        // Some sigwait() implementations incorrectly return EINTR
-        // when interrupted by an unblocked caught signal
-        //
         if(rc == EINTR)
         {
+            //
+            // Some sigwait() implementations incorrectly return EINTR
+            // when interrupted by an unblocked caught signal
+            //
             continue;
         }
         assert(rc == 0);
         
-        rc = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0);
-        assert(rc == 0);
-        
-        CtrlCHandlerCallback callback = _handler->getCallback();
-        
+        CtrlCHandlerCallback callback;
+        {
+            IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(globalMutex);
+            if(!_handler) // The handler is destroyed.
+            {
+                return 0;
+            }
+            callback = _callback;
+        }
+
         if(callback != 0)
         {
             callback(signal);
         }
-
-        rc = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
-        assert(rc == 0);
     }
     return 0;
 }
@@ -219,37 +226,47 @@ CtrlCHandler::CtrlCHandler(CtrlCHandlerCallback callback)
         sigaddset(&ctrlCLikeSignals, SIGHUP);
         sigaddset(&ctrlCLikeSignals, SIGINT);
         sigaddset(&ctrlCLikeSignals, SIGTERM);
+
+#ifndef NDEBUG
         int rc = pthread_sigmask(SIG_BLOCK, &ctrlCLikeSignals, 0);
         assert(rc == 0);
 
         // Joinable thread
         rc = pthread_create(&_tid, 0, sigwaitThread, 0);
         assert(rc == 0);
+#else
+        pthread_sigmask(SIG_BLOCK, &ctrlCLikeSignals, 0);
+
+        // Joinable thread
+        pthread_create(&_tid, 0, sigwaitThread, 0);
+#endif
     }
 }
 
 CtrlCHandler::~CtrlCHandler()
 {
-    int rc = pthread_cancel(_tid);
-    assert(rc == 0);
-#if defined(__APPLE__)
     //
-    // WORKAROUND: sigwait isn't a cancellation point on MacOS X, see
-    // comment in sigwaitThread
+    // Clear the handler, the sigwaitThread will exit if _handler is
+    // nil.
     //
-    rc = pthread_kill(_tid, SIGTERM);
-    //assert(rc == 0); For some reaosns, this assert is sometime triggered
-#endif
-    void* status = 0;
-    rc = pthread_join(_tid, &status);
-    assert(rc == 0);
-#if !defined(__APPLE__)
-    assert(status == PTHREAD_CANCELED);
-#endif
     {
         IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(globalMutex);
         _handler = 0;
     }
+
+    //
+    // Signal the sigwaitThread and join it.
+    //
+    void* status = 0;
+#ifndef NDEBUG
+    int rc = pthread_kill(_tid, SIGTERM);
+    assert(rc == 0);
+    rc = pthread_join(_tid, &status);
+    assert(rc == 0);
+#else
+    pthread_kill(_tid, SIGTERM);
+    pthread_join(_tid, &status);
+#endif
 }
 
 #endif

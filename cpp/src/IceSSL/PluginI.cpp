@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,7 @@
 #include <IceSSL/TransceiverI.h>
 
 #include <Ice/LocalException.h>
+#include <Ice/Object.h>
 
 using namespace std;
 using namespace Ice;
@@ -24,7 +25,7 @@ extern "C"
 {
 
 ICE_DECLSPEC_EXPORT Ice::Plugin*
-createIceSSL(const CommunicatorPtr& communicator, const string& name, const StringSeq& args)
+createIceSSL(const CommunicatorPtr& communicator, const string& /*name*/, const StringSeq& /*args*/)
 {
     PluginI* plugin = new PluginI(communicator);
     return plugin;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -70,6 +70,7 @@ public:
     DbEnv* getEnv() const;
     const std::string& getEnvName() const;
     const Ice::CommunicatorPtr& getCommunicator() const;
+    const Ice::EncodingVersion& getEncoding() const;
 
     typedef std::map<std::string, MapDb*> SharedDbMap;
 
@@ -79,9 +80,10 @@ private:
     void cleanup();
 
     DbEnv* _env;
-    std::auto_ptr<DbEnv> _envHolder;
+    IceUtil::UniquePtr<DbEnv> _envHolder;
     const std::string _envName;
     const Ice::CommunicatorPtr _communicator;
+    Ice::EncodingVersion _encoding;
     MapDb* _catalog;
     MapDb* _catalogIndexList;
 
@@ -116,6 +118,12 @@ inline const Ice::CommunicatorPtr&
 SharedDbEnv::getCommunicator() const
 {
     return _communicator;
+}
+
+inline const Ice::EncodingVersion& 
+SharedDbEnv::getEncoding() const
+{
+    return _encoding;
 }
 
 }

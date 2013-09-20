@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 #include <Ice/DynamicLibrary.h>
 #include <IceUtil/StringUtil.h>
+#include <IceUtil/Unicode.h>
 
 #ifndef _WIN32
 #   include <dlfcn.h>
@@ -21,8 +22,9 @@ using namespace std;
 IceUtil::Shared* IceInternal::upCast(DynamicLibrary* p) { return p; }
 IceUtil::Shared* IceInternal::upCast(DynamicLibraryList* p) { return p; }
 
-IceInternal::DynamicLibrary::DynamicLibrary()
-    : _hnd(0)
+IceInternal::DynamicLibrary::DynamicLibrary(const Ice::StringConverterPtr& stringConverter) : 
+    _hnd(0),
+    _stringConverter(stringConverter)
 {
 }
 
@@ -49,6 +51,20 @@ IceInternal::DynamicLibrary::symbol_type
 IceInternal::DynamicLibrary::loadEntryPoint(const string& entryPoint, bool useIceVersion)
 {
     string::size_type colon = entryPoint.rfind(':');
+
+#ifdef _WIN32
+    const string driveLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    if(colon == 1 && driveLetters.find(entryPoint[0]) != string::npos &&
+       (entryPoint[2] == '\\' || entryPoint[2] == '/'))
+    {
+        //
+        // The only colon we found is in the drive specification, as in "C:\MyDir".
+        // This means the function name is missing.
+        //
+        colon = string::npos;
+    }
+#endif
+
     string::size_type comma = entryPoint.find(',');
     if(colon == string::npos || colon == entryPoint.size() - 1 ||
         (comma != string::npos && (comma > colon || comma == colon - 1)))
@@ -56,9 +72,28 @@ IceInternal::DynamicLibrary::loadEntryPoint(const string& entryPoint, bool useIc
         _err = "invalid entry point format `" + entryPoint + "'";
         return 0;
     }
+
     string libSpec = entryPoint.substr(0, colon);
     string funcName = entryPoint.substr(colon + 1);
-    string libName, version, debug;
+    string libPath, libName, version, debug;
+
+#ifdef _WIN32
+    bool isFilePath = libSpec.find('\\') != string::npos || entryPoint.find('/') != string::npos;
+#else
+    bool isFilePath = libSpec.find('/') != string::npos;
+#endif
+
+    if(isFilePath)
+    {
+#ifdef _WIN32
+        string::size_type separator = libSpec.find_last_of("/\\");
+#else
+        string::size_type separator = libSpec.rfind('/');
+#endif
+        libPath = libSpec.substr(0, separator + 1);
+        libSpec = libSpec.substr(separator + 1);
+    }
+
     if(comma == string::npos)
     {
         libName = libSpec;
@@ -68,7 +103,7 @@ IceInternal::DynamicLibrary::loadEntryPoint(const string& entryPoint, bool useIc
             int minorVersion = (ICE_INT_VERSION / 100) - majorVersion * 100;
             ostringstream os;
             os << majorVersion * 10 + minorVersion;
-            
+
             int patchVersion = ICE_INT_VERSION % 100;
             if(patchVersion > 50)
             {
@@ -87,39 +122,29 @@ IceInternal::DynamicLibrary::loadEntryPoint(const string& entryPoint, bool useIc
         version = libSpec.substr(comma + 1);
     }
 
-    string lib;
+    string lib = libPath;
 
 #ifdef _WIN32
-    lib = libName;
-
-#   ifdef COMPSUFFIX
-    //
-    // If using unique dll names we need to add compiler suffix
-    // to IceSSL so that we do not have to use compiler suffix
-    // in the configuration.
-    //
-    if(IceUtilInternal::toLower(libName) == "icessl")
-    {
-        lib += COMPSUFFIX;
-    }
-#   endif
-
+    lib += libName;
     lib += version;
 
-#   ifdef _DEBUG
+#   if defined(_DEBUG) && !defined(__MINGW32__)
     lib += 'd';
+#   endif
+
+#   ifdef COMPSUFFIX
+    lib += COMPSUFFIX;
 #   endif
 
     lib += ".dll";
 #elif defined(__APPLE__)
-    lib = "lib" + libName;
-    if(!version.empty()) 
+    lib += "lib" + libName;
+    if(!version.empty())
     {
         lib += "." + version;
     }
-    lib += ".dylib";
 #elif defined(__hpux)
-    lib = "lib" + libName;
+    lib += "lib" + libName;
     if(!version.empty())
     {
         lib += "." + version;
@@ -129,24 +154,45 @@ IceInternal::DynamicLibrary::loadEntryPoint(const string& entryPoint, bool useIc
         lib += ".sl";
     }
 #elif defined(_AIX)
-    lib = "lib" + libName + ".a(lib" + libName + ".so";
+    lib += "lib" + libName + ".a(lib" + libName + ".so";
     if(!version.empty())
     {
         lib += "." + version;
     }
     lib += ")";
 #else
-    lib = "lib" + libName + ".so";
+    lib += "lib" + libName + ".so";
     if(!version.empty())
     {
         lib += "." + version;
     }
 #endif
 
+#ifdef __APPLE__
+    //
+    // On OS X fallback to .so and .bundle extensions, if the default
+    // .dylib fails.
+    //
+    if(!load(lib + ".dylib"))
+    {
+        string errMsg = _err;
+        if(!load(lib + ".so"))
+        {
+            errMsg += "; " + _err;
+            if(!load(lib + ".bundle"))
+            {
+                _err = errMsg + "; " + _err;
+                return 0;
+            }
+        }
+        _err = "";
+    }
+#else
     if(!load(lib))
     {
         return 0;
     }
+#endif
 
     return getSymbol(funcName);
 }
@@ -154,8 +200,10 @@ IceInternal::DynamicLibrary::loadEntryPoint(const string& entryPoint, bool useIc
 bool
 IceInternal::DynamicLibrary::load(const string& lib)
 {
-#ifdef _WIN32
-    _hnd = LoadLibrary(lib.c_str());
+#ifdef ICE_OS_WINRT
+    _hnd = LoadPackagedLibrary(IceUtil::stringToWstring(nativeToUTF8(_stringConverter, lib)).c_str(), 0);
+#elif defined(_WIN32)
+    _hnd = LoadLibraryW(IceUtil::stringToWstring(nativeToUTF8(_stringConverter, lib)).c_str());
 #else
 
     int flags = RTLD_NOW | RTLD_GLOBAL;
@@ -189,25 +237,20 @@ IceInternal::DynamicLibrary::getSymbol(const string& name)
 {
     assert(_hnd != 0);
 #ifdef _WIN32
-#  ifdef __BCPLUSPLUS__
-    string newName = "_" + name;
-    symbol_type result = GetProcAddress(_hnd, newName.c_str());
-#  else
-    symbol_type result = GetProcAddress(_hnd,name.c_str());
-#  endif
+    symbol_type result = GetProcAddress(_hnd, name.c_str());
 #else
     symbol_type result = dlsym(_hnd, name.c_str());
 #endif
-	
+
     if(result == 0)
     {
         //
         // Remember the most recent error in _err.
         //
 #ifdef _WIN32
-	_err = IceUtilInternal::lastErrorToString();
+        _err = IceUtilInternal::lastErrorToString();
 #else
-	const char* err = dlerror();
+        const char* err = dlerror();
         if(err)
         {
             _err = err;
@@ -228,3 +271,4 @@ IceInternal::DynamicLibraryList::add(const DynamicLibraryPtr& library)
 {
     _libraries.push_back(library);
 }
+

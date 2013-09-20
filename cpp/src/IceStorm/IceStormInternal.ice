@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_STORM_INTERNAL_ICE
-#define ICE_STORM_INTERNAL_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -60,7 +59,7 @@ interface TopicLink
      * @param events The events to forward.
      *
      **/
-    ["ami"] void forward(EventDataSeq events);
+    void forward(EventDataSeq events);
 };
 
 /** Thrown if the reap call would block. */
@@ -95,7 +94,7 @@ interface TopicInternal extends Topic
      * @throws ReapWouldBlock Raised if the reap call would block.
      *
      **/
-    ["ami"] void reap(Ice::IdentitySeq id) throws ReapWouldBlock;
+    void reap(Ice::IdentitySeq id) throws ReapWouldBlock;
 };
 
 /**
@@ -120,4 +119,3 @@ interface TopicManagerInternal extends TopicManager
 
 }; // End module IceStorm
 
-#endif

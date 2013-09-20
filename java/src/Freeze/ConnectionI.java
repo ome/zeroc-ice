@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -97,6 +97,12 @@ public class ConnectionI implements Connection
         return _communicator;
     }
 
+    public Ice.EncodingVersion
+    getEncoding()
+    {
+        return _encoding;
+    }
+
     public String
     getName()
     {
@@ -107,17 +113,27 @@ public class ConnectionI implements Connection
     finalize()
         throws Throwable
     {
-        if(_dbEnv != null)
+        try
         {
-            _logger.warning("leaked Connection for DbEnv \"" + _envName + "\"");
+            if(_dbEnv != null)
+            {
+                _logger.warning("leaked Connection for DbEnv \"" + _envName + "\"");
+            }
         }
-        super.finalize();
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     ConnectionI(SharedDbEnv dbEnv)
     {
         _dbEnv = dbEnv;
         _communicator = dbEnv.getCommunicator();
+        _encoding = dbEnv.getEncoding();
         _logger = _communicator.getLogger();
         _envName = dbEnv.getEnvName();
         _trace = _communicator.getProperties().getPropertyAsInt("Freeze.Trace.Map");
@@ -219,6 +235,7 @@ public class ConnectionI implements Connection
     }
 
     private Ice.Communicator _communicator;
+    private Ice.EncodingVersion _encoding;
     private Ice.Logger _logger;
     private SharedDbEnv _dbEnv;
     private String _envName;

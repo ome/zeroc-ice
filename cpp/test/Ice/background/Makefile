@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -9,8 +9,8 @@
 
 top_srcdir	= ../../..
 
-CLIENT		= client
-SERVER		= server
+CLIENT		= client$(EXE_EXT)
+SERVER		= server$(EXE_EXT)
 
 TSPFILENAME     = $(call mklibfilename,TestTransport,$(VERSION))
 TSPSONAME	= $(call mksoname,TestTransport,$(SOVERSION)) 
@@ -28,7 +28,8 @@ SOBJS		= Configuration.o \
 		  TestI.o \
 		  Server.o
 
-TRANSPORT_OBJS	= Configuration.o \
+TRANSPORT_OBJS	= Test.o \
+                  Configuration.o \
 		  Connector.o \
 		  Acceptor.o \
 		  EndpointI.o \
@@ -44,7 +45,7 @@ SLICE_SRCS	= Test.ice
 
 include $(top_srcdir)/config/Make.rules
 
-CPPFLAGS	:= -I. -I../../include -I../../../src $(CPPFLAGS)
+CPPFLAGS	:= -I. -I../../include -I../../../src $(CPPFLAGS) $(NO_DEPRECATED_FLAGS)
 LINKWITH	:= $(BZIP2_RPATH_LINK) -lIce -lIceUtil
 
 $(CLIENT): $(COBJS)

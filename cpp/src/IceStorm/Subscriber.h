@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,8 @@
 
 #include <IceStorm/IceStormInternal.h>
 #include <IceStorm/SubscriberRecord.h>
+#include <IceStorm/Instrumentation.h>
+#include <Ice/ObserverHelper.h>
 #include <IceUtil/RecMutex.h>
 
 namespace IceStorm
@@ -44,10 +46,12 @@ public:
     void destroy();
 
     // To be called by the AMI callbacks only.
+    void completed(const Ice::AsyncResultPtr&);
     void error(bool, const Ice::Exception&);
-    void response();
 
     void shutdown();
+
+    void updateObserver();
 
     enum SubscriberState
     {
@@ -80,11 +84,14 @@ protected:
     SubscriberState _state; // The subscriber state.
 
     int _outstanding; // The current number of outstanding responses.
+    int _outstandingCount; // The current number of outstanding events when batching events (only used for metrics).
     EventDataSeq _events; // The queue of events to send.
 
-    // The next to try sending a new event if we're offline.
+    // The next time to try sending a new event if we're offline.
     IceUtil::Time _next;
     int _currentRetry;
+
+    IceInternal::ObserverHelperT<IceStorm::Instrumentation::SubscriberObserver> _observer;
 };
 
 bool operator==(const IceStorm::SubscriberPtr&, const Ice::Identity&);

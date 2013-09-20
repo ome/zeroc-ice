@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -301,10 +301,12 @@ Freeze::BackgroundSaveEvictorI::addFacet(const ObjectPtr& servant, const Identit
                     ObjectRecord& rec = element->rec;
 
                     rec.servant = servant;
-                    rec.stats.creationTime = IceUtil::Time::now(IceUtil::Time::Monotonic).toMilliSeconds();
-                    rec.stats.lastSaveTime = 0;
-                    rec.stats.avgSaveTime = 0;
-
+                    if(store->keepStats())
+                    {
+                        rec.stats.creationTime = IceUtil::Time::now(IceUtil::Time::Monotonic).toMilliSeconds();
+                        rec.stats.lastSaveTime = 0;
+                        rec.stats.avgSaveTime = 0;
+                    }
                     addToModifiedQueue(element);
                     break;
                 }
@@ -1115,6 +1117,7 @@ Freeze::BackgroundSaveEvictorI::run()
                     }
                     
                     Long saveStart = IceUtil::Time::now(IceUtil::Time::Monotonic).toMilliSeconds();
+                   
                     try
                     {
                         DbTxn* tx = 0;
@@ -1393,14 +1396,18 @@ Freeze::BackgroundSaveEvictorI::stream(const BackgroundSaveEvictorElementPtr& el
     
     obj.status = element->status;
     obj.store = &element->store;
-    
+
     const Identity& ident = element->cachePosition->first;
-    ObjectStoreBase::marshal(ident, obj.key, _communicator);
+    ObjectStoreBase::marshal(ident, obj.key, _communicator, _encoding);
 
     if(element->status != destroyed)
     {
-        EvictorIBase::updateStats(element->rec.stats, streamStart);
-        ObjectStoreBase::marshal(element->rec, obj.value, _communicator);
+        bool keepStats = obj.store->keepStats();
+        if(keepStats)
+        {
+            EvictorIBase::updateStats(element->rec.stats, streamStart);
+        }
+        ObjectStoreBase::marshal(element->rec, obj.value, _communicator, _encoding, keepStats);
     }
 }
 
@@ -1422,18 +1429,16 @@ Freeze::BackgroundSaveEvictorElement::BackgroundSaveEvictorElement(ObjectStore<B
     stale(true),
     status(clean)
 {
+    const Statistics cleanStats = { 0 };
+    rec.stats = cleanStats;
 }
 
 Freeze::BackgroundSaveEvictorElement::~BackgroundSaveEvictorElement()
-
 {
 }
 
-// COMPILERFIX: Required to build with C++ Builder 2007
-typedef ObjectStore<BackgroundSaveEvictorElement>::Position BackgroundSaveEvictorElementPosition;
-
 void 
-Freeze::BackgroundSaveEvictorElement::init(BackgroundSaveEvictorElementPosition p)
+Freeze::BackgroundSaveEvictorElement::init(ObjectStore<BackgroundSaveEvictorElement>::Position p)
 {
     stale = false;
     cachePosition = p;

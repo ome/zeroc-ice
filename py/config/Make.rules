@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -46,16 +46,22 @@ embedded_runpath_prefix  ?= /opt/Ice-$(VERSION_MAJOR).$(VERSION_MINOR)
 #
 PYTHON_VERSION	    ?= python$(shell python -c "import sys; import distutils.sysconfig as ds; sys.stdout.write(ds.get_python_version())")
 
+PYTHON_BASE_VERSION ?= $(shell $(PYTHON_VERSION) -c "import sys; import distutils.sysconfig as ds; sys.stdout.write(ds.get_python_version())")
+
 PYTHON_INCLUDE_DIR  ?= $(shell $(PYTHON_VERSION) -c "import sys; import distutils.sysconfig as ds; sys.stdout.write(ds.get_python_inc())")
 
-PYTHON_LIB_DIR	    ?= $(shell $(PYTHON_VERSION) -c "import os; import sys; import distutils.sysconfig as ds; sys.stdout.write(os.path.join(ds.get_python_lib(plat_specific=1,standard_lib=1), 'config'))")
+PYTHON_LIB_DIR	    ?= $(shell $(PYTHON_VERSION) -c "import sys; import distutils.sysconfig as ds; sys.stdout.write(ds.get_config_var('LIBPL'))")
+
+PYTHON_LIB_SUFFIX   ?= $(shell $(PYTHON_VERSION) -c "import sys; sys.stdout.write(sys.__dict__['abiflags'] if 'abiflags' in sys.__dict__ else '')")
+
+PYTHON_LIB_NAME	    ?= $(PYTHON_VERSION)$(PYTHON_LIB_SUFFIX)
 
 PYTHON_FLAGS	    ?= -I$(PYTHON_INCLUDE_DIR)
-PYTHON_LIBS	    ?= -L$(PYTHON_LIB_DIR) -l$(PYTHON_VERSION)
+PYTHON_LIBS	    ?= -L$(PYTHON_LIB_DIR) -l$(PYTHON_LIB_NAME)
 
 #
 # The build architectures for gcc based builds. The format of these
-# build flags are OS dependent. For example, under Mac OS X to build
+# build flags are OS dependent. For example, under OS X to build
 # binaries which support both i386 and x86_64 you would use "-arch
 # i386 -arch x86_64".  The default is OS version dependent. Be aware
 # that this value may conflict with the setting of LP64 above.
@@ -79,10 +85,6 @@ else
     include $(top_srcdir)/../config/Make.common.rules
 endif
 
-libdir			= $(top_srcdir)/python
-install_pythondir	= $(prefix)/python
-install_libdir		= $(prefix)/python
-
 #
 # Platform specific definitions
 #
@@ -91,6 +93,17 @@ ifeq ($(shell test -f $(top_srcdir)/config/Make.rules.$(UNAME) && echo 0),0)
 else
     include $(top_srcdir)/../cpp/config/Make.rules.$(UNAME)
 endif 
+
+libdir                  = $(top_srcdir)/python
+install_pythondir       = $(prefix)/python
+install_libdir          = $(prefix)/python
+
+ifeq ($(UNAME),SunOS)
+   ifeq ($(LP64),yes)
+      libdir            = $(top_srcdir)/python$(lp64suffix)
+      install_libdir    = $(prefix)/python$(lp64suffix)   
+   endif
+endif
 
 ifdef ice_src_dist
     ifeq ($(ice_cpp_dir), $(ice_dir)/cpp)
@@ -133,9 +146,9 @@ endif
 # A Python extension library cannot have a "lib" prefix, so Python-specific
 # functions are defined that strip "lib" from the regular library name.
 #
-mkpylibfilename		= $(subst lib,,$(call mklibfilename,$(1),$(2)))
-mkpysoname		= $(subst lib,,$(call mksoname,$(1),$(2)))
-mkpylibname		= $(subst lib,,$(call mklibname,$(1)))
+mkpylibfilename     = $(subst dy,dylib,$(subst lib,,$(call mklibfilename,$(1),$(2))))
+mkpysoname      = $(subst dy,dylib,$(subst lib,,$(call mksoname,$(1),$(2))))
+mkpylibname     = $(subst dy,dylib,$(subst lib,,$(call mklibname,$(1))))
 
 EVERYTHING		= all depend clean install
 

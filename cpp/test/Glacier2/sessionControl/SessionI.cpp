@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,7 +14,7 @@
 using namespace std;
 using namespace Test;
 
-class DestroyCB : public Glacier2::AMI_SessionControl_destroy
+class DestroyCB : virtual public IceUtil::Shared
 {
 public:
 
@@ -23,13 +23,13 @@ public:
     }
 
     void 
-    ice_response()
+    response()
     {
         _cb->ice_response();
     }
 
     void
-    ice_exception(const IceUtil::Exception&)
+    exception(const IceUtil::Exception&)
     {
         test(false);
     }
@@ -38,6 +38,8 @@ private:
 
     Test::AMD_Session_destroyFromClientPtr _cb;
 };
+
+typedef IceUtil::Handle<DestroyCB> DestroyCBPtr;
 
 Glacier2::SessionPrx
 SessionManagerI::create(const string& userId, const Glacier2::SessionControlPrx& sessionControl,
@@ -61,9 +63,13 @@ SessionI::SessionI(const Glacier2::SessionControlPrx& sessionControl) :
 }
 
 void
-SessionI::destroyFromClient_async(const Test::AMD_Session_destroyFromClientPtr& cb, const Ice::Current& current)
+SessionI::destroyFromClient_async(const Test::AMD_Session_destroyFromClientPtr& cb, const Ice::Current&)
 {
-    _sessionControl->destroy_async(new DestroyCB(cb));
+    DestroyCBPtr asyncCB = new DestroyCB(cb);
+    Glacier2::Callback_SessionControl_destroyPtr amiCB = Glacier2::newCallback_SessionControl_destroy(asyncCB, 
+                                                 &DestroyCB::response, 
+                                                 &DestroyCB::exception);
+    _sessionControl->begin_destroy(amiCB);
 }
 
 void

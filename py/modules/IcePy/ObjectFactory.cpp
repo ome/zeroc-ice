@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,7 @@
 #   include <IceUtil/Config.h>
 #endif
 #include <ObjectFactory.h>
+#include <Thread.h>
 #include <Types.h>
 #include <Util.h>
 #include <Ice/LocalException.h>
@@ -48,7 +49,20 @@ IcePy::ObjectFactory::create(const string& id)
     //
     // Get the type information.
     //
-    ClassInfoPtr info = lookupClassInfo(id);
+    ClassInfoPtr info;
+    if(id == Ice::Object::ice_staticId())
+    {
+        //
+        // When the ID is that of Ice::Object, it indicates that the stream has not
+        // found a factory and is providing us an opportunity to preserve the object.
+        //
+        info = lookupClassInfo("::Ice::UnknownSlicedObject");
+    }
+    else
+    {
+        info = lookupClassInfo(id);
+    }
+
     if(!info)
     {
         return 0;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,21 +15,11 @@ package Ice;
 public interface ObjectPrx
 {
     /**
-     * @deprecated This method is deprecated, use hashCode instead.
-     **/
-    int ice_getHash();
-
-    /**
      * Returns the communicator that created this proxy.
      *
      * @return The communicator that created this proxy.
      **/
     Communicator ice_getCommunicator();
-
-    /**
-     * @deprecated This method is deprecated, use toString instead.
-     **/
-    String ice_toString();
 
     /**
      * Tests whether this object supports a specific Slice interface.
@@ -665,6 +655,22 @@ public interface ObjectPrx
      * @return The new proxy with the specified selection policy.
      **/
     ObjectPrx ice_secure(boolean b);
+
+    /**
+     * Creates a new proxy that is identical to this proxy, except for the encoding used to marshal
+     * parameters.
+     *
+     * @param e The encoding version to use to marshal requests parameters.
+     * @return The new proxy with the specified encoding version.
+     **/
+    ObjectPrx ice_encodingVersion(Ice.EncodingVersion e);
+
+    /**
+     * Returns the encoding version used to marshal requests parameters.
+     *
+     * @return The encoding version.
+     **/
+    Ice.EncodingVersion ice_getEncodingVersion();
 
     /**
      * Returns whether this proxy prefers secure endpoints.

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,7 +16,7 @@
 namespace Ice
 {
 
-class AMDCallback : virtual public IceUtil::Shared
+class ICE_API AMDCallback : virtual public Ice::LocalObject
 {
 public:
 
@@ -30,10 +30,10 @@ namespace IceInternal
 {
 
 //
-// We need virtual inheritance from shared, because we use multiple
-// inheritance from IceUtil::Shared for generated AMD code.
+// We need virtual inheritance from AMDCallback, because we use multiple
+// inheritance from Ice::AMDCallback for generated AMD code.
 //
-class ICE_API IncomingAsync : public IncomingBase, virtual public Ice::AMDCallback, virtual public IceUtil::Shared
+class ICE_API IncomingAsync : public IncomingBase, virtual public Ice::AMDCallback
 {
 public:
 
@@ -46,14 +46,11 @@ public:
 
 protected:
 
-    void __response(bool);
+    void __response();
     void __exception(const std::exception&);
     void __exception();
 
     bool __validateResponse(bool);
-
-    // Inlined for speed optimization.
-    BasicStream* __os() { return &_os; }
 
 private:
 
@@ -78,7 +75,7 @@ private:
 namespace Ice
 {
 
-class ICE_API AMD_Object_ice_invoke : virtual public Ice::AMDCallback, virtual public IceUtil::Shared
+class ICE_API AMD_Object_ice_invoke : virtual public Ice::AMDCallback
 {
 public:
     

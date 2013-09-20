@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,7 +16,7 @@ using namespace std;
 using namespace Test;
 
 int
-run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
+run(int, char**, const Ice::CommunicatorPtr& communicator)
 {
     BackgroundPrx allTests(const Ice::CommunicatorPtr&);
     BackgroundPrx background = allTests(communicator);
@@ -44,6 +44,8 @@ main(int argc, char* argv[])
         // This test kills connections, so we don't want warnings.
         //
         initData.properties->setProperty("Ice.Warn.Connections", "0");
+
+        initData.properties->setProperty("Ice.MessageSizeMax", "50000");
 
         //
         // Setup the test transport plug-in.

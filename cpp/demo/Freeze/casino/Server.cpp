@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -30,13 +30,6 @@ private:
     map<string, string> createTypeMap(const string&);
     const string _envName;
 
-#if (defined(_MSC_VER) && (_MSC_VER < 1300)) || defined(__BCPLUSPLUS__)
-//
-// Some compilers don't let local classes access private data members
-//
-public:
-#endif
-
     CasinoStore::PersistentBankPrx _bankPrx;
     Freeze::TransactionalEvictorPtr _bankEvictor;
     Freeze::TransactionalEvictorPtr _playerEvictor;
@@ -58,7 +51,7 @@ class ObjectFactory : public Ice::ObjectFactory
 public:
 
     virtual Ice::ObjectPtr
-    create(const string& type)
+    create(const string& /*type*/)
     {
         return new T;
     }
@@ -70,7 +63,7 @@ public:
 };
 
 int
-CasinoServer::run(int argc, char* argv[])
+CasinoServer::run(int argc, char*[])
 {
     if(argc > 1)
     {
@@ -122,7 +115,7 @@ CasinoServer::run(int argc, char* argv[])
         }
 
         virtual void
-        initialize(const Ice::ObjectAdapterPtr& adapter, const Ice::Identity& identity, const string& facet,
+        initialize(const Ice::ObjectAdapterPtr& /*adapter*/, const Ice::Identity& /*identity*/, const string& /*facet*/,
                    const Ice::ObjectPtr& servant)
         {
             BankI* bank = dynamic_cast<BankI*>(servant.get());
@@ -161,7 +154,7 @@ CasinoServer::run(int argc, char* argv[])
         }
 
         virtual void
-        initialize(const Ice::ObjectAdapterPtr& adapter, const Ice::Identity& identity, const string& facet,
+        initialize(const Ice::ObjectAdapterPtr& adapter, const Ice::Identity& identity, const string& /*facet*/,
                    const Ice::ObjectPtr& servant)
         {
             CasinoStore::PersistentPlayerPrx prx =
@@ -202,7 +195,7 @@ CasinoServer::run(int argc, char* argv[])
         }
 
         virtual void
-        initialize(const Ice::ObjectAdapterPtr& adapter, const Ice::Identity& identity, const string& facet,
+        initialize(const Ice::ObjectAdapterPtr& /*adapter*/, const Ice::Identity& /*identity*/, const string& /*facet*/,
                    const Ice::ObjectPtr& servant)
         {
             BetI* bet = dynamic_cast<BetI*>(servant.get());
@@ -269,13 +262,7 @@ CasinoServer::run(int argc, char* argv[])
 
         for(size_t i = 0; i < 12; ++i)
         {
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-            Ice::Identity ident;
-            ident.name = players[i];
-            ident.category = "player";
-#else
             Ice::Identity ident = { players[i], "player" };
-#endif
             if(!_playerEvictor->hasObject(ident))
             {
                 _playerEvictor->add(new PlayerI, ident);

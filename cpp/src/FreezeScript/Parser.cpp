@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -129,7 +129,7 @@ FreezeScript::parseExpression(const string& expr, const DataFactoryPtr& factory,
 // getInput supplies characters to the lexical scanner.
 //
 int
-FreezeScript::getInput(char* buf, int maxSize)
+FreezeScript::getInput(char* buf, int /*maxSize*/)
 {
     if(_pos < _input.length())
     {
@@ -166,11 +166,7 @@ FreezeScript::EvaluateException::ice_name() const
 void
 FreezeScript::EvaluateException::ice_print(ostream& out) const
 {
-#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug
-    Exception::ice_print(out);
-#else
     Ice::Exception::ice_print(out);
-#endif
     out << ":\nerror occurred while evaluating expression";
     if(!_reason.empty())
     {
@@ -178,7 +174,7 @@ FreezeScript::EvaluateException::ice_print(ostream& out) const
     }
 }
 
-IceUtil::Exception*
+FreezeScript::EvaluateException*
 FreezeScript::EvaluateException::ice_clone() const
 {
     return new EvaluateException(ice_file(), ice_line(), _reason);
@@ -548,7 +544,7 @@ FreezeScript::DataNode::evaluate(const SymbolTablePtr&)
 }
 
 void
-FreezeScript::DataNode::print(ostream& os) const
+FreezeScript::DataNode::print(ostream& /*os*/) const
 {
     // TODO
     //_data->print(os);

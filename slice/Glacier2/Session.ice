@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef GLACIER2_SESSION_ICE
-#define GLACIER2_SESSION_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -30,6 +29,7 @@ module Glacier2
  * @see SSLSessionManager#create
  *
  **/
+["preserve-slice"]
 exception CannotCreateSessionException
 {
     /**
@@ -57,7 +57,7 @@ interface Session
      * {@link Router} is destroyed.
      *
      **/
-    ["ami"] void destroy();
+    void destroy();
 };
 
 /**
@@ -199,7 +199,7 @@ interface SessionControl
      * Destroy the associated session.
      *
      **/
-    ["ami"] void destroy();
+    void destroy();
 };
 
 /**
@@ -230,7 +230,8 @@ interface SessionManager
      * cannot be created.
      *
      **/
-    ["ami"] Session* create(string userId, SessionControl* control)
+    ["format:sliced"]
+    Session* create(string userId, SessionControl* control)
         throws CannotCreateSessionException;
 };
 
@@ -262,10 +263,10 @@ interface SSLSessionManager
      * cannot be created.
      *
      **/
-    ["ami"] Session* create(SSLInfo info, SessionControl* control)
+    ["format:sliced"] 
+    Session* create(SSLInfo info, SessionControl* control)
         throws CannotCreateSessionException;
 };
 
 };
 
-#endif

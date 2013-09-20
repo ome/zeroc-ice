@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -187,7 +187,7 @@ void
 AdminI::syncApplication(const ApplicationDescriptor& descriptor, const Current&)
 {
     checkIsReadOnly();
-    _database->syncApplicationDescriptor(descriptor, _session.get());
+    _database->syncApplicationDescriptor(descriptor, false, _session.get());
 }
 
 void
@@ -200,7 +200,27 @@ AdminI::updateApplication(const ApplicationUpdateDescriptor& descriptor, const C
     update.updateUser = _session->getId();
     update.descriptor = descriptor;
     update.revision = -1; // The database will set it.
-    _database->updateApplication(update, _session.get());
+    _database->updateApplication(update, false, _session.get());
+}
+
+void
+AdminI::syncApplicationWithoutRestart(const ApplicationDescriptor& descriptor, const Current&)
+{
+    checkIsReadOnly();
+    _database->syncApplicationDescriptor(descriptor, true, _session.get());
+}
+
+void
+AdminI::updateApplicationWithoutRestart(const ApplicationUpdateDescriptor& descriptor, const Current&)
+{
+    checkIsReadOnly();
+
+    ApplicationUpdateInfo update;
+    update.updateTime = IceUtil::Time::now().toMilliSeconds();
+    update.updateUser = _session->getId();
+    update.descriptor = descriptor;
+    update.revision = -1; // The database will set it.
+    _database->updateApplication(update, true, _session.get());
 }
 
 void
@@ -394,50 +414,101 @@ AdminI::getServerAdmin(const string& id, const Current& current) const
     return current.adapter->createProxy(adminId);
 }
 
+namespace
+{
+
+class StartCB : virtual public IceUtil::Shared
+{
+public:
+
+    StartCB(const ServerProxyWrapper& proxy, const AMD_Admin_startServerPtr& amdCB) : _proxy(proxy), _amdCB(amdCB)
+    {
+    }
+
+    virtual void
+    response()
+    {
+        _amdCB->ice_response();
+    }
+
+    virtual void
+    exception(const Ice::Exception& ex)
+    {
+        try
+        {
+            _proxy.handleException(ex);
+            assert(false);
+        }
+        catch(const Ice::Exception& ex)
+        {
+            _amdCB->ice_exception(ex);
+        }
+    }
+
+private:
+
+    const ServerProxyWrapper _proxy;
+    const AMD_Admin_startServerPtr _amdCB;
+};
+
+}
+
+
 void
 AdminI::startServer_async(const AMD_Admin_startServerPtr& amdCB, const string& id, const Current&)
 {
     ServerProxyWrapper proxy(_database, id);
     proxy.useActivationTimeout();
 
-    class StartCB : public AMI_Server_start
-    {
-    public:
-
-        StartCB(const ServerProxyWrapper& proxy, const AMD_Admin_startServerPtr& amdCB) : _proxy(proxy), _amdCB(amdCB)
-        {
-        }
-
-        virtual void
-        ice_response()
-        {
-            _amdCB->ice_response();
-        }
-
-        virtual void
-        ice_exception(const Ice::Exception& ex)
-        {
-            try
-            {
-                _proxy.handleException(ex);
-                assert(false);
-            }
-            catch(const Ice::Exception& ex)
-            {
-                _amdCB->ice_exception(ex);
-            }
-        }
-
-    private:
-
-        const ServerProxyWrapper _proxy;
-        const AMD_Admin_startServerPtr _amdCB;
-    };
-    
     //
     // Since the server might take a while to be activated, we use AMI.
     // 
-    proxy->start_async(new StartCB(proxy, amdCB));
+    proxy->begin_start(newCallback_Server_start(new StartCB(proxy, amdCB), 
+                                                &StartCB::response, 
+                                                &StartCB::exception));
+}
+
+namespace
+{
+
+class StopCB : virtual public IceUtil::Shared
+{
+public:
+
+    StopCB(const ServerProxyWrapper& proxy, const AMD_Admin_stopServerPtr& amdCB) : _proxy(proxy), _amdCB(amdCB)
+    {
+    }
+
+    virtual void
+    response()
+    {
+        _amdCB->ice_response();
+    }
+
+    virtual void
+    exception(const Ice::Exception& ex)
+    {
+        try
+        {
+            _proxy.handleException(ex);
+            assert(false);
+        }
+        catch(const Ice::TimeoutException&)
+        {
+            _amdCB->ice_response();
+        }
+        catch(const Ice::Exception& ex)
+        {
+            _amdCB->ice_exception(ex);
+        }
+    }
+
+private:
+
+    const ServerProxyWrapper _proxy;
+    const AMD_Admin_stopServerPtr _amdCB;
+};
+
 }
 
 void
@@ -445,49 +516,13 @@ AdminI::stopServer_async(const AMD_Admin_stopServerPtr& amdCB, const string& id,
 {
     ServerProxyWrapper proxy(_database, id);
     proxy.useDeactivationTimeout();
-
-    class StopCB : public AMI_Server_stop
-    {
-    public:
-
-        StopCB(const ServerProxyWrapper& proxy, const AMD_Admin_stopServerPtr& amdCB) : _proxy(proxy), _amdCB(amdCB)
-        {
-        }
-
-        virtual void
-        ice_response()
-        {
-            _amdCB->ice_response();
-        }
-
-        virtual void
-        ice_exception(const Ice::Exception& ex)
-        {
-            try
-            {
-                _proxy.handleException(ex);
-                assert(false);
-            }
-            catch(const Ice::TimeoutException&)
-            {
-                _amdCB->ice_response();
-            }
-            catch(const Ice::Exception& ex)
-            {
-                _amdCB->ice_exception(ex);
-            }
-        }
-
-    private:
-
-        const ServerProxyWrapper _proxy;
-        const AMD_Admin_stopServerPtr _amdCB;
-    };
     
     //
     // Since the server might take a while to be deactivated, we use AMI.
     // 
-    proxy->stop_async(new StopCB(proxy, amdCB));
+    proxy->begin_stop(newCallback_Server_stop(new StopCB(proxy, amdCB), 
+                                              &StopCB::response, 
+                                              &StopCB::exception));
 }
 
 void
@@ -655,7 +690,7 @@ AdminI::addObject(const Ice::ObjectPrx& proxy, const ::Ice::Current& current)
 }
 
 void 
-AdminI::updateObject(const Ice::ObjectPrx& proxy, const ::Ice::Current& current)
+AdminI::updateObject(const Ice::ObjectPrx& proxy, const ::Ice::Current&)
 {
     checkIsReadOnly();
 
@@ -677,7 +712,7 @@ AdminI::updateObject(const Ice::ObjectPrx& proxy, const ::Ice::Current& current)
 }
 
 void 
-AdminI::addObjectWithType(const Ice::ObjectPrx& proxy, const string& type, const ::Ice::Current& current)
+AdminI::addObjectWithType(const Ice::ObjectPrx& proxy, const string& type, const ::Ice::Current&)
 {
     checkIsReadOnly();
 
@@ -702,7 +737,7 @@ AdminI::addObjectWithType(const Ice::ObjectPrx& proxy, const string& type, const
 }
 
 void 
-AdminI::removeObject(const Ice::Identity& id, const Ice::Current& current)
+AdminI::removeObject(const Ice::Identity& id, const Ice::Current&)
 {
     checkIsReadOnly();
     if(id.category == _database->getInstanceName())
@@ -795,12 +830,14 @@ AdminI::getNodeProcessorSocketCount(const string& name, const Current&) const
     catch(const Ice::ObjectNotExistException&)
     {
         throw NodeNotExistException(name);
+        return 0;
     }
     catch(const Ice::LocalException& ex)
     {
         ostringstream os;
         os << ex;
         throw NodeUnreachableException(name, os.str());
+        return 0;
     }
 }
 
@@ -938,7 +975,7 @@ AdminI::checkIsReadOnly() const
     if(_database->isReadOnly())
     {
         DeploymentException ex;
-        ex.reason = "this operation is only allowed on a slave or read-only master registry.";
+        ex.reason = "this operation is not allowed on a slave or read-only master registry.";
         throw ex;
     }
 }

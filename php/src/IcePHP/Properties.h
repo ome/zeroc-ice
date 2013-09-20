@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,16 +19,6 @@ extern "C"
 {
 ZEND_FUNCTION(Ice_createProperties);
 }
-
-#define ICEPHP_PROPERTIES_FUNCTIONS \
-    ZEND_FE(Ice_createProperties, NULL)
-
-#ifdef ICEPHP_USE_NAMESPACES
-#   define ICEPHP_PROPERTIES_NS_FUNCTIONS \
-    ZEND_NS_FALIAS("Ice", createProperties, Ice_createProperties, NULL)
-#else
-#   define ICEPHP_PROPERTIES_NS_FUNCTIONS
-#endif
 
 namespace IcePHP
 {

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -189,11 +189,12 @@ public interface InputStream
     void readObject(ReadObjectCallback cb);
 
     /**
-     * Extracts a Slice type ID from the stream.
+     * Read an enumerated value.
      *
-     * @return The extracted type ID.
+     * @param maxValue The maximum enumerator value in the definition.
+     * @return The enumerator.
      **/
-    String readTypeId();
+    int readEnum(int maxValue);
 
     /**
      * Extracts a user exception from the stream and throws it.
@@ -201,9 +202,43 @@ public interface InputStream
     void throwException() throws UserException;
 
     /**
-     * Reads the start of an object or exception slice.
+     * Extracts a user exception from the stream and throws it, using the supplied
+     * factory to instantiate a UserExceptionReader.
+     *
+     * @param factory A factory that creates UserExceptionReader instances.
      **/
-    void startSlice();
+    void throwException(UserExceptionReaderFactory factory) throws UserException;
+
+    /**
+     * Marks the start of an Ice object.
+     **/
+    void startObject();
+
+    /**
+     * Marks the end of an Ice object.
+     *
+     * @return A SlicedData object containing the preserved slices for unknown types.
+     **/
+    SlicedData endObject(boolean preserve);
+
+    /**
+     * Marks the start of a user exception.
+     **/
+    void startException();
+
+    /**
+     * Marks the end of a user exception.
+     *
+     * @return A SlicedData object containing the preserved slices for unknown types.
+     **/
+    SlicedData endException(boolean preserve);
+
+    /**
+     * Reads the start of an object or exception slice.
+     *
+     * @return The Slice type ID for this slice.
+     **/
+    String startSlice();
 
     /**
      * Indicates that the end of an object or exception slice has been reached.
@@ -217,18 +252,29 @@ public interface InputStream
 
     /**
      * Reads the start of an encapsulation.
+     *
+     * @return The encapsulation encoding version.
      **/
-    void startEncapsulation();
-
-    /**
-     * Skips over an encapsulation.
-     **/
-    void skipEncapsulation();
+    EncodingVersion startEncapsulation();
 
     /**
      * Indicates that the end of an encapsulation has been reached.
      **/
     void endEncapsulation();
+
+    /**
+     * Skips over an encapsulation.
+     *
+     * @return The encapsulation encoding version.
+     **/
+    EncodingVersion skipEncapsulation();
+
+    /**
+     * Determines the current encoding version.
+     *
+     * @return The encoding version.
+     **/
+    EncodingVersion getEncoding();
 
     /**
      * Indicates that unmarshaling is complete, except for any Slice objects. The application must call this method
@@ -242,6 +288,29 @@ public interface InputStream
      * Resets the read position of the stream to the beginning.
      **/
     void rewind();
+
+    /**
+     * Skips ahead in the stream.
+     *
+     * @param sz The number of bytes to skip.
+     **/
+    void skip(int sz);
+
+    /**
+     * Skips over a size value.
+     **/
+    void skipSize();
+
+    /**
+     * Determine if an optional value is available for reading.
+     *
+     * @param tag The tag associated with the value.
+     * @param type The optional format for the value.
+     * @return True if the value is present, false otherwise.
+     **/
+    boolean readOptional(int tag, OptionalFormat format);
+
+    int pos();
 
     /**
      * Destroys the stream and its associated resources. The application must call <code>destroy</code> prior

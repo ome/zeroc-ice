@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 #include <Ice/Ice.h>
 #include <Ice/BuiltinSequences.h>
+#include <TestCommon.h>
 #include <ServerLocator.h>
 
 using namespace std;
@@ -103,7 +104,7 @@ ServerLocator::ServerLocator(const ServerLocatorRegistryPtr& registry, const ::I
 
 void
 ServerLocator::findObjectById_async(const Ice::AMD_Locator_findObjectByIdPtr& response, const Ice::Identity& id, 
-                                    const Ice::Current& current) const
+                                    const Ice::Current&) const
 {
     ++const_cast<int&>(_requestCount);
     // We add a small delay to make sure locator request queuing gets tested when
@@ -117,6 +118,13 @@ ServerLocator::findAdapterById_async(const Ice::AMD_Locator_findAdapterByIdPtr& 
                                      const Ice::Current& current) const
 {
     ++const_cast<int&>(_requestCount);
+    if(id == "TestAdapter10" || id == "TestAdapter10-2")
+    {
+        test(current.encoding == Ice::Encoding_1_0);
+        response->ice_response(_registry->getAdapter("TestAdapter"));
+        return;
+    }
+
     // We add a small delay to make sure locator request queuing gets tested when
     // running the test on a fast machine
     IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(1));

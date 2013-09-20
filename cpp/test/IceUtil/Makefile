@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -21,7 +21,15 @@ SUBDIRS		= condvar \
 		  priority \
 		  fileLock
 
-$(EVERYTHING)::
+.PHONY: $(EVERYTHING) $(SUBDIRS)
+
+all:: $(SUBDIRS)
+
+$(SUBDIRS):
+	@echo "making all in $@"
+	@$(MAKE) all --directory=$@
+
+$(EVERYTHING_EXCEPT_ALL)::
 	@for subdir in $(SUBDIRS); \
 	do \
 	    echo "making $@ in $$subdir"; \

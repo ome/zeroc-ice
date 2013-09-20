@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,11 +17,6 @@ using namespace std;
 
 namespace
 {
-
-bool operator==(const GroupNodeInfo& info, int id)
-{
-    return info.id == id;
-}
 
 class CheckTask : public IceUtil::TimerTask
 {
@@ -106,6 +101,21 @@ GroupNodeInfo::operator==(const GroupNodeInfo& rhs) const
 {
     return id == rhs.id;
 }
+
+//
+// COMPILER FIX: Clang using libc++ requires to define operator=
+//
+#if defined(__clang__) && defined(_LIBCPP_VERSION)
+GroupNodeInfo&
+GroupNodeInfo::operator=(const GroupNodeInfo& other)
+    
+{
+    const_cast<int&>(this->id) = other.id;
+    const_cast<LogUpdate&>(this->llu) = other.llu;
+    const_cast<Ice::ObjectPrx&>(this->observer) = other.observer;
+    return *this;
+}
+#endif
 
 Replica::~Replica()
 {
@@ -565,8 +575,7 @@ NodeI::mergeContinue()
     // updates.
     int maxid = -1;
     LogUpdate maxllu = { -1, 0 };
-    set<GroupNodeInfo>::const_iterator p;
-    for(p = tmpSet.begin(); p != tmpSet.end(); ++p)
+    for(set<GroupNodeInfo>::const_iterator p = tmpSet.begin(); p != tmpSet.end(); ++p)
     {
         if(_traceLevels->election > 0)
         {
@@ -659,7 +668,7 @@ NodeI::mergeContinue()
     }
 
     // Tell each node to go.
-    for(p = tmpSet.begin(); p != tmpSet.end(); ++p)
+    for(set<GroupNodeInfo>::const_iterator p = tmpSet.begin(); p != tmpSet.end(); ++p)
     {
         try
         {
@@ -839,13 +848,13 @@ NodeI::ready(int j, const string& gn, const Ice::ObjectPrx& coordinator, int max
     if(!_destroy && _state == NodeStateReorganization && _group == gn)
     {
         // The coordinator must be j (this was set in the invitation).
-	if(_coord != j)
-	{
-	    Ice::Warning warn(_traceLevels->logger);
-	    warn << _traceLevels->electionCat << ": ignoring ready call from replica node " << j
-	    	 << " (real coordinator is " << _coord << ")";
-	    return;
-	}
+        if(_coord != j)
+        {
+            Ice::Warning warn(_traceLevels->logger);
+            warn << _traceLevels->electionCat << ": ignoring ready call from replica node " << j
+                 << " (real coordinator is " << _coord << ")";
+            return;
+        }
 
         // Here we've already validated j in the invite call
         // (otherwise _group != gn).
@@ -909,8 +918,8 @@ NodeI::accept(int j, const string& gn, const Ice::IntSeq& forwardedInvites, cons
                 out << *p;
             }
             out << ") with llu "
-	    	<< llu.generation << "/" << llu.iteration << " into group " << gn
-		<< " group size " << (_up.size() + 1);
+                << llu.generation << "/" << llu.iteration << " into group " << gn
+                << " group size " << (_up.size() + 1);
         }
 
         // Add each of the forwarded invites to the list of issued
@@ -932,7 +941,7 @@ NodeI::accept(int j, const string& gn, const Ice::IntSeq& forwardedInvites, cons
         // merge continue immediately. Otherwise, we let the existing
         // merge() schedule continue.
         if((_up.size() == _nodes.size()-1 || _invitesIssued == _invitesAccepted) &&
-	   _mergeContinueTask && _timer->cancel(_mergeContinueTask))
+           _mergeContinueTask && _timer->cancel(_mergeContinueTask))
         {
             _timer->schedule(_mergeContinueTask, IceUtil::Time::seconds(0));
         }
@@ -1087,7 +1096,7 @@ NodeI::destroy()
 // A node should only receive an observer init call if the node is
 // reorganizing and its not the coordinator.
 void
-NodeI::checkObserverInit(Ice::Long generation)
+NodeI::checkObserverInit(Ice::Long /*generation*/)
 {
     Lock sync(*this);
     if(_state != NodeStateReorganization)
@@ -1131,7 +1140,7 @@ NodeI::startUpdate(Ice::Long& generation, const char* file, int line)
 }
 
 bool
-NodeI::updateMaster(const char* file, int line)
+NodeI::updateMaster(const char* /*file*/, int /*line*/)
 {
     bool majority = _observers->check();
 

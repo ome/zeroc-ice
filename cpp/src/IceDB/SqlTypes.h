@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -36,9 +36,10 @@ public:
     virtual ~DatabaseException() throw();
 
     virtual void ice_print(::std::ostream&) const;
-    virtual ::IceUtil::Exception* ice_clone() const;
+    virtual DatabaseException* ice_clone() const;
     virtual void ice_throw() const;
 
+private:
     QSqlError error;
 };
 
@@ -50,9 +51,10 @@ public:
     virtual ~DeadlockException() throw();
 
     virtual void ice_print(::std::ostream&) const;
-    virtual ::IceUtil::Exception* ice_clone() const;
+    virtual DeadlockException* ice_clone() const;
     virtual void ice_throw() const;
 
+private:
     QSqlError error;
 };
 
@@ -63,7 +65,7 @@ public:
     NotFoundException(const char*, int);
     virtual ~NotFoundException() throw();
 
-    virtual ::IceUtil::Exception* ice_clone() const;
+    virtual NotFoundException* ice_clone() const;
     virtual void ice_throw() const;
 };
 
@@ -72,22 +74,24 @@ void throwDatabaseException(const char*, int, const QSqlError&);
 //
 // Database connection
 //
-class DatabaseConnection : public IceDB::DatabaseConnection
+class DatabaseConnection : public virtual IceDB::DatabaseConnection
 {
 public:
 
-    DatabaseConnection(const QSqlDatabase&, const QString&);
+    DatabaseConnection(const QSqlDatabase&, const QString&, const Ice::EncodingVersion&);
+
+    virtual Ice::EncodingVersion getEncoding() const;
 
     virtual void beginTransaction();
     virtual void commitTransaction();
     virtual void rollbackTransaction();
 
-    QSqlDatabase sqlConnection()
+    QSqlDatabase sqlConnection() const
     {
         return _connection;
     }
 
-    QString sqlConnectionName()
+    QString sqlConnectionName() const
     {
         return _connectionName;
     }
@@ -96,15 +100,16 @@ private:
 
     const QSqlDatabase _connection;
     const QString _connectionName;
+    const Ice::EncodingVersion _encoding;
 };
 typedef IceUtil::Handle<DatabaseConnection> DatabaseConnectionPtr;
 
 
 //
-// Cache per thread of database information
+// Connection pool
 //
 
-class DatabaseCache : public IceUtil::Mutex, virtual public IceDB::DatabaseCache
+class ConnectionPool : public virtual IceDB::ConnectionPool
 {
 public:
     
@@ -115,9 +120,9 @@ public:
 
 protected:
 
-    DatabaseCache(const Ice::CommunicatorPtr&, const std::string&, const std::string&, const std::string&, int,
-                  const std::string&, const std::string&, bool);
-    virtual ~DatabaseCache();
+    ConnectionPool(const Ice::CommunicatorPtr&, const std::string&, const std::string&, const std::string&, int,
+                  const std::string&, const std::string&, bool, const Ice::EncodingVersion&);
+    virtual ~ConnectionPool();
                   
     typedef std::map<IceUtil::ThreadControl::ID, DatabaseConnectionPtr> ThreadDatabaseMap;
 
@@ -127,28 +132,31 @@ protected:
 private:
     
     IceUtilInternal::FileLockPtr _fileLock;
+    const Ice::EncodingVersion _encoding;
+    IceUtil::Mutex _mutex;
 };
 
-typedef IceUtil::Handle<DatabaseCache> DatabaseCachePtr;
+typedef IceUtil::Handle<ConnectionPool> ConnectionPoolPtr;
 
-class ThreadHook : public Ice::ThreadNotification, public IceUtil::Mutex
+class ThreadHook : public Ice::ThreadNotification
 {
 public:
 
     ThreadHook();
-    void setDatabaseCache(const DatabaseCachePtr&);
+    void setConnectionPool(const ConnectionPoolPtr&);
 
     virtual void start();
     virtual void stop();
 
 private:
 
-    DatabaseCachePtr _cache;
+    ConnectionPoolPtr _cache;
+    IceUtil::Mutex _mutex;
 };
 
 typedef IceUtil::Handle<ThreadHook> ThreadHookPtr;
 
-template<class Table, class Key, class Value> class Wrapper : virtual public IceDB::Wrapper<Key, Value>
+template<class Table, class Key, class Value> class Wrapper : public virtual IceDB::Wrapper<Key, Value>
 {
     typedef IceUtil::Handle<Table> TablePtr;
 

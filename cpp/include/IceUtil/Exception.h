@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,6 +23,7 @@ public:
 
     Exception();
     Exception(const char*, int);
+
     virtual ~Exception() throw();
     virtual std::string ice_name() const;
     virtual void ice_print(std::ostream&) const;
@@ -52,7 +53,7 @@ public:
     NullHandleException(const char*, int);
     virtual ~NullHandleException() throw();
     virtual std::string ice_name() const;
-    virtual Exception* ice_clone() const;
+    virtual NullHandleException* ice_clone() const;
     virtual void ice_throw() const;
 
 private:
@@ -69,7 +70,7 @@ public:
     virtual ~IllegalArgumentException() throw();
     virtual std::string ice_name() const;
     virtual void ice_print(std::ostream&) const;
-    virtual Exception* ice_clone() const;
+    virtual IllegalArgumentException* ice_clone() const;
     virtual void ice_throw() const;
 
     std::string reason() const;
@@ -87,7 +88,7 @@ public:
     SyscallException(const char*, int, int);
     virtual std::string ice_name() const;
     virtual void ice_print(std::ostream&) const;
-    virtual Exception* ice_clone() const;
+    virtual SyscallException* ice_clone() const;
     virtual void ice_throw() const;
 
     int error() const;
@@ -106,7 +107,7 @@ public:
     virtual ~FileLockException() throw();
     virtual std::string ice_name() const;
     virtual void ice_print(std::ostream&) const;
-    virtual Exception* ice_clone() const;
+    virtual FileLockException* ice_clone() const;
     virtual void ice_throw() const;
 
     std::string path() const;
@@ -117,6 +118,21 @@ private:
     const int _error;
     static const char* _name;
     std::string _path;
+};
+
+class ICE_UTIL_API OptionalNotSetException : public Exception
+{
+public:
+    
+    OptionalNotSetException(const char*, int);
+    virtual ~OptionalNotSetException() throw();
+    virtual std::string ice_name() const;
+    virtual OptionalNotSetException* ice_clone() const;
+    virtual void ice_throw() const;
+
+private:
+
+    static const char* _name;
 };
 
 }

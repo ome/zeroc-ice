@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,7 +31,7 @@
 namespace Slice
 {
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(__MINGW32__)
  
 const IceUtil::Int64 Int32Max =  0x7fffffffi64;
 const IceUtil::Int64 Int32Min = -Int32Max - 1i64;
@@ -67,6 +67,16 @@ SLICE_API enum NodeType
 {
     Dummy,
     Real
+};
+
+//
+// Format preference for classes and exceptions.
+//
+SLICE_API enum FormatType
+{
+    DefaultFormat,    // No preference was specified.
+    CompactFormat,    // Minimal format.
+    SlicedFormat      // Full format.
 };
 
 class GrammarBase;
@@ -145,6 +155,14 @@ struct ConstDef
     SyntaxTreeBasePtr value;
     std::string valueAsString;
     std::string valueAsLiteral;
+};
+
+struct OptionalDef
+{
+    TypePtr type;
+    std::string name;
+    bool optional;
+    int tag;
 };
 
 // ----------------------------------------------------------------------
@@ -354,6 +372,8 @@ public:
     void setMetaData(const std::list<std::string>&);
     void addMetaData(const std::string&); // TODO: remove this method once "cs:" and "vb:" are hard errors.
 
+    static FormatType parseFormatMetaData(const std::list<std::string>&);
+
     enum ContainedType
     {
         ContainedTypeSequence,
@@ -403,7 +423,7 @@ public:
 
     virtual void destroy();
     ModulePtr createModule(const std::string&);
-    ClassDefPtr createClassDef(const std::string&, bool, const ClassList&, bool);
+    ClassDefPtr createClassDef(const std::string&, int, bool, const ClassList&, bool);
     ClassDeclPtr createClassDecl(const std::string&, bool, bool);
     ExceptionPtr createException(const std::string&, const ExceptionPtr&, bool, NodeType = Real);
     StructPtr createStruct(const std::string&, bool, NodeType = Real);
@@ -412,6 +432,7 @@ public:
                                    const StringList&, bool, NodeType = Real);
     EnumPtr createEnum(const std::string&, bool, NodeType = Real);
     EnumeratorPtr createEnumerator(const std::string&);
+    EnumeratorPtr createEnumerator(const std::string&, int);
     ConstPtr createConst(const std::string, const TypePtr&, const StringList&, const SyntaxTreeBasePtr&,
                          const std::string&, const std::string&, NodeType = Real);
     TypeList lookupType(const std::string&, bool = true);
@@ -430,6 +451,7 @@ public:
     ContainedList contents() const;
     bool hasNonLocalClassDecls() const;
     bool hasNonLocalClassDefs() const;
+    bool hasLocalClassDefsWithAsync() const;
     bool hasNonLocalSequences() const;
     bool hasNonLocalExceptions() const;
     bool hasDictionaries() const;
@@ -461,6 +483,7 @@ protected:
     bool checkInterfaceAndLocal(const std::string&, bool, bool, bool, bool, bool);
     bool checkGlobalMetaData(const StringList&, const StringList&);
     bool validateConstant(const std::string&, const TypePtr&, const SyntaxTreeBasePtr&, const std::string&, bool);
+    EnumeratorPtr validateEnumerator(const std::string&);
 
     ContainedList _contents;
     std::map<std::string, ContainedPtr, CICompare> _introducedMap;
@@ -568,27 +591,33 @@ public:
     };
 
     TypePtr returnType() const;
+    bool returnIsOptional() const;
+    int returnTag() const;
     Mode mode() const;
     Mode sendMode() const;
-    ParamDeclPtr createParamDecl(const std::string&, const TypePtr&, bool);
+    ParamDeclPtr createParamDecl(const std::string&, const TypePtr&, bool, bool, int);
     ParamDeclList parameters() const;
     ExceptionList throws() const;
     void setExceptionList(const ExceptionList&);
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
-    bool sendsClasses() const;
-    bool returnsClasses() const;
+    bool sendsClasses(bool) const;
+    bool returnsClasses(bool) const;
     bool returnsData() const;
+    bool sendsOptionals() const;
     int attributes() const;
+    FormatType format() const;
     virtual std::string kindOf() const;
     virtual void visit(ParserVisitor*, bool);
 
 protected:
 
-    Operation(const ContainerPtr&, const std::string&, const TypePtr&, Mode);
+    Operation(const ContainerPtr&, const std::string&, const TypePtr&, bool, int, Mode);
     friend class ClassDef;
 
     TypePtr _returnType;
+    bool _returnIsOptional;
+    int _returnTag;
     ExceptionList _throws;
     Mode _mode;
 };
@@ -609,15 +638,16 @@ class SLICE_API ClassDef : virtual public Container, virtual public Contained
 public:
 
     virtual void destroy();
-    OperationPtr createOperation(const std::string&, const TypePtr&, Operation::Mode = Operation::Normal);
-    DataMemberPtr createDataMember(const std::string&, const TypePtr&, const SyntaxTreeBasePtr&, const std::string&,
-                                   const std::string&);
+    OperationPtr createOperation(const std::string&, const TypePtr&, bool, int, Operation::Mode = Operation::Normal);
+    DataMemberPtr createDataMember(const std::string&, const TypePtr&, bool, int, const SyntaxTreeBasePtr&,
+                                   const std::string&, const std::string&);
     ClassDeclPtr declaration() const;
     ClassList bases() const;
     ClassList allBases() const;
     OperationList operations() const;
     OperationList allOperations() const;
     DataMemberList dataMembers() const;
+    DataMemberList orderedOptionalDataMembers() const;
     DataMemberList allDataMembers() const;
     DataMemberList classDataMembers() const;
     DataMemberList allClassDataMembers() const;
@@ -629,14 +659,16 @@ public:
     bool hasDataMembers() const;
     bool hasOperations() const;
     bool hasDefaultValues() const;
+    bool inheritsMetaData(const std::string&) const;
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual std::string kindOf() const;
     virtual void visit(ParserVisitor*, bool);
+    int compactId() const;
 
 protected:
 
-    ClassDef(const ContainerPtr&, const std::string&, bool, const ClassList&, bool);
+    ClassDef(const ContainerPtr&, const std::string&, int, bool, const ClassList&, bool);
     friend class Container;
 
     ClassDeclPtr _declaration;
@@ -645,6 +677,7 @@ protected:
     bool _hasOperations;
     ClassList _bases;
     bool _local;
+    int _compactId;
 };
 
 // ----------------------------------------------------------------------
@@ -680,9 +713,10 @@ class SLICE_API Exception : virtual public Container, virtual public Contained
 public:
 
     virtual void destroy();
-    DataMemberPtr createDataMember(const std::string&, const TypePtr&, const SyntaxTreeBasePtr&, const std::string&,
-                                   const std::string&);
+    DataMemberPtr createDataMember(const std::string&, const TypePtr&, bool, int, const SyntaxTreeBasePtr&,
+                                   const std::string&, const std::string&);
     DataMemberList dataMembers() const;
+    DataMemberList orderedOptionalDataMembers() const;
     DataMemberList allDataMembers() const;
     DataMemberList classDataMembers() const;
     DataMemberList allClassDataMembers() const;
@@ -692,8 +726,9 @@ public:
     virtual bool isLocal() const;
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
-    bool usesClasses() const;
+    bool usesClasses(bool) const;
     bool hasDefaultValues() const;
+    bool inheritsMetaData(const std::string&) const;
     virtual std::string kindOf() const;
     virtual void visit(ParserVisitor*, bool);
 
@@ -714,8 +749,8 @@ class SLICE_API Struct : virtual public Container, virtual public Constructed
 {
 public:
 
-    DataMemberPtr createDataMember(const std::string&, const TypePtr&, const SyntaxTreeBasePtr&, const std::string&,
-                                   const std::string&);
+    DataMemberPtr createDataMember(const std::string&, const TypePtr&, bool, int, const SyntaxTreeBasePtr&,
+                                   const std::string&, const std::string&);
     DataMemberList dataMembers() const;
     DataMemberList classDataMembers() const;
     virtual ContainedType containedType() const;
@@ -808,6 +843,9 @@ public:
     virtual void destroy();
     EnumeratorList getEnumerators();
     void setEnumerators(const EnumeratorList&);
+    bool explicitValue() const;
+    int minValue() const;
+    int maxValue() const;
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual bool usesClasses() const;
@@ -823,6 +861,9 @@ protected:
     friend class Container;
 
     EnumeratorList _enumerators;
+    bool _explicitValue;
+    IceUtil::Int64 _minValue;
+    IceUtil::Int64 _maxValue;
 };
 
 // ----------------------------------------------------------------------
@@ -838,13 +879,19 @@ public:
     virtual ContainedType containedType() const;
     virtual std::string kindOf() const;
 
+    bool explicitValue() const;
+    int value() const;
+
 protected:
 
     Enumerator(const ContainerPtr&, const std::string&);
+    Enumerator(const ContainerPtr&, const std::string&, int);
     friend class Container;
     friend class Enum;
 
     EnumPtr _type;
+    bool _explicitValue;
+    int _value;
 };
 
 // ----------------------------------------------------------------------
@@ -888,6 +935,8 @@ public:
 
     TypePtr type() const;
     bool isOutParam() const;
+    bool optional() const;
+    int tag() const;
     virtual ContainedType containedType() const;
     virtual bool uses(const ContainedPtr&) const;
     virtual std::string kindOf() const;
@@ -895,11 +944,13 @@ public:
 
 protected:
 
-    ParamDecl(const ContainerPtr&, const std::string&, const TypePtr&, bool isOutParam);
+    ParamDecl(const ContainerPtr&, const std::string&, const TypePtr&, bool, bool, int);
     friend class Operation;
 
     TypePtr _type;
     bool _isOutParam;
+    bool _optional;
+    int _tag;
 };
 
 // ----------------------------------------------------------------------
@@ -911,6 +962,8 @@ class SLICE_API DataMember : virtual public Contained
 public:
 
     TypePtr type() const;
+    bool optional() const;
+    int tag() const;
     std::string defaultValue() const;
     std::string defaultLiteral() const;
     SyntaxTreeBasePtr defaultValueType() const;
@@ -921,13 +974,15 @@ public:
 
 protected:
     
-    DataMember(const ContainerPtr&, const std::string&, const TypePtr&, const SyntaxTreeBasePtr&, const std::string&,
-               const std::string&);
+    DataMember(const ContainerPtr&, const std::string&, const TypePtr&, bool, int, const SyntaxTreeBasePtr&,
+               const std::string&, const std::string&);
     friend class ClassDef;
     friend class Struct;
     friend class Exception;
 
     TypePtr _type;
+    bool _optional;
+    int _tag;
     SyntaxTreeBasePtr _defaultValueType;
     std::string _defaultValue;
     std::string _defaultLiteral;
@@ -983,7 +1038,9 @@ public:
     ExceptionList findDerivedExceptions(const ExceptionPtr&) const;
     ContainedList findUsedBy(const ContainedPtr&) const;
 
-    bool usesProxies() const;
+    void addTypeId(int, const std::string&);
+    std::string getTypeId(int);
+
     bool usesNonLocals() const;
     bool usesConsts() const;
 
@@ -1029,6 +1086,7 @@ private:
     std::map<std::string, ContainedList> _contentMap;
     FeatureProfile _featureProfile;
     std::map<std::string, DefinitionContextPtr> _definitionContextMap;
+    std::map<int, std::string> _typeIds;
 };
 
 extern SLICE_API Unit* unit; // The current parser for bison/flex

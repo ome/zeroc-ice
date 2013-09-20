@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -95,6 +95,12 @@ Freeze::ConnectionI::getCommunicator() const
     return _communicator;
 }
 
+EncodingVersion
+Freeze::ConnectionI::getEncoding() const
+{
+    return _encoding;
+}
+
 string
 Freeze::ConnectionI::getName() const
 {
@@ -152,6 +158,7 @@ Freeze::ConnectionI::~ConnectionI()
 
 Freeze::ConnectionI::ConnectionI(const SharedDbEnvPtr& dbEnv) :
     _communicator(dbEnv->getCommunicator()),
+    _encoding(dbEnv->getEncoding()),
     _dbEnv(dbEnv),
     _envName(dbEnv->getEnvName()),
     _trace(_communicator->getProperties()->getPropertyAsInt("Freeze.Trace.Map")),
@@ -195,11 +202,4 @@ Freeze::ConnectionPtr
 Freeze::createConnection(const CommunicatorPtr& communicator, const string& envName, DbEnv& dbEnv)
 {
     return new ConnectionI(SharedDbEnv::get(communicator, envName, &dbEnv));
-}
-
-void
-Freeze::TransactionAlreadyInProgressException::ice_print(ostream& out) const
-{
-    Exception::ice_print(out);
-    out << ":\ntransaction already in progress";
 }

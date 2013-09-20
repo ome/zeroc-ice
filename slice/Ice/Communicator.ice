@@ -1,19 +1,19 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_COMMUNICATOR_ICE
-#define ICE_COMMUNICATOR_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
 #include <Ice/LoggerF.ice>
 #include <Ice/StatsF.ice>
+#include <Ice/InstrumentationF.ice>
 #include <Ice/ObjectAdapterF.ice>
 #include <Ice/ObjectFactoryF.ice>
 #include <Ice/RouterF.ice>
@@ -34,7 +34,7 @@
  **/
 module Ice
 {
-    
+
 /**
  *
  * The central object in Ice. One or more communicators can be
@@ -165,7 +165,7 @@ local interface Communicator
      * proxy properties.
      *
      * @param property The base property name.
-     * 
+     *
      * @return The proxy.
      *
      **/
@@ -281,17 +281,25 @@ local interface Communicator
 
     /**
      *
-     * Add a servant factory to this communicator. Installing a
-     * factory with an id for which a factory is already registered
+     * <p>Add an object factory to this communicator. Installing a 
+     * factory with an id for which a factory is already registered 
      * throws {@link AlreadyRegisteredException}.</p>
      *
-     * <p>When unmarshaling an Ice object, the Ice run-time reads the
+     * <p>When unmarshaling an Ice object, the Ice run time reads the
      * most-derived type id off the wire and attempts to create an
      * instance of the type using a factory. If no instance is created,
      * either because no factory was found, or because all factories
-     * returned nil, the object is sliced to the next most-derived type
-     * and the process repeats. If no factory is found that can create an
-     * instance, the Ice run-time throws {@link NoObjectFactoryException}.</p>
+     * returned nil, the behavior of the Ice run time depends on the
+     * format with which the object was marshaled:</p>
+     *
+     * <p>If the object uses the "sliced" format, Ice ascends the class
+     * hierarchy until it finds a type that is recognized by a factory,
+     * or it reaches the least-derived type. If no factory is found that
+     * can create an instance, the run time throws
+     * {@link NoObjectFactoryException}.</p>
+     *
+     * <p>If the object uses the "compact" format, Ice immediately raises
+     * {@link NoObjectFactoryException}.</p>
      *
      * <p>The following order is used to locate a factory for a type:</p>
      *
@@ -310,7 +318,6 @@ local interface Communicator
      * </li>
      *
      * </ol>
-     * <p>
      *
      * @param factory The factory to add.
      *
@@ -325,12 +332,12 @@ local interface Communicator
 
     /**
      *
-     * Find a servant factory registered with this communicator.
+     * Find an object factory registered with this communicator.
      *
      * @param id The type id for which the factory can create instances,
      * or an empty string for the default factory.
      *
-     * @return The servant factory, or null if no servant factory was
+     * @return The object factory, or null if no object factory was
      * found for the given id.
      *
      * @see #addObjectFactory
@@ -343,13 +350,13 @@ local interface Communicator
     /**
      * Get the implicit context associated with this communicator.
      *
-     * @return The implicit context associated with this communicator; 
-     * returns null when the property Ice.ImplicitContext is not set 
+     * @return The implicit context associated with this communicator;
+     * returns null when the property Ice.ImplicitContext is not set
      * or is set to None.
      *
      **/
     ["cpp:const"] ImplicitContext getImplicitContext();
-    
+
     /**
      *
      * Get the properties for this communicator.
@@ -382,6 +389,17 @@ local interface Communicator
      *
      **/
     ["cpp:const"] Stats getStats();
+
+    /**
+     *
+     * Get the observer resolver object for this communicator.
+     *
+     * @return This communicator's observer resolver object.
+     *
+     * @see Stats
+     *
+     **/
+    ["cpp:const"] Ice::Instrumentation::CommunicatorObserver getObserver();
 
     /**
      *
@@ -471,7 +489,7 @@ local interface Communicator
     /**
      *
      * Get a proxy to the main facet of the Admin object. When Ice.Admin.DelayCreation
-     * is greater than 0, it is necessary to call getAdmin() after the communicator is 
+     * is greater than 0, it is necessary to call getAdmin() after the communicator is
      * initialized to create the Admin object. Otherwise, the Admin object is created
      * automatically after all the plug-ins are initialized.
      *
@@ -480,7 +498,7 @@ local interface Communicator
      *
      **/
     ["cpp:const"] Object* getAdmin();
-    
+
     /**
      *
      * Add a new facet to the Admin object.
@@ -488,24 +506,34 @@ local interface Communicator
      * throws {@link AlreadyRegisteredException}.
      *
      * @param servant The servant that implements the new Admin facet.
-     * @param facet The new Admin facet.
+     * @param facet The name of the new Admin facet.
      *
      **/
     void addAdminFacet(Object servant, string facet);
-    
+
     /**
      *
      * Remove the following facet to the Admin object.
      * Removing a facet that was not previously registered throws 
      * {@link NotRegisteredException}.
      *
-     * @param facet The Admin facet.
-     * @return The servant associated with this Admin facet
+     * @param facet The name of the Admin facet.
+     * @return The servant associated with this Admin facet.
      *
      **/
     Object removeAdminFacet(string facet);
+
+    /**
+     *
+     * Returns a facet of the Admin object.
+     *
+     * @param facet The name of the Admin facet.
+     * @return The servant associated with this Admin facet, or
+     * null if no facet is registered with the given name.
+     *
+     **/
+    Object findAdminFacet(string facet);
 };
 
 };
 
-#endif

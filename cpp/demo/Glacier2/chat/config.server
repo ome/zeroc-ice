@@ -4,7 +4,7 @@
 # loopback, so that the session server is not directly accessible from
 # the Internet.
 #
-ChatServer.Endpoints=tcp -h 127.0.0.1 -p 10001
+ChatServer.Endpoints=tcp -h localhost -p 10001
 
 #
 # Warn about connection exceptions
@@ -29,3 +29,10 @@ Ice.Warn.Connections=1
 #
 #Ice.Trace.Protocol=1
 
+#
+# IceMX configuration.
+#
+#Ice.Admin.Endpoints=tcp -h localhost -p 10002
+Ice.Admin.InstanceName=server
+IceMX.Metrics.Debug.GroupBy=id
+IceMX.Metrics.ByParent.GroupBy=parent

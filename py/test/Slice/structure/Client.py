@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -15,7 +15,7 @@ for toplevel in [".", "..", "../..", "../../..", "../../../.."]:
     if os.path.exists(os.path.join(toplevel, "python", "Ice.py")):
         break
 else:
-    raise "can't find toplevel directory!"
+    raise RuntimeError("can't find toplevel directory!")
 
 import Ice
 
@@ -27,13 +27,13 @@ def test(b):
         raise RuntimeError('test assertion failed')
 
 def allTests(communicator):
-    print("testing equals() for Slice structures..."),
+    sys.stdout.write("testing equals() for Slice structures... ")
+    sys.stdout.flush()
 
     #
     # Define some default values.
     #
-    def_s2 = Test.S2(True, 98, 99, 100, 101, 1.0, 2.0, "string", ("one", "two", "three"), {"abc":"def"}, \
-                     Test.S1("name"), Test.C(5), communicator.stringToProxy("test"))
+    def_s2 = Test.S2(True, 98, 99, 100, 101, "string", (1, 2, 3), Test.S1("name"))
 
     #
     # Compare default-constructed structures.
@@ -41,7 +41,7 @@ def allTests(communicator):
     test(Test.S2() == Test.S2())
 
     #
-    # Change one primitive member at a time.
+    # Change one member at a time.
     #
     v = copy.copy(def_s2)
     test(v == def_s2)
@@ -64,14 +64,6 @@ def allTests(communicator):
 
     v = copy.copy(def_s2)
     v.l = v.l - 1
-    test(v != def_s2)
-
-    v = copy.copy(def_s2)
-    v.f = v.f - 1
-    test(v != def_s2)
-
-    v = copy.copy(def_s2)
-    v.d = v.d - 1
     test(v != def_s2)
 
     v = copy.copy(def_s2)
@@ -105,46 +97,25 @@ def allTests(communicator):
     # Sequence member
     #
     v1 = copy.copy(def_s2)
-    v1.ss = copy.copy(def_s2.ss)
+    v1.seq = copy.copy(def_s2.seq)
     test(v1 == def_s2)
 
     v1 = copy.copy(def_s2)
-    v1.ss = []
+    v1.seq = ()
     test(v1 != def_s2)
 
     v1 = copy.copy(def_s2)
-    v1.ss = ("one", "two", "three")
+    v1.seq = (1, 2, 3)
     test(v1 == def_s2)
 
     v1 = copy.copy(def_s2)
     v2 = copy.copy(def_s2)
-    v1.ss = None
+    v1.seq = None
     test(v1 != v2)
 
     v1 = copy.copy(def_s2)
     v2 = copy.copy(def_s2)
-    v2.ss = None
-    test(v1 != v2)
-
-    #
-    # Dictionary member
-    #
-    v1 = copy.copy(def_s2)
-    v1.sd = {"abc":"def"}
-    test(v1 == def_s2)
-
-    v1 = copy.copy(def_s2)
-    v1.sd = {}
-    test(v1 != def_s2)
-
-    v1 = copy.copy(def_s2)
-    v2 = copy.copy(def_s2)
-    v1.sd = None
-    test(v1 != v2)
-
-    v1 = copy.copy(def_s2)
-    v2 = copy.copy(def_s2)
-    v2.sd = None
+    v2.seq = None
     test(v1 != v2)
 
     #
@@ -173,44 +144,48 @@ def allTests(communicator):
     test(v1 != v2)
 
     #
-    # Class member
+    # Define some default values.
     #
-    v1 = copy.copy(def_s2)
-    v1.cls = copy.copy(def_s2.cls)
-    test(v1 != def_s2)
-
-    v1 = copy.copy(def_s2)
-    v2 = copy.copy(def_s2)
-    v1.cls = None
-    test(v1 != v2)
-
-    v1 = copy.copy(def_s2)
-    v2 = copy.copy(def_s2)
-    v2.cls = None
-    test(v1 != v2)
+    def_s3 = Test.S3(Test.C("name"), {"1":"2"}, communicator.stringToProxy("test"))
 
     #
-    # Proxy member
+    # Compare default-constructed structures.
     #
-    v1 = copy.copy(def_s2)
-    v1.prx = communicator.stringToProxy("test")
-    test(v1 == def_s2)
+    test(Test.S3() == Test.S3())
 
-    v1 = copy.copy(def_s2)
-    v1.prx = communicator.stringToProxy("test2")
-    test(v1 != def_s2)
+    #
+    # Change one member at a time.
+    #
+    v1 = copy.copy(def_s3)
+    test(v1 == def_s3)
 
-    v1 = copy.copy(def_s2)
-    v2 = copy.copy(def_s2)
+    v1.obj = None
+    test(v1 != def_s3)
+
+    v1.obj = Test.C("name")
+    test(v1 != def_s3)
+
+    v1 = copy.copy(def_s3)
+    v1.sd = copy.copy(def_s3.sd)
+    test(v1 == def_s3)
+
+    v1.sd = None
+    test(v1 != def_s3)
+
+    v1.sd = {"1":"3"}
+    test(v1 != def_s3)
+
+    v1 = copy.copy(def_s3)
     v1.prx = None
-    test(v1 != v2)
+    test(v1 != def_s3)
 
-    v1 = copy.copy(def_s2)
-    v2 = copy.copy(def_s2)
-    v2.prx = None
-    test(v1 != v2)
+    v1.prx = communicator.stringToProxy("test")
+    test(v1 == def_s3)
 
-    print "ok"
+    v1.prx = communicator.stringToProxy("test2")
+    test(v1 != def_s3)
+
+    print("ok")
 
 def run(args, communicator):
     allTests(communicator)

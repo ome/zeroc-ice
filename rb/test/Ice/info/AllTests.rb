@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -13,7 +13,7 @@ def allTests(communicator)
 
     p1 = communicator.stringToProxy("test -t:default -h tcphost -p 10000 -t 1200 -z:" + \
                                     "udp -h udphost -p 10001 --interface eth0 --ttl 5:" + \
-                                    "opaque -t 100 -v ABCD")
+                                    "opaque -e 1.8 -t 100 -v ABCD")
 
     endps = p1.ice_getEndpoints()
 
@@ -43,6 +43,7 @@ def allTests(communicator)
 
     opaqueEndpoint = endps[2].getInfo()
     test(opaqueEndpoint.is_a?(Ice::OpaqueEndpointInfo));
+    test(opaqueEndpoint.rawEncoding == Ice::EncodingVersion.new(1, 8))
 
     puts "ok"
 

@@ -14,14 +14,14 @@ server. Run the makecerts.py script to create these certificates:
 $ makecerts.py
 
 Follow the instructions provided by the script. Note that to run the
-script you must have java (Java5 or greater) in your path.
+script you must have java (Java6 or greater) in your path.
 
 For simplicity, the certificates created by makecerts.py are not
 protected with a password. In a real world deployment, to ensure that
 only privileged users can create new certificates and start the
 IceGrid components, you would typically use a password for the
 certificate authority, the IceGrid registry and node certificates and
-the Glacier2 certificate. 
+the Glacier2 certificate.
 
 You could also protect the server certificate with a password and
 specify the password in the server configuration in clear text.
@@ -31,9 +31,10 @@ so you might as well use a certificate without a password and rely on
 the filesystem permissions to restrict access to the certificate.
 
 Once the certificates are generated, you can start the IceGrid
-registry, node, and Glacier2 router:
+registries, node, and Glacier2 router:
 
-$ icegridregistry --Ice.Config=config.registry
+$ icegridregistry --Ice.Config=config.master
+$ icegridregistry --Ice.Config=config.slave
 $ icegridnode --Ice.Config=config.node
 $ glacier2router --Ice.Config=config.glacier2
 
@@ -50,33 +51,34 @@ To use icegridadmin through the Glacier2 router, you can use the
 following command:
 
 $ icegridadmin --Ice.Config=config.admin \
-  --Ice.Default.Router="DemoGlacier2/router:ssl -p 4064" 
+  --Ice.Default.Router="DemoGlacier2/router:ssl -p 4064"
 
 Alternatively, you can edit the config.admin file and uncomment the
 Ice.Default.Router property definition.
 
-To use the IceGrid administrative GUI, use the following settings in
-the GUI Login dialog:
+You can also manage this IceGrid deployment with the IceGrid Admin
+graphical tool.
 
-- To connect directly to IceGrid, in the "Direct" tab:
+The IceSSL configuration in config.master, config.slave and
+config.glacier2 is:
 
-  * Check the "Enable IceSSL" checkbox
-  * Set the IceGrid instance name to "DemoIceGrid"
-  * Set the IceGrid registry endpoints to "ssl -p 4062"
-  * In the SSL configuration section, select the "Basic" tab
-  * Set the Keystore file to the certs.jks file from the certs
-    directory of this demo
-  * Set the password to the Java keystore password to "password"
+IceSSL.VerifyPeer=1
 
-- To connect via Glacier2, in the "Routed" tab:
+which means that a client, such as IceGrid Admin, does not need to
+provide an X.509 certificate. As a result, connecting with IceGrid
+Admin is straightforward: you just need to create an SSL connection
+with no associated X.509 certificate.
 
-  * Check the "Enable IceSSL" checkbox
-  * Set the Glacier2 instance name to "DemoGlacier2"
-  * Set the Glacier2 router endpoints to "ssl -p 4064"
-  * In the SSL configuration section, select the "Basic" tab
-  * Set the Keystore file to the certs.jks file from the certs
-    directory of this demo
-  * Set the password to the Java keystore password to "password"
+When using IceGrid Admin, we recommend importing certs/certs.jks
+into the IceGrid Admin trusted CAs Key Store using the IceGrid Admin
+certificate manager. This will ensure IceGrid Admin connects to the
+correct IceGrid Registry or Glacier2 Router.
+
+The icegridadmin command line tool configuration in config.admin
+sets the property "IceSSL.CertAuthFile=ca_cert.pem" to ensure that
+the admin client is connecting to the correct registry or
+glacier2router. In a Java client "IceSSL.Truststore=certs.jks"
+can be used for the same purpose.
 
 The IceGrid registry and Glacier2 router are configured to use the
 "null permissions verifier" so you can use any username/password to

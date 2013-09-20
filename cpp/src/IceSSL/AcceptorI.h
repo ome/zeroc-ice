@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,10 +15,7 @@
 #include <Ice/Acceptor.h>
 #include <Ice/Protocol.h>
 #include <IceSSL/InstanceF.h>
-
-#ifndef _WIN32
-#   include <sys/socket.h> // For struct sockaddr_storage
-#endif
+#include <Ice/Network.h>
 
 #include <vector>
 
@@ -56,7 +53,7 @@ private:
     const InstancePtr _instance;
     const std::string _adapterName;
     const Ice::LoggerPtr _logger;
-    const struct sockaddr_storage _addr;
+    const IceInternal::Address _addr;
     int _backlog;
 #ifdef ICE_USE_IOCP
     SOCKET _acceptFd;

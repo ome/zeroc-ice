@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,8 @@
 
 #ifdef _WIN32
 #   include <io.h>
+#else
+#   include <unistd.h>
 #endif
 
 using namespace IceUtil;
@@ -23,8 +25,8 @@ using namespace std;
 // converts these BOMs back and forth.
 //
 
-//COMPILERFIX: Borland C++ 2010 doesn't support wmain for console applications.
-#if defined(_WIN32) && !defined(__BCPLUSPLUS__)
+//COMPILERFIX: MINGW doesn't support wmain for console applications.
+#if defined(_WIN32) && !defined(__MINGW32__)
 
 int
 wmain(int argc, wchar_t* argv[])
@@ -42,11 +44,11 @@ main(int argc, char* argv[])
     {
 #ifdef _WIN32 
 
-#ifdef __BCPLUSPLUS__
+#   ifdef __MINGW32__
         dir = argv[1];
-#else
+#   else
         dir = IceUtil::wstringToString(argv[1]);
-#endif
+#   endif
         dir += "\\";
 #else
         dir = argv[1];
@@ -179,7 +181,8 @@ main(int argc, char* argv[])
 
         cout << "ok" << endl;
     }
-#ifndef __BCPLUSPLUS__
+
+#ifndef __MINGW32__
     {
         cout << "testing UTF-8 filename... ";
         IceUtilInternal::ifstream fn(dir + "filename.txt");
@@ -206,11 +209,11 @@ main(int argc, char* argv[])
 
         int fd = IceUtilInternal::open(filepath, O_RDONLY);
         test(fd > 0);
-#if defined(_MSC_VER) && (_MSC_VER >= 1400)
+#if defined(_MSC_VER)
         test(_close(fd) == 0);
-#else
-        test(close(fd) == 0);
-#endif
+#   else
+        test(::close(fd) == 0);
+#   endif
 
         FILE* f = IceUtilInternal::fopen(filepath, "r");
         test(f != 0);

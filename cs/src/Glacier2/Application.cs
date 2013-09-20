@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,11 +12,13 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Threading;
 
+#if !SILVERLIGHT
+
 namespace Glacier2
 {
 
 /// <summary>
-/// Utility base class that makes it easy to to correctly initialize and finalize
+/// Utility base class that makes it easy to correctly initialize and finalize
 /// the Ice run time, as well as handle signals. Unless the application specifies
 /// a logger, Application installs a per-process logger that logs to the standard
 /// error output.
@@ -88,7 +90,8 @@ public abstract class Application : Ice.Application
 
     /// <summary>
     /// Called to restart the application's Glacier2 session. This
-    /// method never returns.
+    /// method never returns. The exception produce an application restart
+    /// when called from the Application main thread.
     /// </summary>
     /// <returns>throws RestartSessionException This exception is 
     /// always thrown.</returns>
@@ -109,9 +112,10 @@ public abstract class Application : Ice.Application
     createSession();
 
     /// <summary>
-    /// Called when the base class detects that the session has been destroyed.
-    /// A subclass can override this method to take action after the loss of
-    /// connectivity with the Glacier2 router.
+    /// Called when the session refresh thread detects that the session has been
+    /// destroyed. A subclass can override this method to take action after the
+    /// loss of connectivity with the Glacier2 router. This method is always
+    /// called from the session refresh thread.
     /// </summary>
     public virtual void
     sessionDestroyed()
@@ -215,36 +219,6 @@ public abstract class Application : Ice.Application
             _done = false;
         }
 
-        private class AMI_Router_refreshSessionI : Glacier2.AMI_Router_refreshSession
-        {
-            public AMI_Router_refreshSessionI(Application app, SessionPingThread ping)
-            {
-                _app = app;
-                _ping = ping;
-            }
-
-            public override void
-            ice_response()
-            {
-            }
-
-            public override void
-            ice_exception(Ice.Exception ex)
-            {
-                //
-                // Here the session has gone. The thread
-                // terminates, and we notify the
-                // application that the session has been
-                // destroyed.
-                //
-                _ping.done();
-                _app.sessionDestroyed();
-            }
-            
-            private SessionPingThread _ping;
-            private Application _app;
-        }
-
         public void
         run()
         {
@@ -255,7 +229,12 @@ public abstract class Application : Ice.Application
                 {
                     try
                     {
-                        _router.refreshSession_async(new AMI_Router_refreshSessionI(_app, this));
+                        _router.begin_refreshSession().whenCompleted(
+                                                    (Ice.Exception ex) => 
+                                                        {
+                                                            this.done();
+                                                            _app.sessionDestroyed();
+                                                        });
                     }
                     catch(Ice.CommunicatorDestroyedException)
                     {
@@ -570,3 +549,4 @@ public abstract class Application : Ice.Application
 }
 
 }
+#endif

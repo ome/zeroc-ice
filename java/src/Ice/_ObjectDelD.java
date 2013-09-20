@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,10 +9,12 @@
 
 package Ice;
 
+import Ice.Instrumentation.InvocationObserver;
+
 public class _ObjectDelD implements _ObjectDel
 {
     public boolean
-    ice_isA(final String __id, java.util.Map<String, String> __context)
+    ice_isA(final String __id, java.util.Map<String, String> __context, InvocationObserver __observer)
         throws IceInternal.LocalExceptionWrapper
     {
         final Current __current = new Current();
@@ -39,7 +41,7 @@ public class _ObjectDelD implements _ObjectDel
         
         try
         {
-            DispatchStatus __status = __direct.servant().__collocDispatch(__direct); 
+            DispatchStatus __status = __direct.getServant().__collocDispatch(__direct); 
             assert __status == DispatchStatus.DispatchOK;
             return __result.value;
         }
@@ -62,7 +64,7 @@ public class _ObjectDelD implements _ObjectDel
     }
 
     public void
-    ice_ping(java.util.Map<String, String> __context)
+    ice_ping(java.util.Map<String, String> __context, InvocationObserver __observer)
         throws IceInternal.LocalExceptionWrapper
     {
         final Current __current = new Current();
@@ -88,7 +90,7 @@ public class _ObjectDelD implements _ObjectDel
                 
         try
         {
-            DispatchStatus __status = __direct.servant().__collocDispatch(__direct); 
+            DispatchStatus __status = __direct.getServant().__collocDispatch(__direct); 
             assert __status == DispatchStatus.DispatchOK;
         }
         catch(Throwable __ex)
@@ -109,7 +111,7 @@ public class _ObjectDelD implements _ObjectDel
     }
 
     public String[]
-    ice_ids(java.util.Map<String, String> __context)
+    ice_ids(java.util.Map<String, String> __context, InvocationObserver __observer)
         throws IceInternal.LocalExceptionWrapper
     {
         final Current __current = new Current();
@@ -137,7 +139,7 @@ public class _ObjectDelD implements _ObjectDel
 
         try
         {
-            DispatchStatus __status = __direct.servant().__collocDispatch(__direct); 
+            DispatchStatus __status = __direct.getServant().__collocDispatch(__direct); 
             assert __status == DispatchStatus.DispatchOK;
             return __result.value;
         }
@@ -160,7 +162,7 @@ public class _ObjectDelD implements _ObjectDel
     }
 
     public String
-    ice_id(java.util.Map<String, String> __context)
+    ice_id(java.util.Map<String, String> __context, InvocationObserver __observer)
         throws IceInternal.LocalExceptionWrapper
     {
         final Current __current = new Current();
@@ -187,7 +189,7 @@ public class _ObjectDelD implements _ObjectDel
 
         try
         {
-            DispatchStatus __status = __direct.servant().__collocDispatch(__direct); 
+            DispatchStatus __status = __direct.getServant().__collocDispatch(__direct); 
             assert __status == DispatchStatus.DispatchOK;
             return __result.value;
         }
@@ -211,13 +213,13 @@ public class _ObjectDelD implements _ObjectDel
 
     public boolean
     ice_invoke(String operation, Ice.OperationMode mode, byte[] inParams, ByteSeqHolder outParams,
-               java.util.Map<String, String> context)
+               java.util.Map<String, String> context, InvocationObserver observer)
     {
         throw new CollocationOptimizationException();
     }
 
     public void
-    ice_flushBatchRequests()
+    ice_flushBatchRequests(InvocationObserver observer)
     {
         throw new CollocationOptimizationException();
     }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,7 +16,7 @@
 #include <Ice/LocalObjectF.h>
 #include <Ice/Current.h>
 
-#include <memory>
+#include <IceUtil/UniquePtr.h>
 
 namespace IceInternal
 {
@@ -28,7 +28,7 @@ public:
     Direct(const Ice::Current&);
     void destroy();
 
-    const Ice::ObjectPtr& servant();
+    const Ice::ObjectPtr& getServant();
 
     virtual bool isCollocated();
     virtual const Ice::Current& getCurrent();
@@ -51,7 +51,7 @@ private:
     Ice::ObjectPtr _servant;
     Ice::ServantLocatorPtr _locator;
     Ice::LocalObjectPtr _cookie;
-    std::auto_ptr<Ice::UserException> _userException;
+    IceUtil::UniquePtr<Ice::UserException> _userException;
 };
 
 }

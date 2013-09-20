@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,6 +24,7 @@
 #include <Ice/EventHandler.h>
 #include <Ice/Selector.h>
 #include <Ice/BasicStream.h>
+#include <Ice/ObserverHelper.h>
 
 #include <set>
 #include <list>
@@ -38,12 +39,32 @@ typedef IceUtil::Handle<ThreadPoolWorkQueue> ThreadPoolWorkQueuePtr;
 
 class ThreadPool : public IceUtil::Shared, public IceUtil::Monitor<IceUtil::Mutex>
 {
+    class EventHandlerThread : public IceUtil::Thread
+    {
+    public:
+        
+        EventHandlerThread(const ThreadPoolPtr&, const std::string&);
+        virtual void run();
+
+        void updateObserver();
+        void setState(Ice::Instrumentation::ThreadState);
+        
+    private:
+
+        ThreadPoolPtr _pool;
+        ObserverHelperT<Ice::Instrumentation::ThreadObserver> _observer;
+        Ice::Instrumentation::ThreadState _state;
+    };
+    typedef IceUtil::Handle<EventHandlerThread> EventHandlerThreadPtr;
+
 public:
 
     ThreadPool(const InstancePtr&, const std::string&, int);
     virtual ~ThreadPool();
 
     void destroy();
+
+    void updateObservers();
 
     void initialize(const EventHandlerPtr&);
     void _register(const EventHandlerPtr& handler, SocketOperation status)
@@ -64,35 +85,26 @@ public:
 
 private:
 
-    void run(const IceUtil::ThreadPtr&);
+    void run(const EventHandlerThreadPtr&);
 
     bool ioCompleted(ThreadPoolCurrent&);
 
-#ifdef ICE_USE_IOCP
+#if defined(ICE_USE_IOCP) || defined(ICE_OS_WINRT)
     bool startMessage(ThreadPoolCurrent&);
     void finishMessage(ThreadPoolCurrent&);
 #else
     void promoteFollower(ThreadPoolCurrent&);
-    bool followerWait(const IceUtil::ThreadPtr&, ThreadPoolCurrent&);
+    bool followerWait(ThreadPoolCurrent&);
 #endif
+
+    std::string nextThreadId();
 
     const InstancePtr _instance;
     ThreadPoolWorkQueuePtr _workQueue;
     bool _destroyed;
     const std::string _prefix;
     Selector _selector;
-
-    class EventHandlerThread : public IceUtil::Thread
-    {
-    public:
-        
-        EventHandlerThread(const ThreadPoolPtr&);
-        virtual void run();
-
-    private:
-
-        ThreadPoolPtr _pool;
-    };
+    int _nextThreadId;
 
     friend class EventHandlerThread;
     friend class ThreadPoolCurrent;
@@ -108,9 +120,9 @@ private:
     const int _threadIdleTime;
     const size_t _stackSize;
 
-    std::set<IceUtil::ThreadPtr> _threads; // All threads, running or not.
+    std::set<EventHandlerThreadPtr> _threads; // All threads, running or not.
     int _inUse; // Number of threads that are currently in use.
-#ifndef ICE_USE_IOCP
+#if !defined(ICE_USE_IOCP) && !defined(ICE_OS_WINRT)
     int _inUseIO; // Number of threads that are currently performing IO.
     std::vector<std::pair<EventHandler*, SocketOperation> > _handlers;
     std::vector<std::pair<EventHandler*, SocketOperation> >::const_iterator _nextHandler;
@@ -123,7 +135,7 @@ class ThreadPoolCurrent
 {
 public:
 
-    ThreadPoolCurrent(const InstancePtr&, const ThreadPoolPtr&);
+    ThreadPoolCurrent(const InstancePtr&, const ThreadPoolPtr&, const ThreadPool::EventHandlerThreadPtr&);
 
     SocketOperation operation;
     BasicStream stream; // A per-thread stream to be used by event handlers for optimization.
@@ -133,7 +145,7 @@ public:
         return _threadPool->ioCompleted(const_cast<ThreadPoolCurrent&>(*this));
     }
 
-#ifdef ICE_USE_IOCP
+#if defined(ICE_USE_IOCP) || defined(ICE_OS_WINRT)
     bool startMessage()
     {
         return _threadPool->startMessage(const_cast<ThreadPoolCurrent&>(*this));
@@ -148,9 +160,10 @@ public:
 private:
 
     ThreadPool* _threadPool;
+    ThreadPool::EventHandlerThreadPtr _thread;
     EventHandlerPtr _handler;
     bool _ioCompleted;
-#ifndef ICE_USE_IOCP
+#if !defined(ICE_USE_IOCP) && !defined(ICE_OS_WINRT)
     bool _leader;
 #endif
     friend class ThreadPool;
@@ -180,13 +193,13 @@ class ThreadPoolWorkQueue : public EventHandler, public IceUtil::Mutex
 {
 public:
 
-    ThreadPoolWorkQueue(ThreadPool*, const InstancePtr&, Selector&);
+    ThreadPoolWorkQueue(const InstancePtr&, Selector&);
     ~ThreadPoolWorkQueue();
 
     void destroy();
     void queue(const ThreadPoolWorkItemPtr&);
 
-#ifdef ICE_USE_IOCP
+#if defined(ICE_USE_IOCP) || defined(ICE_OS_WINRT)
     bool startAsync(SocketOperation);
     bool finishAsync(SocketOperation);
 #endif
@@ -199,13 +212,12 @@ public:
 
 private:
 
-    const ThreadPool* _threadPool;
     const InstancePtr _instance;
     Selector& _selector;
     bool _destroyed;
 #ifdef ICE_USE_IOCP
     AsyncInfo _info;
-#else
+#elif !defined(ICE_OS_WINRT)
     SOCKET _fdIntrRead;
     SOCKET _fdIntrWrite;
 #endif
@@ -222,7 +234,7 @@ private:
 // the IOCP implementation and ensures that finishMessage isn't called multiple 
 // times.
 //
-#ifndef ICE_USE_IOCP
+#if !defined(ICE_USE_IOCP) && !defined(ICE_OS_WINRT)
 template<class T> class ThreadPoolMessage
 {
 public:
@@ -338,7 +350,7 @@ public:
             // of the event handler. We need to lock the event handler here to call 
             // finishMessage.
             //
-#if defined(__BCPLUSPLUS__) || (defined(_MSC_VER) && (_MSC_VER < 1300))
+#if defined(__MINGW32__)
             IceUtil::LockT<T> sync(_mutex);
 #else
             IceUtil::LockT<typename T> sync(_mutex);

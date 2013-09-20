@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -745,6 +745,34 @@ public final class ObjectAdapterI implements ObjectAdapter
         }
     }
 
+    public void
+    updateConnectionObservers()
+    {
+        java.util.List<IceInternal.IncomingConnectionFactory> f;
+        synchronized(this)
+        {
+            f = new java.util.ArrayList<IceInternal.IncomingConnectionFactory>(_incomingConnectionFactories);
+        }
+        for(IceInternal.IncomingConnectionFactory p : f)
+        {
+            p.updateConnectionObservers();
+        }
+    }
+    
+    public void 
+    updateThreadObservers()
+    {
+        IceInternal.ThreadPool threadPool = null;
+        synchronized(this)
+        {
+            threadPool = _threadPool;
+        }
+        if(threadPool != null)
+        {
+            threadPool.updateObservers();
+        }
+    }
+
     public synchronized void
     incDirectCount()
     {
@@ -785,7 +813,7 @@ public final class ObjectAdapterI implements ObjectAdapter
         }
         else
         {
-            return _instance.serverThreadPool();
+            return _instance.serverThreadPool(true);
         }
     }
 
@@ -858,12 +886,12 @@ public final class ObjectAdapterI implements ObjectAdapter
         if(unknownProps.size() != 0 && properties.getPropertyAsIntWithDefault("Ice.Warn.UnknownProperties", 1) > 0)
         {
             StringBuffer message = new StringBuffer("found unknown properties for object adapter `");
-	    message.append(_name);
-	    message.append("':");
+            message.append(_name);
+            message.append("':");
             for(String p : unknownProps)
             {
-		message.append("\n    ");
-		message.append(p);
+                message.append("\n    ");
+                message.append(p);
             }
             _instance.initializationData().logger.warning(message.toString());
         }
@@ -1038,25 +1066,33 @@ public final class ObjectAdapterI implements ObjectAdapter
     finalize()
         throws Throwable
     {
-        if(!_deactivated)
+        try
         {
-            _instance.initializationData().logger.warning("object adapter `" + getName() +
-                                                          "' has not been deactivated");
+            if(!_deactivated)
+            {
+                _instance.initializationData().logger.warning("object adapter `" + getName() +
+                                                            "' has not been deactivated");
+            }
+            else if(!_destroyed)
+            {
+                _instance.initializationData().logger.warning("object adapter `" + getName() + "' has not been destroyed");
+            }
+            else
+            {
+                IceUtilInternal.Assert.FinalizerAssert(_threadPool == null);
+                //IceUtilInternal.Assert.FinalizerAssert(_servantManager == null); // Not cleared, it needs to be immutable.
+                //IceUtilInternal.Assert.FinalizerAssert(_incomingConnectionFactories.isEmpty());
+                IceUtilInternal.Assert.FinalizerAssert(_directCount == 0);
+                IceUtilInternal.Assert.FinalizerAssert(!_waitForActivate);
+            }
         }
-        else if(!_destroyed)
+        catch(java.lang.Exception ex)
         {
-            _instance.initializationData().logger.warning("object adapter `" + getName() + "' has not been destroyed");
         }
-        else
+        finally
         {
-            IceUtilInternal.Assert.FinalizerAssert(_threadPool == null);
-            //IceUtilInternal.Assert.FinalizerAssert(_servantManager == null); // Not cleared, it needs to be immutable.
-            //IceUtilInternal.Assert.FinalizerAssert(_incomingConnectionFactories.isEmpty());
-            IceUtilInternal.Assert.FinalizerAssert(_directCount == 0);
-            IceUtilInternal.Assert.FinalizerAssert(!_waitForActivate);
+            super.finalize();
         }
-
-        super.finalize();
     }
 
     private ObjectPrx
@@ -1247,14 +1283,14 @@ public final class ObjectAdapterI implements ObjectAdapter
         if(_instance.traceLevels().network >= 1)
         {
             StringBuffer s = new StringBuffer("published endpoints for object adapter `");
-	    s.append(_name);
-	    s.append("':\n");
+            s.append(_name);
+            s.append("':\n");
             boolean first = true;
             for(IceInternal.EndpointI endpoint : endpoints)
             {
                 if(!first)
                 {
-		    s.append(":");
+                    s.append(":");
                 }
                 s.append(endpoint.toString());
                 first = false;
@@ -1466,6 +1502,7 @@ public final class ObjectAdapterI implements ObjectAdapter
         "AdapterId",
         "Endpoints",
         "Locator",
+        "Locator.EncodingVersion",
         "Locator.EndpointSelection",
         "Locator.ConnectionCached",
         "Locator.PreferSecure",
@@ -1475,6 +1512,7 @@ public final class ObjectAdapterI implements ObjectAdapter
         "RegisterProcess",
         "ReplicaGroupId",
         "Router",
+        "Router.EncodingVersion",
         "Router.EndpointSelection",
         "Router.ConnectionCached",
         "Router.PreferSecure",

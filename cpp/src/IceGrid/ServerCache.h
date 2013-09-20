@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -30,6 +30,28 @@ class NodeCache;
 class NodeEntry;
 typedef IceUtil::Handle<NodeEntry> NodeEntryPtr;
 
+class CheckServerResult;
+typedef IceUtil::Handle<CheckServerResult> CheckServerResultPtr;
+
+class CheckUpdateResult : public IceUtil::Shared
+{
+public:
+
+    CheckUpdateResult(const std::string&, const std::string&, bool, const Ice::AsyncResultPtr&);
+
+    bool getResult();
+
+    const std::string& getServer() { return _server; }
+
+private:
+
+    const std::string _server;
+    const std::string _node;
+    const bool _noRestart;
+    const Ice::AsyncResultPtr _result;
+};
+typedef IceUtil::Handle<CheckUpdateResult> CheckUpdateResultPtr;
+
 class ServerEntry : public Allocatable
 {
 public:
@@ -51,7 +73,8 @@ public:
 
     bool addSyncCallback(const SynchronizationCallbackPtr&);
 
-    void update(const ServerInfo&);
+    void update(const ServerInfo&, bool);
+
     void destroy();
 
     ServerInfo getInfo(bool = false) const;
@@ -66,6 +89,7 @@ public:
     float getLoad(LoadSample) const;
 
     bool canRemove();
+    CheckUpdateResultPtr checkUpdate(const ServerInfo&, bool);
     bool isDestroyed();
     
     void loadCallback(const ServerPrx&, const AdapterPrxDict&, int, int);
@@ -86,9 +110,9 @@ private:
 
     ServerCache& _cache;
     const std::string _id;
-    std::auto_ptr<ServerInfo> _loaded;
-    std::auto_ptr<ServerInfo> _load;
-    std::auto_ptr<ServerInfo> _destroy;
+    IceUtil::UniquePtr<ServerInfo> _loaded;
+    IceUtil::UniquePtr<ServerInfo> _load;
+    IceUtil::UniquePtr<ServerInfo> _destroy;
 
     ServerPrx _proxy;
     AdapterPrxDict _adapters;
@@ -97,7 +121,8 @@ private:
 
     bool _synchronizing;
     bool _updated;
-    std::auto_ptr<Ice::Exception> _exception;
+    IceUtil::UniquePtr<Ice::Exception> _exception;
+    bool _noRestart;
     std::vector<SynchronizationCallbackPtr> _callbacks;
 
     SessionIPtr _session;
@@ -115,7 +140,7 @@ public:
 
     ServerCache(const Ice::CommunicatorPtr&, const std::string&, NodeCache&, AdapterCache&, ObjectCache&, AllocatableObjectCache&);
 
-    ServerEntryPtr add(const ServerInfo&);
+    ServerEntryPtr add(const ServerInfo&, bool);
     ServerEntryPtr get(const std::string&) const;
     bool has(const std::string&) const;
     ServerEntryPtr remove(const std::string&, bool = true);

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,6 +17,170 @@ using namespace std;
 using namespace IcePHP;
 using namespace Slice::PHP;
 
+namespace
+{
+
+bool
+getMember(zval* zv, const string& name, zval** member, int type, bool required TSRMLS_DC)
+{
+    *member = 0;
+
+    void* data = 0;
+    if(zend_hash_find(Z_OBJPROP_P(zv), STRCAST(name.c_str()), name.size() + 1, &data) == FAILURE)
+    {
+        if(required)
+        {
+            invalidArgument("object does not contain member `%s'" TSRMLS_CC, name.c_str());
+            return false;
+        }
+    }
+
+    if(data)
+    {
+        zval** val = reinterpret_cast<zval**>(data);
+
+        if(Z_TYPE_PP(val) != type)
+        {
+            string expected = zendTypeToString(type);
+            string actual = zendTypeToString(Z_TYPE_PP(val));
+            invalidArgument("expected value of type %s for member `%s' but received %s" TSRMLS_CC, expected.c_str(),
+                            name.c_str(), actual.c_str());
+            return false;
+        }
+
+        *member = *val;
+    }
+
+    return true;
+}
+
+void
+setStringMember(zval* obj, const string& name, const string& val TSRMLS_DC)
+{
+    zend_class_entry* cls = Z_OBJCE_P(obj);
+    assert(cls);
+    zend_update_property_stringl(cls, obj, const_cast<char*>(name.c_str()), static_cast<int>(name.size()),
+                                 const_cast<char*>(val.c_str()), static_cast<int>(val.size()) TSRMLS_CC);
+}
+
+template<typename T>
+bool
+getVersion(zval* zv, T& v, const char* type TSRMLS_DC)
+{
+    if(Z_TYPE_P(zv) != IS_OBJECT)
+    {
+        invalidArgument("value does not contain an object" TSRMLS_CC);
+        return false;
+    }
+
+    zend_class_entry* cls = idToClass(type TSRMLS_CC);
+    assert(cls);
+
+    zend_class_entry* ce = Z_OBJCE_P(zv);
+    if(ce != cls)
+    {
+        invalidArgument("expected an instance of %s" TSRMLS_CC, ce->name);
+        return false;
+    }
+
+    zval* majorVal;
+    if(!getMember(zv, "major", &majorVal, IS_LONG, true TSRMLS_CC))
+    {
+        return false;
+    }
+
+    zval* minorVal;
+    if(!getMember(zv, "minor", &minorVal, IS_LONG, true TSRMLS_CC))
+    {
+        return false;
+    }
+
+    long m;
+    m = Z_LVAL_P(majorVal);
+    if(m < 0 || m > 255)
+    {
+        invalidArgument("version major must be a value between 0 and 255" TSRMLS_CC);
+        return false;
+    }
+    v.major = static_cast<Ice::Byte>(m);
+
+    m = Z_LVAL_P(minorVal);
+    if(m < 0 || m > 255)
+    {
+        invalidArgument("version minor must be a value between 0 and 255" TSRMLS_CC);
+        return false;
+    }
+    v.minor = static_cast<Ice::Byte>(m);
+
+    return true;
+}
+
+template<typename T>
+bool
+createVersion(zval* zv, const T& version, const char* type TSRMLS_DC)
+{
+    zend_class_entry* cls = idToClass(type TSRMLS_CC);
+    assert(cls);
+
+    if(object_init_ex(zv, cls) != SUCCESS)
+    {
+        runtimeError("unable to initialize %s" TSRMLS_CC, cls->name);
+        return false;
+    }
+
+    zend_update_property_long(cls, zv, const_cast<char*>("major"), sizeof("major") - 1, version.major TSRMLS_CC);
+    zend_update_property_long(cls, zv, const_cast<char*>("minor"), sizeof("minor") - 1, version.minor TSRMLS_CC);
+
+    return true;
+}
+
+template<typename T>
+bool
+versionToString(zval* zv, zval* s, const char* type TSRMLS_DC)
+{
+    T v;
+    if(!getVersion<T>(zv, v, type TSRMLS_CC))
+    {
+        return false;
+    }
+
+    try
+    {
+        string str = IceInternal::versionToString<T>(v);
+        ZVAL_STRINGL(s, STRCAST(str.c_str()), str.length(), 1);
+    }
+    catch(const IceUtil::Exception& ex)
+    {
+        throwException(ex TSRMLS_CC);
+        return false;
+    }
+
+    return true;
+}
+
+template<typename T>
+bool
+stringToVersion(const string& s, zval* zv, const char* type TSRMLS_DC)
+{
+    try
+    {
+        T v = IceInternal::stringToVersion<T>(s);
+        return createVersion<T>(zv, v, type TSRMLS_CC);
+    }
+    catch(const IceUtil::Exception& ex)
+    {
+        throwException(ex TSRMLS_CC);
+    }
+
+    return false;
+}
+
+char Ice_ProtocolVersion[] = "::Ice::ProtocolVersion";
+char Ice_EncodingVersion[] = "::Ice::EncodingVersion";
+
+}
+
+#if PHP_VERSION_ID < 50400
 #ifdef _WIN32
 extern "C"
 #endif
@@ -25,20 +189,25 @@ dtor_wrapper(void* p)
 {
     zval_ptr_dtor(static_cast<zval**>(p));
 }
+#endif
 
 void*
 IcePHP::createWrapper(zend_class_entry* ce, size_t sz TSRMLS_DC)
 {
     zend_object* obj;
-    zval* tmp;
 
     obj = static_cast<zend_object*>(emalloc(sz));
-    obj->ce = ce;
-    obj->guards = 0;
 
+    zend_object_std_init(obj, ce TSRMLS_CC);
+
+#if PHP_VERSION_ID < 50400
+    zval* tmp;
     obj->properties = static_cast<HashTable*>(emalloc(sizeof(HashTable)));
     zend_hash_init(obj->properties, 0, 0, dtor_wrapper, 0);
     zend_hash_copy(obj->properties, &ce->default_properties, (copy_ctor_func_t)zval_add_ref, &tmp, sizeof(zval*));
+#else
+    object_properties_init(obj, ce);
+#endif
 
     return obj;
 }
@@ -97,10 +266,8 @@ IcePHP::createIdentity(zval* zv, const Ice::Identity& id TSRMLS_DC)
         return false;
     }
 
-    zend_update_property_string(cls, zv, const_cast<char*>("name"), sizeof("name") - 1, STRCAST(id.name.c_str())
-                                TSRMLS_CC);
-    zend_update_property_string(cls, zv, const_cast<char*>("category"), sizeof("category") - 1,
-                                STRCAST(id.category.c_str()) TSRMLS_CC);
+    setStringMember(zv, "name", id.name TSRMLS_CC);
+    setStringMember(zv, "category", id.category TSRMLS_CC);
 
     return true;
 }
@@ -127,35 +294,19 @@ IcePHP::extractIdentity(zval* zv, Ice::Identity& id TSRMLS_DC)
     //
     // Category is optional, but name is required.
     //
-    void* categoryData = 0;
-    void* nameData;
-    if(zend_hash_find(Z_OBJPROP_P(zv), STRCAST("name"), sizeof("name"), &nameData) == FAILURE)
-    {
-        invalidArgument("identity value does not contain member `name'" TSRMLS_CC);
-        return false;
-    }
-    zend_hash_find(Z_OBJPROP_P(zv), STRCAST("category"), sizeof("category"), &categoryData);
-    zval** categoryVal = reinterpret_cast<zval**>(categoryData);
-    zval** nameVal = reinterpret_cast<zval**>(nameData);
+    zval* categoryVal;
+    zval* nameVal;
 
-    if(Z_TYPE_PP(nameVal) != IS_STRING)
+    if(!getMember(zv, "category", &categoryVal, IS_STRING, false TSRMLS_CC) ||
+       !getMember(zv, "name", &nameVal, IS_STRING, true TSRMLS_CC))
     {
-        string s = zendTypeToString(Z_TYPE_PP(nameVal));
-        invalidArgument("expected a string value for identity member `name' but received %s" TSRMLS_CC, s.c_str());
         return false;
     }
 
-    if(categoryVal && Z_TYPE_PP(categoryVal) != IS_STRING && Z_TYPE_PP(categoryVal) != IS_NULL)
+    id.name = Z_STRVAL_P(nameVal);
+    if(categoryVal)
     {
-        string s = zendTypeToString(Z_TYPE_PP(categoryVal));
-        invalidArgument("expected a string value for identity member `category' but received %s" TSRMLS_CC, s.c_str());
-        return false;
-    }
-
-    id.name = Z_STRVAL_PP(nameVal);
-    if(categoryVal && Z_TYPE_PP(categoryVal) == IS_STRING)
-    {
-        id.category = Z_STRVAL_PP(categoryVal);
+        id.category = Z_STRVAL_P(categoryVal);
     }
     else
     {
@@ -280,13 +431,22 @@ IcePHP::extractStringArray(zval* zv, Ice::StringSeq& seq TSRMLS_DC)
     return true;
 }
 
-static void
-setStringMember(zval* obj, const string& name, const string& val TSRMLS_DC)
+bool
+IcePHP::createProtocolVersion(zval* zv, const Ice::ProtocolVersion& v TSRMLS_DC)
 {
-    zend_class_entry* cls = Z_OBJCE_P(obj);
-    assert(cls);
-    zend_update_property_stringl(cls, obj, const_cast<char*>(name.c_str()), static_cast<int>(name.size()),
-                                 const_cast<char*>(val.c_str()), static_cast<int>(val.size()) TSRMLS_CC);
+    return createVersion<Ice::ProtocolVersion>(zv, v, Ice_ProtocolVersion TSRMLS_CC);
+}
+
+bool
+IcePHP::createEncodingVersion(zval* zv, const Ice::EncodingVersion& v TSRMLS_DC)
+{
+    return createVersion<Ice::EncodingVersion>(zv, v, Ice_EncodingVersion TSRMLS_CC);
+}
+
+bool
+IcePHP::extractEncodingVersion(zval* zv, Ice::EncodingVersion& v TSRMLS_DC)
+{
+    return getVersion<Ice::EncodingVersion>(zv, v, Ice_EncodingVersion TSRMLS_CC);
 }
 
 static bool
@@ -362,6 +522,7 @@ convertLocalException(const Ice::LocalException& ex, zval* zex TSRMLS_DC)
             return false;
         }
         zend_update_property(cls, zex, const_cast<char*>("id"), sizeof("id") - 1, id TSRMLS_CC);
+        zval_ptr_dtor(&id);
     }
     catch(const Ice::RequestFailedException& e)
     {
@@ -373,6 +534,7 @@ convertLocalException(const Ice::LocalException& ex, zval* zex TSRMLS_DC)
             return false;
         }
         zend_update_property(cls, zex, const_cast<char*>("id"), sizeof("id") - 1, id TSRMLS_CC);
+        zval_ptr_dtor(&id);
         setStringMember(zex, "facet", e.facet TSRMLS_CC);
         setStringMember(zex, "operation", e.operation TSRMLS_CC);
     }
@@ -392,21 +554,45 @@ convertLocalException(const Ice::LocalException& ex, zval* zex TSRMLS_DC)
     }
     catch(const Ice::UnsupportedProtocolException& e)
     {
-        zend_update_property_long(cls, zex, const_cast<char*>("badMajor"), sizeof("badMajor") - 1, e.badMajor
-                                  TSRMLS_CC);
-        zend_update_property_long(cls, zex, const_cast<char*>("badMinor"), sizeof("badMinor") - 1, e.badMinor
-                                  TSRMLS_CC);
-        zend_update_property_long(cls, zex, const_cast<char*>("major"), sizeof("major") - 1, e.major TSRMLS_CC);
-        zend_update_property_long(cls, zex, const_cast<char*>("minor"), sizeof("minor") - 1, e.minor TSRMLS_CC);
+        zval* v;
+        MAKE_STD_ZVAL(v);
+        if(!createProtocolVersion(v, e.bad TSRMLS_CC))
+        {
+            zval_ptr_dtor(&v);
+            return false;
+        }
+        zend_update_property(cls, zex, const_cast<char*>("bad"), sizeof("bad") - 1, v TSRMLS_CC);
+        zval_ptr_dtor(&v);
+
+        MAKE_STD_ZVAL(v);
+        if(!createProtocolVersion(v, e.supported TSRMLS_CC))
+        {
+            zval_ptr_dtor(&v);
+            return false;
+        }
+        zend_update_property(cls, zex, const_cast<char*>("supported"), sizeof("supported") - 1, v TSRMLS_CC);
+        zval_ptr_dtor(&v);
     }
     catch(const Ice::UnsupportedEncodingException& e)
     {
-        zend_update_property_long(cls, zex, const_cast<char*>("badMajor"), sizeof("badMajor") - 1, e.badMajor
-                                  TSRMLS_CC);
-        zend_update_property_long(cls, zex, const_cast<char*>("badMinor"), sizeof("badMinor") - 1, e.badMinor
-                                  TSRMLS_CC);
-        zend_update_property_long(cls, zex, const_cast<char*>("major"), sizeof("major") - 1, e.major TSRMLS_CC);
-        zend_update_property_long(cls, zex, const_cast<char*>("minor"), sizeof("minor") - 1, e.minor TSRMLS_CC);
+        zval* v;
+        MAKE_STD_ZVAL(v);
+        if(!createEncodingVersion(v, e.bad TSRMLS_CC))
+        {
+            zval_ptr_dtor(&v);
+            return false;
+        }
+        zend_update_property(cls, zex, const_cast<char*>("bad"), sizeof("bad") - 1, v TSRMLS_CC);
+        zval_ptr_dtor(&v);
+
+        MAKE_STD_ZVAL(v);
+        if(!createEncodingVersion(v, e.supported TSRMLS_CC))
+        {
+            zval_ptr_dtor(&v);
+            return false;
+        }
+        zend_update_property(cls, zex, const_cast<char*>("supported"), sizeof("supported") - 1, v TSRMLS_CC);
+        zval_ptr_dtor(&v);
     }
     catch(const Ice::NoObjectFactoryException& e)
     {
@@ -739,4 +925,109 @@ ZEND_FUNCTION(Ice_generateUUID)
 
     string uuid = IceUtil::generateUUID();
     RETURN_STRINGL(STRCAST(uuid.c_str()), uuid.size(), 1);
+}
+
+ZEND_FUNCTION(Ice_currentProtocol)
+{
+    if(ZEND_NUM_ARGS() > 0)
+    {
+        WRONG_PARAM_COUNT;
+    }
+
+    if(!createProtocolVersion(return_value, Ice::currentProtocol TSRMLS_CC))
+    {
+        RETURN_NULL();
+    }
+}
+
+ZEND_FUNCTION(Ice_currentProtocolEncoding)
+{
+    if(ZEND_NUM_ARGS() > 0)
+    {
+        WRONG_PARAM_COUNT;
+    }
+
+    if(!createEncodingVersion(return_value, Ice::currentProtocolEncoding TSRMLS_CC))
+    {
+        RETURN_NULL();
+    }
+}
+
+ZEND_FUNCTION(Ice_currentEncoding)
+{
+    if(ZEND_NUM_ARGS() > 0)
+    {
+        WRONG_PARAM_COUNT;
+    }
+
+    if(!createEncodingVersion(return_value, Ice::currentEncoding TSRMLS_CC))
+    {
+        RETURN_NULL();
+    }
+}
+
+ZEND_FUNCTION(Ice_protocolVersionToString)
+{
+    zend_class_entry* versionClass = idToClass(Ice_ProtocolVersion TSRMLS_CC);
+    assert(versionClass);
+
+    zval* zv;
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>("O"), &zv, versionClass) != SUCCESS)
+    {
+        RETURN_NULL();
+    }
+
+    if(!versionToString<Ice::ProtocolVersion>(zv, return_value, Ice_ProtocolVersion TSRMLS_CC))
+    {
+        RETURN_NULL();
+    }
+}
+
+ZEND_FUNCTION(Ice_stringToProtocolVersion)
+{
+    char* str;
+    int strLen;
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>("s"), &str, &strLen) != SUCCESS)
+    {
+        RETURN_NULL();
+    }
+    string s(str, strLen);
+
+    if(!stringToVersion<Ice::ProtocolVersion>(s, return_value, Ice_ProtocolVersion TSRMLS_CC))
+    {
+        RETURN_NULL();
+    }
+}
+
+ZEND_FUNCTION(Ice_encodingVersionToString)
+{
+    zend_class_entry* versionClass = idToClass(Ice_EncodingVersion TSRMLS_CC);
+    assert(versionClass);
+
+    zval* zv;
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>("O"), &zv, versionClass) != SUCCESS)
+    {
+        RETURN_NULL();
+    }
+
+    if(!versionToString<Ice::EncodingVersion>(zv, return_value, Ice_EncodingVersion TSRMLS_CC))
+    {
+        RETURN_NULL();
+    }
+}
+
+ZEND_FUNCTION(Ice_stringToEncodingVersion)
+{
+    char* str;
+    int strLen;
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>("s"), &str, &strLen) != SUCCESS)
+    {
+        RETURN_NULL();
+    }
+    string s(str, strLen);
+
+    if(!stringToVersion<Ice::EncodingVersion>(s, return_value, Ice_EncodingVersion TSRMLS_CC))
+    {
+        RETURN_NULL();
+    }
 }

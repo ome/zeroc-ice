@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,19 +21,7 @@ using namespace IceInternal;
 ConnectionRequestHandler::ConnectionRequestHandler(const ReferencePtr& reference, const Ice::ObjectPrx& proxy) :
     RequestHandler(reference)
 {
-// COMPILERFIX: Without the catch/rethrow C++Builder 2007 can get access violations.
-#ifdef __BCPLUSPLUS__ 
-    try
-    {
-#endif
-        _connection = _reference->getConnection(_compress);
-#ifdef __BCPLUSPLUS__
-    }
-    catch(const Ice::LocalException&)
-    {
-        throw;
-    }
-#endif
+    _connection = _reference->getConnection(_compress);
     RouterInfoPtr ri = reference->getRouterInfo();
     if(ri)
     {
@@ -73,11 +61,11 @@ ConnectionRequestHandler::sendRequest(Outgoing* out)
 {
     if(!_connection->sendRequest(out, _compress, _response) || _response)
     {
-        return _connection.get(); // The request has been sent or we're expecting a response.
+        return _connection.get(); // The request hasn't been sent or we're expecting a response.
     }
     else
     {
-        return 0; // The request hasn't been sent yet.
+        return 0; // The request has been sent.
     }
 }
 
@@ -100,7 +88,7 @@ ConnectionRequestHandler::flushAsyncBatchRequests(const BatchOutgoingAsyncPtr& o
 }
 
 Ice::ConnectionIPtr
-ConnectionRequestHandler::getConnection(bool wait)
+ConnectionRequestHandler::getConnection(bool /*wait*/)
 {
     return _connection;
 }

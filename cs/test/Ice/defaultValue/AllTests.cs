@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,21 +9,29 @@
 
 using System;
 
-public class AllTests
-{
-    private static void test(bool b)
-    {
-        if(!b)
-        {
-            throw new System.Exception();
-        }
-    }
+#if SILVERLIGHT
+using System.Net;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Ink;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Shapes;
+#endif
 
-    public static void
-    allTests()
+public class AllTests : TestCommon.TestApp
+{
+#if SILVERLIGHT
+    override
+    public void run(Ice.Communicator communicator)
+#else
+    public static void allTests()
+#endif
     {
-        Console.Out.Write("testing default values... ");
-        Console.Out.Flush();
+        Write("testing default values... ");
+        Flush();
 
         {
             Test.Struct1 v = new Test.Struct1();
@@ -43,6 +51,12 @@ public class AllTests
             test(v.nc2 == Test.Nested.Color.green);
             test(v.nc3 == Test.Nested.Color.blue);
             test(v.noDefault == null);
+            test(v.zeroI == 0);
+            test(v.zeroL == 0);
+            test(v.zeroF == 0);
+            test(v.zeroDotF == 0);
+            test(v.zeroD == 0);
+            test(v.zeroDotD == 0);
         }
 
         {
@@ -61,6 +75,12 @@ public class AllTests
             test(v.nc1 == Test.ConstNestedColor1.value);
             test(v.nc2 == Test.ConstNestedColor2.value);
             test(v.nc3 == Test.ConstNestedColor3.value);
+            test(v.zeroI == Test.ConstZeroI.value);
+            test(v.zeroL == Test.ConstZeroL.value);
+            test(v.zeroF == Test.ConstZeroF.value);
+            test(v.zeroDotF == Test.ConstZeroDotF.value);
+            test(v.zeroD == Test.ConstZeroD.value);
+            test(v.zeroDotD == Test.ConstZeroDotD.value);
         }
 
         {
@@ -82,6 +102,39 @@ public class AllTests
             test(v.nc2 == Test.Nested.Color.green);
             test(v.nc3 == Test.Nested.Color.blue);
             //test(v.noDefault == null);
+            test(v.zeroI == 0);
+            test(v.zeroL == 0);
+            test(v.zeroF == 0);
+            test(v.zeroDotF == 0);
+            test(v.zeroD == 0);
+            test(v.zeroDotD == 0);
+        }
+
+        {
+            Test.Struct4 v = new Test.Struct4();
+            test(!v.boolFalse);
+            test(v.boolTrue);
+            test(v.b == 1);
+            test(v.s == 2);
+            test(v.i == 3);
+            test(v.l == 4);
+            test(v.f == 5.1F);
+            test(v.d == 6.2);
+            //test(v.str.Equals("foo \\ \"bar\n \r\n\t\u000b\f\u0007\b? \u0007 \u0007"));
+            //test(v.str.Equals("foo bar"));
+            test(v.c1 == Test.Color.red);
+            test(v.c2 == Test.Color.green);
+            test(v.c3 == Test.Color.blue);
+            test(v.nc1 == Test.Nested.Color.red);
+            test(v.nc2 == Test.Nested.Color.green);
+            test(v.nc3 == Test.Nested.Color.blue);
+            //test(v.noDefault == null);
+            test(v.zeroI == 0);
+            test(v.zeroL == 0);
+            test(v.zeroF == 0);
+            test(v.zeroDotF == 0);
+            test(v.zeroD == 0);
+            test(v.zeroDotD == 0);
         }
 
         {
@@ -96,6 +149,12 @@ public class AllTests
             test(v.d == 6.2);
             test(v.str.Equals("foo \\ \"bar\n \r\n\t\u000b\f\u0007\b? \u0007 \u0007"));
             test(v.noDefault == null);
+            test(v.zeroI == 0);
+            test(v.zeroL == 0);
+            test(v.zeroF == 0);
+            test(v.zeroDotF == 0);
+            test(v.zeroD == 0);
+            test(v.zeroDotD == 0);
         }
 
         {
@@ -116,6 +175,12 @@ public class AllTests
             test(v.nc2 == Test.Nested.Color.green);
             test(v.nc3 == Test.Nested.Color.blue);
             test(v.noDefault == null);
+            test(v.zeroI == 0);
+            test(v.zeroL == 0);
+            test(v.zeroF == 0);
+            test(v.zeroDotF == 0);
+            test(v.zeroD == 0);
+            test(v.zeroDotD == 0);
         }
 
         {
@@ -130,6 +195,12 @@ public class AllTests
             test(v.d == 6.2);
             test(v.str == "foo \\ \"bar\n \r\n\t\u000b\f\u0007\b? \u0007 \u0007");
             test(v.noDefault == null);
+            test(v.zeroI == 0);
+            test(v.zeroL == 0);
+            test(v.zeroF == 0);
+            test(v.zeroDotF == 0);
+            test(v.zeroD == 0);
+            test(v.zeroDotD == 0);
         }
 
         {
@@ -150,6 +221,12 @@ public class AllTests
             test(v.nc1 == Test.Nested.Color.red);
             test(v.nc2 == Test.Nested.Color.green);
             test(v.nc3 == Test.Nested.Color.blue);
+            test(v.zeroI == 0);
+            test(v.zeroL == 0);
+            test(v.zeroF == 0);
+            test(v.zeroDotF == 0);
+            test(v.zeroD == 0);
+            test(v.zeroDotD == 0);
         }
 
         {
@@ -164,6 +241,12 @@ public class AllTests
             test(v.d == 6.2);
             test(v.str.Equals("foo bar"));
             test(v.noDefault == null);
+            test(v.zeroI == 0);
+            test(v.zeroL == 0);
+            test(v.zeroF == 0);
+            test(v.zeroDotF == 0);
+            test(v.zeroD == 0);
+            test(v.zeroDotD == 0);
         }
 
         {
@@ -176,6 +259,12 @@ public class AllTests
             test(v.l == 4);
             test(v.f == 5.1F);
             test(v.d == 6.2);
+            test(v.zeroI == 0);
+            test(v.zeroL == 0);
+            test(v.zeroF == 0);
+            test(v.zeroDotF == 0);
+            test(v.zeroD == 0);
+            test(v.zeroDotD == 0);
         }
 
         {
@@ -190,8 +279,14 @@ public class AllTests
             test(v.d == 6.2);
             test(v.str.Equals("foo bar"));
             test(v.noDefault == null);
+            test(v.zeroI == 0);
+            test(v.zeroL == 0);
+            test(v.zeroF == 0);
+            test(v.zeroDotF == 0);
+            test(v.zeroD == 0);
+            test(v.zeroDotD == 0);
         }
 
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
     }
 }

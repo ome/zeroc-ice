@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,7 +18,7 @@ using namespace IceGrid;
 
 SessionServantManager::SessionServantManager(const Ice::ObjectAdapterPtr& adapter, 
                                              const string& instanceName,
-					     bool checkConnection,
+                                             bool checkConnection,
                                              const string& serverAdminCategory,
                                              const Ice::ObjectPtr& serverAdminRouter,
                                              const AdminCallbackRouterPtr& adminCallbackRouter) : 

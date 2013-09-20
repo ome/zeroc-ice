@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,15 +12,6 @@
 
 #include <IceUtil/Handle.h>
 #include <Ice/Config.h>
-
-//
-// We include ProxyHandle.h here to make sure that the Ice::ProxyHandle
-// template is defined before any definition of upCast().
-//
-// See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=25495 for information
-// on why this is necessary.
-//
-#include <Ice/ProxyHandle.h>
 
 //
 // "Handle" or "smart pointer" template for classes derived from
@@ -45,17 +36,6 @@ template<typename T>
 class Handle : public ::IceUtil::HandleBase<T>
 {
 public:
-    
-#if defined(__BCPLUSPLUS__) && (__BCPLUSPLUS__ >= 0x0600)
-    //
-    // C++Builder 2009 does not allow setting Ptr to 0.
-    //
-    Handle(int p)
-    {
-        assert(p == 0);
-        this->_ptr = 0;
-    }
-#endif
 
     Handle(T* p = 0)
     {
@@ -192,21 +172,13 @@ public:
     template<class Y>
     static Handle dynamicCast(const ::IceUtil::HandleBase<Y>& r)
     {
-#ifdef __BCPLUSPLUS__
-        return Handle<T>(dynamic_cast<T*>(r._ptr));
-#else
         return Handle(dynamic_cast<T*>(r._ptr));
-#endif
     }
 
     template<class Y>
     static Handle dynamicCast(Y* p)
     {
-#ifdef __BCPLUSPLUS__
-        return Handle<T>(dynamic_cast<T*>(p));
-#else
         return Handle(dynamic_cast<T*>(p));
-#endif
     }
 
     void __clearHandleUnsafe()

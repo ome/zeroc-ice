@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -210,7 +210,17 @@ public final class ThreadPool
     finalize()
         throws Throwable
     {
-        IceUtilInternal.Assert.FinalizerAssert(_destroyed);
+        try
+        {
+            IceUtilInternal.Assert.FinalizerAssert(_destroyed);
+        }
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     public synchronized void
@@ -219,6 +229,15 @@ public final class ThreadPool
         assert(!_destroyed);
         _destroyed = true;
         _workQueue.destroy();
+    }
+
+    public synchronized void
+    updateObservers()
+    {
+        for(EventHandlerThread thread : _threads)
+        {
+            thread.updateObserver();
+        }
     }
 
     public synchronized void
@@ -291,7 +310,7 @@ public final class ThreadPool
     private void
     run(EventHandlerThread thread)
     {
-        ThreadPoolCurrent current = new ThreadPoolCurrent(_instance, this);
+        ThreadPoolCurrent current = new ThreadPoolCurrent(_instance, this, thread);
         boolean select = false;
         while(true)
         {
@@ -341,7 +360,7 @@ public final class ThreadPool
                         _nextHandler = _handlers.iterator();
                         select = false;
                     }
-                    else if(!current._leader && followerWait(thread, current))
+                    else if(!current._leader && followerWait(current))
                     {
                         return; // Wait timed-out.
                     }
@@ -372,7 +391,7 @@ public final class ThreadPool
                         --_inUse;
                     }
 
-                    if(!current._leader && followerWait(thread, current))
+                    if(!current._leader && followerWait(current))
                     {
                         return; // Wait timed-out.
                     }
@@ -391,6 +410,7 @@ public final class ThreadPool
                     current._ioCompleted = false;
                     current._handler = _nextHandler.next();
                     current.operation = current._handler._ready;
+                    thread.setState(Ice.Instrumentation.ThreadState.ThreadStateInUseForIO);
                 }
                 else
                 {
@@ -413,6 +433,7 @@ public final class ThreadPool
                     {
                         _selector.startSelect();
                         select = true;
+                        thread.setState(Ice.Instrumentation.ThreadState.ThreadStateIdle);
                     }
                 }
                 else if(_sizeMax > 1)
@@ -431,88 +452,84 @@ public final class ThreadPool
         }
     }
 
-    void
+    synchronized void
     ioCompleted(ThreadPoolCurrent current)
     {
         current._ioCompleted = true; // Set the IO completed flag to specify that ioCompleted() has been called.
 
+        current._thread.setState(Ice.Instrumentation.ThreadState.ThreadStateInUseForUser);
+
         if(_sizeMax > 1)
         {
-            synchronized(this)
+            --_inUseIO;
+            
+            if((current.operation & SocketOperation.Read) != 0 && current._handler.hasMoreData())
             {
-                --_inUseIO;
+                _selector.hasMoreData(current._handler);
+            }
+            
+            if(_serialize && !_destroyed)
+            {
+                _selector.disable(current._handler, current.operation);
+            }    
                 
-                if((current.operation & SocketOperation.Read) != 0 && current._handler.hasMoreData())
-                {
-                    _selector.hasMoreData(current._handler);
-                }
+            if(current._leader)
+            {
+                //
+                // If this thread is still the leader, it's time to promote a new leader.
+                //
+                promoteFollower(current);
+            }
+            else if(_promote && (_nextHandler.hasNext() || _inUseIO == 0))
+            {
+                notify();
+            }
 
-                if(_serialize && !_destroyed)
-                {
-                    _selector.disable(current._handler, current.operation);
-                }    
+            assert(_inUse >= 0);
+            ++_inUse;
                 
-                if(current._leader)
-                {
-                    //
-                    // If this thread is still the leader, it's time to promote a new leader.
-                    //
-                    promoteFollower(current);
-                }
-                else if(_promote && (_nextHandler.hasNext() || _inUseIO == 0))
-                {
-                    notify();
-                }
-
-                assert(_inUse >= 0);
-                ++_inUse;
+            if(_inUse == _sizeWarn)
+            {
+                String s = "thread pool `" + _prefix + "' is running low on threads\n"
+                    + "Size=" + _size + ", " + "SizeMax=" + _sizeMax + ", " + "SizeWarn=" + _sizeWarn;
+                _instance.initializationData().logger.warning(s);
+            }
                 
-                if(_inUse == _sizeWarn)
+            if(!_destroyed)
+            {            
+                assert(_inUse <= _threads.size());
+                if(_inUse < _sizeMax && _inUse == _threads.size())
                 {
-                    String s = "thread pool `" + _prefix + "' is running low on threads\n"
-                        + "Size=" + _size + ", " + "SizeMax=" + _sizeMax + ", " + "SizeWarn=" + _sizeWarn;
-                    _instance.initializationData().logger.warning(s);
-                }
-                
-                if(!_destroyed)
-                {            
-                    assert(_inUse <= _threads.size());
-                    if(_inUse < _sizeMax && _inUse == _threads.size())
+                    if(_instance.traceLevels().threadPool >= 1)
                     {
-                        if(_instance.traceLevels().threadPool >= 1)
-                        {
-                            String s = "growing " + _prefix + ": Size=" + (_threads.size() + 1);
-                            _instance.initializationData().logger.trace(_instance.traceLevels().threadPoolCat, s);
-                        }
+                        String s = "growing " + _prefix + ": Size=" + (_threads.size() + 1);
+                        _instance.initializationData().logger.trace(_instance.traceLevels().threadPoolCat, s);
+                    }
                         
-                        try
+                    try
+                    {
+                        EventHandlerThread thread = new EventHandlerThread(_threadPrefix + "-" + _threadIndex++);
+                        _threads.add(thread);
+                        if(_hasPriority)
                         {
-                            EventHandlerThread thread = new EventHandlerThread(_threadPrefix + "-" + _threadIndex++);
-                            _threads.add(thread);
-                            if(_hasPriority)
-                            {
-                                thread.start(_priority);
-                            }
-                            else
-                            {
-                                thread.start(java.lang.Thread.NORM_PRIORITY);
-                            }
+                            thread.start(_priority);
                         }
-                        catch(RuntimeException ex)
+                        else
                         {
-                            String s = "cannot create thread for `" + _prefix + "':\n" + Ex.toString(ex);
-                            _instance.initializationData().logger.error(s);
+                            thread.start(java.lang.Thread.NORM_PRIORITY);
                         }
+                    }
+                    catch(RuntimeException ex)
+                    {
+                        String s = "cannot create thread for `" + _prefix + "':\n" + Ex.toString(ex);
+                        _instance.initializationData().logger.error(s);
                     }
                 }
             }
         }
         else if((current.operation & SocketOperation.Read) != 0 && current._handler.hasMoreData())
         {
-            synchronized(this)
-            {
-                _selector.hasMoreData(current._handler);
-            }
+            _selector.hasMoreData(current._handler);
         }
     }
     
@@ -529,9 +546,11 @@ public final class ThreadPool
     }
 
     private synchronized boolean
-    followerWait(EventHandlerThread thread, ThreadPoolCurrent current)
+    followerWait(ThreadPoolCurrent current)
     {
         assert(!current._leader);
+
+        current._thread.setState(Ice.Instrumentation.ThreadState.ThreadStateIdle);
 
         //
         // It's important to clear the handler before waiting to make sure that
@@ -563,8 +582,8 @@ public final class ThreadPool
                                 _instance.initializationData().logger.trace(_instance.traceLevels().threadPoolCat, s);
                             }
                             assert(_threads.size() > 1); // Can only be called by a waiting follower thread.
-                            _threads.remove(thread);
-                            _workQueue.queue(new JoinThreadWorkItem(thread));
+                            _threads.remove(current._thread);
+                            _workQueue.queue(new JoinThreadWorkItem(current._thread));
                             return true;
                         }
                     }
@@ -590,11 +609,42 @@ public final class ThreadPool
     private final String _threadPrefix;
     private final Selector _selector;
 
-    private final class EventHandlerThread implements Runnable
+    final class EventHandlerThread implements Runnable
     {
         EventHandlerThread(String name)
         {
             _name = name;
+            _state = Ice.Instrumentation.ThreadState.ThreadStateIdle;
+            updateObserver();
+        }
+
+        public void
+        updateObserver()
+        {
+            // Must be called with the thread pool mutex locked
+            Ice.Instrumentation.CommunicatorObserver obsv = _instance.initializationData().observer;
+            if(obsv != null)
+            {
+                _observer = obsv.getThreadObserver(_prefix, _name, _state, _observer);
+                if(_observer != null)
+                {
+                    _observer.attach();
+                }
+            }
+        }
+
+        public void
+        setState(Ice.Instrumentation.ThreadState s)
+        {
+            // Must be called with the thread pool mutex locked
+            if(_observer != null)
+            {
+                if(_state != s)
+                {
+                    _observer.stateChanged(_state, s);
+                }
+            }
+            _state = s;
         }
 
         public void
@@ -648,6 +698,11 @@ public final class ThreadPool
                 _instance.initializationData().logger.error(s);
             }
 
+            if(_observer != null)
+            {
+                _observer.detach();
+            }
+
             if(_instance.initializationData().threadHook != null)
             {
                 try
@@ -665,6 +720,8 @@ public final class ThreadPool
 
         final private String _name;
         private Thread _thread;
+        private Ice.Instrumentation.ThreadState _state;
+        private Ice.Instrumentation.ThreadObserver _observer;
     }
 
     private final int _size; // Number of threads that are pre-created.

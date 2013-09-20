@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,7 +19,8 @@ public final class ReferenceFactory
             return null;
         }
 
-        return create(ident, facet, tmpl.getMode(), tmpl.getSecure(), endpoints, null, null);
+        return create(ident, facet, tmpl.getMode(), tmpl.getSecure(), tmpl.getProtocol(), tmpl.getEncoding(), 
+                      endpoints, null, null);
     }
 
     public Reference
@@ -30,7 +31,8 @@ public final class ReferenceFactory
             return null;
         }
 
-        return create(ident, facet, tmpl.getMode(), tmpl.getSecure(), null, adapterId, null);
+        return create(ident, facet, tmpl.getMode(), tmpl.getSecure(), tmpl.getProtocol(), tmpl.getEncoding(), null, 
+                      adapterId, null);
     }
 
     public Reference
@@ -44,15 +46,15 @@ public final class ReferenceFactory
         //
         // Create new reference
         //
-        FixedReference ref = new FixedReference(
+        return new FixedReference(
             _instance, 
             _communicator, 
             ident, 
             "", // Facet
             fixedConnection.endpoint().datagram() ? Reference.ModeDatagram : Reference.ModeTwoway,
             fixedConnection.endpoint().secure(),
+            _instance.defaultsAndOverrides().defaultEncoding,
             fixedConnection);
-        return updateCache(ref);
     }
 
     public Reference
@@ -160,6 +162,8 @@ public final class ReferenceFactory
         String facet = "";
         int mode = Reference.ModeTwoway;
         boolean secure = false;
+        Ice.EncodingVersion encoding = _instance.defaultsAndOverrides().defaultEncoding;
+        Ice.ProtocolVersion protocol = Ice.Util.Protocol_1_0;
         String adapter = "";
 
         while(true)
@@ -333,6 +337,44 @@ public final class ReferenceFactory
                     break;
                 }
 
+                case 'e':
+                {
+                    if(argument == null)
+                    {
+                        throw new Ice.ProxyParseException("no argument provided for -e option in `" + s + "'");
+                    }
+            
+                    try
+                    {
+                        encoding = Ice.Util.stringToEncodingVersion(argument);
+                    }
+                    catch(Ice.VersionParseException e)
+                    {
+                        throw new Ice.ProxyParseException("invalid encoding version `" + argument + "' in `" + s + 
+                                                          "':\n" + e.str);
+                    }
+                    break;
+                }
+
+                case 'p':
+                {
+                    if(argument == null)
+                    {
+                        throw new Ice.ProxyParseException("no argument provided for -p option in `" + s + "'");
+                    }
+            
+                    try
+                    {
+                        protocol = Ice.Util.stringToProtocolVersion(argument);
+                    }
+                    catch(Ice.VersionParseException e)
+                    {
+                        throw new Ice.ProxyParseException("invalid protocol version `" + argument + "' in `" + s + 
+                                                          "':\n" + e.str);
+                    }
+                    break;
+                }
+
                 default:
                 {
                     Ice.ProxyParseException e = new Ice.ProxyParseException();
@@ -344,7 +386,7 @@ public final class ReferenceFactory
 
         if(beg == -1)
         {
-            return create(ident, facet, mode, secure, null, null, propertyPrefix);
+            return create(ident, facet, mode, secure, protocol, encoding, null, null, propertyPrefix);
         }
 
         java.util.ArrayList<EndpointI> endpoints = new java.util.ArrayList<EndpointI>();
@@ -425,16 +467,16 @@ public final class ReferenceFactory
                 StringBuffer msg = new StringBuffer("Proxy contains unknown endpoints:");
                 for(String e : unknownEndpoints)
                 {
-		    msg.append(" `");
-		    msg.append(e);
-		    msg.append("'");
+                    msg.append(" `");
+                    msg.append(e);
+                    msg.append("'");
                 }
                 _instance.initializationData().logger.warning(msg.toString());
             }
 
             EndpointI[] endp = new EndpointI[endpoints.size()];
             endpoints.toArray(endp);
-            return create(ident, facet, mode, secure, endp, null, propertyPrefix);
+            return create(ident, facet, mode, secure, protocol, encoding, endp, null, propertyPrefix);
         }
         else if(s.charAt(beg) == '@')
         {
@@ -493,7 +535,7 @@ public final class ReferenceFactory
                 e.str = "empty adapter id in `" + s + "'";
                 throw e;
             }
-            return create(ident, facet, mode, secure, null, adapter, propertyPrefix);
+            return create(ident, facet, mode, secure, protocol, encoding, null, adapter, propertyPrefix);
         }
 
         Ice.ProxyParseException ex = new Ice.ProxyParseException();
@@ -540,6 +582,21 @@ public final class ReferenceFactory
 
         boolean secure = s.readBool();
 
+        Ice.ProtocolVersion protocol;
+        Ice.EncodingVersion encoding;
+        if(!s.getReadEncoding().equals(Ice.Util.Encoding_1_0))
+        {
+            protocol = new Ice.ProtocolVersion();
+            protocol.__read(s);
+            encoding = new Ice.EncodingVersion();
+            encoding.__read(s);
+        }
+        else
+        {
+            protocol = Ice.Util.Protocol_1_0;
+            encoding = Ice.Util.Encoding_1_0;
+        }
+
         EndpointI[] endpoints = null;
         String adapterId = null;
 
@@ -557,7 +614,7 @@ public final class ReferenceFactory
             adapterId = s.readString();
         }
 
-        return create(ident, facet, mode, secure, endpoints, adapterId, null);
+        return create(ident, facet, mode, secure, protocol, encoding, endpoints, adapterId, null);
     }
 
     public ReferenceFactory
@@ -609,52 +666,12 @@ public final class ReferenceFactory
         _communicator = communicator;
     }
 
-    synchronized void
-    destroy()
-    {
-        _references.clear();
-    }
-
-    synchronized private Reference
-    updateCache(Reference ref)
-    {
-        //
-        // If we already have an equivalent reference, use such equivalent
-        // reference. Otherwise add the new reference to the reference
-        // set.
-        //
-        // Java implementation note: A WeakHashMap is used to hold References,
-        // allowing References to be garbage collected automatically. A
-        // Reference serves as both key and value in the map. The
-        // WeakHashMap class internally creates a weak reference for the
-        // key, and we use a weak reference for the value as well.
-        //
-        java.lang.ref.WeakReference<Reference> w = _references.get(ref);
-        if(w != null)
-        {
-            Reference r = w.get();
-            if(r != null)
-            {
-                ref = r;
-            }
-            else
-            {
-                _references.put(ref, new java.lang.ref.WeakReference<Reference>(ref));
-            }
-        }
-        else
-        {
-            _references.put(ref, new java.lang.ref.WeakReference<Reference>(ref));
-        }
-
-        return ref;
-    }
-
     static private String[] _suffixes =
     {
         "EndpointSelection",
         "ConnectionCached",
         "PreferSecure",
+        "EncodingVersion",
         "LocatorCacheTimeout",
         "Locator",
         "Router",
@@ -701,27 +718,39 @@ public final class ReferenceFactory
         if(unknownProps.size() != 0)
         {
             StringBuffer message = new StringBuffer("found unknown properties for proxy '");
-	    message.append(prefix);
-	    message.append("':");
+            message.append(prefix);
+            message.append("':");
             for(String s : unknownProps)
             {
-		message.append("\n    ");
-		message.append(s);
+                message.append("\n    ");
+                message.append(s);
             }
             _instance.initializationData().logger.warning(message.toString());
         }
     }
 
     private Reference
-    create(Ice.Identity ident, String facet, int mode, boolean secure, EndpointI[] endpoints, String adapterId,
-           String propertyPrefix)
+    create(Ice.Identity ident, String facet, int mode, boolean secure, Ice.ProtocolVersion protocol, 
+           Ice.EncodingVersion encoding, EndpointI[] endpoints, String adapterId, String propertyPrefix)
     {
         DefaultsAndOverrides defaultsAndOverrides = _instance.defaultsAndOverrides();
 
         //
         // Default local proxy options.
         //
-        LocatorInfo locatorInfo = _instance.locatorManager().get(_defaultLocator);
+        LocatorInfo locatorInfo = null;
+        if(_defaultLocator != null)
+        {
+            if(!((Ice.ObjectPrxHelperBase)_defaultLocator).__reference().getEncoding().equals(encoding))
+            {
+                locatorInfo = _instance.locatorManager().get(
+                    (Ice.LocatorPrx)_defaultLocator.ice_encodingVersion(encoding));
+            }
+            else
+            {
+                locatorInfo = _instance.locatorManager().get(_defaultLocator);
+            }
+        }
         RouterInfo routerInfo = _instance.routerManager().get(_defaultRouter);
         boolean collocationOptimized = defaultsAndOverrides.defaultCollocationOptimization;
         boolean cacheConnection = true;
@@ -750,7 +779,14 @@ public final class ReferenceFactory
             Ice.LocatorPrx locator = Ice.LocatorPrxHelper.uncheckedCast(_communicator.propertyToProxy(property));
             if(locator != null)
             {
-                locatorInfo = _instance.locatorManager().get(locator);
+                if(!((Ice.ObjectPrxHelperBase)locator).__reference().getEncoding().equals(encoding))
+                {
+                    locatorInfo = _instance.locatorManager().get((Ice.LocatorPrx)locator.ice_encodingVersion(encoding));
+                }
+                else
+                {
+                    locatorInfo = _instance.locatorManager().get(locator);
+                }
             }
 
             property = propertyPrefix + ".Router";
@@ -804,27 +840,27 @@ public final class ReferenceFactory
         //
         // Create new reference
         //
-        return updateCache(new RoutableReference(_instance, 
-                                                 _communicator,
-                                                 ident,
-                                                 facet,
-                                                 mode,
-                                                 secure,
-                                                 endpoints,
-                                                 adapterId,
-                                                 locatorInfo,
-                                                 routerInfo,
-                                                 collocationOptimized,
-                                                 cacheConnection,
-                                                 preferSecure,
-                                                 endpointSelection,
-                                                 locatorCacheTimeout));
+        return new RoutableReference(_instance, 
+                                     _communicator,
+                                     ident,
+                                     facet,
+                                     mode,
+                                     secure,
+                                     protocol,
+                                     encoding,
+                                     endpoints,
+                                     adapterId,
+                                     locatorInfo,
+                                     routerInfo,
+                                     collocationOptimized,
+                                     cacheConnection,
+                                     preferSecure,
+                                     endpointSelection,
+                                     locatorCacheTimeout);
     }
 
     final private Instance _instance;
     final private Ice.Communicator _communicator;
     private Ice.RouterPrx _defaultRouter;
     private Ice.LocatorPrx _defaultLocator;
-    private java.util.WeakHashMap<Reference, java.lang.ref.WeakReference<Reference> > _references =
-        new java.util.WeakHashMap<Reference, java.lang.ref.WeakReference<Reference> >();
 }

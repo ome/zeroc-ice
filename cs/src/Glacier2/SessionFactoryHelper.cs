@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -47,6 +47,10 @@ public class SessionFactoryHelper
     {
         _callback = callback;
         _initData = initData;
+        if(_initData.properties == null)
+        {
+            _initData.properties = Ice.Util.createProperties();
+        }
         setDefaultProperties();
     }
 
@@ -58,6 +62,11 @@ public class SessionFactoryHelper
     public
     SessionFactoryHelper(Ice.Properties properties, SessionCallback callback)
     {
+        if(properties == null)
+        {
+            throw new Ice.InitializationException(
+                                        "Attempt to create a SessionFactoryHelper with a null Properties argument");
+        }
         _callback = callback;
         _initData = new Ice.InitializationData();
         _initData.properties = properties;
@@ -313,6 +322,15 @@ public class SessionFactoryHelper
                 sb.Append(_timeout);
             }
             initData.properties.setProperty("Ice.Default.Router", sb.ToString());
+            //
+            // If using a secure connection setup the IceSSL plug-in, if IceSSL
+            // plug-in has already been setup we don't want to override the
+            // configuration so it can be loaded from a custom location.
+            //
+            if(_secure && initData.properties.getProperty("Ice.Plugin.IceSSL").Length == 0)
+            {
+                initData.properties.setProperty("Ice.Plugin.IceSSL", "IceSSL:IceSSL.PluginFactory");
+            }
         }
         return initData;
     }
@@ -322,14 +340,10 @@ public class SessionFactoryHelper
     {
         _initData.properties.setProperty("Ice.ACM.Client", "0");
         _initData.properties.setProperty("Ice.RetryIntervals", "-1");
-        if(_secure)
-        {
-            _initData.properties.setProperty("Ice.Plugin.IceSSL", "IceSSL:IceSSL.PluginFactory");
-        }
     }
 
     private SessionCallback _callback;
-    private string _routerHost = "127.0.0.1";
+    private string _routerHost = "localhost";
     private Ice.InitializationData _initData;
     private Ice.Identity _identity = new Ice.Identity("router", "Glacier2");
     private bool _secure = true;

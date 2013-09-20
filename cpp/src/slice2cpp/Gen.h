@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -119,7 +119,6 @@ private:
     private:
 
         ::IceUtilInternal::Output& H;
-        ::IceUtilInternal::Output& C;
 
         std::string _dllExport;
     };
@@ -165,7 +164,6 @@ private:
     private:
 
         ::IceUtilInternal::Output& H;
-        ::IceUtilInternal::Output& C;
 
         std::string _dllExport;
         int _useWstring;
@@ -255,6 +253,7 @@ private:
 
     private:
 
+        void emitDataMember(const DataMemberPtr&);
         void emitGCFunctions(const ClassDefPtr&);
         void emitGCInsertCode(const TypePtr&, const std::string&, const std::string&, int);
         void emitGCClearCode(const TypePtr&, const std::string&, const std::string&, int);
@@ -287,7 +286,6 @@ private:
     private:
 
         ::IceUtilInternal::Output& H;
-        ::IceUtilInternal::Output& C;
 
         std::string _dllExport;
         int _useWstring;
@@ -313,50 +311,10 @@ private:
         void generateOperation(const OperationPtr&, bool);
 
         ::IceUtilInternal::Output& H;
-        ::IceUtilInternal::Output& C;
 
         std::string _dllExport;
         int _useWstring;
         std::list<int> _useWstringHist;
-    };
-
-    class IceInternalVisitor : private ::IceUtil::noncopyable, public ParserVisitor
-    {
-    public:
-
-        IceInternalVisitor(::IceUtilInternal::Output&, ::IceUtilInternal::Output&, const std::string&);
-
-        virtual bool visitUnitStart(const UnitPtr&);
-        virtual void visitUnitEnd(const UnitPtr&);
-        virtual void visitClassDecl(const ClassDeclPtr&);
-        virtual bool visitClassDefStart(const ClassDefPtr&);
-
-    private:
-
-        ::IceUtilInternal::Output& H;
-        ::IceUtilInternal::Output& C;
-
-        std::string _dllExport;
-    };
-
-    class HandleVisitor : private ::IceUtil::noncopyable, public ParserVisitor
-    {
-    public:
-
-        HandleVisitor(::IceUtilInternal::Output&, ::IceUtilInternal::Output&, const std::string&, bool);
-
-        virtual bool visitModuleStart(const ModulePtr&);
-        virtual void visitModuleEnd(const ModulePtr&);
-        virtual void visitClassDecl(const ClassDeclPtr&);
-        virtual bool visitClassDefStart(const ClassDefPtr&);
-
-    private:
-
-        ::IceUtilInternal::Output& H;
-        ::IceUtilInternal::Output& C;
-
-        std::string _dllExport;
-        bool _stream;
     };
 
     class ImplVisitor : private ::IceUtil::noncopyable, public ParserVisitor
@@ -405,7 +363,6 @@ private:
     private:
 
         ::IceUtilInternal::Output& H;
-        ::IceUtilInternal::Output& C;
 
         std::string _dllExport;
         int _useWstring;
@@ -440,7 +397,7 @@ private:
     {
     public:
 
-        StreamVisitor(::IceUtilInternal::Output&, ::IceUtilInternal::Output&);
+        StreamVisitor(::IceUtilInternal::Output&, ::IceUtilInternal::Output&, const std::string&);
 
         virtual bool visitModuleStart(const ModulePtr&);
         virtual void visitModuleEnd(const ModulePtr&);
@@ -452,6 +409,7 @@ private:
 
         ::IceUtilInternal::Output& H;
         ::IceUtilInternal::Output& C;
+        std::string _dllExport;
     };
 
 private:

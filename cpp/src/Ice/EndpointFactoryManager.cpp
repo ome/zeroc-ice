@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -113,7 +113,7 @@ IceInternal::EndpointFactoryManager::create(const string& str, bool oaEndpoint) 
         // Code below left in place for debugging.
 
         EndpointIPtr e = factory->create(str.substr(end), oaEndpoint);
-        BasicStream bs(_instance.get());
+        BasicStream bs(_instance.get(), Ice::currentProtocolEncoding);
         e->streamWrite(&bs);
         bs.i = bs.b.begin();
         short type;
@@ -140,7 +140,7 @@ IceInternal::EndpointFactoryManager::create(const string& str, bool oaEndpoint) 
             // and ask the factory to read the endpoint data from that stream to create
             // the actual endpoint.
             //
-            BasicStream bs(_instance.get());
+            BasicStream bs(_instance.get(), Ice::currentProtocolEncoding);
             ue->streamWrite(&bs);
             bs.i = bs.b.begin();
             short type;

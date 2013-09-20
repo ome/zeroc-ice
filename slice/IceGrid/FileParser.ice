@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_GRID_FILE_PARSER_ICE
-#define ICE_GRID_FILE_PARSER_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -47,7 +46,7 @@ interface FileParser
      * @param adminProxy An Admin proxy, used only to retrieve default
      * templates when needed. May be null.
      *
-     * @returns The application descriptor.
+     * @return The application descriptor.
      *
      * @throws ParseException Raised if an error occurred during parsing.
      *
@@ -59,4 +58,3 @@ interface FileParser
 
 };
 
-#endif

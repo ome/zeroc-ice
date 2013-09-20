@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,7 @@ DatabaseException::ice_print(ostream& out) const
     out << ":\n" << message;
 }
 
-::IceUtil::Exception*
+DatabaseException*
 DatabaseException::ice_clone() const
 {
     return new DatabaseException(*this);
@@ -58,7 +58,7 @@ DeadlockException::ice_print(ostream& out) const
     out << ":\n" << message;
 }
 
-::IceUtil::Exception*
+DeadlockException*
 DeadlockException::ice_clone() const
 {
     return new DeadlockException(*this);
@@ -79,7 +79,7 @@ NotFoundException::~NotFoundException() throw()
 {
 }
 
-::IceUtil::Exception*
+NotFoundException*
 NotFoundException::ice_clone() const
 {
     return new NotFoundException(*this);
@@ -112,6 +112,12 @@ DatabaseConnection::DatabaseConnection(const Freeze::ConnectionPtr& connection) 
 {
 }
 
+Ice::EncodingVersion
+DatabaseConnection::getEncoding() const
+{
+    return _connection->getEncoding();
+}
+
 void 
 DatabaseConnection::beginTransaction()
 {
@@ -133,7 +139,7 @@ DatabaseConnection::rollbackTransaction()
     _connection->currentTransaction()->rollback();
 }
 
-DatabaseCache::DatabaseCache(const Ice::CommunicatorPtr& communicator, const string& envName) :
+ConnectionPool::ConnectionPool(const Ice::CommunicatorPtr& communicator, const string& envName) :
     _communicator(communicator),
     _envName(envName),
     _connection(newConnection())
@@ -141,13 +147,13 @@ DatabaseCache::DatabaseCache(const Ice::CommunicatorPtr& communicator, const str
 }
 
 IceDB::DatabaseConnectionPtr
-DatabaseCache::getConnection()
+ConnectionPool::getConnection()
 {
     return _connection;
 }
 
 IceDB::DatabaseConnectionPtr
-DatabaseCache::newConnection()
+ConnectionPool::newConnection()
 {
     return new DatabaseConnection(Freeze::createConnection(_communicator, _envName));
 }

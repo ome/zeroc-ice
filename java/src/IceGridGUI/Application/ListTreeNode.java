@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -154,12 +154,12 @@ abstract class ListTreeNode extends TreeNode
         return _editable;
     }
 
-    javax.swing.ComboBoxModel createComboBoxModel()
+    javax.swing.ComboBoxModel<Object> createComboBoxModel()
     {
         return new ComboBoxModel();
     }
     
-    javax.swing.ComboBoxModel createComboBoxModel(Object item)
+    javax.swing.ComboBoxModel<Object> createComboBoxModel(Object item)
     {
         return new ComboBoxModel(item);
     }
@@ -167,7 +167,7 @@ abstract class ListTreeNode extends TreeNode
     //
     // Adapts ListTreeNode to a ComboBoxModel
     //
-    class ComboBoxModel extends javax.swing.AbstractListModel implements javax.swing.ComboBoxModel
+    class ComboBoxModel extends javax.swing.AbstractListModel<Object> implements javax.swing.ComboBoxModel<Object>
     {
         public Object getElementAt(int index)
         {

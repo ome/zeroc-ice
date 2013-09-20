@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,6 +21,8 @@ class ObjectStore implements IceUtil.Store
         _evictor = evictor;
         _indices = indices;
         _communicator = evictor.communicator();
+        _encoding = evictor.encoding();
+        _keepStats = false;
 
         if(facet.equals(""))
         {
@@ -53,11 +55,18 @@ class ObjectStore implements IceUtil.Store
             Catalog catalog = new Catalog(connection, Util.catalogName(), true);
             CatalogData catalogData = catalog.get(evictor.filename());
 
-            if(catalogData != null && catalogData.evictor == false)
+            if(catalogData != null)
             {
-                DatabaseException ex = new DatabaseException();
-                ex.message = _evictor.errorPrefix() + evictor.filename() + " is not an evictor database";
-                throw ex;
+                if(catalogData.evictor)
+                {
+                    _keepStats = catalogData.value.isEmpty();
+                }
+                else
+                {
+                    DatabaseException ex = new DatabaseException();
+                    ex.message = _evictor.errorPrefix() + evictor.filename() + " is not an evictor database";
+                    throw ex;
+                }
             }
 
             com.sleepycat.db.Environment dbEnv = evictor.dbEnv().getEnv();
@@ -121,8 +130,7 @@ class ObjectStore implements IceUtil.Store
 
                 if(catalogData == null)
                 {
-                    catalogData = new CatalogData();
-                    catalogData.evictor = true;
+                    catalogData = new CatalogData(true, "::Ice::Identity", "Object");
                     catalog.put(evictor.filename(), catalogData);
                 }
 
@@ -191,7 +199,7 @@ class ObjectStore implements IceUtil.Store
             }
         }
 
-        byte[] key = marshalKey(ident, _communicator);
+        byte[] key = marshalKey(ident, _communicator, _encoding);
         com.sleepycat.db.DatabaseEntry dbKey = new com.sleepycat.db.DatabaseEntry(key);
 
         //
@@ -288,10 +296,10 @@ class ObjectStore implements IceUtil.Store
     }
 
     static byte[]
-    marshalKey(Ice.Identity v, Ice.Communicator communicator)
+    marshalKey(Ice.Identity v, Ice.Communicator communicator, Ice.EncodingVersion encoding)
     {
         IceInternal.BasicStream os =
-            new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), false, false);
+            new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), encoding, true, false);
         v.__write(os);
         IceInternal.Buffer buf = os.prepareWrite();
         byte[] r = new byte[buf.size()];
@@ -300,27 +308,30 @@ class ObjectStore implements IceUtil.Store
     }
 
     static Ice.Identity
-    unmarshalKey(byte[] b, Ice.Communicator communicator)
+    unmarshalKey(byte[] b, Ice.Communicator communicator, Ice.EncodingVersion encoding)
     {
-        IceInternal.BasicStream is =
-            new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), false, false);
-        is.resize(b.length, true);
-        IceInternal.Buffer buf = is.getBuffer();
-        buf.b.position(0);
-        buf.b.put(b);
-        buf.b.position(0);
+        IceInternal.BasicStream is = 
+            new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), encoding, b);
         Ice.Identity key = new Ice.Identity();
         key.__read(is);
         return key;
     }
 
     static byte[]
-    marshalValue(ObjectRecord v, Ice.Communicator communicator)
+    marshalValue(ObjectRecord v, Ice.Communicator communicator, Ice.EncodingVersion encoding, boolean keepStats)
     {
         IceInternal.BasicStream os =
-            new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), false, false);
+            new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), encoding, true, false);
         os.startWriteEncaps();
-        v.__write(os);
+
+        if(keepStats)
+        {
+            v.__write(os);
+        }
+        else
+        {
+            os.writeObject(v.servant);
+        }
         os.writePendingObjects();
         os.endWriteEncaps();
         IceInternal.Buffer buf = os.prepareWrite();
@@ -330,20 +341,25 @@ class ObjectStore implements IceUtil.Store
     }
 
     static ObjectRecord
-    unmarshalValue(byte[] b, Ice.Communicator communicator)
+    unmarshalValue(byte[] b, Ice.Communicator communicator, Ice.EncodingVersion encoding, boolean keepStats)
     {
         IceInternal.BasicStream is =
-            new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), false, false);
+            new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), encoding, b);
         is.sliceObjects(false);
-        is.resize(b.length, true);
-        IceInternal.Buffer buf = is.getBuffer();
-        buf.b.position(0);
-        buf.b.put(b);
-        buf.b.position(0);
-        ObjectRecord rec= new ObjectRecord();
+        ObjectRecord rec = new ObjectRecord();
         is.startReadEncaps();
-        rec.__read(is);
-        is.readPendingObjects();
+        if(keepStats)
+        {
+            rec.__read(is);
+            is.readPendingObjects();
+        }
+        else
+        {
+            Ice.ObjectHolder holder = new Ice.ObjectHolder();
+            is.readObject(holder);
+            is.readPendingObjects();
+            rec.servant = holder.value;
+        }
         is.endReadEncaps();
         return rec;
     }
@@ -364,6 +380,18 @@ class ObjectStore implements IceUtil.Store
     communicator()
     {
         return _communicator;
+    }
+
+    final Ice.EncodingVersion
+    encoding()
+    {
+        return _encoding;
+    }
+
+    final boolean
+    keepStats()
+    {
+        return _keepStats;
     }
 
     final EvictorI
@@ -399,7 +427,7 @@ class ObjectStore implements IceUtil.Store
     {
         Ice.Identity ident = (Ice.Identity)identObj;
 
-        byte[] key = marshalKey(ident, _communicator);
+        byte[] key = marshalKey(ident, _communicator, _encoding);
 
         com.sleepycat.db.DatabaseEntry dbKey = new com.sleepycat.db.DatabaseEntry(key);
         com.sleepycat.db.DatabaseEntry dbValue = new com.sleepycat.db.DatabaseEntry();
@@ -439,7 +467,7 @@ class ObjectStore implements IceUtil.Store
             }
         }
 
-        ObjectRecord rec = unmarshalValue(dbValue.getData(), _communicator);
+        ObjectRecord rec = unmarshalValue(dbValue.getData(), _communicator, _encoding, _keepStats);
         _evictor.initialize(ident, _facet, rec.servant);
 
         Object result = _evictor.createEvictorElement(ident, rec, this);
@@ -463,7 +491,7 @@ class ObjectStore implements IceUtil.Store
             throw new DatabaseException(_evictor.errorPrefix() + "inactive transaction");
         }
 
-        byte[] key = marshalKey(ident, _communicator);
+        byte[] key = marshalKey(ident, _communicator, _encoding);
 
         com.sleepycat.db.DatabaseEntry dbKey = new com.sleepycat.db.DatabaseEntry(key);
         com.sleepycat.db.DatabaseEntry dbValue = new com.sleepycat.db.DatabaseEntry();
@@ -497,7 +525,7 @@ class ObjectStore implements IceUtil.Store
             throw new DatabaseException(_evictor.errorPrefix() + "Db.get: " + dx.getMessage(), dx);
         }
 
-        ObjectRecord rec = unmarshalValue(dbValue.getData(), _communicator);
+        ObjectRecord rec = unmarshalValue(dbValue.getData(), _communicator, _encoding, _keepStats);
         _evictor.initialize(ident, _facet, rec.servant);
         return rec;
     }
@@ -523,9 +551,13 @@ class ObjectStore implements IceUtil.Store
             throw new DatabaseException(msg);
         }
 
-        com.sleepycat.db.DatabaseEntry dbKey = new com.sleepycat.db.DatabaseEntry(marshalKey(ident, _communicator));
-        com.sleepycat.db.DatabaseEntry dbValue =
-            new com.sleepycat.db.DatabaseEntry(marshalValue(objectRecord, _communicator));
+        com.sleepycat.db.DatabaseEntry dbKey = new com.sleepycat.db.DatabaseEntry(marshalKey(ident,
+                                                                                             _communicator, 
+                                                                                             _encoding));
+        com.sleepycat.db.DatabaseEntry dbValue = new com.sleepycat.db.DatabaseEntry(marshalValue(objectRecord, 
+                                                                                                 _communicator,
+                                                                                                 _encoding,
+                                                                                                 _keepStats));
 
         try
         {
@@ -565,9 +597,10 @@ class ObjectStore implements IceUtil.Store
             }
         }
 
-        com.sleepycat.db.DatabaseEntry dbKey = new com.sleepycat.db.DatabaseEntry(marshalKey(ident, _communicator));
+        com.sleepycat.db.DatabaseEntry dbKey = 
+            new com.sleepycat.db.DatabaseEntry(marshalKey(ident, _communicator, _encoding));
         com.sleepycat.db.DatabaseEntry dbValue =
-            new com.sleepycat.db.DatabaseEntry(marshalValue(objectRecord, _communicator));
+            new com.sleepycat.db.DatabaseEntry(marshalValue(objectRecord, _communicator, _encoding, _keepStats));
 
         if(_sampleServant != null && !objectRecord.servant.ice_id().equals(_sampleServant.ice_id()))
         {
@@ -621,7 +654,8 @@ class ObjectStore implements IceUtil.Store
             }
         }
 
-        com.sleepycat.db.DatabaseEntry dbKey = new com.sleepycat.db.DatabaseEntry(marshalKey(ident, _communicator));
+        com.sleepycat.db.DatabaseEntry dbKey = 
+            new com.sleepycat.db.DatabaseEntry(marshalKey(ident, _communicator, _encoding));
 
         for(;;)
         {
@@ -661,6 +695,8 @@ class ObjectStore implements IceUtil.Store
     private final EvictorI _evictor;
     private final java.util.List<Index> _indices;
     private final Ice.Communicator _communicator;
+    private final Ice.EncodingVersion _encoding;
+    private boolean _keepStats;
 
     private com.sleepycat.db.Database _db;
     private Ice.Object _sampleServant;

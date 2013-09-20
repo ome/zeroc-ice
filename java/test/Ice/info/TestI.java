@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,10 +38,6 @@ public class TestI extends _TestIntfDisp
         if(ipinfo instanceof Ice.UDPEndpointInfo)
         {
             Ice.UDPEndpointInfo udp = (Ice.UDPEndpointInfo)ipinfo;
-            ctx.put("protocolMajor", Byte.toString(udp.protocolMajor));
-            ctx.put("protocolMinor", Byte.toString(udp.protocolMinor));
-            ctx.put("encodingMajor", Byte.toString(udp.encodingMajor));
-            ctx.put("encodingMinor", Byte.toString(udp.encodingMinor));
             ctx.put("mcastInterface", udp.mcastInterface);
             ctx.put("mcastTtl", Integer.toString(udp.mcastTtl));
         }

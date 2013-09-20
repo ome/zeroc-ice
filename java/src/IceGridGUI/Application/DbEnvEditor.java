@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -183,7 +183,7 @@ class DbEnvEditor extends CommunicatorChildEditor
     private JTextField _name = new JTextField(20);
     private JTextArea _description = new JTextArea(3, 20);
 
-    private JComboBox _dbHome = new JComboBox(new Object[]{NO_DB_HOME});
+    private JComboBox<Object> _dbHome = new JComboBox<Object>(new Object[]{NO_DB_HOME});
     private PropertiesField _properties;
 
     static private final Object NO_DB_HOME = new Object()

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,6 +8,8 @@
 // **********************************************************************
 
 package IceInternal;
+
+import Ice.Instrumentation.InvocationObserver;
 
 public class ConnectionRequestHandler implements RequestHandler
 {
@@ -64,10 +66,11 @@ public class ConnectionRequestHandler implements RequestHandler
     }
 
     public Outgoing
-    getOutgoing(String operation, Ice.OperationMode mode, java.util.Map<String, String> context)
+    getOutgoing(String operation, Ice.OperationMode mode, java.util.Map<String, String> context, 
+                InvocationObserver observer)
         throws LocalExceptionWrapper
     {
-        return _connection.getOutgoing(this, operation, mode, context);
+        return _connection.getOutgoing(this, operation, mode, context, observer);
     }
 
     public void

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,7 +8,10 @@
 // **********************************************************************
 
 #include <Ice/Ice.h>
+#include <TestCommon.h>
 #include <TestI.h>
+
+DEFINE_TEST("server")
 
 using namespace std;
 
@@ -17,7 +20,7 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 {
     Ice::PropertiesPtr properties = communicator->getProperties();
 
-    int num = argc == 2 ? atoi(argv[1]) : -1;
+    int num = argc == 2 ? atoi(argv[1]) : 0;
 
     ostringstream os;
     os << "tcp -p " << (12010 + num);
@@ -34,19 +37,25 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
         adapter2->activate();
     }
 
-    string host;
+    string endpoint;
     if(properties->getProperty("Ice.IPv6") == "1")
     {
-        host = "\"ff01::1:1\"";
+#if defined(__APPLE__)
+        endpoint = "udp -h \"ff02::1:1\" -p 12020 --interface \"lo0\"";
+#else
+        endpoint = "udp -h \"ff01::1:1\" -p 12020";
+#endif
     }
     else
     {
-        host = "239.255.1.1";
+        endpoint = "udp -h 239.255.1.1 -p 12020";
     }
-    properties->setProperty("McastTestAdapter.Endpoints", "udp -h " + host + " -p 12020");
+    properties->setProperty("McastTestAdapter.Endpoints", endpoint);
     Ice::ObjectAdapterPtr mcastAdapter = communicator->createObjectAdapter("McastTestAdapter");
     mcastAdapter->add(new TestIntfI, communicator->stringToIdentity("test"));
     mcastAdapter->activate();
+
+    TEST_READY
 
     communicator->waitForShutdown();
     return EXIT_SUCCESS;

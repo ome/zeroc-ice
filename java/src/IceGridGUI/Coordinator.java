@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,49 +11,21 @@ package IceGridGUI;
 
 import java.util.prefs.Preferences;
 import java.util.prefs.BackingStoreException;
+import java.util.Enumeration;
+import java.util.Collection;
 
-import java.awt.BorderLayout;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Frame;
-import java.awt.Rectangle;
-import java.awt.Container;
-import java.awt.Component;
-import java.awt.Toolkit;
-
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.KeyEvent;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.image.*;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.ButtonGroup;
-import javax.swing.JButton;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComponent;
-import javax.swing.JEditorPane;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JMenuBar;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JToggleButton;
-import javax.swing.JToolBar;
-import javax.swing.JTree;
-import javax.swing.KeyStroke;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.TransferHandler;
+import javax.swing.*;
+import javax.swing.text.Keymap;
 
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileFilter;
@@ -63,8 +35,29 @@ import com.jgoodies.looks.Options;
 import com.jgoodies.looks.HeaderStyle;
 import com.jgoodies.looks.BorderStyle;
 import com.jgoodies.looks.plastic.PlasticLookAndFeel;
+import com.jgoodies.forms.builder.DefaultFormBuilder;
+import com.jgoodies.forms.builder.ButtonBarBuilder;
+import com.jgoodies.forms.factories.Borders;
+import com.jgoodies.forms.factories.DefaultComponentFactory;
+import com.jgoodies.forms.layout.FormLayout;
+import com.jgoodies.forms.layout.CellConstraints;
+import com.jgoodies.forms.util.LayoutStyle;
+
+import java.security.Key;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.MessageDigest;
+
+import javax.security.auth.x500.X500Principal;
 
 import IceGrid.*;
+
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
+
+import IceGridGUI.LiveDeployment.GraphView;
 
 //
 // This class coordinates the communications between the various objects
@@ -140,22 +133,19 @@ public class Coordinator
 
         void setTarget(Action t)
         {
-            if(_target != t)
+            if(_target != null)
             {
-                if(_target != null)
-                {
-                    _target.removePropertyChangeListener(this);
-                }
-                _target = t;
-                if(_target != null)
-                {
-                    _target.addPropertyChangeListener(this);
-                    setEnabled(_target.isEnabled());
-                }
-                else
-                {
-                    setEnabled(false);
-                }
+                _target.removePropertyChangeListener(this);
+            }
+            _target = t;
+            if(_target != null)
+            {
+                _target.addPropertyChangeListener(this);
+                setEnabled(_target.isEnabled());
+            }
+            else
+            {
+                setEnabled(false);
             }
         }
 
@@ -212,7 +202,7 @@ public class Coordinator
                 JTree tree = (JTree)o;
                 if(tree.getModel().getRoot() instanceof IceGridGUI.Application.Root)
                 {
-                    enableTreetEditActions();
+                    enableTreeEditActions();
                 }
                 else
                 {
@@ -266,19 +256,16 @@ public class Coordinator
                 _moveDown.setTarget(null);
             }
         }
+    }
 
-        private void enableTreetEditActions()
-        {
-            if(_copy.getTarget() != _appActionsForMenu.get(IceGridGUI.Application.TreeNode.COPY))
-            {
-                _cut.setTarget(null);
-                _copy.setTarget(_appActionsForMenu.get(IceGridGUI.Application.TreeNode.COPY));
-                _paste.setTarget(_appActionsForMenu.get(IceGridGUI.Application.TreeNode.PASTE));
-                _delete.setTarget(_appActionsForMenu.get(IceGridGUI.Application.TreeNode.DELETE));
-                _moveUp.setTarget(_appActionsForMenu.get(IceGridGUI.Application.TreeNode.MOVE_UP));
-                _moveDown.setTarget(_appActionsForMenu.get(IceGridGUI.Application.TreeNode.MOVE_DOWN));
-            }
-        }
+    private void enableTreeEditActions()
+    {
+        _cut.setTarget(null);
+        _copy.setTarget(_appActionsForMenu.get(IceGridGUI.Application.TreeNode.COPY));
+        _paste.setTarget(_appActionsForMenu.get(IceGridGUI.Application.TreeNode.PASTE));
+        _delete.setTarget(_appActionsForMenu.get(IceGridGUI.Application.TreeNode.DELETE));
+        _moveUp.setTarget(_appActionsForMenu.get(IceGridGUI.Application.TreeNode.MOVE_UP));
+        _moveDown.setTarget(_appActionsForMenu.get(IceGridGUI.Application.TreeNode.MOVE_DOWN));
     }
 
     private class MenuBar extends JMenuBar
@@ -346,6 +333,12 @@ public class Coordinator
             _newTemplateMenu.add(_appActionsForMenu.get(IceGridGUI.Application.TreeNode.NEW_TEMPLATE_SERVER_ICEBOX));
             _newTemplateMenu.add(_appActionsForMenu.get(IceGridGUI.Application.TreeNode.NEW_TEMPLATE_SERVICE));
 
+            //
+            // New Graph sub-menu
+            //
+            _newMenu.addSeparator();
+            _newMenu.add(_newGraph);
+
             fileMenu.addSeparator();
             fileMenu.add(_login);
             fileMenu.add(_logout);
@@ -358,8 +351,11 @@ public class Coordinator
             fileMenu.add(_save);
             fileMenu.add(_saveToFile);
             fileMenu.add(_saveToRegistry);
+            fileMenu.add(_saveToRegistryWithoutRestart);
             fileMenu.addSeparator();
             fileMenu.add(_discardUpdates);
+            fileMenu.addSeparator();
+            fileMenu.add(_certificateManager);
             if(!System.getProperty("os.name").startsWith("Mac OS"))
             {
                 fileMenu.addSeparator();
@@ -412,6 +408,15 @@ public class Coordinator
             _appMenu.addSeparator();
             _appMenu.add(_removeApplicationFromRegistry);
             _appMenu.setEnabled(false);
+
+            //
+            // Metrics View sub-menu
+            //
+            _metricsViewMenu = new JMenu("Metrics View");
+            _metricsViewMenu.setEnabled(false);
+            toolsMenu.add(_metricsViewMenu);
+            _metricsViewMenu.add(_liveActionsForMenu.get(IceGridGUI.LiveDeployment.TreeNode.ENABLE_METRICS_VIEW));
+            _metricsViewMenu.add(_liveActionsForMenu.get(IceGridGUI.LiveDeployment.TreeNode.DISABLE_METRICS_VIEW));
 
             //
             // Node sub-menu
@@ -474,10 +479,10 @@ public class Coordinator
             _serviceMenu = new JMenu("Service");
             _serviceMenu.setEnabled(false);
             toolsMenu.add(_serviceMenu);
-	    _serviceMenu.add(_liveActionsForMenu.get(IceGridGUI.LiveDeployment.TreeNode.START));
-	    _serviceMenu.add(_liveActionsForMenu.get(IceGridGUI.LiveDeployment.TreeNode.STOP));
-	    _serviceMenu.addSeparator();
-	    _serviceMenu.add(_liveActionsForMenu.get(IceGridGUI.LiveDeployment.TreeNode.RETRIEVE_LOG));
+            _serviceMenu.add(_liveActionsForMenu.get(IceGridGUI.LiveDeployment.TreeNode.START));
+            _serviceMenu.add(_liveActionsForMenu.get(IceGridGUI.LiveDeployment.TreeNode.STOP));
+            _serviceMenu.addSeparator();
+            _serviceMenu.add(_liveActionsForMenu.get(IceGridGUI.LiveDeployment.TreeNode.RETRIEVE_LOG));
 
             //
             // Help menu
@@ -549,6 +554,10 @@ public class Coordinator
             button = new JButton(_saveToRegistry);
             button.setText(null);
             button.setIcon(Utils.getIcon("/icons/24x24/save_to_registry.png"));
+            add(button);
+            button = new JButton(_saveToRegistryWithoutRestart);
+            button.setText(null);
+            button.setIcon(Utils.getIcon("/icons/24x24/save_without_restart.png"));
             add(button);
             button = new JButton(_saveToFile);
             button.setText(null);
@@ -625,6 +634,25 @@ public class Coordinator
         return _communicator;
     }
 
+    public Ice.Communicator getWizardCommunicator()
+    {
+        if(_wizardCommunicator == null)
+        {
+            //
+            // Create a communicator that is used by connection wizards to
+            // parse endpoints.
+            //
+            // We enable IceSSL so the communicator knows how to parse ssl
+            // endpoints.
+            //
+            Ice.InitializationData initData = new Ice.InitializationData();
+            initData.properties = Ice.Util.createProperties();
+            initData.properties.setProperty("Ice.Plugin.IceSSL", "IceSSL.PluginFactory");
+            _wizardCommunicator = Ice.Util.initialize(initData);
+        }
+        return _wizardCommunicator;
+    }
+
     public Ice.Properties getProperties()
     {
         return _initData.properties;
@@ -663,6 +691,11 @@ public class Coordinator
     public Action getSaveToRegistryAction()
     {
         return _saveToRegistry;
+    }
+
+    public Action getSaveToRegistryWithoutRestartAction()
+    {
+        return _saveToRegistryWithoutRestart;
     }
 
     public Action getSaveToFileAction()
@@ -707,7 +740,7 @@ public class Coordinator
                 JOptionPane.showMessageDialog(
                     _mainFrame,
                     e.toString(),
-                    "Bad Application Descriptor: Unable load from Registry",
+                    "Bad Application Descriptor: Unable to load from Registry",
                     JOptionPane.ERROR_MESSAGE);
                 return null;
             }
@@ -905,9 +938,9 @@ public class Coordinator
                         boolean asyncRelease = false;
 
                         final String prefix = "Deleting application '" + name + "'...";
-                        AMI_Admin_removeApplication cb = new AMI_Admin_removeApplication()
+                        Callback_Admin_removeApplication cb = new Callback_Admin_removeApplication()
                             {
-                                public void ice_response()
+                                public void response()
                                 {
                                     if(_traceSaveToRegistry)
                                     {
@@ -924,7 +957,7 @@ public class Coordinator
                                         });
                                 }
 
-                                public void ice_exception(final Ice.UserException e)
+                                public void exception(final Ice.UserException e)
                                 {
                                     if(_traceSaveToRegistry)
                                     {
@@ -942,7 +975,7 @@ public class Coordinator
                                         });
                                 }
 
-                                public void ice_exception(final Ice.LocalException e)
+                                public void exception(final Ice.LocalException e)
                                 {
                                     if(_traceSaveToRegistry)
                                     {
@@ -967,7 +1000,7 @@ public class Coordinator
 
                         try
                         {
-                            _sessionKeeper.getAdmin().removeApplication_async(cb, name);
+                            _sessionKeeper.getAdmin().begin_removeApplication(name, cb);
                             asyncRelease = true;
                         }
                         catch(Ice.LocalException e)
@@ -1048,7 +1081,7 @@ public class Coordinator
         {
             if(_traceSaveToRegistry)
             {
-                traceSaveToRegistry("lastestSerial is " + _latestSerial);
+                traceSaveToRegistry("latestSerial is " + _latestSerial);
             }
 
             if(_writeSerial <= _latestSerial)
@@ -1197,6 +1230,15 @@ public class Coordinator
         }
         _liveApplications.clear();
 
+        //
+        // Close al graphs
+        //
+        java.util.List<GraphView> views = new java.util.ArrayList<GraphView>(_graphViews);
+        for(GraphView v : views)
+        {
+            v.close();
+        }
+        
         _logout.setEnabled(false);
         _showLiveDeploymentFilters.setEnabled(false);
         _openApplicationFromRegistry.setEnabled(false);
@@ -1208,12 +1250,23 @@ public class Coordinator
         _acquireExclusiveWriteAccess.setEnabled(false);
         _releaseExclusiveWriteAccess.setEnabled(false);
         _saveToRegistry.setEnabled(false);
+        _saveToRegistryWithoutRestart.setEnabled(false);
     }
 
-    AdminSessionPrx login(SessionKeeper.LoginInfo info,
-                          Component parent,
-                          Ice.LongHolder keepAlivePeriodHolder)
+    enum TrustDecision{YesAlways, YesThisTime, No};
+
+    void
+    login(final SessionKeeper sessionKeeper,
+          final SessionKeeper.ConnectionInfo info, 
+          final JDialog parent, 
+          final Cursor oldCursor,
+          Ice.LongHolder keepAlivePeriodHolder)
     {
+
+        //
+        // Keep certificates arround for connection retry
+        //
+        _trasientCert = null;
         _liveDeploymentRoot.clear();
 
         AdminSessionPrx session = null;
@@ -1221,21 +1274,29 @@ public class Coordinator
         destroyCommunicator();
 
         Ice.InitializationData initData = _initData;
-        if(info.routed && info.routerSSLEnabled || !info.routed && info.registrySSLEnabled)
-        {
-            initData = (Ice.InitializationData)initData.clone();
-            initData.properties = initData.properties._clone();
-            initData.properties.setProperty("Ice.Plugin.IceSSL", "IceSSL.PluginFactory");
+        initData = (Ice.InitializationData)initData.clone();
+        initData.properties = initData.properties._clone();
+        initData.properties.setProperty("Ice.Plugin.IceSSL", "IceSSL.PluginFactory");
+        initData.properties.setProperty("IceSSL.VerifyPeer", "0");
 
-            //
-            // Transform SSL info into properties
-            //
-            initData.properties.setProperty("IceSSL.Keystore", info.keystore);
-            initData.properties.setProperty("IceSSL.Password", new String(info.keyPassword));
-            initData.properties.setProperty("IceSSL.KeystorePassword", new String(info.keystorePassword));
-            initData.properties.setProperty("IceSSL.Alias", info.alias);
-            initData.properties.setProperty("IceSSL.Truststore", info.truststore);
-            initData.properties.setProperty("IceSSL.TruststorePassword", new String(info.truststorePassword));
+        if(info.getAuth() == SessionKeeper.AuthType.X509CertificateAuthType | info.getUseX509Certificate())
+        {
+            try
+            {
+                initData.properties.setProperty("IceSSL.Keystore", getDataDirectory() + "/MyCerts.jks");
+            }
+            catch(java.lang.Exception e)
+            {
+                JOptionPane.showMessageDialog(parent, e.toString(), "Failed to access data directory", 
+                                              JOptionPane.ERROR_MESSAGE);
+                parent.setCursor(oldCursor);
+                return;
+            }
+            if(info.getKeyPassword() != null)
+            {
+                initData.properties.setProperty("IceSSL.Password", new String(info.getKeyPassword()));
+            }
+            initData.properties.setProperty("IceSSL.Alias", info.getAlias());
         }
 
         //
@@ -1254,261 +1315,886 @@ public class Coordinator
                                           e.toString(),
                                           "Communicator initialization failed",
                                           JOptionPane.ERROR_MESSAGE);
-            return null;
+            parent.setCursor(oldCursor);
+            return;
         }
 
-        if(info.routed)
+        class CertificateVerifier implements IceSSL.CertificateVerifier
         {
-            //
-            // Router
-            //
+            public CertificateVerifier() throws java.io.IOException, java.security.GeneralSecurityException, java.lang.Exception
+            {
+                {
+                    _trustedCaKeyStore = KeyStore.getInstance("JKS");
 
+                    FileInputStream is = null;
+                    final String path = getDataDirectory() + "/AuthorityCerts.jks";
+                    if(new File(path).isFile())
+                    {
+                        is = new FileInputStream(new File(path));
+                    }
+
+                    _trustedCaKeyStore.load(is, null);
+                }
+
+                {
+                    _trustedServerKeyStore = KeyStore.getInstance("JKS");
+
+                    FileInputStream is = null;
+                    final String path = getDataDirectory() + "/ServerCerts.jks";
+                    if(new File(path).isFile())
+                    {
+                        is = new FileInputStream(new File(path));
+                    }
+
+                    _trustedServerKeyStore.load(is, null);
+                }
+            }
+
+            class AcceptInvalidCertDialog implements Runnable
+            {
+                public TrustDecision show(IceSSL.NativeConnectionInfo info, boolean validDate,
+                                          boolean validAlternateName, boolean trustedCA)
+                {
+                    _info = info;
+                    _validDate = validDate;
+                    _validAlternateName = validAlternateName;
+                    _trustedCA = trustedCA;
+
+                    while(true)
+                    {
+                        try
+                        {
+                            SwingUtilities.invokeAndWait(this);
+                            break;
+                        }
+                        catch(java.lang.InterruptedException e)
+                        {
+                            // Ignore and retry
+                        }
+                        catch(java.lang.reflect.InvocationTargetException e)
+                        {
+                            break;
+                        }
+                    }
+                    return _decision;
+                }
+
+                public void 
+                run()
+                {
+                    try
+                    {
+                        UntrustedCertificateDialog dialog = new UntrustedCertificateDialog(parent, _info, _validDate, 
+                                                                                           _validAlternateName,
+                                                                                           _trustedCA);
+                        Utils.addEscapeListener(dialog);
+                        _decision = dialog.showDialog();
+                    }
+                    catch(java.lang.Exception ex)
+                    {
+                        JOptionPane.showMessageDialog(parent, ex.toString(), "Failed to inspect certificate details",
+                                                      JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+
+                private IceSSL.NativeConnectionInfo _info;
+                private boolean _validDate;
+                private boolean _validAlternateName;
+                private boolean _trustedCA;
+                private TrustDecision _decision = TrustDecision.No;
+            }
+
+            public boolean verify(IceSSL.NativeConnectionInfo info)
+            {
+                if(!(info.nativeCerts[0] instanceof X509Certificate))
+                {
+                    return false;
+                }
+
+                X509Certificate cert = (X509Certificate) info.nativeCerts[0];
+                byte[] encoded;
+                try
+                {
+                    encoded = cert.getEncoded();
+                }
+                catch(java.security.GeneralSecurityException ex)
+                {
+                    return false;
+                }
+
+                //
+                // Compare the server certificate with a previous accepted certificate if
+                // any, the trasient certificate is reset by Coordinator.login, and is only 
+                // ussefull in case the connection is retry, because a timeout or ACM closed
+                // it while the certificate verifier was waiting for the user decission.
+                //
+                // This avoids to show the dialog again if the user already granted the cert for
+                // this login operation.
+                //
+                if(_trasientCert != null && _trasientCert.equals(cert))
+                {
+                    return true;
+                }
+
+                //
+                // Compare the server with the user trusted server certificates.
+                //
+                try
+                {
+                    for(Enumeration e = _trustedServerKeyStore.aliases(); e.hasMoreElements() ;)
+                    {
+                        String alias = e.nextElement().toString();
+                        if(!_trustedServerKeyStore.isCertificateEntry(alias))
+                        {
+                            continue;
+                        }
+
+                        Certificate c = _trustedServerKeyStore.getCertificate(alias);
+                        try
+                        {
+                            if(java.util.Arrays.equals(encoded, c.getEncoded()))
+                            {
+                                return true;
+                            }
+                        }
+                        catch(java.security.GeneralSecurityException ex)
+                        {
+                            // Skip to next certificate
+                            continue;
+                        }
+                    }
+                }
+                catch(final java.security.KeyStoreException ex)
+                {
+                    while(true)
+                    {
+                        try
+                        {
+                            SwingUtilities.invokeAndWait(new Runnable()
+                                {
+                                    public void run()
+                                    {
+                                        JOptionPane.showMessageDialog(parent, ex.toString(), "Error loading keystore",
+                                                                      JOptionPane.ERROR_MESSAGE);
+                                    }
+                                });
+                            break;
+                        }
+                        catch(java.lang.InterruptedException e)
+                        {
+                        }
+                        catch(java.lang.reflect.InvocationTargetException e)
+                        {
+                            break;
+                        }
+                    }
+                    return false;
+                }
+
+                boolean validDate = true;
+                boolean trustedCA = false;
+                boolean validAlternateName = false;
+
+                //
+                // Check the certificate date is valid.
+                //
+
+                java.util.Date now = new java.util.Date();
+                if(now.getTime() > cert.getNotAfter().getTime() || now.getTime() < cert.getNotBefore().getTime())
+                {
+                    validDate = false;
+                }
+
+                //
+                // Check server alternate names match the connection remote address
+                //
+                try
+                {
+                    Collection altNames = cert.getSubjectAlternativeNames();
+                    if(altNames != null)
+                    {
+                        for(Object o : altNames)
+                        {
+                            java.util.List l = (java.util.List)o;
+                            Integer kind = (Integer)l.get(0);
+                            if(kind != 2 && kind != 7)
+                            {
+                                continue;
+                            }
+                            if(info.remoteAddress.equalsIgnoreCase(l.get(1).toString()))
+                            {
+                                validAlternateName = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch(java.security.cert.CertificateParsingException ex)
+                {
+                    validAlternateName = false;
+                }
+
+                //
+                // Check if the certificate has been signed by any of the trusted certificate
+                // authorities.
+                //
+                try
+                {
+                    for(Enumeration e = _trustedCaKeyStore.aliases(); e.hasMoreElements() ;)
+                    {
+                        String alias = e.nextElement().toString();
+                        if(!_trustedCaKeyStore.isCertificateEntry(alias))
+                        {
+                            continue;
+                        }
+                        Certificate c = _trustedCaKeyStore.getCertificate(alias);
+                        try
+                        {
+                            cert.verify(c.getPublicKey());
+                            trustedCA = true;
+                            break;
+                        }
+                        catch(java.security.GeneralSecurityException ex)
+                        {
+                            // Skip to next certificate
+                            continue;
+                        }
+                    }
+                }
+                catch(final java.security.KeyStoreException ex)
+                {
+                    while(true)
+                    {
+                        try
+                        {
+                            SwingUtilities.invokeAndWait(new Runnable()
+                                {
+                                    public void run()
+                                    {
+                                        JOptionPane.showMessageDialog(parent, ex.toString(), "Error loading keystore",
+                                                                      JOptionPane.ERROR_MESSAGE);
+                                    }
+                                });
+                            break;
+                        }
+                        catch(java.lang.InterruptedException e)
+                        {
+                        }
+                        catch(java.lang.reflect.InvocationTargetException e)
+                        {
+                            break;
+                        }
+                    }
+                    return false;
+                }
+            
+                if(validDate && validAlternateName && trustedCA)
+                {
+                    return true;
+                }
+            
+                TrustDecision decision = new AcceptInvalidCertDialog().show(info, validDate, validAlternateName, 
+                                                                            trustedCA);
+
+                if(decision == TrustDecision.YesThisTime)
+                {
+                    _trasientCert = (X509Certificate) info.nativeCerts[0];
+                    return true;
+                }
+                else if(decision == TrustDecision.YesAlways)
+                {
+                    try
+                    {
+                        String CN = "";
+                        LdapName dn = new LdapName(cert.getSubjectX500Principal().getName());
+                        for(Rdn rdn: dn.getRdns()) 
+                        {
+                            if(rdn.getType().toUpperCase().equals("CN"))
+                            {
+                                CN = rdn.getValue().toString();
+                                break;
+                            }
+                        }
+                        _trustedServerKeyStore.setCertificateEntry(CN, info.nativeCerts[0]);
+                        _trustedServerKeyStore.store(new FileOutputStream(getDataDirectory() + "/ServerCerts.jks"), 
+                                                     new char[]{});
+                        sessionKeeper.certificateManager(parent).load();
+                        return true;
+                    }
+                    catch(final java.lang.Exception ex)
+                    {
+                        while(true)
+                        {
+                            try
+                            {
+                                SwingUtilities.invokeAndWait(new Runnable()
+                                    {
+                                        public void run()
+                                        {
+                                            JOptionPane.showMessageDialog(parent, ex.toString(), "Error saving certificate",
+                                                                          JOptionPane.ERROR_MESSAGE);
+                                        }
+                                    });
+                                break;
+                            }
+                            catch(java.lang.InterruptedException e)
+                            {
+                            }
+                            catch(java.lang.reflect.InvocationTargetException e)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+            
+            private KeyStore _trustedCaKeyStore;
+            private KeyStore _trustedServerKeyStore;
+        }
+
+        IceSSL.Plugin plugin = (IceSSL.Plugin)_communicator.getPluginManager().getPlugin("IceSSL");
+        try
+        {
+            plugin.setCertificateVerifier(new CertificateVerifier());
+        }
+        catch(final java.lang.Exception ex)
+        {
+            while(true)
+            {
+                try
+                {
+                    SwingUtilities.invokeAndWait(new Runnable()
+                        {
+                            public void run()
+                            {
+                                JOptionPane.showMessageDialog(parent, ex.toString(), 
+                                                              "Error creating certificate verifier",
+                                                              JOptionPane.ERROR_MESSAGE);
+                                parent.setCursor(oldCursor);
+                            }
+                        });
+                    break;
+                }
+                catch(java.lang.InterruptedException e)
+                {
+                }
+                catch(java.lang.reflect.InvocationTargetException e)
+                {
+                    break;
+                }
+            }
+            return;
+        }
+
+        class ConnectionCallback
+        {
+            synchronized public void setSession(AdminSessionPrx session)
+            {
+                _session = session;
+            }
+
+            synchronized public AdminSessionPrx getSession()
+            {
+                return _session;
+            }
+
+            synchronized public void setKeepAlivePeriod(long keepAlivePeriod)
+            {
+                _keepAlivePeriod = keepAlivePeriod;
+            }
+
+            synchronized public long getKeepAlivePeriod()
+            {
+                return _keepAlivePeriod;
+            }
+
+            synchronized public void loginSuccess()
+            {
+                _logout.setEnabled(true);
+                _showLiveDeploymentFilters.setEnabled(true);
+                _openApplicationFromRegistry.setEnabled(true);
+                _patchApplication.setEnabled(true);
+                _showApplicationDetails.setEnabled(true);
+                _removeApplicationFromRegistry.setEnabled(true);
+                _appMenu.setEnabled(true);
+                _newApplicationWithDefaultTemplates.setEnabled(true);
+                _acquireExclusiveWriteAccess.setEnabled(true);
+                _mainPane.setSelectedComponent(_liveDeploymentPane);
+                _sessionKeeper.loginSuccess(parent, oldCursor, _keepAlivePeriod, _session, info);
+            }
+
+            synchronized public void loginFailed()
+            {
+                parent.setCursor(oldCursor);
+                _failed = true;
+            }
+
+            synchronized public void permissionDenied(String msg)
+            {
+                parent.setCursor(oldCursor);
+                _failed = true;
+                _sessionKeeper.permissionDenied(parent, info, msg);
+            }
+
+            synchronized public boolean failed()
+            {
+                return _failed;
+            }
+
+            private AdminSessionPrx _session;
+            private long _keepAlivePeriod;
+            private boolean _failed = false;
+        }
+
+        if(!info.getDirect())
+        {
             Ice.Identity routerId = new Ice.Identity();
-            routerId.category = info.routerInstanceName;
+            routerId.category = info.getInstanceName();
             routerId.name = "router";
             String str = "\"" + _communicator.identityToString(routerId) + "\"";
 
-            if(!info.routerEndpoints.equals(""))
+            if(info.getDefaultEndpoint())
             {
-                str += ":" + info.routerEndpoints;
-            }
-
-            try
-            {
-                Glacier2.RouterPrx router = Glacier2.RouterPrxHelper.uncheckedCast(_communicator.stringToProxy(str));
-
-                //
-                // The session must be routed through this router
-                //
-                _communicator.setDefaultRouter(router);
-
-                Glacier2.SessionPrx s;
-                if(info.routerUseSSL)
+                str += ":";
+                if(info.getSSL())
                 {
-                    router = Glacier2.RouterPrxHelper.uncheckedCast(router.ice_secure(true));
-
-                    s = router.createSessionFromSecureConnection();
-
-                    if(s == null)
-                    {
-                        JOptionPane.showMessageDialog(
-                            parent,
-                            "createSessionFromSecureConnection returned a null session: \n"
-                            + "verify that Glacier2.SSLSessionManager is set to "
-                            + "<IceGridInstanceName>/AdminSSLSessionManager in your Glacier2 router configuration",
-                            "Login failed",
-                            JOptionPane.ERROR_MESSAGE);
-
-                        return null;
-                    }
+                    str += "ssl";
                 }
                 else
                 {
-                    router = Glacier2.RouterPrxHelper.uncheckedCast(router.ice_preferSecure(true));
-                    s = router.createSession(info.routerUsername, new String(info.routerPassword));
-
-                    if(s == null)
-                    {
-                        JOptionPane.showMessageDialog(
-                            parent,
-                            "createSession returned a null session: \n"
-                            + "verify that Glacier2.SessionManager is set to "
-                            + "<IceGridInstanceName>/AdminSessionManager in your Glacier2 router configuration",
-                            "Login failed",
-                            JOptionPane.ERROR_MESSAGE);
-
-                        return null;
-                    }
+                    str += "tcp";
                 }
-
-                session = AdminSessionPrxHelper.uncheckedCast(s);
-                keepAlivePeriodHolder.value = router.getSessionTimeout() * 1000 / 2;
-            }
-            catch(Glacier2.PermissionDeniedException e)
-            {
-                if(e.reason.length() == 0)
+                String host = info.getHost();
+                if(host.indexOf('"') == -1)
                 {
-                    e.reason = info.routerUseSSL ? "Invalid credentials" : "Invalid username/password";
+                    host = "\"" + host + "\"";
                 }
-                JOptionPane.showMessageDialog(parent,
-                                              "Permission denied: "
-                                              + e.reason,
-                                              "Login failed",
-                                              JOptionPane.ERROR_MESSAGE);
-                return null;
+                str += " -h " + host + " -p " + info.getPort();
             }
-            catch(Glacier2.CannotCreateSessionException e)
+            else
             {
-                JOptionPane.showMessageDialog(parent,
-                                              "Could not create session: "
-                                              + e.reason,
-                                              "Login failed",
-                                              JOptionPane.ERROR_MESSAGE);
-                return null;
+                str += ":" + info.getEndpoint();
             }
-            catch(Ice.LocalException e)
-            {
-                JOptionPane.showMessageDialog(parent,
-                                              "Could not create session: "
-                                              + e.toString(),
-                                              "Login failed",
-                                              JOptionPane.ERROR_MESSAGE);
-                return null;
-            }
+    
+            final String proxyStr = str;
+            final ConnectionCallback cb = new ConnectionCallback();
+            new Thread(new Runnable()
+                {
+                    public void run()
+                    {
+                        try
+                        {
+                            Glacier2.RouterPrx router = Glacier2.RouterPrxHelper.uncheckedCast(
+                                                                                 _communicator.stringToProxy(proxyStr));
+
+                            //
+                            // The session must be routed through this router
+                            //
+                            _communicator.setDefaultRouter(router);
+
+                            
+                            Glacier2.SessionPrx s;
+                            if(info.getAuth() == SessionKeeper.AuthType.X509CertificateAuthType)
+                            {
+                                router = Glacier2.RouterPrxHelper.uncheckedCast(router.ice_secure(true));
+
+                                s = router.createSessionFromSecureConnection();
+
+                                if(s == null)
+                                {
+                                    SwingUtilities.invokeLater(new Runnable()
+                                        {
+                                            public void run()
+                                            {
+                                                JOptionPane.showMessageDialog(
+                                                    parent,
+                                                    "createSessionFromSecureConnection returned a null session: \n"
+                                                    + "verify that Glacier2.SSLSessionManager is set to "
+                                                    + "<IceGridInstanceName>/AdminSSLSessionManager in your Glacier2 "
+                                                    + "router configuration",
+                                                    "Login failed",
+                                                    JOptionPane.ERROR_MESSAGE);
+                                                cb.loginFailed();
+                                            }
+                                        });
+                                    return;
+                                }
+                            }
+                            else
+                            {
+                                router = Glacier2.RouterPrxHelper.uncheckedCast(router.ice_preferSecure(true));
+
+                                s = router.createSession(info.getUsername(), info.getPassword() != null ? 
+                                                                                new String(info.getPassword()) : "");
+
+                                if(s == null)
+                                {
+                                    SwingUtilities.invokeLater(new Runnable()
+                                        {
+                                            public void run()
+                                            {
+                                                JOptionPane.showMessageDialog(
+                                                    parent,
+                                                    "createSession returned a null session: \n"
+                                                    + "verify that Glacier2.SessionManager is set to "
+                                                    + "<IceGridInstanceName>/AdminSessionManager in your Glacier2 "
+                                                    + "router configuration",
+                                                    "Login failed",
+                                                    JOptionPane.ERROR_MESSAGE);
+                                                cb.loginFailed();
+                                            }
+                                        });
+                                    return;
+                                }
+                            }
+                            cb.setSession(AdminSessionPrxHelper.uncheckedCast(s));
+                            cb.setKeepAlivePeriod(router.getSessionTimeout() * 1000 / 2);
+                            SwingUtilities.invokeLater(new Runnable()
+                                {
+                                    public void run()
+                                    {
+                                        cb.loginSuccess();
+                                    }
+                                });
+                        }
+                        catch(final Glacier2.PermissionDeniedException e)
+                        {
+                            SwingUtilities.invokeLater(new Runnable()
+                                {
+                                    public void run()
+                                    {
+                                        String msg = e.reason;
+                                        if(msg.length() == 0)
+                                        {
+                                            msg = info.getAuth() == SessionKeeper.AuthType.X509CertificateAuthType ? 
+                                                                 "Invalid credentials" : "Invalid username/password";
+                                        }
+                                        if(info.getAuth() == SessionKeeper.AuthType.X509CertificateAuthType)
+                                        {
+                                            JOptionPane.showMessageDialog(parent,
+                                                                        "Permission denied: "
+                                                                        + msg,
+                                                                        "Login failed",
+                                                                        JOptionPane.ERROR_MESSAGE);
+                                            cb.loginFailed();
+                                        }
+                                        else
+                                        {
+                                            cb.permissionDenied(msg);
+                                        }
+                                    }
+                                });
+                            return;
+                        }
+                        catch(final Glacier2.CannotCreateSessionException e)
+                        {
+                            SwingUtilities.invokeLater(new Runnable()
+                                {
+                                    public void run()
+                                    {
+                                        JOptionPane.showMessageDialog(parent, "Could not create session: "
+                                                                    + e.reason,
+                                                                    "Login failed",
+                                                                    JOptionPane.ERROR_MESSAGE);
+                                        cb.loginFailed();
+                                    }
+                                });
+                            return;
+                        }
+                        catch(final Ice.LocalException e)
+                        {
+                            SwingUtilities.invokeLater(new Runnable()
+                                {
+                                    public void run()
+                                    {
+                                        JOptionPane.showMessageDialog(parent,
+                                                                    "Could not create session: "
+                                                                    + e.toString(),
+                                                                    "Login failed",
+                                                                    JOptionPane.ERROR_MESSAGE);
+                                        cb.loginFailed();
+                                    }
+                                });
+                            return;
+                        }
+                    }
+                }).start();
         }
         else
         {
-            if(info.registryEndpoints.equals(""))
+            class RegistryCallback extends ConnectionCallback
+            {
+                synchronized public void setRegistry(RegistryPrx registry)
+                {
+                    _registry = registry;
+                }
+
+                synchronized public RegistryPrx getRegistry()
+                {
+                    return _registry;
+                }
+
+                synchronized public void setCurrentRegistry(RegistryPrx value)
+                {
+                    _currentRegistry = value;
+                }
+
+                synchronized public RegistryPrx getCurrentRegistry()
+                {
+                    return _currentRegistry;
+                }
+
+                synchronized public void setLocator(IceGrid.LocatorPrx locator)
+                {
+                    _locator = locator;
+                }
+
+                synchronized public IceGrid.LocatorPrx getLocator()
+                {
+                    return _locator;
+                }
+    
+                private IceGrid.LocatorPrx _locator;
+                private RegistryPrx _registry;
+                private RegistryPrx _currentRegistry;
+            }
+
+            final RegistryCallback cb = new RegistryCallback();
+
+            if(info.getCustomEndpoint() && info.getEndpoint().equals(""))
             {
                 JOptionPane.showMessageDialog(
                     parent,
-                    "You need to provide one or more endpoint for the Registry",
+                    "You need to provide one or more endpoints for the Registry",
                     "Login failed",
                     JOptionPane.ERROR_MESSAGE);
-
-                return null;
+                cb.loginFailed();
+                return;
             }
 
             //
             // The client uses the locator only without routing
             //
             Ice.Identity locatorId = new Ice.Identity();
-            locatorId.category = info.registryInstanceName;
+            locatorId.category = info.getInstanceName();
             locatorId.name = "Locator";
             String str = "\"" + _communicator.identityToString(locatorId) + "\"";
-            str += ":" + info.registryEndpoints;
-
-            RegistryPrx currentRegistry = null;
-            IceGrid.LocatorPrx defaultLocator = null;
-            try
+            if(info.getDefaultEndpoint())
             {
-                defaultLocator = IceGrid.LocatorPrxHelper.checkedCast(_communicator.stringToProxy(str));
-                if(defaultLocator == null)
+                str += ":";
+                if(info.getSSL())
                 {
-                    JOptionPane.showMessageDialog(
-                        parent,
-                        "This version of IceGrid Admin requires an IceGrid Registry version 3.3",
-                        "Version Mismatch",
-                        JOptionPane.ERROR_MESSAGE);
-                    return null;
+                    str += "ssl";
                 }
-
-                currentRegistry = defaultLocator.getLocalRegistry();
-
-                _communicator.setDefaultLocator(defaultLocator);
-            }
-            catch(Ice.LocalException e)
-            {
-                JOptionPane.showMessageDialog(
-                    parent,
-                    "Could not contact '" + str + "': " + e.toString(),
-                    "Login failed",
-                    JOptionPane.ERROR_MESSAGE);
-                return null;
-            }
-
-            RegistryPrx registry = currentRegistry;
-            if(info.connectToMaster && !currentRegistry.ice_getIdentity().name.equals("Registry"))
-            {
-                Ice.Identity masterRegistryId = new Ice.Identity();
-                masterRegistryId.category = info.registryInstanceName;
-                masterRegistryId.name = "Registry";
-
-                registry = RegistryPrxHelper.
-                    uncheckedCast(_communicator.stringToProxy(
-                                      "\"" + _communicator.identityToString(masterRegistryId) + "\""));
-            }
-
-            //
-            // If the registry to use is the locator local registry, we install a default router
-            // to ensure we'll use a single connection regardless of the endpoints returned in the
-            // proxies of the various session/admin methods (useful if used over an ssh tunnel).
-            //
-            if(registry.ice_getIdentity().equals(currentRegistry.ice_getIdentity()))
-            {
-                Ice.Properties properties = _communicator.getProperties();
-                properties.setProperty("CollocInternal.AdapterId", java.util.UUID.randomUUID().toString());
-                Ice.ObjectAdapter colloc = _communicator.createObjectAdapter("CollocInternal");
-                colloc.setLocator(null);
-                Ice.ObjectPrx router = colloc.addWithUUID(new ReuseConnectionRouter(defaultLocator));
-                _communicator.setDefaultRouter(Ice.RouterPrxHelper.uncheckedCast(router));
-                registry = RegistryPrxHelper.uncheckedCast(registry.ice_router(_communicator.getDefaultRouter()));
-            }
-
-            do
-            {
-                try
+                else
                 {
-                    if(info.registryUseSSL)
-                    {
-                        registry = RegistryPrxHelper.uncheckedCast(registry.ice_secure(true));
-
-                        session = registry.createAdminSessionFromSecureConnection();
-                        assert session != null;
-                    }
-                    else
-                    {
-                        registry = RegistryPrxHelper.uncheckedCast(registry.ice_preferSecure(true));
-
-                        session = registry.createAdminSession(info.registryUsername,
-                                                        new String(info.registryPassword));
-                        assert session != null;
-                    }
-                    keepAlivePeriodHolder.value = registry.getSessionTimeout() * 1000 / 2;
+                    str += "tcp";
                 }
-                catch(IceGrid.PermissionDeniedException e)
+                String host = info.getHost();
+                if(host.indexOf('"') == -1)
                 {
-                    JOptionPane.showMessageDialog(parent,
-                                                  "Permission denied: "
-                                                  + e.reason,
-                                                  "Login failed",
-                                                  JOptionPane.ERROR_MESSAGE);
-                    return null;
+                    host = "\"" + host + "\"";
                 }
-                catch(Ice.LocalException e)
+                str += " -h " + host + " -p " + info.getPort();
+            }
+            else
+            {
+                str += ":" + info.getEndpoint();
+            }
+
+            final String proxyStr = str;
+
+            new Thread(new Runnable()
                 {
-                    if(registry.ice_getIdentity().equals(currentRegistry.ice_getIdentity()))
+                    public void run()
                     {
-                        JOptionPane.showMessageDialog(parent,
-                                                      "Could not create session: "
-                                                      + e.toString(),
-                                                      "Login failed",
-                                                      JOptionPane.ERROR_MESSAGE);
-                        return null;
-                    }
-                    else
-                    {
-                        if(JOptionPane.showConfirmDialog(
-                               parent,
-                               "Unable to connect to the Master Registry:\n " + e.toString()
-                               + "\n\nDo you want to connect to a Slave Registry?",
-                               "Cannot connect to Master Registry",
-                               JOptionPane.YES_NO_OPTION,
-                               JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION)
+                        synchronized(Coordinator.this)
                         {
-                            registry = currentRegistry;
-                        }
-                        else
-                        {
-                            return null;
+                            try
+                            {
+                                cb.setLocator(
+                                        IceGrid.LocatorPrxHelper.checkedCast(_communicator.stringToProxy(proxyStr)));
+
+                                if(cb.getLocator() == null)
+                                {
+                                    SwingUtilities.invokeLater(new Runnable()
+                                        {
+                                            public void run()
+                                            {
+                                                JOptionPane.showMessageDialog(
+                                                    parent,
+                                                    "This version of IceGrid Admin requires an IceGrid Registry "
+                                                    + "version 3.3",
+                                                    "Version Mismatch",
+                                                    JOptionPane.ERROR_MESSAGE);
+                                                cb.loginFailed();
+                                            }
+                                        });
+                                    return;
+                                }
+                                cb.setCurrentRegistry(cb.getLocator().getLocalRegistry());
+                                _communicator.setDefaultLocator(cb.getLocator());
+                            }
+                            catch(final Ice.LocalException e)
+                            {
+                                SwingUtilities.invokeLater(new Runnable()
+                                    {
+                                        public void run()
+                                        {
+                                            JOptionPane.showMessageDialog(
+                                                parent,
+                                                "Could not contact '" + proxyStr + "': " + e.toString(),
+                                                "Login failed",
+                                                JOptionPane.ERROR_MESSAGE);
+                                            cb.loginFailed();
+                                        }
+                                    });
+                                return;
+                            }
+
+                            cb.setRegistry(cb.getCurrentRegistry());
+                            if(info.getConnectToMaster() && 
+                               !cb.getCurrentRegistry().ice_getIdentity().name.equals("Registry"))
+                            {
+                                Ice.Identity masterRegistryId = new Ice.Identity();
+                                masterRegistryId.category = info.getInstanceName();
+                                masterRegistryId.name = "Registry";
+                
+                                cb.setRegistry(RegistryPrxHelper.
+                                    uncheckedCast(_communicator.stringToProxy(
+                                                    "\"" + _communicator.identityToString(masterRegistryId) + "\"")));
+                            }
+
+                            //
+                            // If the registry to use is the locator local registry, we install a default router
+                            // to ensure we'll use a single connection regardless of the endpoints returned in the
+                            // proxies of the various session/admin methods (useful if used over an ssh tunnel).
+                            //
+                            if(cb.getRegistry().ice_getIdentity().equals(cb.getCurrentRegistry().ice_getIdentity()))
+                            {
+                                Ice.Properties properties = _communicator.getProperties();
+                                properties.setProperty("CollocInternal.AdapterId", 
+                                                       java.util.UUID.randomUUID().toString());
+                                Ice.ObjectAdapter colloc = _communicator.createObjectAdapter("CollocInternal");
+                                colloc.setLocator(null);
+                                Ice.ObjectPrx router = colloc.addWithUUID(new ReuseConnectionRouter(cb.getLocator()));
+                                _communicator.setDefaultRouter(Ice.RouterPrxHelper.uncheckedCast(router));
+                                cb.setRegistry(RegistryPrxHelper.uncheckedCast(cb.getRegistry().ice_router(
+                                                                                _communicator.getDefaultRouter())));
+                            }
+                            do
+                            {
+                                try
+                                {
+                                    if(info.getAuth() == SessionKeeper.AuthType.X509CertificateAuthType)
+                                    {
+                                        cb.setRegistry(RegistryPrxHelper.uncheckedCast(
+                                                                                cb.getRegistry().ice_secure(true)));
+                                        cb.setSession(cb.getRegistry().createAdminSessionFromSecureConnection());
+                                        assert cb.getSession() != null;
+                                    }
+                                    else
+                                    {
+                                        cb.setRegistry(RegistryPrxHelper.uncheckedCast(
+                                                                            cb.getRegistry().ice_preferSecure(true)));
+
+                                        cb.setSession(cb.getRegistry().createAdminSession(info.getUsername(), 
+                                                    info.getPassword() != null ? new String(info.getPassword()) : ""));
+                                        assert cb.getSession() != null;
+                                    }
+                                    cb.setKeepAlivePeriod(cb.getRegistry().getSessionTimeout() * 1000 / 2);
+                                }
+                                catch(final IceGrid.PermissionDeniedException e)
+                                {
+                                    SwingUtilities.invokeLater(new Runnable()
+                                        {
+                                            public void run()
+                                            {
+                                                String msg = e.reason;
+                                                if(msg.length() == 0)
+                                                {
+                                                    msg = info.getAuth() == SessionKeeper.AuthType.X509CertificateAuthType ? 
+                                                                         "Invalid credentials" : "Invalid username/password";
+                                                }
+
+                                                if(info.getAuth() == SessionKeeper.AuthType.X509CertificateAuthType)
+                                                {
+                                                    JOptionPane.showMessageDialog(parent,
+                                                                                "Permission denied: "
+                                                                                + e.reason,
+                                                                                "Login failed",
+                                                                                JOptionPane.ERROR_MESSAGE);
+                                                    cb.loginFailed();
+                                                }
+                                                else
+                                                {
+                                                    cb.permissionDenied(msg);
+                                                }
+                                            }
+                                        });
+                                    return;
+                                }
+                                catch(final Ice.LocalException e)
+                                {
+                                    if(cb.getRegistry().ice_getIdentity().equals(cb.getCurrentRegistry().ice_getIdentity()))
+                                    {
+                                        SwingUtilities.invokeLater(new Runnable()
+                                            {
+                                                public void run()
+                                                {
+                                                    JOptionPane.showMessageDialog(parent,
+                                                                                "Could not create session: "
+                                                                                + e.toString(),
+                                                                                "Login failed",
+                                                                                JOptionPane.ERROR_MESSAGE);
+                                                    cb.loginFailed();
+                                                }
+                                            });
+                                        return;
+                                    }
+                                    else
+                                    {
+                                        SwingUtilities.invokeLater(new Runnable()
+                                            {
+                                                public void run()
+                                                {
+                                                    if(JOptionPane.showConfirmDialog(
+                                                        parent,
+                                                        "Unable to connect to the Master Registry:\n " + e.toString()
+                                                        + "\n\nDo you want to connect to a Slave Registry?",
+                                                        "Cannot connect to Master Registry",
+                                                        JOptionPane.YES_NO_OPTION,
+                                                        JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION)
+                                                    {
+                                                        cb.setRegistry(cb.getCurrentRegistry());
+                                                    }
+                                                    else
+                                                    {
+                                                        cb.loginFailed();                                                        
+                                                    }
+                                                }
+                                            });
+                                        if(cb.failed())
+                                        {
+                                            return;
+                                        }
+                                    }
+                                }
+                            }while(cb.getSession() == null);
+
+                            SwingUtilities.invokeLater(new Runnable()
+                                {
+                                    public void run()
+                                    {
+                                        cb.loginSuccess();
+                                    }
+                                });
                         }
                     }
-                }
-            } while(session == null);
+                }).start();
         }
-
-        _logout.setEnabled(true);
-        _showLiveDeploymentFilters.setEnabled(true);
-        _openApplicationFromRegistry.setEnabled(true);
-        _patchApplication.setEnabled(true);
-        _showApplicationDetails.setEnabled(true);
-        _removeApplicationFromRegistry.setEnabled(true);
-        _appMenu.setEnabled(true);
-        _newApplicationWithDefaultTemplates.setEnabled(true);
-        _acquireExclusiveWriteAccess.setEnabled(true);
-        _mainPane.setSelectedComponent(_liveDeploymentPane);
-
-        return session;
     }
 
     void destroySession(AdminSessionPrx session)
@@ -1527,22 +2213,22 @@ public class Coordinator
             {
                 Glacier2.RouterPrx gr = Glacier2.RouterPrxHelper.uncheckedCast(router);
 
-                Glacier2.AMI_Router_destroySession cb = new Glacier2.AMI_Router_destroySession()
+                Glacier2.Callback_Router_destroySession cb = new Glacier2.Callback_Router_destroySession()
                     {
-                        public void ice_response()
+                        public void response()
                         {
                         }
 
-                        public void ice_exception(Ice.LocalException ex)
+                        public void exception(Ice.LocalException ex)
                         {
                         }
 
-                        public void ice_exception(Ice.UserException ex)
+                        public void exception(Ice.UserException ex)
                         {
                         }
                     };
 
-                gr.destroySession_async(cb);
+                gr.begin_destroySession(cb);
             }
         }
         catch(Ice.LocalException e)
@@ -1869,6 +2555,7 @@ public class Coordinator
                 {
                     destroyIceGridAdmin();
                     destroyCommunicator();
+                    destroyWizardCommunicator();
                 }
             };
 
@@ -1950,7 +2637,7 @@ public class Coordinator
             {
                 public void actionPerformed(ActionEvent e)
                 {
-                    _sessionKeeper.relog(true);
+                    _sessionKeeper.connectionManager();
                 }
             };
         _login.putValue(Action.SHORT_DESCRIPTION, "Log into an IceGrid Registry");
@@ -1959,6 +2646,22 @@ public class Coordinator
             {
                 public void actionPerformed(ActionEvent e)
                 {
+                    if(_graphViews.size() > 0)
+                    {
+                        if(JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(getMainFrame(),
+                                                                            "Close all open Metrics Graph Views and logout?",
+                                                                            "Confirm logout",
+                                                                            JOptionPane.YES_NO_OPTION))
+                        {
+                            return;
+                        }
+                        
+                        java.util.List<GraphView> views = new java.util.ArrayList<GraphView>(_graphViews);
+                        for(GraphView v : views)
+                        {
+                            v.close();
+                        }
+                    }
                     _sessionKeeper.logout(true);
                 }
             };
@@ -1998,6 +2701,15 @@ public class Coordinator
                                               "Release exclusive write access on the registry");
         _releaseExclusiveWriteAccess.setEnabled(false);
 
+        _newGraph = new AbstractAction("Metrics Graph")
+            {
+                public void actionPerformed(ActionEvent e)
+                {
+                    createGraphView();
+                }
+            };
+        _newGraph.setEnabled(false);
+
         _showLiveDeploymentFilters = new AbstractAction("Filter live deployment")
             {
                 public void actionPerformed(ActionEvent e)
@@ -2009,7 +2721,7 @@ public class Coordinator
                     {
                         JOptionPane.showMessageDialog(
                             _mainFrame,
-                            "The registry does not contain any application",
+                            "The registry does not contain any applications",
                             "Empty registry",
                             JOptionPane.INFORMATION_MESSAGE);
                     }
@@ -2090,7 +2802,7 @@ public class Coordinator
                     {
                         JOptionPane.showMessageDialog(
                             _mainFrame,
-                            "The registry does not contain any application",
+                            "The registry does not contain any applications",
                             "Empty registry",
                             JOptionPane.INFORMATION_MESSAGE);
                     }
@@ -2158,15 +2870,26 @@ public class Coordinator
                        KeyStroke.getKeyStroke(KeyEvent.VK_S, MENU_MASK));
         _save.putValue(Action.SHORT_DESCRIPTION, "Save");
 
-        _saveToRegistry = new AbstractAction("Save to Registry")
+        _saveToRegistry = new AbstractAction("Save to Registry (Servers may restart)")
             {
                 public void actionPerformed(ActionEvent e)
                 {
-                    getCurrentTab().saveToRegistry();
+                    getCurrentTab().saveToRegistry(true);
                 }
             };
         _saveToRegistry.setEnabled(false);
-        _saveToRegistry.putValue(Action.SHORT_DESCRIPTION, "Save to registry");
+        _saveToRegistry.putValue(Action.SHORT_DESCRIPTION, "Save to registry (servers may restart)");
+
+
+        _saveToRegistryWithoutRestart = new AbstractAction("Save to Registry (No server restart)")
+            {
+                public void actionPerformed(ActionEvent e) 
+                {
+                    getCurrentTab().saveToRegistry(false);
+                }
+            };
+        _saveToRegistryWithoutRestart.setEnabled(false);
+        _saveToRegistryWithoutRestart.putValue(Action.SHORT_DESCRIPTION, "Save to registry (no server restart)");
 
         _saveToFile = new AbstractAction("Save to File")
             {
@@ -2187,6 +2910,19 @@ public class Coordinator
             };
         _discardUpdates.setEnabled(false);
         _discardUpdates.putValue(Action.SHORT_DESCRIPTION, "Discard updates and reload application");
+
+        _certificateManager = new AbstractAction("Certificate Manager...")
+            {
+                public void actionPerformed(ActionEvent e)
+                {
+                    SessionKeeper.CertificateManagerDialog d = _sessionKeeper.certificateManager(getMainFrame());
+                    if(d != null)
+                    {
+                        d.showDialog();
+                    }
+                }
+            };
+        _certificateManager.putValue(Action.SHORT_DESCRIPTION, "Manage SSL Certificates");
 
         _exit = new AbstractAction("Exit")
             {
@@ -2384,6 +3120,20 @@ public class Coordinator
         _mainFrame.getContentPane().add(_mainPane, BorderLayout.CENTER);
     }
 
+    public GraphView createGraphView()
+    {
+        StringBuilder title = new StringBuilder();
+        title.append("Metrics Graph");
+        if(_graphViews.size() > 0)
+        {
+            title.append(" - ");
+            title.append(Integer.toString(_graphViews.size()));
+        }
+        GraphView view = new GraphView(Coordinator.this, title.toString());
+        _graphViews.add(view);
+        return view;
+    }
+
     public LiveDeploymentPane getLiveDeploymentPane()
     {
         return _liveDeploymentPane;
@@ -2452,54 +3202,22 @@ public class Coordinator
 
     private void helpContents()
     {
-        if(System.getProperty("os.name").startsWith("Windows"))
+        int pos = Ice.Util.stringVersion().indexOf('b');
+        if(pos == -1)
         {
-            java.net.URL url = ClassLoader.getSystemResource("IceGridAdmin.chm");
-            if(url != null)
-            {
-                //
-                // Get rid of the leading "/"
-                //
-                String path = url.getPath().substring(1);
-                try
-                {
-                    path = java.net.URLDecoder.decode(path, "UTF-8");
-                }
-                catch(java.io.UnsupportedEncodingException ex)
-                {
-                }
-                try
-                {
-                    Runtime.getRuntime().exec("hh.exe " + path);
-                    return; // success
-                }
-                catch(java.io.IOException ex)
-                {
-                    _initData.logger.warning(ex.toString());
-                }
-            }
+            pos = Ice.Util.stringVersion().lastIndexOf('.');
+            assert(pos != -1);
         }
-
-        //
-        // Otherwise, browser based-help
-        //
-        java.net.URL url = ClassLoader.getSystemResource("IceGridAdmin/index.html");
-        if(url != null)
-        {
-            BareBonesBrowserLaunch.openURL(url.toString());
-        }
-        else
-        {
-            BareBonesBrowserLaunch.openURL("http://www.zeroc.com/doc/Ice-"
-                                           + Ice.Util.stringVersion() + "/IceGridAdmin/index.html");
-        }
+        
+        String version = Ice.Util.stringVersion().substring(0, pos);
+        BareBonesBrowserLaunch.openURL("http://doc.zeroc.com/display/Rel/Ice+" + version + "+IceGrid+Admin");
     }
 
     private void about()
     {
         String text = "IceGrid Admin version "
             + Ice.Util.stringVersion() + "\n"
-            + "Copyright \u00A9 2005-2011 ZeroC, Inc. All rights reserved.\n";
+            + "Copyright \u00A9 2005-2013 ZeroC, Inc. All rights reserved.\n";
 
         JOptionPane.showMessageDialog(
             _mainFrame,
@@ -2530,6 +3248,23 @@ public class Coordinator
 
     void exit(int status)
     {
+        if(_graphViews.size() > 0)
+        {
+            if(JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(getMainFrame(),
+                                                                       "Close all open windows and exit?",
+                                                                       "Confirm exit",
+                                                                       JOptionPane.YES_NO_OPTION))
+            {
+                return;
+            }
+            
+            java.util.List<GraphView> views = new java.util.ArrayList<GraphView>(_graphViews);
+            for(GraphView v : views)
+            {
+                v.close();
+            }
+        }
+
         if(_openChooser != null)
         {
             File dir = _openChooser.getCurrentDirectory();
@@ -2545,6 +3280,7 @@ public class Coordinator
 
         destroyIceGridAdmin();
         destroyCommunicator();
+        destroyWizardCommunicator();
         Runtime.getRuntime().removeShutdownHook(_shutdownHook);
         _mainFrame.dispose();
         Runtime.getRuntime().exit(status);
@@ -2571,6 +3307,27 @@ public class Coordinator
         }
     }
 
+    //
+    // Can be called by the shutdown hook thread
+    //
+    private void destroyWizardCommunicator()
+    {
+        if(_wizardCommunicator != null)
+        {
+            try
+            {
+                _wizardCommunicator.destroy();
+            }
+            catch(Ice.LocalException e)
+            {
+                System.err.println("_wizardCommunicator.destroy() raised "
+                                   + e.toString());
+                e.printStackTrace();
+            }
+            _wizardCommunicator = null;
+        }
+    }
+
     private boolean loadWindowPrefs()
     {
         try
@@ -2591,9 +3348,15 @@ public class Coordinator
         int width = windowPrefs.getInt("width", 0);
         int height = windowPrefs.getInt("height", 0);
         _mainFrame.setBounds(new Rectangle(x, y, width, height));
-        if(windowPrefs.getBoolean("maximized", false))
+        //
+        // This doesn't work well with OS X 10.8
+        //
+        if(!System.getProperty("os.name").startsWith("Mac OS"))
         {
-            _mainFrame.setExtendedState(Frame.MAXIMIZED_BOTH);
+            if(windowPrefs.getBoolean("maximized", false))
+            {
+                _mainFrame.setExtendedState(Frame.MAXIMIZED_BOTH);
+            }
         }
         return true;
     }
@@ -2606,8 +3369,13 @@ public class Coordinator
         windowPrefs.putInt("y", rect.y);
         windowPrefs.putInt("width", rect.width);
         windowPrefs.putInt("height", rect.height);
-        windowPrefs.putBoolean("maximized",
-                               _mainFrame.getExtendedState() == Frame.MAXIMIZED_BOTH);
+        //
+        // This doesn't work well with OS X 10.8
+        //
+        if(!System.getProperty("os.name").startsWith("Mac OS"))
+        {
+            windowPrefs.putBoolean("maximized", _mainFrame.getExtendedState() == Frame.MAXIMIZED_BOTH);
+        }
     }
 
     public AdminSessionPrx getSession()
@@ -2658,8 +3426,11 @@ public class Coordinator
         _newServerMenu.setEnabled(false);
         _newServiceMenu.setEnabled(false);
         _newTemplateMenu.setEnabled(false);
-
+        
         _appMenu.setEnabled(true);
+
+        _metricsViewMenu.setEnabled(availableActions[IceGridGUI.LiveDeployment.TreeNode.ENABLE_METRICS_VIEW] ||
+                                    availableActions[IceGridGUI.LiveDeployment.TreeNode.DISABLE_METRICS_VIEW]);
 
         _nodeMenu.setEnabled(availableActions[IceGridGUI.LiveDeployment.TreeNode.SHUTDOWN_NODE]);
 
@@ -2670,9 +3441,9 @@ public class Coordinator
         _serverMenu.setEnabled(availableActions[IceGridGUI.LiveDeployment.TreeNode.OPEN_DEFINITION]);
 
         _serviceMenu.setEnabled(node instanceof IceGridGUI.LiveDeployment.Service &&
-				(availableActions[IceGridGUI.LiveDeployment.TreeNode.RETRIEVE_LOG] ||
-				 availableActions[IceGridGUI.LiveDeployment.TreeNode.START] ||
-				 availableActions[IceGridGUI.LiveDeployment.TreeNode.STOP]));
+                                (availableActions[IceGridGUI.LiveDeployment.TreeNode.RETRIEVE_LOG] ||
+                                 availableActions[IceGridGUI.LiveDeployment.TreeNode.START] ||
+                                 availableActions[IceGridGUI.LiveDeployment.TreeNode.STOP]));
     }
 
     public void showActions(IceGridGUI.Application.TreeNode node)
@@ -2695,11 +3466,19 @@ public class Coordinator
             availableActions[IceGridGUI.Application.TreeNode.NEW_TEMPLATE_SERVICE]);
 
         _appMenu.setEnabled(false);
+        _metricsViewMenu.setEnabled(false);
         _nodeMenu.setEnabled(false);
         _registryMenu.setEnabled(false);
         _signalMenu.setEnabled(false);
         _serverMenu.setEnabled(false);
         _serviceMenu.setEnabled(false);
+
+        enableTreeEditActions();
+    }
+
+    public void removeGraphView(GraphView view)
+    {
+        _graphViews.remove(view);
     }
 
     public boolean traceObservers()
@@ -2726,11 +3505,80 @@ public class Coordinator
     {
         _connected = connected;
         _statusBar.setConnected(connected);
+        _newGraph.setEnabled(connected);
     }
 
     public boolean connected()
     {
         return _connected;
+    }
+
+    public String getDataDirectory() throws java.lang.Exception
+    {
+        if(_dataDir == null)
+        {
+            if(System.getProperty("os.name").startsWith("Windows"))
+            {
+                String regKey = "\"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\"";
+                String regQuery = "reg query " + regKey + " /v Personal";
+                try
+                {
+                    java.lang.Process process = Runtime.getRuntime().exec(regQuery);
+                    process.waitFor();
+                    if(process.exitValue() != 0)
+                    {
+                        throw new Exception("Could not read Windows registry key `" + regKey + "'");
+                    }
+
+                    java.io.InputStream is = process.getInputStream();
+                    java.io.StringWriter sw = new java.io.StringWriter();
+                    int c;
+                    while((c = is.read()) != -1)
+                    {
+                        sw.write(c);
+                    }
+                    String[] result = sw.toString().split("\n");
+                    for(String line : result)
+                    {
+                        int i = line.indexOf("REG_SZ");
+                        if(i == -1)
+                        {
+                            continue;
+                        }
+                        _dataDir = line.substring(i + "REG_SZ".length(), line.length()).trim();
+                        break;
+                    }
+                    if(_dataDir == null)
+                    {
+                        throw new Exception("Could not get Documents dir from Windows registry key `" + regKey + "'");
+                    }
+                    _dataDir += File.separator + "ZeroC" + File.separator + "IceGrid Admin" + File.separator + "KeyStore";
+                }
+                catch(java.io.IOException ex)
+                {
+                    throw new Exception("Could not read Windows registry key `" + regKey + "'\n" + ex.toString());
+                }
+                catch(java.lang.InterruptedException ex)
+                {
+                    throw new Exception("Could not read Windows registry key `" + regKey + "'\n" + ex.toString());
+                }
+            }
+            else
+            {
+                _dataDir = System.getProperty("user.home") + File.separator + ".ZeroC" + File.separator + "IceGrid Admin" + 
+                                                                                            File.separator + "KeyStore";
+            }
+        }
+        if(!new File(_dataDir).isDirectory())
+        {
+            new File(_dataDir).mkdirs();
+        }
+        return _dataDir;
+    }
+
+    public GraphView[] getGraphViews()
+    {
+        return _graphViews.toArray(new GraphView[_graphViews.size()]);
     }
 
     //
@@ -2745,6 +3593,119 @@ public class Coordinator
         _initData.logger.trace(category, message);
     }
 
+    static class UntrustedCertificateDialog extends JDialog
+    {
+        public UntrustedCertificateDialog(java.awt.Window owner, IceSSL.NativeConnectionInfo info, boolean validDate,
+                                          boolean validAlternateName, boolean trustedCA) 
+                                            throws java.security.GeneralSecurityException, java.io.IOException, 
+                                                   javax.naming.InvalidNameException
+        {
+            super(owner, "Connection Security Warning - IceGrid Admin");
+            setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
+            Container contentPane = getContentPane();
+            contentPane.setLayout(new BoxLayout(contentPane, BoxLayout.Y_AXIS));
+
+            X509Certificate cert = (X509Certificate)info.nativeCerts[0];
+            {
+                DefaultFormBuilder builder = new DefaultFormBuilder(new FormLayout("pref", "pref"));
+                builder.border(Borders.DIALOG);
+                builder.rowGroupingEnabled(true);
+                builder.lineGapSize(LayoutStyle.getCurrent().getLinePad());
+                
+                builder.append(new JLabel("The validation of the SSL Certificate provided by the server has failed"));
+
+                if(validDate)
+                {
+                    builder.append(new JLabel("The certificate date is valid.", _infoIcon, SwingConstants.LEADING));
+                }
+                else
+                {
+                    builder.append(new JLabel("The certificate date is invalid.", _warnIcon, SwingConstants.LEADING));
+                }
+
+                if(validAlternateName)
+                {
+                    builder.append(new JLabel("The subject alternate name matches the connection remote address.",
+                                   _infoIcon, SwingConstants.LEADING));
+                }
+                else
+                {
+                    builder.append(new JLabel("The subject alternate name doesn't match the connection remote address.", 
+                                   _warnIcon, SwingConstants.LEADING));
+                }
+
+                if(trustedCA)
+                {
+                    builder.append(new JLabel("The server certificate is signed by a trusted CA.", _infoIcon, 
+                                   SwingConstants.LEADING));
+                }
+                else
+                {
+                    builder.append(new JLabel("The server certificate is not signed by a trusted CA.", _warnIcon, 
+                                   SwingConstants.LEADING));
+                }
+                contentPane.add(builder.getPanel());
+            }
+
+            contentPane.add(SessionKeeper.getSubjectPanel(cert));
+            contentPane.add(SessionKeeper.getSubjectAlternativeNamesPanel(cert));
+            contentPane.add(SessionKeeper.getIssuerPanel(cert));
+            contentPane.add(SessionKeeper.getValidityPanel(cert));
+            contentPane.add(SessionKeeper.getFingerprintPanel(cert));
+
+            JButton yesAlwaysButton = new JButton(new AbstractAction("Yes, Always Trust")
+                {
+                    public void actionPerformed(ActionEvent e)
+                    {
+                        _decision = TrustDecision.YesAlways;
+                        dispose();
+                    }
+                });
+
+            JButton yesButton = new JButton(new AbstractAction("Yes, Just This Time")
+                {
+                    public void actionPerformed(ActionEvent e)
+                    {
+                        _decision = TrustDecision.YesThisTime;
+                        dispose();
+                    }
+                });
+
+            JButton noButton = new JButton(new AbstractAction("No")
+                {
+                    public void actionPerformed(ActionEvent e)
+                    {
+                        _decision = TrustDecision.No;
+                        dispose();
+                    }
+                });
+            getRootPane().setDefaultButton(noButton);
+            JComponent buttonBar = new ButtonBarBuilder().addGlue().addButton(yesAlwaysButton, yesButton, 
+                                                                              noButton).build();
+            buttonBar.setBorder(Borders.DIALOG);
+            contentPane.add(buttonBar);
+            pack();
+            setResizable(false);
+        }
+
+        TrustDecision showDialog()
+        {
+            setLocationRelativeTo(getOwner());
+            setModal(true);
+            setVisible(true);
+            return _decision;
+        }
+
+        private TrustDecision _decision = TrustDecision.No;
+        private static Icon _infoIcon = new ImageIcon(Utils.iconToImage(UIManager.getIcon("OptionPane.informationIcon")).
+                                                               getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH ));
+                
+        private static Icon _warnIcon = new ImageIcon(Utils.iconToImage(UIManager.getIcon("OptionPane.warningIcon")).
+                                                               getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH ));
+    }
+
+    private String _dataDir;
     private final Ice.InitializationData _initData;
     private Ice.Communicator _communicator;
 
@@ -2777,6 +3738,7 @@ public class Coordinator
     private boolean _substitute = false;
 
     private JFrame _mainFrame;
+    private Ice.Communicator _wizardCommunicator;
     private final SessionKeeper _sessionKeeper;
 
     private Object _clipboard;
@@ -2791,14 +3753,18 @@ public class Coordinator
     private Action _acquireExclusiveWriteAccess;
     private Action _releaseExclusiveWriteAccess;
 
+    private Action _newGraph;
+
     private Action _showLiveDeploymentFilters;
     private Action _openApplicationFromFile;
     private Action _openApplicationFromRegistry;
     private Action _closeApplication;
     private Action _save;
     private Action _saveToRegistry;
+    private Action _saveToRegistryWithoutRestart;
     private Action _saveToFile;
     private Action _discardUpdates;
+    private Action _certificateManager;
     private Action _exit;
     private Action _back;
     private Action _forward;
@@ -2842,6 +3808,7 @@ public class Coordinator
     private JMenu _newServiceMenu;
     private JMenu _newTemplateMenu;
     private JMenu _appMenu;
+    private JMenu _metricsViewMenu;
     private JMenu _nodeMenu;
     private JMenu _registryMenu;
     private JMenu _serverMenu;
@@ -2857,6 +3824,10 @@ public class Coordinator
     private Process _icegridadminProcess;
     private String _fileParser;
     private boolean _connected;
+
+    private X509Certificate _trasientCert;
+
+    private java.util.List<GraphView> _graphViews = new java.util.ArrayList<GraphView>();
 
     static private final int HISTORY_MAX_SIZE = 20;
 }

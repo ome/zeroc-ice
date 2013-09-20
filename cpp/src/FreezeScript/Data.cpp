@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -61,7 +61,7 @@ public:
 
     ObjectReader(const DataFactoryPtr&, const Slice::TypePtr&);
 
-    virtual void read(const Ice::InputStreamPtr&, bool);
+    virtual void read(const Ice::InputStreamPtr&);
 
     ObjectDataPtr getValue() const;
 
@@ -86,6 +86,8 @@ FreezeScript::ObjectWriter::ObjectWriter(const ObjectDataPtr& value) :
 void
 FreezeScript::ObjectWriter::write(const Ice::OutputStreamPtr& out) const
 {
+    out->startObject(0);
+
     Slice::ClassDeclPtr decl = Slice::ClassDeclPtr::dynamicCast(_value->_type);
     Slice::ClassDefPtr type;
     if(decl)
@@ -94,8 +96,14 @@ FreezeScript::ObjectWriter::write(const Ice::OutputStreamPtr& out) const
     }
     while(type)
     {
-        out->writeTypeId(type->scoped());
-        out->startSlice();
+        Slice::ClassDefPtr base;
+        Slice::ClassList bases = type->bases();
+        if(!bases.empty() && !bases.front()->isInterface())
+        {
+            base = bases.front();
+        }
+
+        out->startSlice(type->scoped(), type->compactId(), !base);
         Slice::DataMemberList members = type->dataMembers();
         for(Slice::DataMemberList::iterator p = members.begin(); p != members.end(); ++p)
         {
@@ -105,24 +113,10 @@ FreezeScript::ObjectWriter::write(const Ice::OutputStreamPtr& out) const
         }
         out->endSlice();
 
-        Slice::ClassList bases = type->bases();
-        if(!bases.empty() && !bases.front()->isInterface())
-        {
-            type = bases.front();
-        }
-        else
-        {
-            type = 0;
-        }
+        type = base;
     }
 
-    //
-    // Ice::Object slice
-    //
-    out->writeTypeId(Ice::Object::ice_staticId());
-    out->startSlice();
-    out->writeSize(0); // For compatibility with the old AFM.
-    out->endSlice();
+    out->endObject();
 }
 
 //
@@ -134,7 +128,7 @@ FreezeScript::ObjectReader::ObjectReader(const DataFactoryPtr& factory, const Sl
 }
 
 void
-FreezeScript::ObjectReader::read(const Ice::InputStreamPtr& in, bool rid)
+FreezeScript::ObjectReader::read(const Ice::InputStreamPtr& in)
 {
     const_cast<ObjectDataPtr&>(_value) = new ObjectData(_factory, _type, true);
     Slice::ClassDeclPtr decl = Slice::ClassDeclPtr::dynamicCast(_type);
@@ -143,15 +137,20 @@ FreezeScript::ObjectReader::read(const Ice::InputStreamPtr& in, bool rid)
     {
         type = decl->definition();
     }
+
+    in->startObject();
+
     while(type)
     {
-        if(rid)
+        Slice::ClassDefPtr base;
+        Slice::ClassList bases = type->bases();
+        if(!bases.empty() && !bases.front()->isInterface())
         {
-            string id = in->readTypeId();
-            assert(id == type->scoped());
+            base = bases.front();
         }
 
         in->startSlice();
+
         Slice::DataMemberList members = type->dataMembers();
         for(Slice::DataMemberList::iterator p = members.begin(); p != members.end(); ++p)
         {
@@ -159,40 +158,13 @@ FreezeScript::ObjectReader::read(const Ice::InputStreamPtr& in, bool rid)
             assert(q != _value->_members.end());
             q->second->unmarshal(in);
         }
+
         in->endSlice();
 
-        Slice::ClassList bases = type->bases();
-        if(!bases.empty() && !bases.front()->isInterface())
-        {
-            type = bases.front();
-        }
-        else
-        {
-            type = 0;
-        }
-
-        rid = true;
+        type = base;
     }
 
-    //
-    // Ice::Object slice
-    //
-    if(rid)
-    {
-        string id = in->readTypeId();
-        if(id != Ice::Object::ice_staticId())
-        {
-            throw Ice::MarshalException(__FILE__, __LINE__);
-        }
-    }
-    in->startSlice();
-    // For compatibility with the old AFM.
-    Ice::Int sz = in->readSize();
-    if(sz != 0)
-    {
-        throw Ice::MarshalException(__FILE__, __LINE__);
-    }
-    in->endSlice();
+    in->endObject(false);
 }
 
 FreezeScript::ObjectDataPtr
@@ -867,11 +839,7 @@ FreezeScript::IntegerData::toString(Ice::Long value)
 {
     char buf[64];
 #ifdef _WIN32
-#if defined(_MSC_VER) && (_MSC_VER >= 1400)
     sprintf_s(buf, "%I64d", value);
-#else
-    sprintf(buf, "%I64d", value);
-#endif
 #elif defined(ICE_64)
     sprintf(buf, "%ld", value);
 #else
@@ -1221,7 +1189,7 @@ FreezeScript::ProxyData::ProxyData(const Slice::TypePtr& type, const Ice::Commun
 }
 
 FreezeScript::DataPtr
-FreezeScript::ProxyData::getMember(const string& member) const
+FreezeScript::ProxyData::getMember(const string& /*member*/) const
 {
     // TODO: Support members (id, facet, etc.)?
 
@@ -2174,7 +2142,7 @@ FreezeScript::ObjectData::getMember(const string& member) const
 }
 
 FreezeScript::DataPtr
-FreezeScript::ObjectData::getElement(const DataPtr& element) const
+FreezeScript::ObjectData::getElement(const DataPtr& /*element*/) const
 {
     _errorReporter->error("element requested of object value");
     return 0;
@@ -2187,14 +2155,14 @@ FreezeScript::ObjectData::operator==(const Data& rhs) const
 }
 
 bool
-FreezeScript::ObjectData::operator!=(const Data& rhs) const
+FreezeScript::ObjectData::operator!=(const Data& /*rhs*/) const
 {
     _errorReporter->error("object comparison not supported");
     return false;
 }
 
 bool
-FreezeScript::ObjectData::operator<(const Data& rhs) const
+FreezeScript::ObjectData::operator<(const Data& /*rhs*/) const
 {
     _errorReporter->error("object comparison not supported");
     return false;
@@ -2230,7 +2198,7 @@ FreezeScript::ObjectData::marshal(const Ice::OutputStreamPtr& out) const
 }
 
 void
-FreezeScript::ObjectData::unmarshal(const Ice::InputStreamPtr& in)
+FreezeScript::ObjectData::unmarshal(const Ice::InputStreamPtr& /*in*/)
 {
     //
     // Unmarshaling is done by ObjectReader.
@@ -2274,7 +2242,7 @@ FreezeScript::ObjectData::toString() const
 }
 
 void
-FreezeScript::ObjectData::visit(DataVisitor& visitor)
+FreezeScript::ObjectData::visit(DataVisitor& /*visitor*/)
 {
     assert(false);
 }
@@ -2371,7 +2339,7 @@ FreezeScript::ObjectRef::operator!=(const Data& rhs) const
 }
 
 bool
-FreezeScript::ObjectRef::operator<(const Data& rhs) const
+FreezeScript::ObjectRef::operator<(const Data& /*rhs*/) const
 {
     _errorReporter->error("object comparison not supported");
     return false;

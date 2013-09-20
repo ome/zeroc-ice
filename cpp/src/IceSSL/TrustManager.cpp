@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,7 +20,7 @@
 using namespace std;
 using namespace IceSSL;
 
-IceUtil::Shared* IceInternal::upCast(IceSSL::TrustManager* p) { return p; }
+IceUtil::Shared* IceSSL::upCast(IceSSL::TrustManager* p) { return p; }
 
 TrustManager::TrustManager(const Ice::CommunicatorPtr& communicator) :
     _communicator(communicator)
@@ -154,12 +154,10 @@ TrustManager::verify(const NativeConnectionInfoPtr& info)
             }
         }
 
-        list<list<DistinguishedName> >::const_iterator p;
-
         //
         // Fail if we match anything in the reject set.
         //
-        for(p = reject.begin(); p != reject.end(); ++p)
+        for(list<list<DistinguishedName> >::const_iterator p = reject.begin(); p != reject.end(); ++p)
         {
             if(_traceLevel > 1)
             {
@@ -183,7 +181,7 @@ TrustManager::verify(const NativeConnectionInfoPtr& info)
         //
         // Succeed if we match anything in the accept set.
         //
-        for(p = accept.begin(); p != accept.end(); ++p)
+        for(list<list<DistinguishedName> >::const_iterator p = accept.begin(); p != accept.end(); ++p)
         {
             if(_traceLevel > 1)
             {

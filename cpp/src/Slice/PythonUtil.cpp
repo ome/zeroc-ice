@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -185,7 +185,7 @@ lookupKwd(const string& name)
     {
         "None", "and", "assert", "break", "class", "continue", "def", "del", "elif", "else", "except", "exec",
         "finally", "for", "from", "global", "if", "import", "in", "is", "lambda", "not", "or", "pass",
-        "print", "raise", "return", "try", "while", "yield"
+        "print", "raise", "return", "self", "try", "while", "yield"
     };
     bool found =  binary_search(&keywordList[0],
                                 &keywordList[sizeof(keywordList) / sizeof(*keywordList)],
@@ -240,7 +240,7 @@ getDictLookup(const ContainedPtr& cont, const string& suffix = string())
         scope = package + "." + scope;
     }
 
-    return "_M_" + scope + "__dict__.has_key('" + suffix + Slice::Python::fixIdent(cont->name()) + "')";
+    return "'" + suffix + Slice::Python::fixIdent(cont->name()) + "' not in _M_" + scope + "__dict__";
 }
 
 //
@@ -362,7 +362,7 @@ Slice::Python::CodeVisitor::visitModuleStart(const ModulePtr& p)
 }
 
 void
-Slice::Python::CodeVisitor::visitModuleEnd(const ModulePtr& p)
+Slice::Python::CodeVisitor::visitModuleEnd(const ModulePtr&)
 {
     assert(!_moduleStack.empty());
     _out << sp << nl << "# End of module " << _moduleStack.front();
@@ -383,7 +383,7 @@ Slice::Python::CodeVisitor::visitClassDecl(const ClassDeclPtr& p)
     string scoped = p->scoped();
     if(_classHistory.count(scoped) == 0)
     {
-        _out << sp << nl << "if not " << getDictLookup(p) << ':';
+        _out << sp << nl << "if " << getDictLookup(p) << ':';
         _out.inc();
         string type = getAbsolute(p, "_t_");
         _out << nl << "_M_" << type << " = IcePy.declareClass('" << scoped << "')";
@@ -409,13 +409,12 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
     ClassList bases = p->bases();
     ClassDefPtr base;
     OperationList ops = p->operations();
-    OperationList::iterator oli;
     bool isAbstract = p->isInterface() || p->allOperations().size() > 0; // Don't use isAbstract() - see bug 3739
 
     //
     // Define the class.
     //
-    _out << sp << nl << "if not " << getDictLookup(p) << ':';
+    _out << sp << nl << "if " << getDictLookup(p) << ':';
     _out.inc();
     _out << nl << "_M_" << abs << " = Ice.createTempClass()";
     _out << nl << "class " << name << '(';
@@ -472,7 +471,7 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
     {
         if(isAbstract)
         {
-            _out << nl << "if __builtin__.type(self) == _M_" << abs << ':';
+            _out << nl << "if Ice.getType(self) == _M_" << abs << ':';
             _out.inc();
             _out << nl << "raise RuntimeError('" << abs << " is an abstract class')";
             _out.dec();
@@ -560,12 +559,12 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
         //
         // Emit a placeholder for each operation.
         //
-        for(oli = ops.begin(); oli != ops.end(); ++oli)
+        for(OperationList::iterator oli = ops.begin(); oli != ops.end(); ++oli)
         {
             string fixedOpName = fixIdent((*oli)->name());
             if(!p->isLocal() && (p->hasMetaData("amd") || (*oli)->hasMetaData("amd")))
             {
-                _out << sp << nl << "def " << fixedOpName << "_async(self, _cb";
+                _out << sp << nl << "def " << (*oli)->name() << "_async(self, _cb";
 
                 ParamDeclList params = (*oli)->parameters();
 
@@ -657,7 +656,7 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
         _out << "):";
         _out.inc();
 
-        for(oli = ops.begin(); oli != ops.end(); ++oli)
+        for(OperationList::iterator oli = ops.begin(); oli != ops.end(); ++oli)
         {
             string fixedOpName = fixIdent((*oli)->name());
             if(fixedOpName == "checkedCast" || fixedOpName == "uncheckedCast")
@@ -749,7 +748,7 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
                 {
                     _out << nl << comment;
                 }
-                _out << nl << "def " << fixedOpName << "_async(self, _cb";
+                _out << nl << "def " << (*oli)->name() << "_async(self, _cb";
                 if(!inParams.empty())
                 {
                     _out << ", " << inParams;
@@ -794,9 +793,11 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
     }
 
     DataMemberList members = p->dataMembers();
-    _out << sp << nl << "_M_" << type << " = IcePy.defineClass('" << scoped << "', " << name << ", ";
+    _out << sp << nl << "_M_" << type << " = IcePy.defineClass('" << scoped << "', " << name << ", " << p->compactId()
+         << ", ";
     writeMetaData(p->getMetaData());
-    _out << ", " << (isAbstract ? "True" : "False") << ", ";
+    const bool preserved = p->hasMetaData("preserve-slice") || p->inheritsMetaData("preserve-slice");
+    _out << ", " << (isAbstract ? "True" : "False") << ", " << (preserved ? "True" : "False") << ", ";
     if(!base)
     {
         _out << "None";
@@ -831,7 +832,7 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
     //
     // Data members are represented as a tuple:
     //
-    //   ('MemberName', MemberMetaData, MemberType)
+    //   ('MemberName', MemberMetaData, MemberType, Optional, Tag)
     //
     // where MemberType is either a primitive type constant (T_INT, etc.) or the id of a constructed type.
     //
@@ -857,7 +858,8 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
         writeMetaData((*r)->getMetaData());
         _out << ", ";
         writeType((*r)->type());
-        _out << ')';
+        _out << ", " << ((*r)->optional() ? "True" : "False") << ", "
+             << ((*r)->optional() ? (*r)->tag() : 0) << ')';
     }
     if(members.size() == 1)
     {
@@ -874,7 +876,7 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
     //
     // Define each operation. The arguments to the IcePy.Operation constructor are:
     //
-    // 'opName', Mode, SendMode, AMD, (MetaData), (InParams), (OutParams), ReturnType, (Exceptions)
+    // 'opName', Mode, SendMode, AMD, Format, MetaData, (InParams), (OutParams), ReturnParam, (Exceptions)
     //
     // where InParams and OutParams are tuples of type descriptions, and Exceptions
     // is a tuple of exception type ids.
@@ -890,10 +892,24 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
             ParamDeclList params = (*s)->parameters();
             ParamDeclList::iterator t;
             int count;
+            string format;
+            switch((*s)->format())
+            {
+            case DefaultFormat:
+                format = "None";
+                break;
+            case CompactFormat:
+                format = "Ice.FormatType.CompactFormat";
+                break;
+            case SlicedFormat:
+                format = "Ice.FormatType.SlicedFormat";
+                break;
+            }
 
             _out << nl << name << "._op_" << (*s)->name() << " = IcePy.Operation('" << (*s)->name() << "', "
                  << getOperationMode((*s)->mode()) << ", " << getOperationMode((*s)->sendMode()) << ", "
-                 << ((p->hasMetaData("amd") || (*s)->hasMetaData("amd")) ? "True" : "False") << ", ";
+                 << ((p->hasMetaData("amd") || (*s)->hasMetaData("amd")) ? "True" : "False") << ", "
+                 << format << ", ";
             writeMetaData((*s)->getMetaData());
             _out << ", (";
             for(t = params.begin(), count = 0; t != params.end(); ++t)
@@ -908,7 +924,8 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
                     writeMetaData((*t)->getMetaData());
                     _out << ", ";
                     writeType((*t)->type());
-                    _out << ')';
+                    _out << ", " << ((*t)->optional() ? "True" : "False") << ", "
+                         << ((*t)->optional() ? (*t)->tag() : 0) << ')';
                     ++count;
                 }
             }
@@ -929,7 +946,8 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
                     writeMetaData((*t)->getMetaData());
                     _out << ", ";
                     writeType((*t)->type());
-                    _out << ')';
+                    _out << ", " << ((*t)->optional() ? "True" : "False") << ", "
+                         << ((*t)->optional() ? (*t)->tag() : 0) << ')';
                     ++count;
                 }
             }
@@ -941,7 +959,15 @@ Slice::Python::CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
             TypePtr returnType = (*s)->returnType();
             if(returnType)
             {
+                //
+                // The return type has the same format as an in/out parameter:
+                //
+                // MetaData, Type, Optional?, OptionalTag
+                //
+                _out << "((), ";
                 writeType(returnType);
+                _out << ", " << ((*s)->returnIsOptional() ? "True" : "False") << ", "
+                     << ((*s)->returnIsOptional() ? (*s)->returnTag() : 0) << ')';
             }
             else
             {
@@ -1001,7 +1027,7 @@ Slice::Python::CodeVisitor::visitExceptionStart(const ExceptionPtr& p)
     string abs = getAbsolute(p);
     string name = fixIdent(p->name());
 
-    _out << sp << nl << "if not " << getDictLookup(p) << ':';
+    _out << sp << nl << "if " << getDictLookup(p) << ':';
     _out.inc();
     _out << nl << "_M_" << abs << " = Ice.createTempClass()";
     _out << nl << "class " << name << '(';
@@ -1030,7 +1056,6 @@ Slice::Python::CodeVisitor::visitExceptionStart(const ExceptionPtr& p)
     }
 
     DataMemberList members = p->dataMembers();
-    DataMemberList::iterator dmli;
 
     //
     // __init__
@@ -1091,7 +1116,8 @@ Slice::Python::CodeVisitor::visitExceptionStart(const ExceptionPtr& p)
     string type = getAbsolute(p, "_t_");
     _out << sp << nl << "_M_" << type << " = IcePy.defineException('" << scoped << "', " << name << ", ";
     writeMetaData(p->getMetaData());
-    _out << ", ";
+    const bool preserved = p->hasMetaData("preserve-slice") || p->inheritsMetaData("preserve-slice");
+    _out << ", " << (preserved ? "True" : "False") << ", ";
     if(!base)
     {
         _out << "None";
@@ -1109,11 +1135,11 @@ Slice::Python::CodeVisitor::visitExceptionStart(const ExceptionPtr& p)
     //
     // Data members are represented as a tuple:
     //
-    //   ('MemberName', MemberMetaData, MemberType)
+    //   ('MemberName', MemberMetaData, MemberType, Optional, Tag)
     //
     // where MemberType is either a primitive type constant (T_INT, etc.) or the id of a constructed type.
     //
-    for(dmli = members.begin(); dmli != members.end(); ++dmli)
+    for(DataMemberList::iterator dmli = members.begin(); dmli != members.end(); ++dmli)
     {
         if(dmli != members.begin())
         {
@@ -1123,7 +1149,8 @@ Slice::Python::CodeVisitor::visitExceptionStart(const ExceptionPtr& p)
         writeMetaData((*dmli)->getMetaData());
         _out << ", ";
         writeType((*dmli)->type());
-        _out << ')';
+        _out << ", " << ((*dmli)->optional() ? "True" : "False") << ", "
+             << ((*dmli)->optional() ? (*dmli)->tag() : 0) << ')';
     }
     if(members.size() == 1)
     {
@@ -1151,7 +1178,6 @@ Slice::Python::CodeVisitor::visitStructStart(const StructPtr& p)
     string abs = getAbsolute(p);
     string name = fixIdent(p->name());
     MemberInfoList memberList;
-    MemberInfoList::iterator r;
 
     {
         DataMemberList members = p->dataMembers();
@@ -1164,7 +1190,7 @@ Slice::Python::CodeVisitor::visitStructStart(const StructPtr& p)
         }
     }
 
-    _out << sp << nl << "if not " << getDictLookup(p) << ':';
+    _out << sp << nl << "if " << getDictLookup(p) << ':';
     _out.inc();
     _out << nl << "_M_" << abs << " = Ice.createTempClass()";
     _out << nl << "class " << name << "(object):";
@@ -1180,80 +1206,188 @@ Slice::Python::CodeVisitor::visitStructStart(const StructPtr& p)
     writeConstructorParams(memberList);
     _out << "):";
     _out.inc();
-    for(r = memberList.begin(); r != memberList.end(); ++r)
+    for(MemberInfoList::iterator r = memberList.begin(); r != memberList.end(); ++r)
     {
         writeAssign(*r);
     }
     _out.dec();
 
-    _out << sp << nl << "def __hash__(self):";
-    _out.inc();
-    _out << nl << "_h = 0";
-    int iter = 0;
-    for(r = memberList.begin(); r != memberList.end(); ++r)
-    {
-        string s = "self." + r->fixedName;
-        writeHash(s, r->dataMember->type(), iter);
-    }
-    _out << nl << "return _h % 0x7fffffff";
-    _out.dec();
-
     //
-    // Rich operators.  __lt__, __le__, __eq__, __ne__, __gt__, __ge__
+    // Only generate __hash__ and the comparison operators if this structure type
+    // is a legal dictionary key type.
     //
-    static const char* richOps[] = {
-        "__lt__", "<",
-        "__le__", "<=",
-        "__eq__", "==",
-        "__ne__", "!=",
-        "__gt__", ">",
-        "__ge__", ">="
-    };
-    for(int opIndex = 0; opIndex != sizeof(richOps)/sizeof(richOps[0]); opIndex += 2)
+    bool containsSequence = false;
+    if(Dictionary::legalKeyType(p, containsSequence))
     {
-        string opName = richOps[opIndex];
-        string opSymbol = richOps[opIndex+1];
+        _out << sp << nl << "def __hash__(self):";
+        _out.inc();
+        _out << nl << "_h = 0";
+        int iter = 0;
+        for(MemberInfoList::iterator r = memberList.begin(); r != memberList.end(); ++r)
+        {
+            string s = "self." + r->fixedName;
+            writeHash(s, r->dataMember->type(), iter);
+        }
+        _out << nl << "return _h % 0x7fffffff";
+        _out.dec();
 
-        _out << sp << nl << "def " << opName << "(self, other):";
+        //
+        // Rich operators.  __lt__, __le__, __eq__, __ne__, __gt__, __ge__
+        //
+
+        _out << sp << nl << "def __compare(self, other):";
         _out.inc();
-        _out << nl << "if isinstance(other, _M_" << abs << "):";
+        _out << nl << "if other is None:";
         _out.inc();
-        if(!memberList.empty())
-        {
-            _out << nl << "return ";
-            for(r = memberList.begin(); r != memberList.end(); ++r)
-            {
-                if(r != memberList.begin())
-                {
-                    if(opName == "__eq__")
-                    {
-                        _out << " and ";
-                    }
-                    else
-                    {
-                        _out << " or ";
-                    }
-                }
-                _out << "self." << r->fixedName << " " << opSymbol << " other." << r->fixedName;
-            }
-        }
-        else
-        {
-            _out << nl << "return False";
-        }
+        _out << nl << "return 1";
         _out.dec();
-        _out << nl << "elif other == None:";
+        _out << nl << "elif not isinstance(other, _M_" << abs << "):";
         _out.inc();
-        if(opName == "__ne__")
-        {
-            _out << nl << "return True";
-        }
-        else
-        {
-            _out << nl << "return False";
-        }
-        _out.dec();
         _out << nl << "return NotImplemented";
+        _out.dec();
+        _out << nl << "else:";
+        _out.inc();
+        for(MemberInfoList::iterator r = memberList.begin(); r != memberList.end(); ++r)
+        {
+            //
+            // The None value is not orderable in Python 3.
+            //
+            _out << nl << "if self." << r->fixedName << " is None or other." << r->fixedName << " is None:";
+            _out.inc();
+            _out << nl << "if self." << r->fixedName << " != other." << r->fixedName << ':';
+            _out.inc();
+            _out << nl << "return (-1 if self." << r->fixedName << " is None else 1)";
+            _out.dec();
+            _out.dec();
+            _out << nl << "else:";
+            _out.inc();
+            _out << nl << "if self." << r->fixedName << " < other." << r->fixedName << ':';
+            _out.inc();
+            _out << nl << "return -1";
+            _out.dec();
+            _out << nl << "elif self." << r->fixedName << " > other." << r->fixedName << ':';
+            _out.inc();
+            _out << nl << "return 1";
+            _out.dec();
+            _out.dec();
+        }
+        _out << nl << "return 0";
+        _out.dec();
+        _out.dec();
+
+        _out << sp << nl << "def __lt__(self, other):";
+        _out.inc();
+        _out << nl << "r = self.__compare(other)";
+        _out << nl << "if r is NotImplemented:";
+        _out.inc();
+        _out << nl << "return r";
+        _out.dec();
+        _out << nl << "else:";
+        _out.inc();
+        _out << nl << "return r < 0";
+        _out.dec();
+        _out.dec();
+
+        _out << sp << nl << "def __le__(self, other):";
+        _out.inc();
+        _out << nl << "r = self.__compare(other)";
+        _out << nl << "if r is NotImplemented:";
+        _out.inc();
+        _out << nl << "return r";
+        _out.dec();
+        _out << nl << "else:";
+        _out.inc();
+        _out << nl << "return r <= 0";
+        _out.dec();
+        _out.dec();
+
+        _out << sp << nl << "def __gt__(self, other):";
+        _out.inc();
+        _out << nl << "r = self.__compare(other)";
+        _out << nl << "if r is NotImplemented:";
+        _out.inc();
+        _out << nl << "return r";
+        _out.dec();
+        _out << nl << "else:";
+        _out.inc();
+        _out << nl << "return r > 0";
+        _out.dec();
+        _out.dec();
+
+        _out << sp << nl << "def __ge__(self, other):";
+        _out.inc();
+        _out << nl << "r = self.__compare(other)";
+        _out << nl << "if r is NotImplemented:";
+        _out.inc();
+        _out << nl << "return r";
+        _out.dec();
+        _out << nl << "else:";
+        _out.inc();
+        _out << nl << "return r >= 0";
+        _out.dec();
+        _out.dec();
+
+        _out << sp << nl << "def __eq__(self, other):";
+        _out.inc();
+        _out << nl << "r = self.__compare(other)";
+        _out << nl << "if r is NotImplemented:";
+        _out.inc();
+        _out << nl << "return r";
+        _out.dec();
+        _out << nl << "else:";
+        _out.inc();
+        _out << nl << "return r == 0";
+        _out.dec();
+        _out.dec();
+
+        _out << sp << nl << "def __ne__(self, other):";
+        _out.inc();
+        _out << nl << "r = self.__compare(other)";
+        _out << nl << "if r is NotImplemented:";
+        _out.inc();
+        _out << nl << "return r";
+        _out.dec();
+        _out << nl << "else:";
+        _out.inc();
+        _out << nl << "return r != 0";
+        _out.dec();
+        _out.dec();
+    }
+    else
+    {
+        //
+        // Only generate the rich equality operators __eq__ and __ne__.
+        //
+
+        _out << sp << nl << "def __eq__(self, other):";
+        _out.inc();
+        _out << nl << "if other is None:";
+        _out.inc();
+        _out << nl << "return False";
+        _out.dec();
+        _out << nl << "elif not isinstance(other, _M_" << abs << "):";
+        _out.inc();
+        _out << nl << "return NotImplemented";
+        _out.dec();
+        _out << nl << "else:";
+        _out.inc();
+        for(MemberInfoList::iterator r = memberList.begin(); r != memberList.end(); ++r)
+        {
+            //
+            // The None value is not orderable in Python 3.
+            //
+            _out << nl << "if self." << r->fixedName << " != other." << r->fixedName << ':';
+            _out.inc();
+            _out << nl << "return False";
+            _out.dec();
+        }
+        _out << nl << "return True";
+        _out.dec();
+        _out.dec();
+
+        _out << sp << nl << "def __ne__(self, other):";
+        _out.inc();
+        _out << nl << "return not self.__eq__(other)";
         _out.dec();
     }
 
@@ -1286,7 +1420,7 @@ Slice::Python::CodeVisitor::visitStructStart(const StructPtr& p)
         _out.inc();
         _out << nl;
     }
-    for(r = memberList.begin(); r != memberList.end(); ++r)
+    for(MemberInfoList::iterator r = memberList.begin(); r != memberList.end(); ++r)
     {
         if(r != memberList.begin())
         {
@@ -1342,7 +1476,7 @@ Slice::Python::CodeVisitor::visitSequence(const SequencePtr& p)
     // Emit the type information.
     //
     string scoped = p->scoped();
-    _out << sp << nl << "if not " << getDictLookup(p, "_t_") << ':';
+    _out << sp << nl << "if " << getDictLookup(p, "_t_") << ':';
     _out.inc();
     if(isCustom)
     {
@@ -1369,7 +1503,7 @@ Slice::Python::CodeVisitor::visitDictionary(const DictionaryPtr& p)
     // Emit the type information.
     //
     string scoped = p->scoped();
-    _out << sp << nl << "if not " << getDictLookup(p, "_t_") << ':';
+    _out << sp << nl << "if " << getDictLookup(p, "_t_") << ':';
     _out.inc();
     _out << nl << "_M_" << getAbsolute(p, "_t_") << " = IcePy.defineDictionary('" << scoped << "', ";
     writeMetaData(p->getMetaData());
@@ -1389,12 +1523,11 @@ Slice::Python::CodeVisitor::visitEnum(const EnumPtr& p)
     string name = fixIdent(p->name());
     EnumeratorList enums = p->getEnumerators();
     EnumeratorList::iterator q;
-    int i;
 
-    _out << sp << nl << "if not " << getDictLookup(p) << ':';
+    _out << sp << nl << "if " << getDictLookup(p) << ':';
     _out.inc();
     _out << nl << "_M_" << abs << " = Ice.createTempClass()";
-    _out << nl << "class " << name << "(object):";
+    _out << nl << "class " << name << "(Ice.EnumBase):";
     _out.inc();
 
     string comment = p->comment();
@@ -1403,88 +1536,31 @@ Slice::Python::CodeVisitor::visitEnum(const EnumPtr& p)
         _out << nl << "'''" << editComment(comment) << "'''";
     }
 
-    _out << sp << nl << "def __init__(self, val):";
+    _out << sp << nl << "def __init__(self, _n, _v):";
     _out.inc();
-    {
-        ostringstream assertion;
-        assertion << "assert(val >= 0 and val < " << enums.size() << ')';
-        _out << nl << assertion.str();
-    }
-    _out << nl << "self.value = val";
+    _out << nl << "Ice.EnumBase.__init__(self, _n, _v)";
     _out.dec();
 
-    _out << sp << nl << "def __str__(self):";
+    _out << sp << nl << "def valueOf(self, _n):";
     _out.inc();
-    _out << nl << "return self._names[self.value]";
-    _out.dec();
-    _out << sp << nl << "__repr__ = __str__";
-    _out << sp << nl << "def __hash__(self):";
+    _out << nl << "if _n in self._enumerators:";
     _out.inc();
-    _out << nl << "return self.value";
+    _out << nl << "return self._enumerators[_n]";
     _out.dec();
+    _out << nl << "return None";
+    _out.dec();
+    _out << nl << "valueOf = classmethod(valueOf)";
 
-    //
-    // Rich operators.  __lt__, __le__, __eq__, __ne__, __gt__, __ge__
-    //
-    static const char* richOps[] = {
-        "__lt__", "<",
-        "__le__", "<=",
-        "__eq__", "==",
-        "__ne__", "!=",
-        "__gt__", ">",
-        "__ge__", ">="
-    };
-    for(int opIndex = 0; opIndex != sizeof(richOps)/sizeof(richOps[0]); opIndex += 2)
-    {
-        const char* opName = richOps[opIndex];
-        const char* opSymbol = richOps[opIndex+1];
-
-        _out << sp << nl << "def " << opName << "(self, other):";
-        _out.inc();
-        _out << nl << "if isinstance(other, _M_" << abs << "):";
-        _out.inc();
-        _out << nl << "return self.value " << opSymbol << " other.value;";
-        _out.dec();
-        _out << nl << "elif other == None:";
-        _out.inc();
-        _out << nl << "return False";
-        _out.dec();
-        _out << nl << "return NotImplemented";
-        _out.dec();
-    }
-
-    _out << sp << nl << "_names = (";
-    for(q = enums.begin(), i = 0; q != enums.end(); ++q, ++i)
-    {
-        if(q != enums.begin())
-        {
-            _out << ", ";
-        }
-        _out << "'" << (*q)->name() << "'";
-    }
-    if(enums.size() == 1)
-    {
-        _out << ',';
-    }
-    _out << ')';
     _out.dec();
 
     _out << sp;
-    for(q = enums.begin(), i = 0; q != enums.end(); ++q, ++i)
+    for(q = enums.begin(); q != enums.end(); ++q)
     {
         string fixedEnum = fixIdent((*q)->name());
-        ostringstream idx;
-        idx << i;
-        _out << nl << name << '.' << fixedEnum << " = " << name << '(' << idx.str() << ')';
+        _out << nl << name << '.' << fixedEnum << " = " << name << "(\"" << (*q)->name() << "\", " << (*q)->value()
+             << ')';
     }
-
-    //
-    // Emit the type information.
-    //
-    _out << sp << nl << "_M_" << getAbsolute(p, "_t_") << " = IcePy.defineEnum('" << scoped << "', " << name
-         << ", ";
-    writeMetaData(p->getMetaData());
-    _out << ", (";
+    _out << nl << name << "._enumerators = { ";
     for(q = enums.begin(); q != enums.end(); ++q)
     {
         if(q != enums.begin())
@@ -1492,13 +1568,17 @@ Slice::Python::CodeVisitor::visitEnum(const EnumPtr& p)
             _out << ", ";
         }
         string fixedEnum = fixIdent((*q)->name());
-        _out << name << '.' << fixedEnum;
+        _out << (*q)->value() << ':' << name << '.' << fixedEnum;
     }
-    if(enums.size() == 1)
-    {
-        _out << ',';
-    }
-    _out << "))";
+    _out << " }";
+
+    //
+    // Emit the type information.
+    //
+    _out << sp << nl << "_M_" << getAbsolute(p, "_t_") << " = IcePy.defineEnum('" << scoped << "', " << name
+         << ", ";
+    writeMetaData(p->getMetaData());
+    _out << ", " << name << "._enumerators)";
 
     registerName(name);
 
@@ -1716,7 +1796,7 @@ Slice::Python::CodeVisitor::writeHash(const string& name, const TypePtr& p, int&
         return;
     }
 
-    _out << nl << "_h = 5 * _h + __builtin__.hash(" << name << ")";
+    _out << nl << "_h = 5 * _h + Ice.getHash(" << name << ")";
 }
 
 void
@@ -1746,24 +1826,27 @@ Slice::Python::CodeVisitor::writeMetaData(const StringList& meta)
 void
 Slice::Python::CodeVisitor::writeAssign(const MemberInfo& info)
 {
+    string paramName = info.fixedName;
+    string memberName = info.fixedName;
+
     //
     // Structures are treated differently (see bug 3676).
     //
     StructPtr st = StructPtr::dynamicCast(info.dataMember->type());
-    if(st)
+    if(st && !info.dataMember->optional())
     {
-        _out << nl << "if " << info.fixedName << " is Ice._struct_marker:";
+        _out << nl << "if " << paramName << " is Ice._struct_marker:";
         _out.inc();
-        _out << nl << "self." << info.fixedName << " = " << getSymbol(st) << "()";
+        _out << nl << "self." << memberName << " = " << getSymbol(st) << "()";
         _out.dec();
         _out << nl << "else:";
         _out.inc();
-        _out << nl << "self." << info.fixedName << " = " << info.fixedName;
+        _out << nl << "self." << memberName << " = " << paramName;
         _out.dec();
     }
     else
     {
-        _out << nl << "self." << info.fixedName << " = " << info.fixedName;
+        _out << nl << "self." << memberName << " = " << paramName;
     }
 }
 
@@ -1916,6 +1999,10 @@ Slice::Python::CodeVisitor::writeConstructorParams(const MemberInfoList& members
         if(member->defaultValueType())
         {
             writeConstantValue(member->type(), member->defaultValueType(), member->defaultValue());
+        }
+        else if(member->optional())
+        {
+            _out << "Ice.Unset";
         }
         else
         {
@@ -2208,7 +2295,7 @@ Slice::Python::generate(const UnitPtr& un, bool all, bool checksum, const vector
     Slice::Python::MetaDataVisitor visitor;
     un->visit(&visitor, false);
 
-    out << nl << "import Ice, IcePy, __builtin__";
+    out << nl << "import Ice, IcePy";
 
     if(!all)
     {
@@ -2346,7 +2433,7 @@ Slice::Python::printHeader(IceUtilInternal::Output& out)
     static const char* header =
 "# **********************************************************************\n"
 "#\n"
-"# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.\n"
+"# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.\n"
 "#\n"
 "# This copy of Ice is licensed to you under the terms described in the\n"
 "# ICE_LICENSE file included in this distribution.\n"

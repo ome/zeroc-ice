@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,8 +11,10 @@
 #   include <IceUtil/Config.h>
 #endif
 #include <Operation.h>
+#include <Communicator.h>
 #include <Current.h>
 #include <Proxy.h>
+#include <Thread.h>
 #include <Types.h>
 #include <Util.h>
 #include <Ice/Communicator.h>
@@ -44,9 +46,12 @@ public:
 
     Ice::StringSeq metaData;
     TypeInfoPtr type;
+    bool optional;
+    int tag;
+    int pos;
 };
 typedef IceUtil::Handle<ParamInfo> ParamInfoPtr;
-typedef vector<ParamInfoPtr> ParamInfoList;
+typedef list<ParamInfoPtr> ParamInfoList;
 
 //
 // Encapsulates attributes of an operation.
@@ -55,7 +60,7 @@ class Operation : public IceUtil::Shared
 {
 public:
 
-    Operation(const char*, PyObject*, PyObject*, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+    Operation(const char*, PyObject*, PyObject*, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
 
     void deprecate(const string&);
 
@@ -63,9 +68,12 @@ public:
     Ice::OperationMode mode;
     Ice::OperationMode sendMode;
     bool amd;
+    Ice::FormatType format;
     Ice::StringSeq metaData;
     ParamInfoList inParams;
+    ParamInfoList optionalInParams;
     ParamInfoList outParams;
+    ParamInfoList optionalOutParams;
     ParamInfoPtr returnType;
     ExceptionInfoList exceptions;
     string dispatchName;
@@ -77,7 +85,8 @@ private:
 
     string _deprecateMessage;
 
-    static void convertParams(PyObject*, ParamInfoList&, bool&);
+    static void convertParams(PyObject*, ParamInfoList&, int, bool&);
+    static ParamInfoPtr convertParam(PyObject*, int);
 };
 typedef IceUtil::Handle<Operation> OperationPtr;
 
@@ -115,7 +124,7 @@ protected:
 
     enum MappingType { SyncMapping, AsyncMapping, OldAsyncMapping };
 
-    bool prepareRequest(PyObject*, MappingType, vector<Ice::Byte>&);
+    bool prepareRequest(PyObject*, MappingType, Ice::OutputStreamPtr&, pair<const Ice::Byte*, const Ice::Byte*>&);
     PyObject* unmarshalResults(const pair<const Ice::Byte*, const Ice::Byte*>&);
     PyObject* unmarshalException(const pair<const Ice::Byte*, const Ice::Byte*>&);
     bool validateException(PyObject*) const;
@@ -254,8 +263,8 @@ class Upcall : virtual public IceUtil::Shared
 public:
 
     virtual void dispatch(PyObject*, const pair<const Ice::Byte*, const Ice::Byte*>&, const Ice::Current&) = 0;
-    virtual void response(PyObject*) = 0;
-    virtual void exception(PyException&) = 0;
+    virtual void response(PyObject*, const Ice::EncodingVersion&) = 0;
+    virtual void exception(PyException&, const Ice::EncodingVersion&) = 0;
 };
 typedef IceUtil::Handle<Upcall> UpcallPtr;
 
@@ -270,8 +279,8 @@ public:
     TypedUpcall(const OperationPtr&, const Ice::AMD_Object_ice_invokePtr&, const Ice::CommunicatorPtr&);
 
     virtual void dispatch(PyObject*, const pair<const Ice::Byte*, const Ice::Byte*>&, const Ice::Current&);
-    virtual void response(PyObject*);
-    virtual void exception(PyException&);
+    virtual void response(PyObject*, const Ice::EncodingVersion&);
+    virtual void exception(PyException&, const Ice::EncodingVersion&);
 
 private:
 
@@ -293,8 +302,8 @@ public:
     BlobjectUpcall(bool, const Ice::AMD_Object_ice_invokePtr&);
 
     virtual void dispatch(PyObject*, const pair<const Ice::Byte*, const Ice::Byte*>&, const Ice::Current&);
-    virtual void response(PyObject*);
-    virtual void exception(PyException&);
+    virtual void response(PyObject*, const Ice::EncodingVersion&);
+    virtual void exception(PyException&, const Ice::EncodingVersion&);
 
 private:
 
@@ -352,6 +361,7 @@ struct AMDCallbackObject
 {
     PyObject_HEAD
     UpcallPtr* upcall;
+    Ice::EncodingVersion encoding;
 };
 
 struct AsyncResultObject
@@ -366,6 +376,29 @@ struct AsyncResultObject
 
 extern PyTypeObject OperationType;
 extern PyTypeObject AMDCallbackType;
+
+class UserExceptionReaderFactoryI : public Ice::UserExceptionReaderFactory
+{
+public:
+
+    UserExceptionReaderFactoryI(const Ice::CommunicatorPtr& communicator) :
+        _communicator(communicator)
+    {
+    }
+
+    virtual void createAndThrow(const string& id) const
+    {
+        ExceptionInfoPtr info = lookupExceptionInfo(id);
+        if(info)
+        {
+            throw ExceptionReader(_communicator, info);
+        }
+    }
+
+private:
+
+    const Ice::CommunicatorPtr _communicator;
+};
 
 }
 
@@ -479,9 +512,9 @@ callSent(PyObject* callback, const string& method, bool sentSynchronously, bool 
 extern "C"
 #endif
 static OperationObject*
-operationNew(PyObject* /*arg*/)
+operationNew(PyTypeObject* type, PyObject* /*args*/, PyObject* /*kwds*/)
 {
-    OperationObject* self = PyObject_New(OperationObject, &OperationType);
+    OperationObject* self = reinterpret_cast<OperationObject*>(type->tp_alloc(type, 0));
     if(!self)
     {
         return 0;
@@ -502,19 +535,21 @@ operationInit(OperationObject* self, PyObject* args, PyObject* /*kwds*/)
     PyObject* mode;
     PyObject* sendMode;
     int amd;
-    PyObject* meta;
+    PyObject* format;
+    PyObject* metaData;
     PyObject* inParams;
     PyObject* outParams;
     PyObject* returnType;
     PyObject* exceptions;
-    if(!PyArg_ParseTuple(args, STRCAST("sO!O!iO!O!O!OO!"), &name, modeType, &mode, modeType, &sendMode, &amd,
-                         &PyTuple_Type, &meta, &PyTuple_Type, &inParams, &PyTuple_Type, &outParams, &returnType,
-                         &PyTuple_Type, &exceptions))
+    if(!PyArg_ParseTuple(args, STRCAST("sO!O!iOO!O!O!OO!"), &name, modeType, &mode, modeType, &sendMode, &amd,
+                         &format, &PyTuple_Type, &metaData, &PyTuple_Type, &inParams, &PyTuple_Type, &outParams,
+                         &returnType, &PyTuple_Type, &exceptions))
     {
         return -1;
     }
 
-    OperationPtr op = new Operation(name, mode, sendMode, amd, meta, inParams, outParams, returnType, exceptions);
+    OperationPtr op = new Operation(name, mode, sendMode, amd, format, metaData, inParams, outParams, returnType,
+                                    exceptions);
     self->op = new OperationPtr(op);
 
     return 0;
@@ -527,7 +562,7 @@ static void
 operationDealloc(OperationObject* self)
 {
     delete self->op;
-    PyObject_Del(self);
+    Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 #ifdef WIN32
@@ -641,9 +676,9 @@ operationDeprecate(OperationObject* self, PyObject* args)
 extern "C"
 #endif
 static AMDCallbackObject*
-amdCallbackNew(PyObject* /*arg*/)
+amdCallbackNew(PyTypeObject* type, PyObject* /*args*/, PyObject* /*kwds*/)
 {
-    AMDCallbackObject* self = PyObject_New(AMDCallbackObject, &AMDCallbackType);
+    AMDCallbackObject* self = reinterpret_cast<AMDCallbackObject*>(type->tp_alloc(type, 0));
     if(!self)
     {
         return 0;
@@ -659,7 +694,7 @@ static void
 amdCallbackDealloc(AMDCallbackObject* self)
 {
     delete self->upcall;
-    PyObject_Del(self);
+    Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 #ifdef WIN32
@@ -671,7 +706,7 @@ amdCallbackIceResponse(AMDCallbackObject* self, PyObject* args)
     try
     {
         assert(self->upcall);
-        (*self->upcall)->response(args);
+        (*self->upcall)->response(args, self->encoding);
     }
     catch(...)
     {
@@ -701,7 +736,7 @@ amdCallbackIceException(AMDCallbackObject* self, PyObject* args)
     {
         assert(self->upcall);
         PyException pye(ex); // No traceback information available.
-        (*self->upcall)->exception(pye);
+        (*self->upcall)->exception(pye, self->encoding);
     }
     catch(...)
     {
@@ -723,9 +758,9 @@ amdCallbackIceException(AMDCallbackObject* self, PyObject* args)
 extern "C"
 #endif
 static AsyncResultObject*
-asyncResultNew(PyObject* /*arg*/)
+asyncResultNew(PyTypeObject* type, PyObject* /*args*/, PyObject* /*kwds*/)
 {
-    AsyncResultObject* self = PyObject_New(AsyncResultObject, &AsyncResultType);
+    AsyncResultObject* self = reinterpret_cast<AsyncResultObject*>(type->tp_alloc(type, 0));
     if(!self)
     {
         return 0;
@@ -749,7 +784,7 @@ asyncResultDealloc(AsyncResultObject* self)
     Py_XDECREF(self->proxy);
     Py_XDECREF(self->connection);
     Py_XDECREF(self->communicator);
-    PyObject_Del(self);
+    Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 #ifdef WIN32
@@ -982,7 +1017,7 @@ IcePy::ParamInfo::unmarshaled(PyObject* val, PyObject* target, void* closure)
 //
 // Operation implementation.
 //
-IcePy::Operation::Operation(const char* n, PyObject* m, PyObject* sm, int amdFlag, PyObject* meta,
+IcePy::Operation::Operation(const char* n, PyObject* m, PyObject* sm, int amdFlag, PyObject* fmt, PyObject* meta,
                             PyObject* in, PyObject* out, PyObject* ret, PyObject* ex)
 {
     name = n;
@@ -991,15 +1026,15 @@ IcePy::Operation::Operation(const char* n, PyObject* m, PyObject* sm, int amdFla
     // mode
     //
     PyObjectHandle modeValue = PyObject_GetAttrString(m, STRCAST("value"));
-    assert(PyInt_Check(modeValue.get()));
-    mode = (Ice::OperationMode)static_cast<int>(PyInt_AS_LONG(modeValue.get()));
+    mode = (Ice::OperationMode)static_cast<int>(PyLong_AsLong(modeValue.get()));
+    assert(!PyErr_Occurred());
 
     //
     // sendMode
     //
     PyObjectHandle sendModeValue = PyObject_GetAttrString(sm, STRCAST("value"));
-    assert(PyInt_Check(sendModeValue.get()));
-    sendMode = (Ice::OperationMode)static_cast<int>(PyInt_AS_LONG(sendModeValue.get()));
+    sendMode = (Ice::OperationMode)static_cast<int>(PyLong_AsLong(sendModeValue.get()));
+    assert(!PyErr_Occurred());
 
     //
     // amd
@@ -1007,7 +1042,7 @@ IcePy::Operation::Operation(const char* n, PyObject* m, PyObject* sm, int amdFla
     amd = amdFlag ? true : false;
     if(amd)
     {
-        dispatchName = fixIdent(name) + "_async";
+        dispatchName = name + "_async";
     }
     else
     {
@@ -1015,44 +1050,93 @@ IcePy::Operation::Operation(const char* n, PyObject* m, PyObject* sm, int amdFla
     }
 
     //
+    // format
+    //
+    if(fmt == Py_None)
+    {
+        format = Ice::DefaultFormat;
+    }
+    else
+    {
+        PyObjectHandle formatValue = PyObject_GetAttrString(fmt, STRCAST("value"));
+        format = (Ice::FormatType)static_cast<int>(PyLong_AsLong(formatValue.get()));
+        assert(!PyErr_Occurred());
+    }
+
+    //
     // metaData
     //
+    assert(PyTuple_Check(meta));
 #ifndef NDEBUG
     bool b =
 #endif
     tupleToStringSeq(meta, metaData);
     assert(b);
 
-    Py_ssize_t i, sz;
-
-    //
-    // inParams
-    //
-    convertParams(in, inParams, sendsClasses);
-
-    //
-    // outParams
-    //
-    convertParams(out, outParams, returnsClasses);
-
     //
     // returnType
     //
+    returnsClasses = false;
     if(ret != Py_None)
     {
-        returnType = new ParamInfo;
-        returnType->type = getType(ret);
-        if(!returnsClasses)
+        returnType = convertParam(ret, 0);
+        if(!returnType->optional)
         {
             returnsClasses = returnType->type->usesClasses();
         }
     }
 
     //
+    // inParams
+    //
+    sendsClasses = false;
+    convertParams(in, inParams, 0, sendsClasses);
+
+    //
+    // outParams
+    //
+    convertParams(out, outParams, returnType ? 1 : 0, returnsClasses);
+
+    class SortFn
+    {
+    public:
+        static bool compare(const ParamInfoPtr& lhs, const ParamInfoPtr& rhs)
+        {
+            return lhs->tag < rhs->tag;
+        }
+
+        static bool isRequired(const ParamInfoPtr& i)
+        {
+            return !i->optional;
+        }
+    };
+
+    //
+    // The inParams list represents the parameters in the order of declaration.
+    // We also need a sorted list of optional parameters.
+    //
+    ParamInfoList l = inParams;
+    copy(l.begin(), remove_if(l.begin(), l.end(), SortFn::isRequired), back_inserter(optionalInParams));
+    optionalInParams.sort(SortFn::compare);
+
+    //
+    // The outParams list represents the parameters in the order of declaration.
+    // We also need a sorted list of optional parameters. If the return value is
+    // optional, we must include it in this list.
+    //
+    l = outParams;
+    copy(l.begin(), remove_if(l.begin(), l.end(), SortFn::isRequired), back_inserter(optionalOutParams));
+    if(returnType && returnType->optional)
+    {
+        optionalOutParams.push_back(returnType);
+    }
+    optionalOutParams.sort(SortFn::compare);
+
+    //
     // exceptions
     //
-    sz = PyTuple_GET_SIZE(ex);
-    for(i = 0; i < sz; ++i)
+    Py_ssize_t sz = PyTuple_GET_SIZE(ex);
+    for(Py_ssize_t i = 0; i < sz; ++i)
     {
         exceptions.push_back(getException(PyTuple_GET_ITEM(ex, i)));
     }
@@ -1077,39 +1161,65 @@ IcePy::Operation::deprecate(const string& msg)
 }
 
 void
-IcePy::Operation::convertParams(PyObject* p, ParamInfoList& params, bool& usesClasses)
+IcePy::Operation::convertParams(PyObject* p, ParamInfoList& params, int posOffset, bool& usesClasses)
 {
-    usesClasses = false;
     int sz = static_cast<int>(PyTuple_GET_SIZE(p));
     for(int i = 0; i < sz; ++i)
     {
         PyObject* item = PyTuple_GET_ITEM(p, i);
-        assert(PyTuple_Check(item));
-        assert(PyTuple_GET_SIZE(item) == 2);
-
-        ParamInfoPtr param = new ParamInfo;
-
-        //
-        // metaData
-        //
-        PyObject* meta = PyTuple_GET_ITEM(item, 0);
-        assert(PyTuple_Check(meta));
-#ifndef NDEBUG
-        bool b =
-#endif
-        tupleToStringSeq(meta, param->metaData);
-        assert(b);
-
-        //
-        // type
-        //
-        param->type = getType(PyTuple_GET_ITEM(item, 1));
+        ParamInfoPtr param = convertParam(item, i + posOffset);
         params.push_back(param);
-        if(!usesClasses)
+        if(!param->optional && !usesClasses)
         {
             usesClasses = param->type->usesClasses();
         }
     }
+}
+
+ParamInfoPtr
+IcePy::Operation::convertParam(PyObject* p, int pos)
+{
+    assert(PyTuple_Check(p));
+    assert(PyTuple_GET_SIZE(p) == 4);
+
+    ParamInfoPtr param = new ParamInfo;
+
+    //
+    // metaData
+    //
+    PyObject* meta = PyTuple_GET_ITEM(p, 0);
+    assert(PyTuple_Check(meta));
+#ifndef NDEBUG
+    bool b =
+#endif
+    tupleToStringSeq(meta, param->metaData);
+    assert(b);
+
+    //
+    // type
+    //
+    PyObject* type = PyTuple_GET_ITEM(p, 1);
+    if(type != Py_None)
+    {
+        param->type = getType(type);
+    }
+
+    //
+    // optional
+    //
+    param->optional = PyObject_IsTrue(PyTuple_GET_ITEM(p, 2)) == 1;
+
+    //
+    // tag
+    //
+    param->tag = static_cast<int>(PyLong_AsLong(PyTuple_GET_ITEM(p, 3)));
+
+    //
+    // position
+    //
+    param->pos = pos;
+
+    return param;
 }
 
 static PyMethodDef OperationMethods[] =
@@ -1168,8 +1278,7 @@ PyTypeObject OperationType =
 {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
-    PyObject_HEAD_INIT(0)
-    0,                               /* ob_size */
+    PyVarObject_HEAD_INIT(0, 0)
     STRCAST("IcePy.Operation"),      /* tp_name */
     sizeof(OperationObject),         /* tp_basicsize */
     0,                               /* tp_itemsize */
@@ -1178,7 +1287,7 @@ PyTypeObject OperationType =
     0,                               /* tp_print */
     0,                               /* tp_getattr */
     0,                               /* tp_setattr */
-    0,                               /* tp_compare */
+    0,                               /* tp_reserved */
     0,                               /* tp_repr */
     0,                               /* tp_as_number */
     0,                               /* tp_as_sequence */
@@ -1216,8 +1325,7 @@ PyTypeObject AMDCallbackType =
 {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
-    PyObject_HEAD_INIT(0)
-    0,                               /* ob_size */
+    PyVarObject_HEAD_INIT(0, 0)
     STRCAST("IcePy.AMDCallback"),    /* tp_name */
     sizeof(AMDCallbackObject),       /* tp_basicsize */
     0,                               /* tp_itemsize */
@@ -1226,7 +1334,7 @@ PyTypeObject AMDCallbackType =
     0,                               /* tp_print */
     0,                               /* tp_getattr */
     0,                               /* tp_setattr */
-    0,                               /* tp_compare */
+    0,                               /* tp_reserved */
     0,                               /* tp_repr */
     0,                               /* tp_as_number */
     0,                               /* tp_as_sequence */
@@ -1264,8 +1372,7 @@ PyTypeObject AsyncResultType =
 {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
-    PyObject_HEAD_INIT(0)
-    0,                               /* ob_size */
+    PyVarObject_HEAD_INIT(0, 0)
     STRCAST("IcePy.AsyncResult"),    /* tp_name */
     sizeof(AsyncResultObject),       /* tp_basicsize */
     0,                               /* tp_itemsize */
@@ -1274,7 +1381,7 @@ PyTypeObject AsyncResultType =
     0,                               /* tp_print */
     0,                               /* tp_getattr */
     0,                               /* tp_setattr */
-    0,                               /* tp_compare */
+    0,                               /* tp_reserved */
     0,                               /* tp_repr */
     0,                               /* tp_as_number */
     0,                               /* tp_as_sequence */
@@ -1363,9 +1470,11 @@ IcePy::TypedInvocation::TypedInvocation(const Ice::ObjectPrx& prx, const Operati
 }
 
 bool
-IcePy::TypedInvocation::prepareRequest(PyObject* args, MappingType mapping, vector<Ice::Byte>& bytes)
+IcePy::TypedInvocation::prepareRequest(PyObject* args, MappingType mapping, Ice::OutputStreamPtr& os,
+                                       pair<const Ice::Byte*, const Ice::Byte*>& params)
 {
     assert(PyTuple_Check(args));
+    params.first = params.second = static_cast<const Ice::Byte*>(0);
 
     //
     // Validate the number of arguments.
@@ -1399,33 +1508,65 @@ IcePy::TypedInvocation::prepareRequest(PyObject* args, MappingType mapping, vect
             //
             // Marshal the in parameters.
             //
-            Ice::OutputStreamPtr os = Ice::createOutputStream(_communicator);
+            os = Ice::createOutputStream(_communicator);
+            os->startEncapsulation(_prx->ice_getEncodingVersion(), _op->format);
 
             ObjectMap objectMap;
-            int i = 0;
-            for(ParamInfoList::iterator p = _op->inParams.begin(); p != _op->inParams.end(); ++p, ++i)
+            ParamInfoList::iterator p;
+
+            //
+            // Validate the supplied arguments.
+            //
+            for(p = _op->inParams.begin(); p != _op->inParams.end(); ++p)
             {
-                PyObject* arg = PyTuple_GET_ITEM(args, i);
-                if(!(*p)->type->validate(arg))
+                ParamInfoPtr info = *p;
+                PyObject* arg = PyTuple_GET_ITEM(args, info->pos);
+                if((!info->optional || arg != Unset) && !info->type->validate(arg))
                 {
-                    string opName;
+                    string name;
                     if(mapping == OldAsyncMapping)
                     {
-                        opName = _op->name + "_async";
+                        name = _op->name + "_async";
                     }
                     else if(mapping == AsyncMapping)
                     {
-                        opName = "begin_" + _op->name;
+                        name = "begin_" + _op->name;
                     }
                     else
                     {
-                        opName = fixIdent(_op->name);
+                        name = fixIdent(_op->name);
                     }
                     PyErr_Format(PyExc_ValueError, STRCAST("invalid value for argument %d in operation `%s'"),
-                                 mapping == OldAsyncMapping ? i + 2 : i + 1, const_cast<char*>(opName.c_str()));
+                                 mapping == OldAsyncMapping ? info->pos + 2 : info->pos + 1,
+                                 const_cast<char*>(name.c_str()));
                     return false;
                 }
-                (*p)->type->marshal(arg, os, &objectMap, &(*p)->metaData);
+            }
+
+            //
+            // Marshal the required parameters.
+            //
+            for(p = _op->inParams.begin(); p != _op->inParams.end(); ++p)
+            {
+                ParamInfoPtr info = *p;
+                if(!info->optional)
+                {
+                    PyObject* arg = PyTuple_GET_ITEM(args, info->pos);
+                    info->type->marshal(arg, os, &objectMap, false, &info->metaData);
+                }
+            }
+
+            //
+            // Marshal the optional parameters.
+            //
+            for(p = _op->optionalInParams.begin(); p != _op->optionalInParams.end(); ++p)
+            {
+                ParamInfoPtr info = *p;
+                PyObject* arg = PyTuple_GET_ITEM(args, info->pos);
+                if(arg != Unset && os->writeOptional(info->tag, info->type->optionalFormat()))
+                {
+                    info->type->marshal(arg, os, &objectMap, true, &info->metaData);
+                }
             }
 
             if(_op->sendsClasses)
@@ -1433,7 +1574,8 @@ IcePy::TypedInvocation::prepareRequest(PyObject* args, MappingType mapping, vect
                 os->writePendingObjects();
             }
 
-            os->finished(bytes);
+            os->endEncapsulation();
+            params = os->finished();
         }
         catch(const AbortMarshaling&)
         {
@@ -1453,28 +1595,81 @@ IcePy::TypedInvocation::prepareRequest(PyObject* args, MappingType mapping, vect
 PyObject*
 IcePy::TypedInvocation::unmarshalResults(const pair<const Ice::Byte*, const Ice::Byte*>& bytes)
 {
-    Py_ssize_t i = _op->returnType ? 1 : 0;
-    Py_ssize_t numResults = static_cast<Py_ssize_t>(_op->outParams.size()) + i;
+    Py_ssize_t numResults = static_cast<Py_ssize_t>(_op->outParams.size());
+    if(_op->returnType)
+    {
+        numResults++;
+    }
 
     PyObjectHandle results = PyTuple_New(numResults);
     if(results.get() && numResults > 0)
     {
-        Ice::InputStreamPtr is = Ice::createInputStream(_communicator, bytes);
-        for(ParamInfoList::iterator p = _op->outParams.begin(); p != _op->outParams.end(); ++p, ++i)
+        Ice::InputStreamPtr is = Ice::wrapInputStream(_communicator, bytes);
+
+        //
+        // Store a pointer to a local SlicedDataUtil object as the stream's closure.
+        // This is necessary to support object unmarshaling (see ObjectReader).
+        //
+        SlicedDataUtil util;
+        assert(!is->closure());
+        is->closure(&util);
+
+        is->startEncapsulation();
+
+        ParamInfoList::iterator p;
+
+        //
+        // Unmarshal the required out parameters.
+        //
+        for(p = _op->outParams.begin(); p != _op->outParams.end(); ++p)
         {
-            void* closure = reinterpret_cast<void*>(i);
-            (*p)->type->unmarshal(is, *p, results.get(), closure, &(*p)->metaData);
+            ParamInfoPtr info = *p;
+            if(!info->optional)
+            {
+                void* closure = reinterpret_cast<void*>(info->pos);
+                info->type->unmarshal(is, info, results.get(), closure, false, &info->metaData);
+            }
         }
 
-        if(_op->returnType)
+        //
+        // Unmarshal the required return value, if any.
+        //
+        if(_op->returnType && !_op->returnType->optional)
         {
-            _op->returnType->type->unmarshal(is, _op->returnType, results.get(), 0, &_op->metaData);
+            assert(_op->returnType->pos == 0);
+            void* closure = reinterpret_cast<void*>(_op->returnType->pos);
+            _op->returnType->type->unmarshal(is, _op->returnType, results.get(), closure, false, &_op->metaData);
+        }
+
+        //
+        // Unmarshal the optional results. This includes an optional return value.
+        //
+        for(p = _op->optionalOutParams.begin(); p != _op->optionalOutParams.end(); ++p)
+        {
+            ParamInfoPtr info = *p;
+            if(is->readOptional(info->tag, info->type->optionalFormat()))
+            {
+                void* closure = reinterpret_cast<void*>(info->pos);
+                info->type->unmarshal(is, info, results.get(), closure, true, &info->metaData);
+            }
+            else
+            {
+                if(PyTuple_SET_ITEM(results.get(), info->pos, Unset) < 0)
+                {
+                    return 0;
+                }
+                Py_INCREF(Unset); // PyTuple_SET_ITEM steals a reference.
+            }
         }
 
         if(_op->returnsClasses)
         {
             is->readPendingObjects();
         }
+
+        is->endEncapsulation();
+
+        util.update();
     }
 
     return results.release();
@@ -1483,75 +1678,53 @@ IcePy::TypedInvocation::unmarshalResults(const pair<const Ice::Byte*, const Ice:
 PyObject*
 IcePy::TypedInvocation::unmarshalException(const pair<const Ice::Byte*, const Ice::Byte*>& bytes)
 {
-    int traceSlicing = -1;
+    Ice::InputStreamPtr is = Ice::wrapInputStream(_communicator, bytes);
 
-    Ice::InputStreamPtr is = Ice::createInputStream(_communicator, bytes);
+    //
+    // Store a pointer to a local SlicedDataUtil object as the stream's closure.
+    // This is necessary to support object unmarshaling (see ObjectReader).
+    //
+    SlicedDataUtil util;
+    assert(!is->closure());
+    is->closure(&util);
 
-    bool usesClasses;
-    is->read(usesClasses);
+    is->startEncapsulation();
 
-    string id;
-    is->read(id);
-    const string origId = id;
-
-    while(!id.empty())
+    try
     {
-        ExceptionInfoPtr info = lookupExceptionInfo(id);
-        if(info)
+        Ice::UserExceptionReaderFactoryPtr factory = new UserExceptionReaderFactoryI(_communicator);
+        is->throwException(factory);
+    }
+    catch(const ExceptionReader& r)
+    {
+        is->endEncapsulation();
+
+        PyObject* ex = r.getException();
+
+        if(validateException(ex))
         {
-            PyObjectHandle ex = info->unmarshal(is);
-            if(info->usesClasses)
+            util.update();
+
+            Ice::SlicedDataPtr slicedData = r.getSlicedData();
+            if(slicedData)
             {
-                is->readPendingObjects();
+                SlicedDataUtil::setMember(ex, slicedData);
             }
 
-            if(validateException(ex.get()))
-            {
-                return ex.release();
-            }
-            else
-            {
-                PyException pye(ex.get()); // No traceback information available.
-                pye.raise();
-            }
+            Py_INCREF(ex);
+            return ex;
         }
         else
         {
-            if(traceSlicing == -1)
-            {
-                traceSlicing = _communicator->getProperties()->getPropertyAsInt("Ice.Trace.Slicing") > 0;
-            }
-
-            if(traceSlicing > 0)
-            {
-                _communicator->getLogger()->trace("Slicing", "unknown exception type `" + id + "'");
-            }
-
-            is->skipSlice(); // Slice off what we don't understand.
-
-            try
-            {
-                is->read(id); // Read type id for next slice.
-            }
-            catch(Ice::UnmarshalOutOfBoundsException& ex)
-            {
-                //
-                // When readString raises this exception it means we've seen the last slice,
-                // so we set the reason member to a more helpful message.
-                //
-                ex.reason = "unknown exception type `" + origId + "'";
-                throw;
-            }
+            PyException pye(ex); // No traceback information available.
+            pye.raise();
         }
     }
 
-    //
-    // Getting here should be impossible: we can get here only if the
-    // sender has marshaled a sequence of type IDs, none of which we
-    // have a factory for. This means that sender and receiver disagree
-    // about the Slice definitions they use.
-    //
-    throw Ice::UnknownUserException(__FILE__, __LINE__, "unknown exception type `" + origId + "'");
+    throw Ice::UnknownUserException(__FILE__, __LINE__, "unknown exception");
+#ifdef __SUNPRO_CC
+    return 0;
+#endif
 }
 
 bool
@@ -1599,8 +1772,9 @@ IcePy::SyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
     //
     // Marshal the input parameters to a byte sequence.
     //
-    Ice::ByteSeq params;
-    if(!prepareRequest(pyparams, SyncMapping, params))
+    Ice::OutputStreamPtr os;
+    pair<const Ice::Byte*, const Ice::Byte*> params;
+    if(!prepareRequest(pyparams, SyncMapping, os, params))
     {
         return 0;
     }
@@ -1650,7 +1824,8 @@ IcePy::SyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
                 //
                 // Unmarshal a user exception.
                 //
-                pair<const Ice::Byte*, const Ice::Byte*> rb(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
+                pair<const Ice::Byte*, const Ice::Byte*> rb(static_cast<const Ice::Byte*>(0),
+                                                            static_cast<const Ice::Byte*>(0));
                 if(!result.empty())
                 {
                     rb.first = &result[0];
@@ -1670,7 +1845,8 @@ IcePy::SyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
                 // Unmarshal the results. If there is more than one value to be returned, then return them
                 // in a tuple of the form (result, outParam1, ...). Otherwise just return the value.
                 //
-                pair<const Ice::Byte*, const Ice::Byte*> rb(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
+                pair<const Ice::Byte*, const Ice::Byte*> rb(static_cast<const Ice::Byte*>(0),
+                                                            static_cast<const Ice::Byte*>(0));
                 if(!result.empty())
                 {
                     rb.first = &result[0];
@@ -1800,8 +1976,9 @@ IcePy::AsyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
     //
     // Marshal the input parameters to a byte sequence.
     //
-    Ice::ByteSeq params;
-    if(!prepareRequest(pyparams, AsyncMapping, params))
+    Ice::OutputStreamPtr os;
+    pair<const Ice::Byte*, const Ice::Byte*> params;
+    if(!prepareRequest(pyparams, AsyncMapping, os, params))
     {
         return 0;
     }
@@ -1810,12 +1987,6 @@ IcePy::AsyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
     try
     {
         checkAsyncTwowayOnly(_prx);
-        pair<const Ice::Byte*, const Ice::Byte*> pparams(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
-        if(!params.empty())
-        {
-            pparams.first = &params[0];
-            pparams.second = &params[0] + params.size();
-        }
 
         Ice::Callback_Object_ice_invokePtr cb;
         if(_response || _ex || _sent)
@@ -1838,11 +2009,11 @@ IcePy::AsyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
             AllowThreads allowThreads; // Release Python's global interpreter lock during remote invocations.
             if(cb)
             {
-                result = _prx->begin_ice_invoke(_op->name, _op->sendMode, pparams, ctx, cb);
+                result = _prx->begin_ice_invoke(_op->name, _op->sendMode, params, ctx, cb);
             }
             else
             {
-                result = _prx->begin_ice_invoke(_op->name, _op->sendMode, pparams, ctx);
+                result = _prx->begin_ice_invoke(_op->name, _op->sendMode, params, ctx);
             }
         }
         else
@@ -1850,11 +2021,11 @@ IcePy::AsyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
             AllowThreads allowThreads; // Release Python's global interpreter lock during remote invocations.
             if(cb)
             {
-                result = _prx->begin_ice_invoke(_op->name, _op->sendMode, pparams, cb);
+                result = _prx->begin_ice_invoke(_op->name, _op->sendMode, params, cb);
             }
             else
             {
-                result = _prx->begin_ice_invoke(_op->name, _op->sendMode, pparams);
+                result = _prx->begin_ice_invoke(_op->name, _op->sendMode, params);
             }
         }
     }
@@ -1872,7 +2043,7 @@ IcePy::AsyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
         // IllegalArgumentException can propagate directly.
         // (Raised by checkAsyncTwowayOnly)
         //
-        PyErr_Format(PyExc_RuntimeError, STRCAST(ex.reason().c_str()));
+        PyErr_Format(PyExc_RuntimeError, "%s", STRCAST(ex.reason().c_str()));
         return 0;
     }
     catch(const Ice::Exception&)
@@ -1884,7 +2055,7 @@ IcePy::AsyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
     }
 
     assert(result);
-    AsyncResultObject* obj = asyncResultNew(0);
+    AsyncResultObject* obj = asyncResultNew(&AsyncResultType, 0, 0);
     if(!obj)
     {
         return 0;
@@ -1893,6 +2064,7 @@ IcePy::AsyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
     obj->invocation = new InvocationPtr(this);
     obj->proxy = _pyProxy;
     Py_INCREF(obj->proxy);
+    obj->communicator = getCommunicatorWrapper(_communicator);
     return reinterpret_cast<PyObject*>(obj);
 }
 
@@ -1957,7 +2129,7 @@ IcePy::AsyncTypedInvocation::end(const Ice::ObjectPrx& proxy, const OperationPtr
     }
     catch(const IceUtil::IllegalArgumentException& ex)
     {
-        PyErr_Format(PyExc_RuntimeError, STRCAST(ex.reason().c_str()));
+        PyErr_Format(PyExc_RuntimeError, "%s", STRCAST(ex.reason().c_str()));
     }
     catch(const Ice::Exception& ex)
     {
@@ -2089,8 +2261,9 @@ IcePy::OldAsyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
     //
     // Marshal the input parameters to a byte sequence.
     //
-    Ice::ByteSeq params;
-    if(!prepareRequest(pyparams, OldAsyncMapping, params))
+    Ice::OutputStreamPtr os;
+    pair<const Ice::Byte*, const Ice::Byte*> params;
+    if(!prepareRequest(pyparams, OldAsyncMapping, os, params))
     {
         return 0;
     }
@@ -2099,12 +2272,6 @@ IcePy::OldAsyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
     try
     {
         checkTwowayOnly(_prx);
-        pair<const Ice::Byte*, const Ice::Byte*> pparams(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
-        if(!params.empty())
-        {
-            pparams.first = &params[0];
-            pparams.second = &params[0] + params.size();
-        }
 
         Ice::Callback_Object_ice_invokePtr cb =
             Ice::newCallback_Object_ice_invoke(this, &OldAsyncTypedInvocation::response,
@@ -2131,12 +2298,12 @@ IcePy::OldAsyncTypedInvocation::invoke(PyObject* args, PyObject* /* kwds */)
             }
 
             AllowThreads allowThreads; // Release Python's global interpreter lock during remote invocations.
-            result = _prx->begin_ice_invoke(_op->name, _op->sendMode, pparams, ctx, cb);
+            result = _prx->begin_ice_invoke(_op->name, _op->sendMode, params, ctx, cb);
         }
         else
         {
             AllowThreads allowThreads; // Release Python's global interpreter lock during remote invocations.
-            result = _prx->begin_ice_invoke(_op->name, _op->sendMode, pparams, cb);
+            result = _prx->begin_ice_invoke(_op->name, _op->sendMode, params, cb);
         }
 
         sentSynchronously = result->sentSynchronously();
@@ -2263,31 +2430,48 @@ IcePy::SyncBlobjectInvocation::invoke(PyObject* args, PyObject* /* kwds */)
     PyObject* inParams;
     PyObject* operationModeType = lookupType("Ice.OperationMode");
     PyObject* ctx = 0;
+#if PY_VERSION_HEX >= 0x03000000
+    if(!PyArg_ParseTuple(args, STRCAST("sO!O!|O"), &operation, operationModeType, &mode, &PyBytes_Type, &inParams,
+                         &ctx))
+    {
+        return 0;
+    }
+#else
     if(!PyArg_ParseTuple(args, STRCAST("sO!O!|O"), &operation, operationModeType, &mode, &PyBuffer_Type, &inParams,
                          &ctx))
     {
         return 0;
     }
+#endif
 
     PyObjectHandle modeValue = PyObject_GetAttrString(mode, STRCAST("value"));
-    Ice::OperationMode sendMode = (Ice::OperationMode)static_cast<int>(PyInt_AS_LONG(modeValue.get()));
+    Ice::OperationMode sendMode = (Ice::OperationMode)static_cast<int>(PyLong_AsLong(modeValue.get()));
+    assert(!PyErr_Occurred());
 
+#if PY_VERSION_HEX >= 0x03000000
+    Py_ssize_t sz = PyBytes_GET_SIZE(inParams);
+    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(static_cast<const Ice::Byte*>(0),
+                                                    static_cast<const Ice::Byte*>(0));
+    if(sz > 0)
+    {
+        in.first = reinterpret_cast<Ice::Byte*>(PyBytes_AS_STRING(inParams));
+        in.second = in.first + sz;
+    }
+#else
     //
     // Use the array API to avoid copying the data.
     //
-#if PY_VERSION_HEX < 0x02050000
-    const char* charBuf = 0;
-#else
     char* charBuf = 0;
-#endif
     Py_ssize_t sz = inParams->ob_type->tp_as_buffer->bf_getcharbuffer(inParams, 0, &charBuf);
     const Ice::Byte* mem = reinterpret_cast<const Ice::Byte*>(charBuf);
-    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
+    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(static_cast<const Ice::Byte*>(0),
+                                                    static_cast<const Ice::Byte*>(0));
     if(sz > 0)
     {
         in.first = mem;
         in.second = mem + sz;
     }
+#endif
 
     try
     {
@@ -2325,11 +2509,26 @@ IcePy::SyncBlobjectInvocation::invoke(PyObject* args, PyObject* /* kwds */)
             throwPythonException();
         }
 
+#if PY_VERSION_HEX >= 0x03000000
+        PyObjectHandle op;
+        if(out.empty())
+        {
+            op = PyBytes_FromString("");
+        }
+        else
+        {
+            op = PyBytes_FromStringAndSize(reinterpret_cast<const char*>(&out[0]), out.size());
+        }
+        if(!op.get())
+        {
+            throwPythonException();
+        }
+#else
         //
         // Create the output buffer and copy in the outParams.
         //
-        PyObjectHandle ip = PyBuffer_New(out.size());
-        if(!ip.get())
+        PyObjectHandle op = PyBuffer_New(out.size());
+        if(!op.get())
         {
             throwPythonException();
         }
@@ -2337,18 +2536,19 @@ IcePy::SyncBlobjectInvocation::invoke(PyObject* args, PyObject* /* kwds */)
         {
             void* buf;
             Py_ssize_t sz;
-            if(PyObject_AsWriteBuffer(ip.get(), &buf, &sz))
+            if(PyObject_AsWriteBuffer(op.get(), &buf, &sz))
             {
                 throwPythonException();
             }
             memcpy(buf, &out[0], sz);
         }
+#endif
         
-        if(PyTuple_SET_ITEM(result.get(), 1, ip.get()) < 0)
+        if(PyTuple_SET_ITEM(result.get(), 1, op.get()) < 0)
         {
             throwPythonException();
         }
-        ip.release(); // PyTuple_SET_ITEM steals a reference.
+        op.release(); // PyTuple_SET_ITEM steals a reference.
 
         return result.release();
     }
@@ -2400,16 +2600,25 @@ IcePy::AsyncBlobjectInvocation::invoke(PyObject* args, PyObject* kwds)
     PyObject* ex = Py_None;
     PyObject* sent = Py_None;
     PyObject* pyctx = Py_None;
+#if PY_VERSION_HEX >= 0x03000000
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, STRCAST("sO!O!|OOOO"), argNames, &operation, operationModeType, &mode,
+                                    &PyBytes_Type, &inParams, &response, &ex, &sent, &pyctx))
+    {
+        return 0;
+    }
+#else
     if(!PyArg_ParseTupleAndKeywords(args, kwds, STRCAST("sO!O!|OOOO"), argNames, &operation, operationModeType, &mode,
                                     &PyBuffer_Type, &inParams, &response, &ex, &sent, &pyctx))
     {
         return 0;
     }
+#endif
 
     _op = operation;
 
     PyObjectHandle modeValue = PyObject_GetAttrString(mode, STRCAST("value"));
-    Ice::OperationMode sendMode = (Ice::OperationMode)static_cast<int>(PyInt_AS_LONG(modeValue.get()));
+    Ice::OperationMode sendMode = (Ice::OperationMode)static_cast<int>(PyLong_AsLong(modeValue.get()));
+    assert(!PyErr_Occurred());
 
     if(PyCallable_Check(response))
     {
@@ -2457,22 +2666,30 @@ IcePy::AsyncBlobjectInvocation::invoke(PyObject* args, PyObject* kwds)
         return 0;
     }
 
+#if PY_VERSION_HEX >= 0x03000000
+    Py_ssize_t sz = PyBytes_GET_SIZE(inParams);
+    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(static_cast<const Ice::Byte*>(0),
+                                                    static_cast<const Ice::Byte*>(0));
+    if(sz > 0)
+    {
+        in.first = reinterpret_cast<Ice::Byte*>(PyBytes_AS_STRING(inParams));
+        in.second = in.first + sz;
+    }
+#else
     //
     // Use the array API to avoid copying the data.
     //
-#if PY_VERSION_HEX < 0x02050000
-    const char* charBuf = 0;
-#else
     char* charBuf = 0;
-#endif
     Py_ssize_t sz = inParams->ob_type->tp_as_buffer->bf_getcharbuffer(inParams, 0, &charBuf);
     const Ice::Byte* mem = reinterpret_cast<const Ice::Byte*>(charBuf);
-    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
+    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(static_cast<const Ice::Byte*>(0),
+                                                    static_cast<const Ice::Byte*>(0));
     if(sz > 0)
     {
         in.first = mem;
         in.second = mem + sz;
     }
+#endif
 
     Ice::AsyncResultPtr result;
     try
@@ -2533,7 +2750,7 @@ IcePy::AsyncBlobjectInvocation::invoke(PyObject* args, PyObject* kwds)
     }
 
     assert(result);
-    AsyncResultObject* obj = asyncResultNew(0);
+    AsyncResultObject* obj = asyncResultNew(&AsyncResultType, 0, 0);
     if(!obj)
     {
         return 0;
@@ -2542,6 +2759,7 @@ IcePy::AsyncBlobjectInvocation::invoke(PyObject* args, PyObject* kwds)
     obj->invocation = new InvocationPtr(this);
     obj->proxy = _pyProxy;
     Py_INCREF(obj->proxy);
+    obj->communicator = getCommunicatorWrapper(_prx->ice_getCommunicator());
     return reinterpret_cast<PyObject*>(obj);
 }
 
@@ -2572,29 +2790,46 @@ IcePy::AsyncBlobjectInvocation::end(const Ice::ObjectPrx& proxy, const Ice::Asyn
             return 0;
         }
 
+#if PY_VERSION_HEX >= 0x03000000
+        Py_ssize_t sz = results.second - results.first;
+        PyObjectHandle op;
+        if(sz == 0)
+        {
+            op = PyBytes_FromString("");
+        }
+        else
+        {
+            op = PyBytes_FromStringAndSize(reinterpret_cast<const char*>(results.first), sz);
+        }
+        if(!op.get())
+        {
+            return 0;
+        }
+#else
         //
         // Create the output buffer and copy in the outParams.
         //
-        PyObjectHandle ip = PyBuffer_New(results.second - results.first);
-        if(!ip.get())
+        PyObjectHandle op = PyBuffer_New(results.second - results.first);
+        if(!op.get())
         {
             return 0;
         }
 
         void* buf;
         Py_ssize_t sz;
-        if(PyObject_AsWriteBuffer(ip.get(), &buf, &sz))
+        if(PyObject_AsWriteBuffer(op.get(), &buf, &sz))
         {
             return 0;
         }
         assert(sz == results.second - results.first);
         memcpy(buf, results.first, sz);
+#endif
 
-        if(PyTuple_SET_ITEM(args.get(), 1, ip.get()) < 0)
+        if(PyTuple_SET_ITEM(args.get(), 1, op.get()) < 0)
         {
             return 0;
         }
-        ip.release(); // PyTuple_SET_ITEM steals a reference.
+        op.release(); // PyTuple_SET_ITEM steals a reference.
 
         return args.release();
     }
@@ -2604,7 +2839,7 @@ IcePy::AsyncBlobjectInvocation::end(const Ice::ObjectPrx& proxy, const Ice::Asyn
     }
     catch(const IceUtil::IllegalArgumentException& ex)
     {
-        PyErr_Format(PyExc_RuntimeError, STRCAST(ex.reason().c_str()));
+        PyErr_Format(PyExc_RuntimeError, "%s", STRCAST(ex.reason().c_str()));
     }
     catch(const Ice::Exception& ex)
     {
@@ -2640,11 +2875,29 @@ IcePy::AsyncBlobjectInvocation::response(bool ok, const pair<const Ice::Byte*, c
             return;
         }
 
+#if PY_VERSION_HEX >= 0x03000000
+        Py_ssize_t sz = results.second - results.first;
+        PyObjectHandle op;
+        if(sz == 0)
+        {
+            op = PyBytes_FromString("");
+        }
+        else
+        {
+            op = PyBytes_FromStringAndSize(reinterpret_cast<const char*>(results.first), sz);
+        }
+        if(!op.get())
+        {
+            assert(PyErr_Occurred());
+            PyErr_Print();
+            return;
+        }
+#else
         //
         // Create the output buffer and copy in the outParams.
         //
-        PyObjectHandle ip = PyBuffer_New(results.second - results.first);
-        if(!ip.get())
+        PyObjectHandle op = PyBuffer_New(results.second - results.first);
+        if(!op.get())
         {
             assert(PyErr_Occurred());
             PyErr_Print();
@@ -2653,7 +2906,7 @@ IcePy::AsyncBlobjectInvocation::response(bool ok, const pair<const Ice::Byte*, c
 
         void* buf;
         Py_ssize_t sz;
-        if(PyObject_AsWriteBuffer(ip.get(), &buf, &sz))
+        if(PyObject_AsWriteBuffer(op.get(), &buf, &sz))
         {
             assert(PyErr_Occurred());
             PyErr_Print();
@@ -2661,14 +2914,15 @@ IcePy::AsyncBlobjectInvocation::response(bool ok, const pair<const Ice::Byte*, c
         }
         assert(sz == results.second - results.first);
         memcpy(buf, results.first, sz);
+#endif
 
-        if(PyTuple_SET_ITEM(args.get(), 1, ip.get()) < 0)
+        if(PyTuple_SET_ITEM(args.get(), 1, op.get()) < 0)
         {
             assert(PyErr_Occurred());
             PyErr_Print();
             return;
         }
-        ip.release(); // PyTuple_SET_ITEM steals a reference.
+        op.release(); // PyTuple_SET_ITEM steals a reference.
 
         PyObjectHandle tmp = PyObject_Call(_response, args.get(), 0);
         if(PyErr_Occurred())
@@ -2719,34 +2973,51 @@ IcePy::OldAsyncBlobjectInvocation::invoke(PyObject* args, PyObject* /* kwds */)
     PyObject* inParams;
     PyObject* operationModeType = lookupType("Ice.OperationMode");
     PyObject* ctx = 0;
+#if PY_VERSION_HEX >= 0x03000000
+    if(!PyArg_ParseTuple(args, STRCAST("OsO!O!|O"), &_callback, &operation, operationModeType, &mode,
+                         &PyBytes_Type, &inParams, &ctx))
+    {
+        return 0;
+    }
+#else
     if(!PyArg_ParseTuple(args, STRCAST("OsO!O!|O"), &_callback, &operation, operationModeType, &mode,
                          &PyBuffer_Type, &inParams, &ctx))
     {
         return 0;
     }
+#endif
 
     Py_INCREF(_callback);
     _op = operation;
 
     PyObjectHandle modeValue = PyObject_GetAttrString(mode, STRCAST("value"));
-    Ice::OperationMode sendMode = (Ice::OperationMode)static_cast<int>(PyInt_AS_LONG(modeValue.get()));
+    Ice::OperationMode sendMode = (Ice::OperationMode)static_cast<int>(PyLong_AsLong(modeValue.get()));
+    assert(!PyErr_Occurred());
 
+#if PY_VERSION_HEX >= 0x03000000
+    Py_ssize_t sz = PyBytes_GET_SIZE(inParams);
+    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(static_cast<const Ice::Byte*>(0),
+                                                    static_cast<const Ice::Byte*>(0));
+    if(sz > 0)
+    {
+        in.first = reinterpret_cast<Ice::Byte*>(PyBytes_AS_STRING(inParams));
+        in.second = in.first + sz;
+    }
+#else
     //
     // Use the array API to avoid copying the data.
     //
-#if PY_VERSION_HEX < 0x02050000
-    const char* charBuf = 0;
-#else
     char* charBuf = 0;
-#endif
     Py_ssize_t sz = inParams->ob_type->tp_as_buffer->bf_getcharbuffer(inParams, 0, &charBuf);
     const Ice::Byte* mem = reinterpret_cast<const Ice::Byte*>(charBuf);
-    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(static_cast<const Ice::Byte*>(0), static_cast<const Ice::Byte*>(0));
+    pair<const ::Ice::Byte*, const ::Ice::Byte*> in(static_cast<const Ice::Byte*>(0),
+                                                    static_cast<const Ice::Byte*>(0));
     if(sz > 0)
     {
         in.first = mem;
         in.second = mem + sz;
     }
+#endif
 
     bool sentSynchronously = false;
     try
@@ -2820,11 +3091,29 @@ IcePy::OldAsyncBlobjectInvocation::response(bool ok, const pair<const Ice::Byte*
             return;
         }
 
+#if PY_VERSION_HEX >= 0x03000000
+        Py_ssize_t sz = results.second - results.first;
+        PyObjectHandle op;
+        if(sz == 0)
+        {
+            op = PyBytes_FromString("");
+        }
+        else
+        {
+            op = PyBytes_FromStringAndSize(reinterpret_cast<const char*>(results.first), sz);
+        }
+        if(!op.get())
+        {
+            assert(PyErr_Occurred());
+            PyErr_Print();
+            return;
+        }
+#else
         //
         // Create the output buffer and copy in the outParams.
         //
-        PyObjectHandle ip = PyBuffer_New(results.second - results.first);
-        if(!ip.get())
+        PyObjectHandle op = PyBuffer_New(results.second - results.first);
+        if(!op.get())
         {
             assert(PyErr_Occurred());
             PyErr_Print();
@@ -2833,7 +3122,7 @@ IcePy::OldAsyncBlobjectInvocation::response(bool ok, const pair<const Ice::Byte*
 
         void* buf;
         Py_ssize_t sz;
-        if(PyObject_AsWriteBuffer(ip.get(), &buf, &sz))
+        if(PyObject_AsWriteBuffer(op.get(), &buf, &sz))
         {
             assert(PyErr_Occurred());
             PyErr_Print();
@@ -2841,14 +3130,15 @@ IcePy::OldAsyncBlobjectInvocation::response(bool ok, const pair<const Ice::Byte*
         }
         assert(sz == results.second - results.first);
         memcpy(buf, results.first, sz);
+#endif
 
-        if(PyTuple_SET_ITEM(args.get(), 1, ip.get()) < 0)
+        if(PyTuple_SET_ITEM(args.get(), 1, op.get()) < 0)
         {
             assert(PyErr_Occurred());
             PyErr_Print();
             return;
         }
-        ip.release(); // PyTuple_SET_ITEM steals a reference.
+        op.release(); // PyTuple_SET_ITEM steals a reference.
 
         const string methodName = "ice_response";
         if(!PyObject_HasAttrString(_callback, STRCAST(methodName.c_str())))
@@ -2913,11 +3203,11 @@ IcePy::TypedUpcall::dispatch(PyObject* servant, const pair<const Ice::Byte*, con
     //
     Py_ssize_t count = static_cast<Py_ssize_t>(_op->inParams.size()) + 1;
 
-    Py_ssize_t start = 0;
+    Py_ssize_t offset = 0;
     if(_op->amd)
     {
         ++count; // Leave room for a leading AMD callback argument.
-        start = 1;
+        offset = 1;
     }
 
     PyObjectHandle args = PyTuple_New(count);
@@ -2928,19 +3218,64 @@ IcePy::TypedUpcall::dispatch(PyObject* servant, const pair<const Ice::Byte*, con
 
     if(!_op->inParams.empty())
     {
-        Ice::InputStreamPtr is = Ice::createInputStream(_communicator, inBytes);
+        Ice::InputStreamPtr is = Ice::wrapInputStream(_communicator, inBytes);
+
+        //
+        // Store a pointer to a local SlicedDataUtil object as the stream's closure.
+        // This is necessary to support object unmarshaling (see ObjectReader).
+        //
+        SlicedDataUtil util;
+        assert(!is->closure());
+        is->closure(&util);
+
         try
         {
-            Py_ssize_t i = start;
-            for(ParamInfoList::iterator p = _op->inParams.begin(); p != _op->inParams.end(); ++p, ++i)
+            is->startEncapsulation();
+
+            ParamInfoList::iterator p;
+
+            //
+            // Unmarshal the required parameters.
+            //
+            for(p = _op->inParams.begin(); p != _op->inParams.end(); ++p)
             {
-                void* closure = reinterpret_cast<void*>(i);
-                (*p)->type->unmarshal(is, *p, args.get(), closure, &(*p)->metaData);
+                ParamInfoPtr info = *p;
+                if(!info->optional)
+                {
+                    void* closure = reinterpret_cast<void*>(info->pos + offset);
+                    info->type->unmarshal(is, info, args.get(), closure, false, &info->metaData);
+                }
             }
+
+            //
+            // Unmarshal the optional parameters.
+            //
+            for(p = _op->optionalInParams.begin(); p != _op->optionalInParams.end(); ++p)
+            {
+                ParamInfoPtr info = *p;
+                if(is->readOptional(info->tag, info->type->optionalFormat()))
+                {
+                    void* closure = reinterpret_cast<void*>(info->pos + offset);
+                    info->type->unmarshal(is, info, args.get(), closure, true, &info->metaData);
+                }
+                else
+                {
+                    if(PyTuple_SET_ITEM(args.get(), info->pos + offset, Unset) < 0)
+                    {
+                        throwPythonException();
+                    }
+                    Py_INCREF(Unset); // PyTuple_SET_ITEM steals a reference.
+                }
+            }
+
             if(_op->sendsClasses)
             {
                 is->readPendingObjects();
             }
+
+            is->endEncapsulation();
+
+            util.update();
         }
         catch(const AbortMarshaling&)
         {
@@ -2963,12 +3298,13 @@ IcePy::TypedUpcall::dispatch(PyObject* servant, const pair<const Ice::Byte*, con
         //
         // Create the callback object and pass it as the first argument.
         //
-        AMDCallbackObject* obj = amdCallbackNew(0);
+        AMDCallbackObject* obj = amdCallbackNew(&AMDCallbackType, 0, 0);
         if(!obj)
         {
             throwPythonException();
         }
         obj->upcall = new UpcallPtr(this);
+        obj->encoding = current.encoding;
         if(PyTuple_SET_ITEM(args.get(), 0, (PyObject*)obj) < 0) // PyTuple_SET_ITEM steals a reference.
         {
             Py_DECREF(obj);
@@ -3000,18 +3336,18 @@ IcePy::TypedUpcall::dispatch(PyObject* servant, const pair<const Ice::Byte*, con
     if(PyErr_Occurred())
     {
         PyException ex; // Retrieve it before another Python API call clears it.
-        exception(ex);
+        exception(ex, current.encoding);
         return;
     }
 
     if(!_op->amd)
     {
-        response(result.get());
+        response(result.get(), current.encoding);
     }
 }
 
 void
-IcePy::TypedUpcall::response(PyObject* args)
+IcePy::TypedUpcall::response(PyObject* args, const Ice::EncodingVersion& encoding)
 {
     if(_finished)
     {
@@ -3033,69 +3369,111 @@ IcePy::TypedUpcall::response(PyObject* args)
         Ice::OutputStreamPtr os = Ice::createOutputStream(_communicator);
         try
         {
-            Py_ssize_t i = _op->returnType ? 1 : 0;
-            Py_ssize_t numResults = static_cast<Py_ssize_t>(_op->outParams.size()) + i;
-            if(numResults > 1)
+            Py_ssize_t numResults = static_cast<Py_ssize_t>(_op->outParams.size());
+            if(_op->returnType)
             {
-                if(!PyTuple_Check(args) || PyTuple_GET_SIZE(args) != numResults)
-                {
-                    ostringstream ostr;
-                    ostr << "operation `" << fixIdent(_op->name) << "' should return a tuple of length " << numResults;
-                    string str = ostr.str();
-                    PyErr_Warn(PyExc_RuntimeWarning, const_cast<char*>(str.c_str()));
-                    throw Ice::MarshalException(__FILE__, __LINE__);
-                }
+                numResults++;
             }
 
-            ObjectMap objectMap;
-
-            for(ParamInfoList::iterator p = _op->outParams.begin(); p != _op->outParams.end(); ++p, ++i)
+            if(numResults > 1 && (!PyTuple_Check(args) || PyTuple_GET_SIZE(args) != numResults))
             {
-                PyObject* arg;
-                if(_op->amd || numResults > 1)
-                {
-                    arg = PyTuple_GET_ITEM(args, i);
-                }
-                else
-                {
-                    arg = args;
-                    assert(_op->outParams.size() == 1);
-                }
+                ostringstream ostr;
+                ostr << "operation `" << fixIdent(_op->name) << "' should return a tuple of length " << numResults;
+                string str = ostr.str();
+                PyErr_Warn(PyExc_RuntimeWarning, const_cast<char*>(str.c_str()));
+                throw Ice::MarshalException(__FILE__, __LINE__);
+            }
 
-                if(!(*p)->type->validate(arg))
+            //
+            // Normalize the args value. For an AMD operation, or when there are multiple
+            // result values, args is already a tuple. Otherwise, we create a tuple to
+            // make the code a little simpler.
+            //
+            PyObjectHandle t;
+            if(_op->amd || numResults > 1)
+            {
+                t = args;
+            }
+            else
+            {
+                t = PyTuple_New(1);
+                if(!t.get())
+                {
+                    throw AbortMarshaling();
+                }
+                PyTuple_SET_ITEM(t.get(), 0, args);
+            }
+            Py_INCREF(args);
+
+            os->startEncapsulation(encoding, _op->format);
+
+            ObjectMap objectMap;
+            ParamInfoList::iterator p;
+
+            //
+            // Validate the results.
+            //
+            for(p = _op->outParams.begin(); p != _op->outParams.end(); ++p)
+            {
+                ParamInfoPtr info = *p;
+                PyObject* arg = PyTuple_GET_ITEM(t.get(), info->pos);
+                if((!info->optional || arg != Unset) && !info->type->validate(arg))
                 {
                     // TODO: Provide the parameter name instead?
                     ostringstream ostr;
-                    ostr << "invalid value for out argument " << (i + 1) << " in operation `" << fixIdent(_op->name)
-                         << (_op->amd ? "_async" : "") << "'";
+                    ostr << "invalid value for out argument " << (info->pos + 1) << " in operation `"
+                         << _op->dispatchName << "'";
                     string str = ostr.str();
                     PyErr_Warn(PyExc_RuntimeWarning, const_cast<char*>(str.c_str()));
                     throw Ice::MarshalException(__FILE__, __LINE__);
                 }
-                (*p)->type->marshal(arg, os, &objectMap, &(*p)->metaData);
             }
-
             if(_op->returnType)
             {
-                PyObject* res;
-                if(_op->amd || numResults > 1)
-                {
-                    res = PyTuple_GET_ITEM(args, 0);
-                }
-                else
-                {
-                    assert(_op->outParams.size() == 0);
-                    res = args;
-                }
-                if(!_op->returnType->type->validate(res))
+                PyObject* res = PyTuple_GET_ITEM(t.get(), 0);
+                if((!_op->returnType->optional || res != Unset) && !_op->returnType->type->validate(res))
                 {
                     ostringstream ostr;
-                    ostr << "invalid return value for operation `" << fixIdent(_op->name) << "'";
+                    ostr << "invalid return value for operation `" << _op->dispatchName << "'";
                     string str = ostr.str();
                     PyErr_Warn(PyExc_RuntimeWarning, const_cast<char*>(str.c_str()));
                     throw Ice::MarshalException(__FILE__, __LINE__);
                 }
-                _op->returnType->type->marshal(res, os, &objectMap, &_op->metaData);
+            }
+
+            //
+            // Marshal the required out parameters.
+            //
+            for(p = _op->outParams.begin(); p != _op->outParams.end(); ++p)
+            {
+                ParamInfoPtr info = *p;
+                if(!info->optional)
+                {
+                    PyObject* arg = PyTuple_GET_ITEM(t.get(), info->pos);
+                    info->type->marshal(arg, os, &objectMap, false, &info->metaData);
+                }
+            }
+
+            //
+            // Marshal the required return value, if any.
+            //
+            if(_op->returnType && !_op->returnType->optional)
+            {
+                PyObject* res = PyTuple_GET_ITEM(t.get(), 0);
+                _op->returnType->type->marshal(res, os, &objectMap, false, &_op->metaData);
+            }
+
+            //
+            // Marshal the optional results.
+            //
+            for(p = _op->optionalOutParams.begin(); p != _op->optionalOutParams.end(); ++p)
+            {
+                ParamInfoPtr info = *p;
+                PyObject* arg = PyTuple_GET_ITEM(t.get(), info->pos);
+                if(arg != Unset && os->writeOptional(info->tag, info->type->optionalFormat()))
+                {
+                    info->type->marshal(arg, os, &objectMap, true, &info->metaData);
+                }
             }
 
             if(_op->returnsClasses)
@@ -3103,17 +3481,10 @@ IcePy::TypedUpcall::response(PyObject* args)
                 os->writePendingObjects();
             }
 
-            Ice::ByteSeq bytes;
-            os->finished(bytes);
-            pair<const Ice::Byte*, const Ice::Byte*> ob(static_cast<const Ice::Byte*>(0), static_cast<const Ice::Byte*>(0));
-            if(!bytes.empty())
-            {
-                ob.first = &bytes[0];
-                ob.second = &bytes[0] + bytes.size();
-            }
+            os->endEncapsulation();
 
             AllowThreads allowThreads; // Release Python's global interpreter lock during blocking calls.
-            _callback->ice_response(true, ob);
+            _callback->ice_response(true, os->finished());
         }
         catch(const AbortMarshaling&)
         {
@@ -3128,7 +3499,7 @@ IcePy::TypedUpcall::response(PyObject* args)
 }
 
 void
-IcePy::TypedUpcall::exception(PyException& ex)
+IcePy::TypedUpcall::exception(PyException& ex, const Ice::EncodingVersion& encoding)
 {
     if(_finished)
     {
@@ -3171,28 +3542,15 @@ IcePy::TypedUpcall::exception(PyException& ex)
                 else
                 {
                     Ice::OutputStreamPtr os = Ice::createOutputStream(_communicator);
+                    os->startEncapsulation(encoding, _op->format);
 
-                    os->write(info->usesClasses);
+                    ExceptionWriter writer(_communicator, ex.ex, info);
+                    os->writeException(writer);
 
-                    ObjectMap objectMap;
-                    info->marshal(ex.ex.get(), os, &objectMap);
-
-                    if(info->usesClasses)
-                    {
-                        os->writePendingObjects();
-                    }
-
-                    Ice::ByteSeq bytes;
-                    os->finished(bytes);
-                    pair<const Ice::Byte*, const Ice::Byte*> ob(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
-                    if(!bytes.empty())
-                    {
-                        ob.first = &bytes[0];
-                        ob.second = &bytes[0] + bytes.size();
-                    }
+                    os->endEncapsulation();
 
                     AllowThreads allowThreads; // Release Python's global interpreter lock during blocking calls.
-                    _callback->ice_response(false, ob);
+                    _callback->ice_response(false, os->finished());
                 }
             }
             else
@@ -3255,12 +3613,23 @@ IcePy::BlobjectUpcall::dispatch(PyObject* servant, const pair<const Ice::Byte*, 
         throwPythonException();
     }
  
+    PyObjectHandle ip;
+
+#if PY_VERSION_HEX >= 0x03000000
+    if(inBytes.second == inBytes.first)
+    {
+        ip = PyBytes_FromString("");
+    }
+    else
+    {
+        ip = PyBytes_FromStringAndSize(reinterpret_cast<const char*>(inBytes.first), inBytes.second - inBytes.first);
+    }
+#else
     //
     // If using AMD we need to copy the bytes since the bytes may be
     // accessed after this method is over, otherwise
     // PyBuffer_FromMemory can be used which doesn't do a copy.
     //
-    PyObjectHandle ip;
     if(!_amd)
     {
         ip = PyBuffer_FromMemory((void*)inBytes.first, inBytes.second - inBytes.first);
@@ -3285,6 +3654,7 @@ IcePy::BlobjectUpcall::dispatch(PyObject* servant, const pair<const Ice::Byte*, 
         assert(sz == inBytes.second - inBytes.first);
         memcpy(buf, inBytes.first, sz);
     }
+#endif
 
     if(PyTuple_SET_ITEM(args.get(), start, ip.get()) < 0)
     {
@@ -3311,12 +3681,13 @@ IcePy::BlobjectUpcall::dispatch(PyObject* servant, const pair<const Ice::Byte*, 
         //
         // Create the callback object and pass it as the first argument.
         //
-        AMDCallbackObject* obj = amdCallbackNew(0);
+        AMDCallbackObject* obj = amdCallbackNew(&AMDCallbackType, 0, 0);
         if(!obj)
         {
             throwPythonException();
         }
         obj->upcall = new UpcallPtr(this);
+        obj->encoding = current.encoding;
         if(PyTuple_SET_ITEM(args.get(), 0, (PyObject*)obj) < 0) // PyTuple_SET_ITEM steals a reference.
         {
             Py_DECREF(obj);
@@ -3348,18 +3719,18 @@ IcePy::BlobjectUpcall::dispatch(PyObject* servant, const pair<const Ice::Byte*, 
     if(PyErr_Occurred())
     {
         PyException ex; // Retrieve it before another Python API call clears it.
-        exception(ex);
+        exception(ex, current.encoding);
         return;
     }
 
     if(!_amd)
     {
-        response(result.get());
+        response(result.get(), current.encoding);
     }
 }
 
 void
-IcePy::BlobjectUpcall::response(PyObject* args)
+IcePy::BlobjectUpcall::response(PyObject* args, const Ice::EncodingVersion&)
 {
     if(_finished)
     {
@@ -3373,7 +3744,7 @@ IcePy::BlobjectUpcall::response(PyObject* args)
     _finished = true;
 
     //
-    // The return value is a tuple of (bool, PyBuffer).
+    // The return value is a tuple of (bool, results).
     //
     if(!PyTuple_Check(args) || PyTuple_GET_SIZE(args) != 2)
     {
@@ -3390,9 +3761,28 @@ IcePy::BlobjectUpcall::response(PyObject* args)
     }
 
     PyObject* arg = PyTuple_GET_ITEM(args, 0);
-    int isTrue = PyObject_IsTrue(arg);
+    bool isTrue = PyObject_IsTrue(arg) == 1;
 
     arg = PyTuple_GET_ITEM(args, 1);
+
+#if PY_VERSION_HEX >= 0x03000000
+    if(!PyBytes_Check(arg))
+    {
+        ostringstream ostr;
+        ostr << "invalid return value for operation `ice_invoke'";
+        string str = ostr.str();
+        PyErr_Warn(PyExc_RuntimeWarning, const_cast<char*>(str.c_str()));
+        throw Ice::MarshalException(__FILE__, __LINE__);
+    }
+
+    Py_ssize_t sz = PyBytes_GET_SIZE(arg);
+    pair<const ::Ice::Byte*, const ::Ice::Byte*> r(static_cast<const Ice::Byte*>(0),static_cast<const Ice::Byte*>(0));
+    if(sz > 0)
+    {
+        r.first = reinterpret_cast<Ice::Byte*>(PyBytes_AS_STRING(arg));
+        r.second = r.first + sz;
+    }
+#else
     if(!PyBuffer_Check(arg))
     {
         ostringstream ostr;
@@ -3402,21 +3792,18 @@ IcePy::BlobjectUpcall::response(PyObject* args)
         throw Ice::MarshalException(__FILE__, __LINE__);
     }
 
-#if PY_VERSION_HEX < 0x02050000
-    const char* charBuf = 0;
-#else
     char* charBuf = 0;
-#endif
     Py_ssize_t sz = arg->ob_type->tp_as_buffer->bf_getcharbuffer(arg, 0, &charBuf);
     const Ice::Byte* mem = reinterpret_cast<const Ice::Byte*>(charBuf);
-    const pair<const ::Ice::Byte*, const ::Ice::Byte*> bytes(mem, mem + sz);
+    const pair<const ::Ice::Byte*, const ::Ice::Byte*> r(mem, mem + sz);
+#endif
 
     AllowThreads allowThreads; // Release Python's global interpreter lock during blocking calls.
-    _callback->ice_response(isTrue, bytes);
+    _callback->ice_response(isTrue, r);
 }
 
 void
-IcePy::BlobjectUpcall::exception(PyException& ex)
+IcePy::BlobjectUpcall::exception(PyException& ex, const Ice::EncodingVersion&)
 {
     if(_finished)
     {
@@ -3560,7 +3947,7 @@ IcePy::endIceInvoke(PyObject* proxy, PyObject* args)
 PyObject*
 IcePy::createAsyncResult(const Ice::AsyncResultPtr& r, PyObject* proxy, PyObject* connection, PyObject* communicator)
 {
-    AsyncResultObject* obj = asyncResultNew(0);
+    AsyncResultObject* obj = asyncResultNew(&AsyncResultType, 0, 0);
     if(!obj)
     {
         return 0;

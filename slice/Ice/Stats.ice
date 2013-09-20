@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_STATS_ICE
-#define ICE_STATS_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -21,7 +20,10 @@ module Ice
  * is sent or received. Applications must provide their own {@link Stats}
  * by implementing this interface and installing it in a communicator.
  *
+ * <p class="Deprecated">This local interface is deprecated as of Ice 3.5.
+ *
  **/
+["deprecate:Stats is deprecated; you should use instead Ice Metrics or Ice Instrumentation"]
 local interface Stats
 {
     /**
@@ -48,7 +50,6 @@ local interface Stats
      **/
     void bytesReceived(string protocol, int num);
 };
-
+    
 };
 
-#endif

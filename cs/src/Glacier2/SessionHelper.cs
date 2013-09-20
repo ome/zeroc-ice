@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,29 +22,6 @@ public class SessionHelper
 {
     private class SessionRefreshThread
     {
-        private class RefreshI : Glacier2.AMI_Router_refreshSession
-        {
-            public
-            RefreshI(SessionHelper helper, SessionRefreshThread thread)
-            {
-                _thread = thread;
-                _helper = helper;
-            }
-
-            public override void ice_response()
-            {
-            }
-
-            public override void ice_exception(Ice.Exception ex)
-            {
-                _thread.done();
-                _helper.destroy();
-            }
-
-            SessionRefreshThread _thread;
-            SessionHelper _helper;
-        }
-
         public SessionRefreshThread(SessionHelper session, Glacier2.RouterPrx router, int period)
         {
             _session = session;
@@ -63,7 +40,12 @@ public class SessionHelper
                 {
                     try
                     {
-                        _router.refreshSession_async(new RefreshI(_session, this));
+                        _router.begin_refreshSession().whenCompleted(
+                                            (Ice.Exception ex) => 
+                                                        {
+                                                            this.done();
+                                                            _session.destroy();
+                                                        });
                     }
                     catch(Ice.CommunicatorDestroyedException)
                     {
@@ -75,7 +57,7 @@ public class SessionHelper
 
                     if(!_done)
                     {
-#if COMPACT
+#if COMPACT || SILVERLIGHT
                         _m.TimedWait(_period);
 #else
                         try
@@ -166,7 +148,7 @@ public class SessionHelper
                 return;
             }
             _session = null;
-
+            _connected = false;
             //
             // Run the destroyInternal in a thread. This is because it
             // destroyInternal makes remote invocations.
@@ -409,7 +391,6 @@ public class SessionHelper
             _router = null;
 
             communicator = _communicator;
-            _communicator = null;
 
             Debug.Assert(communicator != null);
 
@@ -440,13 +421,13 @@ public class SessionHelper
             //
             communicator.getLogger().warning("SessionHelper: unexpected exception when destroying the session:\n" + e);
         }
-        _connected = false;
+
         if(sessionRefresh != null)
         {
             sessionRefresh.done();
             while(true)
             {
-#if COMPACT
+#if COMPACT || SILVERLIGHT
                 _refreshThread.Join();
                 break;
 #else
@@ -493,10 +474,15 @@ public class SessionHelper
         catch(Ice.LocalException ex)
         {
             _destroy = true;
-            dispatchCallback(delegate()
-                             {
-                                 _callback.connectFailed(this, ex);
-                             }, null);
+            new Thread(
+                new ThreadStart(delegate()
+                    {
+                        dispatchCallback(delegate()
+                            {
+                                _callback.connectFailed(this, ex);
+                            }, 
+                            null);
+                    })).Start();
             return;
         }
 
@@ -523,7 +509,6 @@ public class SessionHelper
                     catch(Exception)
                     {
                     }
-                    _communicator = null;
                     dispatchCallback(delegate()
                                      {
                                          _callback.connectFailed(this, ex);
@@ -560,7 +545,7 @@ public class SessionHelper
     {
         if(_initData.dispatcher != null)
         {
-            EventWaitHandle h = new EventWaitHandle(false, EventResetMode.ManualReset);
+            EventWaitHandle h = new ManualResetEvent(false);
             _initData.dispatcher(delegate()
                                  {
                                      callback();
@@ -574,7 +559,7 @@ public class SessionHelper
         }
     }
 
-    private Ice.InitializationData _initData;
+    private readonly Ice.InitializationData _initData;
     private Ice.Communicator _communicator;
     private Ice.ObjectAdapter _adapter;
     private Glacier2.RouterPrx _router;
@@ -584,7 +569,7 @@ public class SessionHelper
 
     private SessionRefreshThread _sessionRefresh;
     private Thread _refreshThread;
-    private SessionCallback _callback;
+    private readonly SessionCallback _callback;
     private bool _destroy = false;
 }
 

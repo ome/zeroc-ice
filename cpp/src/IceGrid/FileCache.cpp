@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -164,11 +164,7 @@ FileCache::read(const string& file, Ice::Long offset, int size, Ice::Long& newOf
     // 
     newOffset = offset;
     lines = Ice::StringSeq();
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-    is.seekg(static_cast<int>(offset));
-#else
     is.seekg(static_cast<streamoff>(offset), ios::beg);
-#endif
     int totalSize = 0;
     string line;
 
@@ -195,15 +191,15 @@ FileCache::read(const string& file, Ice::Long offset, int size, Ice::Long& newOf
 
         totalSize += lineSize;
         lines.push_back(line);
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
+        //
+        // Some eofbit cases will also set failbit. So first
+        // check eof.
+        //
         if(is.eof())
         {
             newOffset += line.size();
         }
-        else
-#else
-        if(!is.fail())
-#endif
+        else if(!is.fail())
         {
             newOffset = is.tellg();
         }

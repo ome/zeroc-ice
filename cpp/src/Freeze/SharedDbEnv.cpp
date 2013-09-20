@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,6 @@
 #include <Ice/StringConverter.h>
 
 #include <cstdlib>
-#include <memory>
 
 
 using namespace std;
@@ -78,8 +77,8 @@ operator<(const MapKey& lhs, const MapKey& rhs)
 void
 dbErrCallback(const char* prefix, char* msg)
 #else
-    void
-    dbErrCallback(const ::DbEnv* ignored, const char* prefix, const char* msg)
+void
+dbErrCallback(const ::DbEnv* /*ignored*/, const char* prefix, const char* msg)
 #endif    
 {
     const Freeze::SharedDbEnv* env = reinterpret_cast<const Freeze::SharedDbEnv*>(prefix);
@@ -89,10 +88,8 @@ dbErrCallback(const char* prefix, char* msg)
     out << "DbEnv \"" << env->getEnvName() << "\": " << msg;
 }
 
-#ifndef __BCPLUSPLUS__ // COMPILERFIX
 namespace
 {
-#endif
 
 Mutex* mapMutex = 0;
 Mutex* refCountMutex = 0;
@@ -119,9 +116,7 @@ public:
 
 Init init;
 
-#ifndef __BCPLUSPLUS__ // COMPILERFIX
 }
-#endif
 
 typedef map<MapKey, Freeze::SharedDbEnv*> SharedDbEnvMap;
 SharedDbEnvMap* sharedDbEnvMap;
@@ -153,7 +148,7 @@ Freeze::SharedDbEnv::get(const CommunicatorPtr& communicator, const string& envN
     //
     // MapKey not found, let's create and open a new DbEnv
     //
-    auto_ptr<SharedDbEnv> result(new SharedDbEnv(envName, communicator, env));
+    IceUtil::UniquePtr<SharedDbEnv> result(new SharedDbEnv(envName, communicator, env));
     
     //
     // Insert it into the map
@@ -250,7 +245,7 @@ Freeze::SharedDbEnv::getSharedMapDb(const string& dbName,
     
     ConnectionIPtr insertConnection = new ConnectionI(this);
     
-    auto_ptr<MapDb> result(new MapDb(insertConnection, dbName, key, value, 
+    IceUtil::UniquePtr<MapDb> result(new MapDb(insertConnection, dbName, key, value, 
                                      keyCompare, indices, createDb));
     
     //
@@ -335,11 +330,12 @@ void Freeze::SharedDbEnv::__decRef()
         //
         // Remove from map
         //
-     
-        size_t one;
-        one = sharedDbEnvMap->erase(key);
+#ifndef NDEBUG
+        size_t one = sharedDbEnvMap->erase(key);
         assert(one == 1);
-
+#else
+        sharedDbEnvMap->erase(key);
+#endif
         if(sharedDbEnvMap->size() == 0)
         {
             delete sharedDbEnvMap;
@@ -501,6 +497,11 @@ Freeze::SharedDbEnv::SharedDbEnv(const std::string& envName,
     string propertyPrefix = string("Freeze.DbEnv.") + envName;
     string dbHome = properties->getPropertyWithDefault(propertyPrefix + ".DbHome", envName);
 
+    string encoding = properties->getPropertyWithDefault(propertyPrefix + ".EncodingVersion", 
+                                                         encodingVersionToString(Ice::currentEncoding));
+    _encoding = stringToEncodingVersion(encoding);
+    IceInternal::checkSupportedEncoding(_encoding);
+
     //
     // Normally the file lock is necessary, but for read-only situations (such as when
     // using the FreezeScript utilities) this property allows the file lock to be
@@ -595,8 +596,7 @@ Freeze::SharedDbEnv::SharedDbEnv(const std::string& envName,
             //
             // Default checkpoint period is every 120 seconds
             //
-            Int checkpointPeriod = properties->getPropertyAsIntWithDefault(
-                propertyPrefix + ".CheckpointPeriod", 120);
+            Int checkpointPeriod = properties->getPropertyAsIntWithDefault(propertyPrefix + ".CheckpointPeriod", 120);
             Int kbyte = properties->getPropertyAsIntWithDefault(propertyPrefix + ".PeriodicCheckpointMinSize", 0);
         
             if(checkpointPeriod > 0)
@@ -608,8 +608,9 @@ Freeze::SharedDbEnv::SharedDbEnv(const std::string& envName,
         //
         // Get catalogs
         //
-        _catalog = new MapDb(_communicator, catalogName(), CatalogKeyCodec::typeId(), CatalogValueCodec::typeId(), _env);
-        _catalogIndexList = new MapDb(_communicator, catalogIndexListName(), 
+        _catalog = new MapDb(_communicator, _encoding, catalogName(), CatalogKeyCodec::typeId(),
+                             CatalogValueCodec::typeId(), _env);
+        _catalogIndexList = new MapDb(_communicator, _encoding, catalogIndexListName(), 
                                       CatalogIndexListKeyCodec::typeId(), CatalogIndexListValueCodec::typeId(), _env);
 
     }

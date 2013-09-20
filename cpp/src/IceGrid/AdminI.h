@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -37,6 +37,8 @@ public:
     virtual void addApplication(const ApplicationDescriptor&, const Ice::Current&);
     virtual void syncApplication(const ApplicationDescriptor&, const Ice::Current&);
     virtual void updateApplication(const ApplicationUpdateDescriptor&, const Ice::Current&);
+    virtual void syncApplicationWithoutRestart(const ApplicationDescriptor&, const Ice::Current&);
+    virtual void updateApplicationWithoutRestart(const ApplicationUpdateDescriptor&, const Ice::Current&);
     virtual void removeApplication(const std::string&, const Ice::Current&);
     virtual void instantiateServer(const std::string&, const std::string&, const ServerInstanceDescriptor&, 
                                    const Ice::Current&);

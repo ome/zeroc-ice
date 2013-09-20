@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@
 #include <ConnectionInfo.h>
 #include <EndpointInfo.h>
 #include <Util.h>
+#include <Ice/Object.h>
 
 using namespace std;
 using namespace IcePy;
@@ -32,9 +33,9 @@ struct ConnectionInfoObject
 extern "C"
 #endif
 static ConnectionInfoObject*
-connectionInfoNew(PyObject* /*arg*/)
+connectionInfoNew(PyTypeObject* /*type*/, PyObject* /*args*/, PyObject* /*kwds*/)
 {
-    PyErr_Format(PyExc_RuntimeError, STRCAST("An connection info cannot be created directly"));
+    PyErr_Format(PyExc_RuntimeError, STRCAST("A connection info cannot be created directly"));
     return 0;
 }
 
@@ -45,7 +46,7 @@ static void
 connectionInfoDealloc(ConnectionInfoObject* self)
 {
     delete self->connectionInfo;
-    PyObject_Del(self);
+    Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 #ifdef WIN32
@@ -87,7 +88,7 @@ ipConnectionInfoGetLocalPort(ConnectionInfoObject* self)
 {
     Ice::IPConnectionInfoPtr info = Ice::IPConnectionInfoPtr::dynamicCast(*self->connectionInfo);
     assert(info);
-    return PyInt_FromLong(info->localPort);
+    return PyLong_FromLong(info->localPort);
 }
 
 #ifdef WIN32
@@ -109,7 +110,7 @@ ipConnectionInfoGetRemotePort(ConnectionInfoObject* self)
 {
     Ice::IPConnectionInfoPtr info = Ice::IPConnectionInfoPtr::dynamicCast(*self->connectionInfo);
     assert(info);
-    return PyInt_FromLong(info->remotePort);
+    return PyLong_FromLong(info->remotePort);
 }
 
 #ifdef WIN32
@@ -131,7 +132,7 @@ udpConnectionInfoGetMcastPort(ConnectionInfoObject* self, void* member)
 {
     Ice::UDPConnectionInfoPtr info = Ice::UDPConnectionInfoPtr::dynamicCast(*self->connectionInfo);
     assert(info);
-    return PyInt_FromLong(info->mcastPort);
+    return PyLong_FromLong(info->mcastPort);
 }
 
 static PyGetSetDef ConnectionInfoGetters[] =
@@ -172,8 +173,7 @@ PyTypeObject ConnectionInfoType =
 {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
-    PyObject_HEAD_INIT(0)
-    0,                               /* ob_size */
+    PyVarObject_HEAD_INIT(0, 0)
     STRCAST("IcePy.ConnectionInfo"), /* tp_name */
     sizeof(ConnectionInfoObject),    /* tp_basicsize */
     0,                               /* tp_itemsize */
@@ -182,7 +182,7 @@ PyTypeObject ConnectionInfoType =
     0,                               /* tp_print */
     0,                               /* tp_getattr */
     0,                               /* tp_setattr */
-    0,                               /* tp_compare */
+    0,                               /* tp_reserved */
     0,                               /* tp_repr */
     0,                               /* tp_as_number */
     0,                               /* tp_as_sequence */
@@ -220,8 +220,7 @@ PyTypeObject IPConnectionInfoType =
 {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
-    PyObject_HEAD_INIT(0)
-    0,                               /* ob_size */
+    PyVarObject_HEAD_INIT(0, 0)
     STRCAST("IcePy.IPConnectionInfo"), /* tp_name */
     sizeof(ConnectionInfoObject),    /* tp_basicsize */
     0,                               /* tp_itemsize */
@@ -230,7 +229,7 @@ PyTypeObject IPConnectionInfoType =
     0,                               /* tp_print */
     0,                               /* tp_getattr */
     0,                               /* tp_setattr */
-    0,                               /* tp_compare */
+    0,                               /* tp_reserved */
     0,                               /* tp_repr */
     0,                               /* tp_as_number */
     0,                               /* tp_as_sequence */
@@ -268,8 +267,7 @@ PyTypeObject TCPConnectionInfoType =
 {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
-    PyObject_HEAD_INIT(0)
-    0,                               /* ob_size */
+    PyVarObject_HEAD_INIT(0, 0)
     STRCAST("IcePy.TCPConnectionInfo"),/* tp_name */
     sizeof(ConnectionInfoObject),    /* tp_basicsize */
     0,                               /* tp_itemsize */
@@ -278,7 +276,7 @@ PyTypeObject TCPConnectionInfoType =
     0,                               /* tp_print */
     0,                               /* tp_getattr */
     0,                               /* tp_setattr */
-    0,                               /* tp_compare */
+    0,                               /* tp_reserved */
     0,                               /* tp_repr */
     0,                               /* tp_as_number */
     0,                               /* tp_as_sequence */
@@ -316,8 +314,7 @@ PyTypeObject UDPConnectionInfoType =
 {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
-    PyObject_HEAD_INIT(0)
-    0,                               /* ob_size */
+    PyVarObject_HEAD_INIT(0, 0)
     STRCAST("IcePy.UDPConnectionInfo"),/* tp_name */
     sizeof(ConnectionInfoObject),    /* tp_basicsize */
     0,                               /* tp_itemsize */
@@ -326,7 +323,7 @@ PyTypeObject UDPConnectionInfoType =
     0,                               /* tp_print */
     0,                               /* tp_getattr */
     0,                               /* tp_setattr */
-    0,                               /* tp_compare */
+    0,                               /* tp_reserved */
     0,                               /* tp_repr */
     0,                               /* tp_as_number */
     0,                               /* tp_as_sequence */
@@ -440,7 +437,7 @@ IcePy::createConnectionInfo(const Ice::ConnectionInfoPtr& connectionInfo)
         type = &ConnectionInfoType;
     }
 
-    ConnectionInfoObject* obj = PyObject_New(ConnectionInfoObject, type);
+    ConnectionInfoObject* obj = reinterpret_cast<ConnectionInfoObject*>(type->tp_alloc(type, 0));
     if(!obj)
     {
         return 0;

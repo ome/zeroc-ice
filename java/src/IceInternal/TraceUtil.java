@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -190,7 +190,6 @@ public final class TraceUtil
         {
             s.write("\nrequest #" + i + ':');
             printRequestHeader(s, str);
-            str.skipEncaps();
         }
     }
 
@@ -343,6 +342,13 @@ public final class TraceUtil
                 {
                     out.write(", ");
                 }
+            }
+            
+            Ice.EncodingVersion v = stream.skipEncaps();
+            if(!v.equals(Ice.Util.Encoding_1_0))
+            {
+                out.write("\nencoding = ");
+                out.write(Ice.Util.encodingVersionToString(v));
             }
         }
         catch(java.io.IOException ex)

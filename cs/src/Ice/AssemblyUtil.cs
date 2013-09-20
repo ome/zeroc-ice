@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -56,8 +56,7 @@ namespace IceInternal
             xp_ = v.Major == 5 && v.Minor == 1; // Are we running on XP?
 
             osx_ = false;
-
-#if COMPACT
+#if COMPACT || SILVERLIGHT
             //
             // Populate the _iceAssemblies list with the fully-qualified names
             // of the standard Ice assemblies. The fully-qualified name looks
@@ -81,8 +80,8 @@ namespace IceInternal
                 _iceAssemblies.Add("IcePatch2," + suffix);
                 _iceAssemblies.Add("IceStorm," + suffix);
             }
-#else
-            if(platform_ == Platform.NonWindows)
+#elif !UNITY
+            if (platform_ == Platform.NonWindows)
             {
                 try
                 {
@@ -113,18 +112,14 @@ namespace IceInternal
 
         public static Type findType(Instance instance, string csharpId)
         {
-#if !COMPACT
-            loadAssemblies(); // Lazy initialization
-#endif
-
             lock(_mutex)
             {
-                Type t = (Type)_typeTable[csharpId];
-                if(t != null)
+                Type t;
+                if (_typeTable.TryGetValue(csharpId, out t))
                 {
                     return t;
                 }
-#if COMPACT
+#if COMPACT || SILVERLIGHT
                 string[] assemblies = instance.factoryAssemblies();
                 for(int i = 0; i < assemblies.Length; ++i)
                 {
@@ -151,7 +146,8 @@ namespace IceInternal
                     }
                 }
 #else
-                foreach(Assembly a in _loadedAssemblies.Values)
+                loadAssemblies(); // Lazy initialization
+                foreach (Assembly a in _loadedAssemblies.Values)
                 {
                     if((t = a.GetType(csharpId)) != null)
                     {
@@ -164,15 +160,14 @@ namespace IceInternal
             return null;
         }
 
-#if !COMPACT
+#if !COMPACT && !SILVERLIGHT
         public static Type[] findTypesWithPrefix(string prefix)
         {
-            IceUtilInternal.LinkedList l = new IceUtilInternal.LinkedList();
-
-            loadAssemblies(); // Lazy initialization
+            LinkedList<Type> l = new LinkedList<Type>();
 
             lock(_mutex)
             {
+                loadAssemblies(); // Lazy initialization
                 foreach(Assembly a in _loadedAssemblies.Values)
                 {
                     Type[] types = a.GetTypes();
@@ -180,7 +175,7 @@ namespace IceInternal
                     {
                         if(t.AssemblyQualifiedName.IndexOf(prefix, StringComparison.Ordinal) == 0)
                         {
-                            l.Add(t);
+                            l.AddLast(t);
                         }
                     }
                 }
@@ -197,26 +192,17 @@ namespace IceInternal
 
         public static object createInstance(Type t)
         {
-            ConstructorInfo[] constructors = t.GetConstructors();
-
-            if(constructors.Length == 0)
+            try
+            {
+                return Activator.CreateInstance(t);
+            }
+            catch(MemberAccessException)
             {
                 return null;
             }
-
-            ParameterInfo[] firstConstructor = constructors[0].GetParameters();
-
-            int paramCount = firstConstructor.Length;
-            Type[] constructor = new Type[paramCount];
-            for(int i = 0; i < paramCount; i++)
-            {
-                constructor[i] = firstConstructor[i].ParameterType;
-            }
-
-            return t.GetConstructor(constructor).Invoke(new object[]{});
         }
 
-#if !COMPACT
+#if !COMPACT && !SILVERLIGHT
         //
         // Make sure that all assemblies that are referenced by this process
         // are actually loaded. This is necessary so we can use reflection
@@ -228,20 +214,25 @@ namespace IceInternal
         //
         private static void loadAssemblies()
         {
-            lock(_mutex)
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            List<Assembly> newAssemblies = null;
+            foreach(Assembly a in assemblies)
             {
-                if(!_assembliesLoaded)
+                if(!_loadedAssemblies.Contains(a.FullName))
                 {
-                    Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-                    foreach(Assembly a in assemblies)
+                    if(newAssemblies == null)
                     {
-                        _loadedAssemblies[a.FullName] = a;
+                        newAssemblies = new List<Assembly>();
                     }
-                    foreach(Assembly a in assemblies)
-                    {
-                        loadReferencedAssemblies(a);
-                    }
-                    _assembliesLoaded = true;
+                    newAssemblies.Add(a);
+                    _loadedAssemblies[a.FullName] = a;
+                }
+            }
+            if(newAssemblies != null)
+            {
+                foreach(Assembly a in newAssemblies)
+                {
+                    loadReferencedAssemblies(a);
                 }
             }
         }
@@ -251,11 +242,16 @@ namespace IceInternal
             AssemblyName[] names = a.GetReferencedAssemblies();
             foreach(AssemblyName name in names)
             {
-                if(!_loadedAssemblies.Contains(name.FullName))
+                if(!_loadedAssemblies.ContainsKey(name.FullName))
                 {
                     try
                     {
                         Assembly ra = Assembly.Load(name);
+                        //
+                        // The value of name.FullName may not match that of ra.FullName, so
+                        // we record the assembly using both keys.
+                        //
+                        _loadedAssemblies[name.FullName] = ra;
                         _loadedAssemblies[ra.FullName] = ra;
                         loadReferencedAssemblies(ra);
                     }
@@ -267,13 +263,12 @@ namespace IceInternal
             }
         }
 
-        private static bool _assembliesLoaded = false;
         private static Hashtable _loadedAssemblies = new Hashtable(); // <string, Assembly> pairs.
 #else
         private static List<string> _iceAssemblies = new List<string>();
 #endif
-        private static Hashtable _typeTable = new Hashtable(); // <type name, Type> pairs.
-        private static Mutex _mutex = new Mutex();
+        private static Dictionary<string, Type> _typeTable = new Dictionary<string, Type>(); // <type name, Type> pairs.
+        private static object _mutex = new object();
 
         public readonly static Runtime runtime_; // Either DotNET or Mono
         //

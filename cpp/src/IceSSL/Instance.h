@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -39,7 +39,9 @@ public:
     Ice::CommunicatorPtr communicator() const;
     IceInternal::EndpointHostResolverPtr endpointHostResolver() const;
     IceInternal::ProtocolSupport protocolSupport() const;
+    bool preferIPv6() const;
     std::string defaultHost() const;
+    Ice::EncodingVersion defaultEncoding() const;
     int networkTraceLevel() const;
     std::string networkTraceCategory() const;
     int securityTraceLevel() const;
@@ -64,9 +66,15 @@ public:
 
 private:
 
-    void parseProtocols(const Ice::StringSeq&);
+    enum Protocols { SSLv3 = 0x01, TLSv1_0 = 0x02, TLSv1_1 = 0x04, TLSv1_2 = 0x08 };
+    static int parseProtocols(const Ice::StringSeq&);
+
+    static SSL_METHOD* getMethod(int);
+
+    void setOptions(int);
 
     Ice::LoggerPtr _logger;
+    bool _initOpenSSL;
     IceInternal::ProtocolPluginFacadePtr _facade;
     int _securityTraceLevel;
     std::string _securityTraceCategory;

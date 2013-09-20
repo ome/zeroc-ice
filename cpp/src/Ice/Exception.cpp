@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,12 +11,48 @@
 #include <Ice/LocalException.h>
 #include <Ice/Network.h>
 #include <Ice/Plugin.h>
+#include <Ice/SlicedData.h>
+#include <Ice/BasicStream.h>
+#include <Ice/Stream.h>
 #include <IceUtil/StringUtil.h>
+#ifdef ICE_OS_WINRT
+#    include <IceUtil/Unicode.h>
+#endif
 #include <iomanip>
 
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
+
+namespace
+{
+
+inline string
+socketErrorToString(int error)
+{
+    if(error == 0)
+    {
+        return "unknown error";
+    }
+#ifdef ICE_OS_WINRT
+    if(error == E_ACCESSDENIED)
+    {
+        ostringstream os;
+        os << "access to a resource or feature is denied, ensure that you have requested the appropriate\n";
+        os << "capability and made the required declarations in the package manifest of your app.";
+        return os.str();
+    }
+    else
+    {
+        return IceUtil::wstringToString(
+            static_cast<Windows::Networking::Sockets::SocketErrorStatus>(error).ToString()->Data());
+    }
+#else
+    return IceUtilInternal::errorToString(error);
+#endif
+}
+
+};
 
 namespace IceInternal
 {
@@ -25,11 +61,23 @@ namespace Ex
 {
 
 void
-throwUOE(const string& expectedType, const string& actualType)
+throwUOE(const string& expectedType, const ObjectPtr& v)
 {
+    //
+    // If the object is an unknown sliced object, we didn't find an
+    // object factory, in this case raise a NoObjectFactoryException
+    // instead.
+    //
+    UnknownSlicedObject* uso = dynamic_cast<UnknownSlicedObject*>(v.get());
+    if(uso)
+    {
+        throw NoObjectFactoryException(__FILE__, __LINE__, "", uso->getUnknownTypeId());
+    }
+
+    string type = v->ice_id();
     throw Ice::UnexpectedObjectException(__FILE__, __LINE__,
-                                         "expected element of type `" + expectedType + "' but received '" + actualType,
-                                         actualType, expectedType);
+                                         "expected element of type `" + expectedType + "' but received '" +
+                                         type, type, expectedType);
 }
 
 void
@@ -40,8 +88,57 @@ throwMemoryLimitException(const char* file, int line, size_t requested, size_t m
     throw Ice::MemoryLimitException(file, line, s.str());
 }
 
+void
+throwMarshalException(const char* file, int line, const string& reason)
+{
+    throw Ice::MarshalException(file, line, reason);
 }
 
+}
+}
+
+void 
+Ice::UserException::__write(::IceInternal::BasicStream* os) const
+{
+    os->startWriteException(0);
+    __writeImpl(os);
+    os->endWriteException();
+}
+
+void 
+Ice::UserException::__read(::IceInternal::BasicStream* is)
+{
+    is->startReadException();
+    __readImpl(is);
+    is->endReadException(false);
+}
+
+void 
+Ice::UserException::__write(const Ice::OutputStreamPtr& os) const
+{
+    os->startException(0);
+    __writeImpl(os);
+    os->endException();
+}
+
+void 
+Ice::UserException::__read(const Ice::InputStreamPtr& is)
+{
+    is->startException();
+    __readImpl(is);
+    is->endException(false);
+}
+
+void 
+Ice::UserException::__writeImpl(const Ice::OutputStreamPtr&) const
+{
+    throw MarshalException(__FILE__, __LINE__, "user exception was not generated with stream support");
+}
+
+void 
+Ice::UserException::__readImpl(const Ice::InputStreamPtr&)
+{
+    throw MarshalException(__FILE__, __LINE__, "user exception was not generated with stream support");
 }
 
 bool
@@ -185,6 +282,13 @@ Ice::EndpointSelectionTypeParseException::ice_print(ostream& out) const
 }
 
 void
+Ice::VersionParseException::ice_print(ostream& out) const
+{
+    Exception::ice_print(out);
+    out << ":\nerror while parsing version `" << str << "'";
+}
+
+void
 Ice::IdentityParseException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
@@ -277,15 +381,7 @@ void
 Ice::SocketException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\nsocket exception: ";
-    if(error == 0)
-    {
-        out << "unknown error";
-    }
-    else
-    {
-        out << IceUtilInternal::errorToString(error);
-    }
+    out << ":\nsocket exception: " << socketErrorToString(error);
 }
 
 void
@@ -311,14 +407,14 @@ void
 Ice::ConnectFailedException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\nconnect failed: " << IceUtilInternal::errorToString(error);
+    out << ":\nconnect failed: " << socketErrorToString(error);
 }
 
 void
 Ice::ConnectionRefusedException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\nconnection refused: " << IceUtilInternal::errorToString(error);
+    out << ":\nconnection refused: " << socketErrorToString(error);
 }
 
 void
@@ -332,7 +428,7 @@ Ice::ConnectionLostException::ice_print(ostream& out) const
     }
     else
     {
-        out << IceUtilInternal::errorToString(error);
+        out << socketErrorToString(error);
     }
 }
 
@@ -340,7 +436,13 @@ void
 Ice::DNSException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\nDNS error: " << errorToStringDNS(error) << "\nhost: " << host;
+    out << ":\nDNS error: ";
+#ifdef ICE_OS_WINRT
+    out << socketErrorToString(error);
+#else
+    out << errorToStringDNS(error);
+#endif
+    out << "\nhost: " << host;
 }
 
 void
@@ -412,16 +514,16 @@ void
 Ice::UnsupportedProtocolException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\nprotocol error: unsupported protocol version: " << badMajor << "." << badMinor;
-    out << "\n(can only support protocols compatible with version " << major << "." << minor << ")";
+    out << ":\nprotocol error: unsupported protocol version: " << bad;
+    out << "\n(can only support protocols compatible with version " << supported << ")";
 }
 
 void
 Ice::UnsupportedEncodingException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
-    out << ":\nprotocol error: unsupported encoding version: " << badMajor << "." << badMinor;
-    out << "\n(can only support encodings compatible with version " << major << "." << major << ")";
+    out << ":\nprotocol error: unsupported encoding version: " << bad;
+    out << "\n(can only support encodings compatible with version " << supported << ")";
     if(!reason.empty())
     {
         out << "\n" << reason;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -170,11 +170,6 @@ createServerProps(const Ice::PropertiesPtr& defaultProperties, const string& def
     }
     return result;
 }
-
-#if defined(_MSC_VER) && (_MSC_VER < 1300) 
-void allTests2(const CommunicatorPtr&, const Ice::PropertiesPtr&, const string&, const string&, const string&,
-               const Test::ServerFactoryPrx&);
-#endif
 
 void
 allTests(const CommunicatorPtr& communicator, const string& testDir)
@@ -1039,23 +1034,7 @@ allTests(const CommunicatorPtr& communicator, const string& testDir)
         fact->destroyServer(server);
         comm->destroy();
     }
-#if defined(_MSC_VER) && (_MSC_VER < 1300) 
-    //
-    // COMPILER FIX: VC60 generates "too many exception handler states" if single function
-    //
-    allTests2(communicator, defaultProperties, defaultDir, defaultHost, factoryRef, factory);
-}
-
-void
-allTests2(const CommunicatorPtr& communicator,
-          const Ice::PropertiesPtr& defaultProperties,
-          const string& defaultDir,
-          const string& defaultHost,
-          const string& factoryRef,
-          const Test::ServerFactoryPrx& factory)
-{
-    string sep = ";";
-#endif
+    
     {
         //
         // Configure a server with RSA and DSA certificates.

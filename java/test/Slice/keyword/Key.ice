@@ -1,11 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+#pragma once
 
 [["java:package:test.Slice.keyword"]]
 module abstract
@@ -75,4 +77,3 @@ const int finally = 0;
 const int getClass = 0;
 
 };
-

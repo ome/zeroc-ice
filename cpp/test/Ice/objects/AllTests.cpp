@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,14 @@
 
 using namespace std;
 using namespace Test;
+
+class AbstractBaseI : public AbstractBase
+{
+public:
+    
+    virtual void op(const Ice::Current&) 
+    {}
+};
 
 void
 testUOE(const Ice::CommunicatorPtr& communicator)
@@ -79,6 +87,23 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     test(bp1->theS.str == "hello");
     test(bp1->str == "hi");
 
+    cout << "ok" << endl;
+
+    cout << "testing ice_clone..." << flush;
+
+    BasePtr bp2 = BasePtr::dynamicCast(bp1->ice_clone());
+    test(bp1->theS.str == bp2->theS.str);
+    test(bp1->str == bp2->str);
+    
+    AbstractBasePtr abp1 = new AbstractBaseI;
+    try
+    {
+        abp1->ice_clone();
+        test(false);
+    }
+    catch(const Ice::CloneNotImplementedException&)
+    {
+    }
     cout << "ok" << endl;
 
     cout << "getting B1... " << flush;
@@ -190,14 +215,32 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     initial->setI(h);
     cout << "ok" << endl;
 
-#if !defined(_MSC_VER) || (_MSC_VER >= 1300)
+    cout << "testing sequences... " << flush;
+    BaseSeq inS, outS, retS;
+    retS = initial->opBaseSeq(inS, outS);
+
+    inS.resize(1);
+    inS[0] = new Base();
+    retS = initial->opBaseSeq(inS, outS);
+    test(retS.size() == 1 && outS.size() == 1);
+    cout << "ok" << endl;
+
+    cout << "testing compact ID..." << flush;
+    try
+    {
+        test(initial->getCompact());
+    }
+    catch(const Ice::OperationNotExistException&)
+    {
+    }
+    cout << "ok" << endl;
+
     if(!collocated)
     {
         cout << "testing UnexpectedObjectException... " << flush;
         testUOE(communicator);
         cout << "ok" << endl;
     }
-#endif
 
     return initial;
 }

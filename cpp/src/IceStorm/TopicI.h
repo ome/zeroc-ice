@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,8 @@
 
 #include <IceStorm/IceStormInternal.h>
 #include <IceStorm/Election.h>
+#include <IceStorm/Instrumentation.h>
+#include <Ice/ObserverHelper.h>
 #include <list>
 
 namespace IceStorm
@@ -24,8 +26,8 @@ typedef IceUtil::Handle<Instance> InstancePtr;
 class Subscriber;
 typedef IceUtil::Handle<Subscriber> SubscriberPtr;
 
-class DatabaseCache;
-typedef IceUtil::Handle<DatabaseCache> DatabaseCachePtr;
+class ConnectionPool;
+typedef IceUtil::Handle<ConnectionPool> ConnectionPoolPtr;
 
 class TopicImpl : public IceUtil::Shared
 {
@@ -65,6 +67,9 @@ public:
 
     Ice::ObjectPtr getServant() const;
 
+    void updateObserver();
+    void updateSubscriberObservers();
+
 private:
 
     IceStormElection::LogUpdate destroyInternal(const IceStormElection::LogUpdate&, bool);
@@ -78,8 +83,9 @@ private:
     const std::string _name; // The topic name
     const Ice::Identity _id; // The topic identity
     const std::string _envName;
-    const DatabaseCachePtr _databaseCache; // The database cache.
+    const ConnectionPoolPtr _connectionPool; // The connection pool
 
+    IceInternal::ObserverHelperT<IceStorm::Instrumentation::TopicObserver> _observer;
 
     /*const*/ Ice::ObjectPrx _publisherPrx; // The actual publisher proxy.
     /*const*/ TopicLinkPrx _linkPrx; // The link proxy.

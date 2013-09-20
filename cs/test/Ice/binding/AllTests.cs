@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,16 +14,20 @@ using System.Diagnostics;
 using System.Threading;
 using Test;
 
-public class AllTests
-{
-    private static void test(bool b)
-    {
-        if(!b)
-        {
-            throw new System.Exception();
-        }
-    }
+#if SILVERLIGHT
+using System.Net;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Ink;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Shapes;
+#endif
 
+public class AllTests : TestCommon.TestApp
+{
     private class GetAdapterNameCB
     {
         public void response(string name)
@@ -73,64 +77,68 @@ public class AllTests
         return cb.getResult();
     }
 
-    private static void shuffle(ref ArrayList array)
+    private static void shuffle(ref List<RemoteObjectAdapterPrx> array)
     {
-        for(int i = 0; i < array.Count - 1; ++i)
+        for (int i = 0; i < array.Count - 1; ++i)
         {
             int r = rand_.Next(array.Count - i) + i;
             Debug.Assert(r >= i && r < array.Count);
-            if(r != i)
+            if (r != i)
             {
-                object tmp = array[i];
+                RemoteObjectAdapterPrx tmp = array[i];
                 array[i] = array[r];
                 array[r] = tmp;
             }
         }
     }
 
-    private static TestIntfPrx createTestIntfPrx(ArrayList adapters)
+    private static TestIntfPrx createTestIntfPrx(List<RemoteObjectAdapterPrx> adapters)
     {
-        ArrayList endpoints = new ArrayList();
+        List<Ice.Endpoint> endpoints = new List<Ice.Endpoint>();
         TestIntfPrx obj = null;
-        IEnumerator p = adapters.GetEnumerator();
+        IEnumerator<RemoteObjectAdapterPrx> p = adapters.GetEnumerator();
         while(p.MoveNext())
         {
-            obj = ((RemoteObjectAdapterPrx)p.Current).getTestIntf();
+            obj = p.Current.getTestIntf();
             foreach(Ice.Endpoint e in obj.ice_getEndpoints())
             {
                 endpoints.Add(e);
             }
         }
-        return TestIntfPrxHelper.uncheckedCast(
-            obj.ice_endpoints((Ice.Endpoint[])endpoints.ToArray(typeof(Ice.Endpoint))));
+        return TestIntfPrxHelper.uncheckedCast(obj.ice_endpoints(endpoints.ToArray()));
     }
 
-    private static void deactivate(RemoteCommunicatorPrx communicator, ArrayList adapters)
+    private static void deactivate(RemoteCommunicatorPrx communicator, List<RemoteObjectAdapterPrx> adapters)
     {
-        IEnumerator p = adapters.GetEnumerator();
-        while(p.MoveNext())
+        IEnumerator<RemoteObjectAdapterPrx> p = adapters.GetEnumerator();
+        while (p.MoveNext())
         {
-            communicator.deactivateObjectAdapter((RemoteObjectAdapterPrx)p.Current);
+            communicator.deactivateObjectAdapter(p.Current);
         }
     }
 
-        private class StringComparator : IComparer
+    private class StringComparator : IComparer<String>
+    {
+        public int Compare(String l, String r)
         {
-            public int Compare(object l, object r)
-            {
-                return ((string)l).CompareTo((string)r);
-            }
-        };
+            return l.CompareTo(r);
+        }
+    };
 
+#if SILVERLIGHT
+    override
+    public void run(Ice.Communicator communicator)
+#else
     public static void allTests(Ice.Communicator communicator)
+#endif
     {
         string @ref = "communicator:default -p 12010";
         RemoteCommunicatorPrx com = RemoteCommunicatorPrxHelper.uncheckedCast(communicator.stringToProxy(@ref));
 
         System.Random rand = new System.Random(unchecked((int)System.DateTime.Now.Ticks));
 
-        Console.Out.Write("testing binding with single endpoint... ");
-        Console.Out.Flush();
+        Write("testing binding with single endpoint... ");
+        Flush();
         {
             RemoteObjectAdapterPrx adapter = com.createObjectAdapter("Adapter", "default");
 
@@ -156,12 +164,12 @@ public class AllTests
             {
             }
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing binding with multiple endpoints... ");
-        Console.Out.Flush();
+        Write("testing binding with multiple endpoints... ");
+        Flush();
         {
-            ArrayList adapters = new ArrayList();
+            List<RemoteObjectAdapterPrx> adapters = new List<RemoteObjectAdapterPrx>();
             adapters.Add(com.createObjectAdapter("Adapter11", "default"));
             adapters.Add(com.createObjectAdapter("Adapter12", "default"));
             adapters.Add(com.createObjectAdapter("Adapter13", "default"));
@@ -176,7 +184,7 @@ public class AllTests
             names.Add("Adapter13");
             while(names.Count > 0)
             {
-                ArrayList adpts = new ArrayList(adapters);
+                List<RemoteObjectAdapterPrx> adpts = new List<RemoteObjectAdapterPrx>(adapters);
 
                 TestIntfPrx test1 = createTestIntfPrx(adpts);
                 shuffle(ref adpts);
@@ -223,7 +231,7 @@ public class AllTests
             names.Add("Adapter13");
             while(names.Count > 0)
             {
-                ArrayList adpts = new ArrayList(adapters);
+                List<RemoteObjectAdapterPrx> adpts = new List<RemoteObjectAdapterPrx>(adapters);
 
                 TestIntfPrx test1 = createTestIntfPrx(adpts);
                 shuffle(ref adpts);
@@ -248,10 +256,10 @@ public class AllTests
 
             deactivate(com, adapters);
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing binding with multiple random endpoints... ");
-        Console.Out.Flush();
+        Write("testing binding with multiple random endpoints... ");
+        Flush();
         {
             RemoteObjectAdapterPrx[] adapters = new RemoteObjectAdapterPrx[5];
             adapters[0] = com.createObjectAdapter("AdapterRandom11", "default");
@@ -305,7 +313,7 @@ public class AllTests
                     {
                         adpts[j] = adapters[rand.Next(adapters.Length)];
                     }
-                    proxies[i] = createTestIntfPrx(new ArrayList(adpts));
+                    proxies[i] = createTestIntfPrx(new List<RemoteObjectAdapterPrx>(adpts));
                 }
 
                 for(i = 0; i < proxies.Length; i++)
@@ -323,7 +331,7 @@ public class AllTests
                     }
                 }
 
-                ArrayList connections = new ArrayList();
+                List<Ice.Connection> connections = new List<Ice.Connection>();
                 for(i = 0; i < proxies.Length; i++)
                 {
                     if(proxies[i].ice_getCachedConnection() != null)
@@ -349,12 +357,12 @@ public class AllTests
                 }
             }
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing binding with multiple endpoints and AMI... ");
-        Console.Out.Flush();
+        Write("testing binding with multiple endpoints and AMI... ");
+        Flush();
         {
-            ArrayList adapters = new ArrayList();
+            List<RemoteObjectAdapterPrx> adapters = new List<RemoteObjectAdapterPrx>();
             adapters.Add(com.createObjectAdapter("AdapterAMI11", "default"));
             adapters.Add(com.createObjectAdapter("AdapterAMI12", "default"));
             adapters.Add(com.createObjectAdapter("AdapterAMI13", "default"));
@@ -369,7 +377,7 @@ public class AllTests
             names.Add("AdapterAMI13");
             while(names.Count > 0)
             {
-                ArrayList adpts = new ArrayList(adapters);
+                List<RemoteObjectAdapterPrx> adpts = new List<RemoteObjectAdapterPrx>(adapters);
 
                 TestIntfPrx test1 = createTestIntfPrx(adpts);
                 shuffle(ref adpts);
@@ -416,7 +424,7 @@ public class AllTests
             names.Add("AdapterAMI13");
             while(names.Count > 0)
             {
-                ArrayList adpts = new ArrayList(adapters);
+                List<RemoteObjectAdapterPrx> adpts = new List<RemoteObjectAdapterPrx>(adapters);
 
                 TestIntfPrx test1 = createTestIntfPrx(adpts);
                 shuffle(ref adpts);
@@ -441,12 +449,12 @@ public class AllTests
 
             deactivate(com, adapters);
         }
-        Console.Out.WriteLine("ok");
+       WriteLine("ok");
 
-        Console.Out.Write("testing random endpoint selection... ");
-        Console.Out.Flush();
+        Write("testing random endpoint selection... ");
+        Flush();
         {
-            ArrayList adapters = new ArrayList();
+            List<RemoteObjectAdapterPrx> adapters = new List<RemoteObjectAdapterPrx>();
             adapters.Add(com.createObjectAdapter("Adapter21", "default"));
             adapters.Add(com.createObjectAdapter("Adapter22", "default"));
             adapters.Add(com.createObjectAdapter("Adapter23", "default"));
@@ -478,12 +486,12 @@ public class AllTests
 
             deactivate(com, adapters);
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing ordered endpoint selection... ");
-        Console.Out.Flush();
+        Write("testing ordered endpoint selection... ");
+        Flush();
         {
-            ArrayList adapters = new ArrayList();
+            List<RemoteObjectAdapterPrx> adapters = new List<RemoteObjectAdapterPrx>();
             adapters.Add(com.createObjectAdapter("Adapter31", "default"));
             adapters.Add(com.createObjectAdapter("Adapter32", "default"));
             adapters.Add(com.createObjectAdapter("Adapter33", "default"));
@@ -538,10 +546,10 @@ public class AllTests
 
             deactivate(com, adapters);
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing per request binding with single endpoint... ");
-        Console.Out.Flush();
+        Write("testing per request binding with single endpoint... ");
+        Flush();
         {
             RemoteObjectAdapterPrx adapter = com.createObjectAdapter("Adapter41", "default");
 
@@ -565,12 +573,12 @@ public class AllTests
             {
             }
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing per request binding with multiple endpoints... ");
-        Console.Out.Flush();
+        Write("testing per request binding with multiple endpoints... ");
+        Flush();
         {
-            ArrayList adapters = new ArrayList();
+            List<RemoteObjectAdapterPrx> adapters = new List<RemoteObjectAdapterPrx>();
             adapters.Add(com.createObjectAdapter("Adapter51", "default"));
             adapters.Add(com.createObjectAdapter("Adapter52", "default"));
             adapters.Add(com.createObjectAdapter("Adapter53", "default"));
@@ -603,12 +611,12 @@ public class AllTests
 
             deactivate(com, adapters);
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing per request binding with multiple endpoints and AMI... ");
-        Console.Out.Flush();
+        Write("testing per request binding with multiple endpoints and AMI... ");
+        Flush();
         {
-            ArrayList adapters = new ArrayList();
+            List<RemoteObjectAdapterPrx> adapters = new List<RemoteObjectAdapterPrx>();
             adapters.Add(com.createObjectAdapter("AdapterAMI51", "default"));
             adapters.Add(com.createObjectAdapter("AdapterAMI52", "default"));
             adapters.Add(com.createObjectAdapter("AdapterAMI53", "default"));
@@ -641,12 +649,12 @@ public class AllTests
 
             deactivate(com, adapters);
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing per request binding and ordered endpoint selection... ");
-        Console.Out.Flush();
+        Write("testing per request binding and ordered endpoint selection... ");
+        Flush();
         {
-            ArrayList adapters = new ArrayList();
+            List<RemoteObjectAdapterPrx> adapters = new List<RemoteObjectAdapterPrx>();
             adapters.Add(com.createObjectAdapter("Adapter61", "default"));
             adapters.Add(com.createObjectAdapter("Adapter62", "default"));
             adapters.Add(com.createObjectAdapter("Adapter63", "default"));
@@ -701,12 +709,12 @@ public class AllTests
 
             deactivate(com, adapters);
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing per request binding and ordered endpoint selection and AMI... ");
-        Console.Out.Flush();
+        Write("testing per request binding and ordered endpoint selection and AMI... ");
+        Flush();
         {
-            ArrayList adapters = new ArrayList();
+            List<RemoteObjectAdapterPrx> adapters = new List<RemoteObjectAdapterPrx>();
             adapters.Add(com.createObjectAdapter("AdapterAMI61", "default"));
             adapters.Add(com.createObjectAdapter("AdapterAMI62", "default"));
             adapters.Add(com.createObjectAdapter("AdapterAMI63", "default"));
@@ -761,12 +769,13 @@ public class AllTests
 
             deactivate(com, adapters);
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing endpoint mode filtering... ");
-        Console.Out.Flush();
+#if !SILVERLIGHT
+        Write("testing endpoint mode filtering... ");
+        Flush();
         {
-            ArrayList adapters = new ArrayList();
+            List<RemoteObjectAdapterPrx> adapters = new List<RemoteObjectAdapterPrx>();
             adapters.Add(com.createObjectAdapter("Adapter71", "default"));
             adapters.Add(com.createObjectAdapter("Adapter72", "udp"));
 
@@ -783,14 +792,14 @@ public class AllTests
             {
             }
         }
-        Console.Out.WriteLine("ok");
-
+        WriteLine("ok");
+#endif
         if(communicator.getProperties().getProperty("Ice.Plugin.IceSSL").Length > 0)
         {
-            Console.Out.Write("testing unsecure vs. secure endpoints... ");
-            Console.Out.Flush();
+            Write("testing unsecure vs. secure endpoints... ");
+            Flush();
             {
-                ArrayList adapters = new ArrayList();
+                List<RemoteObjectAdapterPrx> adapters = new List<RemoteObjectAdapterPrx>();
                 adapters.Add(com.createObjectAdapter("Adapter81", "ssl"));
                 adapters.Add(com.createObjectAdapter("Adapter82", "tcp"));
 
@@ -838,8 +847,136 @@ public class AllTests
 
                 deactivate(com, adapters);
             }
-            Console.Out.WriteLine("ok");
+            WriteLine("ok");
         }
+
+#if !SILVERLIGHT && !COMPACT && !UNITY
+        {
+            Write("testing ipv4 & ipv6 connections... ");
+            Flush();
+
+            Ice.Properties ipv4 = Ice.Util.createProperties();
+            ipv4.setProperty("Ice.IPv4", "1");
+            ipv4.setProperty("Ice.IPv6", "0");
+            ipv4.setProperty("Adapter.Endpoints", "tcp -h localhost");
+
+            Ice.Properties ipv6 = Ice.Util.createProperties();
+            ipv6.setProperty("Ice.IPv4", "0");
+            ipv6.setProperty("Ice.IPv6", "1");
+            ipv6.setProperty("Adapter.Endpoints", "tcp -h localhost");
+
+            Ice.Properties bothPreferIPv4 = Ice.Util.createProperties();
+            bothPreferIPv4.setProperty("Ice.IPv4", "1");
+            bothPreferIPv4.setProperty("Ice.IPv6", "1");
+            bothPreferIPv4.setProperty("Ice.PreferIPv6Address", "0");
+            bothPreferIPv4.setProperty("Adapter.Endpoints", "tcp -h localhost");
+
+            Ice.Properties bothPreferIPv6 = Ice.Util.createProperties();
+            bothPreferIPv6.setProperty("Ice.IPv4", "1");
+            bothPreferIPv6.setProperty("Ice.IPv6", "1");
+            bothPreferIPv6.setProperty("Ice.PreferIPv6Address", "1");
+            bothPreferIPv6.setProperty("Adapter.Endpoints", "tcp -h localhost");
+
+            List<Ice.Properties> clientProps = new List<Ice.Properties>();
+            clientProps.Add(ipv4);
+            clientProps.Add(ipv6);
+            clientProps.Add(bothPreferIPv4);
+            clientProps.Add(bothPreferIPv6);
+
+            Ice.Properties anyipv4 = ipv4.ice_clone_();
+            anyipv4.setProperty("Adapter.Endpoints", "tcp -p 12012");
+            anyipv4.setProperty("Adapter.PublishedEndpoints", "tcp -h 127.0.0.1 -p 12012");
+
+            Ice.Properties anyipv6 = ipv6.ice_clone_();
+            anyipv6.setProperty("Adapter.Endpoints", "tcp -p 12012");
+            anyipv6.setProperty("Adapter.PublishedEndpoints", "tcp -h \".1\" -p 12012");
+
+            Ice.Properties anyboth = Ice.Util.createProperties();
+            anyboth.setProperty("Ice.IPv4", "1");
+            anyboth.setProperty("Ice.IPv6", "1");
+            anyboth.setProperty("Adapter.Endpoints", "tcp -p 12012");
+            anyboth.setProperty("Adapter.PublishedEndpoints", "tcp -h \"::1\" -p 12012:tcp -h 127.0.0.1 -p 12012");
+
+            Ice.Properties localipv4 = ipv4.ice_clone_();
+            localipv4.setProperty("Adapter.Endpoints", "tcp -h 127.0.0.1");
+
+            Ice.Properties localipv6 = ipv6.ice_clone_();
+            localipv6.setProperty("Adapter.Endpoints", "tcp -h \"::1\"");
+
+            List<Ice.Properties> serverProps = new List<Ice.Properties>(clientProps);
+            serverProps.Add(anyipv4);
+            serverProps.Add(anyipv6);
+            serverProps.Add(anyboth);
+            serverProps.Add(localipv4);
+            serverProps.Add(localipv6);
+        
+            bool ipv6NotSupported = false;
+            foreach(Ice.Properties p in serverProps)
+            {
+                Ice.InitializationData serverInitData = new Ice.InitializationData();
+                serverInitData.properties = p;
+                Ice.Communicator serverCommunicator = Ice.Util.initialize(serverInitData);
+                Ice.ObjectAdapter oa;
+                try
+                {
+                    oa = serverCommunicator.createObjectAdapter("Adapter");
+                    oa.activate();
+                }
+                catch(Ice.DNSException)
+                {
+                    serverCommunicator.destroy();
+                    continue; // IP version not supported.
+                }
+                catch(Ice.SocketException)
+                {
+                    if(p == ipv6)
+                    {
+                        ipv6NotSupported = true;
+                    }
+                    serverCommunicator.destroy();
+                    continue; // IP version not supported.
+                }
+
+                string strPrx = oa.createProxy(serverCommunicator.stringToIdentity("dummy")).ToString();
+                foreach(Ice.Properties q in clientProps)
+                {
+                    Ice.InitializationData clientInitData = new Ice.InitializationData();
+                    clientInitData.properties = q;
+                    Ice.Communicator clientCommunicator = Ice.Util.initialize(clientInitData);
+                    Ice.ObjectPrx prx = clientCommunicator.stringToProxy(strPrx);
+                    try
+                    {
+                        prx.ice_ping();
+                        test(false);
+                    }
+                    catch(Ice.ObjectNotExistException)
+                    {
+                        // Expected, no object registered.
+                    }
+                    catch(Ice.DNSException)
+                    {
+                        // Expected if no IPv4 or IPv6 address is
+                        // associated to localhost or if trying to connect
+                        // to an any endpoint with the wrong IP version,
+                        // e.g.: resolving an IPv4 address when only IPv6
+                        // is enabled fails with a DNS exception.
+                    }
+                    catch(Ice.SocketException)
+                    {
+                        test((p == ipv4 && q == ipv6) || (p == ipv6 && q == ipv4) ||
+                             (p == bothPreferIPv4 && q == ipv6) || (p == bothPreferIPv6 && q == ipv4) ||
+                             (p == bothPreferIPv6 && q == ipv6 && ipv6NotSupported) ||
+                             (p == anyipv4 && q == ipv6) || (p == anyipv6 && q == ipv4) ||
+                             (p == localipv4 && q == ipv6) || (p == localipv6 && q == ipv4));
+                    }
+                    clientCommunicator.destroy();
+                }
+                serverCommunicator.destroy();
+            }
+            
+            WriteLine("ok");
+        }
+#endif
 
         com.shutdown();
     }

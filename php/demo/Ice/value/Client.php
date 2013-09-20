@@ -1,7 +1,7 @@
 <?php
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,6 +34,14 @@ class DerivedPrinterI extends Demo_DerivedPrinter
     }
 }
 
+class ClientPrinterI extends Demo_ClientPrinter
+{
+    function printBackwards()
+    {
+        echo strrev($this->message),"\n";
+    }
+}
+
 class ObjectFactory implements Ice_ObjectFactory
 {
     function create($type)
@@ -48,6 +56,11 @@ class ObjectFactory implements Ice_ObjectFactory
             return new DerivedPrinterI;
         }
 
+        if($type == Demo_ClientPrinter::ice_staticId())
+        {
+            return new ClientPrinterI;
+        }
+
         assert(false);
         return null;
     }
@@ -59,7 +72,7 @@ class ObjectFactory implements Ice_ObjectFactory
 
 try
 {
-    $base = $ICE->stringToProxy("initial:default -p 10000");
+    $base = $ICE->stringToProxy("initial:default -h localhost -p 10000");
     $initial = Demo_InitialPrxHelper::checkedCast($base);
 
     echo "\n";
@@ -156,6 +169,21 @@ try
     echo "==> ",$derived->derivedMessage,"\n";
     echo "==> ";
     $derived->printUppercase();
+
+    echo "\n";
+    echo "Now let's make sure that slice is preserved with [\"preserve-slice\"]\n";
+    echo "metadata. We create a derived type on the client and pass it to the\n";
+    echo "server, which does not have a factory for the derived type.\n";
+    echo "[press enter]\n";
+    fgets(STDIN);
+
+    $clientp = new ClientPrinterI();
+    $clientp->message = "a message 4 u";
+    $ICE->addObjectFactory($factory, Demo_ClientPrinter::ice_staticId());
+
+    $derivedAsBase = $initial->updatePrinterMessage($clientp);
+    assert($derivedAsBase instanceof Demo_ClientPrinter);
+    echo "==> ",$derivedAsBase->message,"\n";
 
     echo "\n";
     echo "Finally, we try the same again, but instead of returning the\n";

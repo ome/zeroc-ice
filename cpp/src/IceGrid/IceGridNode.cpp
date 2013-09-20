@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -105,7 +105,7 @@ public:
     {
     }
 
-    virtual ObjectPtr locate(const Current& c, LocalObjectPtr&)
+    virtual ObjectPtr locate(const Current&, LocalObjectPtr&)
     {
         return _servant;
     }
@@ -325,9 +325,9 @@ NodeService::startImpl(int argc, char* argv[], int& status)
             locatorId.category = properties->getPropertyWithDefault("IceGrid.InstanceName", "IceGrid");
             locatorId.name = "Locator";
             string endpoints = properties->getProperty("IceGrid.Registry.Client.Endpoints");
-            string locatorPrx = "\"" + communicator()->identityToString(locatorId) + "\" :" + endpoints;
-            communicator()->setDefaultLocator(Ice::LocatorPrx::uncheckedCast(communicator()->stringToProxy(locatorPrx)));
-            properties->setProperty("Ice.Default.Locator", locatorPrx);
+            string locPrx = "\"" + communicator()->identityToString(locatorId) + "\" :" + endpoints;
+            communicator()->setDefaultLocator(Ice::LocatorPrx::uncheckedCast(communicator()->stringToProxy(locPrx)));
+            properties->setProperty("Ice.Default.Locator", locPrx);
         }
     }
     else if(properties->getProperty("Ice.Default.Locator").empty())
@@ -350,12 +350,12 @@ NodeService::startImpl(int argc, char* argv[], int& status)
     {
         if(!IceUtilInternal::directoryExists(dataPath))
         {
-            ostringstream os;
             FileException ex(__FILE__, __LINE__);
             ex.path = dataPath;
             ex.error = IceInternal::getSystemErrno();
-            os << ex;
-            error("property `IceGrid.Node.Data' is set to an invalid path:\n" + os.str());
+      
+            ServiceError err(this);
+            err << "property `IceGrid.Node.Data' is set to an invalid path:\n" << ex;
             return false;
         }
 
@@ -434,11 +434,10 @@ NodeService::startImpl(int argc, char* argv[], int& status)
         {
             mapper = UserAccountMapperPrx::uncheckedCast(communicator()->propertyToProxy(mapperProperty));
         }
-        catch(const Ice::LocalException& ex)
+        catch(const std::exception& ex)
         {
-            ostringstream os;
-            os << "user account mapper `" << mapperProperty << "' is invalid:\n" << ex;
-            error(os.str());
+            ServiceError err(this);
+            err << "user account mapper `" << mapperProperty << "' is invalid:\n" << ex;
             return false;
         }
     }
@@ -572,12 +571,11 @@ NodeService::startImpl(int argc, char* argv[], int& status)
     {
         try
         {
-            Ice::Identity registryId;
-            registryId.category = instanceName;
-            registryId.name = "Registry";
+            Ice::Identity regId;
+            regId.category = instanceName;
+            regId.name = "Registry";
             
-            RegistryPrx registry = RegistryPrx::checkedCast(
-                communicator()->stringToProxy("\"" + communicator()->identityToString(registryId) + "\""));
+            RegistryPrx registry = RegistryPrx::checkedCast(communicator()->getDefaultLocator()->findObjectById(regId));
             if(!registry)
             {
                 throw "invalid registry";
@@ -627,28 +625,24 @@ NodeService::startImpl(int argc, char* argv[], int& status)
         }
         catch(const DeploymentException& ex)
         {
-            ostringstream ostr;
-            ostr << "failed to deploy application `" << desc << "':\n" << ex << ": " << ex.reason;
-            warning(ostr.str());
+            ServiceWarning warn(this);
+            warn << "failed to deploy application `" << desc << "':\n" << ex;
         }
         catch(const AccessDeniedException& ex)
         {
-            ostringstream ostr;
-            ostr << "failed to deploy application `" << desc << "':\n" 
+            ServiceWarning warn(this);
+            warn << "failed to deploy application `" << desc << "':\n" 
                  << "registry database is locked by `" << ex.lockUserId << "'";
-            warning(ostr.str());
         }
         catch(const std::exception& ex)
         {
-            ostringstream ostr;
-            ostr << "failed to deploy application `" << desc << "':\n" << ex.what();
-            warning(ostr.str());
+            ServiceWarning warn(this);
+            warn << "failed to deploy application `" << desc << "':\n" << ex;
         }
         catch(const string& reason)
         {
-            ostringstream ostr;
-            ostr << "failed to deploy application `" << desc << "':\n" << reason;
-            warning(ostr.str());
+            ServiceWarning warn(this);
+            warn << "failed to deploy application `" << desc << "':\n" << reason;
         }
     }
 
@@ -716,11 +710,10 @@ NodeService::stop()
             _adapter->deactivate();
             _adapter = 0;
         }
-        catch(const Ice::LocalException& ex)
+        catch(const std::exception& ex)
         {
-            ostringstream ostr;
-            ostr << "unexpected exception while shutting down node:\n" << ex;
-            warning(ostr.str());
+            ServiceWarning warn(this);
+            warn << "unexpected exception while shutting down node:\n" << ex;
         }
     }
 
@@ -745,11 +738,10 @@ NodeService::stop()
         communicator()->shutdown();
         communicator()->waitForShutdown();
     }
-    catch(const Ice::LocalException& ex)
+    catch(const std::exception& ex)
     {
-        ostringstream ostr;
-        ostr << "unexpected exception while shutting down node:\n" << ex;
-        warning(ostr.str());
+        ServiceWarning warn(this);
+        warn << "unexpected exception while shutting down node:\n" << ex;
     }
 
     //
@@ -833,8 +825,7 @@ NodeService::usage(const string& appName)
     print("Usage: " + appName + " [options]\n" + options);
 }
 
-//COMPILERFIX: Borland C++ 2010 doesn't support wmain for console applications.
-#if defined(_WIN32 ) && !defined(__BCPLUSPLUS__)
+#ifdef _WIN32
 
 int
 wmain(int argc, wchar_t* argv[])

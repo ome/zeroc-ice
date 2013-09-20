@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -40,7 +40,7 @@ public:
     bool start();
     void stop();
 
-    void removeObserver(const ServiceObserverPrx&, const Ice::Exception&);
+    void observerCompleted(const Ice::AsyncResultPtr&);
 
 private:
 
@@ -71,6 +71,7 @@ private:
     void observerRemoved(const ServiceObserverPrx&, const std::exception&);
 
     Ice::PropertiesPtr createServiceProperties(const std::string&);
+    void destroyServiceCommunicator(const std::string&, const Ice::CommunicatorPtr&);
     
     ::Ice::CommunicatorPtr _communicator;
     ::Ice::CommunicatorPtr _sharedCommunicator;
@@ -81,6 +82,7 @@ private:
 
     std::set<ServiceObserverPrx> _observers;
     int _traceServiceObserver;
+    ::Ice::CallbackPtr _observerCompletedCB;
 };
 
 typedef IceUtil::Handle<ServiceManagerI> ServiceManagerIPtr;

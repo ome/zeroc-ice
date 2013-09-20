@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,21 +14,21 @@ namespace IceSSL
     using System.Collections.Generic;
     using System.Net;
     using System.Globalization;
-	
+        
     sealed class EndpointI : IceInternal.EndpointI
     {
-        internal EndpointI(Instance instance, string ho, int po, int ti, string conId, bool co)
+        internal EndpointI(Instance instance, string ho, int po, int ti, string conId, bool co) : base(conId)
         {
             _instance = instance;
             _host = ho;
             _port = po;
             _timeout = ti;
-            _connectionId = conId;
+            connectionId_ = conId;
             _compress = co;
             calcHashValue();
         }
 
-        internal EndpointI(Instance instance, string str, bool oaEndpoint)
+        internal EndpointI(Instance instance, string str, bool oaEndpoint) : base("")
         {
             _instance = instance;
             _host = null;
@@ -150,9 +150,8 @@ namespace IceSSL
 
                     default:
                     {
-                        Ice.EndpointParseException e = new Ice.EndpointParseException();
-                        e.str = "unknown option `" + option + "' in `ssl " + str + "'";
-                        throw e;
+                        parseOption(option, argument, "ssl", str);
+                        break;
                     }
                 }
             }
@@ -249,7 +248,7 @@ namespace IceSSL
         
         private sealed class InfoI : IceSSL.EndpointInfo
         {
-            public InfoI(int to, bool comp, string host, int port) : base(to, comp, host, port)
+            public InfoI(int to, bool comp, string h, int p) : base(to, comp, h, p)
             {
             }
 
@@ -286,6 +285,14 @@ namespace IceSSL
         }
 
         //
+        // Return the protocol name;
+        //
+        public override string protocol()
+        {
+            return "ssl";
+        }
+
+        //
         // Return the timeout for the endpoint in milliseconds. 0 means
         // non-blocking, -1 means no timeout.
         //
@@ -307,7 +314,7 @@ namespace IceSSL
             }
             else
             {
-                return new EndpointI(_instance, _host, _port, timeout, _connectionId, _compress);
+                return new EndpointI(_instance, _host, _port, timeout, connectionId_, _compress);
             }
         }
 
@@ -316,7 +323,7 @@ namespace IceSSL
         //
         public override IceInternal.EndpointI connectionId(string connectionId)
         {
-            if(connectionId == _connectionId)
+            if(connectionId == connectionId_)
             {
                 return this;
             }
@@ -348,7 +355,7 @@ namespace IceSSL
             }
             else
             {
-                return new EndpointI(_instance, _host, _port, _timeout, _connectionId, compress);
+                return new EndpointI(_instance, _host, _port, _timeout, connectionId_, compress);
             }
         }
 
@@ -385,14 +392,16 @@ namespace IceSSL
         // Return connectors for this endpoint, or empty list if no connector
         // is available.
         //
-        public override List<IceInternal.Connector> connectors()
+        public override List<IceInternal.Connector> connectors(Ice.EndpointSelectionType selType)
         {
-            return connectors(IceInternal.Network.getAddresses(_host, _port, _instance.protocolSupport()));
+            return connectors(IceInternal.Network.getAddresses(_host, _port, _instance.protocolSupport(), selType,
+                                                               _instance.preferIPv6(), true));
         }
 
-        public override void connectors_async(IceInternal.EndpointI_connectors callback)
+        public override void connectors_async(Ice.EndpointSelectionType selType,
+                                              IceInternal.EndpointI_connectors callback)
         {
-            _instance.endpointHostResolver().resolve(_host, _port, this, callback);
+            _instance.endpointHostResolver().resolve(_host, _port, selType, this, callback);
         }
 
         //
@@ -405,7 +414,7 @@ namespace IceSSL
         public override IceInternal.Acceptor acceptor(ref IceInternal.EndpointI endpoint, string adapterName)
         {
             AcceptorI p = new AcceptorI(_instance, adapterName, _host, _port);
-            endpoint = new EndpointI(_instance, _host, p.effectivePort(), _timeout, _connectionId, _compress);
+            endpoint = new EndpointI(_instance, _host, p.effectivePort(), _timeout, connectionId_, _compress);
             return p;
         }
 
@@ -426,7 +435,7 @@ namespace IceSSL
             {
                 foreach(string h in hosts)
                 {
-                    endps.Add(new EndpointI(_instance, h, _port, _timeout, _connectionId, _compress));
+                    endps.Add(new EndpointI(_instance, h, _port, _timeout, connectionId_, _compress));
                 }
             }
             return endps;
@@ -437,24 +446,21 @@ namespace IceSSL
         //
         public override bool equivalent(IceInternal.EndpointI endpoint)
         {
-            EndpointI sslEndpointI = null;
-            try
-            {
-                sslEndpointI = (EndpointI)endpoint;
-            }
-            catch(System.InvalidCastException)
+            if(!(endpoint is EndpointI))
             {
                 return false;
             }
+
+            EndpointI sslEndpointI = (EndpointI)endpoint;
             return sslEndpointI._host.Equals(_host) && sslEndpointI._port == _port;
         }
 
-        public override List<IceInternal.Connector> connectors(List<IPEndPoint> addresses)
+        public override List<IceInternal.Connector> connectors(List<EndPoint> addresses)
         {
             List<IceInternal.Connector> connectors = new List<IceInternal.Connector>();
-            foreach(IPEndPoint addr in addresses)
+            foreach(EndPoint addr in addresses)
             {
-                connectors.Add(new ConnectorI(_instance, _host, addr, _timeout, _connectionId));
+                connectors.Add(new ConnectorI(_instance, _host, addr, _timeout, connectionId_));
             }
             return connectors;
         }
@@ -467,35 +473,25 @@ namespace IceSSL
         //
         // Compare endpoints for sorting purposes
         //
-        public override bool Equals(object obj)
+        public override int CompareTo(IceInternal.EndpointI obj)
         {
-            return CompareTo(obj) == 0;
-        }
-
-        public override int CompareTo(object obj)
-        {
-            EndpointI p = null;
-
-            try
+            if(!(obj is EndpointI))
             {
-                p = (EndpointI)obj;
+                return type() < obj.type() ? -1 : 1;
             }
-            catch(System.InvalidCastException)
-            {
-                try
-                {
-                    IceInternal.EndpointI e = (IceInternal.EndpointI)obj;
-                    return type() < e.type() ? -1 : 1;
-                }
-                catch(System.InvalidCastException)
-                {
-                    Debug.Assert(false);
-                }
-            }
-
+            
+            EndpointI p = (EndpointI)obj;
             if(this == p)
             {
                 return 0;
+            }
+            else
+            {
+                int r = base.CompareTo(p);
+                if(r != 0)
+                {
+                    return r;
+                }
             }
 
             if(_port < p._port)
@@ -516,9 +512,9 @@ namespace IceSSL
                 return 1;
             }
 
-            if(!_connectionId.Equals(p._connectionId))
+            if(!connectionId_.Equals(p.connectionId_))
             {
-                return string.Compare(_connectionId, p._connectionId, StringComparison.Ordinal);
+                return string.Compare(connectionId_, p.connectionId_, StringComparison.Ordinal);
             }
 
             if(!_compress && p._compress)
@@ -535,18 +531,20 @@ namespace IceSSL
 
         private void calcHashValue()
         {
-            _hashCode = _host.GetHashCode();
-            _hashCode = 5 * _hashCode + _port;
-            _hashCode = 5 * _hashCode + _timeout;
-            _hashCode = 5 * _hashCode + _connectionId.GetHashCode();
-            _hashCode = 5 * _hashCode + (_compress ? 1 : 0);
+            int h = 5381;
+            IceInternal.HashUtil.hashAdd(ref h, EndpointType.value);
+            IceInternal.HashUtil.hashAdd(ref h, _host);
+            IceInternal.HashUtil.hashAdd(ref h, _port);
+            IceInternal.HashUtil.hashAdd(ref h, _timeout);
+            IceInternal.HashUtil.hashAdd(ref h, connectionId_);
+            IceInternal.HashUtil.hashAdd(ref h, _compress);
+            _hashCode = h;
         }
 
         private Instance _instance;
         private string _host;
         private int _port;
         private int _timeout;
-        private string _connectionId = "";
         private bool _compress;
         private int _hashCode;
     }

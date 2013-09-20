@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -85,6 +85,12 @@ public class TestI : TestIntfDisp_
         {
             _m.Unlock();
         }
+    }
+
+    override public void
+    close(bool force, Ice.Current current)
+    {
+        current.con.close(force);
     }
 
     override public void

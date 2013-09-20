@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,6 +19,11 @@
 #   include <sys/time.h>
 #endif
 
+#ifdef __APPLE__
+#   include <mach/mach.h>
+#   include <mach/mach_time.h>
+#endif
+
 using namespace IceUtil;
 
 #ifdef _WIN32
@@ -26,7 +31,7 @@ using namespace IceUtil;
 namespace
 {
 
-static double frequency = -1.0;
+double frequency = -1.0;
 
 //
 // Initialize the frequency
@@ -53,9 +58,30 @@ public:
         }
     }
 };
-static InitializeFrequency frequencyInitializer;
+InitializeFrequency frequencyInitializer;
 
+}
+#endif
+
+#ifdef __APPLE__
+namespace
+{
+
+double machMultiplier = 1.0;
+class InitializeTime
+{
+public:
+
+    InitializeTime()
+    {
+        mach_timebase_info_data_t initTimeBase = { 0, 0 };
+        mach_timebase_info(&initTimeBase);
+        machMultiplier = static_cast<double>(initTimeBase.numer) / initTimeBase.denom / ICE_INT64(1000);
+    }
 };
+InitializeTime initializeTime;
+
+}
 #endif
 
 Time::Time() :
@@ -72,7 +98,7 @@ IceUtil::Time::now(Clock clock)
 #  if defined(_MSC_VER)
         struct _timeb tb;
         _ftime(&tb);
-#  elif defined(__BCPLUSPLUS__)
+#  elif defined(__MINGW32__)
         struct timeb tb;
         ftime(&tb);
 #  endif
@@ -105,15 +131,15 @@ IceUtil::Time::now(Clock clock)
 #  if defined(_MSC_VER)
             struct _timeb tb;
             _ftime(&tb);
-#  elif defined(__BCPLUSPLUS__)
+#  elif defined(__MINGW32__)
             struct timeb tb;
             ftime(&tb);
 #  endif
             return Time(static_cast<Int64>(tb.time) * ICE_INT64(1000000) + tb.millitm * 1000);
         }
-#elif defined(__hpux) || defined(__APPLE__)
+#elif defined(__hpux)
         //
-        // HP/MacOS does not support CLOCK_MONOTONIC
+        // HP does not support CLOCK_MONOTONIC
         //
         struct timeval tv;
         if(gettimeofday(&tv, 0) < 0)
@@ -122,6 +148,8 @@ IceUtil::Time::now(Clock clock)
             throw SyscallException(__FILE__, __LINE__, errno);
         }
         return Time(tv.tv_sec * ICE_INT64(1000000) + tv.tv_usec);
+#elif defined(__APPLE__)
+       return Time(mach_absolute_time() * machMultiplier);
 #else
         struct timespec ts;
         if(clock_gettime(CLOCK_MONOTONIC, &ts) < 0)

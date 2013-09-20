@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,7 +33,7 @@ public class AllTests
     public static InitialPrx
     allTests(Ice.Communicator communicator, PrintWriter out)
     {
-		out.print("testing stringToProxy... ");
+                out.print("testing stringToProxy... ");
         out.flush();
         String ref = "initial:default -p 12010";
         Ice.ObjectPrx base = communicator.stringToProxy(ref);
@@ -95,6 +95,10 @@ public class AllTests
                     initial.throwTest2E2AsE1();
                     test(false);
                 }
+                catch(Ice.UnknownUserException ex)
+                {
+                    // Expected
+                }
                 catch(Ice.MarshalException ex)
                 {
                     // Expected
@@ -107,6 +111,10 @@ public class AllTests
                 {
                     initial.throwTest2E2AsE2();
                     test(false);
+                }
+                catch(Ice.UnknownUserException ex)
+                {
+                    // Expected
                 }
                 catch(Ice.MarshalException ex)
                 {

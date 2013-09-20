@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -103,7 +103,7 @@ public:
     }
 
     virtual bool
-    fileListProgress(Ice::Int percent)
+    fileListProgress(Ice::Int /*percent*/)
     {
         return true;
     }
@@ -120,7 +120,7 @@ public:
     }
 
     virtual bool
-    patchStart(const string& path, Ice::Long size, Ice::Long totalProgress, Ice::Long totalSize)
+    patchStart(const string& /*path*/, Ice::Long /*size*/, Ice::Long totalProgress, Ice::Long totalSize)
     {
         if(_traceLevels->patch > 1 && totalSize > (1024 * 1024))
         {
@@ -158,7 +158,7 @@ public:
     }
 
     virtual bool
-    patchProgress(Ice::Long progress, Ice::Long size, Ice::Long totalProgress, Ice::Long totalSize)
+    patchProgress(Ice::Long /*progress*/, Ice::Long /*size*/, Ice::Long /*totalProgress*/, Ice::Long /*totalSize*/)
     {
         return true;
     }
@@ -188,7 +188,7 @@ private:
     string _dest;
 };
 
-class NodeUp : public NodeI::Update, public AMI_NodeObserver_nodeUp
+class NodeUp : public NodeI::Update
 {
 public:
 
@@ -202,7 +202,7 @@ public:
     {
         try
         {
-            _observer->nodeUp_async(this, _info);
+            _observer->begin_nodeUp(_info, newCallback(static_cast<NodeI::Update*>(this), &NodeI::Update::completed));
         }
         catch(const Ice::LocalException&)
         {
@@ -210,25 +210,13 @@ public:
         }
         return true;
     }
-
-    virtual void
-    ice_response()
-    {
-        finished(true);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception&)
-    {
-        finished(false);
-    }
     
 private:
     
     NodeDynamicInfo _info;
 };
 
-class UpdateServer : public NodeI::Update, public AMI_NodeObserver_updateServer
+class UpdateServer : public NodeI::Update
 {
 public:
 
@@ -242,7 +230,9 @@ public:
     {
         try
         {
-            _observer->updateServer_async(this, _node->getName(), _info);
+            _observer->begin_updateServer(_node->getName(), 
+                                          _info,
+                                          newCallback(static_cast<NodeI::Update*>(this), &NodeI::Update::completed));
         }
         catch(const Ice::LocalException&)
         {
@@ -250,25 +240,13 @@ public:
         }
         return true;
     }
-
-    virtual void
-    ice_response()
-    {
-        finished(true);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception&)
-    {
-        finished(false);
-    }
     
 private:
     
     ServerDynamicInfo _info;
 };
 
-class UpdateAdapter : public NodeI::Update, public AMI_NodeObserver_updateAdapter
+class UpdateAdapter : public NodeI::Update
 {
 public:
 
@@ -282,25 +260,15 @@ public:
     {
         try
         {
-            _observer->updateAdapter_async(this, _node->getName(), _info);
+            _observer->begin_updateAdapter(_node->getName(), 
+                                           _info,
+                                           newCallback(static_cast<NodeI::Update*>(this), &NodeI::Update::completed));
         }
         catch(const Ice::LocalException&)
         {
             return false;
         }
         return true;
-    }
-
-    virtual void
-    ice_response()
-    {
-        finished(true);
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception&)
-    {
-        finished(false);
     }
     
 private:
@@ -384,6 +352,20 @@ NodeI::NodeI(const Ice::ObjectAdapterPtr& adapter,
     }
 }
 
+void
+NodeI::Update::completed(const Ice::AsyncResultPtr& result)
+{
+    try
+    {
+        result->throwLocalException();
+        finished(true);
+    }
+    catch(const Ice::LocalException&)
+    {
+        finished(false);
+    }
+}
+
 NodeI::~NodeI()
 {
 }
@@ -392,6 +374,7 @@ void
 NodeI::loadServer_async(const AMD_Node_loadServerPtr& amdCB,
                         const InternalServerDescriptorPtr& descriptor,
                         const string& replicaName,
+                        bool noRestart,
                         const Ice::Current& current)
 {
     ServerCommandPtr command;
@@ -436,7 +419,7 @@ NodeI::loadServer_async(const AMD_Node_loadServerPtr& amdCB,
             
             try
             {
-                command = server->load(amdCB, descriptor, replicaName);
+                command = server->load(amdCB, descriptor, replicaName, noRestart);
             }
             catch(const Ice::ObjectNotExistException&)
             {
@@ -468,9 +451,57 @@ NodeI::loadServer_async(const AMD_Node_loadServerPtr& amdCB,
 }
 
 void
-NodeI::destroyServer_async(const AMD_Node_destroyServerPtr& amdCB, 
-                           const string& serverId, 
-                           const string& uuid, 
+NodeI::loadServer_async(const AMD_Node_loadServerPtr& amdCB,
+                        const InternalServerDescriptorPtr& descriptor,
+                        const string& replicaName,
+                        const Ice::Current& current)
+{
+    loadServer_async(amdCB, descriptor, replicaName, false, current);
+}
+
+void
+NodeI::loadServerWithoutRestart_async(const AMD_Node_loadServerWithoutRestartPtr& amdCB,
+                                      const InternalServerDescriptorPtr& descriptor,
+                                      const string& replicaName,
+                                      const Ice::Current& current)
+{
+    class LoadServerCB : public AMD_Node_loadServer
+    {
+    public:
+
+        LoadServerCB(const AMD_Node_loadServerWithoutRestartPtr& cb) : _cb(cb)
+        {
+        }
+
+        virtual void 
+        ice_response(const ServerPrx& server, const AdapterPrxDict& adapters, Ice::Int actTimeout, Ice::Int deacTimeout)
+        {
+            _cb->ice_response(server, adapters, actTimeout, deacTimeout);
+        };
+
+        virtual void 
+        ice_exception(const ::std::exception& ex)
+        {
+            _cb->ice_exception(ex);
+        }
+
+        virtual void 
+        ice_exception()
+        {
+            _cb->ice_exception();
+        }
+
+    private:
+
+        const AMD_Node_loadServerWithoutRestartPtr _cb;
+    };
+    loadServer_async(new LoadServerCB(amdCB), descriptor, replicaName, true, current);
+}
+
+void
+NodeI::destroyServer_async(const AMD_Node_destroyServerPtr& amdCB,
+                           const string& serverId,
+                           const string& uuid,
                            int revision,
                            const string& replicaName,
                            const Ice::Current& current)
@@ -612,9 +643,8 @@ NodeI::patch_async(const AMD_Node_patchPtr& amdCB,
     {
         try
         {
-            set<ServerIPtr>::iterator s = servers.begin(); 
             vector<string> running;
-            while(s != servers.end())
+            for(set<ServerIPtr>::iterator s = servers.begin(); s != servers.end();)
             {
                 try
                 {
@@ -646,7 +676,7 @@ NodeI::patch_async(const AMD_Node_patchPtr& amdCB,
                 }
             }
 
-            for(s = servers.begin(); s != servers.end(); ++s)
+            for(set<ServerIPtr>::iterator s = servers.begin(); s != servers.end(); ++s)
             {
                 (*s)->waitForPatch();
             }
@@ -669,7 +699,7 @@ NodeI::patch_async(const AMD_Node_patchPtr& amdCB,
             //
             // Patch the server(s).
             //
-            for(s = servers.begin(); s != servers.end(); ++s)
+            for(set<ServerIPtr>::iterator s = servers.begin(); s != servers.end(); ++s)
             {
                 InternalDistributionDescriptorPtr dist = (*s)->getDistribution();
                 if(dist && (server.empty() || (*s)->getId() == server))
@@ -1271,8 +1301,7 @@ NodeI::canRemoveServerDirectory(const string& name)
     }
     
     c = readDirectory(_serversDir + "/" + name + "/config");
-    Ice::StringSeq::const_iterator p;
-    for(p = c.begin() ; p != c.end(); ++p)
+    for(Ice::StringSeq::const_iterator p = c.begin() ; p != c.end(); ++p)
     {
         if(p->find("config") != 0)
         {
@@ -1281,7 +1310,7 @@ NodeI::canRemoveServerDirectory(const string& name)
     }
     
     c = readDirectory(_serversDir + "/" + name + "/dbs");
-    for(p = c.begin() ; p != c.end(); ++p)
+    for(Ice::StringSeq::const_iterator p = c.begin() ; p != c.end(); ++p)
     {
         try
         {

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -51,6 +51,9 @@ class TestIntfI(Test.TestIntf):
             return result
         finally:
             self._cond.release()
+
+    def close(self, force, current=None):
+        current.con.close(force)
 
     def shutdown(self, current=None):
         current.adapter.getCommunicator().shutdown()

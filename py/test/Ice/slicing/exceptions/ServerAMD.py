@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -101,6 +101,73 @@ class TestI(Test.TestIntf):
         umd2.ui = "UnknownMostDerived2.ui"
         umd2.umd2 = "UnknownMostDerived2.umd2"
         cb.ice_exception(umd2)
+
+    def unknownMostDerived2AsBaseCompact_async(self, cb, current=None):
+        umd2 = Test.UnknownMostDerived2()
+        umd2.b = "UnknownMostDerived2.b"
+        umd2.ui = "UnknownMostDerived2.ui"
+        umd2.umd2 = "UnknownMostDerived2.umd2"
+        cb.ice_exception(umd2)
+
+    def knownPreservedAsBase_async(self, cb, r, current=None):
+        ex = Test.KnownPreservedDerived()
+        ex.b = "base"
+        ex.kp = "preserved"
+        ex.kpd = "derived"
+        cb.ice_exception(ex)
+
+    def knownPreservedAsKnownPreserved_async(self, cb, r, current=None):
+        ex = Test.KnownPreservedDerived()
+        ex.b = "base"
+        ex.kp = "preserved"
+        ex.kpd = "derived"
+        cb.ice_exception(ex)
+
+    def relayKnownPreservedAsBase_async(self, cb, r, current=None):
+        try:
+            r.knownPreservedAsBase()
+            test(False)
+        except Ice.Exception as ex:
+            cb.ice_exception(ex)
+
+    def relayKnownPreservedAsKnownPreserved_async(self, cb, r, current=None):
+        try:
+            r.knownPreservedAsKnownPreserved()
+            test(False)
+        except Ice.Exception as ex:
+            cb.ice_exception(ex)
+
+    def unknownPreservedAsBase_async(self, cb, r, current=None):
+        ex = Test.SPreserved2()
+        ex.b = "base"
+        ex.kp = "preserved"
+        ex.kpd = "derived"
+        ex.p1 = Test.SPreservedClass("bc", "spc")
+        ex.p2 = ex.p1
+        cb.ice_exception(ex)
+
+    def unknownPreservedAsKnownPreserved_async(self, cb, r, current=None):
+        ex = Test.SPreserved2()
+        ex.b = "base"
+        ex.kp = "preserved"
+        ex.kpd = "derived"
+        ex.p1 = Test.SPreservedClass("bc", "spc")
+        ex.p2 = ex.p1
+        cb.ice_exception(ex)
+
+    def relayUnknownPreservedAsBase_async(self, cb, r, current=None):
+        try:
+            r.unknownPreservedAsBase()
+            test(False)
+        except Ice.Exception as ex:
+            cb.ice_exception(ex)
+
+    def relayUnknownPreservedAsKnownPreserved_async(self, cb, r, current=None):
+        try:
+            r.unknownPreservedAsKnownPreserved()
+            test(False)
+        except Ice.Exception as ex:
+            cb.ice_exception(ex)
 
 def run(args, communicator):
     properties = communicator.getProperties()

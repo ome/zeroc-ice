@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -72,7 +72,8 @@ Freeze::EvictorIteratorI::nextBatch()
      
     Key firstKey = _key;
 
-    CommunicatorPtr communicator = _store->communicator();
+    const CommunicatorPtr& communicator = _store->communicator();
+    const EncodingVersion& encoding = _store->encoding();
    
     DbTxn* txn = _tx == 0 ? 0: _tx->dbTxn();
 
@@ -134,7 +135,7 @@ Freeze::EvictorIteratorI::nextBatch()
                                 flags = DB_NEXT;
                     
                                 Ice::Identity ident;
-                                ObjectStoreBase::unmarshal(ident, _key, communicator);
+                                ObjectStoreBase::unmarshal(ident, _key, communicator, encoding);
                                 if(_batch.size() < _batchSize)
                                 {
                                     _batch.push_back(ident);

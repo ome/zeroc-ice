@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef TEST_ICE
-#define TEST_ICE
+#pragma once
 
 #include <Ice/BuiltinSequences.ice>
 
@@ -36,6 +35,14 @@ struct SmallStruct
     string str;
     MyEnum e;
     MyClass* p;
+};
+
+class OptionalClass
+{
+    bool bo;
+    byte by;
+    optional(1) short sh;
+    optional(2) int i;
 };
 
 sequence<MyEnum> MyEnumS;
@@ -114,17 +121,22 @@ sequence<Ice::StringSeq> StringSList;
 ["clr:generic:Stack"]
 sequence<Ice::StringSeq> StringSStack;
 
-#if COMPACT
+#ifndef SILVERLIGHT
+#  if COMPACT
 ["clr:generic:SortedList"]
 dictionary<string, string> SortedStringStringD;
-#else
+#  else
 ["clr:generic:SortedDictionary"]
 dictionary<string, string> SortedStringStringD;
+#  endif
 #endif
+
 ["clr:collection"]
 dictionary<string, int> StringIntDCollection;
 
+#ifndef SILVERLIGHT
 ["clr:serializable:Serialize.Small"] sequence<byte> SerialSmall;
+#endif
 
 class MyClass
 {
@@ -142,7 +154,7 @@ class MyClass
     MyEnumS seq9;
     MyClassS seq10;
     StringMyClassD d;
-#ifndef COMPACT
+#if !defined(COMPACT) && !defined(SILVERLIGHT)
     SerialSmall ss;
 #endif
 };
@@ -157,5 +169,3 @@ exception MyException
 };
 
 };
-
-#endif

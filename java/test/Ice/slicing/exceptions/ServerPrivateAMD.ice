@@ -1,21 +1,23 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef SERVERPRIVATE_AMD_ICE
-#define SERVERPRIVATE_AMD_ICE
+#pragma once
 
 [["java:package:test.Ice.slicing.exceptions.serverAMD"]]
 module Test
 {
 
+//
 // Duplicate types from Test.ice. We cannot use #include since
 // that will use the types from the same prefix.
+//
+
 exception Base
 {
     string b;
@@ -36,7 +38,35 @@ exception KnownMostDerived extends KnownIntermediate
     string kmd;
 };
 
-["amd"] interface TestIntf
+["preserve-slice"]
+exception KnownPreserved extends Base
+{
+    string kp;
+};
+
+exception KnownPreservedDerived extends KnownPreserved
+{
+    string kpd;
+};
+
+["preserve-slice"]
+class BaseClass
+{
+    string bc;
+};
+
+["format:sliced"]
+interface Relay
+{
+    void knownPreservedAsBase() throws Base;
+    void knownPreservedAsKnownPreserved() throws KnownPreserved;
+
+    void unknownPreservedAsBase() throws Base;
+    void unknownPreservedAsKnownPreserved() throws KnownPreserved;
+};
+
+["ami", "amd", "format:sliced"]
+interface TestIntf
 {
     void baseAsBase() throws Base;
     void unknownDerivedAsBase() throws Base;
@@ -54,10 +84,26 @@ exception KnownMostDerived extends KnownIntermediate
     void unknownMostDerived1AsKnownIntermediate() throws KnownIntermediate;
     void unknownMostDerived2AsBase() throws Base;
 
+    ["format:compact"] void unknownMostDerived2AsBaseCompact() throws Base;
+
+    void knownPreservedAsBase() throws Base;
+    void knownPreservedAsKnownPreserved() throws KnownPreserved;
+
+    void relayKnownPreservedAsBase(Relay* r) throws Base;
+    void relayKnownPreservedAsKnownPreserved(Relay* r) throws KnownPreserved;
+
+    void unknownPreservedAsBase() throws Base;
+    void unknownPreservedAsKnownPreserved() throws KnownPreserved;
+
+    void relayUnknownPreservedAsBase(Relay* r) throws Base;
+    void relayUnknownPreservedAsKnownPreserved(Relay* r) throws KnownPreserved;
+
     void shutdown();
 };
 
-// Additional server specific types (used for testing slicing).
+//
+// Types private to the server.
+//
 
 exception UnknownDerived extends Base
 {
@@ -79,6 +125,19 @@ exception UnknownMostDerived2 extends UnknownIntermediate
    string umd2;
 };
 
+class SPreservedClass extends BaseClass
+{
+    string spc;
 };
 
-#endif
+exception SPreserved1 extends KnownPreservedDerived
+{
+    BaseClass p1;
+};
+
+exception SPreserved2 extends SPreserved1
+{
+    BaseClass p2;
+};
+
+};

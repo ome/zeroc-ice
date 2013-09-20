@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -56,7 +56,7 @@ class NullPermissionsVerifierI : public Glacier2::PermissionsVerifier
 {
 public:
 
-    bool checkPermissions(const string& userId, const string& password, string&, const Current&) const
+    bool checkPermissions(const string& /*userId*/, const string& /*password*/, string&, const Current&) const
     {
         return true;
     }
@@ -119,7 +119,7 @@ public:
     {
     }
 
-    virtual ObjectPtr locate(const Current& c, LocalObjectPtr&)
+    virtual ObjectPtr locate(const Current&, LocalObjectPtr&)
     {
         return _servant;
     }
@@ -234,17 +234,48 @@ RegistryI::startImpl()
     properties->setProperty("IceGrid.Registry.Client.AdapterId", "");
     properties->setProperty("IceGrid.Registry.Server.AdapterId", "");
     properties->setProperty("IceGrid.Registry.SessionManager.AdapterId", "");
+    properties->setProperty("IceGrid.Registry.AdminSessionManager.AdapterId", "");
     properties->setProperty("IceGrid.Registry.Internal.AdapterId", "");
 
     setupThreadPool(properties, "IceGrid.Registry.Client.ThreadPool", 1, 10);
     setupThreadPool(properties, "IceGrid.Registry.Server.ThreadPool", 1, 10, true); // Serialize for admin callbacks
     setupThreadPool(properties, "IceGrid.Registry.SessionManager.ThreadPool", 1, 10);
+    setupThreadPool(properties, "IceGrid.Registry.AdminSessionManager.ThreadPool", 1, 10);
     setupThreadPool(properties, "IceGrid.Registry.Internal.ThreadPool", 1, 100);
 
     _replicaName = properties->getPropertyWithDefault("IceGrid.Registry.ReplicaName", "Master");
     _master = _replicaName == "Master";
     _sessionTimeout = properties->getPropertyAsIntWithDefault("IceGrid.Registry.SessionTimeout", 30);
 
+    if(properties->getProperty("IceGrid.Registry.Client.ACM").empty())
+    {
+        //
+        // Set the client object adapter ACM timeout to the session
+        // timeout * 2. If no session timeout is set, ACM is disabled.
+        //
+        ostringstream os;
+        os << _sessionTimeout * 2;
+        properties->setProperty("IceGrid.Registry.Client.ACM", os.str());
+    }
+    if(properties->getProperty("IceGrid.Registry.Server.ACM").empty())
+    {
+        properties->setProperty("IceGrid.Registry.Server.ACM", "30");
+    }
+    if(properties->getProperty("IceGrid.Registry.Internal.ACM").empty())
+    {
+        int nt = properties->getPropertyAsIntWithDefault("IceGrid.Registry.NodeSessionTimeout", 30);
+        int rt = properties->getPropertyAsIntWithDefault("IceGrid.Registry.ReplicaSessionTimeout", 30);
+
+        //
+        // Set the internal object adapter ACM timeout to the replica
+        // or node session timeout * 2. If no session timeout is set,
+        // ACM is disabled.
+        //
+        ostringstream os;
+        os << std::max(nt, rt) * 2;
+        properties->setProperty("IceGrid.Registry.Internal.ACM", os.str());
+    }
+    
     if(!_master && properties->getProperty("Ice.Default.Locator").empty())
     {
         if(properties->getProperty("Ice.Default.Locator").empty())
@@ -297,7 +328,7 @@ RegistryI::startImpl()
     catch(const Ice::LocalException&)
     {
     }
-    
+
     //
     // Create the reaper thread.
     //
@@ -317,11 +348,11 @@ RegistryI::startImpl()
     registryTopicManagerId.category = _instanceName;
     registryTopicManagerId.name = "RegistryTopicManager";
     _iceStorm = IceStormInternal::Service::create(_communicator, 
-					          registryAdapter, 
-                                          	  registryAdapter, 
-                                          	  "IceGrid.Registry", 
-                                          	  registryTopicManagerId,
-                                          	  "Registry");
+                                                  registryAdapter, 
+                                                  registryAdapter, 
+                                                  "IceGrid.Registry", 
+                                                  registryTopicManagerId,
+                                                  "Registry");
     const IceStorm::TopicManagerPrx topicManager = _iceStorm->getTopicManager();
 
     //
@@ -349,18 +380,17 @@ RegistryI::startImpl()
     // Get the saved replica/node proxies.
     //
     ObjectProxySeq proxies;
-    ObjectProxySeq::const_iterator p;
 
     NodePrxSeq nodes;
     proxies = _database->getInternalObjectsByType(Node::ice_staticId());
-    for(p = proxies.begin(); p != proxies.end(); ++p)
+    for(ObjectProxySeq::const_iterator p = proxies.begin(); p != proxies.end(); ++p)
     {
         nodes.push_back(NodePrx::uncheckedCast(*p));
     }
 
     InternalRegistryPrxSeq replicas;
     proxies = _database->getObjectsByType(InternalRegistry::ice_staticId());
-    for(p = proxies.begin(); p != proxies.end(); ++p)
+    for(ObjectProxySeq::const_iterator p = proxies.begin(); p != proxies.end(); ++p)
     {
         replicas.push_back(InternalRegistryPrx::uncheckedCast(*p));
     }
@@ -586,7 +616,7 @@ RegistryI::setupClientSessionFactory(const Ice::ObjectAdapterPtr& registryAdapte
     }
 
     assert(_reaper);
-    _timer = new IceUtil::Timer();  // Used for for session allocation timeout.
+    _timer = new IceUtil::Timer();  // Used for session allocation timeout.
     _clientSessionFactory = new ClientSessionFactory(servantManager, _database, _timer, _reaper);
 
     if(servantManager && _master) // Slaves don't support client session manager objects.
@@ -768,6 +798,12 @@ RegistryI::createSession(const string& user, const string& password, const Curre
             throw exc;
         }
     }
+    catch(const Glacier2::PermissionDeniedException& ex)
+    {
+        PermissionDeniedException exc;
+        exc.reason = ex.reason;
+        throw exc;
+    }
     catch(const LocalException& ex)
     {
         if(_traceLevels && _traceLevels->session > 0)
@@ -817,6 +853,12 @@ RegistryI::createAdminSession(const string& user, const string& password, const 
             exc.reason = reason;
             throw exc;
         }
+    }
+    catch(const Glacier2::PermissionDeniedException& ex)
+    {
+        PermissionDeniedException exc;
+        exc.reason = ex.reason;
+        throw exc;
     }
     catch(const LocalException& ex)
     {
@@ -877,6 +919,12 @@ RegistryI::createSessionFromSecureConnection(const Current& current)
             throw exc;
         }
     }
+    catch(const Glacier2::PermissionDeniedException& ex)
+    {
+        PermissionDeniedException exc;
+        exc.reason = ex.reason;
+        throw exc;
+    }
     catch(const LocalException& ex)
     {
         if(_traceLevels && _traceLevels->session > 0)
@@ -922,6 +970,12 @@ RegistryI::createAdminSessionFromSecureConnection(const Current& current)
             throw exc;
         }
     }
+    catch(const Glacier2::PermissionDeniedException& ex)
+    {
+        PermissionDeniedException exc;
+        exc.reason = ex.reason;
+        throw exc;
+    }
     catch(const LocalException& ex)
     {
         if(_traceLevels && _traceLevels->session > 0)
@@ -945,7 +999,7 @@ RegistryI::createAdminSessionFromSecureConnection(const Current& current)
 }
 
 int
-RegistryI::getSessionTimeout(const Ice::Current& current) const
+RegistryI::getSessionTimeout(const Ice::Current& /*current*/) const
 {
     return _sessionTimeout;
 }
@@ -1318,7 +1372,7 @@ RegistryI::registerReplicas(const InternalRegistryPrx& internalRegistry,
 }
 
 void
-RegistryI::registerNodes(const InternalRegistryPrx& internalRegistry, const NodePrxSeq& nodes)
+RegistryI::registerNodes(const InternalRegistryPrx& /*internalRegistry*/, const NodePrxSeq& nodes)
 {
     const string prefix("Node-");
 

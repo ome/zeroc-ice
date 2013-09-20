@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,11 +34,7 @@ FreezeScript::FailureException::ice_name() const
 void
 FreezeScript::FailureException::ice_print(ostream& out) const
 {
-#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug
-    Exception::ice_print(out);
-#else
     ::IceUtil::Exception::ice_print(out);
-#endif
     out << ":\nerror occurred during transformation"; // TODO
     if(!_reason.empty())
     {
@@ -46,7 +42,7 @@ FreezeScript::FailureException::ice_print(ostream& out) const
     }
 }
 
-IceUtil::Exception*
+FreezeScript::FailureException*
 FreezeScript::FailureException::ice_clone() const
 {
     return new FailureException(ice_file(), ice_line(), _reason);

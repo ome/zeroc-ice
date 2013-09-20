@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,6 +16,7 @@
 #include <Ice/LoggerF.h>
 #include <Ice/StatsF.h>
 #include <Ice/Transceiver.h>
+#include <Ice/Network.h>
 
 typedef struct ssl_st SSL;
 typedef struct bio_st BIO;
@@ -60,7 +61,7 @@ public:
 
 private:
 
-    TransceiverI(const InstancePtr&, SOCKET, const std::string&, const struct sockaddr_storage&);
+    TransceiverI(const InstancePtr&, SOCKET, const std::string&, const IceInternal::Address&);
     TransceiverI(const InstancePtr&, SOCKET, const std::string&);
     virtual ~TransceiverI();
 
@@ -87,7 +88,7 @@ private:
 
     State _state;
     std::string _desc;
-    struct sockaddr_storage _connectAddr;
+    IceInternal::Address _connectAddr;
 #ifdef ICE_USE_IOCP
     int _maxSendPacketSize;
     int _maxReceivePacketSize;

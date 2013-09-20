@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -23,7 +23,7 @@ class TestI(Test.TestIntf):
 
     def deactivate(self, current=None):
         current.adapter.deactivate()
-        time.sleep(1)
+        time.sleep(0.1)
 
 class CookieI(Test.Cookie):
     def message(self):

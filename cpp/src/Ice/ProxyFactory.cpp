@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -73,7 +73,7 @@ ObjectPrx
 IceInternal::ProxyFactory::streamToProxy(BasicStream* s) const
 {
     Identity ident;
-    ident.__read(s);
+    s->read(ident);
 
     ReferencePtr ref = _instance->referenceFactory()->create(ident, s);
     return referenceToProxy(ref);
@@ -84,13 +84,13 @@ IceInternal::ProxyFactory::proxyToStream(const ObjectPrx& proxy, BasicStream* s)
 {
     if(proxy)
     {
-        proxy->__reference()->getIdentity().__write(s);
+        s->write(proxy->__reference()->getIdentity());
         proxy->__reference()->streamWrite(s);
     }
     else
     {
         Identity ident;
-        ident.__write(s);
+        s->write(ident);
     }
 }
 
@@ -195,7 +195,7 @@ IceInternal::ProxyFactory::checkRetryAfterException(const LocalException& ex,
     // in this process that will not change if we try again.
     //
     // The most likely cause for a MarshalException is exceeding the
-    // maximum message size, which is represented by the the subclass
+    // maximum message size, which is represented by the subclass
     // MemoryLimitException. For example, a client can attempt to send
     // a message that exceeds the maximum memory size, or accumulate
     // enough batch requests without flushing that the maximum size is
@@ -217,7 +217,7 @@ IceInternal::ProxyFactory::checkRetryAfterException(const LocalException& ex,
     ++cnt;
     assert(cnt > 0);
 
-    int interval;
+    int interval = -1;
     if(cnt == static_cast<int>(_retryIntervals.size() + 1) && 
        dynamic_cast<const CloseConnectionException*>(&ex))
     {

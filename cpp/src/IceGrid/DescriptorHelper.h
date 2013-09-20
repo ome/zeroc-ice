@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,7 +33,7 @@ public:
     DistributionDescriptor operator()(const DistributionDescriptor&) const;
     PropertyDescriptorSeq operator()(const PropertyDescriptorSeq&, const std::string& = std::string("property")) const;
     PropertySetDescriptorDict operator()(const PropertySetDescriptorDict&) const;
-    ObjectDescriptorSeq operator()(const ObjectDescriptorSeq&, const std::string&) const;
+    ObjectDescriptorSeq operator()(const ObjectDescriptorSeq&, const std::string&, const std::string&) const;
     Ice::Identity operator()(const Ice::Identity&, const std::string&) const;
     PropertySetDescriptor operator()(const PropertySetDescriptor&) const;
 
@@ -86,8 +86,8 @@ class CommunicatorHelper
 {
 public:
 
-    CommunicatorHelper(const CommunicatorDescriptorPtr&);
-    CommunicatorHelper() { }
+    CommunicatorHelper(const CommunicatorDescriptorPtr&, bool = false);
+    CommunicatorHelper() : _ignoreProps(false) { }
     virtual ~CommunicatorHelper() { }
 
     virtual bool operator==(const CommunicatorHelper&) const;
@@ -110,13 +110,14 @@ protected:
 private:
 
     CommunicatorDescriptorPtr _desc;
+    bool _ignoreProps;
 };
 
 class ServiceHelper : public CommunicatorHelper
 {
 public:
 
-    ServiceHelper(const ServiceDescriptorPtr&);
+    ServiceHelper(const ServiceDescriptorPtr&, bool = false);
     ServiceHelper() { }
 
     virtual bool operator==(const CommunicatorHelper&) const;
@@ -144,7 +145,7 @@ class ServerHelper : public CommunicatorHelper, public IceUtil::SimpleShared
 {
 public:
 
-    ServerHelper(const ServerDescriptorPtr&);
+    ServerHelper(const ServerDescriptorPtr&, bool = false);
     ServerHelper() { }
 
     virtual bool operator==(const CommunicatorHelper&) const;
@@ -186,7 +187,7 @@ class ServiceInstanceHelper : public InstanceHelper
 {
 public:
 
-    ServiceInstanceHelper(const ServiceInstanceDescriptor&);
+    ServiceInstanceHelper(const ServiceInstanceDescriptor&, bool);
 
     bool operator==(const ServiceInstanceHelper&) const;
     bool operator!=(const ServiceInstanceHelper&) const;
@@ -208,7 +209,7 @@ class IceBoxHelper : public ServerHelper
 {
 public:
 
-    IceBoxHelper(const IceBoxDescriptorPtr&);
+    IceBoxHelper(const IceBoxDescriptorPtr&, bool = false);
     IceBoxHelper() { }
 
     virtual bool operator==(const CommunicatorHelper&) const;
@@ -225,7 +226,7 @@ public:
 
 protected:
 
-#if defined(__sun)
+#ifdef __SUNPRO_CC
     using ServerHelper::instantiateImpl;
 #endif
 
@@ -340,8 +341,9 @@ private:
     NodeHelperDict _nodes;
 };
 
-bool descriptorEqual(const ServerDescriptorPtr&, const ServerDescriptorPtr&);
+bool descriptorEqual(const ServerDescriptorPtr&, const ServerDescriptorPtr&, bool = false);
 ServerHelperPtr createHelper(const ServerDescriptorPtr&);
+bool isServerUpdated(const ServerInfo&, const ServerInfo&, bool = false);
 
 }
 

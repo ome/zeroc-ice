@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,7 +25,8 @@ public class Server
         {
             args = communicator().getProperties().parseCommandLineOptions("TestAdapter", args);
             Ice.ObjectAdapter adapter = communicator().createObjectAdapter("TestAdapter");
-            adapter.add(new TestI(), communicator().stringToIdentity("test"));
+            string id = communicator().getProperties().getPropertyWithDefault("Identity", "test");
+            adapter.add(new TestI(), communicator().stringToIdentity(id));
             shutdownOnInterrupt();
             try
             {
@@ -41,10 +42,6 @@ public class Server
 
     public static int Main(string[] args)
     {
-#if !COMPACT
-        Debug.Listeners.Add(new ConsoleTraceListener());
-#endif
-
         App server = new App();
         return server.main(args);
     }

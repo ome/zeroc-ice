@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,8 +13,19 @@
 #include <IceUtil/Mutex.h>
 #include <Ice/UserExceptionFactory.h>
 #include <Ice/ObjectFactoryF.h>
-#include <string>
-#include <map>
+
+namespace Ice
+{
+
+class ICE_API CompactIdResolver : public IceUtil::Shared
+{
+public:
+
+    virtual ::std::string resolve(Ice::Int) const = 0;
+};
+typedef IceUtil::Handle<CompactIdResolver> CompactIdResolverPtr;
+
+}
 
 namespace IceInternal
 {
@@ -31,6 +42,10 @@ public:
     Ice::ObjectFactoryPtr getObjectFactory(const ::std::string&) const;
     void removeObjectFactory(const ::std::string&);
 
+    void addTypeId(int, const ::std::string&);
+    std::string getTypeId(int) const;
+    void removeTypeId(int);
+
 private:
 
     IceUtil::Mutex _m;
@@ -42,6 +57,10 @@ private:
     typedef ::std::pair<Ice::ObjectFactoryPtr, int> OFPair;
     typedef ::std::map< ::std::string, OFPair> OFTable;
     OFTable _oft;
+
+    typedef ::std::pair< ::std::string, int> TypeIdPair;
+    typedef ::std::map<int, TypeIdPair> TypeIdTable;
+    TypeIdTable _typeIdTable;
 };
 
 }

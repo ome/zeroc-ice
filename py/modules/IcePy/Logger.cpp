@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,7 @@
 #   include <IceUtil/Config.h>
 #endif
 #include <Logger.h>
+#include <Thread.h>
 #include <Ice/Initialize.h>
 
 using namespace std;
@@ -108,9 +109,9 @@ IcePy::LoggerWrapper::getObject()
 extern "C"
 #endif
 static LoggerObject*
-loggerNew(PyObject* /*arg*/)
+loggerNew(PyTypeObject* type, PyObject* /*args*/, PyObject* /*kwds*/)
 {
-    LoggerObject* self = PyObject_New(LoggerObject, &LoggerType);
+    LoggerObject* self = reinterpret_cast<LoggerObject*>(type->tp_alloc(type, 0));
     if(!self)
     {
         return 0;
@@ -126,7 +127,7 @@ static void
 loggerDealloc(LoggerObject* self)
 {
     delete self->logger;
-    PyObject_Del(self);
+    Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 #ifdef WIN32
@@ -338,8 +339,7 @@ PyTypeObject LoggerType =
 {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
-    PyObject_HEAD_INIT(0)
-    0,                              /* ob_size */
+    PyVarObject_HEAD_INIT(0, 0)
     STRCAST("IcePy.Logger"),        /* tp_name */
     sizeof(LoggerObject),           /* tp_basicsize */
     0,                              /* tp_itemsize */
@@ -348,7 +348,7 @@ PyTypeObject LoggerType =
     0,                              /* tp_print */
     0,                              /* tp_getattr */
     0,                              /* tp_setattr */
-    0,                              /* tp_compare */
+    0,                              /* tp_reserved */
     0,                              /* tp_repr */
     0,                              /* tp_as_number */
     0,                              /* tp_as_sequence */
@@ -400,10 +400,19 @@ IcePy::initLogger(PyObject* module)
     return true;
 }
 
+void
+IcePy::cleanupLogger()
+{
+    //
+    // Python is about to exit; we need to remove the wrapper around the process logger.
+    //
+    Ice::setProcessLogger(0);
+}
+
 PyObject*
 IcePy::createLogger(const Ice::LoggerPtr& logger)
 {
-    LoggerObject* obj = loggerNew(0);
+    LoggerObject* obj = loggerNew(&LoggerType, 0, 0);
     if(obj)
     {
         obj->logger = new Ice::LoggerPtr(logger);

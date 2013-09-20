@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_LOCATOR_ICE
-#define ICE_LOCATOR_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -93,7 +92,7 @@ interface Locator
      * be found.
      *
      **/
-    ["ami", "amd", "nonmutating", "cpp:const"] idempotent Object* findObjectById(Ice::Identity id)
+    ["amd", "nonmutating", "cpp:const"] idempotent Object* findObjectById(Ice::Identity id)
         throws ObjectNotFoundException;
 
     /**
@@ -109,7 +108,7 @@ interface Locator
      * found.
      *
      **/
-    ["ami", "amd", "nonmutating", "cpp:const"] idempotent Object* findAdapterById(string id)
+    ["amd", "nonmutating", "cpp:const"] idempotent Object* findAdapterById(string id)
         throws AdapterNotFoundException;
 
     /**
@@ -154,7 +153,7 @@ interface LocatorRegistry
      * id is already active.
      *
      **/
-    ["amd", "ami"] idempotent void setAdapterDirectProxy(string id, Object* proxy)
+    ["amd"] idempotent void setAdapterDirectProxy(string id, Object* proxy)
         throws AdapterNotFoundException, AdapterAlreadyActiveException;
 
     /**
@@ -182,7 +181,7 @@ interface LocatorRegistry
      * locator registry for this object adapter.
      *
      **/
-    ["amd", "ami"] idempotent void setReplicatedAdapterDirectProxy(string adapterId, string replicaGroupId, Object* p)
+    ["amd"] idempotent void setReplicatedAdapterDirectProxy(string adapterId, string replicaGroupId, Object* p)
         throws AdapterNotFoundException, AdapterAlreadyActiveException, InvalidReplicaGroupIdException;
 
     /**
@@ -203,4 +202,3 @@ interface LocatorRegistry
 
 };
 
-#endif

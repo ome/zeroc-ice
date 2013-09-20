@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,12 +10,12 @@
 #include <Ice/EndpointI.h>
 #include <Ice/Instance.h>
 #include <Ice/LocalException.h>
-#include <Ice/Network.h>
 #include <Ice/PropertiesI.h>
 #include <Ice/LoggerUtil.h>
 #include <IceUtil/MutexPtrLock.h>
 
 using namespace std;
+using namespace Ice::Instrumentation;
 using namespace IceInternal;
 
 namespace
@@ -46,8 +46,14 @@ Init init;
 Ice::LocalObject* IceInternal::upCast(EndpointI* p) { return p; }
 IceUtil::Shared* IceInternal::upCast(EndpointHostResolver* p) { return p; }
 
+const string&
+IceInternal::EndpointI::connectionId() const
+{
+    return _connectionId;
+}
+
 Ice::Int
-IceInternal::EndpointI::ice_getHash() const
+IceInternal::EndpointI::internal_getHash() const
 {
     IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(hashMutex);
     if(!_hashInitialized)
@@ -58,7 +64,7 @@ IceInternal::EndpointI::ice_getHash() const
 }
 
 vector<ConnectorPtr>
-IceInternal::EndpointI::connectors(const vector<struct sockaddr_storage>& addrs) const
+IceInternal::EndpointI::connectors(const vector<Address>& /*addrs*/) const
 {
     //
     // This method must be extended by endpoints which use the EndpointHostResolver to create
@@ -68,18 +74,30 @@ IceInternal::EndpointI::connectors(const vector<struct sockaddr_storage>& addrs)
     return vector<ConnectorPtr>();
 }
 
-IceInternal::EndpointI::EndpointI() : _hashInitialized(false)
+IceInternal::EndpointI::EndpointI(const std::string& connectionId) : 
+    _connectionId(connectionId),
+    _hashInitialized(false)
 {
 }
 
+IceInternal::EndpointI::EndpointI() : 
+    _hashInitialized(false) 
+{
+}
+
+#ifndef ICE_OS_WINRT
+
 IceInternal::EndpointHostResolver::EndpointHostResolver(const InstancePtr& instance) :
-    IceUtil::Thread("Ice endpoint host resolver thread"),
+    IceUtil::Thread("Ice.HostResolver"),
     _instance(instance),
+    _protocol(instance->protocolSupport()),
+    _preferIPv6(instance->preferIPv6()),
     _destroyed(false)
 {
     __setNoDelete(true);
     try
     {
+        updateObserver();
         bool hasPriority = _instance->initializationData().properties->getProperty("Ice.ThreadPriority") != "";
         int priority = _instance->initializationData().properties->getPropertyAsInt("Ice.ThreadPriority");
         if(hasPriority)
@@ -102,17 +120,51 @@ IceInternal::EndpointHostResolver::EndpointHostResolver(const InstancePtr& insta
     __setNoDelete(false);
 }
 
+vector<ConnectorPtr>
+IceInternal::EndpointHostResolver::resolve(const string& host, int port, Ice::EndpointSelectionType selType, 
+                                           const EndpointIPtr& endpoint)
+{
+    //
+    // Try to get the addresses without DNS lookup. If this doesn't
+    // work, we retry with DNS lookup (and observer).
+    //
+    vector<Address> addrs = getAddresses(host, port, _protocol, selType, _preferIPv6, false);
+    if(!addrs.empty())
+    {
+        return endpoint->connectors(addrs);
+    }
+
+    ObserverHelperT<> observer;
+    const CommunicatorObserverPtr& obsv = _instance->initializationData().observer;
+    if(obsv)
+    {
+        observer.attach(obsv->getEndpointLookupObserver(endpoint));
+    }
+    
+    vector<ConnectorPtr> connectors;
+    try 
+    {
+        connectors = endpoint->connectors(getAddresses(host, port, _protocol, selType, _preferIPv6, true));
+    }
+    catch(const Ice::LocalException& ex)
+    {
+        observer.failed(ex.ice_name());
+        throw;
+    }
+    return connectors;
+}
+
 void
-IceInternal::EndpointHostResolver::resolve(const string& host, int port, const EndpointIPtr& endpoint,
-                                           const EndpointI_connectorsPtr& callback)
-{ 
+IceInternal::EndpointHostResolver::resolve(const string& host, int port, Ice::EndpointSelectionType selType, 
+                                           const EndpointIPtr& endpoint, const EndpointI_connectorsPtr& callback)
+{
     //
     // Try to get the addresses without DNS lookup. If this doesn't work, we queue a resolve
     // entry and the thread will take care of getting the endpoint addresses.
     //
     try
     {
-        vector<struct sockaddr_storage> addrs = getAddresses(host, port, _instance->protocolSupport(), false);
+        vector<Address> addrs = getAddresses(host, port, _protocol, selType, _preferIPv6, false);
         if(!addrs.empty())
         {
             callback->connectors(endpoint->connectors(addrs));
@@ -131,8 +183,20 @@ IceInternal::EndpointHostResolver::resolve(const string& host, int port, const E
     ResolveEntry entry;
     entry.host = host;
     entry.port = port;
+    entry.selType = selType;
     entry.endpoint = endpoint;
     entry.callback = callback;
+
+    const CommunicatorObserverPtr& obsv = _instance->initializationData().observer;
+    if(obsv)
+    {
+        entry.observer = obsv->getEndpointLookupObserver(endpoint);
+        if(entry.observer)
+        {
+            entry.observer->attach();
+        }
+    }
+
     _queue.push_back(entry);
     notify();
 }
@@ -151,11 +215,10 @@ IceInternal::EndpointHostResolver::run()
 {
     while(true)
     {
-        ResolveEntry resolve;
-
+        ResolveEntry r;
+        ThreadObserverPtr threadObserver;
         {
             Lock sync(*this);
-
             while(!_destroyed && _queue.empty())
             {
                 wait();
@@ -166,25 +229,113 @@ IceInternal::EndpointHostResolver::run()
                 break;
             }
 
-            resolve = _queue.front();
+            r = _queue.front();
             _queue.pop_front();
+            threadObserver = _observer.get();
         }
 
         try
         {
-            resolve.callback->connectors(
-                resolve.endpoint->connectors(
-                    getAddresses(resolve.host, resolve.port, _instance->protocolSupport(), true)));
+            if(threadObserver)
+            {
+                threadObserver->stateChanged(ThreadStateIdle, ThreadStateInUseForOther);
+            }
+
+            r.callback->connectors(r.endpoint->connectors(getAddresses(r.host, 
+                                                                       r.port, 
+                                                                       _protocol,
+                                                                       r.selType, 
+                                                                       _preferIPv6, true)));
+
+            if(threadObserver)
+            {
+                threadObserver->stateChanged(ThreadStateInUseForOther, ThreadStateIdle);
+            }
         }
         catch(const Ice::LocalException& ex)
         {
-            resolve.callback->exception(ex);
+            if(r.observer)
+            {
+                r.observer->failed(ex.ice_name());
+            }
+            r.callback->exception(ex);
+        }
+
+        if(r.observer)
+        {
+            r.observer->detach();
         }
     }
 
     for(deque<ResolveEntry>::const_iterator p = _queue.begin(); p != _queue.end(); ++p)
     {
-        p->callback->exception(Ice::CommunicatorDestroyedException(__FILE__, __LINE__));
+        Ice::CommunicatorDestroyedException ex(__FILE__, __LINE__);
+        p->callback->exception(ex);
+        if(p->observer)
+        {
+            p->observer->failed(ex.ice_name());
+            p->observer->detach();
+        }
     }
     _queue.clear();
+
+    if(_observer)
+    {
+        _observer.detach();
+    }
 }
+
+void
+IceInternal::EndpointHostResolver::updateObserver()
+{
+    Lock sync(*this);
+    const CommunicatorObserverPtr& obsv = _instance->initializationData().observer;
+    if(obsv)
+    {
+        _observer.attach(obsv->getThreadObserver("Communicator", name(), ThreadStateIdle, _observer.get()));
+    }
+}
+
+#else
+
+IceInternal::EndpointHostResolver::EndpointHostResolver(const InstancePtr& instance) :
+    _instance(instance)
+{
+}
+
+vector<ConnectorPtr>
+IceInternal::EndpointHostResolver::resolve(const string& host, int port, Ice::EndpointSelectionType selType, 
+                                           const EndpointIPtr& endpoint)
+{
+    return endpoint->connectors(getAddresses(host, port, _instance->protocolSupport(), selType, 
+                                             _instance->preferIPv6(), false));
+}
+
+void
+IceInternal::EndpointHostResolver::resolve(const string&, int,
+                                           Ice::EndpointSelectionType selType, 
+                                           const EndpointIPtr& endpoint, 
+                                           const EndpointI_connectorsPtr& callback)
+{
+    //
+    // No DNS lookup support with WinRT.
+    //
+    callback->connectors(endpoint->connectors(selType));
+}
+
+void
+IceInternal::EndpointHostResolver::destroy()
+{
+}
+
+void
+IceInternal::EndpointHostResolver::run()
+{
+}
+
+void
+IceInternal::EndpointHostResolver::updateObserver()
+{
+}
+
+#endif

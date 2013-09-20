@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -32,9 +32,7 @@ Freeze::MapIndexBase::~MapIndexBase()
 {
 }
 
-Freeze::MapIndexBase::MapIndexBase(
-    const string& name,
-    bool enabled) :
+Freeze::MapIndexBase::MapIndexBase(const string& name, bool enabled) :
     KeyCompareBase(enabled),
     _name(name),
     _impl(0),
@@ -207,7 +205,7 @@ Freeze::MapHelper::recreate(const Freeze::ConnectionPtr& connection,
                 oldDb.open(txn, Ice::nativeToUTF8(connectionI->communicator(), oldDbName).c_str(), 0, DB_BTREE,
                            DB_THREAD, FREEZE_DB_MODE);
                     
-                auto_ptr<MapDb> newDb(new MapDb(connectionI, dbName, key, value, keyCompare, indices, true));
+                IceUtil::UniquePtr<MapDb> newDb(new MapDb(connectionI, dbName, key, value, keyCompare, indices, true));
                 
                 if(connectionI->trace() >= 2)
                 {
@@ -327,7 +325,7 @@ Freeze::IteratorHelper::create(const MapHelper& m, bool readOnly)
 {
     const MapHelperI& actualMap = dynamic_cast<const MapHelperI&>(m);
 
-    auto_ptr<IteratorHelperI> r(new IteratorHelperI(actualMap, readOnly, 
+    IceUtil::UniquePtr<IteratorHelperI> r(new IteratorHelperI(actualMap, readOnly, 
                                                     0, false));
     if(r->next())
     {
@@ -340,7 +338,7 @@ Freeze::IteratorHelper::create(const MapHelper& m, bool readOnly)
 }
 
 
-Freeze::IteratorHelper::~IteratorHelper()
+Freeze::IteratorHelper::~IteratorHelper() ICE_NOEXCEPT_FALSE
 {
 }
 
@@ -375,7 +373,11 @@ Freeze::IteratorHelperI::IteratorHelperI(const MapHelperI& m, bool readOnly,
         //
         // Need to start a transaction
         //
+#ifdef ICE_CPP11
+        _tx.reset(new Tx(_map));
+#else
         _tx = new Tx(_map);
+#endif
         txn = _tx->getTxn();
     }
 
@@ -429,7 +431,7 @@ Freeze::IteratorHelperI::IteratorHelperI(const IteratorHelperI& it) :
     _map._iteratorList.push_back(this);
 }
 
-Freeze::IteratorHelperI::~IteratorHelperI()
+Freeze::IteratorHelperI::~IteratorHelperI() ICE_NOEXCEPT_FALSE
 {
     close();
 }
@@ -440,13 +442,22 @@ Freeze::IteratorHelperI::find(const Key& key) const
 {
     Dbt dbKey;
     initializeInDbt(key, dbKey);
+#if (DB_VERSION_MAJOR <= 4) || (DB_VERSION_MAJOR == 5 && DB_VERSION_MINOR <= 1)
     //
     // When we have a custom-comparison function, Berkeley DB returns
     // the key on-disk (when it finds one). We disable this behavior:
     // (ref Oracle SR 5925672.992)
     //
     dbKey.set_flags(DB_DBT_USERMEM | DB_DBT_PARTIAL);
-    
+#else
+    //
+    // In DB > 5.1 we can not set DB_DBT_PARTIAL in the key Dbt,
+    // when using DB_SET, we must resize the Dbt key param to hold enought
+    // space or Dbc::get fails with DB_BUFFER_SMALL.
+    //
+    dbKey.set_flags(DB_DBT_USERMEM);
+    dbKey.set_ulen(static_cast<u_int32_t>(key.size()));
+#endif
     //
     // Keep 0 length since we're not interested in the data
     //
@@ -642,8 +653,7 @@ Freeze::IteratorHelperI::get(const Key*& key, const Value*& value) const
         }
         catch(const ::DbException& dx)
         {
-            handleDbException(dx, _key, dbKey, _value, dbValue,
-                              __FILE__, __LINE__);
+            handleDbException(dx, _key, dbKey, _value, dbValue, __FILE__, __LINE__);
         }
     }
 }
@@ -749,9 +759,12 @@ Freeze::IteratorHelperI::set(const Value& value)
 
     try
     {
-        int err;
-        err = _dbc->put(&dbKey, &dbValue, DB_CURRENT);
+#ifndef NDEBUG
+        int err = _dbc->put(&dbKey, &dbValue, DB_CURRENT);
         assert(err == 0);
+#else
+        _dbc->put(&dbKey, &dbValue, DB_CURRENT);
+#endif
     }
     catch(const ::DbDeadlockException& dx)
     {
@@ -880,16 +893,9 @@ Freeze::IteratorHelperI::close()
         {
             _dbc->close();
         }
-        catch(const ::DbDeadlockException& dx)
+        catch(const ::DbDeadlockException&)
         {
-            bool raiseException = (_tx == 0);
-            cleanup();
-            if(raiseException)
-            {
-                DeadlockException ex(__FILE__, __LINE__);
-                ex.message = dx.what();
-                throw ex;
-            }
+            // Ignored - it's unclear if this can ever occur
         }
         catch(const ::DbException& dx)
         {
@@ -907,7 +913,14 @@ Freeze::IteratorHelperI::cleanup()
 {
     _dbc = 0;
     _map._iteratorList.remove(this);
+    
+    // this can raise an exception when committing the transaction
+    // (only for read/write iterators)
+#ifdef ICE_CPP11
+    _tx.reset();
+#else
     _tx = 0;
+#endif 
 }
 
 
@@ -939,7 +952,7 @@ Freeze::IteratorHelperI::Tx::Tx(const MapHelperI& m) :
 }
         
 
-Freeze::IteratorHelperI::Tx::~Tx()
+Freeze::IteratorHelperI::Tx::~Tx() ICE_NOEXCEPT_FALSE
 {
     if(_dead)
     {
@@ -1020,11 +1033,14 @@ Freeze::MapHelperI::MapHelperI(const ConnectionIPtr& connection,
         assert(indexBase->_communicator == _connection->communicator());
         assert(indexBase->_map == 0);
         
-#ifndef NDEBUG
+#ifdef NDEBUG
+	_indices.insert(IndexMap::value_type(indexBase->name(), indexBase));
+#else
         bool inserted =
-#endif 
             _indices.insert(IndexMap::value_type(indexBase->name(), indexBase)).second;
         assert(inserted);
+#endif
+
         indexBase->_map = this;
     }
     
@@ -1033,7 +1049,15 @@ Freeze::MapHelperI::MapHelperI(const ConnectionIPtr& connection,
 
 Freeze::MapHelperI::~MapHelperI()
 {
-    close();
+    try
+    {
+        close();
+    }
+    catch(const DatabaseException& ex)
+    {
+        Ice::Error error(_connection->getCommunicator()->getLogger());
+        error << "Freeze: closing map " << _dbName << " raised: " << ex;
+    } 
 }
 
 Freeze::IteratorHelper*
@@ -1043,7 +1067,7 @@ Freeze::MapHelperI::find(const Key& k, bool readOnly) const
     {
         try
         {  
-            auto_ptr<IteratorHelperI> r(new IteratorHelperI(*this, readOnly, 0, false));
+            IceUtil::UniquePtr<IteratorHelperI> r(new IteratorHelperI(*this, readOnly, 0, false));
             if(r->find(k))
             {
                 return r.release();
@@ -1083,7 +1107,7 @@ Freeze::MapHelperI::lowerBound(const Key& k, bool readOnly) const
     {
         try
         {  
-            auto_ptr<IteratorHelperI> r(new IteratorHelperI(*this, readOnly, 0, false));
+            IceUtil::UniquePtr<IteratorHelperI> r(new IteratorHelperI(*this, readOnly, 0, false));
             if(r->lowerBound(k))
             {
                 return r.release();
@@ -1123,7 +1147,7 @@ Freeze::MapHelperI::upperBound(const Key& k, bool readOnly) const
     {
         try
         {  
-            auto_ptr<IteratorHelperI> r(new IteratorHelperI(*this, readOnly, 0, false));
+            IceUtil::UniquePtr<IteratorHelperI> r(new IteratorHelperI(*this, readOnly, 0, false));
             if(r->upperBound(k))
             {
                 return r.release();
@@ -1355,26 +1379,65 @@ Freeze::MapHelperI::clear()
         closeAllIterators();
     }
 
-    for(;;)
+    Dbt dbKey;
+    dbKey.set_flags(DB_DBT_USERMEM | DB_DBT_PARTIAL);
+    
+    Dbt dbValue;
+    dbValue.set_flags(DB_DBT_USERMEM | DB_DBT_PARTIAL);
+
+    try
     {
-        try
+        for(;;)
         {
-            u_int32_t count;
-            int err;
-            err = _db->truncate(txn, &count, txn != 0 ? 0 : DB_AUTO_COMMIT);
-            assert(err == 0);
-            break;
-        }
-        catch(const ::DbDeadlockException& dx)
-        {
-            if(txn != 0)
+            Dbc* dbc = 0;
+     
+            try
             {
-                DeadlockException ex(__FILE__, __LINE__);
-                ex.message = dx.what();
-                throw ex;
+                IteratorHelperI::TxPtr tx;
+                if(txn == 0)
+                {
+#ifdef ICE_CPP11
+                    tx.reset(new IteratorHelperI::Tx(*this));
+#else
+                    tx = new IteratorHelperI::Tx(*this);
+#endif
+                    txn = tx->getTxn();
+                }
+
+                _db->cursor(txn, &dbc, 0);
+                while(dbc->get(&dbKey, &dbValue, DB_NEXT | DB_RMW) == 0)
+                {
+                    dbc->del(0);
+                }
+
+                Dbc* toClose = dbc;
+                dbc = 0;
+                toClose->close();
+                break; // for (;;)
             }
-            else
+            catch(const DbDeadlockException&)
             {
+                if(dbc != 0)
+                {
+                    try
+                    {
+                        dbc->close();
+                    }
+                    catch(const DbDeadlockException&)
+                    {
+                        if(txn != 0)
+                        {
+                            throw;
+                        }
+                        else
+                        {
+                            //
+                            // Ignored
+                            //
+                        }
+                    }
+                }
+
                 if(_connection->deadlockWarning())
                 {
                     Warning out(_connection->communicator()->getLogger());
@@ -1382,17 +1445,47 @@ Freeze::MapHelperI::clear()
                         << _dbName << "\"; retrying ...";
                 }
 
+                if(txn != 0)
+                {
+                    throw;
+                }
                 //
-                // Ignored, try again
+                // Otherwise retry
                 //
             }
+            catch(...)
+            {
+                if(dbc != 0)
+                {
+                    try
+                    {
+                        dbc->close();
+                    }
+                    catch(const DbDeadlockException&)
+                    {
+                        if(txn != 0)
+                        {
+                            throw;
+                        }
+                        else
+                        {
+                            //
+                            // Ignored
+                            //
+                        }
+                    }
+                }
+                throw;
+            }
         }
-        catch(const ::DbException& dx)
-        {
-            DatabaseException ex(__FILE__, __LINE__);
-            ex.message = dx.what();
-            throw ex;
-        }
+    }
+    catch(const DbDeadlockException& dx)
+    {
+        throw DeadlockException(__FILE__, __LINE__, dx.what(), _connection->currentTransaction());
+    }
+    catch(const DbException& dx)
+    {
+        throw DatabaseException(__FILE__, __LINE__, dx.what());
     }
 }
 
@@ -1487,10 +1580,10 @@ Freeze::MapHelperI::size() const
 
     try
     {
-#if DB_VERSION_MAJOR != 4
-#error Freeze requires DB 4.x
+#if DB_VERSION_MAJOR < 4
+#error Freeze requires DB 4.x or greater
 #endif
-#if DB_VERSION_MINOR < 3
+#if (DB_VERSION_MAJOR == 4) && (DB_VERSION_MINOR < 3)
         _db->stat(&s, 0);
 #else
         _db->stat(_connection->dbTxn(), &s, 0);
@@ -1696,14 +1789,21 @@ Freeze::MapIndexI::MapIndexI(const ConnectionIPtr& connection, MapDb& db,
    
 Freeze::MapIndexI::~MapIndexI()
 {
-    _db->close(0);
+    try
+    {
+        _db->close(0);
+    }
+    catch(const DbException&)
+    {
+        // Ignored
+    }
 }
 
 
 IteratorHelper* 
 Freeze::MapIndexI::begin(bool ro, const MapHelperI& m) const
 {
-    auto_ptr<IteratorHelperI> r(new IteratorHelperI(m, ro, _index, false));
+    IceUtil::UniquePtr<IteratorHelperI> r(new IteratorHelperI(m, ro, _index, false));
 
     if(r->next())
     {
@@ -1719,7 +1819,7 @@ IteratorHelper*
 Freeze::MapIndexI::untypedFind(const Key& k, bool ro, const MapHelperI& m, 
                                bool onlyDups) const
 {
-    auto_ptr<IteratorHelperI> r(new IteratorHelperI(m, ro, _index, onlyDups));
+    IceUtil::UniquePtr<IteratorHelperI> r(new IteratorHelperI(m, ro, _index, onlyDups));
 
     if(r->find(k))
     {
@@ -1734,7 +1834,7 @@ Freeze::MapIndexI::untypedFind(const Key& k, bool ro, const MapHelperI& m,
 IteratorHelper* 
 Freeze::MapIndexI::untypedLowerBound(const Key& k, bool ro, const MapHelperI& m) const
 {
-    auto_ptr<IteratorHelperI> r(new IteratorHelperI(m, ro, _index, false));
+    IceUtil::UniquePtr<IteratorHelperI> r(new IteratorHelperI(m, ro, _index, false));
 
     if(r->lowerBound(k))
     {
@@ -1749,7 +1849,7 @@ Freeze::MapIndexI::untypedLowerBound(const Key& k, bool ro, const MapHelperI& m)
 IteratorHelper* 
 Freeze::MapIndexI::untypedUpperBound(const Key& k, bool ro, const MapHelperI& m) const
 {
-    auto_ptr<IteratorHelperI> r(new IteratorHelperI(m, ro, _index, false));
+    IceUtil::UniquePtr<IteratorHelperI> r(new IteratorHelperI(m, ro, _index, false));
 
     if(r->upperBound(k))
     {
@@ -1766,12 +1866,22 @@ Freeze::MapIndexI::untypedCount(const Key& k, const ConnectionIPtr& connection) 
 {
     Dbt dbKey;
     initializeInDbt(k, dbKey);
+#if (DB_VERSION_MAJOR <= 4)
     //
     // When we have a custom-comparison function, Berkeley DB returns
     // the key on-disk (when it finds one). We disable this behavior:
     // (ref Oracle SR 5925672.992)
     //
     dbKey.set_flags(DB_DBT_USERMEM | DB_DBT_PARTIAL);
+#else
+    //
+    // In DB 5.x we can not set DB_DBT_PARTIAL in the key Dbt,
+    // when using DB_SET, we must resize the Dbt key param to hold enought
+    // space or Dbc::get fails with DB_BUFFER_SMALL.
+    //
+    dbKey.set_flags(DB_DBT_USERMEM);
+    dbKey.set_ulen(static_cast<u_int32_t>(k.size()));
+#endif
 
     
     Dbt dbValue;
@@ -1884,7 +1994,7 @@ Freeze::MapIndexI::untypedCount(const Key& k, const ConnectionIPtr& connection) 
 }
     
 int
-Freeze::MapIndexI::secondaryKeyCreate(Db* secondary, const Dbt* dbKey, 
+Freeze::MapIndexI::secondaryKeyCreate(Db* /*secondary*/, const Dbt* /*dbKey*/, 
                                       const Dbt* dbValue, Dbt* result)
 {
     Byte* first = static_cast<Byte*>(dbValue->get_data());
@@ -1923,14 +2033,6 @@ Freeze::DatabaseException::ice_print(ostream& out) const
 {
     Exception::ice_print(out);
     out << ":\n" << message;
-}
-
-
-void
-Freeze::InvalidPositionException::ice_print(ostream& out) const
-{
-    Exception::ice_print(out);
-    out << ":\ninvalid position";
 }
 
 void

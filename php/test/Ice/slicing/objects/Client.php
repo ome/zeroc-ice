@@ -24,6 +24,7 @@ function test($b)
 function allTests($communicator)
 {
     global $NS;
+    global $Ice_Encoding_1_0;
 
     $d1cls = $NS ? "Test\\D1" : "Test_D1";
     $d3cls = $NS ? "Test\\D3" : "Test_D3";
@@ -31,7 +32,7 @@ function allTests($communicator)
     $obj = $communicator->stringToProxy("Test:default -p 12010");
     $test = $obj->ice_checkedCast("::Test::TestIntf");
 
-    echo "testing base as Object... ";
+    echo "base as Object... ";
     flush();
     {
         $o = $test->SBaseAsObject();
@@ -41,7 +42,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing base as base... ";
+    echo "base as base... ";
     flush();
     {
         $o = $test->SBaseAsSBase();
@@ -49,7 +50,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing base with known derived as base... ";
+    echo "base with known derived as base... ";
     flush();
     {
         $sb = $test->SBSKnownDerivedAsSBase();
@@ -59,7 +60,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing base with known derived as known derived... ";
+    echo "base with known derived as known derived... ";
     flush();
     {
         $sbksd = $test->SBSKnownDerivedAsSBSKnownDerived();
@@ -67,26 +68,66 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing base with unknown derived as base... ";
+    echo "base with unknown derived as base... ";
     flush();
     {
         $sb = $test->SBSUnknownDerivedAsSBase();
         test($sb->sb == "SBSUnknownDerived.sb");
     }
-    echo "ok\n";
-
-    echo "testing unknown with Object as Object... ";
-    flush();
+    if($test->ice_getEncodingVersion() == $Ice_Encoding_1_0)
     {
         try
         {
-            $o = $test->SUnknownAsObject();
+            //
+            // This test succeeds for the 1.0 encoding.
+            //
+            $sb = $test->SBSUnknownDerivedAsSBaseCompact();
+            test($sb->sb == "SBSUnknownDerived.sb");
+        }
+        catch(Exception $ex)
+        {
             test(false);
+        }
+    }
+    else
+    {
+        try
+        {
+            //
+            // This test fails when using the compact format because the instance cannot
+            // be sliced to a known type.
+            //
+            $sb = $test->SBSUnknownDerivedAsSBaseCompact();
+            test(false);
+        }
+        catch(Exception $ex)
+        {
+            test(get_class($ex) == ($NS ? "Ice\\NoObjectFactoryException" : "Ice_NoObjectFactoryException"));
+        }
+    }
+    echo "ok\n";
+
+    echo "unknown with Object as Object... ";
+    flush();
+    {
+        $usocls = $NS ? "Ice\\UnknownSlicedObject" : "Ice_UnknownSlicedObject";
+        try
+        {
+            $o = $test->SUnknownAsObject();
+            test($test->ice_getEncodingVersion() != $Ice_Encoding_1_0);
+            test($o instanceof $usocls);
+            test($o->unknownTypeId == "::Test::SUnknown");
+            test($o->_ice_slicedData != null);
+            $test->checkSUnknown($o);
         }
         catch(Exception $b)
         {
             $excls = $NS ? "Ice\\NoObjectFactoryException" : "Ice_NoObjectFactoryException";
-            if(!($b instanceof $excls))
+            if($b instanceof $excls)
+            {
+                test($test->ice_getEncodingVersion() == $Ice_Encoding_1_0);
+            }
+            else
             {
                 throw $ex;
             }
@@ -94,7 +135,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing one-element cycle... ";
+    echo "one-element cycle... ";
     flush();
     {
         $b = $test->oneElementCycle();
@@ -110,7 +151,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing two-element cycle... ";
+    echo "two-element cycle... ";
     flush();
     {
         $b1 = $test->twoElementCycle();
@@ -131,7 +172,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing known derived pointer slicing as base... ";
+    echo "known derived pointer slicing as base... ";
     flush();
     {
         $b1 = $test->D1AsB();
@@ -159,7 +200,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing known derived pointer slicing as derived... ";
+    echo "known derived pointer slicing as derived... ";
     flush();
     {
         $d1 = $test->D1AsD1();
@@ -182,7 +223,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing unknown derived pointer slicing as base... ";
+    echo "unknown derived pointer slicing as base... ";
     flush();
     {
         $b2 = $test->D2AsB();
@@ -210,7 +251,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing parameter pointer slicing with known first... ";
+    echo "parameter pointer slicing with known first... ";
     flush();
     {
         $test->paramTest1($b1, $b2);
@@ -236,7 +277,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing parameter pointer slicing with unknown first... ";
+    echo "parameter pointer slicing with unknown first... ";
     flush();
     {
         $test->paramTest2($b2, $b1);
@@ -262,7 +303,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing return value identity with known first... ";
+    echo "return value identity with known first... ";
     flush();
     {
         $r = $test->returnTest1($p1, $p2);
@@ -275,7 +316,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing return value identity with unknown first... ";
+    echo "return value identity with unknown first... ";
     flush();
     {
         $r = $test->returnTest2($p1, $p2);
@@ -288,7 +329,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing return value identity for input params known first... ";
+    echo "return value identity for input params known first... ";
     flush();
     {
         $d1 = $NS ? eval("return new Test\\D1;") : eval("return new Test_D1;");
@@ -334,7 +375,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing return value identity for input params unknown first... ";
+    echo "return value identity for input params unknown first... ";
     flush();
     {
         $d1 = $NS ? eval("return new Test\\D1;") : eval("return new Test_D1;");
@@ -380,7 +421,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing return value identity for input params unknown first... ";
+    echo "return value identity for input params unknown first... ";
     flush();
     {
         $d1 = $NS ? eval("return new Test\\D1;") : eval("return new Test_D1;");
@@ -428,7 +469,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing remainder unmarshaling (3 instances)... ";
+    echo "remainder unmarshaling (3 instances)... ";
     flush();
     {
         $ret = $test->paramTest3($p1, $p2);
@@ -450,7 +491,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing remainder unmarshaling (4 instances)... ";
+    echo "remainder unmarshaling (4 instances)... ";
     flush();
     {
         $ret = $test->paramTest4($b);
@@ -467,7 +508,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing parameter pointer slicing with first instance marshaled in unknown derived as base... ";
+    echo "parameter pointer slicing with first instance marshaled in unknown derived as base... ";
     flush();
     {
         $b1 = $NS ? eval("return new Test\\B;") : eval("return new Test_B;");
@@ -501,7 +542,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing parameter pointer slicing with first instance marshaled in unknown derived as derived... ";
+    echo "parameter pointer slicing with first instance marshaled in unknown derived as derived... ";
     flush();
     {
         $d11 = $NS ? eval("return new Test\\D1;") : eval("return new Test_D1;");
@@ -540,7 +581,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing sequence slicing... ";
+    echo "sequence slicing... ";
     flush();
     {
         $ss = null;
@@ -632,7 +673,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing dictionary slicing... ";
+    echo "dictionary slicing... ";
     flush();
     {
         $bin = array();
@@ -695,7 +736,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing base exception thrown as base exception... ";
+    echo "base exception thrown as base exception... ";
     flush();
     {
         try
@@ -724,7 +765,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing derived exception thrown as base exception... ";
+    echo "derived exception thrown as base exception... ";
     flush();
     {
         try
@@ -761,7 +802,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing derived exception thrown as derived exception... ";
+    echo "derived exception thrown as derived exception... ";
     flush();
     {
         try
@@ -798,7 +839,7 @@ function allTests($communicator)
     }
     echo "ok\n";
 
-    echo "testing unknown derived exception thrown as base exception... ";
+    echo "unknown derived exception thrown as base exception... ";
     flush();
     {
         try
@@ -827,10 +868,198 @@ function allTests($communicator)
     }
     echo "ok\n";
 
+    echo "forward-declared class... ";
+    flush();
+    {
+        try
+        {
+            $f = null;
+            $test->useForward($f);
+            test($f != null);
+        }
+        catch(Exception $e)
+        {
+            test(false);
+        }
+    }
+    echo "ok\n";
+
+    echo "preserved classes... ";
+    flush();
+    {
+        //
+        // Server knows the most-derived class PDerived.
+        //
+        $pd = $NS ? eval("return new Test\\PDerived;") : eval("return new Test_PDerived;");
+        $pd->pi = 3;
+        $pd->ps = "preserved";
+        $pd->pb = $pd;
+
+        $r = $test->exchangePBase($pd);
+        test(get_class($r) == ($NS ? "Test\\PDerived" : "Test_PDerived"));
+        test($r->pi == 3);
+        test($r->ps == "preserved");
+        test($r->pb === $r); // Object identity comparison
+
+        //
+        // Server only knows the base (non-preserved) type, so the object is sliced.
+        //
+        $pu = $NS ? eval("return new Test\\PCUnknown;") : eval("return new Test_PCUnknown;");
+        $pu->pi = 3;
+        $pu->pu = "preserved";
+
+        $r = $test->exchangePBase($pu);
+        test(get_class($r) != ($NS ? "Test\\PCUnknown" : "Test_PCUnknown"));
+        test($r->pi == 3);
+
+        //
+        // Server only knows the intermediate type Preserved. The object will be sliced to
+        // Preserved for the 1.0 encoding; otherwise it should be returned intact.
+        //
+        $pcd = $NS ? eval("return new Test\\PCDerived;") : eval("return new Test_PCDerived;");
+        $pcd->pi = 3;
+        $pcd->pbs = array($pcd);
+
+        $r = $test->exchangePBase($pcd);
+        if($test->ice_getEncodingVersion() == $Ice_Encoding_1_0)
+        {
+            test(get_class($r) != ($NS ? "Test\\PCDerived" : "Test_PCDerived"));
+            test($r->pi == 3);
+        }
+        else
+        {
+            test(get_class($r) == ($NS ? "Test\\PCDerived" : "Test_PCDerived"));
+            test($r->pi == 3);
+            test($r->pbs[0] === $r); // Object identity comparison
+        }
+
+        //
+        // Server only knows the intermediate type CompactPDerived. The object will be sliced to
+        // CompactPDerived for the 1.0 encoding; otherwise it should be returned intact.
+        //
+        $pcd = $NS ? eval("return new Test\\CompactPCDerived;") : eval("return new Test_CompactPCDerived;");
+        $pcd->pi = 3;
+        $pcd->pbs = array($pcd);
+
+        $r = $test->exchangePBase($pcd);
+        if($test->ice_getEncodingVersion() == $Ice_Encoding_1_0)
+        {
+            test(get_class($r) != ($NS ? "Test\\CompactPCDerived" : "Test_CompactPCDerived"));
+            test($r->pi == 3);
+        }
+        else
+        {
+            test(get_class($r) == ($NS ? "Test\\CompactPCDerived" : "Test_CompactPCDerived"));
+            test($r->pi == 3);
+            test($r->pbs[0] === $r); // Object identity comparison
+        }
+
+        //
+        // Send an object that will have multiple preserved slices in the server.
+        // The object will be sliced to Preserved for the 1.0 encoding.
+        //
+        $pcd = $NS ? eval("return new Test\\PCDerived3;") : eval("return new Test_PCDerived3;");
+        $pcd->pi = 3;
+        //
+        // Sending more than 254 objects exercises the encoding for object ids.
+        //
+        $pcd->pbs = array();
+        for($i = 0; $i < 300; ++$i)
+        {
+            $p2 = $NS ? eval("return new Test\\PCDerived2;") : eval("return new Test_PCDerived2;");
+            $p2->pi = $i;
+            $p2->pbs = array(null); // Nil reference. This slice should not have an indirection table.
+            $p2->pcd2 = $i;
+            array_push($pcd->pbs, $p2);
+        }
+        $pcd->pcd2 = $pcd->pi;
+        $pcd->pcd3 = $pcd->pbs[10];
+
+        $r = $test->exchangePBase($pcd);
+        if($test->ice_getEncodingVersion() == $Ice_Encoding_1_0)
+        {
+            test(get_class($r) != ($NS ? "Test\\PCDerived3" : "Test_PCDerived3"));
+            test(get_class($r) == ($NS ? "Test\\PDerived" : "Test_PDerived"));
+            test($r->pi == 3);
+        }
+        else
+        {
+            test(get_class($r) == ($NS ? "Test\\PCDerived3" : "Test_PCDerived3"));
+            test($r->pi == 3);
+            for($i = 0; $i < 300; ++$i)
+            {
+                $p2 = $r->pbs[$i];
+                test(get_class($p2) == ($NS ? "Test\\PCDerived2" : "Test_PCDerived2"));
+                test($p2->pi == $i);
+                test(count($p2->pbs) == 1);
+                test($p2->pbs[0] == null);
+                test($p2->pcd2 == $i);
+            }
+            test($r->pcd2 == $r->pi);
+            test($r->pcd3 === $r->pbs[10]); // Object identity comparison
+        }
+
+        //
+        // Obtain an object with preserved slices and send it back to the server.
+        // The preserved slices should be excluded for the 1.0 encoding, otherwise
+        // they should be included.
+        //
+        $p = $test->PBSUnknownAsPreserved();
+        $test->checkPBSUnknown($p);
+        if($test->ice_getEncodingVersion() != $Ice_Encoding_1_0)
+        {
+            $test->ice_encodingVersion($Ice_Encoding_1_0)->checkPBSUnknown($p);
+        }
+
+        //
+        // Relay a graph through the server. This test uses a preserved class
+        // with a class member.
+        //
+        $c = $NS ? eval("return new Test\\PNode;") : eval("return new Test_PNode;");
+        $c->next = $NS ? eval("return new Test\\PNode;") : eval("return new Test_PNode;");
+        $c->next->next = $NS ? eval("return new Test\\PNode;") : eval("return new Test_PNode;");
+        $c->next->next->next = $c;    // Create a cyclic graph.
+
+        $n = $test->exchangePNode($c);
+        test($n->next != null);
+        test($n->next !== $n->next->next); // Object identity comparison
+        test($n->next->next !== $n->next->next->next); // Object identity comparison
+        test($n->next->next->next === $n); // Object identity comparison
+        $n = null;      // Release reference.
+
+        //
+        // Obtain a preserved object from the server where the most-derived
+        // type is unknown. The preserved slice refers to a graph of PNode
+        // objects.
+        //
+        $p = $test->PBSUnknownAsPreservedWithGraph();
+        test($p != null);
+        $test->checkPBSUnknownWithGraph($p);
+        $p = null;      // Release reference.
+
+        //
+        // Obtain a preserved object from the server where the most-derived
+        // type is unknown. A data member in the preserved slice refers to the
+        // outer object, so the chain of references looks like this:
+        //
+        // outer->slicedData->outer
+        //
+        $p = $test->PBSUnknown2AsPreservedWithGraph();
+        test($p != null);
+        if($test->ice_getEncodingVersion() != $Ice_Encoding_1_0)
+        {
+            test($p->_ice_slicedData != null);
+        }
+        $test->checkPBSUnknown2WithGraph($p);
+        $p->_ice_slicedData = null;     // Break the cycle.
+        $p = null;                      // Release reference.
+    }
+    echo "ok\n";
+
     return $test;
 }
 
-$communicator = Ice_initialize(&$argv);
+$communicator = Ice_initialize($argv);
 $test = allTests($communicator);
 $test->shutdown();
 $communicator->destroy();

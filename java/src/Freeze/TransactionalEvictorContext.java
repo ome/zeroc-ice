@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -179,7 +179,10 @@ class TransactionalEvictorContext implements Ice.DispatchInterceptorAsyncCallbac
                 {
                     if(!_readOnly && !_removed)
                     {
-                        EvictorI.updateStats(_rec.stats, IceInternal.Time.currentMonotonicTimeMillis());
+                        if(_store.keepStats())
+                        {
+                            EvictorI.updateStats(_rec.stats, IceInternal.Time.currentMonotonicTimeMillis());
+                        }
                         _store.update(_current.id, _rec, _tx);
 
                         if(_trace >= 3)

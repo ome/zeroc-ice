@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,7 +34,7 @@ public:
     }
 
     virtual void
-    event(int i, const Current& current)
+    event(int i, const Current&)
     {
         if(_name == "twoway ordered" && i != _last)
         {
@@ -69,7 +69,6 @@ private:
     const string _name;
     const int _max;
     int _count;
-    bool _ordered;
     int _last;
 };
 typedef IceUtil::Handle<SingleI> SingleIPtr;

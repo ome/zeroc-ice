@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,8 @@
 
 package IceInternal;
 
+import Ice.Instrumentation.InvocationObserver;
+
 public class ConnectRequestHandler
     implements RequestHandler, Reference.GetConnectionCallback, RouterInfo.AddProxyCallback
 {
@@ -16,7 +18,7 @@ public class ConnectRequestHandler
     {
         Request(BasicStream os)
         {
-            this.os = new BasicStream(os.instance());
+            this.os = new BasicStream(os.instance(), Protocol.currentProtocolEncoding);
             this.os.swap(os);
         }
 
@@ -121,7 +123,8 @@ public class ConnectRequestHandler
                 _batchRequestInProgress = false;
                 notifyAll();
 
-                BasicStream dummy = new BasicStream(_reference.getInstance(), _batchAutoFlush);
+                BasicStream dummy = new BasicStream(_reference.getInstance(), Protocol.currentProtocolEncoding,
+                                                    _batchAutoFlush);
                 _batchStream.swap(dummy);
                 _batchRequestsSize = Protocol.requestBatchHdr.length;
 
@@ -181,18 +184,19 @@ public class ConnectRequestHandler
     }
 
     public Outgoing
-    getOutgoing(String operation, Ice.OperationMode mode, java.util.Map<String, String> context)
+    getOutgoing(String operation, Ice.OperationMode mode, java.util.Map<String, String> context, 
+                InvocationObserver observer)
         throws LocalExceptionWrapper
     {
         synchronized(this)
         {
             if(!initialized())
             {
-                return new IceInternal.Outgoing(this, operation, mode, context);
+                return new IceInternal.Outgoing(this, operation, mode, context, observer);
             }
         }
 
-        return _connection.getOutgoing(this, operation, mode, context);
+        return _connection.getOutgoing(this, operation, mode, context, observer);
     }
 
     public void
@@ -334,7 +338,7 @@ public class ConnectRequestHandler
         _flushing = false;
         _batchRequestInProgress = false;
         _batchRequestsSize = Protocol.requestBatchHdr.length;
-        _batchStream = new BasicStream(ref.getInstance(), _batchAutoFlush);
+        _batchStream = new BasicStream(ref.getInstance(), Protocol.currentProtocolEncoding, _batchAutoFlush);
         _updateRequestHandler = false;
     }
 
@@ -424,7 +428,7 @@ public class ConnectRequestHandler
                 }
                 else
                 {
-                    BasicStream os = new BasicStream(request.os.instance());
+                    BasicStream os = new BasicStream(request.os.instance(), Protocol.currentProtocolEncoding);
                     _connection.prepareBatchRequest(os);
                     try
                     {

@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_PATCH2_FILE_SERVER_ICE
-#define ICE_PATCH2_FILE_SERVER_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -77,7 +76,7 @@ interface FileServer
      * files in the specified partition.
      *
      **/
-    ["ami", "nonmutating", "cpp:const"] idempotent FileInfoSeq getFileInfoSeq(int partition)
+    ["nonmutating", "cpp:const"] idempotent FileInfoSeq getFileInfoSeq(int partition)
         throws PartitionOutOfRangeException;
 
     /**
@@ -120,27 +119,10 @@ interface FileServer
      * @return A sequence containing the compressed file contents.
      *
      **/
-    ["ami", "amd", "nonmutating", "cpp:const", "cpp:array"] 
+    ["amd", "nonmutating", "cpp:const", "cpp:array"] 
     idempotent Ice::ByteSeq getFileCompressed(string path, int pos, int num)
         throws FileAccessException;
 };
 
-/**
- *
- * The IcePatch administrative interface. This must only be
- * accessible from inside the firewall.
- *
- **/
-interface Admin
-{
-    /**
-     *
-     * Shut down the IcePatch server.
-     *
-     **/
-    void shutdown();
 };
 
-};
-
-#endif

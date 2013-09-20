@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -83,7 +83,7 @@ public:
     }
 
     virtual void
-    forward(const EventDataSeq& v, const Ice::Current& current)
+    forward(const EventDataSeq& v, const Ice::Current& /*current*/)
     {
         _impl->publish(true, v);
     }
@@ -164,28 +164,6 @@ TransientTopicImpl::getNonReplicatedPublisher(const Ice::Current&) const
     // Immutable
     return _publisherPrx;
 }
-
-//
-// COMPILERFIX: For some reason with VC6 find reports an error.
-//
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-namespace
-{
-static vector<SubscriberPtr>::iterator
-find(vector<SubscriberPtr>::iterator start, vector<SubscriberPtr>::iterator end, const Ice::Identity& ident)
-{
-    while(start != end)
-    {
-        if(*start == ident)
-        {
-            return start;
-        }
-        ++start;
-    }
-    return end;
-}
-}
-#endif
 
 void
 TransientTopicImpl::subscribe(const QoS& origQoS, const Ice::ObjectPrx& obj, const Ice::Current&)
@@ -602,6 +580,6 @@ TransientTopicImpl::shutdown()
     // Shutdown each subscriber. This waits for the event queues to drain.
     for(vector<SubscriberPtr>::const_iterator p = _subscribers.begin(); p != _subscribers.end(); ++p)
     {
-	(*p)->shutdown();
+        (*p)->shutdown();
     }
 }

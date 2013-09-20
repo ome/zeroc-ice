@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_PROCESS_ICE
-#define ICE_PROCESS_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -36,7 +35,7 @@ interface Process
      * @see Communicator#shutdown
      *
      **/
-    ["ami"] void shutdown();
+    void shutdown();
 
 
     /**
@@ -48,9 +47,8 @@ interface Process
      * @param fd 1 for stdout, 2 for stderr.
      *
      **/
-    ["ami"] void writeMessage(string message, int fd);
+    void writeMessage(string message, int fd);
 };
 
 };
 
-#endif

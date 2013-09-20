@@ -1,14 +1,14 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_SERVANT_FACTORY_MANAGER_H
-#define ICE_SERVANT_FACTORY_MANAGER_H
+#ifndef ICE_OBJECT_FACTORY_MANAGER_H
+#define ICE_OBJECT_FACTORY_MANAGER_H
 
 #include <IceUtil/Shared.h>
 #include <IceUtil/Mutex.h>

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -149,7 +149,7 @@ CodeVisitor::visitClassDecl(const ClassDeclPtr& p)
         _out << nl << type << " = IcePHP_declareClass('" << scoped << "');";
         if(!p->isLocal())
         {
-            _out << nl << type << "Prx = IcePHP_defineProxy(" << type << ");";
+            _out << nl << type << "Prx = IcePHP_declareProxy('" << scoped << "');";
         }
         _out << eb;
 
@@ -172,7 +172,6 @@ CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
     ClassList bases = p->bases();
     ClassDefPtr base;
     OperationList ops = p->operations();
-    OperationList::iterator oli;
     DataMemberList members = p->dataMembers();
     bool isInterface = p->isInterface();
     bool isAbstract = isInterface || p->allOperations().size() > 0; // Don't use isAbstract() - see bug 3739
@@ -200,7 +199,7 @@ CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
             }
         }
         _out << sb;
-        for(oli = ops.begin(); oli != ops.end(); ++oli)
+        for(OperationList::iterator oli = ops.begin(); oli != ops.end(); ++oli)
         {
             _out << nl << "public function " << fixIdent((*oli)->name()) << '(';
             ParamDeclList params = (*oli)->parameters();
@@ -298,7 +297,7 @@ CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
         if(!ops.empty())
         {
             _out << sp;
-            for(oli = ops.begin(); oli != ops.end(); ++oli)
+            for(OperationList::iterator oli = ops.begin(); oli != ops.end(); ++oli)
             {
                 _out << nl << "abstract public function " << fixIdent((*oli)->name()) << '(';
                 ParamDeclList params = (*oli)->parameters();
@@ -383,13 +382,18 @@ CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
         // Emit a forward declaration for the class in case a data member refers to this type.
         //
         _out << sp << nl << type << " = IcePHP_declareClass('" << scoped << "');";
+        if(!p->isLocal())
+        {
+            _out << nl << prxType << " = IcePHP_declareProxy('" << scoped << "');";
+        }
     }
 
     //
     // Emit the type information.
     //
+    const bool preserved = p->hasMetaData("preserve-slice") || p->inheritsMetaData("preserve-slice");
     _out << sp << nl << type << " = IcePHP_defineClass('" << scoped << "', '" << escapeName(abs) << "', "
-         << (isAbstract ? "true" : "false") << ", ";
+         << p->compactId() << ", " << (isAbstract ? "true" : "false") << ", " << (preserved ? "true" : "false") << ", ";
     if(!base)
     {
         _out << "$Ice__t_Object";
@@ -425,7 +429,7 @@ CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
     //
     // Data members are represented as an array:
     //
-    //   ('MemberName', MemberType)
+    //   ('MemberName', MemberType, Optional, Tag)
     //
     // where MemberType is either a primitive type constant (T_INT, etc.) or the id of a constructed type.
     //
@@ -436,12 +440,13 @@ CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
         {
             if(q != members.begin())
             {
-                _out << ',' << nl;
+                _out << ',';
             }
             _out.inc();
             _out << nl << "array('" << fixIdent((*q)->name()) << "', ";
             writeType((*q)->type());
-            _out << ')';
+            _out << ", " << ((*q)->optional() ? "true" : "false") << ", "
+                 << ((*q)->optional() ? (*q)->tag() : 0) << ')';
             _out.dec();
         }
         _out << ')';
@@ -459,7 +464,7 @@ CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
         //
         // Define each operation. The arguments to IcePHP_defineOperation are:
         //
-        // $ClassType, 'opName', Mode, SendMode, (InParams), (OutParams), ReturnType, (Exceptions)
+        // $ClassType, 'opName', Mode, SendMode, FormatType, (InParams), (OutParams), ReturnParam, (Exceptions)
         //
         // where InParams and OutParams are arrays of type descriptions, and Exceptions
         // is an array of exception type ids.
@@ -467,7 +472,7 @@ CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
         if(!ops.empty())
         {
             _out << sp;
-            for(oli = ops.begin(); oli != ops.end(); ++oli)
+            for(OperationList::iterator oli = ops.begin(); oli != ops.end(); ++oli)
             {
                 ParamDeclList params = (*oli)->parameters();
                 ParamDeclList::iterator t;
@@ -475,7 +480,7 @@ CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
 
                 _out << nl << "IcePHP_defineOperation(" << type << ", '" << (*oli)->name() << "', "
                      << getOperationMode((*oli)->mode(), _ns) << ", " << getOperationMode((*oli)->sendMode(), _ns)
-                     << ", ";
+                     << ", " << static_cast<int>((*oli)->format()) << ", ";
                 for(t = params.begin(), count = 0; t != params.end(); ++t)
                 {
                     if(!(*t)->isOutParam())
@@ -488,7 +493,10 @@ CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
                         {
                             _out << ", ";
                         }
+                        _out << "array(";
                         writeType((*t)->type());
+                        _out << ", " << ((*t)->optional() ? "true" : "false") << ", "
+                             << ((*t)->optional() ? (*t)->tag() : 0) << ')';
                         ++count;
                     }
                 }
@@ -513,7 +521,10 @@ CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
                         {
                             _out << ", ";
                         }
+                        _out << "array(";
                         writeType((*t)->type());
+                        _out << ", " << ((*t)->optional() ? "true" : "false") << ", "
+                             << ((*t)->optional() ? (*t)->tag() : 0) << ')';
                         ++count;
                     }
                 }
@@ -529,7 +540,15 @@ CodeVisitor::visitClassDefStart(const ClassDefPtr& p)
                 TypePtr returnType = (*oli)->returnType();
                 if(returnType)
                 {
+                    //
+                    // The return type has the same format as an in/out parameter:
+                    //
+                    // Type, Optional?, OptionalTag
+                    //
+                    _out << "array(";
                     writeType(returnType);
+                    _out << ", " << ((*oli)->returnIsOptional() ? "true" : "false") << ", "
+                         << ((*oli)->returnIsOptional() ? (*oli)->returnTag() : 0) << ')';
                 }
                 else
                 {
@@ -602,7 +621,6 @@ CodeVisitor::visitExceptionStart(const ExceptionPtr& p)
     _out << sb;
 
     DataMemberList members = p->dataMembers();
-    DataMemberList::iterator dmli;
 
     //
     // __construct
@@ -660,7 +678,7 @@ CodeVisitor::visitExceptionStart(const ExceptionPtr& p)
     if(!members.empty())
     {
         _out << sp;
-        for(dmli = members.begin(); dmli != members.end(); ++dmli)
+        for(DataMemberList::iterator dmli = members.begin(); dmli != members.end(); ++dmli)
         {
             _out << nl << "public $" << fixIdent((*dmli)->name()) << ";";
         }
@@ -671,7 +689,9 @@ CodeVisitor::visitExceptionStart(const ExceptionPtr& p)
     //
     // Emit the type information.
     //
-    _out << sp << nl << type << " = IcePHP_defineException('" << scoped << "', '" << escapeName(abs) << "', ";
+    const bool preserved = p->hasMetaData("preserve-slice") || p->inheritsMetaData("preserve-slice");
+    _out << sp << nl << type << " = IcePHP_defineException('" << scoped << "', '" << escapeName(abs) << "', "
+         << (preserved ? "true" : "false") << ", ";
     if(!base)
     {
         _out << "null";
@@ -684,23 +704,24 @@ CodeVisitor::visitExceptionStart(const ExceptionPtr& p)
     //
     // Data members are represented as an array:
     //
-    //   ('MemberName', MemberType)
+    //   ('MemberName', MemberType, Optional, Tag)
     //
     // where MemberType is either a primitive type constant (T_INT, etc.) or the id of a constructed type.
     //
     if(!members.empty())
     {
         _out << "array(";
-        for(dmli = members.begin(); dmli != members.end(); ++dmli)
+        for(DataMemberList::iterator dmli = members.begin(); dmli != members.end(); ++dmli)
         {
             if(dmli != members.begin())
             {
-                _out << ',' << nl;
+                _out << ',';
             }
             _out.inc();
             _out << nl << "array('" << fixIdent((*dmli)->name()) << "', ";
             writeType((*dmli)->type());
-            _out << ')';
+            _out << ", " << ((*dmli)->optional() ? "true" : "false") << ", "
+                 << ((*dmli)->optional() ? (*dmli)->tag() : 0) << ')';
             _out.dec();
         }
         _out << ')';
@@ -726,7 +747,6 @@ CodeVisitor::visitStructStart(const StructPtr& p)
     string type = getTypeVar(p);
     string abs = getAbsolute(p, _ns);
     MemberInfoList memberList;
-    MemberInfoList::iterator r;
 
     {
         DataMemberList members = p->dataMembers();
@@ -750,7 +770,7 @@ CodeVisitor::visitStructStart(const StructPtr& p)
     writeConstructorParams(memberList);
     _out << ")";
     _out << sb;
-    for(r = memberList.begin(); r != memberList.end(); ++r)
+    for(MemberInfoList::iterator r = memberList.begin(); r != memberList.end(); ++r)
     {
         writeAssign(*r);
     }
@@ -768,7 +788,7 @@ CodeVisitor::visitStructStart(const StructPtr& p)
     if(!memberList.empty())
     {
         _out << sp;
-        for(r = memberList.begin(); r != memberList.end(); ++r)
+        for(MemberInfoList::iterator r = memberList.begin(); r != memberList.end(); ++r)
         {
             _out << nl << "public $" << r->fixedName << ';';
         }
@@ -787,7 +807,7 @@ CodeVisitor::visitStructStart(const StructPtr& p)
     //
     // where MemberType is either a primitive type constant (T_INT, etc.) or the id of a constructed type.
     //
-    for(r = memberList.begin(); r != memberList.end(); ++r)
+    for(MemberInfoList::iterator r = memberList.begin(); r != memberList.end(); ++r)
     {
         if(r != memberList.begin())
         {
@@ -894,8 +914,6 @@ CodeVisitor::visitEnum(const EnumPtr& p)
     string type = getTypeVar(p);
     string abs = getAbsolute(p, _ns);
     EnumeratorList enums = p->getEnumerators();
-    EnumeratorList::iterator q;
-    long i;
 
     startNamespace(p);
 
@@ -903,13 +921,13 @@ CodeVisitor::visitEnum(const EnumPtr& p)
     _out << sb;
     _out << nl << "class " << name;
     _out << sb;
-
-    for(q = enums.begin(), i = 0; q != enums.end(); ++q, ++i)
+    
     {
-        string fixedEnum = fixIdent((*q)->name());
-        ostringstream idx;
-        idx << i;
-        _out << nl << "const " << fixedEnum << " = " << idx.str() << ';';
+        long i = 0;
+        for(EnumeratorList::iterator q = enums.begin(); q != enums.end(); ++q, ++i)
+        {
+            _out << nl << "const " << fixIdent((*q)->name()) << " = " << (*q)->value() << ';';
+        }
     }
 
     _out << eb;
@@ -918,13 +936,13 @@ CodeVisitor::visitEnum(const EnumPtr& p)
     // Emit the type information.
     //
     _out << sp << nl << type << " = IcePHP_defineEnum('" << scoped << "', array(";
-    for(q = enums.begin(); q != enums.end(); ++q)
+    for(EnumeratorList::iterator q = enums.begin(); q != enums.end(); ++q)
     {
         if(q != enums.begin())
         {
             _out << ", ";
         }
-        _out << "'" << (*q)->name() << "'";
+        _out << "'" << (*q)->name() << "', " << (*q)->value();
     }
     _out << "));";
 
@@ -1307,8 +1325,7 @@ CodeVisitor::writeConstantValue(const TypePtr& type, const SyntaxTreeBasePtr& va
                 val = val.substr(colon + 1);
             }
             Slice::EnumeratorList l = en->getEnumerators();
-            Slice::EnumeratorList::iterator q;
-            for(q = l.begin(); q != l.end(); ++q)
+            for(Slice::EnumeratorList::iterator q = l.begin(); q != l.end(); ++q)
             {
                 if((*q)->name() == val)
                 {
@@ -1340,6 +1357,10 @@ CodeVisitor::writeConstructorParams(const MemberInfoList& members)
         {
             writeConstantValue(member->type(), member->defaultValueType(), member->defaultValue());
         }
+        else if(member->optional())
+        {
+            _out << "Ice_Unset";
+        }
         else
         {
             writeDefaultValue(member->type());
@@ -1348,7 +1369,7 @@ CodeVisitor::writeConstructorParams(const MemberInfoList& members)
 }
 
 string
-CodeVisitor::getOperationMode(Slice::Operation::Mode mode, bool ns)
+CodeVisitor::getOperationMode(Slice::Operation::Mode mode, bool /*ns*/)
 {
     ostringstream ostr;
     ostr << static_cast<int>(mode);
@@ -1471,7 +1492,7 @@ printHeader(IceUtilInternal::Output& out)
     static const char* header =
 "// **********************************************************************\n"
 "//\n"
-"// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.\n"
+"// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.\n"
 "//\n"
 "// This copy of Ice is licensed to you under the terms described in the\n"
 "// ICE_LICENSE file included in this distribution.\n"
@@ -1488,7 +1509,7 @@ printHeader(IceUtilInternal::Output& out)
 namespace
 {
 
-IceUtil::Mutex* mutex = 0;
+IceUtil::Mutex* globalMutex = 0;
 bool interrupted = false;
 
 class Init
@@ -1497,13 +1518,13 @@ public:
 
     Init()
     {
-        mutex = new IceUtil::Mutex;
+        globalMutex = new IceUtil::Mutex;
     }
 
     ~Init()
     {
-        delete mutex;
-        mutex = 0;
+        delete globalMutex;
+        globalMutex = 0;
     }
 };
 
@@ -1512,9 +1533,9 @@ Init init;
 }
 
 static void
-interruptedCallback(int signal)
+interruptedCallback(int /*signal*/)
 {
-    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(mutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(globalMutex);
 
     interrupted = true;
 }
@@ -1588,20 +1609,19 @@ compile(int argc, char* argv[])
 
     vector<string> cppArgs;
     vector<string> optargs = opts.argVec("D");
-    vector<string>::const_iterator i;
-    for(i = optargs.begin(); i != optargs.end(); ++i)
+    for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
     {
         cppArgs.push_back("-D" + *i);
     }
 
     optargs = opts.argVec("U");
-    for(i = optargs.begin(); i != optargs.end(); ++i)
+    for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
     {
         cppArgs.push_back("-U" + *i);
     }
 
     vector<string> includePaths = opts.argVec("I");
-    for(i = includePaths.begin(); i != includePaths.end(); ++i)
+    for(vector<string>::const_iterator i = includePaths.begin(); i != includePaths.end(); ++i)
     {
         cppArgs.push_back("-I" + Preprocessor::normalizeIncludePath(*i));
     }
@@ -1636,7 +1656,7 @@ compile(int argc, char* argv[])
     IceUtil::CtrlCHandler ctrlCHandler;
     ctrlCHandler.setCallback(interruptedCallback);
 
-    for(i = args.begin(); i != args.end(); ++i)
+    for(vector<string>::const_iterator i = args.begin(); i != args.end(); ++i)
     {
         //
         // Ignore duplicates.
@@ -1777,7 +1797,7 @@ compile(int argc, char* argv[])
         }
 
         {
-            IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(mutex);
+            IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(globalMutex);
 
             if(interrupted)
             {
@@ -1818,4 +1838,3 @@ main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 }
-

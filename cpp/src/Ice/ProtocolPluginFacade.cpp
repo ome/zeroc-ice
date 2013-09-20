@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,6 +38,12 @@ IceInternal::ProtocolPluginFacade::getDefaultHost() const
     return _instance->defaultsAndOverrides()->defaultHost;
 }
 
+Ice::EncodingVersion
+IceInternal::ProtocolPluginFacade::getDefaultEncoding() const
+{
+    return _instance->defaultsAndOverrides()->defaultEncoding;
+}
+
 int
 IceInternal::ProtocolPluginFacade::getNetworkTraceLevel() const
 {
@@ -60,6 +66,12 @@ ProtocolSupport
 IceInternal::ProtocolPluginFacade::getProtocolSupport() const
 {
     return _instance->protocolSupport();
+}
+
+bool
+IceInternal::ProtocolPluginFacade::preferIPv6() const
+{
+    return _instance->preferIPv6();
 }
 
 void

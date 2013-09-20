@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -258,6 +258,12 @@ Ice::CommunicatorI::getStats() const
     return _instance->initializationData().stats;
 }
 
+Ice::Instrumentation::CommunicatorObserverPtr
+Ice::CommunicatorI::getObserver() const
+{
+    return _instance->initializationData().observer;
+}
+
 RouterPrx
 Ice::CommunicatorI::getDefaultRouter() const
 {
@@ -304,26 +310,31 @@ Ice::CommunicatorI::flushBatchRequests()
 AsyncResultPtr
 Ice::CommunicatorI::begin_flushBatchRequests()
 {
-    return begin_flushBatchRequestsInternal(::IceInternal::__dummyCallback, 0);
+    return __begin_flushBatchRequests(::IceInternal::__dummyCallback, 0);
 }
 
 AsyncResultPtr
 Ice::CommunicatorI::begin_flushBatchRequests(const CallbackPtr& cb, const LocalObjectPtr& cookie)
 {
-    return begin_flushBatchRequestsInternal(cb, cookie);
+    return __begin_flushBatchRequests(cb, cookie);
 }
 
 AsyncResultPtr
 Ice::CommunicatorI::begin_flushBatchRequests(const Callback_Communicator_flushBatchRequestsPtr& cb,
                                              const LocalObjectPtr& cookie)
 {
-    return begin_flushBatchRequestsInternal(cb, cookie);
+    return __begin_flushBatchRequests(cb, cookie);
 }
 
-static const ::std::string __flushBatchRequests_name = "flushBatchRequests";
+namespace
+{
+
+const ::std::string __flushBatchRequests_name = "flushBatchRequests";
+
+}
 
 AsyncResultPtr
-Ice::CommunicatorI::begin_flushBatchRequestsInternal(const IceInternal::CallbackBasePtr& cb,
+Ice::CommunicatorI::__begin_flushBatchRequests(const IceInternal::CallbackBasePtr& cb,
                                                      const LocalObjectPtr& cookie)
 {
     OutgoingConnectionFactoryPtr connectionFactory = _instance->outgoingConnectionFactory();
@@ -371,6 +382,12 @@ Ice::ObjectPtr
 Ice::CommunicatorI::removeAdminFacet(const string& facet)
 {
     return _instance->removeAdminFacet(facet);
+}
+
+Ice::ObjectPtr
+Ice::CommunicatorI::findAdminFacet(const string& facet)
+{
+    return _instance->findAdminFacet(facet);
 }
 
 Ice::CommunicatorI::CommunicatorI(const InitializationData& initData)

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,8 @@ public abstract class Index implements com.sleepycat.db.SecondaryKeyCreator
         throws com.sleepycat.db.DatabaseException
     {
         Ice.Communicator communicator = _store.communicator();
-        ObjectRecord rec = ObjectStore.unmarshalValue(value.getData(), communicator);
+        Ice.EncodingVersion encoding = _store.encoding();
+        ObjectRecord rec = ObjectStore.unmarshalValue(value.getData(), communicator, encoding, _store.keepStats());
 
         byte[] secondaryKey = marshalKey(rec.servant);
         if(secondaryKey != null)
@@ -76,7 +77,15 @@ public abstract class Index implements com.sleepycat.db.SecondaryKeyCreator
             // the key on-disk (when it finds one). We disable this behavior:
             // (ref Oracle SR 5925672.992)
             //
-            key.setPartial(true);
+            // In DB > 5.1.x we can not set DB_DBT_PARTIAL in the key Dbt when calling
+            // getSearchKey.
+            //
+            if(com.sleepycat.db.Environment.getVersionMajor() < 5 || 
+               (com.sleepycat.db.Environment.getVersionMajor() == 5 && 
+                com.sleepycat.db.Environment.getVersionMinor() <= 1))
+            {
+                key.setPartial(true);
+            }
 
             com.sleepycat.db.DatabaseEntry pkey = new com.sleepycat.db.DatabaseEntry();
             com.sleepycat.db.DatabaseEntry value = new com.sleepycat.db.DatabaseEntry();
@@ -86,6 +95,7 @@ public abstract class Index implements com.sleepycat.db.SecondaryKeyCreator
             value.setPartial(true);
 
             Ice.Communicator communicator = _store.communicator();
+            Ice.EncodingVersion encoding = _store.encoding();
 
             TransactionI transaction = _store.evictor().beforeQuery();
             com.sleepycat.db.Transaction tx = transaction == null ? null : transaction.dbTxn();
@@ -123,7 +133,7 @@ public abstract class Index implements com.sleepycat.db.SecondaryKeyCreator
 
                         if(found)
                         {
-                            Ice.Identity ident = ObjectStore.unmarshalKey(pkey.getData(), communicator);
+                            Ice.Identity ident = ObjectStore.unmarshalKey(pkey.getData(), communicator, encoding);
                             identities.add(ident);
                             first = false;
                         }
@@ -217,7 +227,15 @@ public abstract class Index implements com.sleepycat.db.SecondaryKeyCreator
             // the key on-disk (when it finds one). We disable this behavior:
             // (ref Oracle SR 5925672.992)
             //
-            key.setPartial(true);
+            // In DB > 5.1.x we can not set DB_DBT_PARTIAL in the key Dbt when calling
+            // getSearchKey.
+            //
+            if(com.sleepycat.db.Environment.getVersionMajor() < 5 || 
+               (com.sleepycat.db.Environment.getVersionMajor() == 5 && 
+                com.sleepycat.db.Environment.getVersionMinor() <= 1))
+            {
+                key.setPartial(true);
+            }
 
             com.sleepycat.db.DatabaseEntry value = new com.sleepycat.db.DatabaseEntry();
             //
@@ -300,6 +318,12 @@ public abstract class Index implements com.sleepycat.db.SecondaryKeyCreator
     communicator()
     {
         return _store.communicator();
+    }
+
+    protected final Ice.EncodingVersion
+    encoding()
+    {
+        return _store.encoding();
     }
 
     void

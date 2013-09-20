@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -96,4 +96,16 @@ batchOneways(const Test::MyClassPrx& p)
     }
     batch->ice_ping();
     batch2->ice_ping();
+
+    Ice::Identity identity;
+    identity.name = "invalid";
+    Ice::ObjectPrx batch3 = batch->ice_identity(identity);
+    batch3->ice_ping();
+    batch3->ice_flushBatchRequests();
+
+    // Make sure that a bogus batch request doesn't cause troubles to other ones.
+    batch3->ice_ping();
+    batch->ice_ping();
+    batch->ice_flushBatchRequests();
+    batch->ice_ping();
 }

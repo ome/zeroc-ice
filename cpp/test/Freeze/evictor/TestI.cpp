@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -88,7 +88,7 @@ public:
     void exception(const Ice::UserException& e)
     {
         Lock sync(*this);
-        _exception.reset(dynamic_cast<Ice::UserException*>(e.ice_clone()));
+        _exception.reset(e.ice_clone());
         notify();
     }
 
@@ -134,7 +134,7 @@ private:
     Test::AMD_Account_transfer3Ptr _cb;
     bool _response;
     bool _cancelled;
-    std::auto_ptr<Ice::UserException> _exception;
+    IceUtil::UniquePtr<Ice::UserException> _exception;
 };
 typedef IceUtil::Handle<ResponseThread> ResponseThreadPtr;
 
@@ -291,7 +291,7 @@ Test::ServantI::setValueAsync_async(const AMD_Servant_setValueAsyncPtr& __cb, In
 }
 
 void
-Test::ServantI::releaseAsync(const Current& current) const
+Test::ServantI::releaseAsync(const Current&) const
 {
     Monitor<Mutex>::Lock sync(*this);
     //
@@ -336,14 +336,14 @@ Test::ServantI::removeFacet(const string& name, const Current& current) const
 
 
 Ice::Int
-Test::ServantI::getTransientValue(const Current& current) const
+Test::ServantI::getTransientValue(const Current&) const
 {
     Monitor<Mutex>::Lock sync(*this);
     return _transientValue;
 }
 
 void
-Test::ServantI::setTransientValue(Ice::Int val, const Current& current)
+Test::ServantI::setTransientValue(Ice::Int val, const Current&)
 {
     Monitor<Mutex>::Lock sync(*this);
     _transientValue = val;
@@ -495,7 +495,7 @@ public:
     }
     
     virtual void
-    initialize(const ObjectAdapterPtr& adapter, const Identity& ident, const string& facet, const ObjectPtr& servant)
+    initialize(const ObjectAdapterPtr&, const Identity&, const string&, const ObjectPtr& servant)
     {
         Test::ServantI* servantI = dynamic_cast<Test::ServantI*>(servant.get());
         if(servantI != 0)
@@ -592,7 +592,7 @@ Test::RemoteEvictorI::getServant(const string& id, const Current&)
 
 
 void
-Test::RemoteEvictorI::saveNow(const Current& current)
+Test::RemoteEvictorI::saveNow(const Current&)
 {
     _evictor->getIterator("", 1);
 }

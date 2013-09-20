@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,6 +23,15 @@ public:
     
     Blobject(const InstancePtr&, const Ice::ConnectionPtr&, const Ice::Context&);
     virtual ~Blobject();
+
+    void destroy();
+    
+    virtual void updateObserver(const Glacier2::Instrumentation::SessionObserverPtr&);
+    
+    void invokeResponse(bool, const std::pair<const Ice::Byte*, const Ice::Byte*>&, 
+                        const Ice::AMD_Object_ice_invokePtr&);
+    void invokeSent(bool, const Ice::AMD_Object_ice_invokePtr&);
+    void invokeException(const Ice::Exception&, const Ice::AMD_Object_ice_invokePtr&);
 
 protected:
 

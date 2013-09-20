@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -28,7 +28,7 @@ public class AllTests
     public static TestIntfPrx
     allTests(Ice.Communicator communicator, java.io.PrintWriter out)
     {
-	out.print("testing stringToProxy... ");
+        out.print("testing stringToProxy... ");
         out.flush();
         String ref = "test:default -p 12010";
         Ice.ObjectPrx base = communicator.stringToProxy(ref);
@@ -68,6 +68,20 @@ public class AllTests
         out.flush();
         obj._transient();
         out.println("ok");
+
+        {
+            out.print("testing connection closure... ");
+            out.flush();
+            for(int i = 0; i < 10; ++i)
+            {
+                Ice.InitializationData initData = new Ice.InitializationData();
+                initData.properties = communicator.getProperties()._clone();
+                Ice.Communicator comm = Ice.Util.initialize(initData);
+                comm.stringToProxy("test:default -p 12010").begin_ice_ping();
+                comm.destroy();
+            }
+            out.println("ok");
+        }
 
         out.print("deactivating object adapter in the server... ");
         out.flush();

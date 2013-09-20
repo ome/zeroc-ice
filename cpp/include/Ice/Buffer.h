@@ -1,14 +1,14 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICEE_BUFFER_H
-#define ICEE_BUFFER_H
+#ifndef ICE_BUFFER_H
+#define ICE_BUFFER_H
 
 #include <Ice/Config.h>
 
@@ -20,6 +20,7 @@ class ICE_API Buffer : private IceUtil::noncopyable
 public:
 
     Buffer(size_t maxCapacity) : b(maxCapacity), i(b.begin()) { }
+    Buffer(const Ice::Byte* beg, const Ice::Byte* end) : b(beg, end), i(b.begin()) { }
     virtual ~Buffer() { }
 
     void swapBuffer(Buffer&);
@@ -38,10 +39,10 @@ public:
         typedef Ice::Byte& reference;
         typedef const Ice::Byte& const_reference;
         typedef Ice::Byte* pointer;
-        typedef ptrdiff_t difference_type;
         typedef size_t size_type;
 
         Container(size_type maxCapacity);
+        Container(const_iterator, const_iterator);
 
         ~Container();
 
@@ -81,6 +82,8 @@ public:
 
         void resize(size_type n) // Inlined for performance reasons.
         {
+            assert(!_buf || _capacity > 0);
+
             if(n == 0)
             {
                 clear();
@@ -94,6 +97,8 @@ public:
 
         void reset()
         {
+            assert(!_buf || _capacity > 0);
+
             if(_size > 0 && _size * 2 < _capacity)
             {
                 //

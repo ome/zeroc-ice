@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -35,7 +35,7 @@ main(int argc, char* argv[])
 }
 
 int
-CallbackServer::run(int argc, char* argv[])
+CallbackServer::run(int, char**)
 {
     communicator()->getProperties()->setProperty("CallbackAdapter.Endpoints", "tcp -p 12010");
     ObjectAdapterPtr adapter = communicator()->createObjectAdapter("CallbackAdapter");

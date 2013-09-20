@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,7 +14,7 @@ public class Server extends test.Util.Application
     public int
     run(String[] args)
     {
-	Ice.Communicator communicator = communicator();
+        Ice.Communicator communicator = communicator();
         communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010");
         Ice.ObjectAdapter adapter = communicator.createObjectAdapter("TestAdapter");
         Ice.Object object = new ChecksumI();
@@ -34,8 +34,8 @@ public class Server extends test.Util.Application
     public static void
     main(String[] args)
     {
-    	Server c = new Server();
-    	int status = c.main("Server", args);
+        Server c = new Server();
+        int status = c.main("Server", args);
         
         System.gc();
         System.exit(status);

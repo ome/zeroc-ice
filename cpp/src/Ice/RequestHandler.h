@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,6 +15,7 @@
 #include <Ice/RequestHandlerF.h>
 #include <Ice/ReferenceF.h>
 #include <Ice/OutgoingAsyncF.h>
+#include <Ice/ProxyF.h>
 #include <Ice/ConnectionIF.h>
 
 namespace IceInternal
@@ -43,7 +44,7 @@ public:
     const ReferencePtr& getReference() const { return _reference; } // Inlined for performances.
 
     virtual Ice::ConnectionIPtr getConnection(bool) = 0;
-
+    
 protected:
 
     RequestHandler(const ReferencePtr&);

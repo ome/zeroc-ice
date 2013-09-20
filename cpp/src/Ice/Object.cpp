@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,12 +14,19 @@
 #include <Ice/Direct.h>
 #include <Ice/LocalException.h>
 #include <Ice/Stream.h>
+#include <Ice/SlicedData.h>
 
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
 
-IceUtil::Shared* IceInternal::upCast(Object* p) { return p; }
+Object* Ice::upCast(Object* p) { return p; }
+
+void 
+Ice::__patch(ObjectPtr& obj, const ObjectPtr& v)
+{
+    obj = v;
+}
 
 bool
 Ice::Object::operator==(const Object& r) const
@@ -79,7 +86,7 @@ Ice::Object::ice_staticId()
     return __Ice__Object_ids[0];
 }
 
-ObjectPtr
+Ice::ObjectPtr
 Ice::Object::ice_clone() const
 {
     throw CloneNotImplementedException(__FILE__, __LINE__);
@@ -99,42 +106,45 @@ Ice::Object::ice_postUnmarshal()
 DispatchStatus
 Ice::Object::___ice_isA(Incoming& __inS, const Current& __current)
 {
-    BasicStream* __is = __inS.is();
-    __is->startReadEncaps();
+    BasicStream* __is = __inS.startReadParams();
     string __id;
     __is->read(__id, false);
-    __is->endReadEncaps();
+    __inS.endReadParams();
     bool __ret = ice_isA(__id, __current);
-    BasicStream* __os = __inS.os();
+    BasicStream* __os = __inS.__startWriteParams(DefaultFormat);
     __os->write(__ret);
+    __inS.__endWriteParams(true);
     return DispatchOK;
 }
 
 DispatchStatus
 Ice::Object::___ice_ping(Incoming& __inS, const Current& __current)
 {
-    __inS.is()->skipEmptyEncaps();
+    __inS.readEmptyParams();
     ice_ping(__current);
+    __inS.__writeEmptyParams();
     return DispatchOK;
 }
 
 DispatchStatus
 Ice::Object::___ice_ids(Incoming& __inS, const Current& __current)
 {
-    __inS.is()->skipEmptyEncaps();
+    __inS.readEmptyParams();
     vector<string> __ret = ice_ids(__current);
-    BasicStream* __os = __inS.os();
+    BasicStream* __os = __inS.__startWriteParams(DefaultFormat);
     __os->write(&__ret[0], &__ret[0] + __ret.size(), false);
+    __inS.__endWriteParams(true);
     return DispatchOK;
 }
 
 DispatchStatus
 Ice::Object::___ice_id(Incoming& __inS, const Current& __current)
 {
-    __inS.is()->skipEmptyEncaps();
+    __inS.readEmptyParams();
     string __ret = ice_id(__current);
-    BasicStream* __os = __inS.os();
+    BasicStream* __os = __inS.__startWriteParams(DefaultFormat);
     __os->write(__ret, false);
+    __inS.__endWriteParams(true);
     return DispatchOK;
 }
 
@@ -239,70 +249,47 @@ Ice::Object::__collocDispatch(IceInternal::Direct& request)
 }
 
 void
-Ice::Object::__write(BasicStream* __os) const
+Ice::Object::__write(IceInternal::BasicStream* os) const
 {
-    __os->writeTypeId(ice_staticId());
-    __os->startWriteSlice();
-    __os->writeSize(0); // For compatibility with the old AFM.
-    __os->endWriteSlice();
+    os->startWriteObject(0);
+    __writeImpl(os);
+    os->endWriteObject();
 }
-
-void
-Ice::Object::__read(BasicStream* __is, bool __rid)
+ 
+void 
+Ice::Object::__read(IceInternal::BasicStream* is)
 {
-    if(__rid)
-    {
-        string myId;
-        __is->readTypeId(myId);
-    }
-
-    __is->startReadSlice();
-
-    // For compatibility with the old AFM.
-    Int sz;
-    __is->readSize(sz);
-    if(sz != 0)
-    {
-        throw Ice::MarshalException(__FILE__, __LINE__);
-    }
-
-    __is->endReadSlice();
+   is->startReadObject();
+   __readImpl(is);
+   is->endReadObject(false);
 }
-
-void
-Ice::Object::__write(const OutputStreamPtr& __outS) const
+    
+void 
+Ice::Object::__write(const OutputStreamPtr& os) const
 {
-    __outS->writeTypeId(ice_staticId());
-    __outS->startSlice();
-    __outS->writeSize(0); // For compatibility with the old AFM.
-    __outS->endSlice();
+    os->startObject(0);
+    __writeImpl(os);
+    os->endObject();
 }
-
-void
-Ice::Object::__read(const InputStreamPtr& __inS, bool __rid)
+ 
+void 
+Ice::Object::__read(const InputStreamPtr& is)
 {
-    if(__rid)
-    {
-        __inS->readTypeId();
-    }
-
-    __inS->startSlice();
-
-    // For compatibility with the old AFM.
-    Int sz = __inS->readSize();
-    if(sz != 0)
-    {
-        throw Ice::MarshalException(__FILE__, __LINE__);
-    }
-
-    __inS->endSlice();
+    is->startObject();
+   __readImpl(is);
+   is->endObject(false);
 }
-
-void
-Ice::__patch__ObjectPtr(void* __addr, ObjectPtr& v)
+ 
+void 
+Ice::Object::__writeImpl(const OutputStreamPtr&) const
 {
-    ObjectPtr* p = static_cast<ObjectPtr*>(__addr);
-    *p = v;
+    throw MarshalException(__FILE__, __LINE__, "class was not generated with stream support");
+}
+ 
+void 
+Ice::Object::__readImpl(const InputStreamPtr&)
+{
+    throw MarshalException(__FILE__, __LINE__, "class was not generated with stream support");
 }
 
 namespace
@@ -364,15 +351,19 @@ Ice::Object::__checkMode(OperationMode expected, OperationMode received)
 DispatchStatus
 Ice::Blobject::__dispatch(Incoming& in, const Current& current)
 {
-    vector<Byte> inParams;
-    BasicStream* is = in.is();
-    is->startReadEncaps();
-    Int sz = is->getReadEncapsSize();
-    is->readBlob(inParams, sz);
-    is->endReadEncaps();
-    vector<Byte> outParams;
-    bool ok = ice_invoke(inParams, outParams, current);
-    in.os()->writeBlob(outParams);
+    const Byte* inEncaps;
+    Int sz;
+    in.readParamEncaps(inEncaps, sz);
+    vector<Byte> outEncaps;
+    bool ok = ice_invoke(vector<Byte>(inEncaps, inEncaps + sz), outEncaps, current);
+    if(outEncaps.empty())
+    {
+        in.__writeParamEncaps(0, 0, ok);
+    }
+    else
+    {
+        in.__writeParamEncaps(&outEncaps[0], static_cast<Ice::Int>(outEncaps.size()), ok);
+    }
     if(ok)
     {
         return DispatchOK;
@@ -386,16 +377,20 @@ Ice::Blobject::__dispatch(Incoming& in, const Current& current)
 DispatchStatus
 Ice::BlobjectArray::__dispatch(Incoming& in, const Current& current)
 {
-    pair<const Byte*, const Byte*> inParams;
-    BasicStream* is = in.is();
-    is->startReadEncaps();
-    Int sz = is->getReadEncapsSize();
-    is->readBlob(inParams.first, sz);
-    inParams.second = inParams.first + sz;
-    is->endReadEncaps();
-    vector<Byte> outParams;
-    bool ok = ice_invoke(inParams, outParams, current);
-    in.os()->writeBlob(outParams);
+    pair<const Byte*, const Byte*> inEncaps;
+    Int sz;
+    in.readParamEncaps(inEncaps.first, sz);
+    inEncaps.second = inEncaps.first + sz;
+    vector<Byte> outEncaps;
+    bool ok = ice_invoke(inEncaps, outEncaps, current);
+    if(outEncaps.empty())
+    {
+        in.__writeParamEncaps(0, 0, ok);
+    }
+    else
+    {
+        in.__writeParamEncaps(&outEncaps[0], static_cast<Ice::Int>(outEncaps.size()), ok);
+    }
     if(ok)
     {
         return DispatchOK;
@@ -409,16 +404,13 @@ Ice::BlobjectArray::__dispatch(Incoming& in, const Current& current)
 DispatchStatus
 Ice::BlobjectAsync::__dispatch(Incoming& in, const Current& current)
 {
-    vector<Byte> inParams;
-    BasicStream* is = in.is();
-    is->startReadEncaps();
-    Int sz = is->getReadEncapsSize();
-    is->readBlob(inParams, sz);
-    is->endReadEncaps();
+    const Byte* inEncaps;
+    Int sz;
+    in.readParamEncaps(inEncaps, sz);
     AMD_Object_ice_invokePtr cb = new ::IceAsync::Ice::AMD_Object_ice_invoke(in);
     try
     {
-        ice_invoke_async(cb, inParams, current);
+        ice_invoke_async(cb, vector<Byte>(inEncaps, inEncaps + sz), current);
     }
     catch(const ::std::exception& ex)
     {
@@ -434,17 +426,14 @@ Ice::BlobjectAsync::__dispatch(Incoming& in, const Current& current)
 DispatchStatus
 Ice::BlobjectArrayAsync::__dispatch(Incoming& in, const Current& current)
 {
-    pair<const Byte*, const Byte*> inParams;
-    BasicStream* is = in.is();
-    is->startReadEncaps();
-    Int sz = is->getReadEncapsSize();
-    is->readBlob(inParams.first, sz);
-    inParams.second = inParams.first + sz;
-    is->endReadEncaps();
+    pair<const Byte*, const Byte*> inEncaps;
+    Int sz;
+    in.readParamEncaps(inEncaps.first, sz);
+    inEncaps.second = inEncaps.first + sz;
     AMD_Object_ice_invokePtr cb = new ::IceAsync::Ice::AMD_Object_ice_invoke(in);
     try
     {
-        ice_invoke_async(cb, inParams, current);
+        ice_invoke_async(cb, inEncaps, current);
     }
     catch(const ::std::exception& ex)
     {
@@ -456,6 +445,7 @@ Ice::BlobjectArrayAsync::__dispatch(Incoming& in, const Current& current)
     }
     return DispatchAsync;
 }
+
 void
 Ice::ice_writeObject(const OutputStreamPtr& out, const ObjectPtr& p)
 {

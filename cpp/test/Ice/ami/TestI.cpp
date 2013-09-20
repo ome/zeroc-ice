@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,7 +24,7 @@ TestIntfI::op(const Ice::Current&)
 }
 
 int
-TestIntfI::opWithResult(const Ice::Current& current)
+TestIntfI::opWithResult(const Ice::Current&)
 {
     return 15;
 }
@@ -36,7 +36,7 @@ TestIntfI::opWithUE(const Ice::Current&)
 }
 
 void
-TestIntfI::opWithPayload(const Ice::ByteSeq&, const Ice::Current& current)
+TestIntfI::opWithPayload(const Ice::ByteSeq&, const Ice::Current&)
 {
 }
 
@@ -66,6 +66,12 @@ TestIntfI::waitForBatch(Ice::Int count, const Ice::Current&)
     bool result = count == _batchCount;
     _batchCount = 0;
     return result;
+}
+
+void
+TestIntfI::close(bool force, const Ice::Current& current)
+{
+    current.con->close(force);
 }
 
 void

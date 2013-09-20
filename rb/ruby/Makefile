@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -45,7 +45,11 @@ ICE_SRCS	= Ice/LocalException.rb \
 		  Ice/SliceChecksumDict.rb \
 		  Ice/Endpoint.rb \
 		  Ice/EndpointF.rb \
-		  Ice/EndpointTypes.rb
+		  Ice/EndpointTypes.rb \
+		  Ice/Version.rb \
+		  Ice/InstrumentationF.rb \
+		  Ice/Instrumentation.rb \
+		  Ice/Metrics.rb
 
 #
 # IMPORTANT: If you add or remove Slice files, you also need to check Glacier2.rb!
@@ -55,7 +59,8 @@ GLACIER2_SRCS	= Glacier2/RouterF.rb \
 		  Glacier2/Session.rb \
 		  Glacier2/PermissionsVerifierF.rb \
 		  Glacier2/PermissionsVerifier.rb \
-		  Glacier2/SSLInfo.rb
+		  Glacier2/SSLInfo.rb \
+		  Glacier2/Metrics.rb
 
 #
 # IMPORTANT: If you add or remove Slice files, you also need to check IceBox.rb!
@@ -85,7 +90,8 @@ ICEPATCH2_SRCS	= IcePatch2/FileInfo.rb \
 #
 # IMPORTANT: If you add or remove Slice files, you also need to check IceStorm.rb!
 #
-ICESTORM_SRCS	= IceStorm/IceStorm.rb
+ICESTORM_SRCS	= IceStorm/IceStorm.rb \
+		  IceStorm/Metrics.rb
 
 ALL_SRCS	= $(ICE_SRCS) \
 		  $(GLACIER2_SRCS) \

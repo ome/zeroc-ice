@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,7 +34,7 @@ public class Server
         {
             ic = Ice.Util.initialize(ref args);
             Ice.ObjectAdapter adapter =
-                ic.createObjectAdapterWithEndpoints("SimplePrinterAdapter", "default -p 10000");
+                ic.createObjectAdapterWithEndpoints("SimplePrinterAdapter", "default -h localhost -p 10000");
             Ice.Object obj = new PrinterI();
             adapter.add(obj, ic.stringToIdentity("SimplePrinter"));
             adapter.activate();

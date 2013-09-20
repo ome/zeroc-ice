@@ -1,16 +1,16 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef TEST_ICE
-#define TEST_ICE
+#pragma once
 
-[["cpp:include:deque", "cpp:include:list", "cpp:include:MyByteSeq.h"]]
+[["cpp:include:deque", "cpp:include:list", "cpp:include:MyByteSeq.h", "cpp:include:CustomMap.h", 
+  "cpp:include:CustomBuffer.h"]]
 
 module Test
 {
@@ -21,6 +21,8 @@ sequence<bool> BoolSeq;
 ["cpp:type:std::list< ::Test::BoolList>"] sequence<BoolList> BoolListList;
 sequence<BoolList> BoolListSeq;
 ["cpp:type:std::list< ::Test::BoolSeq>"] sequence<BoolSeq> BoolSeqList;
+
+["cpp:type:std::list<std::deque<bool> >"] sequence<["cpp:type:std::deque<bool>"] BoolSeq> BoolDequeList;
 
 sequence<byte> ByteSeq;
 ["cpp:type:std::list< ::Ice::Byte>"] sequence<byte> ByteList;
@@ -48,7 +50,7 @@ sequence<Fixed> FixedSeq;
 sequence<FixedList> FixedListSeq;
 ["cpp:type:std::list< ::Test::FixedSeq>"] sequence<FixedSeq> FixedSeqList;
 
-struct Variable
+["cpp:comparable"] struct Variable
 {
     string s;
     BoolList bl;
@@ -101,13 +103,40 @@ sequence<double> DoubleSeq;
 };
 sequence<ClassOtherStruct> ClassOtherStructSeq;
 
-["cpp:class"] struct ClassStruct
+["cpp:class", "cpp:comparable"] struct ClassStruct
 {
     ClassOtherStructSeq otherSeq;
     ClassOtherStruct other;
     int y;
 };
 sequence<ClassStruct> ClassStructSeq;
+
+["cpp:type:Test::CustomMap<Ice::Int, std::string>"] dictionary<int, string> IntStringDict;
+dictionary<long, long> LongLongDict;
+dictionary<string, int> StringIntDict;
+
+class DictClass
+{
+    IntStringDict isdict;
+};
+
+["cpp:type:Test::CustomBuffer<bool>"] sequence<bool> BoolBuffer;
+["cpp:type:Test::CustomBuffer<Ice::Short>"] sequence<short> ShortBuffer;
+["cpp:type:Test::CustomBuffer<Ice::Int>"] sequence<int> IntBuffer;
+["cpp:type:Test::CustomBuffer<Ice::Long>"] sequence<long> LongBuffer;
+["cpp:type:Test::CustomBuffer<Ice::Float>"] sequence<float> FloatBuffer;
+["cpp:type:Test::CustomBuffer<Ice::Double>"] sequence<double> DoubleBuffer;
+["cpp:type:Test::CustomBuffer<Ice::Byte>"] sequence<byte> ByteBuffer;
+["cpp:comparable"] struct BufferStruct
+{
+    ByteBuffer byteBuf;
+    BoolBuffer boolBuf;
+    ShortBuffer shortBuf;
+    IntBuffer intBuf;
+    LongBuffer longBuf;
+    FloatBuffer floatBuf;
+    DoubleBuffer doubleBuf;
+};
 
 ["ami"] class TestIntf
 {
@@ -139,6 +168,12 @@ sequence<ClassStruct> ClassStructSeq;
     opBoolSeq(["cpp:type:std::deque<bool>"] BoolSeq inSeq, out ["cpp:type:std::deque<bool>"]BoolSeq outSeq);
 
     BoolList opBoolList(BoolList inSeq, out BoolList outSeq);
+
+    BoolDequeList opBoolDequeList(BoolDequeList inSeq, out BoolDequeList outSeq);
+    ["cpp:array"] BoolDequeList opBoolDequeListArray(["cpp:array"] BoolDequeList inSeq,
+                                                out ["cpp:array"] BoolDequeList outSeq);
+    ["cpp:range"] BoolDequeList opBoolDequeListRange(["cpp:range"] BoolDequeList inSeq,
+                                                out ["cpp:range"] BoolDequeList outSeq);
 
     ["cpp:type:std::deque< ::Ice::Byte>"] ByteSeq 
     opByteSeq(["cpp:type:std::deque< ::Ice::Byte>"] ByteSeq inSeq, 
@@ -195,9 +230,22 @@ sequence<ClassStruct> ClassStructSeq;
     
     void opOutRangeByteSeq(ByteSeq org, out ["cpp:range"] ByteSeq copy);
 
+    IntStringDict opIntStringDict(IntStringDict idict, out IntStringDict odict);
+
+    ["cpp:type:::Test::CustomMap< ::Ice::Long, ::Ice::Long>"] LongLongDict 
+    opVarDict(["cpp:type:::Test::CustomMap<std::string, ::Ice::Int>"] StringIntDict idict,
+              out ["cpp:type:::Test::CustomMap<std::string, ::Ice::Int>"] StringIntDict odict);
+        
+    ShortBuffer opShortBuffer(ShortBuffer inS, out ShortBuffer outS);
+
+    ["cpp:type:::Test::CustomBuffer<bool>"] BoolSeq opBoolBuffer(
+        ["cpp:type:::Test::CustomBuffer<bool>"] BoolSeq inS,
+        out ["cpp:type:::Test::CustomBuffer<bool>"] BoolSeq outS);
+
+    BufferStruct opBufferStruct(BufferStruct s);
+
     void shutdown();
 };
 
 };
 
-#endif

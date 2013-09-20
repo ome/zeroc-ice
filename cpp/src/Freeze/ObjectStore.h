@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -43,10 +43,10 @@ public:
     bool dbHasObject(const Ice::Identity&, const TransactionIPtr&) const;
     void save(Key& key, Value& value, Ice::Byte status, DbTxn* tx);
 
-    static void marshal(const Ice::Identity&, Key&, const Ice::CommunicatorPtr&);
-    static void unmarshal(Ice::Identity&, const Key&, const Ice::CommunicatorPtr&);
-    static void marshal(const ObjectRecord&, Value&, const Ice::CommunicatorPtr&);
-    static void unmarshal(ObjectRecord&, const Value&, const Ice::CommunicatorPtr&);
+    static void marshal(const Ice::Identity&, Key&, const Ice::CommunicatorPtr&, const Ice::EncodingVersion&);
+    static void unmarshal(Ice::Identity&, const Key&, const Ice::CommunicatorPtr&, const Ice::EncodingVersion&);
+    static void marshal(const ObjectRecord&, Value&, const Ice::CommunicatorPtr&, const Ice::EncodingVersion&, bool);
+    static void unmarshal(ObjectRecord&, const Value&, const Ice::CommunicatorPtr&, const Ice::EncodingVersion&, bool);
 
     bool load(const Ice::Identity&, const TransactionIPtr&, ObjectRecord&);
     void update(const Ice::Identity&, const ObjectRecord&, const TransactionIPtr&);
@@ -63,21 +63,25 @@ public:
     const std::string& dbName() const;
 
     const Ice::CommunicatorPtr& communicator() const;
+    const Ice::EncodingVersion& encoding() const;
     const std::string& facet() const;
-
+    bool keepStats() const;
+    
 protected:
 
     bool loadImpl(const Ice::Identity&, ObjectRecord&);
 
 private:
     
-    std::auto_ptr<Db> _db;
+    IceUtil::UniquePtr<Db> _db;
     std::string _facet;
     std::string _dbName;
     EvictorIBase* _evictor;
     std::vector<IndexPtr> _indices;
     Ice::CommunicatorPtr _communicator;
+    Ice::EncodingVersion _encoding;
     Ice::ObjectPtr _sampleServant;
+    bool _keepStats;
 };
 
 
@@ -94,14 +98,7 @@ class ObjectStore : public ObjectStoreBase, public IceUtil::Cache<Ice::Identity,
     {
     }
 
-#ifdef __BCPLUSPLUS__
-    bool load(const Ice::Identity& ident, const TransactionIPtr& trans, ObjectRecord& rec)
-    {
-        return ObjectStoreBase::load(ident, trans, rec);
-    }
-#else
     using ObjectStoreBase::load;
-#endif
 
     typedef IceUtil::Cache<Ice::Identity, T> Cache;
 
@@ -144,6 +141,12 @@ ObjectStoreBase::communicator() const
     return _communicator;
 }
 
+inline const Ice::EncodingVersion& 
+ObjectStoreBase::encoding() const
+{
+    return _encoding;
+}
+
 inline EvictorIBase*
 ObjectStoreBase::evictor() const
 {
@@ -154,6 +157,12 @@ inline const std::string&
 ObjectStoreBase::facet() const
 {
     return _facet;
+}
+
+inline bool
+ObjectStoreBase::keepStats() const
+{
+    return _keepStats;
 }
 
 inline const Ice::ObjectPtr&

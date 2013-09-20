@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,7 @@ class LocatorI : public Ice::Locator
 public:
         
     virtual void
-    findAdapterById_async(const Ice::AMD_Locator_findAdapterByIdPtr& response, const string& adapter,
+    findAdapterById_async(const Ice::AMD_Locator_findAdapterByIdPtr& response, const string&,
                           const Ice::Current& current) const
     {
         _controller->checkCallPause(current);
@@ -96,7 +96,7 @@ private:
 
 
 int
-run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
+run(int, char**, const Ice::CommunicatorPtr& communicator)
 {
     communicator->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12010");
     communicator->getProperties()->setProperty("ControllerAdapter.Endpoints", "tcp -p 12011");
@@ -137,6 +137,8 @@ main(int argc, char* argv[])
         // This test kills connections, so we don't want warnings.
         //
         initData.properties->setProperty("Ice.Warn.Connections", "0");
+
+        initData.properties->setProperty("Ice.MessageSizeMax", "50000");
 
         //
         // Setup the test transport plug-in.

@@ -1,12 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
 #include <Ice/LoggerUtil.h>
 #include <Ice/Communicator.h>
 #include <Ice/LocalException.h>
@@ -58,6 +59,46 @@ namespace IceGrid
         ServerCache& _serverCache;
         const ServerEntryPtr _entry;
     };
+
+
+}
+
+CheckUpdateResult::CheckUpdateResult(const string& server, 
+                                     const string& node, 
+                                     bool noRestart, 
+                                     const Ice::AsyncResultPtr& result) : 
+    _server(server), _node(node), _noRestart(noRestart), _result(result)
+{
+}
+
+bool
+CheckUpdateResult::getResult()
+{
+    try
+    {
+        return ServerPrx::uncheckedCast(_result->getProxy())->end_checkUpdate(_result);
+    }
+    catch(const DeploymentException& ex)
+    {
+        ostringstream os;
+        os << "check for server `" << _server << "' update failed: " << ex.reason;
+        throw DeploymentException(os.str());
+    }
+    catch(const Ice::OperationNotExistException&)
+    {
+        if(_noRestart)
+        {
+            throw DeploymentException("server `" + _server + "' doesn't support check for updates");
+        }
+        return false;
+    }
+    catch(const Ice::Exception& ex)
+    {
+        ostringstream os;
+        os << ex;
+        throw NodeUnreachableException(_node, os.str());
+    }
+    return false; 
 }
 
 ServerCache::ServerCache(const Ice::CommunicatorPtr& communicator,
@@ -76,7 +117,7 @@ ServerCache::ServerCache(const Ice::CommunicatorPtr& communicator,
 }
 
 ServerEntryPtr
-ServerCache::add(const ServerInfo& info)
+ServerCache::add(const ServerInfo& info, bool noRestart)
 {
     Lock sync(*this);
 
@@ -86,7 +127,7 @@ ServerCache::add(const ServerInfo& info)
         entry = new ServerEntry(*this, info.descriptor->id);
         addImpl(info.descriptor->id, entry);
     }
-    entry->update(info);
+    entry->update(info, noRestart);
     _nodeCache.get(info.node, true)->addServer(entry);
 
     forEachCommunicator(AddCommunicator(*this, entry, info.application))(info.descriptor);
@@ -166,36 +207,27 @@ ServerCache::addCommunicator(const CommunicatorDescriptorPtr& comm,
         assert(!q->id.empty());
         _adapterCache.addServerAdapter(*q, server, application);
 
-        ObjectDescriptorSeq::const_iterator r;
-        for(r = q->objects.begin(); r != q->objects.end(); ++r)
+        for(ObjectDescriptorSeq::const_iterator r = q->objects.begin(); r != q->objects.end(); ++r)
         {
-            ObjectInfo info;
-            info.type = r->type;
-            info.proxy = _communicator->stringToProxy("\"" + _communicator->identityToString(r->id) + "\" @ " + q->id);
-            _objectCache.add(info, application);
+            _objectCache.add(toObjectInfo(_communicator, *r, q->id), application);
         }
-
-        for(r = q->allocatables.begin(); r != q->allocatables.end(); ++r)
+        for(ObjectDescriptorSeq::const_iterator r = q->allocatables.begin(); r != q->allocatables.end(); ++r)
         {
-            ObjectInfo info;
-            info.type = r->type;
-            info.proxy = _communicator->stringToProxy("\"" + _communicator->identityToString(r->id) + "\" @ " + q->id);
-            _allocatableObjectCache.add(info, server);
+            _allocatableObjectCache.add(toObjectInfo(_communicator, *r, q->id), server);
         }
     }
 }
 
 void
-ServerCache::removeCommunicator(const CommunicatorDescriptorPtr& comm, const ServerEntryPtr& entry)
+ServerCache::removeCommunicator(const CommunicatorDescriptorPtr& comm, const ServerEntryPtr& /*entry*/)
 {
     for(AdapterDescriptorSeq::const_iterator q = comm->adapters.begin() ; q != comm->adapters.end(); ++q)
     {
-        ObjectDescriptorSeq::const_iterator r;
-        for(r = q->objects.begin(); r != q->objects.end(); ++r)
+        for(ObjectDescriptorSeq::const_iterator r = q->objects.begin(); r != q->objects.end(); ++r)
         {
             _objectCache.remove(r->id);
         }
-        for(r = q->allocatables.begin(); r != q->allocatables.end(); ++r)
+        for(ObjectDescriptorSeq::const_iterator r = q->allocatables.begin(); r != q->allocatables.end(); ++r)
         {
             _allocatableObjectCache.remove(r->id);
         }
@@ -210,7 +242,8 @@ ServerEntry::ServerEntry(ServerCache& cache, const string& id) :
     _activationTimeout(-1),
     _deactivationTimeout(-1),
     _synchronizing(false),
-    _updated(false)
+    _updated(false),
+    _noRestart(false)
 {
 }
 
@@ -272,11 +305,11 @@ ServerEntry::addSyncCallback(const SynchronizationCallbackPtr& callback)
 }
 
 void
-ServerEntry::update(const ServerInfo& info)
+ServerEntry::update(const ServerInfo& info, bool noRestart)
 {
     Lock sync(*this);
 
-    auto_ptr<ServerInfo> descriptor(new ServerInfo());
+    IceUtil::UniquePtr<ServerInfo> descriptor(new ServerInfo());
     *descriptor = info;
 
     _updated = true;
@@ -294,6 +327,7 @@ ServerEntry::update(const ServerInfo& info)
     }
 
     _load = descriptor;
+    _noRestart = noRestart;
     _loaded.reset(0);
     _allocatable = info.descriptor->allocatable;
     if(info.descriptor->activation == "session")
@@ -527,6 +561,7 @@ ServerEntry::syncImpl()
     SessionIPtr session;
     ServerInfo destroy;
     int timeout = -1;
+    bool noRestart = false;
 
     {
         Lock sync(*this);
@@ -553,6 +588,7 @@ ServerEntry::syncImpl()
             load = *_load;
             session = _session;
             timeout = _deactivationTimeout; // loadServer might block to deactivate the previous server.
+            noRestart = _noRestart;
         }
         else
         {
@@ -577,7 +613,7 @@ ServerEntry::syncImpl()
     {
         try
         {
-            _cache.getNodeCache().get(load.node)->loadServer(this, load, session, timeout);
+            _cache.getNodeCache().get(load.node)->loadServer(this, load, session, timeout, noRestart);
         }
         catch(NodeNotExistException&)
         {
@@ -691,6 +727,7 @@ ServerEntry::loadCallback(const ServerPrx& proxy, const AdapterPrxDict& adpts, i
     ServerInfo destroy;
     int timeout = -1;
     bool synced = false;
+    bool noRestart = false;
 
     {
         Lock sync(*this);
@@ -725,6 +762,7 @@ ServerEntry::loadCallback(const ServerPrx& proxy, const AdapterPrxDict& adpts, i
             else if(_load.get())
             {
                 load = *_load;
+                noRestart = _noRestart;
                 session = _session;
                 timeout = _deactivationTimeout; // loadServer might block to deactivate the previous server.
             }
@@ -753,7 +791,7 @@ ServerEntry::loadCallback(const ServerPrx& proxy, const AdapterPrxDict& adpts, i
     {
         try
         {
-            _cache.getNodeCache().get(load.node)->loadServer(this, load, session, timeout);
+            _cache.getNodeCache().get(load.node)->loadServer(this, load, session, timeout, noRestart);
         }
         catch(NodeNotExistException&)
         {
@@ -766,6 +804,7 @@ void
 ServerEntry::destroyCallback()
 {
     ServerInfo load;
+    bool noRestart = false;
     SessionIPtr session;
 
     {
@@ -786,6 +825,7 @@ ServerEntry::destroyCallback()
         {
             _updated = false;
             load = *_load;
+            noRestart = _noRestart;
             session = _session;
         }
     }
@@ -794,7 +834,7 @@ ServerEntry::destroyCallback()
     {
         try
         {
-            _cache.getNodeCache().get(load.node)->loadServer(this, load, session, -1);
+            _cache.getNodeCache().get(load.node)->loadServer(this, load, session, -1, noRestart);
         }
         catch(NodeNotExistException&)
         {
@@ -813,6 +853,7 @@ ServerEntry::exception(const Ice::Exception& ex)
 {
     ServerInfo load;
     SessionIPtr session;
+    bool noRestart = false;
     bool remove = false;
     int timeout = -1;
 
@@ -835,6 +876,7 @@ ServerEntry::exception(const Ice::Exception& ex)
             _destroy.reset(0);
             _updated = false;
             load = *_load.get();
+            noRestart = _noRestart;
             session = _session;
             timeout = _deactivationTimeout; // loadServer might block to deactivate the previous server.
         }
@@ -844,7 +886,7 @@ ServerEntry::exception(const Ice::Exception& ex)
     {
         try
         {
-            _cache.getNodeCache().get(load.node)->loadServer(this, load, session, timeout);
+            _cache.getNodeCache().get(load.node)->loadServer(this, load, session, timeout, noRestart);
         }
         catch(NodeNotExistException&)
         {
@@ -875,6 +917,67 @@ ServerEntry::canRemove()
      return !_loaded.get() && !_load.get() && !_destroy.get();
 }
 
+CheckUpdateResultPtr
+ServerEntry::checkUpdate(const ServerInfo& info, bool noRestart)
+{
+    SessionIPtr session;
+    {
+        Lock sync(*this);
+        if(!_loaded.get() && !_load.get())
+        {
+            throw ServerNotExistException();
+        }
+        
+        ServerInfo oldInfo = _loaded.get() ? *_loaded : *_load;
+        if(noRestart && info.node != oldInfo.node)
+        {
+            throw DeploymentException("server `" + _id + "' is moving to another node");
+        }
+
+        session = _session;
+    }
+
+    NodeEntryPtr node;
+    try
+    {
+        node = _cache.getNodeCache().get(info.node);
+    }
+    catch(NodeNotExistException&)
+    {
+        throw NodeUnreachableException(info.node, "node is not active");
+    }
+
+    ServerPrx server;
+    try
+    {
+        server = getProxy(true, 5);
+    }
+    catch(const SynchronizationException&)
+    {
+        ostringstream os;
+        os << "check for server `" << _id << "' update failed:";
+        os << "timeout while waiting for the server to be loaded on the node";
+        throw DeploymentException(os.str());
+    }
+    catch(const DeploymentException&)
+    {
+        if(noRestart)
+        {
+            // If the server can't be loaded and no restart is required, we throw
+            // to indicate that the server update can't be checked.
+            throw;
+        }
+        else
+        {
+            // Otherwise, we do as if the update is valid.
+            return 0;
+        }
+    }
+
+    InternalServerDescriptorPtr desc = node->getInternalServerDescriptor(info, session);
+    return new CheckUpdateResult(_id, info.node, noRestart, server->begin_checkUpdate(desc, noRestart));
+
+}
 
 void
 ServerEntry::allocated(const SessionIPtr& session)
@@ -953,7 +1056,7 @@ ServerEntry::allocated(const SessionIPtr& session)
 }
 
 void
-ServerEntry::allocatedNoSync(const SessionIPtr& session)
+ServerEntry::allocatedNoSync(const SessionIPtr& /*session*/)
 {
     {
         Lock sync(*this);
@@ -1047,7 +1150,7 @@ ServerEntry::released(const SessionIPtr& session)
 }
 
 void
-ServerEntry::releasedNoSync(const SessionIPtr& session)
+ServerEntry::releasedNoSync(const SessionIPtr& /*session*/)
 {
     {
         Lock sync(*this);

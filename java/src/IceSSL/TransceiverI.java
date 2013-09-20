@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -56,8 +56,18 @@ final class TransceiverI implements IceInternal.Transceiver
                 s.append("local address = ");
                 s.append(IceInternal.Network.addrToString(fd.getLocalAddress(), fd.getLocalPort()));
                 s.append("\nremote address = ");
-                assert(_connectAddr != null);
-                s.append(IceInternal.Network.addrToString(_connectAddr));
+                if(_incoming)
+                {
+                    final java.net.InetSocketAddress addr = (java.net.InetSocketAddress)fd.getRemoteSocketAddress();
+                    final java.net.InetAddress remoteAddr = addr != null ? addr.getAddress() : null;
+                    final int remotePort = addr != null ? addr.getPort() : -1;
+                    s.append(IceInternal.Network.addrToString(remoteAddr, remotePort));
+                }
+                else
+                {
+                    assert(_connectAddr != null);
+                    s.append(IceInternal.Network.addrToString(_connectAddr));
+                }
                 _logger.trace(_instance.networkTraceCategory(), s.toString());
             }
             throw ex;
@@ -153,6 +163,16 @@ final class TransceiverI implements IceInternal.Transceiver
             throw new Ice.ConnectionLostException();
         }
 
+        //
+        // We don't want write to be called on android main thread as this will cause
+        // NetworkOnMainThreadException to be thrown. If that is the android main thread
+        // we return false and this method will be later called from the thread pool.
+        //
+        if(IceInternal.Util.isAndroidMainThread(Thread.currentThread()))
+        {
+            return false;
+        }
+
         int status = writeNonBlocking(buf.b);
         if(status != IceInternal.SocketOperation.None)
         {
@@ -162,6 +182,7 @@ final class TransceiverI implements IceInternal.Transceiver
         return true;
     }
 
+    @SuppressWarnings("deprecation")
     public boolean
     read(IceInternal.Buffer buf, Ice.BooleanHolder moreData)
     {
@@ -295,6 +316,7 @@ final class TransceiverI implements IceInternal.Transceiver
     //
     // Only for use by ConnectorI, AcceptorI.
     //
+    @SuppressWarnings("deprecation")
     TransceiverI(Instance instance, javax.net.ssl.SSLEngine engine, java.nio.channels.SocketChannel fd,
                  String host, boolean connected, boolean incoming, String adapterName,
                  java.net.InetSocketAddress connectAddr)
@@ -341,9 +363,17 @@ final class TransceiverI implements IceInternal.Transceiver
     finalize()
         throws Throwable
     {
-        IceUtilInternal.Assert.FinalizerAssert(_fd == null);
-
-        super.finalize();
+        try
+        {
+            IceUtilInternal.Assert.FinalizerAssert(_fd == null);
+        }
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     private NativeConnectionInfo
@@ -352,56 +382,48 @@ final class TransceiverI implements IceInternal.Transceiver
         //
         // This can only be called on an open transceiver.
         //
-        assert(_fd != null);
-
         NativeConnectionInfo info = new NativeConnectionInfo();
-        java.net.Socket socket = _fd.socket();
-        if(socket.getLocalAddress() != null)
+        if(_fd != null)
         {
-            info.localAddress = socket.getLocalAddress().getHostAddress();
-            info.localPort = socket.getLocalPort();
-        }
-        else
-        {
+            java.net.Socket socket = _fd.socket();
             //
             // On some platforms (e.g., early Android releases), sockets don't
             // correctly return address information.
             //
-            info.localAddress = "";
-            info.localPort = -1;
-        }
-
-        if(socket.getInetAddress() != null)
-        {
-            info.remoteAddress = socket.getInetAddress().getHostAddress();
-            info.remotePort = socket.getPort();
-        }
-        else
-        {
-            info.remoteAddress = "";
-            info.remotePort = -1;
-        }
-        SSLSession session = _engine.getSession();
-        info.cipher = session.getCipherSuite();
-        try
-        {
-            java.util.ArrayList<String> certs = new java.util.ArrayList<String>();
-            info.nativeCerts = session.getPeerCertificates();
-            for(java.security.cert.Certificate c : info.nativeCerts)
+            if(socket.getLocalAddress() != null)
             {
-                StringBuffer s = new StringBuffer("-----BEGIN CERTIFICATE-----\n");
-                s.append(IceUtilInternal.Base64.encode(c.getEncoded()));
-                s.append("\n-----END CERTIFICATE-----");
-                certs.add(s.toString());
+                info.localAddress = socket.getLocalAddress().getHostAddress();
+                info.localPort = socket.getLocalPort();
             }
-            info.certs = certs.toArray(new String[0]);
-        }
-        catch(java.security.cert.CertificateEncodingException ex)
-        {
-        }
-        catch(javax.net.ssl.SSLPeerUnverifiedException ex)
-        {
-            // No peer certificates.
+            
+            if(socket.getInetAddress() != null)
+            {
+                info.remoteAddress = socket.getInetAddress().getHostAddress();
+                info.remotePort = socket.getPort();
+            }
+
+            SSLSession session = _engine.getSession();
+            info.cipher = session.getCipherSuite();
+            try
+            {
+                java.util.ArrayList<String> certs = new java.util.ArrayList<String>();
+                info.nativeCerts = session.getPeerCertificates();
+                for(java.security.cert.Certificate c : info.nativeCerts)
+                {
+                    StringBuffer s = new StringBuffer("-----BEGIN CERTIFICATE-----\n");
+                    s.append(IceUtilInternal.Base64.encode(c.getEncoded()));
+                    s.append("\n-----END CERTIFICATE-----");
+                    certs.add(s.toString());
+                }
+                info.certs = certs.toArray(new String[0]);
+            }
+            catch(java.security.cert.CertificateEncodingException ex)
+            {
+            }
+            catch(javax.net.ssl.SSLPeerUnverifiedException ex)
+            {
+                // No peer certificates.
+            }
         }
         info.adapterName = _adapterName;
         info.incoming = _incoming;
@@ -569,6 +591,7 @@ final class TransceiverI implements IceInternal.Transceiver
         }
     }
 
+    @SuppressWarnings("deprecation")
     private int
     writeNonBlocking(ByteBuffer buf)
     {
@@ -803,6 +826,8 @@ final class TransceiverI implements IceInternal.Transceiver
     private java.net.InetSocketAddress _connectAddr;
     private int _state;
     private Ice.Logger _logger;
+
+    @SuppressWarnings("deprecation")
     private Ice.Stats _stats;
     private String _desc;
     private int _maxPacketSize;

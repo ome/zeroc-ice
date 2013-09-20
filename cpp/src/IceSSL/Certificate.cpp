@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,9 +14,26 @@
 #include <IceSSL/Plugin.h>
 #include <IceSSL/Util.h>
 #include <IceSSL/RFC2253.h>
+#include <Ice/Object.h>
 
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
+
+#ifdef __SUNPRO_CC
+
+//
+// The call to sk_GENERAL_NAME_pop_free fails to compile if we don't
+// remove the extern "C" vs non extern "C" check with the macro below:
+//
+
+extern "C" typedef void (*FreeFunc)(void*);
+
+#undef CHECKED_SK_FREE_FUNC
+#define CHECKED_SK_FREE_FUNC(type, p) \
+    (FreeFunc) (p)
+
+#endif
+
 
 using namespace std;
 using namespace Ice;
@@ -40,7 +57,7 @@ CertificateReadException::ice_name() const
     return _name;
 }
 
-Exception* 
+CertificateReadException* 
 CertificateReadException::ice_clone() const
 {
     return new CertificateReadException(*this);
@@ -70,7 +87,7 @@ CertificateEncodingException::ice_name() const
     return _name;
 }
 
-Exception* 
+CertificateEncodingException* 
 CertificateEncodingException::ice_clone() const
 {
     return new CertificateEncodingException(*this);
@@ -269,7 +286,7 @@ ParseException::ice_name() const
     return _name;
 }
 
-IceUtil::Exception* 
+ParseException* 
 ParseException::ice_clone() const
 {
     return new ParseException(*this);

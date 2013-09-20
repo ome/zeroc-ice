@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,18 +17,18 @@
 namespace IceGrid
 {
 
-class FreezeDatabaseCache : public FreezeDB::DatabaseCache, public DatabaseCache
+class FreezeConnectionPool : public FreezeDB::ConnectionPool, public ConnectionPool
 {
 public:
 
-    FreezeDatabaseCache(const Ice::CommunicatorPtr&);
+    FreezeConnectionPool(const Ice::CommunicatorPtr&);
 
     virtual ApplicationsWrapperPtr getApplications(const IceDB::DatabaseConnectionPtr&);
     virtual AdaptersWrapperPtr getAdapters(const IceDB::DatabaseConnectionPtr&);
     virtual ObjectsWrapperPtr getObjects(const IceDB::DatabaseConnectionPtr&);
     virtual ObjectsWrapperPtr getInternalObjects(const IceDB::DatabaseConnectionPtr&);
 };
-typedef IceUtil::Handle<FreezeDatabaseCache> FreezeDatabaseCachePtr;
+typedef IceUtil::Handle<FreezeConnectionPool> FreezeConnectionPoolPtr;
 
 class FreezeDBPlugin : public DatabasePlugin
 {
@@ -39,12 +39,12 @@ public:
     void initialize();
     void destroy();
     
-    DatabaseCachePtr getDatabaseCache();
+    ConnectionPoolPtr getConnectionPool();
 
 private:
 
     const Ice::CommunicatorPtr _communicator;
-    FreezeDatabaseCachePtr _databaseCache;
+    FreezeConnectionPoolPtr _connectionPool;
 };
 
 }

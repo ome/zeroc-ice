@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,8 +10,10 @@
 #ifndef ICE_TCP_ENDPOINT_I_H
 #define ICE_TCP_ENDPOINT_I_H
 
+#include <IceUtil/Config.h>
 #include <Ice/EndpointI.h>
 #include <Ice/EndpointFactory.h>
+#include <Ice/Network.h> // for IceIternal::Address
 
 namespace IceInternal
 {
@@ -28,6 +30,7 @@ public:
     virtual std::string toString() const;
     virtual Ice::EndpointInfoPtr getInfo() const;
     virtual Ice::Short type() const;
+    virtual std::string protocol() const;
     virtual Ice::Int timeout() const;
     virtual EndpointIPtr timeout(Ice::Int) const;
     virtual EndpointIPtr connectionId(const ::std::string&) const;
@@ -36,8 +39,8 @@ public:
     virtual bool datagram() const;
     virtual bool secure() const;
     virtual TransceiverPtr transceiver(EndpointIPtr&) const;
-    virtual std::vector<ConnectorPtr> connectors() const;
-    virtual void connectors_async(const EndpointI_connectorsPtr&) const;
+    virtual std::vector<ConnectorPtr> connectors(Ice::EndpointSelectionType) const;
+    virtual void connectors_async(Ice::EndpointSelectionType, const EndpointI_connectorsPtr&) const;
     virtual AcceptorPtr acceptor(EndpointIPtr&, const std::string&) const;
     virtual std::vector<EndpointIPtr> expand() const;
     virtual bool equivalent(const EndpointIPtr&) const;
@@ -45,10 +48,14 @@ public:
     virtual bool operator==(const Ice::LocalObject&) const;
     virtual bool operator<(const Ice::LocalObject&) const;
 
+#ifdef __SUNPRO_CC
+    using EndpointI::connectionId;
+#endif
+
 private:
 
     virtual ::Ice::Int hashInit() const;
-    virtual std::vector<ConnectorPtr> connectors(const std::vector<struct sockaddr_storage>&) const;
+    virtual std::vector<ConnectorPtr> connectors(const std::vector<IceInternal::Address>&) const;
 
     //
     // All members are const, because endpoints are immutable.
@@ -57,7 +64,6 @@ private:
     const std::string _host;
     const Ice::Int _port;
     const Ice::Int _timeout;
-    const std::string _connectionId;
     const bool _compress;
 };
 

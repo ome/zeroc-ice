@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,16 +14,20 @@ using System.Diagnostics;
 using System.Threading;
 using Test;
 
-public class AllTests
-{
-    private static void test(bool b)
-    {
-        if(!b)
-        {
-            throw new System.Exception();
-        }
-    }
+#if SILVERLIGHT
+using System.Net;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Ink;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Shapes;
+#endif
 
+public class AllTests : TestCommon.TestApp
+{
     private class Cookie
     {
         public Cookie(int i)
@@ -616,7 +620,23 @@ public class AllTests
         ThrowType _t;
     }
 
+#if SILVERLIGHT
+    public override Ice.InitializationData initData()
+    {
+        Ice.InitializationData id = new Ice.InitializationData();
+        id.properties = Ice.Util.createProperties();
+        id.properties.setProperty("Ice.Warn.AMICallback", "0");
+        id.properties.setProperty("Ice.FactoryAssemblies", "ami,version=1.0.0.0");
+        return id;
+    }
+
+
+
+    override
+    public void run(Ice.Communicator communicator)
+#else
     public static void allTests(Ice.Communicator communicator)
+#endif
     {
         string sref = "test:default -p 12010";
         Ice.ObjectPrx obj = communicator.stringToProxy(sref);
@@ -630,8 +650,8 @@ public class AllTests
 
         Test.TestIntfControllerPrx testController = Test.TestIntfControllerPrxHelper.uncheckedCast(obj);
 
-        Console.Out.Write("testing begin/end invocation... ");
-        Console.Out.Flush();
+        Write("testing begin/end invocation... ");
+        Flush();
         {
             Ice.AsyncResult result;
             Dictionary<string, string> ctx = new Dictionary<string, string>();
@@ -685,10 +705,10 @@ public class AllTests
             {
             }
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing async callback... ");
-        Console.Out.Flush();
+        Write("testing async callback... ");
+        Flush();
         {
             AsyncCallback cb = new AsyncCallback();
             Dictionary<string, string> ctx = new Dictionary<string, string>();
@@ -758,10 +778,10 @@ public class AllTests
             p.begin_opWithUE(ctx, cbWC.opWithUE, cookie);
             cbWC.check();
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing response callback... ");
-        Console.Out.Flush();
+        Write("testing response callback... ");
+        Flush();
         {
             ResponseCallback cb = new ResponseCallback();
             Dictionary<string, string> ctx = new Dictionary<string, string>();
@@ -801,10 +821,10 @@ public class AllTests
             p.begin_opWithUE(ctx).whenCompleted(cb.op, cb.opWithUE);
             cb.check();
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing local exceptions... ");
-        Console.Out.Flush();
+        Write("testing local exceptions... ");
+        Flush();
         {
             Test.TestIntfPrx indirect = Test.TestIntfPrxHelper.uncheckedCast(p.ice_adapterId("dummy"));
             Ice.AsyncResult r;
@@ -849,10 +869,10 @@ public class AllTests
                 // Expected.
             }
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing local exceptions with async callback... ");
-        Console.Out.Flush();
+        Write("testing local exceptions with async callback... ");
+        Flush();
         {
             Test.TestIntfPrx i = Test.TestIntfPrxHelper.uncheckedCast(p.ice_adapterId("dummy"));
             AsyncCallback cb = new AsyncCallback();
@@ -884,10 +904,10 @@ public class AllTests
             i.begin_op(cbWC.opEx, cookie);
             cbWC.check();
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing local exceptions with response callback... ");
-        Console.Out.Flush();
+        Write("testing local exceptions with response callback... ");
+        Flush();
         {
             Test.TestIntfPrx i = Test.TestIntfPrxHelper.uncheckedCast(p.ice_adapterId("dummy"));
             ExceptionCallback cb = new ExceptionCallback();
@@ -907,10 +927,10 @@ public class AllTests
             i.begin_op().whenCompleted(cb.op, cb.ex);
             cb.check();
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing exception callback... ");
-        Console.Out.Flush();
+        Write("testing exception callback... ");
+        Flush();
         {
             Test.TestIntfPrx i = Test.TestIntfPrxHelper.uncheckedCast(p.ice_adapterId("dummy"));
             ExceptionCallback cb = new ExceptionCallback();
@@ -936,10 +956,10 @@ public class AllTests
             p.begin_opWithUE().whenCompleted(cb.opWithUE);
             cb.check();
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing sent callback... ");
-        Console.Out.Flush();
+        Write("testing sent callback... ");
+        Flush();
         {
             SentCallback cb = new SentCallback();
 
@@ -988,10 +1008,10 @@ public class AllTests
                 cb3.check();
             }
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing illegal arguments... ");
-        Console.Out.Flush();
+        Write("testing illegal arguments... ");
+        Flush();
         {
             Ice.AsyncResult result;
 
@@ -1025,10 +1045,10 @@ public class AllTests
             {
             }
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing unexpected exceptions from callback... ");
-        Console.Out.Flush();
+        Write("testing unexpected exceptions from callback... ");
+        Flush();
         {
             Test.TestIntfPrx q = Test.TestIntfPrxHelper.uncheckedCast(p.ice_adapterId("dummy"));
             ThrowType[] throwEx = new ThrowType[]{ ThrowType.LocalException, ThrowType.UserException,
@@ -1054,10 +1074,10 @@ public class AllTests
                 cb.check();
             }
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing batch requests with proxy... ");
-        Console.Out.Flush();
+        Write("testing batch requests with proxy... ");
+        Flush();
         {
             Cookie cookie = new Cookie(5);
 
@@ -1131,10 +1151,10 @@ public class AllTests
                 test(p.opBatchCount() == 0);
             }
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing batch requests with connection... ");
-        Console.Out.Flush();
+        Write("testing batch requests with connection... ");
+        Flush();
         {
             Cookie cookie = new Cookie(5);
 
@@ -1208,10 +1228,10 @@ public class AllTests
                 test(p.opBatchCount() == 0);
             }
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing batch requests with communicator... ");
-        Console.Out.Flush();
+        Write("testing batch requests with communicator... ");
+        Flush();
         {
             Cookie cookie = new Cookie(5);
 
@@ -1422,55 +1442,174 @@ public class AllTests
                 test(p.opBatchCount() == 0);
             }
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing AsyncResult operations... ");
-        Console.Out.Flush();
+        Write("testing AsyncResult operations... ");
+        Flush();
         {
-            testController.holdAdapter();
-            Ice.AsyncResult r1;
-            Ice.AsyncResult r2;
-            try
             {
-                r1 = p.begin_op();
-                byte[] seq = new byte[10024];
-                (new System.Random()).NextBytes(seq);
-                while((r2 = p.begin_opWithPayload(seq)).sentSynchronously());
-                
-                test(r1.sentSynchronously() && r1.isSent() && !r1.isCompleted_() ||
-                     !r1.sentSynchronously() && !r1.isCompleted_());
-                
-                test(!r2.sentSynchronously() && !r2.isCompleted_());
-                
-                test(!r1.IsCompleted && !r1.CompletedSynchronously);
-                test(!r2.IsCompleted && !r2.CompletedSynchronously);
+                testController.holdAdapter();
+                Ice.AsyncResult r1;
+                Ice.AsyncResult r2;
+                try
+                {
+                    r1 = p.begin_op();
+                    byte[] seq = new byte[10024];
+                    (new System.Random()).NextBytes(seq);
+                    while((r2 = p.begin_opWithPayload(seq)).sentSynchronously());
+
+                    test(r1.sentSynchronously() && r1.isSent() && !r1.isCompleted_() ||
+                         !r1.sentSynchronously() && !r1.isCompleted_());
+
+                    test(!r2.sentSynchronously() && !r2.isCompleted_());
+
+                    test(!r1.IsCompleted && !r1.CompletedSynchronously);
+                    test(!r2.IsCompleted && !r2.CompletedSynchronously);
+                }
+                finally
+                {
+                    testController.resumeAdapter();
+                }
+
+                WaitHandle w1 = r1.AsyncWaitHandle;
+                WaitHandle w2 = r2.AsyncWaitHandle;
+
+                r1.waitForSent();
+                test(r1.isSent());
+
+                r2.waitForSent();
+                test(r2.isSent());
+
+                r1.waitForCompleted();
+                test(r1.isCompleted_());
+                w1.WaitOne();
+
+                r2.waitForCompleted();
+                test(r2.isCompleted_());
+                w2.WaitOne();
+
+                test(r1.getOperation().Equals("op"));
+                test(r2.getOperation().Equals("opWithPayload"));
             }
-            finally
+
             {
-                testController.resumeAdapter();
+                Ice.AsyncResult r;
+
+                //
+                // Twoway
+                //
+                r = p.begin_ice_ping();
+                test(r.getOperation().Equals("ice_ping"));
+                test(r.getConnection() == null); // Expected
+                test(r.getCommunicator() == communicator);
+                test(r.getProxy() == p);
+                p.end_ice_ping(r);
+
+                Test.TestIntfPrx p2;
+
+                //
+                // Oneway
+                //
+                p2 = p.ice_oneway() as Test.TestIntfPrx;
+                r = p2.begin_ice_ping();
+                test(r.getOperation().Equals("ice_ping"));
+                test(r.getConnection() == null); // Expected
+                test(r.getCommunicator() == communicator);
+                test(r.getProxy() == p2);
+
+                //
+                // Batch request via proxy
+                //
+                p2 = p.ice_batchOneway() as Test.TestIntfPrx;
+                p2.ice_ping();
+                r = p2.begin_ice_flushBatchRequests();
+                test(r.getConnection() == null); // Expected
+                test(r.getCommunicator() == communicator);
+                test(r.getProxy() == p2);
+                p2.end_ice_flushBatchRequests(r);
+
+                //
+                // Batch request via connection
+                //
+                Ice.Connection con = p.ice_getConnection();
+                p2 = p.ice_batchOneway() as Test.TestIntfPrx;
+                p2.ice_ping();
+                r = con.begin_flushBatchRequests();
+                test(r.getConnection() == con);
+                test(r.getCommunicator() == communicator);
+                test(r.getProxy() == null); // Expected
+                con.end_flushBatchRequests(r);
+
+                //
+                // Batch request via communicator
+                //
+                p2 = p.ice_batchOneway() as Test.TestIntfPrx;
+                p2.ice_ping();
+                r = communicator.begin_flushBatchRequests();
+                test(r.getConnection() == null); // Expected
+                test(r.getCommunicator() == communicator);
+                test(r.getProxy() == null); // Expected
+                communicator.end_flushBatchRequests(r);
             }
-
-            WaitHandle w1 = r1.AsyncWaitHandle;
-            WaitHandle w2 = r2.AsyncWaitHandle;
-
-            r1.waitForSent();
-            test(r1.isSent());
-
-            r2.waitForSent();
-            test(r2.isSent());
-
-            r1.waitForCompleted();
-            test(r1.isCompleted_());
-            w1.WaitOne();
-
-            r2.waitForCompleted();
-            test(r2.isCompleted_());
-            w2.WaitOne();
-
-            test(r1.getOperation().Equals("op"));
-            test(r2.getOperation().Equals("opWithPayload"));
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
+
+        Write("testing close connection with sending queue... ");
+        Flush();
+        {
+            byte[] seq = new byte[1024 * 10];
+            (new System.Random()).NextBytes(seq); // Make sure the request doesn't compress too well.
+
+            //
+            // Send multiple opWithPayload, followed by a close and followed by multiple opWithPaylod.
+            // The goal is to make sure that none of the opWithPayload fail even if the server closes 
+            // the connection gracefully in between.
+            // 
+            int maxQueue = 2;
+            bool done = false;
+            while(!done && maxQueue < 50)
+            { 
+                done = true;
+                p.ice_ping();
+                List<Ice.AsyncResult> results = new List<Ice.AsyncResult>();
+                for(int i = 0; i < maxQueue; ++i)
+                {
+                    results.Add(p.begin_opWithPayload(seq));
+                }
+                if(!p.begin_close(false).isSent())
+                {
+                    for(int i = 0; i < maxQueue; i++)
+                    {
+                        Ice.AsyncResult r = p.begin_opWithPayload(seq);
+                        results.Add(r);
+                        if(r.isSent())
+                        {
+                            done = false;
+                            maxQueue *= 2;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    maxQueue *= 2;
+                    done = false;
+                }
+                foreach(Ice.AsyncResult q in results)
+                {
+                    q.waitForCompleted();
+                    try
+                    {
+                        q.throwLocalException();
+                    }
+                    catch(Ice.LocalException)
+                    {
+                        test(false);
+                    }
+                }
+            }
+        }
+        WriteLine("ok");
 
         p.shutdown();
     }

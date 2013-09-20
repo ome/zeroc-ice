@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -13,7 +13,7 @@ LIBFILENAME  = $(call mklibfilename,IceStormService,$(VERSION))
 SONAME       = $(call mksoname,IceStormService,$(SOVERSION))  
 LIBNAME	= $(call mklibname,IceStormService)
 
-ADMIN		= $(top_srcdir)/bin/icestormadmin
+ADMIN		= $(bindir)/icestormadmin
 
 LIBTARGETS   	= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
 TARGETS         = $(LIBTARGETS) $(ADMIN)
@@ -32,6 +32,8 @@ OBJS		= NodeI.o \
 		  Election.o \
 		  SubscriberRecord.o \
 		  IceStormInternal.o \
+		  Instrumentation.o \
+		  InstrumentationI.o \
 		  Util.o
 
 AOBJS		= Admin.o \
@@ -46,10 +48,20 @@ AOBJS		= Admin.o \
 SRCS		= $(OBJS:.o=.cpp) \
 		  $(AOBJS:.o=.cpp) \
 
-SLICE_SRCS	= ../IceStorm/Election.ice \
+SLICE_SRCS	= ../IceStorm/Instrumentation.ice \
+		  ../IceStorm/Election.ice \
 		  ../IceStorm/IceStormInternal.ice \
 		  ../IceStorm/LLURecord.ice \
 		  ../IceStorm/SubscriberRecord.ice
+
+HDIR		= $(headerdir)/IceStorm
+SDIR		= $(slicedir)/IceStorm
+
+ifeq ($(CPP11),yes)
+RPATH_DIR	= @loader_path/../../lib/c++11
+else
+RPATH_DIR	= @loader_path/../lib
+endif
 
 include $(top_srcdir)/config/Make.rules
 
@@ -82,9 +94,6 @@ install:: all
 	$(call installprogram,$(ADMIN),$(install_bindir))
 
 SUBDIRS = FreezeDB
-ifneq ($(QT_HOME),)
-   SUBDIRS += SqlDB
-endif
 
 $(EVERYTHING)::
 	@for subdir in $(SUBDIRS); \

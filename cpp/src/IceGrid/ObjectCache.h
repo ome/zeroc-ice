@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,7 +24,7 @@ class ObjectEntry : public IceUtil::Shared
 {
 public:
     
-    ObjectEntry(ObjectCache&, const ObjectInfo&, const std::string&);
+    ObjectEntry(const ObjectInfo&, const std::string&);
     Ice::ObjectPrx getProxy() const;
     std::string getType() const;
     std::string getApplication() const;
@@ -34,7 +34,6 @@ public:
 
 private:
 
-    ObjectCache& _cache;
     const ObjectInfo _info;
     const std::string _application;
 };

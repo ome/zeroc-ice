@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,11 +11,13 @@
 #include <TestCommon.h>
 #include <Test.h>
 
+DEFINE_TEST("client")
+
 using namespace std;
 using namespace Test;
 
 int
-run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
+run(int, char**, const Ice::CommunicatorPtr& communicator)
 {
     RetryPrx allTests(const Ice::CommunicatorPtr&);
     RetryPrx retry = allTests(communicator);
@@ -47,8 +49,9 @@ main(int argc, char* argv[])
         communicator = Ice::initialize(argc, argv, initData);
         status = run(argc, argv, communicator);
     }
-    catch(const Ice::Exception&)
+    catch(const Ice::Exception& ex)
     {
+        cerr << ex << endl;
         status = EXIT_FAILURE;
     }
 

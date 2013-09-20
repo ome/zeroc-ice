@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,8 +38,8 @@ class TcpAcceptor implements Acceptor
 
         if(_traceLevels.network >= 1)
         {
-            StringBuffer s = new StringBuffer("accepting tcp connections at ");
-	    s.append(toString());
+            StringBuffer s = new StringBuffer("listening for tcp connections at ");
+            s.append(toString());
 
             java.util.List<String> interfaces = 
                 Network.getHostsForEndpointExpand(_addr.getAddress().getHostAddress(), _instance.protocolSupport(),
@@ -110,7 +110,7 @@ class TcpAcceptor implements Acceptor
                 //
                 Network.setReuseAddress(_fd, true);
             }
-            _addr = Network.getAddressForServer(host, port, _instance.protocolSupport());
+            _addr = Network.getAddressForServer(host, port, _instance.protocolSupport(), _instance.preferIPv6());
             if(_traceLevels.network >= 2)
             {
                 String s = "attempting to bind to tcp socket " + toString();
@@ -129,9 +129,17 @@ class TcpAcceptor implements Acceptor
     finalize()
         throws Throwable
     {
-        IceUtilInternal.Assert.FinalizerAssert(_fd == null);
-
-        super.finalize();
+        try
+        {
+            IceUtilInternal.Assert.FinalizerAssert(_fd == null);
+        }
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     private Instance _instance;

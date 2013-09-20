@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -19,7 +19,7 @@ for top_srcdir in [".", "..", "../..", "../../..", "../../../.."]:
     if os.path.exists(os.path.join(top_srcdir, "..", "config", "makedepend.py")):
         break
 else:
-    raise "can't find top level source directory!"
+    raise RuntimeError("can't find top level source directory!")
 
 subincludedir = top_srcdir + "/include"
 subcppincludedir = top_srcdir + "/../cpp/include"
@@ -27,7 +27,7 @@ subcppincludedir = top_srcdir + "/../cpp/include"
 try:
     opts, args = getopt.getopt(sys.argv[1:], "n", ["nmake"])
 except getopt.GetoptError:
-    raise "invalid arguments"
+    raise RuntimeError("invalid arguments")
 
 prefix = None
 if len(args) > 0:
@@ -64,8 +64,16 @@ for line in fileinput.input("-"):
     else:
         previous = ""
 
+    i = 0
     for s in line.split():
         if(s[0] == "/"):
+            continue
+
+        if i == 0 and s.endswith(".h") and prefix != None:
+            if depend:
+                print >>depend, prefix + "/" + s,
+            print >>dependmak, prefix + "\\" + s,
+            i += 1
             continue
 
         if s.endswith(".cs:"):

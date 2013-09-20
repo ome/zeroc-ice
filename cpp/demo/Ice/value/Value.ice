@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef VALUE_ICE
-#define VALUE_ICE
+#pragma once
 
 module Demo
 {
@@ -18,16 +17,21 @@ class Simple
     string message;
 };
 
+["preserve-slice"]
 class Printer
 {
     string message;
     void printBackwards();
 };
 
-["cpp:virtual"]class DerivedPrinter extends Printer
+["cpp:virtual"] class DerivedPrinter extends Printer
 {
     string derivedMessage;
     void printUppercase();
+};
+
+["cpp:virtual"]class ClientPrinter extends Printer
+{
 };
 
 exception DerivedPrinterException
@@ -39,11 +43,11 @@ interface Initial
 {
     Simple getSimple();
     void getPrinter(out Printer impl, out Printer* proxy);
-    Printer getDerivedPrinter();
+    ["format:sliced"] Printer getDerivedPrinter();
+    ["format:sliced"] Printer updatePrinterMessage(Printer impl);
     void throwDerivedPrinter() throws DerivedPrinterException;
     void shutdown();
 };
 
 };
 
-#endif

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -65,9 +65,18 @@ class Instance
                 {
                     l.add("SSLv3");
                 }
-                else if(s.equals("tls") || s.equals("tls1") || s.equals("tlsv1"))
+                else if(s.equals("tls") || s.equals("tls1") || s.equals("tlsv1") || s.equals("tls1_0") ||
+                        s.equals("tlsv1_0"))
                 {
                     l.add("TLSv1");
+                }
+                else if(s.equals("tls1_1") || s.equals("tlsv1_1"))
+                {
+                    l.add("TLSv1.1");
+                }
+                else if(s.equals("tls1_2") || s.equals("tlsv1_2"))
+                {
+                    l.add("TLSv1.2");
                 }
                 else
                 {
@@ -647,6 +656,18 @@ class Instance
         return _facade.getProtocolSupport();
     }
 
+    boolean
+    preferIPv6()
+    {
+        return _facade.getPreferIPv6();
+    }
+
+    Ice.EncodingVersion
+    defaultEncoding()
+    {
+        return _facade.getDefaultEncoding();
+    }
+
     String
     defaultHost()
     {
@@ -689,7 +710,7 @@ class Instance
         javax.net.ssl.SSLEngine engine;
         if(peerAddr != null)
         {
-            engine = _context.createSSLEngine(peerAddr.getHostName(), peerAddr.getPort());
+            engine = _context.createSSLEngine(peerAddr.getAddress().getHostAddress(), peerAddr.getPort());
         }
         else
         {
@@ -918,7 +939,7 @@ class Instance
             }
 
             //
-            // Compare the peer's address against the the dnsName and ipAddress
+            // Compare the peer's address against the dnsName and ipAddress
             // values in the subject alternative name.
             //
             if(!certNameOK)

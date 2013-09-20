@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -135,19 +135,23 @@ allTests(const CommunicatorPtr& communicator)
 
     cout << "ok" << endl;
 
-
-    cout << "testing udp multicast... " << flush;
-    string host;
+    string endpoint;
     if(communicator->getProperties()->getProperty("Ice.IPv6") == "1")
     {
-        host = "\"ff01::1:1\"";
+#if defined(__APPLE__)
+        endpoint = "udp -h \"ff02::1:1\" -p 12020 --interface \"lo0\"";
+#else
+        endpoint = "udp -h \"ff01::1:1\" -p 12020";
+#endif
     }
     else
     {
-        host = "239.255.1.1";
+        endpoint = "udp -h 239.255.1.1 -p 12020";
     }
-    base = communicator->stringToProxy("test -d:udp -h " + host + " -p 12020");
+    base = communicator->stringToProxy("test -d:" + endpoint);
     TestIntfPrx objMcast = TestIntfPrx::uncheckedCast(base);
+#ifndef ICE_OS_WINRT
+    cout << "testing udp multicast... " << flush;
 
     nRetry = 5;
     while(nRetry-- > 0)
@@ -170,6 +174,7 @@ allTests(const CommunicatorPtr& communicator)
     {
         cout << "ok" << endl;
     }
+#endif
 
     cout << "testing udp bi-dir connection... " << flush;    
     obj->ice_getConnection()->setAdapter(adapter);

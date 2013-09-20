@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -12,8 +12,7 @@ top_srcdir	= ../..
 LIBFILENAME     = $(call mkrblibfilename,IceRuby,$(VERSION))
 SONAME          = $(call mkrbsoname,IceRuby,$(SOVERSION))  
 LIBNAME		= $(call mkrblibname,IceRuby)
-
-TARGETS		=  $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
+TARGETS		= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
 
 OBJS		= Connection.o \
 		  Communicator.o \
@@ -34,8 +33,7 @@ SRCS		= $(OBJS:.o=.cpp)
 include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I. -I.. $(CPPFLAGS) $(ICE_FLAGS) $(RUBY_FLAGS)
-
-LINKWITH        := -L$(libdir) $(ICE_LIBS) $(RUBY_LIBS) $(CXXLIBS)
+LINKWITH        := -L"$(libdir)" $(ICE_LIBS) $(RUBY_LIBS) $(CXXLIBS)
 
 $(libdir)/$(LIBFILENAME): $(OBJS)
 	rm -f $@
@@ -52,4 +50,4 @@ $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 install:: all
 	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))
 
-include .depend
+#include .depend

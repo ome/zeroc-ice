@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef TEST_ICE
-#define TEST_ICE
+#pragma once
 
 module Test
 {
@@ -39,6 +38,28 @@ exception D
     int dMem;
 };
 
+exception E
+{
+    string data;
+};
+
+["cpp:ice_print"]
+exception F
+{
+    string data;
+};
+
+local exception G
+{
+    string data;
+};
+
+["cpp:ice_print"]
+local exception H
+{
+    string data;
+};
+
 module Mod
 {
     exception A extends ::Test::A
@@ -46,7 +67,6 @@ module Mod
         int a2Mem;
     };
 };
-
 
 ["ami"] interface Thrower
 {
@@ -71,6 +91,8 @@ module Mod
     void throwNonIceException();
     void throwAssertException();
 
+    idempotent void throwLocalExceptionIdempotent();
+
     void throwAfterResponse();
     void throwAfterException() throws A;
 };
@@ -82,4 +104,3 @@ module Mod
 
 };
 
-#endif

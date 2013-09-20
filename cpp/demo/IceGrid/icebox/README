@@ -1,6 +1,14 @@
 This demo shows a very simple IceGrid deployment, with a single
 IceBox server hosting a number of IceBox services.
 
+The demo also demonstrates how to use an environment variable in a
+server descriptor.
+
+In application.xml, <env>LANG=en</env> defines an environment variable
+named "LANG" with value "en". The Hello object implementation HelloI
+reads the value of "LANG" and shows the message in the corresponding
+language; you can try to update the value to fr, de, es or it.
+
 
 Setup
 -----
@@ -24,9 +32,10 @@ We suggest using the graphical IceGrid administration tool with this
 demo. Follow these steps to log into the IceGrid registry and view
 the application you deployed above:
 
-  - Launch the application. Windows users can double-click on the
-    file IceGridGUI.jar located in <Ice installation directory>\bin.
-    Users with a Linux RPM installation can use a script to start the
+  - Launch the application. Windows users can use the IceGrid Admin
+    icon from the Start menu, OS X users can use the IceGrid Admin
+    icon from the Finder Applications folder, and users with a Linux
+    RPM installation can use the icegridgui script to start the
     program:
 
     $ icegridgui
@@ -41,14 +50,24 @@ the application you deployed above:
 
   - Select Login... from the File menu.
 
-  - Enter any username and password combination (the password is not
-    validated).
+  - In the "Saved Connections" dialog, click "New Connection" to open
+    the "New Connection" wizard.
 
-  - Enter "DemoIceGrid" for the IceGrid instance name.
+  - Select "Direct Connection" and click Next.
 
-  - Enter "tcp -h localhost -p 4061" for the endpoints.
+  - Enter "DemoIceGrid" for the IceGrid instance name and click next.
 
-  - Click OK to log in.
+  - In "Endpoint Configuration", select "A hostname and port number?"
+    and click Next.
+
+  - Enter "localhost" for the Hostname. You can leave the port empty
+    as the demo uses the default port. Click Next.
+
+  - Enter any username and password combination and click Finish
+    to log in.
+
+  - Next time you want to connect, the connection will appear in the
+    "Saved Connections" dialog, just select it and click Connect.
 
 
 Windows Note
@@ -80,7 +99,6 @@ using the following command:
 
  $ icegridadmin --Ice.Config=config.grid -e \
     "application update application.xml"
-
 
 
 Running the Client
@@ -129,7 +147,7 @@ Follow these steps:
    In the IceGrid GUI, use the Routed tab of the Login dialog. Change
    the Glacier2 instance name to "DemoGlacier2" and the endpoints to
    "tcp -h localhost -p 4063".
-   
+
    DemoGlacier2 is configured to use a built-in permissions verifier
    that does not validate passwords, so you can log in using any
    username/password combination.

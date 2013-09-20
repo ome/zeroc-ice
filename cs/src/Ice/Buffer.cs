@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,6 +23,15 @@ namespace IceInternal
             _size = 0;
             _capacity = 0;
             _maxCapacity = maxCapacity;
+        }
+
+        public Buffer(byte[] data)
+        {
+            b = ByteBuffer.wrap(data);
+            b.order(ByteBuffer.ByteOrder.LITTLE_ENDIAN);
+            _size = data.Length;
+            _capacity = 0;
+            _maxCapacity = 0;
         }
 
         public int size()
@@ -59,6 +68,8 @@ namespace IceInternal
 
         public void resize(int n, bool reading)
         {
+            Debug.Assert(b == _emptyBuffer || _capacity > 0);
+
             if(n == 0)
             {
                 clear();
@@ -145,12 +156,10 @@ namespace IceInternal
 
                 b.order(ByteBuffer.ByteOrder.LITTLE_ENDIAN);
             }
-            catch(System.OutOfMemoryException ex)
+            catch(System.OutOfMemoryException)
             {
-                _capacity = b.capacity(); // Restore the previous capacity.
-                Ice.MarshalException e = new Ice.MarshalException(ex);
-                e.reason = "OutOfMemoryException occurred while allocating a ByteBuffer";
-                throw e;
+                _capacity = b.capacity(); // Restore the previous capacity
+                throw;
             }
             catch(System.Exception ex)
             {

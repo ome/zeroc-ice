@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -297,7 +297,7 @@ public class Client extends JFrame
         fieldPanel.setLayout(new GridLayout(0, 1));
         fieldPanel.add(_hostField);
         fieldPanel.add(_userNameField);
-        fieldPanel.add(_passwordField);    	
+        fieldPanel.add(_passwordField);         
         _connectionPanel.add(labelPanel);
         _connectionPanel.add(fieldPanel);
 

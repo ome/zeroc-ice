@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -9,12 +9,14 @@
 
 top_srcdir	= ../../..
 
-CLIENT		= client
-SERVER		= server
-SERVERAMD	= serveramd
-COLLOCATED	= collocated
+CLIENT		= client$(EXE_EXT)
+SERVER		= server$(EXE_EXT)
+SERVERAMD	= serveramd$(EXE_EXT)
+COLLOCATED	= collocated$(EXE_EXT)
 
 TARGETS		= $(CLIENT) $(SERVER) $(SERVERAMD) $(COLLOCATED)
+
+OBJS		= ExceptionsI.o
 
 COBJS		= Test.o \
 		  Client.o \
@@ -33,7 +35,8 @@ COLOBJS		= Test.o \
 		  Collocated.o \
 		  AllTests.o
 
-SRCS		= $(COBJS:.o=.cpp) \
+SRCS		= $(OBJS:.o=.cpp) \
+		  $(COBJS:.o=.cpp) \
 		  $(SOBJS:.o=.cpp) \
 		  $(SAMDOBJS:.o=.cpp) \
 		  $(COLOBJS:.o=.cpp)
@@ -44,20 +47,20 @@ include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I. -I../../include $(CPPFLAGS)
 
-$(CLIENT): $(COBJS)
+$(CLIENT): $(COBJS) $(OBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(COBJS) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(COBJS) $(OBJS) $(LIBS)
 
-$(SERVER): $(SOBJS)
+$(SERVER): $(SOBJS) $(OBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) $(OBJS) $(LIBS)
 
-$(SERVERAMD): $(SAMDOBJS)
+$(SERVERAMD): $(SAMDOBJS) $(OBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(SAMDOBJS) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(SAMDOBJS) $(OBJS) $(LIBS)
 
-$(COLLOCATED): $(COLOBJS)
+$(COLLOCATED): $(COLOBJS) $(OBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(COLOBJS) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(COLOBJS) $(OBJS) $(LIBS)
 
 include .depend

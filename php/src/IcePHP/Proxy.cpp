@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -59,7 +59,11 @@ extern "C"
 static zend_object_value handleAlloc(zend_class_entry* TSRMLS_DC);
 static void handleFreeStorage(void* TSRMLS_DC);
 static zend_object_value handleClone(zval* TSRMLS_DC);
+#if PHP_VERSION_ID < 50400
 static union _zend_function* handleGetMethod(zval**, char*, int TSRMLS_DC);
+#else
+static union _zend_function* handleGetMethod(zval**, char*, int, const _zend_literal* TSRMLS_DC);
+#endif
 static int handleCompare(zval*, zval* TSRMLS_DC);
 }
 
@@ -641,6 +645,62 @@ ZEND_METHOD(Ice_ObjectPrx, ice_secure)
     }
 }
 
+ZEND_METHOD(Ice_ObjectPrx, ice_getEncodingVersion)
+{
+    if(ZEND_NUM_ARGS() != 0)
+    {
+        WRONG_PARAM_COUNT;
+    }
+
+    ProxyPtr _this = Wrapper<ProxyPtr>::value(getThis() TSRMLS_CC);
+    assert(_this);
+
+    try
+    {
+        if(!createEncodingVersion(return_value, _this->proxy->ice_getEncodingVersion() TSRMLS_CC))
+        {
+            RETURN_NULL();
+        }
+    }
+    catch(const IceUtil::Exception& ex)
+    {
+        throwException(ex TSRMLS_CC);
+        RETURN_NULL();
+    }
+}
+
+ZEND_METHOD(Ice_ObjectPrx, ice_encodingVersion)
+{
+    ProxyPtr _this = Wrapper<ProxyPtr>::value(getThis() TSRMLS_CC);
+    assert(_this);
+
+    zend_class_entry* cls = idToClass("::Ice::EncodingVersion" TSRMLS_CC);
+    assert(cls);
+
+    zval *zv;
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>("O"), &zv, cls) == FAILURE)
+    {
+        RETURN_NULL();
+    }
+
+    Ice::EncodingVersion v;
+    if(extractEncodingVersion(zv, v TSRMLS_CC))
+    {
+        try
+        {
+            if(!_this->clone(return_value, _this->proxy->ice_encodingVersion(v) TSRMLS_CC))
+            {
+                RETURN_NULL();
+            }
+        }
+        catch(const IceUtil::Exception& ex)
+        {
+            throwException(ex TSRMLS_CC);
+            RETURN_NULL();
+        }
+    }
+}
+
 ZEND_METHOD(Ice_ObjectPrx, ice_isPreferSecure)
 {
     if(ZEND_NUM_ARGS() != 0)
@@ -1209,6 +1269,27 @@ ZEND_METHOD(Ice_ObjectPrx, ice_getCachedConnection)
     }
 }
 
+ZEND_METHOD(Ice_ObjectPrx, ice_flushBatchRequests)
+{
+    if(ZEND_NUM_ARGS() != 0)
+    {
+        WRONG_PARAM_COUNT;
+    }
+
+    ProxyPtr _this = Wrapper<ProxyPtr>::value(getThis() TSRMLS_CC);
+    assert(_this);
+
+    try
+    {
+        _this->proxy->ice_flushBatchRequests();
+    }
+    catch(const IceUtil::Exception& ex)
+    {
+        throwException(ex TSRMLS_CC);
+        RETURN_NULL();
+    }
+}
+
 static ClassInfoPtr
 lookupClass(const string& id TSRMLS_DC)
 {
@@ -1310,6 +1391,10 @@ do_cast(INTERNAL_FUNCTION_PARAMETERS, bool check)
         {
             RETURN_NULL();
         }
+    }
+    catch(const Ice::FacetNotExistException&)
+    {
+        // Ignore.
     }
     catch(const IceUtil::Exception& ex)
     {
@@ -1418,7 +1503,8 @@ handleFreeStorage(void* p TSRMLS_DC)
 {
     Wrapper<ProxyPtr>* obj = static_cast<Wrapper<ProxyPtr>*>(p);
     delete obj->ptr;
-    zend_objects_free_object_storage(static_cast<zend_object*>(p) TSRMLS_CC);
+    zend_object_std_dtor(static_cast<zend_object*>(p) TSRMLS_CC);
+    efree(p);
 }
 
 #ifdef _WIN32
@@ -1461,7 +1547,11 @@ handleClone(zval* zv TSRMLS_DC)
 extern "C"
 #endif
 static union _zend_function*
+#if PHP_VERSION_ID < 50400
 handleGetMethod(zval** zv, char* method, int len TSRMLS_DC)
+#else
+handleGetMethod(zval** zv, char* method, int len, const _zend_literal* key TSRMLS_DC)
+#endif
 {
     zend_function* result;
 
@@ -1470,7 +1560,11 @@ handleGetMethod(zval** zv, char* method, int len TSRMLS_DC)
     // any of our predefined proxy methods. If it returns 0, then we return a
     // function that will check the class definition.
     //
+#if PHP_VERSION_ID < 50400
     result = zend_get_std_object_handlers()->get_method(zv, method, len TSRMLS_CC);
+#else
+    result = zend_get_std_object_handlers()->get_method(zv, method, len, key TSRMLS_CC);
+#endif
     if(!result)
     {
         Wrapper<ProxyPtr>* obj = Wrapper<ProxyPtr>::extract(*zv TSRMLS_CC);
@@ -1530,9 +1624,16 @@ handleCompare(zval* zobj1, zval* zobj2 TSRMLS_DC)
 }
 
 //
+// Necessary to suppress warnings from zend_function_entry in php-5.2.
+//
+#if defined(__GNUC__)
+#  pragma GCC diagnostic ignored "-Wwrite-strings"
+#endif
+
+//
 // Predefined methods for ObjectPrx.
 //
-static function_entry _proxyMethods[] =
+static zend_function_entry _proxyMethods[] =
 {
     ZEND_ME(Ice_ObjectPrx, __construct, NULL, ZEND_ACC_PRIVATE|ZEND_ACC_CTOR)
     ZEND_ME(Ice_ObjectPrx, __toString, NULL, ZEND_ACC_PUBLIC)
@@ -1557,6 +1658,8 @@ static function_entry _proxyMethods[] =
     ZEND_ME(Ice_ObjectPrx, ice_endpointSelection, NULL, ZEND_ACC_PUBLIC)
     ZEND_ME(Ice_ObjectPrx, ice_isSecure, NULL, ZEND_ACC_PUBLIC)
     ZEND_ME(Ice_ObjectPrx, ice_secure, NULL, ZEND_ACC_PUBLIC)
+    ZEND_ME(Ice_ObjectPrx, ice_getEncodingVersion, NULL, ZEND_ACC_PUBLIC)
+    ZEND_ME(Ice_ObjectPrx, ice_encodingVersion, NULL, ZEND_ACC_PUBLIC)
     ZEND_ME(Ice_ObjectPrx, ice_isPreferSecure, NULL, ZEND_ACC_PUBLIC)
     ZEND_ME(Ice_ObjectPrx, ice_preferSecure, NULL, ZEND_ACC_PUBLIC)
     ZEND_ME(Ice_ObjectPrx, ice_getRouter, NULL, ZEND_ACC_PUBLIC)
@@ -1578,10 +1681,18 @@ static function_entry _proxyMethods[] =
     ZEND_ME(Ice_ObjectPrx, ice_connectionId, NULL, ZEND_ACC_PUBLIC)
     ZEND_ME(Ice_ObjectPrx, ice_getConnection, NULL, ZEND_ACC_PUBLIC)
     ZEND_ME(Ice_ObjectPrx, ice_getCachedConnection, NULL, ZEND_ACC_PUBLIC)
+    ZEND_ME(Ice_ObjectPrx, ice_flushBatchRequests, NULL, ZEND_ACC_PUBLIC)
     ZEND_ME(Ice_ObjectPrx, ice_uncheckedCast, NULL, ZEND_ACC_PUBLIC)
     ZEND_ME(Ice_ObjectPrx, ice_checkedCast, NULL, ZEND_ACC_PUBLIC)
     {0, 0, 0}
 };
+
+//
+// enable warning again
+//
+#if defined(__GNUC__)
+#  pragma GCC diagnostic error "-Wwrite-strings"
+#endif
 
 bool
 IcePHP::proxyInit(TSRMLS_D)

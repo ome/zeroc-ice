@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,12 @@ public:
     virtual void SBSUnknownDerivedAsSBase_async(const ::Test::AMD_TestIntf_SBSUnknownDerivedAsSBasePtr&,
                                                 const ::Ice::Current&);
 
+    virtual void SBSUnknownDerivedAsSBaseCompact_async(const ::Test::AMD_TestIntf_SBSUnknownDerivedAsSBaseCompactPtr&,
+                                                       const ::Ice::Current&);
+
     virtual void SUnknownAsObject_async(const ::Test::AMD_TestIntf_SUnknownAsObjectPtr&, const ::Ice::Current&);
+    virtual void checkSUnknown_async(const ::Test::AMD_TestIntf_checkSUnknownPtr&, const Ice::ObjectPtr&,
+                                     const ::Ice::Current&);
 
     virtual void oneElementCycle_async(const ::Test::AMD_TestIntf_oneElementCyclePtr&, const ::Ice::Current&);
     virtual void twoElementCycle_async(const ::Test::AMD_TestIntf_twoElementCyclePtr&, const ::Ice::Current&);
@@ -54,12 +59,35 @@ public:
     virtual void dictionaryTest_async(const ::Test::AMD_TestIntf_dictionaryTestPtr&,
                                       const ::Test::BDict&, const ::Ice::Current&);
 
+    virtual void exchangePBase_async(const ::Test::AMD_TestIntf_exchangePBasePtr&, const ::Test::PBasePtr&,
+                                     const ::Ice::Current&);
+
+    virtual void PBSUnknownAsPreserved_async(const ::Test::AMD_TestIntf_PBSUnknownAsPreservedPtr&,
+                                             const ::Ice::Current&);
+    virtual void checkPBSUnknown_async(const ::Test::AMD_TestIntf_checkPBSUnknownPtr&, const ::Test::PreservedPtr&,
+                                       const ::Ice::Current&);
+
+    virtual void PBSUnknownAsPreservedWithGraph_async(const ::Test::AMD_TestIntf_PBSUnknownAsPreservedWithGraphPtr&,
+                                                      const ::Ice::Current&);
+    virtual void checkPBSUnknownWithGraph_async(const ::Test::AMD_TestIntf_checkPBSUnknownWithGraphPtr&,
+                                                const ::Test::PreservedPtr&, const ::Ice::Current&);
+
+    virtual void PBSUnknown2AsPreservedWithGraph_async(const ::Test::AMD_TestIntf_PBSUnknown2AsPreservedWithGraphPtr&,
+                                                       const ::Ice::Current&);
+    virtual void checkPBSUnknown2WithGraph_async(const ::Test::AMD_TestIntf_checkPBSUnknown2WithGraphPtr&,
+                                                 const ::Test::PreservedPtr&, const ::Ice::Current&);
+
+    virtual void exchangePNode_async(const ::Test::AMD_TestIntf_exchangePNodePtr&, const ::Test::PNodePtr&,
+                                     const ::Ice::Current&);
+
     virtual void throwBaseAsBase_async(const ::Test::AMD_TestIntf_throwBaseAsBasePtr&, const ::Ice::Current&);
     virtual void throwDerivedAsBase_async(const ::Test::AMD_TestIntf_throwDerivedAsBasePtr&, const ::Ice::Current&);
     virtual void throwDerivedAsDerived_async(const ::Test::AMD_TestIntf_throwDerivedAsDerivedPtr&,
                                              const ::Ice::Current&);
     virtual void throwUnknownDerivedAsBase_async(const ::Test::AMD_TestIntf_throwUnknownDerivedAsBasePtr&,
                                                  const ::Ice::Current&);
+    virtual void throwPreservedException_async(const ::Test::AMD_TestIntf_throwPreservedExceptionPtr&,
+                                               const ::Ice::Current&);
 
     virtual void useForward_async(const ::Test::AMD_TestIntf_useForwardPtr&, const ::Ice::Current&);
 

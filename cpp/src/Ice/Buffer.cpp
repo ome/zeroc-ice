@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,18 +25,33 @@ IceInternal::Buffer::Container::Container(size_type maxCapacity) :
     _buf(0),
     _size(0),
     _capacity(0),
-    _maxCapacity(maxCapacity)
+    _maxCapacity(maxCapacity),
+    _shrinkCounter(0)
+{
+}
+
+IceInternal::Buffer::Container::Container(const_iterator beg, const_iterator end) :
+    _buf(const_cast<iterator>(beg)),
+    _size(end - beg),
+    _capacity(0),
+    _maxCapacity(0),
+    _shrinkCounter(0)
 {
 }
 
 IceInternal::Buffer::Container::~Container()
 {
-    ::free(_buf);
+    if(_buf && _capacity > 0)
+    {
+        ::free(_buf);
+    }
 }
 
 void
 IceInternal::Buffer::Container::swap(Container& other)
 {
+    assert(!_buf || _capacity > 0);
+
     std::swap(_buf, other._buf);
 
     std::swap(_size, other._size);
@@ -47,6 +62,8 @@ IceInternal::Buffer::Container::swap(Container& other)
 void
 IceInternal::Buffer::Container::clear()
 {
+    assert(!_buf || _capacity > 0);
+
     free(_buf);
     _buf = 0;
     _size = 0;
@@ -56,6 +73,8 @@ IceInternal::Buffer::Container::clear()
 void
 IceInternal::Buffer::Container::reserve(size_type n)
 {
+    assert(!_buf || _capacity > 0);
+
     size_type c = _capacity;
     if(n > _capacity)
     {
@@ -75,9 +94,7 @@ IceInternal::Buffer::Container::reserve(size_type n)
     if(!p)
     {
         _capacity = c; // Restore the previous capacity.
-        SyscallException ex(__FILE__, __LINE__);
-        ex.error = getSystemErrno();
-        throw ex;
+        throw std::bad_alloc();
     }
     _buf = p;
 }

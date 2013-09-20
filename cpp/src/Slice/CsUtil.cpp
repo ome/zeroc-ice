@@ -1,11 +1,22 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+//
+// Disable unreferenced formal parameter warnings
+// for VC90 binary_search.
+//
+#if defined(_MSC_VER) && (_MSC_VER <= 1500)
+#  pragma warning( push )
+#  pragma warning( disable : 4100 )
+#  include <algorithm>
+#  pragma warning( pop )
+#endif
 
 #include <Slice/CsUtil.h>
 #include <Slice/DotNetNames.h>
@@ -136,9 +147,10 @@ Slice::CsGenerator::fixId(const ContainedPtr& cont, int baseTypes, bool mangleCa
 {
     ContainerPtr container = cont->container();
     ContainedPtr contained = ContainedPtr::dynamicCast(container);
-    if(contained && contained->hasMetaData("clr:property"))
+    if(contained && contained->hasMetaData("clr:property") &&
+       (contained->containedType() == Contained::ContainedTypeClass || contained->containedType() == Contained::ContainedTypeStruct))
     {
-        return cont->name() + "_prop";
+        return cont->name() + "__prop";
     }
     else
     {
@@ -147,11 +159,121 @@ Slice::CsGenerator::fixId(const ContainedPtr& cont, int baseTypes, bool mangleCa
 }
 
 string
-Slice::CsGenerator::typeToString(const TypePtr& type)
+Slice::CsGenerator::getOptionalFormat(const TypePtr& type)
+{
+    BuiltinPtr bp = BuiltinPtr::dynamicCast(type);
+    if(bp)
+    {
+        switch(bp->kind())
+        {
+        case Builtin::KindByte:
+        case Builtin::KindBool:
+        {
+            return "Ice.OptionalFormat.F1";
+        }
+        case Builtin::KindShort:
+        {
+            return "Ice.OptionalFormat.F2";
+        }
+        case Builtin::KindInt:
+        case Builtin::KindFloat:
+        {
+            return "Ice.OptionalFormat.F4";
+        }
+        case Builtin::KindLong:
+        case Builtin::KindDouble:
+        {
+            return "Ice.OptionalFormat.F8";
+        }
+        case Builtin::KindString:
+        {
+            return "Ice.OptionalFormat.VSize";
+        }
+        case Builtin::KindObject:
+        {
+            return "Ice.OptionalFormat.Class";
+        }
+        case Builtin::KindObjectProxy:
+        {
+            return "Ice.OptionalFormat.FSize";
+        }
+        case Builtin::KindLocalObject:
+        {
+            assert(false);
+            break;
+        }
+        }
+    }
+
+    if(EnumPtr::dynamicCast(type))
+    {
+        return "Ice.OptionalFormat.Size";
+    }
+
+    SequencePtr seq = SequencePtr::dynamicCast(type);
+    if(seq)
+    {
+        return seq->type()->isVariableLength() ? "Ice.OptionalFormat.FSize" : "Ice.OptionalFormat.VSize";
+    }
+
+    DictionaryPtr d = DictionaryPtr::dynamicCast(type);
+    if(d)
+    {
+        return (d->keyType()->isVariableLength() || d->valueType()->isVariableLength()) ?
+            "Ice.OptionalFormat.FSize" : "Ice.OptionalFormat.VSize";
+    }
+
+    StructPtr st = StructPtr::dynamicCast(type);
+    if(st)
+    {
+        return st->isVariableLength() ? "Ice.OptionalFormat.FSize" : "Ice.OptionalFormat.VSize";
+    }
+
+    if(ProxyPtr::dynamicCast(type))
+    {
+        return "Ice.OptionalFormat.FSize";
+    }
+
+    ClassDeclPtr cl = ClassDeclPtr::dynamicCast(type);
+    assert(cl);
+    return "Ice.OptionalFormat.Class";
+}
+
+string
+Slice::CsGenerator::getStaticId(const TypePtr& type)
+{
+    BuiltinPtr b = BuiltinPtr::dynamicCast(type);
+    ClassDeclPtr cl = ClassDeclPtr::dynamicCast(type);
+
+    assert((b && b->kind() == Builtin::KindObject) || cl);
+
+    if(b)
+    {
+        return "Ice.ObjectImpl.ice_staticId()";
+    }
+    else if(cl->isInterface())
+    {
+        ContainedPtr cont = ContainedPtr::dynamicCast(cl->container());
+        assert(cont);
+        return fixId(cont->scoped(), DotNet::ICloneable) + "." + cl->name() + "Disp_.ice_staticId()";
+    }
+    else
+    {
+        return fixId(cl->scoped(), DotNet::ICloneable) + ".ice_staticId()";
+    }
+}
+
+string
+Slice::CsGenerator::typeToString(const TypePtr& type, bool optional)
 {
     if(!type)
     {
         return "void";
+    }
+
+    if(optional)
+    {
+        return "Ice.Optional<" + typeToString(type, false) + ">";
     }
 
     static const char* builtinTable[] =
@@ -298,10 +420,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
                                               const TypePtr& type,
                                               const string& param,
                                               bool marshal,
-                                              bool streamingAPI,
-                                              bool isOutParam,
-                                              const string& patchParams,
-					      bool newAMI)
+                                              bool streamingAPI)
 {
     string stream;
 
@@ -423,26 +542,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
                 }
                 else
                 {
-                    if(isOutParam)
-                    {
-                        out << nl << "IceInternal.ParamPatcher<Ice.Object> " << param
-                            << "_PP = new IceInternal.ParamPatcher<Ice.Object>(\"::Ice::Object\");";
-                        out << nl << stream << ".readObject(";
-                        if(streamingAPI)
-                        {
-                            out << "(Ice.ReadObjectCallback)";
-                        }
-                        out << param << "_PP);";
-                    }
-                    else
-                    {
-                        out << nl << stream << ".readObject(";
-                        if(streamingAPI)
-                        {
-                            out <<  "(Ice.ReadObjectCallback)";
-                        }
-                        out << "new Patcher__(\"::Ice::Object\", " << patchParams << "));";
-                    }
+                    out << nl << stream << ".readObject(" << param << ");";
                 }
                 break;
             }
@@ -502,27 +602,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
         }
         else
         {
-            if(isOutParam)
-            {
-                out << nl << "IceInternal.ParamPatcher<" << typeToString(type) << ">" << param
-                    << "_PP = new IceInternal.ParamPatcher<" << typeToString(type) << ">(\""
-                    << cl->scoped() << "\");";
-                out << nl << stream << ".readObject(";
-                if(streamingAPI)
-                {
-                    out << "(Ice.ReadObjectCallback)";
-                }
-                out << param << "_PP);";
-            }
-            else
-            {
-                out << nl << stream << ".readObject(";
-                if(streamingAPI)
-                {
-                    out << "(Ice.ReadObjectCallback)";
-                }
-                out << "new Patcher__(\"" << cl->scoped() << "\", " << patchParams << "));";
-            }
+            out << nl << stream << ".readObject(" << param << ");";
         }
         return;
     }
@@ -537,7 +617,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
                 out << nl << "if(" << param << " == null)";
                 out << sb;
                 string typeS = typeToString(st);
-                out << nl << typeS << " " << "tmp__ = new " << typeS << "();";
+                out << nl << typeS << " tmp__ = new " << typeS << "();";
                 out << nl << "tmp__.";
                 out << (streamingAPI ? "ice_write" : "write__") << "(" << stream << ");";
                 out << eb;
@@ -582,51 +662,26 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
     EnumPtr en = EnumPtr::dynamicCast(type);
     if(en)
     {
-        string func;
-        string cast;
-        size_t sz = en->getEnumerators().size();
-        if(sz <= 0x7f)
-        {
-            func = marshal ? "writeByte" : "readByte";
-            cast = marshal ? string("(byte)") : "(" + fixId(en->scoped()) + ")";
-        }
-        else if(sz <= 0x7fff)
-        {
-            func = marshal ? "writeShort" : "readShort";
-            cast = marshal ? string("(short)") : "(" + fixId(en->scoped()) + ")";
-        }
-        else
-        {
-            func = marshal ? "writeInt" : "readInt";
-            cast = marshal ? string("(int)") : "(" + fixId(en->scoped()) + ")";
-        }
         if(marshal)
         {
             if(streamingAPI)
             {
-                out << nl << "if((int)" << param << " < 0 || (int)" << param << " >= " << sz << ")";
+                out << nl << "if((int)" << param << " < " << en->minValue()
+                    << " || (int)" << param << " > " << en->maxValue() << ")";
                 out << sb;
                 out << nl << "throw new Ice.MarshalException(\"enumerator out of range\");";
                 out << eb;
             }
-            out << nl << stream << '.' << func << '(' << cast << param;
-            if(!streamingAPI)
-            {
-                out << ", " << sz;
-            }
-            out << ");";
+            out << nl << stream << ".writeEnum((int)" << param << ", " << en->maxValue() << ");";
         }
         else
         {
-            out << nl << param << " = " << cast << stream << '.' << func << "(";
-            if(!streamingAPI)
-            {
-                out << sz;
-            }
-            out << ")" << ';';
+            out << nl << param << " = (" << fixId(en->scoped()) << ')' << stream << ".readEnum(" << en->maxValue()
+                << ");";
             if(streamingAPI)
             {
-                out << nl << "if((int)" << param << " < 0 || (int)" << param << " >= " << sz << ")";
+                out << nl << "if((int)" << param << " < " << en->minValue() << " || (int)" << param << " > "
+                    << en->maxValue() << ")";
                 out << sb;
                 out << nl << "throw new Ice.MarshalException(\"enumerator out of range\");";
                 out << eb;
@@ -638,7 +693,7 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
     SequencePtr seq = SequencePtr::dynamicCast(type);
     if(seq)
     {
-        writeSequenceMarshalUnmarshalCode(out, seq, param, marshal, streamingAPI);
+        writeSequenceMarshalUnmarshalCode(out, seq, param, marshal, streamingAPI, true);
         return;
     }
 
@@ -664,11 +719,356 @@ Slice::CsGenerator::writeMarshalUnmarshalCode(Output &out,
 }
 
 void
+Slice::CsGenerator::writeOptionalMarshalUnmarshalCode(Output &out,
+                                                      const TypePtr& type,
+                                                      const string& param,
+                                                      int tag,
+                                                      bool marshal,
+                                                      bool streamingAPI)
+{
+    string stream;
+
+    if(marshal)
+    {
+        stream = streamingAPI ? "outS__" : "os__";
+    }
+    else
+    {
+        stream = streamingAPI ? "inS__" : "is__";
+    }
+
+    BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
+    if(builtin)
+    {
+        switch(builtin->kind())
+        {
+            case Builtin::KindByte:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << ".writeByte(" << tag << ", " << param << ");";
+                }
+                else
+                {
+                    out << nl << param << " = " << stream << ".readByte(" << tag << ");";
+                }
+                break;
+            }
+            case Builtin::KindBool:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << ".writeBool(" << tag << ", " << param << ");";
+                }
+                else
+                {
+                    out << nl << param << " = " << stream << ".readBool(" << tag << ");";
+                }
+                break;
+            }
+            case Builtin::KindShort:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << ".writeShort(" << tag << ", " << param << ");";
+                }
+                else
+                {
+                    out << nl << param << " = " << stream << ".readShort(" << tag << ");";
+                }
+                break;
+            }
+            case Builtin::KindInt:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << ".writeInt(" << tag << ", " << param << ");";
+                }
+                else
+                {
+                    out << nl << param << " = " << stream << ".readInt(" << tag << ");";
+                }
+                break;
+            }
+            case Builtin::KindLong:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << ".writeLong(" << tag << ", " << param << ");";
+                }
+                else
+                {
+                    out << nl << param << " = " << stream << ".readLong(" << tag << ");";
+                }
+                break;
+            }
+            case Builtin::KindFloat:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << ".writeFloat(" << tag << ", " << param << ");";
+                }
+                else
+                {
+                    out << nl << param << " = " << stream << ".readFloat(" << tag << ");";
+                }
+                break;
+            }
+            case Builtin::KindDouble:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << ".writeDouble(" << tag << ", " << param << ");";
+                }
+                else
+                {
+                    out << nl << param << " = " << stream << ".readDouble(" << tag << ");";
+                }
+                break;
+            }
+            case Builtin::KindString:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << ".writeString(" << tag << ", " << param << ");";
+                }
+                else
+                {
+                    out << nl << param << " = " << stream << ".readString(" << tag << ");";
+                }
+                break;
+            }
+            case Builtin::KindObject:
+            {
+                if(marshal)
+                {
+                    out << nl << stream << ".writeObject(" << tag << ", " << param << ");";
+                }
+                else
+                {
+                    out << nl << stream << ".readObject(" << tag << ", " << param << ");";
+                }
+                break;
+            }
+            case Builtin::KindObjectProxy:
+            {
+                string typeS = typeToString(type);
+                if(marshal)
+                {
+                    out << nl << stream << ".writeProxy(" << tag << ", " << param << ");";
+                }
+                else
+                {
+                    out << nl << param << " = new Ice.Optional<Ice.ObjectPrx>(" << stream << ".readProxy(" << tag
+                        << "));";
+                }
+                break;
+            }
+            case Builtin::KindLocalObject:
+            {
+                assert(false);
+                break;
+            }
+        }
+        return;
+    }
+
+    ProxyPtr prx = ProxyPtr::dynamicCast(type);
+    if(prx)
+    {
+        if(marshal)
+        {
+            out << nl << "if(" << param << ".HasValue && " << stream << ".writeOpt(" << tag
+                << ", Ice.OptionalFormat.FSize))";
+            out << sb;
+            out << nl << stream << ".startSize();";
+            writeMarshalUnmarshalCode(out, type, param + ".Value", marshal, streamingAPI);
+            out << nl << stream << ".endSize();";
+            out << eb;
+        }
+        else
+        {
+            out << nl << "if(" << stream << ".readOpt(" << tag << ", Ice.OptionalFormat.FSize))";
+            out << sb;
+            out << nl << stream << ".skip(4);";
+            string tmp = "tmpVal__";
+            string typeS = typeToString(type);
+            out << nl << typeS << ' ' << tmp << ';';
+            writeMarshalUnmarshalCode(out, type, tmp, marshal, streamingAPI);
+            out << nl << param << " = new Ice.Optional<" << typeS << ">(" << tmp << ");";
+            out << eb;
+            out << nl << "else";
+            out << sb;
+            out << nl << param << " = new Ice.Optional<" << typeS << ">();";
+            out << eb;
+        }
+        return;
+    }
+
+    ClassDeclPtr cl = ClassDeclPtr::dynamicCast(type);
+    if(cl)
+    {
+        if(marshal)
+        {
+            out << nl << stream << ".writeObject(" << tag << ", " << param << ");";
+        }
+        else
+        {
+            out << nl << stream << ".readObject(" << tag << ", " << param << ");";
+        }
+        return;
+    }
+
+    StructPtr st = StructPtr::dynamicCast(type);
+    if(st)
+    {
+        if(marshal)
+        {
+            out << nl << "if(" << param << ".HasValue && " << stream << ".writeOpt(" << tag << ", "
+                << getOptionalFormat(st) << "))";
+            out << sb;
+            if(st->isVariableLength())
+            {
+                out << nl << stream << ".startSize();";
+            }
+            else
+            {
+                out << nl << stream << ".writeSize(" << st->minWireSize() << ");";
+            }
+            writeMarshalUnmarshalCode(out, type, param + ".Value", marshal, streamingAPI);
+            if(st->isVariableLength())
+            {
+                out << nl << stream << ".endSize();";
+            }
+            out << eb;
+        }
+        else
+        {
+            out << nl << "if(" << stream << ".readOpt(" << tag << ", " << getOptionalFormat(st) << "))";
+            out << sb;
+            if(st->isVariableLength())
+            {
+                out << nl << stream << ".skip(4);";
+            }
+            else
+            {
+                out << nl << stream << ".skipSize();";
+            }
+            string typeS = typeToString(type);
+            string tmp = "tmpVal__";
+            if(isValueType(st))
+            {
+                out << nl << typeS << ' ' << tmp << " = new " << typeS << "();";
+            }
+            else
+            {
+                out << nl << typeS << ' ' << tmp << " = null;";
+            }
+            writeMarshalUnmarshalCode(out, type, tmp, marshal, streamingAPI);
+            out << nl << param << " = new Ice.Optional<" << typeS << ">(" << tmp << ");";
+            out << eb;
+            out << nl << "else";
+            out << sb;
+            out << nl << param << " = new Ice.Optional<" << typeS << ">();";
+            out << eb;
+        }
+        return;
+    }
+
+    EnumPtr en = EnumPtr::dynamicCast(type);
+    if(en)
+    {
+        size_t sz = en->getEnumerators().size();
+        if(marshal)
+        {
+            out << nl << "if(" << param << ".HasValue)";
+            out << sb;
+            out << nl << stream << ".writeEnum(" << tag << ", (int)" << param << ".Value, " << sz << ");";
+            out << eb;
+        }
+        else
+        {
+            out << nl << "if(" << stream << ".readOpt(" << tag << ", Ice.OptionalFormat.Size))";
+            out << sb;
+            string typeS = typeToString(type);
+            string tmp = "tmpVal__";
+            out << nl << typeS << ' ' << tmp << ';';
+            writeMarshalUnmarshalCode(out, type, tmp, marshal, streamingAPI);
+            out << nl << param << " = new Ice.Optional<" << typeS << ">(" << tmp << ");";
+            out << eb;
+            out << nl << "else";
+            out << sb;
+            out << nl << param << " = new Ice.Optional<" << typeS << ">();";
+            out << eb;
+        }
+        return;
+    }
+
+    SequencePtr seq = SequencePtr::dynamicCast(type);
+    if(seq)
+    {
+        writeOptionalSequenceMarshalUnmarshalCode(out, seq, param, tag, marshal, streamingAPI);
+        return;
+    }
+
+    DictionaryPtr d = DictionaryPtr::dynamicCast(type);
+    assert(d);
+    TypePtr keyType = d->keyType();
+    TypePtr valueType = d->valueType();
+    if(marshal)
+    {
+        out << nl << "if(" << param << ".HasValue && " << stream << ".writeOpt(" << tag << ", "
+            << getOptionalFormat(d) << "))";
+        out << sb;
+        if(keyType->isVariableLength() || valueType->isVariableLength())
+        {
+            out << nl << stream << ".startSize();";
+        }
+        else
+        {
+            out << nl << stream << ".writeSize(" << param << ".Value == null ? 1 : " << param << ".Value.Count * "
+                << (keyType->minWireSize() + valueType->minWireSize()) << " + (" << param
+                << ".Value.Count > 254 ? 5 : 1));";
+        }
+        writeMarshalUnmarshalCode(out, type, param + ".Value", marshal, streamingAPI);
+        if(keyType->isVariableLength() || valueType->isVariableLength())
+        {
+            out << nl << stream << ".endSize();";
+        }
+        out << eb;
+    }
+    else
+    {
+        out << nl << "if(" << stream << ".readOpt(" << tag << ", " << getOptionalFormat(d) << "))";
+        out << sb;
+        if(keyType->isVariableLength() || valueType->isVariableLength())
+        {
+            out << nl << stream << ".skip(4);";
+        }
+        else
+        {
+            out << nl << stream << ".skipSize();";
+        }
+        string typeS = typeToString(type);
+        string tmp = "tmpVal__";
+        out << nl << typeS << ' ' << tmp << " = new " << typeS << "();";
+        writeMarshalUnmarshalCode(out, type, tmp, marshal, streamingAPI);
+        out << nl << param << " = new Ice.Optional<" << typeS << ">(" << tmp << ");";
+        out << eb;
+        out << nl << "else";
+        out << sb;
+        out << nl << param << " = new Ice.Optional<" << typeS << ">();";
+        out << eb;
+    }
+}
+
+void
 Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
                                                       const SequencePtr& seq,
                                                       const string& param,
                                                       bool marshal,
-                                                      bool streamingAPI)
+                                                      bool streamingAPI,
+                                                      bool useHelper)
 {
     string stream;
     if(marshal)
@@ -680,13 +1080,29 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
         stream = streamingAPI ? "inS__" : "is__";
     }
 
+    if(useHelper)
+    {
+        ContainedPtr cont = ContainedPtr::dynamicCast(seq->container());
+        assert(cont);
+        string helperName = fixId(cont->scoped(), DotNet::ICloneable) + "." + seq->name() + "Helper";
+        if(marshal)
+        {
+            out << nl << helperName << ".write(" << stream << ", " << param << ");";
+        }
+        else
+        {
+            out << nl << param << " = " << helperName << ".read(" << stream << ");";
+        }
+        return;
+    }
+
     TypePtr type = seq->type();
     string typeS = typeToString(type);
 
-    string genericPrefix = "clr:generic:";
+    const string genericPrefix = "clr:generic:";
     string genericType;
     string addMethod = "Add";
-    bool isGeneric = seq->findMetaData(genericPrefix, genericType);
+    const bool isGeneric = seq->findMetaData(genericPrefix, genericType);
     bool isStack = false;
     bool isList = false;
     bool isLinkedList = false;
@@ -717,9 +1133,9 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
             isCustom = true;
         }
     }
-    bool isCollection = seq->hasMetaData("clr:collection");
-    bool isArray = !isGeneric && !isCollection;
-    string limitID = isArray ? "Length" : "Count";
+    const bool isCollection = seq->hasMetaData("clr:collection");
+    const bool isArray = !isGeneric && !isCollection;
+    const string limitID = isArray ? "Length" : "Count";
 
     BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
     if(builtin)
@@ -743,11 +1159,11 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
                         if(isStack)
                         {
                             //
-                            // If the collection is a stack, write in bottom-to-top order. Stacks
+                            // If the collection is a stack, write in top-to-bottom order. Stacks
                             // cannot contain Ice.Object.
                             //
                             out << nl << "Ice.ObjectPrx[] " << param << "_tmp = " << param << ".ToArray();";
-                            out << nl << "for(int ix__ = " << param << "_tmp.Length - 1; ix__ >= 0; --ix__)";
+                            out << nl << "for(int ix__ = 0; ix__ < " << param << "_tmp.Length; ++ix__)";
                             out << sb;
                             out << nl << stream << ".writeProxy(" << param << "_tmp[ix__]);";
                             out << eb;
@@ -804,10 +1220,6 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
                         out << nl << "for(int ix__ = 0; ix__ < " << param << "_lenx; ++ix__)";
                         out << sb;
                         out << nl << stream << ".readObject(";
-                        if(streamingAPI)
-                        {
-                            out << "(ReadObjectCallback)";
-                        }
                         string patcherName;
                         if(isCustom)
                         {
@@ -968,17 +1380,13 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
                             if(isStack)
                             {
                                 //
-                                // Stacks are marshaled in top-to-bottom order. We cannot call
-                                // "new Stack(type[])" because that constructor assumes the array
-                                // is in bottom-to-top order. We read the array first, then push it
-                                // in reverse order.
+                                // Stacks are marshaled in top-to-bottom order. The "Stack(type[])"
+                                // constructor assumes the array is in bottom-to-top order, so we
+                                // read the array first, then reverse it.
                                 //
                                 out << nl << typeS << "[] arr__ = " << stream << ".read" << func << "Seq();";
-                                out << nl << param << " = new " << typeToString(seq) << "(arr__.Length);";
-                                out << nl << "for(int ix__ = arr__.Length - 1; ix__ >= 0; --ix__)";
-                                out << sb;
-                                out << nl << param << ".Push(arr__[ix__]);";
-                                out << eb;
+                                out << nl << "_System.Array.Reverse(arr__);";
+                                out << nl << param << " = new " << typeToString(seq) << "(arr__);";
                             }
                             else
                             {
@@ -1084,10 +1492,6 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
             out << nl << "IceInternal." << patcherName << "Patcher<" << typeS << "> spx = new IceInternal."
                 << patcherName << "Patcher<" << typeS << ">(\"" << scoped << "\", " << param << ", ix__);";
             out << nl << stream << ".readObject(";
-            if(streamingAPI)
-            {
-                out << "(Ice.ReadObjectCallback)";
-            }
             out << "spx);";
             out << eb;
             out << eb;
@@ -1110,12 +1514,12 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
             if(isGeneric && !isList)
             {
                 //
-                // Stacks are marshaled bottom-up.
+                // Stacks are marshaled top-down.
                 //
                 if(isStack)
                 {
                     out << nl << typeS << "[] " << param << "_tmp = " << param << ".ToArray();";
-                    out << nl << "for(int ix__ = " << param << "_tmp.Length - 1; ix__ >= 0; --ix__)";
+                    out << nl << "for(int ix__ = 0; ix__ < " << param << "_tmp.Length; ++ix__)";
                 }
                 else
                 {
@@ -1184,18 +1588,21 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
             out << sb;
             out << nl << "int szx__ = " << stream << ".readAndCheckSeqSize(" 
                 << static_cast<unsigned>(type->minWireSize()) << ");";
-            out << nl << param << " = new ";
             if(isArray)
             {
-                out << toArrayAlloc(typeS + "[]", "szx__") << ";";
+                out << nl << param << " = new " << toArrayAlloc(typeS + "[]", "szx__") << ";";
             }
             else if(isCustom)
             {
-                out << "global::" << genericType << "<" << typeS << ">();";
+                out << nl << param << " = new global::" << genericType << "<" << typeS << ">();";
+            }
+            else if(isStack)
+            {
+                out << nl << typeS << "[] " << param << "__tmp = new " << toArrayAlloc(typeS + "[]", "szx__") << ";";
             }
             else if(isGeneric)
             {
-                out << "_System.Collections.Generic." << genericType << "<" << typeS << ">(";
+                out << nl << param << " = new _System.Collections.Generic." << genericType << "<" << typeS << ">(";
                 if(!isLinkedList)
                 {
                     out << "szx__";
@@ -1204,23 +1611,24 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
             }
             else
             {
-                out << fixId(seq->scoped()) << "(szx__);";
+                out << nl << param << " = new " << fixId(seq->scoped()) << "(szx__);";
             }
             out << nl << "for(int ix__ = 0; ix__ < szx__; ++ix__)";
             out << sb;
-            if(isArray)
+            if(isArray || isStack)
             {
+                string v = isArray ? param : param + "__tmp";
                 if(!isValueType(st))
                 {
-                    out << nl << param << "[ix__] = new " << typeS << "();";
+                    out << nl << v << "[ix__] = new " << typeS << "();";
                 }
                 if(streamingAPI)
                 {
-                    out << nl << param << "[ix__].ice_read(" << stream << ");";
+                    out << nl << v << "[ix__].ice_read(" << stream << ");";
                 }
                 else
                 {
-                    out << nl << param << "[ix__].read__(" << stream << ");";
+                    out << nl << v << "[ix__].read__(" << stream << ");";
                 }
             }
             else
@@ -1237,6 +1645,12 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
                 out << nl << param << "." << addMethod << "(val__);";
             }
             out << eb;
+            if(isStack)
+            {
+                out << nl << "_System.Array.Reverse(" << param << "__tmp);";
+                out << nl << param << " = new _System.Collections.Generic." << genericType << "<" << typeS << ">("
+                    << param << "__tmp);";
+            }
             out << eb;
         }
         return;
@@ -1245,24 +1659,6 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
     EnumPtr en = EnumPtr::dynamicCast(type);
     if(en)
     {
-        size_t sz = en->getEnumerators().size();
-        string dataType;
-        string func = marshal ? "write" : "read";
-        if(sz <= 0x7f)
-        {
-            func += "Byte";
-            dataType = "byte";
-        }
-        else if(sz <= 0x7fff)
-        {
-            func += "Short";
-            dataType = "short";
-        }
-        else
-        {
-            func += "Int";
-            dataType = "int";
-        }
         if(marshal)
         {
             out << nl << "if(" << param << " == null)";
@@ -1275,19 +1671,14 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
             if(isGeneric && !isList)
             {
                 //
-                // Stacks are marshaled bottom-up.
+                // Stacks are marshaled top-down.
                 //
                 if(isStack)
                 {
                     out << nl << typeS << "[] " << param << "_tmp = " << param << ".ToArray();";
-                    out << nl << "for(int ix__ = " << param << "_tmp.Length - 1; ix__ >= 0; --ix__)";
+                    out << nl << "for(int ix__ = 0; ix__ < " << param << "_tmp.Length; ++ix__)";
                     out << sb;
-                    out << nl << stream << '.' << func << "((" << dataType << ")" << param << "_tmp[ix__]";
-                    if(!streamingAPI)
-                    {
-                        out << ", " << sz;
-                    }
-                    out << ");";
+                    out << nl << stream << ".writeEnum((int)" << param << "_tmp[ix__], " << en->maxValue() << ");";
                     out << eb;
                 }
                 else
@@ -1296,12 +1687,7 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
                         << "> e__ = " << param << ".GetEnumerator();";
                     out << nl << "while(e__.MoveNext())";
                     out << sb;
-                    out << nl << stream << '.' << func << "((" << dataType << ")e__.Current";
-                    if(!streamingAPI)
-                    {
-                        out << ", " << sz;
-                    }
-                    out << ");";
+                    out << nl << stream << ".writeEnum((int)e__.Current, " << en->maxValue() << ");";
                     out << eb;
                 }
             }
@@ -1309,12 +1695,7 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
             {
                 out << nl << "for(int ix__ = 0; ix__ < " << param << '.' << limitID << "; ++ix__)";
                 out << sb;
-                out << nl << stream << '.' << func << "((" << dataType << ")" << param << "[ix__]";
-                if(!streamingAPI)
-                {
-                    out << ", " << sz;
-                }
-                out << ");";
+                out << nl << stream << ".writeEnum((int)" << param << "[ix__], " << en->maxValue() << ");";
                 out << eb;
             }
             out << eb;
@@ -1324,18 +1705,21 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
             out << sb;
             out << nl << "int szx__ = " << stream << ".readAndCheckSeqSize(" << 
                 static_cast<unsigned>(type->minWireSize()) << ");";
-            out << nl << param << " = new ";
             if(isArray)
             {
-                out << toArrayAlloc(typeS + "[]", "szx__") << ";";
+                out << nl << param << " = new " << toArrayAlloc(typeS + "[]", "szx__") << ";";
             }
             else if(isCustom)
             {
-                out << "global::" << genericType << "<" << typeS << ">();";
+                out << nl << param << " = new global::" << genericType << "<" << typeS << ">();";
+            }
+            else if(isStack)
+            {
+                out << nl << typeS << "[] " << param << "__tmp = new " << toArrayAlloc(typeS + "[]", "szx__") << ";";
             }
             else if(isGeneric)
             {
-                out << "_System.Collections.Generic." << genericType << "<" << typeS << ">(";
+                out << nl << param << " = new _System.Collections.Generic." << genericType << "<" << typeS << ">(";
                 if(!isLinkedList)
                 {
                     out << "szx__";
@@ -1344,29 +1728,27 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
             }
             else
             {
-                out << fixId(seq->scoped()) << "(szx__);";
+                out << nl << param << " = new " << fixId(seq->scoped()) << "(szx__);";
             }
             out << nl << "for(int ix__ = 0; ix__ < szx__; ++ix__)";
             out << sb;
-            if(isArray)
+            if(isArray || isStack)
             {
-                out << nl << param << "[ix__] = (" << typeS << ')' << stream << "." << func << "(";
-                if(!streamingAPI)
-                {
-                    out << sz;
-                }
-                out << ");";
+                string v = isArray ? param : param + "__tmp";
+                out << nl << v << "[ix__] = (" << typeS << ')' << stream << ".readEnum(" << en->maxValue() << ");";
             }
             else
             {
-                out << nl << param << "." << addMethod << "((" << typeS << ')' << stream << "." << func << "(";
-                if(!streamingAPI)
-                {
-                    out << sz;
-                }
-                out << "));";
+                out << nl << param << "." << addMethod << "((" << typeS << ')' << stream << ".readEnum("
+                    << en->maxValue() << "));";
             }
             out << eb;
+            if(isStack)
+            {
+                out << nl << "_System.Array.Reverse(" << param << "__tmp);";
+                out << nl << param << " = new _System.Collections.Generic." << genericType << "<" << typeS << ">("
+                    << param << "__tmp);";
+            }
             out << eb;
         }
         return;
@@ -1400,12 +1782,12 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
         if(isGeneric && !isList)
         {
             //
-            // Stacks are marshaled bottom-up.
+            // Stacks are marshaled top-down.
             //
             if(isStack)
             {
                 out << nl << typeS << "[] " << param << "_tmp = " << param << ".ToArray();";
-                out << nl << "for(int ix__ = " << param << "_tmp.Length - 1; ix__ >= 0; --ix__)";
+                out << nl << "for(int ix__ = 0; ix__ < " << param << "_tmp.Length; ++ix__)";
                 out << sb;
                 out << nl << helperName << '.' << func << '(' << stream << ", " << param << "_tmp[ix__]);";
                 out << eb;
@@ -1439,38 +1821,257 @@ Slice::CsGenerator::writeSequenceMarshalUnmarshalCode(Output& out,
         out << sb;
         out << nl << "int szx__ = " << stream << ".readAndCheckSeqSize("
             << static_cast<unsigned>(type->minWireSize()) << ");";
-        out << nl << param << " = new ";
         if(isArray)
         {
-            out << toArrayAlloc(typeS + "[]", "szx__") << ";";
+            out << nl << param << " = new " << toArrayAlloc(typeS + "[]", "szx__") << ";";
         }
         else if(isCustom)
         {
-            out << "global::" << genericType << "<" << typeS << ">();";
+            out << nl << param << " = new global::" << genericType << "<" << typeS << ">();";
+        }
+        else if(isStack)
+        {
+            out << nl << typeS << "[] " << param << "__tmp = new " << toArrayAlloc(typeS + "[]", "szx__") << ";";
         }
         else if(isGeneric)
         {
-            out << "_System.Collections.Generic." << genericType << "<" << typeS << ">();";
+            out << nl << param << " = new _System.Collections.Generic." << genericType << "<" << typeS << ">();";
         }
         else
         {
-            out << fixId(seq->scoped()) << "(szx__);";
+            out << nl << param << " = new " << fixId(seq->scoped()) << "(szx__);";
         }
         out << nl << "for(int ix__ = 0; ix__ < szx__; ++ix__)";
         out << sb;
-        if(isArray)
+        if(isArray || isStack)
         {
-            out << nl << param << "[ix__] = " << helperName << '.' << func << '(' << stream << ");";
+            string v = isArray ? param : param + "__tmp";
+            out << nl << v << "[ix__] = " << helperName << '.' << func << '(' << stream << ");";
         }
         else
         {
             out << nl << param << "." << addMethod << "(" << helperName << '.' << func << '(' << stream << "));";
         }
         out << eb;
+        if(isStack)
+        {
+            out << nl << "_System.Array.Reverse(" << param << "__tmp);";
+            out << nl << param << " = new _System.Collections.Generic." << genericType << "<" << typeS << ">("
+                << param << "__tmp);";
+        }
         out << eb;
     }
 
     return;
+}
+
+void
+Slice::CsGenerator::writeOptionalSequenceMarshalUnmarshalCode(Output& out,
+                                                              const SequencePtr& seq,
+                                                              const string& param,
+                                                              int tag,
+                                                              bool marshal,
+                                                              bool streamingAPI)
+{
+    string stream;
+    if(marshal)
+    {
+        stream = streamingAPI ? "outS__" : "os__";
+    }
+    else
+    {
+        stream = streamingAPI ? "inS__" : "is__";
+    }
+
+    const TypePtr type = seq->type();
+    const string typeS = typeToString(type);
+    const string seqS = typeToString(seq);
+
+    string meta;
+    const bool isArray = !seq->findMetaData("clr:generic:", meta) && !seq->hasMetaData("clr:collection");
+    const string length = isArray ? param + ".Value.Length" : param + ".Value.Count";
+
+    BuiltinPtr builtin = BuiltinPtr::dynamicCast(type);
+    if(builtin)
+    {
+        switch(builtin->kind())
+        {
+        case Builtin::KindByte:
+        case Builtin::KindBool:
+        case Builtin::KindShort:
+        case Builtin::KindInt:
+        case Builtin::KindFloat:
+        case Builtin::KindLong:
+        case Builtin::KindDouble:
+        case Builtin::KindString:
+        {
+            string func = typeS;
+            func[0] = toupper(static_cast<unsigned char>(typeS[0]));
+            const bool isSerializable = seq->findMetaData("clr:serializable:", meta);
+
+            if(marshal)
+            {
+                if(isSerializable)
+                {
+                    out << nl << "if(" << param << ".HasValue && " << stream << ".writeOpt(" << tag
+                        << ", Ice.OptionalFormat.VSize))";
+                    out << sb;
+                    out << nl << stream << ".writeSerializable(" << param << ".Value);";
+                    out << eb;
+                }
+                else if(isArray)
+                {
+                    out << nl << stream << ".write" << func << "Seq(" << tag << ", " << param << ");";
+                }
+                else
+                {
+                    out << nl << "if(" << param << ".HasValue)";
+                    out << sb;
+                    out << nl << stream << ".write" << func << "Seq(" << tag << ", " << param
+                        << ".Value == null ? 0 : " << param << ".Value.Count, " << param << ".Value);";
+                    out << eb;
+                }
+            }
+            else
+            {
+                out << nl << "if(" << stream << ".readOpt(" << tag << ", " << getOptionalFormat(seq) << "))";
+                out << sb;
+                if(builtin->isVariableLength())
+                {
+                    out << nl << stream << ".skip(4);";
+                }
+                else if(builtin->kind() != Builtin::KindByte && builtin->kind() != Builtin::KindBool)
+                {
+                    out << nl << stream << ".skipSize();";
+                }
+                string tmp = "tmpVal__";
+                out << nl << seqS << ' ' << tmp << ';';
+                writeSequenceMarshalUnmarshalCode(out, seq, tmp, marshal, streamingAPI, true);
+                out << nl << param << " = new Ice.Optional<" << seqS << ">(" << tmp << ");";
+                out << eb;
+                out << nl << "else";
+                out << sb;
+                out << nl << param << " = new Ice.Optional<" << seqS << ">();";
+                out << eb;
+            }
+            break;
+        }
+
+        case Builtin::KindObject:
+        case Builtin::KindObjectProxy:
+        {
+            if(marshal)
+            {
+                out << nl << "if(" << param << ".HasValue && " << stream << ".writeOpt(" << tag << ", "
+                    << getOptionalFormat(seq) << "))";
+                out << sb;
+                out << nl << stream << ".startSize();";
+                writeSequenceMarshalUnmarshalCode(out, seq, param + ".Value", marshal, streamingAPI, true);
+                out << nl << stream << ".endSize();";
+                out << eb;
+            }
+            else
+            {
+                out << nl << "if(" << stream << ".readOpt(" << tag << ", " << getOptionalFormat(seq) << "))";
+                out << sb;
+                out << nl << stream << ".skip(4);";
+                string tmp = "tmpVal__";
+                out << nl << seqS << ' ' << tmp << ';';
+                writeSequenceMarshalUnmarshalCode(out, seq, tmp, marshal, streamingAPI, true);
+                out << nl << param << " = new Ice.Optional<" << seqS << ">(" << tmp << ");";
+                out << eb;
+                out << nl << "else";
+                out << sb;
+                out << nl << param << " = new Ice.Optional<" << seqS << ">();";
+                out << eb;
+            }
+            break;
+        }
+
+        case Builtin::KindLocalObject:
+            assert(false);
+        }
+
+        return;
+    }
+
+    StructPtr st = StructPtr::dynamicCast(type);
+    if(st)
+    {
+        if(marshal)
+        {
+            out << nl << "if(" << param << ".HasValue && " << stream << ".writeOpt(" << tag << ", "
+                << getOptionalFormat(seq) << "))";
+            out << sb;
+            if(st->isVariableLength())
+            {
+                out << nl << stream << ".startSize();";
+            }
+            else if(st->minWireSize() > 1)
+            {
+                out << nl << stream << ".writeSize(" << param << ".Value == null ? 1 : " << length << " * "
+                    << st->minWireSize() << " + (" << length << " > 254 ? 5 : 1));";
+            }
+            writeSequenceMarshalUnmarshalCode(out, seq, param + ".Value", marshal, streamingAPI, true);
+            if(st->isVariableLength())
+            {
+                out << nl << stream << ".endSize();";
+            }
+            out << eb;
+        }
+        else
+        {
+            out << nl << "if(" << stream << ".readOpt(" << tag << ", " << getOptionalFormat(seq) << "))";
+            out << sb;
+            if(st->isVariableLength())
+            {
+                out << nl << stream << ".skip(4);";
+            }
+            else if(st->minWireSize() > 1)
+            {
+                out << nl << stream << ".skipSize();";
+            }
+            string tmp = "tmpVal__";
+            out << nl << seqS << ' ' << tmp << ';';
+            writeSequenceMarshalUnmarshalCode(out, seq, tmp, marshal, streamingAPI, true);
+            out << nl << param << " = new Ice.Optional<" << seqS << ">(" << tmp << ");";
+            out << eb;
+            out << nl << "else";
+            out << sb;
+            out << nl << param << " = new Ice.Optional<" << seqS << ">();";
+            out << eb;
+        }
+        return;
+    }
+
+    //
+    // At this point, all remaining element types have variable size.
+    //
+    if(marshal)
+    {
+        out << nl << "if(" << param << ".HasValue && " << stream << ".writeOpt(" << tag << ", "
+            << getOptionalFormat(seq) << "))";
+        out << sb;
+        out << nl << stream << ".startSize();";
+        writeSequenceMarshalUnmarshalCode(out, seq, param + ".Value", marshal, streamingAPI, true);
+        out << nl << stream << ".endSize();";
+        out << eb;
+    }
+    else
+    {
+        out << nl << "if(" << stream << ".readOpt(" << tag << ", " << getOptionalFormat(seq) << "))";
+        out << sb;
+        out << nl << stream << ".skip(4);";
+        string tmp = "tmpVal__";
+        out << nl << seqS << ' ' << tmp << ';';
+        writeSequenceMarshalUnmarshalCode(out, seq, tmp, marshal, streamingAPI, true);
+        out << nl << param << " = new Ice.Optional<" << seqS << ">(" << tmp << ");";
+        out << eb;
+        out << nl << "else";
+        out << sb;
+        out << nl << param << " = new Ice.Optional<" << seqS << ">();";
+        out << eb;
+    }
 }
 
 string
@@ -1527,12 +2128,12 @@ Slice::CsGenerator::MetaDataVisitor::visitUnitStart(const UnitPtr& p)
                         continue;
                     }
                     emitWarning(file, -1, "ignoring invalid global metadata `" + s + "'");
-		    _history.insert(s);
+                    _history.insert(s);
                 }
                 else if(s.find(clrPrefix) == 0)
                 {
                     emitWarning(file, -1, "ignoring invalid global metadata `" + s + "'");
-		    _history.insert(s);
+                    _history.insert(s);
                 }
             }
         }

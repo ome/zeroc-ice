@@ -1,13 +1,13 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
-import Ice, Test
+import Ice, Test, sys
 
 def test(b):
     if not b:
@@ -15,7 +15,8 @@ def test(b):
 
 def allTests():
 
-    print "testing default values...",
+    sys.stdout.write("testing default values... ")
+    sys.stdout.flush()
 
     v = Test.Struct1()
     test(not v.boolFalse)
@@ -34,7 +35,13 @@ def allTests():
     test(v.nc2 == Test.Nested.Color.green)
     test(v.nc3 == Test.Nested.Color.blue)
     test(v.noDefault == '')
-
+    test(v.zeroI == 0)
+    test(v.zeroL == 0)
+    test(v.zeroF == 0)
+    test(v.zeroDotF == 0)
+    test(v.zeroD == 0)
+    test(v.zeroDotD == 0)
+    
     v = Test.Struct2()
     test(v.boolTrue == Test.ConstBool)
     test(v.b == Test.ConstByte)
@@ -50,7 +57,13 @@ def allTests():
     test(v.nc1 == Test.ConstNestedColor1)
     test(v.nc2 == Test.ConstNestedColor2)
     test(v.nc3 == Test.ConstNestedColor3)
-
+    test(v.zeroI == Test.ConstZeroI)
+    test(v.zeroL == Test.ConstZeroL)
+    test(v.zeroF == Test.ConstZeroF)
+    test(v.zeroDotF == Test.ConstZeroDotF)
+    test(v.zeroD == Test.ConstZeroD)
+    test(v.zeroDotD == Test.ConstZeroDotD)
+    
     v = Test.Base()
     test(not v.boolFalse)
     test(v.boolTrue)
@@ -62,7 +75,13 @@ def allTests():
     test(v.d == 6.2)
     test(v.str == "foo \\ \"bar\n \r\n\t\013\f\007\b? \007 \007")
     test(v.noDefault == '')
-
+    test(v.zeroI == 0)
+    test(v.zeroL == 0)
+    test(v.zeroF == 0)
+    test(v.zeroDotF == 0)
+    test(v.zeroD == 0)
+    test(v.zeroDotD == 0)
+            
     v = Test.Derived()
     test(not v.boolFalse)
     test(v.boolTrue)
@@ -80,6 +99,12 @@ def allTests():
     test(v.nc2 == Test.Nested.Color.green)
     test(v.nc3 == Test.Nested.Color.blue)
     test(v.noDefault == '')
+    test(v.zeroI == 0)
+    test(v.zeroL == 0)
+    test(v.zeroF == 0)
+    test(v.zeroDotF == 0)
+    test(v.zeroD == 0)
+    test(v.zeroDotD == 0)
 
     v = Test.BaseEx()
     test(not v.boolFalse)
@@ -92,6 +117,12 @@ def allTests():
     test(v.d == 6.2)
     test(v.str == "foo \\ \"bar\n \r\n\t\013\f\007\b? \007 \007")
     test(v.noDefault == '')
+    test(v.zeroI == 0)
+    test(v.zeroL == 0)
+    test(v.zeroF == 0)
+    test(v.zeroDotF == 0)
+    test(v.zeroD == 0)
+    test(v.zeroDotD == 0)
 
     v = Test.DerivedEx()
     test(not v.boolFalse)
@@ -110,5 +141,11 @@ def allTests():
     test(v.nc1 == Test.Nested.Color.red)
     test(v.nc2 == Test.Nested.Color.green)
     test(v.nc3 == Test.Nested.Color.blue)
+    test(v.zeroI == 0)
+    test(v.zeroL == 0)
+    test(v.zeroF == 0)
+    test(v.zeroDotF == 0)
+    test(v.zeroD == 0)
+    test(v.zeroDotD == 0)
 
-    print "ok"
+    print("ok")

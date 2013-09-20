@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,9 +8,9 @@
 // **********************************************************************
 
 #include <Ice/UdpConnector.h>
+
 #include <Ice/UdpTransceiver.h>
 #include <Ice/UdpEndpointI.h>
-#include <Ice/Network.h>
 #include <Ice/LocalException.h>
 
 using namespace std;
@@ -43,33 +43,12 @@ IceInternal::UdpConnector::operator==(const Connector& r) const
     {
         return false;
     }
-
     if(compareAddress(_addr, p->_addr) != 0)
     {
         return false;
     }
 
     if(_connectionId != p->_connectionId)
-    {
-        return false;
-    }
-
-    if(_protocolMajor != p->_protocolMajor)
-    {
-        return false;
-    }
-
-    if(_protocolMinor != p->_protocolMinor)
-    {
-        return false;
-    }
-
-    if(_encodingMajor != p->_encodingMajor)
-    {
-        return false;
-    }
-
-    if(_encodingMinor != p->_encodingMinor)
     {
         return false;
     }
@@ -111,42 +90,6 @@ IceInternal::UdpConnector::operator<(const Connector& r) const
         return false;
     }
 
-    if(_protocolMajor < p->_protocolMajor)
-    {
-        return true;
-    }
-    else if(p->_protocolMajor < _protocolMajor)
-    {
-        return false;
-    }
-
-    if(_protocolMinor < p->_protocolMinor)
-    {
-        return true;
-    }
-    else if(p->_protocolMinor < _protocolMinor)
-    {
-        return false;
-    }
-
-    if(_encodingMajor < p->_encodingMajor)
-    {
-        return true;
-    }
-    else if(p->_encodingMajor < _encodingMajor)
-    {
-        return false;
-    }
-
-    if(_encodingMinor < p->_encodingMinor)
-    {
-        return true;
-    }
-    else if(p->_encodingMinor < _encodingMinor)
-    {
-        return false;
-    }
-
     if(_mcastTtl < p->_mcastTtl)
     {
         return true;
@@ -164,23 +107,15 @@ IceInternal::UdpConnector::operator<(const Connector& r) const
     {
         return false;
     }
-
     return compareAddress(_addr, p->_addr) == -1;
 }
 
-
-IceInternal::UdpConnector::UdpConnector(const InstancePtr& instance, const struct sockaddr_storage& addr, 
-                                        const string& mcastInterface, int mcastTtl, Ice::Byte protocolMajor,
-                                        Ice::Byte protocolMinor, Ice::Byte encodingMajor, Ice::Byte encodingMinor,
-                                        const std::string& connectionId) :
+IceInternal::UdpConnector::UdpConnector(const InstancePtr& instance, const Address& addr, 
+                                        const string& mcastInterface, int mcastTtl, const std::string& connectionId) :
     _instance(instance),
     _addr(addr),
     _mcastInterface(mcastInterface),
     _mcastTtl(mcastTtl),
-    _protocolMajor(protocolMajor),
-    _protocolMinor(protocolMinor),
-    _encodingMajor(encodingMajor),
-    _encodingMinor(encodingMinor),
     _connectionId(connectionId)
 {
 }

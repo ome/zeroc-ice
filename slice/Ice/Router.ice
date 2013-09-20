@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_ROUTER_ICE
-#define ICE_ROUTER_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -34,7 +33,7 @@ interface Router
      * @return The router's client proxy.
      *
      **/
-    ["ami", "nonmutating", "cpp:const"] idempotent Object* getClientProxy();
+    ["nonmutating", "cpp:const"] idempotent Object* getClientProxy();
 
     /**
      *
@@ -68,9 +67,8 @@ interface Router
      * @return Proxies discarded by the router.
      *
      **/
-    ["ami"] idempotent ObjectProxySeq addProxies(ObjectProxySeq proxies);
+    idempotent ObjectProxySeq addProxies(ObjectProxySeq proxies);
 };
 
 };
 
-#endif

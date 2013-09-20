@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -37,8 +37,11 @@ namespace IceInternal
         //
         internal const byte protocolMajor = 1;
         internal const byte protocolMinor = 0;
+        internal const byte protocolEncodingMajor = 1;
+        internal const byte protocolEncodingMinor = 0;
+
         internal const byte encodingMajor = 1;
-        internal const byte encodingMinor = 0;
+        internal const byte encodingMinor = 1;
         
         //
         // The Ice protocol message types
@@ -54,7 +57,7 @@ namespace IceInternal
             IceInternal.Protocol.magic[0], IceInternal.Protocol.magic[1], IceInternal.Protocol.magic[2], 
             IceInternal.Protocol.magic[3],
             IceInternal.Protocol.protocolMajor, IceInternal.Protocol.protocolMinor,
-            IceInternal.Protocol.encodingMajor, IceInternal.Protocol.encodingMinor,
+            IceInternal.Protocol.protocolEncodingMajor, IceInternal.Protocol.protocolEncodingMinor,
             IceInternal.Protocol.requestMsg,
             (byte)0, // Compression status.
             (byte)0, (byte)0, (byte)0, (byte)0, // Message size (placeholder).
@@ -66,7 +69,7 @@ namespace IceInternal
             IceInternal.Protocol.magic[0], IceInternal.Protocol.magic[1], IceInternal.Protocol.magic[2],
             IceInternal.Protocol.magic[3],
             IceInternal.Protocol.protocolMajor, IceInternal.Protocol.protocolMinor,
-            IceInternal.Protocol.encodingMajor, IceInternal.Protocol.encodingMinor,
+            IceInternal.Protocol.protocolEncodingMajor, IceInternal.Protocol.protocolEncodingMinor,
             IceInternal.Protocol.requestBatchMsg,
             (byte)0, // Compression status.
             (byte)0, (byte)0, (byte)0, (byte)0, // Message size (placeholder).
@@ -78,11 +81,100 @@ namespace IceInternal
             IceInternal.Protocol.magic[0], IceInternal.Protocol.magic[1], IceInternal.Protocol.magic[2], 
             IceInternal.Protocol.magic[3],
             IceInternal.Protocol.protocolMajor, IceInternal.Protocol.protocolMinor,
-            IceInternal.Protocol.encodingMajor, IceInternal.Protocol.encodingMinor,
+            IceInternal.Protocol.protocolEncodingMajor, IceInternal.Protocol.protocolEncodingMinor,
             IceInternal.Protocol.replyMsg,
             (byte)0, // Compression status.
             (byte)0, (byte)0, (byte)0, (byte)0 // Message size (placeholder).
         };
+
+        internal static void
+        checkSupportedProtocol(Ice.ProtocolVersion v)
+        {
+            if(v.major != protocolMajor || v.minor > protocolMinor)
+            {
+                throw new Ice.UnsupportedProtocolException("", v, Ice.Util.currentProtocol);
+            }
+        }
+
+        internal static void
+        checkSupportedProtocolEncoding(Ice.EncodingVersion v)
+        {
+            if(v.major != protocolEncodingMajor || v.minor > protocolEncodingMinor)
+            {
+                throw new Ice.UnsupportedEncodingException("", v, Ice.Util.currentProtocolEncoding);
+            }
+        }
+
+        internal static void
+        checkSupportedEncoding(Ice.EncodingVersion v)
+        {
+            if(v.major != encodingMajor || v.minor > encodingMinor)
+            {
+                throw new Ice.UnsupportedEncodingException("", v, Ice.Util.currentEncoding);
+            }
+        }
+        
+        //
+        // Either return the given protocol if not compatible, or the greatest
+        // supported protocol otherwise.
+        //
+        internal static Ice.ProtocolVersion
+        getCompatibleProtocol(Ice.ProtocolVersion v)
+        {
+            if(v.major != Ice.Util.currentProtocol.major)
+            {
+                return v; // Unsupported protocol, return as is.
+            }
+            else if(v.minor < Ice.Util.currentProtocol.minor)
+            {
+                return v; // Supported protocol.
+            }
+            else
+            {
+                //
+                // Unsupported but compatible, use the currently supported
+                // protocol, that's the best we can do.
+                //
+                return Ice.Util.currentProtocol; 
+            }
+        }
+
+        //
+        // Either return the given encoding if not compatible, or the greatest
+        // supported encoding otherwise.
+        //
+        internal static Ice.EncodingVersion
+        getCompatibleEncoding(Ice.EncodingVersion v)
+        {
+            if(v.major != Ice.Util.currentEncoding.major)
+            {
+                return v; // Unsupported encoding, return as is.
+            }
+            else if(v.minor < Ice.Util.currentEncoding.minor)
+            {
+                return v; // Supported encoding.
+            }
+            else
+            {
+                //
+                // Unsupported but compatible, use the currently supported
+                // encoding, that's the best we can do.
+                //
+                return Ice.Util.currentEncoding; 
+            }
+        }
+
+        internal static bool
+        isSupported(Ice.ProtocolVersion version, Ice.ProtocolVersion supported)
+        {
+            return version.major == supported.major && version.minor <= supported.minor;
+        }
+
+        internal static bool
+        isSupported(Ice.EncodingVersion version, Ice.EncodingVersion supported)
+        {
+            return version.major == supported.major && version.minor <= supported.minor;
+        }
         
         private Protocol()
         {

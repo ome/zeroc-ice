@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -91,10 +91,6 @@ public class SessionFactoryHelper
         //
         _initData.properties.setProperty("Ice.ACM.Client", "0");
         _initData.properties.setProperty("Ice.RetryIntervals", "-1");
-        if(_secure)
-        {
-            _initData.properties.setProperty("Ice.Plugin.IceSSL", "IceSSL.PluginFactory");
-        }
     }
 
     /**
@@ -228,7 +224,7 @@ public class SessionFactoryHelper
     synchronized public void
     setConnectContext(final java.util.Map<String, String> context)
     {
-	_context = context;
+        _context = context;
     }
 
     /**
@@ -316,12 +312,21 @@ public class SessionFactoryHelper
             }
 
             initData.properties.setProperty("Ice.Default.Router", sb.toString());
+            //
+            // If using a secure connection setup the IceSSL plug-in, if IceSSL
+            // plug-in has already been setup we don't want to override the
+            // configuration so it can be loaded from a custom location.
+            //
+            if(_secure && initData.properties.getProperty("Ice.Plugin.IceSSL").length() == 0)
+            {
+                initData.properties.setProperty("Ice.Plugin.IceSSL", "IceSSL.PluginFactory");
+            }
         }
         return initData;
     }
 
     private SessionCallback _callback;
-    private String _routerHost = "127.0.0.1";
+    private String _routerHost = "localhost";
     private Ice.InitializationData _initData;
     private Ice.Identity _identity = new Ice.Identity("router", "Glacier2");
     private boolean _secure = true;

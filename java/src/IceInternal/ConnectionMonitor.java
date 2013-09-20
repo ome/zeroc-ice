@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -96,10 +96,18 @@ public final class ConnectionMonitor implements IceInternal.TimerTask
     finalize()
         throws Throwable
     {
-        IceUtilInternal.Assert.FinalizerAssert(_instance == null);
-        IceUtilInternal.Assert.FinalizerAssert(_connections == null);
-        
-        super.finalize();
+        try
+        {
+            IceUtilInternal.Assert.FinalizerAssert(_instance == null);
+            IceUtilInternal.Assert.FinalizerAssert(_connections == null);
+        }
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     public void

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using Ice.Instrumentation;
 
 namespace IceInternal
 {
@@ -21,7 +22,7 @@ namespace IceInternal
         {
             internal Request(BasicStream os)
             {
-                this.os = new BasicStream(os.instance());
+                this.os = new BasicStream(os.instance(), Ice.Util.currentProtocolEncoding);
                 this.os.swap(os);
             }
 
@@ -131,7 +132,8 @@ namespace IceInternal
                     _batchRequestInProgress = false;
                     _m.NotifyAll();
 
-                    BasicStream dummy = new BasicStream(_reference.getInstance(), _batchAutoFlush);
+                    BasicStream dummy = new BasicStream(_reference.getInstance(), Ice.Util.currentProtocolEncoding, 
+                                                        _batchAutoFlush);
                     _batchStream.swap(dummy);
                     _batchRequestsSize = Protocol.requestBatchHdr.Length;
 
@@ -202,14 +204,15 @@ namespace IceInternal
             return _connection.flushAsyncBatchRequests(@out, out sentCallback);
         }
 
-        public Outgoing getOutgoing(string operation, Ice.OperationMode mode, Dictionary<string, string> context)
+        public Outgoing getOutgoing(string operation, Ice.OperationMode mode, Dictionary<string, string> context,
+                                    InvocationObserver observer)
         {
             _m.Lock();
             try
             {
                 if(!initialized())
                 {
-                    return new IceInternal.Outgoing(this, operation, mode, context);
+                    return new IceInternal.Outgoing(this, operation, mode, context, observer);
                 }
             }
             finally
@@ -217,7 +220,7 @@ namespace IceInternal
                 _m.Unlock();
             }
 
-            return _connection.getOutgoing(this, operation, mode, context);
+            return _connection.getOutgoing(this, operation, mode, context, observer);
         }
 
         public void reclaimOutgoing(Outgoing og)
@@ -368,7 +371,7 @@ namespace IceInternal
             _flushing = false;
             _batchRequestInProgress = false;
             _batchRequestsSize = Protocol.requestBatchHdr.Length;
-            _batchStream = new BasicStream(@ref.getInstance(), _batchAutoFlush);
+            _batchStream = new BasicStream(@ref.getInstance(), Ice.Util.currentProtocolEncoding, _batchAutoFlush);
             _updateRequestHandler = false;
         }
 
@@ -450,7 +453,7 @@ namespace IceInternal
                     }
                     else
                     {
-                        BasicStream os = new BasicStream(request.os.instance());
+                        BasicStream os = new BasicStream(request.os.instance(), Ice.Util.currentProtocolEncoding);
                         _connection.prepareBatchRequest(os);
                         try
                         {

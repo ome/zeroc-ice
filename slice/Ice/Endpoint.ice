@@ -1,15 +1,15 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_ENDPOINT_ICE
-#define ICE_ENDPOINT_ICE
+#pragma once
 
+#include <Ice/Version.ice>
 #include <Ice/BuiltinSequences.ice>
 #include <Ice/EndpointF.ice>
 
@@ -18,7 +18,18 @@
 module Ice
 {
 
+/**
+ *
+ * Uniquely identifies TCP endpoints.
+ *
+ **/
 const short TCPEndpointType = 1;
+
+/**
+ *
+ * Uniquely identifies UDP endpoints.
+ *
+ **/
 const short UDPEndpointType = 3;
 
 /**
@@ -136,22 +147,6 @@ local class TCPEndpointInfo extends IPEndpointInfo
  **/
 local class UDPEndpointInfo extends IPEndpointInfo
 {
-     /**
-      *
-      * The protocol version supported by the endpoint.
-      *
-      **/
-     byte protocolMajor;
-     byte protocolMinor;
-
-     /**
-      *
-      * The encoding version supported by the endpoint.
-      *
-      **/
-     byte encodingMajor;
-     byte encodingMinor;
-
     /**
      * 
      * The multicast interface.
@@ -178,6 +173,14 @@ local class OpaqueEndpointInfo extends EndpointInfo
 {
     /**
      *
+     * The encoding version of the opaque endpoint (to decode or
+     * encode the rawBytes).
+     * 
+     **/
+    Ice::EncodingVersion rawEncoding;
+
+    /**
+     *
      * The raw encoding of the opaque endpoint.
      *
      **/
@@ -186,4 +189,3 @@ local class OpaqueEndpointInfo extends EndpointInfo
 
 };
 
-#endif

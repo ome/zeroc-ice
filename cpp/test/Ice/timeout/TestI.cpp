@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -57,7 +57,8 @@ TimeoutI::holdAdapter(Ice::Int to, const Ice::Current& current)
 {
     current.adapter->hold();
     IceUtil::ThreadPtr thread = new ActivateAdapterThread(current.adapter, to);
-    thread->start();
+    IceUtil::ThreadControl threadControl = thread->start();
+    threadControl.detach();
 }
 
 void
