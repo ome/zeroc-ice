@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -91,7 +91,7 @@ private:
 };
 typedef IceUtil::Handle<ServerAdapterEntry> ServerAdapterEntryPtr;
 
-class ReplicaGroupEntry : public AdapterEntry, public IceUtil::Mutex
+class ReplicaGroupEntry : public AdapterEntry, public IceUtil::Monitor<IceUtil::Mutex>
 {
 public:
 
@@ -117,6 +117,7 @@ private:
     LoadSample _loadSample;
     std::vector<ServerAdapterEntryPtr> _replicas;
     int _lastReplica;
+    bool _requestInProgress;
 };
 typedef IceUtil::Handle<ReplicaGroupEntry> ReplicaGroupEntryPtr;
 

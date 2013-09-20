@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -101,7 +101,7 @@ public class IncomingAsync extends IncomingBase implements Ice.AMDCallback
     }
 
     final protected void
-    __response(boolean ok)
+    __response()
     {
         try
         {
@@ -114,22 +114,10 @@ public class IncomingAsync extends IncomingBase implements Ice.AMDCallback
 
             if(_response)
             {
-                _os.endWriteEncaps();
-
-                int save = _os.pos();
-                _os.pos(Protocol.headerSize + 4); // Reply status position.
-
-                if(ok)
+                if(_observer != null)
                 {
-                    _os.writeByte(ReplyStatus.replyOK);
+                    _observer.reply(_os.size() - Protocol.headerSize - 4);
                 }
-                else
-                {
-                    _os.writeByte(ReplyStatus.replyUserException);
-                }
-
-                _os.pos(save);
-
                 _connection.sendResponse(_os, _compress);
             }
             else
@@ -137,6 +125,11 @@ public class IncomingAsync extends IncomingBase implements Ice.AMDCallback
                 _connection.sendNoResponse();
             }
 
+            if(_observer != null)
+            {
+                _observer.detach();
+                _observer = null;
+            }
             _connection = null;
         }
         catch(Ice.LocalException ex)
@@ -203,12 +196,6 @@ public class IncomingAsync extends IncomingBase implements Ice.AMDCallback
             }
         }
         return true;
-    }
-
-    final protected BasicStream
-    __os()
-    {
-        return _os;
     }
 
     private final boolean _retriable;

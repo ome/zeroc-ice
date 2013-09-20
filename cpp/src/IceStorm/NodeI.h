@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -41,7 +41,7 @@ public:
     virtual void invitation(int, const std::string&, const Ice::Current&);
     virtual void ready(int, const std::string&, const Ice::ObjectPrx&, int, Ice::Long, const Ice::Current&);
     virtual void accept(int, const std::string&, const Ice::IntSeq&, const Ice::ObjectPrx&, const LogUpdate&, int,
-			const Ice::Current&);
+                        const Ice::Current&);
     virtual bool areYouCoordinator(const Ice::Current&) const;
     virtual bool areYouThere(const std::string&, int, const Ice::Current&) const;
     virtual Ice::ObjectPrx sync(const Ice::Current&) const;

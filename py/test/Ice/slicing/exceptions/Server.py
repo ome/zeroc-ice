@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -99,6 +99,57 @@ class TestI(Test.TestIntf):
         umd2.ui = "UnknownMostDerived2.ui"
         umd2.umd2 = "UnknownMostDerived2.umd2"
         raise umd2
+
+    def unknownMostDerived2AsBaseCompact(self, current=None):
+        umd2 = Test.UnknownMostDerived2()
+        umd2.b = "UnknownMostDerived2.b"
+        umd2.ui = "UnknownMostDerived2.ui"
+        umd2.umd2 = "UnknownMostDerived2.umd2"
+        raise umd2
+
+    def knownPreservedAsBase(self, current=None):
+        ex = Test.KnownPreservedDerived()
+        ex.b = "base"
+        ex.kp = "preserved"
+        ex.kpd = "derived"
+        raise ex
+
+    def knownPreservedAsKnownPreserved(self, current=None):
+        ex = Test.KnownPreservedDerived()
+        ex.b = "base"
+        ex.kp = "preserved"
+        ex.kpd = "derived"
+        raise ex
+
+    def relayKnownPreservedAsBase(self, r, current=None):
+        r.knownPreservedAsBase()
+
+    def relayKnownPreservedAsKnownPreserved(self, r, current=None):
+        r.knownPreservedAsKnownPreserved()
+
+    def unknownPreservedAsBase(self, current=None):
+        ex = Test.SPreserved2()
+        ex.b = "base"
+        ex.kp = "preserved"
+        ex.kpd = "derived"
+        ex.p1 = Test.SPreservedClass("bc", "spc")
+        ex.p2 = ex.p1
+        raise ex
+
+    def unknownPreservedAsKnownPreserved(self, current=None):
+        ex = Test.SPreserved2()
+        ex.b = "base"
+        ex.kp = "preserved"
+        ex.kpd = "derived"
+        ex.p1 = Test.SPreservedClass("bc", "spc")
+        ex.p2 = ex.p1
+        raise ex
+
+    def relayUnknownPreservedAsBase(self, r, current=None):
+        r.unknownPreservedAsBase()
+
+    def relayUnknownPreservedAsKnownPreserved(self, r, current=None):
+        r.unknownPreservedAsKnownPreserved()
 
 def run(args, communicator):
     properties = communicator.getProperties()

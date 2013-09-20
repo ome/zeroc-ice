@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -121,7 +121,7 @@ public class Client
             derivedAsBase = initial.getDerivedPrinter();
             DerivedPrinter derived = (DerivedPrinter)derivedAsBase;
 
-            Console.Out.WriteLine("==> class cast to derived object succeded");
+            Console.Out.WriteLine("==> class cast to derived object succeeded");
             Console.Out.WriteLine("==> The type ID of the received object is \"" + derived.ice_id() + "\"");
 
             Console.Out.WriteLine();
@@ -134,6 +134,23 @@ public class Client
             Console.Out.WriteLine("==> " + derived.derivedMessage);
             Console.Out.Write("==> ");
             derived.printUppercase();
+
+            Console.Out.WriteLine();
+            Console.Out.WriteLine("Now let's make sure that slice is preserved with [\"preserve-slice\"]");
+            Console.Out.WriteLine("metadata. We create a derived type on the client and pass it to the");
+            Console.Out.WriteLine("server, which does not have a factory for the derived type. We do a");
+            Console.Out.WriteLine("class cast to make sure we can still access the derived type when");
+            Console.Out.WriteLine("it has been returned from the server.");
+            Console.Out.WriteLine("[press enter]");
+            Console.In.ReadLine();
+
+	    ClientPrinter clientp = new ClientPrinterI();
+	    clientp.message = "a message 4 u";
+            communicator().addObjectFactory(factory, Demo.ClientPrinter.ice_staticId());
+
+	    derivedAsBase = initial.updatePrinterMessage(clientp);
+	    clientp = (ClientPrinter)derivedAsBase;
+            Console.Out.WriteLine("==> " + clientp.message);
 
             Console.Out.WriteLine();
             Console.Out.WriteLine("Finally, we try the same again, but instead of returning the");

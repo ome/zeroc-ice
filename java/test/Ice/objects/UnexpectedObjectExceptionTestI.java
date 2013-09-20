@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,9 +20,11 @@ public final class UnexpectedObjectExceptionTestI extends Ice.Blobject
     {
         Ice.Communicator communicator = current.adapter.getCommunicator();
         Ice.OutputStream out = Ice.Util.createOutputStream(communicator);
+        out.startEncapsulation(current.encoding, Ice.FormatType.DefaultFormat);
         AlsoEmpty ae = new AlsoEmpty();
         AlsoEmptyHelper.write(out, ae);
         out.writePendingObjects();
+        out.endEncapsulation();
         outParams.value = out.finished();
         return true;
     }

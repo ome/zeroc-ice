@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -55,42 +55,42 @@ namespace Ice
         //
         public static bool Equals(System.Collections.IDictionary d1, System.Collections.IDictionary d2)
         {
-	    try
-	    {
+            try
+            {
                 bool result;
                 if(cheapComparison(d1, d2, out result))
                 {
                     return result;
                 }
 
-		System.Collections.ICollection keys1 = d1.Keys;
-		foreach(object k in keys1)
-		{
-		    if(d2.Contains(k))
-		    {
-			object v1 = d1[k];
-			object v2 = d2[k];
-			if(v1 == null)
-			{
-			    if(v2 != null)
-			    {
-				return false;
-			    }
-			}
-			else
-			{
-			    if(!v1.Equals(v2))
-			    {
-				return false;
-			    }
-			}
-		    }
-		    else
-		    {
-			return false;
-		    }
-		}
-	    }
+                System.Collections.ICollection keys1 = d1.Keys;
+                foreach(object k in keys1)
+                {
+                    if(d2.Contains(k))
+                    {
+                        object v1 = d1[k];
+                        object v2 = d2[k];
+                        if(v1 == null)
+                        {
+                            if(v2 != null)
+                            {
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            if(!v1.Equals(v2))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
             catch(System.Exception)
             {
                 return false;

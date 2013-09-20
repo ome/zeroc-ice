@@ -1,7 +1,7 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,6 +23,12 @@ extern bool ICE_DECLSPEC_IMPORT printStackTraces;
 
 }
 
+string
+Ice::LoggerOutputBase::str() const
+{
+    return _str.str();
+}
+
 ostringstream&
 Ice::LoggerOutputBase::__str()
 {
@@ -39,7 +45,6 @@ Ice::operator<<(Ice::LoggerOutputBase& out, ios_base& (*val)(ios_base&))
 Ice::LoggerOutputBase&
 Ice::operator<<(Ice::LoggerOutputBase& out, const std::exception& ex)
 {
-#ifdef __GNUC__
     if(IceUtilInternal::printStackTraces)
     {
         const ::IceUtil::Exception* exception = dynamic_cast<const ::IceUtil::Exception*>(&ex);
@@ -49,73 +54,10 @@ Ice::operator<<(Ice::LoggerOutputBase& out, const std::exception& ex)
             return out;
         }
     }
-#endif
     out.__str() << ex.what();
     return out;
 }
 
-Ice::Print::Print(const LoggerPtr& logger) :
-    _logger(logger)
-{
-}
-
-Ice::Print::~Print()
-{
-    flush();
-}
-
-void
-Ice::Print::flush()
-{
-    string s = __str().str();
-    if(!s.empty())
-    {
-        _logger->print(s);
-    }
-    __str().str("");
-}
-
-Ice::Warning::Warning(const LoggerPtr& logger) :
-    _logger(logger)
-{
-}
-
-Ice::Warning::~Warning()
-{
-    flush();
-}
-
-void
-Ice::Warning::flush()
-{
-    string s = __str().str();
-    if(!s.empty())
-    {
-        _logger->warning(s);
-    }
-    __str().str("");
-}
-
-Ice::Error::Error(const LoggerPtr& logger) :
-    _logger(logger)
-{
-}
-
-Ice::Error::~Error()
-{
-    flush();
-}
-
-void
-Ice::Error::flush()
-{
-    string s = __str().str();
-    if(!s.empty())
-    {
-        _logger->error(s);
-    }
-    __str().str("");
-}
 
 Ice::Trace::Trace(const LoggerPtr& logger, const string& category) :
     _logger(logger),
@@ -138,6 +80,7 @@ Ice::Trace::flush()
     }
     __str().str("");
 }
+
 
 Ice::LoggerPlugin::LoggerPlugin(const CommunicatorPtr& communicator, const LoggerPtr& logger)
 {

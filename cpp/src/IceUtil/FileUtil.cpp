@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,14 +16,9 @@
 
 #ifdef _WIN32
 #  include <process.h>
-#endif
-
-#ifdef _WIN32
 #  include <io.h>
-#endif
-
-#ifdef __BCPLUSPLUS__
-#  include <dir.h>
+#else
+#  include <unistd.h>
 #endif
 
 using namespace std;
@@ -151,6 +146,7 @@ IceUtilInternal::open(const string& path, int flags)
     }
 }
 
+#ifndef ICE_OS_WINRT
 int
 IceUtilInternal::getcwd(string& cwd)
 {
@@ -162,6 +158,7 @@ IceUtilInternal::getcwd(string& cwd)
     cwd = IceUtil::wstringToString(cwdbuf);
     return 0;
 }
+#endif
 
 int
 IceUtilInternal::unlink(const string& path)
@@ -172,7 +169,7 @@ IceUtilInternal::unlink(const string& path)
 int
 IceUtilInternal::close(int fd)
 {
-#if defined(_MSC_VER) && (_MSC_VER >= 1400)
+#ifdef __MINGW32__
         return _close(fd);
 #else
         return ::close(fd);
@@ -183,8 +180,15 @@ IceUtilInternal::FileLock::FileLock(const std::string& path) :
     _fd(INVALID_HANDLE_VALUE),
     _path(path)
 {
+#ifndef ICE_OS_WINRT
     _fd = ::CreateFileW(IceUtil::stringToWstring(path).c_str(), GENERIC_WRITE, 0, NULL,
                         OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+#else
+    CREATEFILE2_EXTENDED_PARAMETERS params;
+    params.dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
+    _fd = ::CreateFile2(IceUtil::stringToWstring(path).c_str(), GENERIC_WRITE, 0,
+                        OPEN_ALWAYS, &params);
+#endif
     _path = path;
 
     if(_fd == INVALID_HANDLE_VALUE)
@@ -192,14 +196,33 @@ IceUtilInternal::FileLock::FileLock(const std::string& path) :
         throw IceUtil::FileLockException(__FILE__, __LINE__, GetLastError(), _path);
     }
 
+#ifdef __MINGW32__
     if(::LockFile(_fd, 0, 0, 0, 0) == 0)
+    {
+        throw IceUtil::FileLockException(__FILE__, __LINE__, GetLastError(), _path);
+    }
+#else
+    OVERLAPPED overlaped;
+    overlaped.Internal = 0;
+    overlaped.InternalHigh = 0;
+    overlaped.Offset = 0;
+    overlaped.OffsetHigh = 0;
+
+#if defined(_MSC_VER) && (_MSC_VER >= 1600)
+    overlaped.hEvent = nullptr;
+#else
+    overlaped.hEvent = 0;
+#endif
+
+    if(::LockFileEx(_fd, LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY, 0, 0, 0, &overlaped) == 0)
     {
         ::CloseHandle(_fd);
         throw IceUtil::FileLockException(__FILE__, __LINE__, GetLastError(), _path);
     }
+#endif
     //
-    // In Windows implementation we don't write the process pid to the file, as is 
-    // not posible to read the file from other process while it is locked here.
+    // In Windows implementation we don't write the process pid to the file, as it is 
+    // not possible to read the file from other process while it is locked here.
     //
 }
 
@@ -210,167 +233,52 @@ IceUtilInternal::FileLock::~FileLock()
     unlink(_path);
 }
 
-#ifdef _STLP_BEGIN_NAMESPACE
-namespace
-{
-int
-toFileFlags(ios_base::openmode mode)
-{
-    int flags = 0;
-    if(mode & ios_base::app)
-    {
-        flags |= _O_APPEND;
-    }
-    if(mode & ios_base::trunc)
-    {
-        flags |= _O_TRUNC;
-    }
-    if(mode & ios_base::binary)
-    {
-        flags |= _O_BINARY;
-    }
-    if((mode & ios_base::in) && !(mode & ios_base::out))
-    {
-        flags |= _O_RDONLY;
-    }
-    else if((mode & ios_base::out) && !(mode & ios_base::in))
-    {
-        flags |= _O_WRONLY | _O_CREAT;
-    }
-    else 
-    {
-        flags |= _O_RDWR;
-        if(mode & ios_base::trunc)
-        {
-            flags |= _O_CREAT;
-        }
-    }
-    return flags;
-}
-}
-#endif
-
 IceUtilInternal::ifstream::ifstream()
-#ifdef _STLP_BEGIN_NAMESPACE
-    : _fd(-1)
-#endif
 {
 }
 
-#ifdef _STLP_BEGIN_NAMESPACE
-
-IceUtilInternal::ifstream::ifstream(const string& path, ios_base::openmode mode) : _fd(-1)
-{
-    open(path, mode);
-}
-
-IceUtilInternal::ifstream::~ifstream()
-{
-    close();
-}
-
-void
-IceUtilInternal::ifstream::close()
-{
-    if(!rdbuf()->close())
-    {
-        setstate(ios_base::failbit);
-    }
-    if(_fd >= 0)
-    {
-        _close(_fd);
-    }
-}
-
-void
-IceUtilInternal::ifstream::open(const string& path, ios_base::openmode mode)
-{
-    mode |= ifstream::in;
-    _fd = IceUtilInternal::open(path, toFileFlags(mode));
-    if(_fd < 0 || !rdbuf()->open(_fd, mode))
-    {
-        setstate(ios_base::failbit);
-    }
-    if(mode & (ios_base::ate || ios_base::app))
-    {
-        seekg(ios_base::end);
-    }
-}
-
+IceUtilInternal::ifstream::ifstream(const string& path, ios_base::openmode mode) : 
+#ifdef  __MINGW32__
+    std::ifstream(path.c_str(), mode)
 #else
-
-IceUtilInternal::ifstream::ifstream(const string& path, ios_base::openmode mode) : std::ifstream(IceUtil::stringToWstring(path).c_str(), mode)
+    std::ifstream(IceUtil::stringToWstring(path).c_str(), mode)
+#endif
 {
 }
 
 void
 IceUtilInternal::ifstream::open(const string& path, ios_base::openmode mode)
 {
+#ifdef  __MINGW32__
+    std::ifstream::open(path.c_str(), mode);
+#else
     std::ifstream::open(IceUtil::stringToWstring(path).c_str(), mode);
-}
-
 #endif
+}
 
 IceUtilInternal::ofstream::ofstream()
-#ifdef _STLP_BEGIN_NAMESPACE
-    : _fd(-1)
-#endif
 {
 }
 
-#ifdef _STLP_BEGIN_NAMESPACE
-
-IceUtilInternal::ofstream::ofstream(const string& path, ios_base::openmode mode) : _fd(-1)
-{
-    open(path, mode);
-}
-
-IceUtilInternal::ofstream::~ofstream()
-{
-    close();
-}
-
-void
-IceUtilInternal::ofstream::close()
-{
-    if(!rdbuf()->close())
-    {
-        setstate(ios_base::failbit);
-    }
-    if(_fd >= 0)
-    {
-        _close(_fd);
-    }
-}
-
-void
-IceUtilInternal::ofstream::open(const string& path, ios_base::openmode mode)
-{
-    mode |= ofstream::out;
-    _fd = IceUtilInternal::open(path, toFileFlags(mode));
-    if(_fd < 0 || !rdbuf()->open(_fd, mode))
-    {
-        setstate(ios_base::failbit);
-    }
-    if(mode & (ios_base::ate || ios_base::app))
-    {
-        seekp(ios_base::end);
-    }
-}
-
+IceUtilInternal::ofstream::ofstream(const string& path, ios_base::openmode mode) : 
+#ifdef __MINGW32__
+    std::ofstream(path.c_str(), mode)
 #else
-
-IceUtilInternal::ofstream::ofstream(const string& path, ios_base::openmode mode) : std::ofstream(IceUtil::stringToWstring(path).c_str(), mode)
+    std::ofstream(IceUtil::stringToWstring(path).c_str(), mode)
+#endif
 {
 }
 
 void
 IceUtilInternal::ofstream::open(const string& path, ios_base::openmode mode)
 {
+#ifdef __MINGW32__
+    std::ofstream::open(path.c_str(), mode);
+#else
     std::ofstream::open(IceUtil::stringToWstring(path).c_str(), mode);
+#endif
 }
 
-#endif
 
 #else
 

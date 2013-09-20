@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,11 +16,13 @@
 #include <IceUtil/Time.h>
 #include <Ice/LocatorInfoF.h>
 #include <Ice/LocatorF.h>
-#include <Ice/ProxyF.h>
+#include <Ice/ReferenceF.h>
+#include <Ice/Identity.h>
 #include <Ice/EndpointIF.h>
 #include <Ice/PropertiesF.h>
+#include <Ice/Version.h>
 
-#include <memory>
+#include <IceUtil/UniquePtr.h>
 
 namespace IceInternal
 {
@@ -46,7 +48,7 @@ private:
     std::map<Ice::LocatorPrx, LocatorInfoPtr> _table;
     std::map<Ice::LocatorPrx, LocatorInfoPtr>::iterator _tableHint;
 
-    std::map<Ice::Identity, LocatorTablePtr> _locatorTables;
+    std::map<std::pair<Ice::Identity, Ice::EncodingVersion>, LocatorTablePtr> _locatorTables;
 };
 
 class LocatorTable : public IceUtil::Shared, public IceUtil::Mutex
@@ -109,13 +111,13 @@ public:
 
         void addCallback(const ReferencePtr&, const ReferencePtr&, int, const GetEndpointsCallbackPtr&);
         std::vector<EndpointIPtr> getEndpoints(const ReferencePtr&, const ReferencePtr&, int, bool&);
+        
+        void response(const Ice::ObjectPrx&);
+        void exception(const Ice::Exception&);
 
     protected:
 
         Request(const LocatorInfoPtr&, const ReferencePtr&);
-
-        void response(const Ice::ObjectPrx&);
-        void exception(const Ice::Exception&);
 
         virtual void send(bool) = 0;
 
@@ -130,7 +132,7 @@ public:
         bool _sent;
         bool _response;
         Ice::ObjectPrx _proxy;
-        std::auto_ptr<Ice::Exception> _exception;
+        IceUtil::UniquePtr<Ice::Exception> _exception;
     };
     typedef IceUtil::Handle<Request> RequestPtr;
 
@@ -142,7 +144,13 @@ public:
     bool operator!=(const LocatorInfo&) const;
     bool operator<(const LocatorInfo&) const;
 
-    Ice::LocatorPrx getLocator() const;
+    const Ice::LocatorPrx& getLocator() const
+    {
+        //
+        // No mutex lock necessary, _locator is immutable.
+        //
+        return _locator;
+    }
     Ice::LocatorRegistryPrx getLocatorRegistry();
 
     std::vector<EndpointIPtr> getEndpoints(const ReferencePtr& ref, int ttl, bool& cached)

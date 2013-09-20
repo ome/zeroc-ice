@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -210,6 +210,18 @@ InitialI::setI(const IPtr&, const Ice::Current&)
 {
 }
 
+BaseSeq
+InitialI::opBaseSeq(const BaseSeq& inSeq, BaseSeq& outSeq, const Ice::Current&)
+{
+    outSeq = inSeq;
+    return inSeq;
+}
+
+CompactPtr
+InitialI::getCompact(const Ice::Current&)
+{
+    return new CompactExt();
+}
 
 IPtr
 InitialI::getJ(const Ice::Current&)
@@ -228,13 +240,13 @@ UnexpectedObjectExceptionTestI::ice_invoke(const std::vector<Ice::Byte>&,
                                            std::vector<Ice::Byte>& outParams,
                                            const Ice::Current& current)
 {
-#if !defined(_MSC_VER) || (_MSC_VER >= 1300)
     Ice::CommunicatorPtr communicator = current.adapter->getCommunicator();
     Ice::OutputStreamPtr out = Ice::createOutputStream(communicator);
+    out->startEncapsulation(current.encoding, Ice::DefaultFormat);
     AlsoEmptyPtr ae = new AlsoEmpty;
     out->write(ae);
     out->writePendingObjects();
+    out->endEncapsulation();
     out->finished(outParams);
-#endif
     return true;
 }

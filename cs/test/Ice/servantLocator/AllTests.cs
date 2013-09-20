@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,16 +11,12 @@ using System;
 using Test;
 using Ice;
 
-public class AllTests
+#if SILVERLIGHT
+using System.Windows.Controls;
+#endif
+
+public class AllTests : TestCommon.TestApp
 {
-    private static void test(bool b)
-    {
-        if(!b)
-        {
-            throw new System.Exception();
-        }
-    }
-    
     public static void testExceptions(TestIntfPrx obj, bool collocated)
     {
         try
@@ -94,6 +90,9 @@ public class AllTests
             //Console.Error.WriteLine(ex.unknown);
             test(ex.unknown.IndexOf("Test::TestIntfUserException") >= 0);
         }
+        catch(Ice.OperationNotExistException)
+        {
+        }
         catch(System.Exception)
         {
             test(false);
@@ -121,6 +120,23 @@ public class AllTests
         catch(UnknownException ex)
         {
             test(ex.unknown.IndexOf("System.Exception") >= 0);
+        }
+        catch(Ice.OperationNotExistException)
+        {
+        }
+        catch(System.Exception)
+        {
+            test(false);
+        }
+
+        try
+        {
+            obj.unknownExceptionWithServantException();
+            test(false);
+        }
+        catch(UnknownException ex)
+        {
+            test(ex.unknown.Equals("reason"));
         }
         catch(System.Exception)
         {
@@ -185,24 +201,40 @@ public class AllTests
         }
     }
 
-    public static TestIntfPrx allTests(Ice.Communicator communicator, bool collocated)
+#if SILVERLIGHT
+    public override Ice.InitializationData initData()
     {
-        Console.Out.Write("testing stringToProxy... ");
-        Console.Out.Flush();
+        Ice.InitializationData initData = new Ice.InitializationData();
+        initData.properties = Ice.Util.createProperties();
+        initData.properties.setProperty("Ice.FactoryAssemblies", "servantLocator,version=1.0.0.0");
+        return initData;
+    }
+
+    override
+    public void run(Ice.Communicator communicator)
+#else
+    public static TestIntfPrx allTests(Ice.Communicator communicator, bool collocated)
+#endif
+    {
+#if SILVERLIGHT
+        bool collocated = false;
+#endif
+        Write("testing stringToProxy... ");
+        Flush();
         string @ref = "asm:default -p 12010";
         Ice.ObjectPrx @base = communicator.stringToProxy(@ref);
         test(@base != null);
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
         
-        Console.Out.Write("testing checked cast... ");
-        Console.Out.Flush();
+        Write("testing checked cast... ");
+        Flush();
         TestIntfPrx obj = TestIntfPrxHelper.checkedCast(@base);
         test(obj != null);
         test(obj.Equals(@base));
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing ice_ids... ");
-        Console.Out.Flush();
+        Write("testing ice_ids... ");
+        Flush();
         try
         {
             Ice.ObjectPrx o = communicator.stringToProxy("category/locate:default -p 12010");
@@ -232,10 +264,10 @@ public class AllTests
         {
             test(false);
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing servant locator...");
-        Console.Out.Flush();
+        Write("testing servant locator...");
+        Flush();
         @base = communicator.stringToProxy("category/locate:default -p 12010");
         obj = TestIntfPrxHelper.checkedCast(@base);
         try
@@ -245,10 +277,10 @@ public class AllTests
         catch(ObjectNotExistException)
         {
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing default servant locator...");
-        Console.Out.Flush();
+        Write("testing default servant locator...");
+        Flush();
         @base = communicator.stringToProxy("anothercat/locate:default -p 12010");
         obj = TestIntfPrxHelper.checkedCast(@base);
         @base = communicator.stringToProxy("locate:default -p 12010");
@@ -267,17 +299,17 @@ public class AllTests
         catch(ObjectNotExistException)
         {
         }
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing locate exceptions... ");
-        Console.Out.Flush();
+        Write("testing locate exceptions... ");
+        Flush();
         @base = communicator.stringToProxy("category/locate:default -p 12010");
         obj = TestIntfPrxHelper.checkedCast(@base);
         testExceptions(obj, collocated);
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing finished exceptions... ");
-        Console.Out.Flush();
+        Write("testing finished exceptions... ");
+        Flush();
         @base = communicator.stringToProxy("category/finished:default -p 12010");
         obj = TestIntfPrxHelper.checkedCast(@base);
         testExceptions(obj, collocated);
@@ -318,10 +350,10 @@ public class AllTests
             //
         }
 
-        Console.Out.WriteLine("ok");
+        WriteLine("ok");
 
-        Console.Out.Write("testing servant locator removal... ");
-        Console.Out.Flush();
+        Write("testing servant locator removal... ");
+        Flush();
         @base = communicator.stringToProxy("test/activation:default -p 12010");
         TestActivationPrx activation = TestActivationPrxHelper.checkedCast(@base);
         activation.activateServantLocator(false);
@@ -332,21 +364,24 @@ public class AllTests
         }
         catch(ObjectNotExistException)
         {
-            Console.Out.WriteLine("ok");
+            WriteLine("ok");
         }
-        Console.Out.Write("testing servant locator addition... ");
-        Console.Out.Flush();
+        Write("testing servant locator addition... ");
+        Flush();
         activation.activateServantLocator(true);
         try
         {
             obj.ice_ping();
-            Console.Out.WriteLine("ok");
+            WriteLine("ok");
         }
         catch(System.Exception)
         {
             test(false);
         }
-
+#if SILVERLIGHT
+        obj.shutdown();
+#else
         return obj;
+#endif
     }
 }

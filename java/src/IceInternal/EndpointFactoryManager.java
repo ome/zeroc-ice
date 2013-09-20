@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -108,7 +108,7 @@ public final class EndpointFactoryManager
                     // and ask the factory to read the endpoint data from that stream to create
                     // the actual endpoint.
                     //
-                    BasicStream bs = new BasicStream(_instance, true, false);
+                    BasicStream bs = new BasicStream(_instance, Protocol.currentProtocolEncoding, true, false);
                     ue.streamWrite(bs);
                     Buffer buf = bs.getBuffer();
                     buf.b.position(0);

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,7 @@
 
 #include <IceUtil/Config.h>
 #include <IceUtil/Lock.h>
+
 
 namespace IceUtil
 {
@@ -36,10 +37,8 @@ class AbstractMutexI : public AbstractMutex, public T
 {
 public:
 
-#ifndef __BCPLUSPLUS__
     typedef LockT<AbstractMutexI> Lock;
     typedef TryLockT<AbstractMutexI> TryLock;
-#endif
 
     virtual void lock() const
     {
@@ -65,10 +64,8 @@ class AbstractMutexReadI : public AbstractMutex, public T
 {
 public:
 
-#ifndef __BCPLUSPLUS__
     typedef LockT<AbstractMutexReadI> Lock;
     typedef TryLockT<AbstractMutexReadI> TryLock;
-#endif
 
     virtual void lock() const
     {
@@ -94,10 +91,8 @@ class AbstractMutexWriteI : public AbstractMutex, public T
 {
 public:
 
-#ifndef __BCPLUSPLUS__
     typedef LockT<AbstractMutexWriteI> Lock;
     typedef TryLockT<AbstractMutexWriteI> TryLock;
-#endif
 
     virtual void lock() const
     {
@@ -117,7 +112,6 @@ public:
     virtual ~AbstractMutexWriteI()
     {}
 };
-
 
 }
 

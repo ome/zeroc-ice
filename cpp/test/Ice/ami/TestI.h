@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -28,6 +28,7 @@ public:
     virtual void opBatch(const Ice::Current&);
     virtual Ice::Int opBatchCount(const Ice::Current&);
     virtual bool waitForBatch(Ice::Int, const Ice::Current&);
+    virtual void close(bool, const Ice::Current&);
     virtual void shutdown(const Ice::Current&);
 
 private:

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,12 +18,12 @@ using namespace IceUtil;
 // can only create and destroy one CurrentDatabase per process run.
 //
 
-#if defined(_MSC_VER) || defined(__BCPLUSPLUS__)
+#ifdef _MSC_VER
    #define __thread __declspec(thread)
 #endif
 
 //
-// GCC on MacOS doesn't support __thread; and on HP-UX with aC++, there
+// GCC on OS X doesn't support __thread; and on HP-UX with aC++, there
 // is strange compiler or linker bug when using __thread.
 //
 #if defined(__HP_aCC) || defined(__APPLE__)
@@ -80,10 +80,10 @@ CurrentDatabase::get()
         _dbList.push_back(db);
 #ifdef USE_PTHREAD_KEY
 #ifdef NDEBUG
-	pthread_setspecific(dbKey, db);
+    pthread_setspecific(dbKey, db);
 #else
-	int rs = pthread_setspecific(dbKey, db);
-	assert(rs == 0);
+    int rs = pthread_setspecific(dbKey, db);
+    assert(rs == 0);
 #endif
 #endif
     }

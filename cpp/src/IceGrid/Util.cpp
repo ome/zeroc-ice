@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,13 +16,6 @@
 using namespace std;
 using namespace Ice;
 using namespace IceGrid;
-
-void
-IceGrid::SynchronizationException::ice_print(ostream& out) const
-{
-    Exception::ice_print(out);
-    out << ":\nsynchronization exception";
-}
 
 string 
 IceGrid::toString(const vector<string>& v, const string& sep)
@@ -118,67 +111,92 @@ IceGrid::escapeProperty(const string& s, bool escapeEqual)
         switch(c)
         {
           case ' ':
-	  {
-	      //
-	      // We only escape the space character when it's at the beginning
-	      // or at the end of the string
-	      //
-	      if(i < firstChar || i > lastChar)
-	      {
-		  if(previousCharIsEscape)
-		  {
-		      result.push_back('\\'); // escape the previous char, by adding another escape.
-		  }
+          {
+              //
+              // We only escape the space character when it's at the beginning
+              // or at the end of the string
+              //
+              if(i < firstChar || i > lastChar)
+              {
+                  if(previousCharIsEscape)
+                  {
+                      result.push_back('\\'); // escape the previous char, by adding another escape.
+                  }
 
-		  result.push_back('\\');
-	      }
-	      result.push_back(c);
-	      previousCharIsEscape = false;
-	      break;
-	  }
+                  result.push_back('\\');
+              }
+              result.push_back(c);
+              previousCharIsEscape = false;
+              break;
+          }
   
-	  case '\\':
+          case '\\':
           case '#':
           case '=':
-	  {
-	      if(c == '=' && !escapeEqual)
-	      {
-		  previousCharIsEscape = false;
-	      }
-	      else
-	      {
-		  //
-		  // We only escape the \ character when it is followed by a
-		  // character that we escape, e.g. \# is encoded as \\\#, not \#
-		  // and \\server is encoded as \\\server.
-		  //
-		  if(previousCharIsEscape)
-		  {
-		      result.push_back('\\'); // escape the previous char, by adding another escape.
-		  }
-		  if(c == '\\')
-		  {
-		      previousCharIsEscape = true; // deferring the potential escaping to the next loop
-		  }
-		  else
-		  {
-		      result.push_back('\\');
-		      previousCharIsEscape = false;
-		  }
-	      }
-	      result.push_back(c);
-	      break;
-	  }
+          {
+              if(c == '=' && !escapeEqual)
+              {
+                  previousCharIsEscape = false;
+              }
+              else
+              {
+                  //
+                  // We only escape the \ character when it is followed by a
+                  // character that we escape, e.g. \# is encoded as \\\#, not \#
+                  // and \\server is encoded as \\\server.
+                  //
+                  if(previousCharIsEscape)
+                  {
+                      result.push_back('\\'); // escape the previous char, by adding another escape.
+                  }
+                  if(c == '\\')
+                  {
+                      previousCharIsEscape = true; // deferring the potential escaping to the next loop
+                  }
+                  else
+                  {
+                      result.push_back('\\');
+                      previousCharIsEscape = false;
+                  }
+              }
+              result.push_back(c);
+              break;
+          }
 
           default:
-	  {
-	      result.push_back(c);
-	      previousCharIsEscape = false;
-	      break;
-	  }
+          {
+              result.push_back(c);
+              previousCharIsEscape = false;
+              break;
+          }
         }
     }
     return result;
+}
+
+ObjectInfo
+IceGrid::toObjectInfo(const Ice::CommunicatorPtr& communicator, const ObjectDescriptor& object, const string& adapterId)
+{
+    ObjectInfo info;
+    info.type = object.type;
+    ostringstream proxyStr;
+    proxyStr << "\"" << communicator->identityToString(object.id) << "\"";
+    if(!object.proxyOptions.empty())
+    {
+        proxyStr << ' ' << object.proxyOptions;
+    }
+    proxyStr << " @ " << adapterId;
+    try
+    {
+        info.proxy = communicator->stringToProxy(proxyStr.str());
+    }
+    catch(const Ice::ProxyParseException&)
+    {
+        ostringstream fallbackProxyStr;
+        fallbackProxyStr << "\"" << communicator->identityToString(object.id) << "\"" << " @ " << adapterId;
+        info.proxy = communicator->stringToProxy(fallbackProxyStr.str());
+    }
+    return info;
 }
 
 void

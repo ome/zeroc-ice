@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,6 +14,31 @@
 #endif
 
 #ifdef _WIN32
+
+#   ifdef ICE_HAS_WIN32_CONDVAR
+
+IceUtil::Cond::Cond()
+{
+    InitializeConditionVariable(&_cond);
+}
+
+IceUtil::Cond::~Cond()
+{
+}
+
+void
+IceUtil::Cond::signal()
+{
+    WakeConditionVariable(&_cond);
+}
+
+void
+IceUtil::Cond::broadcast()
+{
+    WakeAllConditionVariable(&_cond);
+}
+
+#   else
 
 IceUtilInternal::Semaphore::Semaphore(long initial)
 {
@@ -293,15 +318,15 @@ IceUtil::Cond::timedDowait(const Time& timeout) const
     }
 }
 
+#    endif // ICE_HAS_WIN32_CONDVAR
+
 #else
 
 IceUtil::Cond::Cond()
 {
-    int rc;
-
     pthread_condattr_t attr;
 
-    rc = pthread_condattr_init(&attr);
+    int rc = pthread_condattr_init(&attr);
     if(rc != 0)
     {
         throw ThreadSyscallException(__FILE__, __LINE__, rc);
@@ -330,9 +355,12 @@ IceUtil::Cond::Cond()
 
 IceUtil::Cond::~Cond()
 {
-    int rc = 0;
-    rc = pthread_cond_destroy(&_cond);
+#ifndef NDEBUG
+    int rc = pthread_cond_destroy(&_cond);
     assert(rc == 0);
+#else
+    pthread_cond_destroy(&_cond);
+#endif
 }
 
 void

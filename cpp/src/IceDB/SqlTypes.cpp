@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -36,7 +36,7 @@ DatabaseException::ice_print(ostream& out) const
     out << "\n  driver error: " << error.driverText().toUtf8().data();
 }
 
-::IceUtil::Exception*
+DatabaseException*
 DatabaseException::ice_clone() const
 {
     return new DatabaseException(*this);
@@ -66,7 +66,7 @@ DeadlockException::ice_print(ostream& out) const
     out << "\n  driver error: " << error.driverText().toUtf8().data();
 }
 
-::IceUtil::Exception*
+DeadlockException*
 DeadlockException::ice_clone() const
 {
     return new DeadlockException(*this);
@@ -87,7 +87,7 @@ NotFoundException::~NotFoundException() throw()
 {
 }
 
-::IceUtil::Exception*
+NotFoundException*
 NotFoundException::ice_clone() const
 {
     return new NotFoundException(*this);
@@ -114,10 +114,17 @@ SqlDB::throwDatabaseException(const char* file, int line, const QSqlError& err)
     }
 }
 
-DatabaseConnection::DatabaseConnection(const QSqlDatabase& c, const QString& cn) :
+DatabaseConnection::DatabaseConnection(const QSqlDatabase& c, const QString& cn, const Ice::EncodingVersion& encoding) :
     _connection(c),
-    _connectionName(cn)
+    _connectionName(cn),
+    _encoding(encoding)
 {
+}
+
+Ice::EncodingVersion
+DatabaseConnection::getEncoding() const
+{
+    return _encoding;
 }
 
 void
@@ -160,17 +167,16 @@ DatabaseConnection::rollbackTransaction()
     }
 }
 
-DatabaseCache::DatabaseCache(const Ice::CommunicatorPtr& communicator, 
+ConnectionPool::ConnectionPool(const Ice::CommunicatorPtr& communicator, 
                              const string& type,
                              const string& name,
                              const string& host,
                              int port,
                              const string& user,
                              const string& password,
-                             bool requiresBlob)
+                             bool requiresBlob,
+                             const Ice::EncodingVersion& encoding) : _encoding(encoding)
 {
-    Ice::PropertiesPtr properties = communicator->getProperties();
-    
     //
     // File lock to prevent multiple process open the same db env.
     //
@@ -205,7 +211,7 @@ DatabaseCache::DatabaseCache(const Ice::CommunicatorPtr& communicator,
     }
 }
 
-DatabaseCache::~DatabaseCache()
+ConnectionPool::~ConnectionPool()
 {
     //
     // QSqlDatabase references must be removed before calling removeDatabase.
@@ -224,9 +230,9 @@ DatabaseCache::~DatabaseCache()
 }
 
 IceDB::DatabaseConnectionPtr
-DatabaseCache::getConnection()
+ConnectionPool::getConnection()
 {
-    IceUtil::Mutex::Lock lock(*this);
+    IceUtil::Mutex::Lock lock(_mutex);
     
     ThreadDatabaseMap::iterator p = _cache.find(IceUtil::ThreadControl().id());
     if(p != _cache.end())
@@ -311,21 +317,21 @@ DatabaseCache::getConnection()
         }
     }
 
-    DatabaseConnectionPtr db = new DatabaseConnection(connection, connectionName);
+    DatabaseConnectionPtr db = new DatabaseConnection(connection, connectionName, _encoding);
     _cache[IceUtil::ThreadControl().id()] = db;
     return db;
 }
 
 IceDB::DatabaseConnectionPtr
-DatabaseCache::newConnection()
+ConnectionPool::newConnection()
 {
     return getConnection();
 }
 
 void
-DatabaseCache::threadStopped()
+ConnectionPool::threadStopped()
 {
-    IceUtil::Mutex::Lock lock(*this);
+    IceUtil::Mutex::Lock lock(_mutex);
 
     ThreadDatabaseMap::iterator p = _cache.find(IceUtil::ThreadControl().id());
     if(p != _cache.end())
@@ -344,9 +350,9 @@ ThreadHook::ThreadHook()
 }
 
 void
-ThreadHook::setDatabaseCache(const DatabaseCachePtr& cache)
+ThreadHook::setConnectionPool(const ConnectionPoolPtr& cache)
 {
-    IceUtil::Mutex::Lock sync(*this);
+    IceUtil::Mutex::Lock sync(_mutex);
     _cache = cache;
 }
 
@@ -358,7 +364,7 @@ ThreadHook::start()
 void
 ThreadHook::stop()
 {
-    IceUtil::Mutex::Lock sync(*this);
+    IceUtil::Mutex::Lock sync(_mutex);
     if(_cache)
     {
         _cache->threadStopped();

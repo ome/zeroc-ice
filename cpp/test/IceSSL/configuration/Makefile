@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -9,8 +9,8 @@
 
 top_srcdir	= ../../..
 
-CLIENT		= client
-SERVER		= server
+CLIENT		= client$(EXE_EXT)
+SERVER		= server$(EXE_EXT)
 
 TARGETS		= $(CLIENT) $(SERVER)
 
@@ -35,10 +35,10 @@ CPPFLAGS	:= -I. -I../../include $(CPPFLAGS)
 
 $(CLIENT): $(COBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(COBJS) $(LIBS) $(OPENSSL_RPATH_LINK) -lIceSSL
+	$(CXX) $(LDFLAGS) -o $@ $(COBJS) $(OPENSSL_RPATH_LINK) $(ICESSL_LIBS)
 
 $(SERVER): $(SOBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) $(LIBS) $(OPENSSL_RPATH_LINK) -lIceSSL
+	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) $(OPENSSL_RPATH_LINK) $(ICESSL_LIBS)
 
 include .depend

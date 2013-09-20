@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,7 +26,7 @@ public class Client
 
     private static int run(string[] args, Ice.Communicator communicator)
     {
-        System.Collections.ArrayList ports = new System.Collections.ArrayList(args.Length);
+        System.Collections.Generic.List<int> ports = new System.Collections.Generic.List<int>();
         for(int i = 0; i < args.Length; i++)
         {
             int port = 0;
@@ -57,10 +57,6 @@ public class Client
     {
         int status = 0;
         Ice.Communicator communicator = null;
-
-#if !COMPACT
-        Debug.Listeners.Add(new ConsoleTraceListener());
-#endif
 
         try
         {

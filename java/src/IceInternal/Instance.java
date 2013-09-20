@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,48 @@ package IceInternal;
 
 public final class Instance
 {
+    private class ObserverUpdaterI implements Ice.Instrumentation.ObserverUpdater
+    {
+        ObserverUpdaterI(Instance instance)
+        {
+            _instance = instance;
+        }
+
+        @Override public void 
+        updateConnectionObservers()
+        {
+            try
+            {
+                _instance.outgoingConnectionFactory().updateConnectionObservers();
+                _instance.objectAdapterFactory().updateConnectionObservers();
+            }
+            catch(Ice.CommunicatorDestroyedException ex)
+            {
+            }
+        }
+
+        @Override public void 
+        updateThreadObservers()
+        {
+            try
+            {
+                _instance.clientThreadPool().updateObservers();
+                ThreadPool serverThreadPool = _instance.serverThreadPool(false);
+                if(serverThreadPool != null)
+                {
+                    serverThreadPool.updateObservers();
+                }
+                _instance.objectAdapterFactory().updateThreadObservers();
+                _instance.endpointHostResolver().updateObserver();
+            }
+            catch(Ice.CommunicatorDestroyedException ex)
+            {
+            }
+        }
+
+        final private Instance _instance;
+    }
+
     public Ice.InitializationData
     initializationData()
     {
@@ -135,15 +177,16 @@ public final class Instance
         return _objectAdapterFactory;
     }
 
-    public synchronized int
+    public int
     protocolSupport()
     {
-        if(_state == StateDestroyed)
-        {
-            throw new Ice.CommunicatorDestroyedException();
-        }
-
         return _protocolSupport;
+    }
+
+    public boolean
+    preferIPv6()
+    {
+        return _preferIPv6;
     }
 
     public synchronized ThreadPool
@@ -159,14 +202,14 @@ public final class Instance
     }
 
     public synchronized ThreadPool
-    serverThreadPool()
+    serverThreadPool(boolean create)
     {
         if(_state == StateDestroyed)
         {
             throw new Ice.CommunicatorDestroyedException();
         }
 
-        if(_serverThreadPool == null) // Lazy initialization.
+        if(_serverThreadPool == null && create) // Lazy initialization.
         {
             int timeout = _initData.properties.getPropertyAsInt("Ice.ServerIdleTime");
             _serverThreadPool = new ThreadPool(this, "Ice.ThreadPool.Server", timeout);
@@ -463,10 +506,10 @@ public final class Instance
         }
 
         Ice.Object result = null;
+
         if(_adminAdapter == null || (!_adminFacetFilter.isEmpty() && !_adminFacetFilter.contains(facet)))
         {
             result = _adminFacets.remove(facet);
-
             if(result == null)
             {
                 throw new Ice.NotRegisteredException("facet", facet);
@@ -476,6 +519,29 @@ public final class Instance
         {
             result = _adminAdapter.removeFacet(_adminIdentity, facet);
         }
+
+        return result;
+    }
+
+    public synchronized Ice.Object
+    findAdminFacet(String facet)
+    {
+        if(_state == StateDestroyed)
+        {
+            throw new Ice.CommunicatorDestroyedException();
+        }
+
+        Ice.Object result = null;
+
+        if(_adminAdapter == null || (!_adminFacetFilter.isEmpty() && !_adminFacetFilter.contains(facet)))
+        {
+            result = _adminFacets.get(facet);
+        }
+        else
+        {
+            result = _adminAdapter.findFacet(_adminIdentity, facet);
+        }
+
         return result;
     }
 
@@ -523,6 +589,37 @@ public final class Instance
     findClass(String className)
     {
         return Util.findClass(className, _initData.classLoader);
+    }
+
+    public synchronized String
+    getClassForType(String type)
+    {
+        return _typeToClassMap.get(type);
+    }
+
+    public synchronized void
+    addClassForType(String type, String className)
+    {
+        if(_typeToClassMap.containsKey(type))
+        {
+            assert(_typeToClassMap.get(type).equals(className));
+        }
+        else
+        {
+            _typeToClassMap.put(type, className);
+        }
+    }
+
+    public String[]
+    getPackages()
+    {
+        return _packages;
+    }
+
+    public boolean
+    useApplicationClassLoader()
+    {
+        return _useApplicationClassLoader;
     }
 
     //
@@ -600,7 +697,8 @@ public final class Instance
             if(_initData.logger == null)
             {
                 String logfile = _initData.properties.getProperty("Ice.LogFile");
-                if(_initData.properties.getPropertyAsInt("Ice.UseSyslog") > 0)
+                if(_initData.properties.getPropertyAsInt("Ice.UseSyslog") > 0 &&
+                   !System.getProperty("os.name").startsWith("Windows"))
                 {
                     if(logfile.length() != 0)
                     {
@@ -619,7 +717,9 @@ public final class Instance
                 }
             }
 
-            validatePackages();
+            _packages = validatePackages();
+
+            _useApplicationClassLoader = _initData.properties.getPropertyAsInt("Ice.UseApplicationClassLoader") > 0;
 
             _traceLevels = new TraceLevels(_initData.properties);
 
@@ -661,7 +761,7 @@ public final class Instance
             _proxyFactory = new ProxyFactory(this);
 
             boolean ipv4 = _initData.properties.getPropertyAsIntWithDefault("Ice.IPv4", 1) > 0;
-            boolean ipv6 = _initData.properties.getPropertyAsIntWithDefault("Ice.IPv6", 0) > 0;
+            boolean ipv6 = _initData.properties.getPropertyAsIntWithDefault("Ice.IPv6", 1) > 0;
             if(!ipv4 && !ipv6)
             {
                 throw new Ice.InitializationException("Both IPV4 and IPv6 support cannot be disabled.");
@@ -678,15 +778,16 @@ public final class Instance
             {
                 _protocolSupport = Network.EnableIPv6;
             }
+            _preferIPv6 = _initData.properties.getPropertyAsInt("Ice.PreferIPv6Address") > 0;
             _endpointFactoryManager = new EndpointFactoryManager(this);
             EndpointFactory tcpEndpointFactory = new TcpEndpointFactory(this);
             _endpointFactoryManager.add(tcpEndpointFactory);
             EndpointFactory udpEndpointFactory = new UdpEndpointFactory(this);
             _endpointFactoryManager.add(udpEndpointFactory);
 
-            _pluginManager = new Ice.PluginManagerI(communicator);
+            _pluginManager = new Ice.PluginManagerI(communicator, this);
 
-            _outgoingConnectionFactory = new OutgoingConnectionFactory(this);
+            _outgoingConnectionFactory = new OutgoingConnectionFactory(communicator, this);
 
             _servantFactoryManager = new ObjectFactoryManager();
 
@@ -703,9 +804,30 @@ public final class Instance
                 _adminFacetFilter.addAll(java.util.Arrays.asList(facetFilter));
             }
 
-            _adminFacets.put("Properties", new PropertiesAdminI(_initData.properties));
             _adminFacets.put("Process", new ProcessI(communicator));
 
+            MetricsAdminI admin = new MetricsAdminI(_initData.properties, _initData.logger);
+            _adminFacets.put("Metrics", admin);
+            
+            PropertiesAdminI props = new PropertiesAdminI("Properties", _initData.properties, _initData.logger);
+            _adminFacets.put("Properties", props);
+            
+            //
+            // Setup the communicator observer only if the user didn't already set an
+            // Ice observer resolver and if the admininistrative endpoints are set.
+            //
+            if(_initData.observer == null && 
+               (_adminFacetFilter.isEmpty() || _adminFacetFilter.contains("Metrics")) &&
+               _initData.properties.getProperty("Ice.Admin.Endpoints").length() > 0)
+            {
+                CommunicatorObserverI observer = new CommunicatorObserverI(admin);
+                _initData.observer = observer;
+
+                //
+                // Make sure the admin plugin receives property updates.
+                //
+                props.addUpdateCallback(admin);
+            }
         }
         catch(Ice.LocalException ex)
         {
@@ -718,24 +840,32 @@ public final class Instance
     finalize()
         throws Throwable
     {
-        IceUtilInternal.Assert.FinalizerAssert(_state == StateDestroyed);
-        IceUtilInternal.Assert.FinalizerAssert(_referenceFactory == null);
-        IceUtilInternal.Assert.FinalizerAssert(_proxyFactory == null);
-        IceUtilInternal.Assert.FinalizerAssert(_outgoingConnectionFactory == null);
-        IceUtilInternal.Assert.FinalizerAssert(_connectionMonitor == null);
-        IceUtilInternal.Assert.FinalizerAssert(_servantFactoryManager == null);
-        IceUtilInternal.Assert.FinalizerAssert(_objectAdapterFactory == null);
-        IceUtilInternal.Assert.FinalizerAssert(_clientThreadPool == null);
-        IceUtilInternal.Assert.FinalizerAssert(_serverThreadPool == null);
-        IceUtilInternal.Assert.FinalizerAssert(_endpointHostResolver == null);
-        IceUtilInternal.Assert.FinalizerAssert(_timer == null);
-        IceUtilInternal.Assert.FinalizerAssert(_routerManager == null);
-        IceUtilInternal.Assert.FinalizerAssert(_locatorManager == null);
-        IceUtilInternal.Assert.FinalizerAssert(_endpointFactoryManager == null);
-        IceUtilInternal.Assert.FinalizerAssert(_pluginManager == null);
-        IceUtilInternal.Assert.FinalizerAssert(_retryQueue == null);
-
-        super.finalize();
+        try
+        {
+            IceUtilInternal.Assert.FinalizerAssert(_state == StateDestroyed);
+            IceUtilInternal.Assert.FinalizerAssert(_referenceFactory == null);
+            IceUtilInternal.Assert.FinalizerAssert(_proxyFactory == null);
+            IceUtilInternal.Assert.FinalizerAssert(_outgoingConnectionFactory == null);
+            IceUtilInternal.Assert.FinalizerAssert(_connectionMonitor == null);
+            IceUtilInternal.Assert.FinalizerAssert(_servantFactoryManager == null);
+            IceUtilInternal.Assert.FinalizerAssert(_objectAdapterFactory == null);
+            IceUtilInternal.Assert.FinalizerAssert(_clientThreadPool == null);
+            IceUtilInternal.Assert.FinalizerAssert(_serverThreadPool == null);
+            IceUtilInternal.Assert.FinalizerAssert(_endpointHostResolver == null);
+            IceUtilInternal.Assert.FinalizerAssert(_timer == null);
+            IceUtilInternal.Assert.FinalizerAssert(_routerManager == null);
+            IceUtilInternal.Assert.FinalizerAssert(_locatorManager == null);
+            IceUtilInternal.Assert.FinalizerAssert(_endpointFactoryManager == null);
+            IceUtilInternal.Assert.FinalizerAssert(_pluginManager == null);
+            IceUtilInternal.Assert.FinalizerAssert(_retryQueue == null);
+        }
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     public void
@@ -747,6 +877,14 @@ public final class Instance
         assert(_serverThreadPool == null);
         Ice.PluginManagerI pluginManagerImpl = (Ice.PluginManagerI)_pluginManager;
         pluginManagerImpl.loadPlugins(args);
+
+        //
+        // Set observer updater
+        //
+        if(_initData.observer != null)
+        {
+            _initData.observer.setObserverUpdater(new ObserverUpdaterI(this));
+        }
 
         //
         // Create threads.
@@ -930,12 +1068,9 @@ public final class Instance
                 _servantFactoryManager.destroy();
                 _servantFactoryManager = null;
             }
-
-            if(_referenceFactory != null)
-            {
-                _referenceFactory.destroy();
-                _referenceFactory = null;
-            }
+            
+            //_referenceFactory.destroy(); // No destroy function defined.
+            _referenceFactory = null;
 
             // _proxyFactory.destroy(); // No destroy function defined.
             _proxyFactory = null;
@@ -967,6 +1102,8 @@ public final class Instance
             _adminAdapter = null;
             _adminFacets.clear();
 
+            _typeToClassMap.clear();
+
             _state = StateDestroyed;
         }
 
@@ -994,19 +1131,20 @@ public final class Instance
                 StringBuffer message = new StringBuffer("The following properties were set but never read:");
                 for(String p : unusedProperties)
                 {
-		    message.append("\n    ");
-		    message.append(p);
+                    message.append("\n    ");
+                    message.append(p);
                 }
                 _initData.logger.warning(message.toString());
             }
         }
     }
 
-    private void
+    private String[]
     validatePackages()
     {
         final String prefix = "Ice.Package.";
         java.util.Map<String, String> map = _initData.properties.getPropertiesForPrefix(prefix);
+        java.util.List<String> packages = new java.util.ArrayList<String>();
         for(java.util.Map.Entry<String, String> p : map.entrySet())
         {
             String key = p.getKey();
@@ -1029,7 +1167,18 @@ public final class Instance
             {
                 _initData.logger.warning("unable to validate package: " + key + "=" + pkg);
             }
+            else
+            {
+                packages.add(pkg);
+            }
         }
+
+        String pkg = _initData.properties.getProperty("Ice.Default.Package");
+        if(pkg.length() > 0)
+        {
+            packages.add(pkg);
+        }
+        return packages.toArray(new String[packages.size()]);
     }
 
     private static final int StateActive = 0;
@@ -1054,6 +1203,7 @@ public final class Instance
     private ObjectFactoryManager _servantFactoryManager;
     private ObjectAdapterFactory _objectAdapterFactory;
     private int _protocolSupport;
+    private boolean _preferIPv6;
     private ThreadPool _clientThreadPool;
     private ThreadPool _serverThreadPool;
     private EndpointHostResolver _endpointHostResolver;
@@ -1066,6 +1216,10 @@ public final class Instance
     private java.util.Map<String, Ice.Object> _adminFacets = new java.util.HashMap<String, Ice.Object>();
     private java.util.Set<String> _adminFacetFilter = new java.util.HashSet<String>();
     private Ice.Identity _adminIdentity;
+
+    private java.util.Map<String, String> _typeToClassMap = new java.util.HashMap<String, String>();
+    final private String[] _packages;
+    final private boolean _useApplicationClassLoader;
 
     private static boolean _oneOffDone = false;
 }

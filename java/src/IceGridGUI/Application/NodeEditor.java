@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -171,8 +171,9 @@ class NodeEditor extends Editor
 
         _loadFactor.getDocument().addDocumentListener(_updateListener);
         _loadFactor.setToolTipText("<html>A floating point value.<br>"
-                                   + "When not specified, IceGrid uses 1.0 on all platforms<br>"
-                                   + "except Windows where it uses 1.0 divided by <i>number of processors</i>.<html>");
+                                   + "When not specified, IceGrid uses 1.0 divided by the<br>"
+                                   + "<i>number of threads</i> on all platforms except Windows;<br>"
+                                   + "on Windows, IceGrid uses 1.0.<html>");
     }
 
     protected void appendProperties(DefaultFormBuilder builder)

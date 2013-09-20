@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -66,7 +66,7 @@ class NodeEditor extends Editor
             _os.setCaretPosition(0);
             _machineType.setText(info.machine + " with " +
                                  info.nProcessors
-                                 + " CPU"
+                                 + " CPU thread"
                                  + (info.nProcessors >= 2 ? "s" : ""));
 
             if(node.isRunningWindows())

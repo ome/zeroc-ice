@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,11 +27,49 @@ public class Main extends JFrame
 {
     public static void main(final String[] args)
     {
+        //
+        // Initialize L&F in main thread before Swing is used
+        //
+        try
+        {
+            if(System.getProperty("os.name").startsWith("Mac OS")) // OS X L&F
+            {
+                System.setProperty("apple.laf.useScreenMenuBar", "true");
+                System.setProperty("com.apple.mrj.application.apple.menu.about.name", "IceGrid Admin");
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            }
+            else if(System.getProperty("os.name").startsWith("Windows"))
+            {
+                UIManager.setLookAndFeel("com.jgoodies.looks.windows.WindowsLookAndFeel");
+            }
+            else  // JGoodies L&F
+            {
+                UIManager.setLookAndFeel("com.jgoodies.looks.plastic.PlasticLookAndFeel");
+            }
+        }
+        catch(Exception e)
+        {
+            System.err.println(e.toString());
+        }
+
         SwingUtilities.invokeLater(new Runnable()
             {
                 public void run()
                 {
-                    createAndShowGUI(args);
+                    try
+                    {
+                        //
+                        // Create and set up the window.
+                        //
+                        new Main(args);
+                    }
+                    catch(Ice.LocalException e)
+                    {
+                        JOptionPane.showMessageDialog(null,
+                                                      e.toString(),
+                                                      "Initialization failed",
+                                                      JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             });
     }
@@ -60,41 +98,6 @@ public class Main extends JFrame
         _coordinator = new Coordinator(this, new Ice.StringSeqHolder(args), Preferences.userNodeForPackage(getClass()));
 
         _coordinator.showMainFrame();
-    }
-
-    private static void createAndShowGUI(String[] args)
-    {
-        try
-        {
-            if(UIManager.getSystemLookAndFeelClassName().equals("apple.laf.AquaLookAndFeel"))
-            {
-                System.setProperty("apple.laf.useScreenMenuBar", "true");
-                UIManager.setLookAndFeel("apple.laf.AquaLookAndFeel");
-            }
-            else  // JGoodies L&F
-            {
-                UIManager.setLookAndFeel("com.jgoodies.looks.plastic.PlasticXPLookAndFeel");
-            }
-        }
-        catch(Exception e)
-        {
-            System.err.println(e.toString());
-        }
-
-        try
-        {
-            //
-            // Create and set up the window.
-            //
-            new Main(args);
-        }
-        catch(Ice.LocalException e)
-        {
-            JOptionPane.showMessageDialog(null,
-                                          e.toString(),
-                                          "Initialization failed",
-                                          JOptionPane.ERROR_MESSAGE);
-        }
     }
 
     private Coordinator _coordinator;

@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef TEST_ICE
-#define TEST_ICE
+#pragma once
 
 module Test
 {
@@ -43,6 +42,12 @@ struct Struct1
     Nested::Color nc2 = Nested::green;
     Nested::Color nc3 = Nested::blue;
     string noDefault;
+    int zeroI = 0;
+    long zeroL = 0;
+    float zeroF = 0;
+    float zeroDotF = 0.0;
+    double zeroD = 0;
+    double zeroDotD = 0;
 };
 
 const bool ConstBool = true;
@@ -59,6 +64,12 @@ const Color ConstColor3 = blue;
 const Nested::Color ConstNestedColor1 = ::Test::Nested::red;
 const Nested::Color ConstNestedColor2 = Test::Nested::green;
 const Nested::Color ConstNestedColor3 = Nested::blue;
+const int ConstZeroI = 0;
+const long ConstZeroL = 0;
+const float ConstZeroF = 0;
+const float ConstZeroDotF = 0.0;
+const double ConstZeroD = 0;
+const double ConstZeroDotD = 0;
 
 struct Struct2
 {
@@ -76,6 +87,12 @@ struct Struct2
     Nested::Color nc1 = ConstNestedColor1;
     Nested::Color nc2 = ConstNestedColor2;
     Nested::Color nc3 = ConstNestedColor3;
+    int zeroI = ConstZeroI;
+    long zeroL = ConstZeroL;
+    float zeroF = ConstZeroF;
+    float zeroDotF = ConstZeroDotF;
+    double zeroD = ConstZeroD;
+    double zeroDotD = ConstZeroDotD;
 };
 
 //
@@ -102,6 +119,43 @@ struct Struct3
     Nested::Color nc2 = Nested::green;
     Nested::Color nc3 = Nested::blue;
     //string noDefault;
+    int zeroI = 0;
+    long zeroL = 0;
+    float zeroF = 0;
+    float zeroDotF = 0.0;
+    double zeroD = 0;
+    double zeroDotD = 0;
+};
+
+//
+// Struct4 would normally map to a C# struct because we have omitted
+// the string members, and don't contains clr:class metadata, but as it
+// contains default values it is mapped to a class.
+//
+struct Struct4
+{
+    bool boolFalse = false;
+    bool boolTrue = true;
+    byte b = 1;
+    short s = 2;
+    int i = 3;
+    long l = 4;
+    float f = 5.1;
+    double d = 6.2;
+    //string str = "foo \\ \"bar\n \r\n\t\v\f\a\b\? \007 \x07";
+    Color c1 = ::Test::red;
+    Color c2 = Test::green;
+    Color c3 = blue;
+    Nested::Color nc1 = ::Test::Nested::red;
+    Nested::Color nc2 = Nested::green;
+    Nested::Color nc3 = Nested::blue;
+    //string noDefault;
+    int zeroI = 0;
+    long zeroL = 0;
+    float zeroF = 0;
+    float zeroDotF = 0.0;
+    double zeroD = 0;
+    double zeroDotD = 0;
 };
 
 class Base
@@ -116,6 +170,12 @@ class Base
     double d = 6.2;
     string str = "foo \\ \"bar\n \r\n\t\v\f\a\b\? \007 \x07";
     string noDefault;
+    int zeroI = 0;
+    long zeroL = 0;
+    float zeroF = 0;
+    float zeroDotF = 0.0;
+    double zeroD = 0;
+    double zeroDotD = 0;
 };
 
 class Derived extends Base
@@ -141,6 +201,12 @@ exception BaseEx
     double d = 6.2;
     string str = "foo \\ \"bar\n \r\n\t\v\f\a\b\? \007 \x07";
     string noDefault;
+    int zeroI = 0;
+    long zeroL = 0;
+    float zeroF = 0;
+    float zeroDotF = 0.0;
+    double zeroD = 0;
+    double zeroDotD = 0;
 };
 
 exception DerivedEx extends BaseEx
@@ -167,6 +233,12 @@ class ClassProperty
     double d = 6.2;
     string str = "foo bar";
     string noDefault;
+    int zeroI = 0;
+    long zeroL = 0;
+    float zeroF = 0;
+    float zeroDotF = 0.0;
+    double zeroD = 0;
+    double zeroDotD = 0;
 };
 
 ["clr:property"]
@@ -182,6 +254,12 @@ struct StructProperty
     double d = 6.2;
     string str = "foo bar";
     string noDefault;
+    int zeroI = 0;
+    long zeroL = 0;
+    float zeroF = 0;
+    float zeroDotF = 0.0;
+    double zeroD = 0;
+    double zeroDotD = 0;
 };
 
 //
@@ -203,8 +281,12 @@ exception ExceptionProperty
     double d = 6.2;
     string str = "foo bar";
     string noDefault;
+    int zeroI = 0;
+    long zeroL = 0;
+    float zeroF = 0;
+    float zeroDotF = 0.0;
+    double zeroD = 0;
+    double zeroDotD = 0;
 };
 
 };
-
-#endif

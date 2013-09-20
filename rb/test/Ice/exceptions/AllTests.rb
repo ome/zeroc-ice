@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -327,6 +327,20 @@ def allTests(communicator)
         # We get an unknown local exception without collocation
         # optimization.
         #
+    rescue
+        print $!.backtrace.join("\n")
+        test(false)
+    end
+
+    begin
+        thrower.throwLocalExceptionIdempotent()
+        test(false)
+    rescue Ice::UnknownLocalException
+        #
+        # We get an unknown local exception without collocation
+        # optimization.
+        #
+    rescue Ice::OperationNotExistException
     rescue
         print $!.backtrace.join("\n")
         test(false)

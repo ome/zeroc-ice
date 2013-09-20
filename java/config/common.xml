@@ -1,7 +1,7 @@
 <!--
  **********************************************************************
 
- Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+ Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 
  This copy of Ice is licensed to you under the terms described in the
  ICE_LICENSE file included in this distribution.
@@ -9,7 +9,7 @@
  **********************************************************************
 -->
 
-<project name="common" basedir=".">
+<project name="common" basedir="." xmlns:fx="javafx:com.sun.javafx.tools.ant">
 
     <property environment="env"/>
     <property name="build.sysclasspath" value="last"/>
@@ -21,6 +21,48 @@
 
     <!-- Load build configuration properties -->
     <property file="${top.dir}/config/build.properties"/>
+
+    <condition property="thirdparty.home" value="${env.THIRDPARTY_HOME}">
+       <and>
+          <os family="Windows"/>
+          <isset property="env.THIRDPARTY_HOME"/>
+          <not><isset property="thirdparty.home"/></not>
+       </and>
+    </condition>
+
+    <condition property="thirdparty.home" value="${env.ProgramFiles(x86)}\ZeroC\Ice-${ice.version}-ThirdParty">
+        <and>
+            <os family="Windows"/>
+            <not><isset property="thirdparty.home"/></not>
+            <or>
+                <equals arg1="AMD64" arg2="${env.PROCESSOR_ARCHITECTURE}"/>
+                <equals arg1="AMD64" arg2="${env.PROCESSOR_ARCHITEW6432}"/>
+            </or>
+        </and>
+    </condition>
+
+    <condition property="thirdparty.home" value="${env.ProgramFiles}\ZeroC\Ice-${ice.version}-ThirdParty">
+        <and>
+            <os family="Windows"/>
+            <not><isset property="thirdparty.home"/></not>
+        </and>
+    </condition>
+
+
+    <!-- Set default prefix directory, just if prefix is not set -->
+    <condition property="prefix" value="${env.SystemDrive}\Ice-${ice.version}">
+        <and>
+            <os family="windows"/>
+            <not><isset property="prefix"/></not>
+        </and>
+    </condition>
+
+    <condition property="prefix" value="/opt/Ice-${ice.version}">
+        <and>
+            <not><os family="windows"/></not>
+            <not><isset property="prefix"/></not>
+        </and>
+    </condition>
 
     <!-- Use -Xlint when requested -->
     <condition property="javac.lint" value="-Xlint:${lint}" else="-Xlint:none">
@@ -38,11 +80,30 @@
     <property name="class.dir" value="classes${build.suffix}"/>
     <property name="generated.dir" value="generated${build.suffix}"/>
 
+    <!-- Do we build the IceGrid Admin graphical tool -->
+    <!-- Currently we build it when the JDK is version 7 and we are not 
+         on Solaris (which does not have JavaFX) -->
+    <condition property="build-icegridadmin">
+      <and>
+         <equals arg1="${java.specification.version}" arg2="1.7"/>
+         <not><os name="SunOS"/></not>
+      </and>
+    </condition>
+
     <!-- We use pathconvert to ensure that ice.top.dir is relative to the path of the build.xml
          file insead of the current working directory. -->
     <pathconvert property="ice.top.dir">
       <path location="${top.dir}"/>
     </pathconvert>
+
+    <!-- Define text.extension to '.txt' in Windows source distributions -->
+    <condition property="text.extension" value=".txt" else="">
+        <and>
+          <os family="Windows"/>
+          <available file="${top.dir}/../LICENSE.txt"/>
+          <not><isset property="text.extension"/></not>
+       </and>
+    </condition>
 
     <condition property="slice.translator" value="slice2java.exe" else="slice2java">
       <os family="windows"/>
@@ -147,19 +208,32 @@
           <available file="/usr/bin/${slice.translator}"/>
         </and>
     </condition>
-    <condition property="ice.dir" value="C:\Program Files\ZeroC\Ice-${ice.version}">
+
+    <condition property="ice.dir" value="${env.ProgramFiles(x86)}\ZeroC\Ice-${ice.version}">
         <and>
-            <os family="windows"/>
+            <os family="Windows"/>
             <not><isset property="ice.dir"/></not>
-            <available file="C:\Program Files\ZeroC\Ice-${ice.version}\bin\${slice.translator}"/>
+            <or>
+                <and>
+                    <or>
+                        <equals arg1="AMD64" arg2="${env.PROCESSOR_ARCHITECTURE}"/>
+                        <equals arg1="IA64" arg2="${env.PROCESSOR_ARCHITECTURE}"/>
+                    </or>
+                </and>
+                <and>
+                    <or>
+                        <equals arg1="AMD64" arg2="${env.PROCESSOR_ARCHITEW6432}"/>
+                        <equals arg1="IA64" arg2="${env.PROCESSOR_ARCHITEW6432}"/>
+                    </or>
+                </and>
+            </or>
         </and>
     </condition>
-    <condition property="ice.dir" value="C:\Program Files (x86)\ZeroC\Ice-${ice.version}">
+
+    <condition property="ice.dir" value="${env.ProgramFiles}\ZeroC\Ice-${ice.version}">
         <and>
-            <!-- We can't check for PROCESSOR_ARCHITECTURE because it's set to x86 by ant even on AMD64 platforms. -->
             <os family="windows"/>
             <not><isset property="ice.dir"/></not>
-            <available file="C:\Program Files (x86)\ZeroC\Ice-${ice.version}\bin\${slice.translator}"/>
         </and>
     </condition>
     <condition property="ice.dir" value="/opt/Ice-${ice.version}">
@@ -208,13 +282,126 @@
             <available file="/opt/Ice-${ice.version}/lib/db.jar"/>
         </and>
     </condition>
+    <condition property="db.jar.file" value="/opt/db-${db.version}/lib/db.jar">
+        <and>
+            <not><os family="windows"/></not>
+            <not><isset property="db.jar.file"/></not>
+            <not><available classname="com.sleepycat.db.Database"/></not>
+            <available file="/opt/db-${db.version}/lib/db.jar"/>
+        </and>
+    </condition>
+    <condition property="db.jar.file" value="/opt/db/lib/db.jar">
+        <and>
+            <not><os family="windows"/></not>
+            <not><isset property="db.jar.file"/></not>
+            <not><available classname="com.sleepycat.db.Database"/></not>
+            <available file="/opt/db/lib/db.jar"/>
+        </and>
+    </condition>
+    <condition property="db.jar.file" value="/usr/lib/db.jar">
+        <and>
+            <not><os family="windows"/></not>
+            <not><isset property="db.jar.file"/></not>
+            <not><available classname="com.sleepycat.db.Database"/></not>
+            <available file="/usr/lib/db.jar"/>
+        </and>
+    </condition>
+
+
+    <condition property="db.jar.file" value="${thirdparty.home}/lib/db.jar">
+        <and>
+            <os family="windows"/>
+            <not><isset property="db.jar.file"/></not>
+            <not><available classname="com.sleepycat.db.Database"/></not>
+            <available file="${thirdparty.home}/lib/db.jar"/>
+        </and>
+    </condition>
+
 
     <path id="db.classpath">
         <pathelement location="${db.jar.file}"/>
     </path>
 
+    <!-- Set jgoodies.common to the path name of the Jgoodies Common JAR file -->
+    <condition property="jgoodies.common" value="/usr/share/java/jgoodies-common-${jgoodies-common.version}.jar">
+        <and>
+            <not><os family="windows"/></not>
+            <not><isset property="jgoodies.common"/></not>
+            <not><available classname="com.jgoodies.common.base.SystemUtils"/></not>
+            <available file="/usr/share/java/jgoodies-common-${jgoodies-common.version}.jar"/>
+        </and>
+    </condition>
+    <condition property="jgoodies.common"
+               value="${thirdparty.home}/lib/jgoodies-common-${jgoodies-common.version}.jar">
+        <and>
+            <os family="windows"/>
+            <not><isset property="jgoodies.common"/></not>
+            <not><available classname="com.jgoodies.common.base.SystemUtils"/></not>
+            <available file="${thirdparty.home}/lib/jgoodies-common-${jgoodies-common.version}.jar"/>
+        </and>
+    </condition>
+
+    <!-- Set jgoodies.forms to the path name of the Jgoodies Forms JAR file -->
+    <condition property="jgoodies.forms" value="/usr/share/java/jgoodies-forms-${jgoodies-forms.version}.jar">
+        <and>
+            <not><os family="windows"/></not>
+            <not><isset property="jgoodies.forms"/></not>
+            <not><available classname="com.jgoodies.forms.builder.DefaultFormBuilder"/></not>
+            <available file="/usr/share/java/jgoodies-forms-${jgoodies-forms.version}.jar"/>
+        </and>
+    </condition>
+    <condition property="jgoodies.forms"
+               value="${thirdparty.home}/lib/jgoodies-forms-${jgoodies-forms.version}.jar">
+        <and>
+            <os family="windows"/>
+            <not><isset property="jgoodies.forms"/></not>
+            <not><available classname="com.jgoodies.forms.builder.DefaultFormBuilder"/></not>
+            <available file="${thirdparty.home}/lib/jgoodies-forms-${jgoodies-forms.version}.jar"/>
+        </and>
+    </condition>
+
+    <!-- Set jgoodies.looks to the path name of the Jgoodies Looks JAR file -->
+    <condition property="jgoodies.looks" value="/usr/share/java/jgoodies-looks-${jgoodies-looks.version}.jar">
+        <and>
+            <not><os family="windows"/></not>
+            <not><isset property="jgoodies.looks"/></not>
+            <not><available classname="com.jgoodies.looks.Options"/></not>
+            <available file="/usr/share/java/jgoodies-looks-${jgoodies-looks.version}.jar"/>
+        </and>
+    </condition>
+    <condition property="jgoodies.looks"
+               value="${thirdparty.home}/lib/jgoodies-looks-${jgoodies-looks.version}.jar">
+        <and>
+            <os family="windows"/>
+            <not><isset property="jgoodies.looks"/></not>
+            <not><available classname="com.jgoodies.looks.Options"/></not>
+            <available file="${thirdparty.home}/lib/jgoodies-looks-${jgoodies-looks.version}.jar"/>
+        </and>
+    </condition>
+
     <target name="config-init-warn" if="ice.warn.duplicate.translator">
         <echo message="Found ${slice.translator} in both ${ice.cpp.dir}/bin and ${ice.dir}/cpp/bin, ${ice.cpp.dir}/bin/${slice.translator} will be used!" level="warning"/>
+    </target>
+
+    <target name="config-init-javafx" if="build-icegridadmin">
+
+        <!-- JavaFX jar file -->
+        <condition property="javafx.jar" value="${java.home}/lib/jfxrt.jar">
+            <and>
+                <not><isset property="javafx.jar"/></not>
+                <available file="${java.home}/lib/jfxrt.jar"/>
+            </and>
+        </condition>
+
+        <condition property="ant-javafx.jar" value="${java.home}/../lib/ant-javafx.jar">
+            <and>
+                <not><isset property="ant-javafx.jar"/></not>
+                <available file="${java.home}/../lib/ant-javafx.jar"/>
+            </and>
+        </condition>
+
+        <taskdef resource="com/sun/javafx/tools/ant/antlib.xml" uri="javafx:com.sun.javafx.tools.ant"
+                 classpath="${ant-javafx.jar}"/>
     </target>
 
     <target name="config-init" depends="config-init-warn">
@@ -241,22 +428,42 @@
             </and>
         </condition>
 
-        <condition property="dist.jar.file" value="${dist.lib.dir}/Ice-${ice.version}.jar">
+        <!-- Ice jar file -->
+        <condition property="ice.jar.file" value="${dist.lib.dir}/Ice-${ice.version}.jar">
             <and>
-                <not><isset property="dist.jar.file"/></not>
+                <not><isset property="ice.jar.file"/></not>
                 <available file="${dist.lib.dir}/Ice-${ice.version}.jar"/>
             </and>
         </condition>
 
-        <condition property="dist.jar.file" value="${dist.lib.dir}/Ice.jar">
+        <condition property="ice.jar.file" value="${dist.lib.dir}/Ice.jar">
             <and>
-                <not><isset property="dist.jar.file"/></not>
+                <not><isset property="ice.jar.file"/></not>
                 <available file="${dist.lib.dir}/Ice.jar"/>
             </and>
         </condition>
 
         <path id="ice.classpath">
-            <pathelement location="${dist.jar.file}"/>
+            <pathelement location="${ice.jar.file}"/>
+        </path>
+
+        <!-- Glacier2 jar file -->
+        <condition property="glacier2.jar.file" value="${dist.lib.dir}/Glacier2-${ice.version}.jar">
+            <and>
+                <not><isset property="glacier2.jar.file"/></not>
+                <available file="${dist.lib.dir}/Glacier2-${ice.version}.jar"/>
+            </and>
+        </condition>
+
+        <condition property="glacier2.jar.file" value="${dist.lib.dir}/Glacier2.jar">
+            <and>
+                <not><isset property="glacier2.jar.file"/></not>
+                <available file="${dist.lib.dir}/Glacier2.jar"/>
+            </and>
+        </condition>
+
+        <path id="glacier2.classpath">
+            <pathelement location="${glacier2.jar.file}"/>
         </path>
 
         <!-- Set freeze.classpath with the distribution Freeze.jar file -->
@@ -277,6 +484,64 @@
         <path id="freeze.classpath">
             <pathelement location="${freeze.jar.file}"/>
             <path refid="db.classpath"/>
+        </path>
+
+
+        <!-- IceBox jar file -->
+        <condition property="icebox.jar.file" value="${dist.lib.dir}/IceBox-${ice.version}.jar">
+            <and>
+                <not><isset property="icebox.jar.file"/></not>
+                <available file="${dist.lib.dir}/IceBox-${ice.version}.jar"/>
+            </and>
+        </condition>
+
+        <condition property="icebox.jar.file" value="${dist.lib.dir}/IceBox.jar">
+            <and>
+                <not><isset property="icebox.jar.file"/></not>
+                <available file="${dist.lib.dir}/IceBox.jar"/>
+            </and>
+        </condition>
+
+        <path id="icebox.classpath">
+            <pathelement location="${icebox.jar.file}"/>
+        </path>
+
+        <!-- IceStorm jar file -->
+        <condition property="icestorm.jar.file" value="${dist.lib.dir}/IceStorm-${ice.version}.jar">
+            <and>
+                <not><isset property="icestorm.jar.file"/></not>
+                <available file="${dist.lib.dir}/IceStorm-${ice.version}.jar"/>
+            </and>
+        </condition>
+
+        <condition property="icestorm.jar.file" value="${dist.lib.dir}/IceStorm.jar">
+            <and>
+                <not><isset property="icestorm.jar.file"/></not>
+                <available file="${dist.lib.dir}/IceStorm.jar"/>
+            </and>
+        </condition>
+
+        <path id="icestorm.classpath">
+            <pathelement location="${icestorm.jar.file}"/>
+        </path>
+
+        <!-- IceGrid jar file -->
+        <condition property="icegrid.jar.file" value="${dist.lib.dir}/IceGrid-${ice.version}.jar">
+            <and>
+                <not><isset property="icegrid.jar.file"/></not>
+                <available file="${dist.lib.dir}/IceGrid-${ice.version}.jar"/>
+            </and>
+        </condition>
+
+        <condition property="icegrid.jar.file" value="${dist.lib.dir}/IceGrid.jar">
+            <and>
+                <not><isset property="icegrid.jar.file"/></not>
+                <available file="${dist.lib.dir}/IceGrid.jar"/>
+            </and>
+        </condition>
+
+        <path id="icegrid.classpath">
+            <pathelement location="${icegrid.jar.file}"/>
         </path>
 
         <condition property="certs.dir" value="${ice.top.dir}/certs" else="${ice.top.dir}/../certs">

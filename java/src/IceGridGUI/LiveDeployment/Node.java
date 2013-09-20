@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -35,7 +35,7 @@ class Node extends ListTreeNode
     //
     public boolean[] getAvailableActions()
     {
-        boolean[] actions = new boolean[ACTION_COUNT];
+        boolean[] actions = new boolean[IceGridGUI.LiveDeployment.TreeNode.ACTION_COUNT];
         actions[SHUTDOWN_NODE] = _up;
         actions[RETRIEVE_STDOUT] = _up;
         actions[RETRIEVE_STDERR] = _up;
@@ -79,22 +79,22 @@ class Node extends ListTreeNode
         final String prefix = "Shutting down node '" + _id + "'...";
         getCoordinator().getStatusBar().setText(prefix);
 
-        AMI_Admin_shutdownNode cb = new AMI_Admin_shutdownNode()
+        Callback_Admin_shutdownNode cb = new Callback_Admin_shutdownNode()
             {
                 //
                 // Called by another thread!
                 //
-                public void ice_response()
+                public void response()
                 {
                     amiSuccess(prefix);
                 }
 
-                public void ice_exception(Ice.UserException e)
+                public void exception(Ice.UserException e)
                 {
                     amiFailure(prefix, "Failed to shutdown " + _id, e);
                 }
 
-                public void ice_exception(Ice.LocalException e)
+                public void exception(Ice.LocalException e)
                 {
                     amiFailure(prefix, "Failed to shutdown " + _id,
                                e.toString());
@@ -106,7 +106,7 @@ class Node extends ListTreeNode
             getCoordinator().getMainFrame().setCursor(
                 Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-            getCoordinator().getAdmin().shutdownNode_async(cb, _id);
+            getCoordinator().getAdmin().begin_shutdownNode(_id, cb);
         }
         catch(Ice.LocalException e)
         {
@@ -408,7 +408,7 @@ class Node extends ListTreeNode
                 else
                 {
                     removeDescriptor(nodeDesc, oldServer);
-                    oldServer.rebuild(server);
+                    oldServer.rebuild(server, true);
                     freshServers.add(oldServer);
                     nodeDesc.serverInstances.add(desc);
                 }
@@ -428,7 +428,7 @@ class Node extends ListTreeNode
                 else
                 {
                     removeDescriptor(nodeDesc, oldServer);
-                    oldServer.rebuild(server);
+                    oldServer.rebuild(server, true);
                     freshServers.add(oldServer);
                     nodeDesc.servers.add(desc);
                 }
@@ -582,14 +582,20 @@ class Node extends ListTreeNode
         if(_info != null)
         {
             java.util.ListIterator<ServerDynamicInfo> p = _info.servers.listIterator();
+            boolean found = false;
             while(p.hasNext())
             {
                 ServerDynamicInfo sinfo = p.next();
                 if(sinfo.id.equals(updatedInfo.id))
                 {
                     p.set(updatedInfo);
+                    found = true;
                     break;
                 }
+            }
+            if(!found)
+            {
+                _info.servers.add(updatedInfo);
             }
         }
 
@@ -605,14 +611,20 @@ class Node extends ListTreeNode
         if(_info != null)
         {
             java.util.ListIterator<AdapterDynamicInfo> p = _info.adapters.listIterator();
+            boolean found = false;
             while(p.hasNext())
             {
                 AdapterDynamicInfo ainfo = p.next();
                 if(ainfo.id.equals(updatedInfo.id))
                 {
                     p.set(updatedInfo);
+                    found = true;
                     break;
                 }
+            }
+            if(!found)
+            {
+                _info.adapters.add(updatedInfo);
             }
         }
 
@@ -664,9 +676,9 @@ class Node extends ListTreeNode
 
     void showLoad()
     {
-        AMI_Admin_getNodeLoad cb = new AMI_Admin_getNodeLoad()
+        Callback_Admin_getNodeLoad cb = new Callback_Admin_getNodeLoad()
             {
-                public void ice_response(LoadInfo loadInfo)
+                public void response(LoadInfo loadInfo)
                 {
                     NumberFormat format;
                     if(_windows)
@@ -696,7 +708,7 @@ class Node extends ListTreeNode
                         });
                 }
 
-                public void ice_exception(final Ice.UserException e)
+                public void exception(final Ice.UserException e)
                 {
                     SwingUtilities.invokeLater(new Runnable()
                         {
@@ -720,7 +732,7 @@ class Node extends ListTreeNode
                         });
                 }
 
-                public void ice_exception(final Ice.LocalException e)
+                public void exception(final Ice.LocalException e)
                 {
                     SwingUtilities.invokeLater(new Runnable()
                         {
@@ -744,7 +756,7 @@ class Node extends ListTreeNode
             }
             else
             {
-                admin.getNodeLoad_async(cb, _id);
+                admin.begin_getNodeLoad(_id, cb);
             }
         }
         catch(Ice.LocalException e)
@@ -906,6 +918,17 @@ class Node extends ListTreeNode
     {
         NodeDescriptor descriptor;
         Utils.Resolver resolver;
+    }
+
+    public java.util.List<Server>
+    getServers()
+    {
+        java.util.List<Server> servers = new java.util.ArrayList<Server>();
+        for(Object obj : _children)
+        {
+            servers.add((Server)obj);
+        }
+        return servers;
     }
 
     //

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,8 +26,10 @@
 #include <Ice/ConnectorF.h>
 #include <Ice/LocatorInfoF.h>
 #include <Ice/ThreadPoolF.h>
+#include <Ice/OutgoingAsyncF.h>
 #include <Ice/Exception.h>
 #include <Ice/BuiltinSequences.h>
+#include <Ice/Proxy.h>
 #include <list>
 
 namespace Ice
@@ -85,6 +87,9 @@ public:
     bool isLocal(const ObjectPrx&) const;
 
     void flushAsyncBatchRequests(const IceInternal::CommunicatorBatchOutgoingAsyncPtr&);
+
+    void updateConnectionObservers();
+    void updateThreadObservers();
 
     void incDirectCount();
     void decDirectCount();

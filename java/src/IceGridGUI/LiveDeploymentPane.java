@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,6 +26,8 @@ import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeSelectionModel;
 import javax.swing.tree.TreePath;
+import javax.swing.event.TreeWillExpandListener;
+import javax.swing.event.TreeExpansionEvent;
 
 import com.jgoodies.forms.factories.Borders;
 
@@ -33,6 +35,7 @@ import IceGrid.*;
 import IceGridGUI.LiveDeployment.Editor;
 import IceGridGUI.LiveDeployment.Root;
 import IceGridGUI.LiveDeployment.TreeNode;
+import IceGridGUI.LiveDeployment.Server;
 
 public class LiveDeploymentPane extends JSplitPane implements Tab
 {
@@ -53,6 +56,7 @@ public class LiveDeploymentPane extends JSplitPane implements Tab
         c.getCloseApplicationAction().setEnabled(false);
         c.getSaveAction().setEnabled(false);
         c.getSaveToRegistryAction().setEnabled(false);
+        c.getSaveToRegistryWithoutRestartAction().setEnabled(false);
         c.getSaveToFileAction().setEnabled(false);
         c.getDiscardUpdatesAction().setEnabled(false);
 
@@ -174,7 +178,7 @@ public class LiveDeploymentPane extends JSplitPane implements Tab
         assert false;
     }
 
-    public void saveToRegistry()
+    public void saveToRegistry(boolean restart)
     {
         assert false;
     }
@@ -223,7 +227,7 @@ public class LiveDeploymentPane extends JSplitPane implements Tab
             new JScrollPane(tree,
                             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                             JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        leftScroll.setBorder(Borders.EMPTY_BORDER);
+        leftScroll.setBorder(Borders.EMPTY);
 
         _leftPane = new SimpleInternalFrame("Runtime Components");
         _leftPane.setContent(leftScroll);

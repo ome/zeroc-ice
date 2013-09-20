@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@
 #include <ObjectFactory.h>
 #include <Properties.h>
 #include <Proxy.h>
+#include <Types.h>
 #include <Util.h>
 #include <Ice/Communicator.h>
 #include <Ice/Initialize.h>
@@ -125,6 +126,8 @@ IceRuby_initialize(int argc, VALUE* argv, VALUE self)
         //
         volatile VALUE progName = callRuby(rb_gv_get, "$0");
         seq.insert(seq.begin(), getString(progName));
+
+        data.compactIdResolver = new IdResolver;
 
         if(hasArgs)
         {

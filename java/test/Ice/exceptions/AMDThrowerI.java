@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,6 +22,7 @@ import test.Ice.exceptions.AMD.Test.AMD_Thrower_throwCasA;
 import test.Ice.exceptions.AMD.Test.AMD_Thrower_throwCasB;
 import test.Ice.exceptions.AMD.Test.AMD_Thrower_throwCasC;
 import test.Ice.exceptions.AMD.Test.AMD_Thrower_throwLocalException;
+import test.Ice.exceptions.AMD.Test.AMD_Thrower_throwLocalExceptionIdempotent;
 import test.Ice.exceptions.AMD.Test.AMD_Thrower_throwNonIceException;
 import test.Ice.exceptions.AMD.Test.AMD_Thrower_throwUndeclaredA;
 import test.Ice.exceptions.AMD.Test.AMD_Thrower_throwUndeclaredB;
@@ -185,6 +186,12 @@ public final class AMDThrowerI extends _ThrowerDisp
     throwAssertException_async(AMD_Thrower_throwAssertException cb, Ice.Current current)
     {
         throw new java.lang.AssertionError();
+    }
+
+    public void
+    throwLocalExceptionIdempotent_async(AMD_Thrower_throwLocalExceptionIdempotent cb, Ice.Current current)
+    {
+        cb.ice_exception(new Ice.TimeoutException());
     }
 
     public void

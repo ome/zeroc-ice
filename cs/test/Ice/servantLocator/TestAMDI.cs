@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -44,6 +44,13 @@ public sealed class TestI : TestIntfDisp_
     public override void csException_async(AMD_TestIntf_csException cb, Ice.Current current)
     {
         cb.ice_response();
+    }
+
+    public override void 
+    unknownExceptionWithServantException_async(AMD_TestIntf_unknownExceptionWithServantException cb, 
+                                               Ice.Current current)
+    {
+        cb.ice_exception(new Ice.ObjectNotExistException());
     }
 
     public override void impossibleException_async(AMD_TestIntf_impossibleException cb, bool @throw,

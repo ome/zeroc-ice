@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -129,6 +129,21 @@ Ice::Identity getIdentity(VALUE);
 // Create an instance of Ice::Identity. May raise RubyException.
 //
 VALUE createIdentity(const Ice::Identity&);
+
+//
+// Create a Ruby instance of Ice.ProtocolVersion.
+//
+VALUE createProtocolVersion(const Ice::ProtocolVersion&);
+
+//
+// Create a Ruby instance of Ice.EncodingVersion.
+//
+VALUE createEncodingVersion(const Ice::EncodingVersion&);
+
+//
+// Extracts the members of an encoding version.
+//
+bool getEncodingVersion(VALUE, Ice::EncodingVersion&);
 
 //
 // The callRuby functions are used to invoke Ruby C API functions

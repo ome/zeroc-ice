@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 }
 
 int
-Create::run(int argc, char* argv[])
+Create::run(int, char*[])
 {
     const string names[] = { "don", "ed", "frank", "gary", "arnold", "bob", "carlos" };
     const string phoneNumbers[] = { "(777)777-7777", "(666)666-6666", "(555)555-5555 x123", 

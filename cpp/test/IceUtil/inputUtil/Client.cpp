@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,10 +21,7 @@ using namespace std;
 
 #define WS " \f\n\r\t\v"
 
-#if defined(__BCPLUSPLUS__)
-Int64 Int64Min = -9223372036854775808i64;
-Int64 Int64Max =  9223372036854775807i64;
-#elif defined(_MSC_VER)
+#if defined(_MSC_VER)
 const Int64 Int64Min = -9223372036854775808i64;
 const Int64 Int64Max =  9223372036854775807i64;
 #elif defined(ICE_64)
@@ -213,7 +210,6 @@ main(int, char**)
         test(IceUtilInternal::splitString(":a:b:", ":", ss) && ss.size() == 2 && ss[0] == "a" && ss[1] == "b");
         ss.clear();
 
-#if defined(_MSC_VER) && _MSC_VER >= 1300 // COMPILERBUG: VC++ 6 doesn't like escaped quotes
         test(IceUtilInternal::splitString("\"a\"", ":", ss) && ss.size() == 1 && ss[0] == "a");
         ss.clear();
         test(IceUtilInternal::splitString("\"a\":b", ":", ss) && ss.size() == 2 && ss[0] == "a" && ss[1] == "b");
@@ -224,7 +220,6 @@ main(int, char**)
         ss.clear();
         test(IceUtilInternal::splitString("a=\"a:b\"", ":", ss) && ss.size() == 1 && ss[0] == "a=a:b");
         ss.clear();
-#endif
 
         test(IceUtilInternal::splitString("'a'", ":", ss) && ss.size() == 1 && ss[0] == "a");
         ss.clear();
@@ -233,7 +228,6 @@ main(int, char**)
         test(IceUtilInternal::splitString("\"'a\"", ":", ss) && ss.size() == 1 && ss[0] == "'a");
         ss.clear();
 
-#if defined(_MSC_VER) && _MSC_VER >= 1300 // COMPILERBUG: VC++ 6 doesn't like escaped quotes
         test(IceUtilInternal::splitString("a\\'b", ":", ss) && ss.size() == 1 && ss[0] == "a'b");
         ss.clear();
         test(IceUtilInternal::splitString("'a:b\\'c'", ":", ss) && ss.size() == 1 && ss[0] == "a:b'c");
@@ -246,8 +240,6 @@ main(int, char**)
         ss.clear();
         test(IceUtilInternal::splitString("\"a:b'c\"", ":", ss) && ss.size() == 1 && ss[0] == "a:b'c");
         ss.clear();
-#endif
-
         test(!IceUtilInternal::splitString("a\"b", ":", ss));
     }
     cout << "ok" << endl;

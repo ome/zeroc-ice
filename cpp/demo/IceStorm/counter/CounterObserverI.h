@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -32,7 +32,7 @@ private:
 };
 typedef IceUtil::Handle<MTPrinter> MTPrinterPtr;
 
-class CounterObserverI : public Demo::CounterObserver, public IceUtil::Mutex
+class CounterObserverI : public Demo::CounterObserver
 {
 public:
 
@@ -45,6 +45,7 @@ private:
 
     int _value;
     MTPrinterPtr _printer;
+    IceUtil::Mutex _mutex;
 };
 
 #endif

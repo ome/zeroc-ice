@@ -15,9 +15,9 @@ Requirements
 Operating systems
 -----------------
 
-Ice for Java has been tested under Linux, Solaris, MacOS X, and
-Windows XP/Server 2003/Vista/7, but due to the portability of Java, it
-is very likely that it will also work on other platforms for which a
+Ice for Java has been tested under Linux, Solaris, OS X, and Windows
+7/8/Server 2008/Server 2012, but due to the portability of Java, it is
+very likely that it will also work on other platforms for which a 
 suitable Java implementation is available.
 
 Note, however, that you will need the Slice to Java translator (see
@@ -31,11 +31,17 @@ generated Java files to your target platform.
 Java version
 ------------
 
-Ice for Java requires J2SE 1.5.0 or later.
+Ice for Java requires J2SE 1.6.0 or later.
 
-You can download Java5 and Java6 for Solaris, Windows, and Linux from:
+The graphical IceGrid administrative tool requires J2SE 7u6 or later
+with JavaFX support.
+
+You can download Java for Solaris, Windows, OS X and Linux from:
 
   http://www.oracle.com/technetwork/java/index.html
+
+We do not support the IceGrid administrative tool on Solaris because
+of the lack of JavaFX support on this platform.
 
 Make sure to add javac and java to your PATH.
 
@@ -52,9 +58,9 @@ command-line option shown below:
 
   java -Djava.security.egd=file:/dev/urandom MyClass ...
 
-On systems with IPv6 enabled, you may experience occasional hangs 
-the first time an Ice object adapter is activated within a JVM. A 
-work-around is to disable IPv6 support by setting the Java property 
+On systems with IPv6 enabled, you may experience occasional hangs
+the first time an Ice object adapter is activated within a JVM. A
+work-around is to disable IPv6 support by setting the Java property
 java.net.preferIPv4Stack to true. For example:
 
   java -Djava.net.preferIPv4Stack=true MyClass ...
@@ -81,33 +87,25 @@ Berkeley DB
 
 "Freeze" is an optional Ice component that provides a persistence
 facility for Ice applications. Freeze uses Berkeley DB as its
-underlying database and currently requires Berkeley DB 4.8.30.
+underlying database and currently requires Berkeley DB version 5.3
+(the recommended version is 5.3.21).
 
-ZeroC provides Berkeley DB binary distributions (with Java support)
-for many platforms: 
+ZeroC includes a Berkeley DB binary distribution with Java support
+in the Ice distribution on all platforms except Solaris 11:
 
   http://www.zeroc.com/download.html
 
-Alternatively, you can build Berkeley DB yourself; the Berkeley DB 
-source distribution is available at
-
-  http://www.oracle.com/database/berkeley-db/index.html
-
-This source distribution is also available at
+The corresponding source distribution with build instructions is
+available at:
 
   http://www.zeroc.com/download.html#src_third_party
-
-When you build Berkeley DB, make sure to configure Berkeley DB with
-Java support. For Linux, this is done by specifying the --enable-java
-option when running the configure script. On Windows, you must select
-the project "db_java -- Win32 Release".
 
 In order to run an application that uses Freeze, you must add db.jar
 to your CLASSPATH and verify that the Berkeley DB shared libraries are
 in your java.library.path. On Linux, this can be achieved by adding
 <Berkeley DB home>/lib to your LD_LIBRARY_PATH, for example:
 
-  $ export LD_LIBRARY_PATH=/opt/db48/lib:$LD_LIBRARY_PATH
+  $ export LD_LIBRARY_PATH=/opt/db53/lib:$LD_LIBRARY_PATH
 
 
 bzip2
@@ -134,14 +132,14 @@ Console") uses JGoodies Common, JGoodies Forms, and JGoodies Looks.
 
 The libraries are available here:
 
-  http://www.jgoodies.com/downloads/libraries.html
+  http://www.jgoodies.com/downloads/libraries/
 
 The IceGrid administrative tool has been tested with the following
 versions:
 
-  JGoodies Common 1.2.0
-  JGoodies Forms 1.4.1
-  JGoodies Looks 2.4.1
+  JGoodies Common 1.4.0
+  JGoodies Forms 1.6.0
+  JGoodies Looks 2.5.2
 
 
 ProGuard
@@ -154,15 +152,26 @@ ProGuard is available here:
 
   http://proguard.sourceforge.net
 
-Ice for Java has been tested with ProGuard 4.6.
+Ice for Java has been tested with ProGuard 4.8.
+
+
+Java Application Bundler
+------------------------
+
+The Java Application Bundler is used to create the OS X application
+bundle for the graphical IceGrid administrative tool (see "IceGrid
+Administrative Console").
+
+The Java Application Bundler is available here:
+
+  http://java.net/projects/appbundler
 
 
 Android
 -------
 
-The Ice run time (lib/Ice.jar) is fully compatible with Android 2.1 or
-later. The IceSSL plug-in requires Android 2.2 or later (see the
-release notes for more information on SSL in Android).
+The Ice run time (lib/Ice.jar) is fully compatible with Android 2.3 or
+later.
 
 Refer to the sections "Eclipse Development" and "Using Ice in Android"
 below for additional details.
@@ -185,8 +194,8 @@ This source distribution cannot be compiled successfully without the
 Berkeley DB run time for Java (db.jar). On Unix platforms, the build
 system searches for this file in two locations:
 
-  * /usr/share/java/db-4.8.30.jar
-  * /opt/Ice-3.4.2/lib/db.jar
+  * /usr/share/java/db-5.3.21.jar
+  * /opt/Ice-3.5.0/lib/db.jar
 
 If neither of these files is present on your system, or if you are not
 using a Unix platform, you must add db.jar to your CLASSPATH.
@@ -197,11 +206,11 @@ must set the ICE_HOME environment variable with the path name of your
 Ice installation. For example:
 
   # On Unix.
-  $ export ICE_HOME=/opt/Ice-3.4.2  (For local build)
+  $ export ICE_HOME=/opt/Ice-3.5.0  (For local build)
   $ export ICE_HOME=/usr            (For RPM installation)
 
   # On Windows
-  > set ICE_HOME=C:\Ice-3.4.2
+  > set ICE_HOME=C:\Ice-3.5.0
 
 Before building Ice for Java, review the settings in the file
 config/build.properties and edit as necessary.
@@ -217,6 +226,11 @@ two options:
    be present in your CLASSPATH or available at the locations defined
    in config/build.properties.
 
+In OS X you have one more option to create an Application Bundle. The
+Java Application Bundler must be present in your CLASSPATH. After build
+the application bundle will be placed in "lib/IceGrid Admin.app". During
+installation the bundle is copied to the Ice-3.5.0/bin subdirectory.
+
 
 Building Ice for Java
 ---------------------
@@ -225,8 +239,9 @@ To build only the Ice run time (Ice.jar), use the following command:
 
   ant ice-jar
 
-To build the Ice run time along with Freeze and the IceGrid
-administrative console, use this command:
+To build the Ice run time along with Freeze, IceBox, IceGrid, IceStorm,
+IcePatch2 services  and the IceGrid administrative console, use
+this command:
 
   ant jar
 
@@ -264,8 +279,10 @@ specified by the "prefix" variable in config/build.properties.
 It is not necessary to rebuild Ice for Java after changing the
 value of the prefix variable.
 
-After installation add Ice.jar (and optionally Freeze.jar) to your
-CLASSPATH.
+After installation, add Ice.jar to your CLASSPATH. If you plan to use
+other Ice services, you must also add the appropriate JAR files to
+your CLASSPATH: Freeze.jar, Glacier2.jar, IceBox.jar, IceStorm.jar,
+IcePatch2.jar and IceGrid.jar.
 
 
 ======================================================================
@@ -293,7 +310,7 @@ The Ice manual provides usage instructions for the plug-in:
 Using Ice in Android
 ======================================================================
 
-Ice requires Android 2.1 or later. Aside from that, there are no other
+Ice requires Android 2.3 or later. Aside from that, there are no other
 special requirements for using Ice in an Android application. We
 strongly recommend installing our Slice2Java plug-in for Eclipse to
 automate the compilation of your Slice definitions.
@@ -335,11 +352,11 @@ this source distribution then you must set the ICE_HOME environment
 variable with the path name of your Ice installation:
 
   # On Unix
-  $ export ICE_HOME=/opt/Ice-3.4.2  (For local build)
+  $ export ICE_HOME=/opt/Ice-3.5.0  (For local build)
   $ export ICE_HOME=/usr            (For RPM installation)
 
   # On Windows
-  > set ICE_HOME=c:\Ice-3.4.2
+  > set ICE_HOME=c:\Ice-3.5.0
 
 Python is required to run the test suite:
 
@@ -363,10 +380,15 @@ Note that the Glacier2/router test will fail if it is run with the
 CLASSPATH.
 
 If you want to try out any of the demos, make sure to add lib/Ice.jar
-and "classes" to your CLASSPATH. Then change to the desired demo
-directory and follow the instructions in the README file. If no README
-file is present, the demo can be run by entering the following command
-to start the server:
+and "classes" to your CLASSPATH.
+
+For demos that use Ice services you must also add the service
+corresponding jar files Freeze.jar, Glacier2.jar, IceBox.jar,
+IceStorm.jar and IceGrid.jar to your CLASSPATH.
+
+Then change to the desired demo directory and follow the instructions
+in the README file. If no README file is present, the demo can be run
+by entering the following command to start the server:
 
   $ java Server
 
@@ -374,6 +396,35 @@ Then in a separate window enter the following command to start the
 client:
 
   $ java Client
+
+
+======================================================================
+Android Tests
+======================================================================
+
+The Ice test suite for Android consists of a JAR file containing the
+individual test cases and an Android app that loads and runs these
+tests.
+
+You must first build the test JAR file:
+
+  $ ant test-android-jar
+
+This produces IceAndroidTest.jar. Next, you must use Eclipse and the
+Slice2Java plug-in to build the the test app.
+
+In Eclipse, open the test project by choosing File->Import...; in the
+"General" group, select "Existing Project into Workspace", then
+navigate to the test/android directory.
+
+The test project is configured to locate the Ice run time JAR file
+(Ice.jar) and IceAndroidTest.jar via the ICE_JAR_HOME classpath
+variable. The Slice2Java plug-in configures this variable
+automatically based on your setting for the SDK location in the
+Eclipse preferences.
+
+After successfully building the project, deploy it onto a suitable
+emulator or device.
 
 
 ======================================================================
@@ -392,7 +443,11 @@ start the console with the following command:
   java -jar IceGridGUI.jar
 
 If you compiled the console without ProGuard, you will need to add
-Ice.jar, IceGridGUI.jar, and the JGoodies libraries to your CLASSPATH.
-You can start the console with this command:
+IceGridGUI.jar to your CLASSPATH. You can start the console with this
+command:
 
   java IceGridGUI.Main
+
+In OS X there is also an application bundle named "IceGrid Admin". You
+can start the IceGrid Administrative Console by double-clicking the
+"IceGrid Admin" icon in Finder.

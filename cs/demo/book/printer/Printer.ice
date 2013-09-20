@@ -1,20 +1,18 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef SIMPLE_ICE
-#define SIMPLE_ICE
+#pragma once
 
-module Demo {
+module Demo
+{
     interface Printer
     {
         void printString(string s);
     };
 };
-
-#endif

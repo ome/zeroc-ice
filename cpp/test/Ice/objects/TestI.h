@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -111,6 +111,10 @@ public:
 
     virtual void setI(const Test::IPtr&, const Ice::Current&);
 
+    virtual Test::BaseSeq opBaseSeq(const Test::BaseSeq&, Test::BaseSeq&, const Ice::Current&);
+
+    virtual Test::CompactPtr getCompact(const Ice::Current&);
+    
 private:
 
     Ice::ObjectAdapterPtr _adapter;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,24 +24,6 @@ ZEND_FUNCTION(Ice_unregister);
 ZEND_FUNCTION(Ice_find);
 ZEND_FUNCTION(Ice_getProperties);
 }
-
-#define ICEPHP_COMMUNICATOR_FUNCTIONS \
-    ZEND_FE(Ice_initialize, NULL) \
-    ZEND_FE(Ice_register, NULL) \
-    ZEND_FE(Ice_unregister, NULL) \
-    ZEND_FE(Ice_find, NULL) \
-    ZEND_FE(Ice_getProperties, NULL)
-
-#ifdef ICEPHP_USE_NAMESPACES
-#   define ICEPHP_COMMUNICATOR_NS_FUNCTIONS \
-    ZEND_NS_FALIAS("Ice", initialize, Ice_initialize, NULL) \
-    ZEND_NS_FALIAS("Ice", register, Ice_register, NULL) \
-    ZEND_NS_FALIAS("Ice", unregister, Ice_unregister, NULL) \
-    ZEND_NS_FALIAS("Ice", find, Ice_find, NULL) \
-    ZEND_NS_FALIAS("Ice", getProperties, Ice_getProperties, NULL)
-#else
-#   define ICEPHP_COMMUNICATOR_NS_FUNCTIONS
-#endif
 
 namespace IcePHP
 {

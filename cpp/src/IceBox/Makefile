@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -13,8 +13,8 @@ LIBFILENAME     = $(call mklibfilename,IceBox,$(VERSION))
 SONAME          = $(call mksoname,IceBox,$(SOVERSION))  
 LIBNAME		= $(call mklibname,IceBox)
 
-SERVER		= $(top_srcdir)/bin/icebox
-ADMIN		= $(top_srcdir)/bin/iceboxadmin
+SERVER		= $(bindir)/icebox
+ADMIN		= $(bindir)/iceboxadmin
 
 LIBTARGETS      = $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
 TARGETS         = $(LIBTARGETS) $(SERVER) $(ADMIN)
@@ -36,6 +36,11 @@ SLICE_SRCS	= $(SDIR)/IceBox.ice
 HDIR		= $(headerdir)/IceBox
 SDIR		= $(slicedir)/IceBox
 
+ifeq ($(CPP11),yes)
+RPATH_DIR	= @loader_path/../../lib/c++11
+else
+RPATH_DIR	= @loader_path/../lib
+endif
 
 include $(top_srcdir)/config/Make.rules
 

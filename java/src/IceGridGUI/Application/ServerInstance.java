@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -437,7 +437,7 @@ class ServerInstance extends ListTreeNode implements Server, PropertySetParent
         return _editable;
     }
 
-    Object[] getServiceNames()
+    String[] getServiceNames()
     {
         assert _isIceBox;
 
@@ -447,7 +447,7 @@ class ServerInstance extends ListTreeNode implements Server, PropertySetParent
 
         Communicator.ChildList services = getRoot().findServerTemplate(_descriptor.template).getServices();
 
-        Object[] result = new Object[services.size()];
+        String[] result = new String[services.size()];
         int i = 0;
 
         java.util.Iterator p = services.iterator();

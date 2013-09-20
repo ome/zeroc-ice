@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,11 +15,15 @@ namespace IceInternal
     public sealed class ConnectionReaper
     {
         public void
-        add(Ice.ConnectionI connection)
+        add(Ice.ConnectionI connection, Ice.Instrumentation.Observer observer)
         {
             lock(this)
             {
                 _connections.Add(connection);
+                if(observer != null)
+                {
+                    observer.detach();
+                }
             }
         }
 

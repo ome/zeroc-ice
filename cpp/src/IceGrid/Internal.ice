@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_GRID_INTERNAL_ICE
-#define ICE_GRID_INTERNAL_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -150,7 +149,7 @@ interface Adapter
      * adapter direct proxy it's active.
      *
      **/
-    ["ami", "amd"] Object* activate();    
+    ["amd"] Object* activate();    
 
     /**
      *
@@ -162,7 +161,7 @@ interface Adapter
      * endpoints if the adapter is already active.
      *
      **/
-    ["ami", "nonmutating", "cpp:const"] idempotent Object* getDirectProxy()
+    ["nonmutating", "cpp:const"] idempotent Object* getDirectProxy()
         throws AdapterNotActiveException;
 
     /**
@@ -178,7 +177,7 @@ interface Adapter
      * active adapter.
      *
      **/
-    ["ami"] void setDirectProxy(Object* proxy)
+    void setDirectProxy(Object* proxy)
         throws AdapterActiveException;
 };
 
@@ -225,7 +224,7 @@ interface Server extends FileReader
      * otherwise.
      *
      **/
-    ["amd", "ami"] void start()
+    ["amd"] void start()
         throws ServerStartException;
 
     /**
@@ -235,9 +234,21 @@ interface Server extends FileReader
      * amount of time, it will be killed.
      *
      **/
-    ["amd", "ami"] void stop()
+    ["amd"] void stop()
         throws ServerStopException;
     
+    /**
+     *
+     * Check if the given server can be loaded on this node.
+     *
+     * @return True if the server is inactive.
+     *
+     * @throws DeploymentException Raised if the server can't be updated.
+     *
+     **/
+    ["ami"] bool checkUpdate(InternalServerDescriptor svr, bool noRestart)
+        throws DeploymentException;
+
     /**
      *
      * Enable or disable the server.
@@ -293,7 +304,7 @@ interface Server extends FileReader
      * Set the process proxy.
      *
      **/
-    ["ami", "amd"] void setProcess(Ice::Process* proc);
+    ["amd"] void setProcess(Ice::Process* proc);
 };
 
 interface InternalRegistry;
@@ -351,7 +362,7 @@ interface Node extends FileReader, ReplicaObserver
      * they will be created.
      *
      **/
-    ["amd", "ami"] idempotent Server* loadServer(InternalServerDescriptor svr,
+    ["amd"] idempotent Server* loadServer(InternalServerDescriptor svr,
                                                  string replicaName,
                                                  out AdapterPrxDict adapters, 
                                                  out int actTimeout, 
@@ -360,10 +371,26 @@ interface Node extends FileReader, ReplicaObserver
 
     /**
      *
+     * Load the given server and ensure the server won't be
+     * restarted. If the server resources weren't already created
+     * (database environment directories, property files, etc), they
+     * will be created. If the server can't be updated without a
+     * restart, a DeploymentException is raised.
+     *
+     **/
+    ["amd"] idempotent Server* loadServerWithoutRestart(InternalServerDescriptor svr,
+                                                        string replicaName,
+                                                        out AdapterPrxDict adapters, 
+                                                        out int actTimeout, 
+                                                        out int deactTimeout)
+        throws DeploymentException;
+
+    /**
+     *
      * Destroy the given server.
      *
      **/
-    ["amd", "ami"] idempotent void destroyServer(string name, string uuid, int revision, string replicaName)
+    ["amd"] idempotent void destroyServer(string name, string uuid, int revision, string replicaName)
         throws DeploymentException;
 
     /**
@@ -387,7 +414,7 @@ interface Node extends FileReader, ReplicaObserver
      * replicaAdded below).
      * 
      **/
-    ["ami"] void registerWithReplica(InternalRegistry* replica);
+    void registerWithReplica(InternalRegistry* replica);
 
     /**
      *
@@ -493,7 +520,7 @@ interface NodeSession
      * of the server.
      *
      **/
-    ["amd", "ami", "cpp:const"] void waitForApplicationUpdate(string application, int revision);
+    ["amd", "cpp:const"] void waitForApplicationUpdate(string application, int revision);
 
     /**
      *
@@ -548,7 +575,8 @@ interface ReplicaSession
      * will receive the database and database updates.
      *
      **/
-    idempotent void setDatabaseObserver(DatabaseObserver* dbObs);
+    idempotent void setDatabaseObserver(DatabaseObserver* dbObs)
+        throws ObserverAlreadyRegisteredException;
 
     /**
      *
@@ -573,7 +601,7 @@ interface ReplicaSession
      * the locator registry interface.
      *
      **/
-    ["ami"] idempotent void setAdapterDirectProxy(string adapterId, string replicaGroupId, Object* proxy)
+    idempotent void setAdapterDirectProxy(string adapterId, string replicaGroupId, Object* proxy)
         throws AdapterNotExistException, AdapterExistsException;
 
     /**
@@ -645,7 +673,8 @@ class InternalNodeInfo
 
     /**
      *
-     * The number of processors.
+     * The number of processor threads (e.g. 8 on 
+     * system with 1 quad-core CPU, with 2 threads per core)
      *
      **/
     int nProcessors;
@@ -702,7 +731,7 @@ interface InternalRegistry extends FileReader
      *
      **/
     NodeSession* registerNode(InternalNodeInfo info, Node* prx, LoadInfo loadInf)
-        throws NodeActiveException;
+        throws NodeActiveException, PermissionDeniedException;
 
     /**
      *
@@ -721,7 +750,7 @@ interface InternalRegistry extends FileReader
      *
      **/
     ReplicaSession* registerReplica(InternalReplicaInfo info, InternalRegistry* prx)
-        throws ReplicaActiveException;
+        throws ReplicaActiveException, PermissionDeniedException;
 
     /**
      *
@@ -757,4 +786,3 @@ interface InternalRegistry extends FileReader
 
 };
 
-#endif

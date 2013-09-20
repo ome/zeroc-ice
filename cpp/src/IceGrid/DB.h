@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,7 +38,7 @@ public:
 };
 typedef IceUtil::Handle<ObjectsWrapper> ObjectsWrapperPtr;
 
-class DatabaseCache : virtual public IceDB::DatabaseCache
+class ConnectionPool : public virtual IceDB::ConnectionPool
 {
 public:
 
@@ -47,13 +47,13 @@ public:
     virtual ObjectsWrapperPtr getObjects(const IceDB::DatabaseConnectionPtr&) = 0;
     virtual ObjectsWrapperPtr getInternalObjects(const IceDB::DatabaseConnectionPtr&) = 0;
 };
-typedef IceUtil::Handle<DatabaseCache> DatabaseCachePtr;
+typedef IceUtil::Handle<ConnectionPool> ConnectionPoolPtr;
 
 class DatabasePlugin : virtual public Ice::Plugin
 {
 public:
 
-    virtual DatabaseCachePtr getDatabaseCache() = 0;
+    virtual ConnectionPoolPtr getConnectionPool() = 0;
 };
 typedef IceUtil::Handle<DatabasePlugin> DatabasePluginPtr;
 

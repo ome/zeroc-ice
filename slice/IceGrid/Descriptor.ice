@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_GRID_DESCRIPTOR_ICE
-#define ICE_GRID_DESCRIPTOR_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -59,6 +58,7 @@ struct PropertyDescriptor
  * A property set descriptor.
  *
  **/
+["cpp:comparable"]
 struct PropertySetDescriptor
 {
     /**
@@ -103,6 +103,15 @@ struct ObjectDescriptor
      *
      **/
     string type;
+
+    /**
+     *
+     * Proxy options to use with the proxy created for this Ice object. If empty,
+     * the proxy will be created with the proxy options specified on the object
+     * adapter or replica group.
+     *
+     **/
+    string proxyOptions;
 };
 
 /**
@@ -117,6 +126,7 @@ struct ObjectDescriptor
  * An Ice object adapter descriptor.
  *
  **/
+["cpp:comparable"]
 struct AdapterDescriptor
 {
     /**
@@ -200,6 +210,7 @@ struct AdapterDescriptor
  * A Freeze database environment descriptor.
  *
  **/
+["cpp:comparable"]
 struct DbEnvDescriptor
 {
     /**
@@ -290,6 +301,7 @@ class CommunicatorDescriptor
  * directories to retrieve from the patch server.
  *
  **/
+["cpp:comparable"]
 struct DistributionDescriptor
 {
     /** The proxy of the IcePatch2 server. */
@@ -447,6 +459,7 @@ class ServiceDescriptor extends CommunicatorDescriptor
  * A server template instance descriptor.
  *
  **/
+["cpp:comparable"]
 struct ServerInstanceDescriptor
 {
     /**
@@ -721,6 +734,13 @@ struct ReplicaGroupDescriptor
      *
      **/
     LoadBalancingPolicy loadBalancing;
+
+    /**
+     *
+     * Default options for proxies created for the replica group.
+     *
+     **/
+    string proxyOptions;
 
     /**
      *
@@ -1049,4 +1069,3 @@ struct ApplicationUpdateDescriptor
 
 };
 
-#endif

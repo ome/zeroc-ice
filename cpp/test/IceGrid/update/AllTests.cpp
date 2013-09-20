@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -606,7 +606,11 @@ allTests(const Ice::CommunicatorPtr& communicator)
         
         IceBoxDescriptorPtr server = new IceBoxDescriptor();
         server->id = "IceBox";
+#if defined(NDEBUG) || !defined(_WIN32)
         server->exe = properties->getProperty("IceBinDir") + "/icebox";
+#else
+        server->exe = properties->getProperty("IceBinDir") + "/iceboxd";
+#endif
         server->applicationDistrib = false;
         server->allocatable = false;
         addProperty(server, "Ice.Admin.Endpoints", "tcp -h 127.0.0.1");

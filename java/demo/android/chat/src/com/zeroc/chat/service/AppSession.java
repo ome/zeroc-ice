@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,6 +15,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
+import com.zeroc.chat.R;
+
+import android.content.res.Resources;
 import android.os.Handler;
 
 public class AppSession
@@ -36,7 +39,7 @@ public class AppSession
     private String _hostname;
     private String _error;
 
-    public AppSession(Handler handler, IceSSL.CertificateVerifier verifier, String hostname, String username,
+    public AppSession(Resources resources, Handler handler, String hostname, String username,
                       String password, boolean secure)
         throws Glacier2.CannotCreateSessionException, Glacier2.PermissionDeniedException
     {
@@ -49,22 +52,28 @@ public class AppSession
         initData.properties.setProperty("Ice.RetryIntervals", "-1");
         initData.properties.setProperty("Ice.Trace.Network", "0");
         initData.properties.setProperty("Ice.Plugin.IceSSL", "IceSSL.PluginFactory");
-        initData.properties.setProperty("IceSSL.VerifyPeer", "0");
-        initData.properties.setProperty("IceSSL.TrustOnly.Client", "CN=Glacier2");
+        initData.properties.setProperty("Ice.InitPlugins", "0");
+        initData.properties.setProperty("IceSSL.TruststoreType", "BKS");
+        initData.properties.setProperty("IceSSL.Password", "password");
 
         _communicator = Ice.Util.initialize(initData);
-        IceSSL.Plugin plugin = (IceSSL.Plugin)_communicator.getPluginManager().getPlugin("IceSSL");
-        plugin.setCertificateVerifier(verifier);
         _hostname = hostname;
 
         String s;
         if(secure)
         {
-            s = "Glacier2/router:ssl -p 4064 -h " + hostname + " -t 10000";
+            java.io.InputStream certStream;
+            certStream = resources.openRawResource(R.raw.client);
+
+            IceSSL.Plugin plugin = (IceSSL.Plugin)_communicator.getPluginManager().getPlugin("IceSSL");
+            plugin.setTruststoreStream(certStream);
+            _communicator.getPluginManager().initializePlugins();
+            
+            s = "Glacier2/router -e 1.0:ssl -p 4064 -h " + hostname + " -t 10000";
         }
         else
         {
-            s = "Glacier2/router:tcp -p 4502 -h " + hostname + " -t 10000";
+            s = "Glacier2/router -e 1.0:tcp -p 4502 -h " + hostname + " -t 10000";
         }
 
         Ice.ObjectPrx proxy = _communicator.stringToProxy(s);
@@ -359,6 +368,8 @@ public class AppSession
                 }
             });
         }
+        
+        public static final long serialVersionUID = 1;
     }
 
     // Any exception destroys the session.

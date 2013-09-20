@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#if defined(_MSC_VER) && (_MSC_VER < 1300) 
+#ifdef __MINGW32__
 #include <limits.h>
 #endif
 
@@ -25,9 +25,11 @@ using namespace IceUtil;
 namespace IceUtilInternal
 {
 
-#if defined(__BCPLUSPLUS__) || (defined(_MSC_VER) && (_MSC_VER < 1300))
+
+#ifdef __MINGW32__
+
 //
-// The VC60 runtime does not include _strtoi64, so we provide our own implementation
+// The MINGW runtime does not include _strtoi64, so we provide our own implementation
 //
 
 static const string allDigits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -177,7 +179,7 @@ Int64
 strToInt64(const char* s, char** endptr, int base)
 {
 #if defined(_WIN32)
-#   if defined(__BCPLUSPLUS__) || (defined(_MSC_VER) && (_MSC_VER < 1300))
+#   ifdef __MINGW32__
     return strToInt64Impl(s, endptr, base);
 #   else
     return _strtoi64(s, endptr, base);

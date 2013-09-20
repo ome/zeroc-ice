@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -82,15 +82,15 @@ run(int argc, char* argv[], const CommunicatorPtr& communicator)
         Ice::ObjectPrx prx = topic->getPublisher()->ice_twoway();
         vector<SinglePrx> single;
         Ice::EndpointSeq endpoints = prx->ice_getEndpoints();
-	for(Ice::EndpointSeq::const_iterator p = endpoints.begin(); p != endpoints.end(); ++p)
-	{
+        for(Ice::EndpointSeq::const_iterator p = endpoints.begin(); p != endpoints.end(); ++p)
+        {
             if((*p)->toString().substr(0, 3) != "udp")
             {
                 Ice::EndpointSeq e;
                 e.push_back(*p);
                 single.push_back(SinglePrx::uncheckedCast(prx->ice_endpoints(e)));
             }
-	}
+        }
         if(single.size() <= 1)
         {
             cerr << argv[0] << ": Not enough endpoints in publisher proxy" << endl;

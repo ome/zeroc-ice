@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 #include <TestAMDI.h>
 #include <Ice/Ice.h>
+#include <TestCommon.h>
 
 using namespace Test;
 
@@ -141,6 +142,123 @@ TestI::unknownMostDerived2AsBase_async(const AMD_TestIntf_unknownMostDerived2AsB
     umd2.ui = "UnknownMostDerived2.ui";
     umd2.umd2 = "UnknownMostDerived2.umd2";
     cb->ice_exception(umd2);
+}
+
+void
+TestI::unknownMostDerived2AsBaseCompact_async(const AMD_TestIntf_unknownMostDerived2AsBaseCompactPtr& cb,
+                                              const ::Ice::Current&)
+{
+    UnknownMostDerived2 umd2;
+    umd2.b = "UnknownMostDerived2.b";
+    umd2.ui = "UnknownMostDerived2.ui";
+    umd2.umd2 = "UnknownMostDerived2.umd2";
+    cb->ice_exception(umd2);
+}
+
+void
+TestI::knownPreservedAsBase_async(const AMD_TestIntf_knownPreservedAsBasePtr& cb, const ::Ice::Current&)
+{
+    KnownPreservedDerived ex;
+    ex.b = "base";
+    ex.kp = "preserved";
+    ex.kpd = "derived";
+    cb->ice_exception(ex);
+}
+
+void
+TestI::knownPreservedAsKnownPreserved_async(const AMD_TestIntf_knownPreservedAsKnownPreservedPtr& cb,
+                                            const ::Ice::Current&)
+{
+    KnownPreservedDerived ex;
+    ex.b = "base";
+    ex.kp = "preserved";
+    ex.kpd = "derived";
+    cb->ice_exception(ex);
+}
+
+void
+TestI::relayKnownPreservedAsBase_async(const AMD_TestIntf_relayKnownPreservedAsBasePtr& cb, const RelayPrx& r,
+                                       const ::Ice::Current&)
+{
+    try
+    {
+        r->knownPreservedAsBase();
+        test(false);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        cb->ice_exception(ex);
+    }
+}
+
+void
+TestI::relayKnownPreservedAsKnownPreserved_async(const AMD_TestIntf_relayKnownPreservedAsKnownPreservedPtr& cb,
+                                                 const RelayPrx& r, const ::Ice::Current&)
+{
+    try
+    {
+        r->knownPreservedAsKnownPreserved();
+        test(false);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        cb->ice_exception(ex);
+    }
+}
+
+void
+TestI::unknownPreservedAsBase_async(const AMD_TestIntf_unknownPreservedAsBasePtr& cb, const ::Ice::Current&)
+{
+    SPreserved2 ex;
+    ex.b = "base";
+    ex.kp = "preserved";
+    ex.kpd = "derived";
+    ex.p1 = new SPreservedClass("bc", "spc");
+    ex.p2 = ex.p1;
+    cb->ice_exception(ex);
+}
+
+void
+TestI::unknownPreservedAsKnownPreserved_async(const AMD_TestIntf_unknownPreservedAsKnownPreservedPtr& cb,
+                                              const ::Ice::Current&)
+{
+    SPreserved2 ex;
+    ex.b = "base";
+    ex.kp = "preserved";
+    ex.kpd = "derived";
+    ex.p1 = new SPreservedClass("bc", "spc");
+    ex.p2 = ex.p1;
+    cb->ice_exception(ex);
+}
+
+void
+TestI::relayUnknownPreservedAsBase_async(const AMD_TestIntf_relayUnknownPreservedAsBasePtr& cb, const RelayPrx& r,
+                                         const ::Ice::Current&)
+{
+    try
+    {
+        r->unknownPreservedAsBase();
+        test(false);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        cb->ice_exception(ex);
+    }
+}
+
+void
+TestI::relayUnknownPreservedAsKnownPreserved_async(const AMD_TestIntf_relayUnknownPreservedAsKnownPreservedPtr& cb,
+                                                   const RelayPrx& r, const ::Ice::Current&)
+{
+    try
+    {
+        r->unknownPreservedAsKnownPreserved();
+        test(false);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        cb->ice_exception(ex);
+    }
 }
 
 void

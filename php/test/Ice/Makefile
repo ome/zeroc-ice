@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -11,7 +11,8 @@ top_srcdir	= ../..
 
 include $(top_srcdir)/config/Make.rules.php
 
-SUBDIRS		= binding checksum exceptions facets info inheritance objects operations proxy slicing defaultValue
+SUBDIRS		= binding checksum exceptions facets info inheritance objects operations proxy slicing defaultValue \
+		  optional enums
 
 $(EVERYTHING)::
 	@for subdir in $(SUBDIRS); \

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -210,7 +210,8 @@ handleFreeStorage(void* p TSRMLS_DC)
 {
     Wrapper<Ice::LoggerPtr>* obj = static_cast<Wrapper<Ice::LoggerPtr>*>(p);
     delete obj->ptr;
-    zend_objects_free_object_storage(static_cast<zend_object*>(p) TSRMLS_CC);
+    zend_object_std_dtor(static_cast<zend_object*>(p) TSRMLS_CC);
+    efree(p);
 }
 
 #ifdef _WIN32
@@ -224,13 +225,20 @@ handleClone(zval* zv TSRMLS_DC)
 }
 
 //
+// Necessary to suppress warnings from zend_function_entry in php-5.2.
+//
+#if defined(__GNUC__)
+#  pragma GCC diagnostic ignored "-Wwrite-strings"
+#endif
+
+//
 // Predefined methods for Logger.
 //
-static function_entry _interfaceMethods[] =
+static zend_function_entry _interfaceMethods[] =
 {
     {0, 0, 0}
 };
-static function_entry _classMethods[] =
+static zend_function_entry _classMethods[] =
 {
     ZEND_ME(Ice_Logger, __construct, NULL, ZEND_ACC_PRIVATE|ZEND_ACC_CTOR)
     ZEND_ME(Ice_Logger, __toString, NULL, ZEND_ACC_PUBLIC)
@@ -241,6 +249,12 @@ static function_entry _classMethods[] =
     ZEND_ME(Ice_Logger, cloneWithPrefix, NULL, ZEND_ACC_PUBLIC)
     {0, 0, 0}
 };
+//
+// enable warning again
+//
+#if defined(__GNUC__)
+#  pragma GCC diagnostic error "-Wwrite-strings"
+#endif
 
 bool
 IcePHP::loggerInit(TSRMLS_D)

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -115,7 +115,7 @@ public class Client extends test.Util.Application
     private int
     runAmd(MyObjectPrx prx, AMDInterceptorI interceptor, PrintWriter out)
     {
-		out.print("testing simple interceptor... ");
+                out.print("testing simple interceptor... ");
         out.flush();
         test(interceptor.getLastOperation() == null);
         test(interceptor.getLastStatus() == null);
@@ -201,7 +201,7 @@ public class Client extends test.Util.Application
         oa.activate();
        
         PrintWriter out = getWriter();
-		out.println("Collocation optimization on");
+                out.println("Collocation optimization on");
         int rs = run(prx, interceptor);
         if(rs == 0)
         {

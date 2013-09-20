@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -101,14 +101,7 @@ BankI::checkAllChips(const Ice::Current& current) const
 Casino::BetPrx
 BankI::createBet(int amount, int lifetime, const Ice::Current&)
 {
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-    Ice::Identity ident;
-    ident.name =  IceUtil::generateUUID();
-    ident.category = "bet";
-#else
     Ice::Identity ident = { IceUtil::generateUUID(), "bet" };
-#endif
-
     Ice::Long closeTime = IceUtil::Time::now().toMilliSeconds() + lifetime;
 
     outstandingChips += amount;

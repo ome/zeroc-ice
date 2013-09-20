@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef FREEZE_BACKGROUND_SAVE_EVICTOR_ICE
-#define FREEZE_BACKGROUND_SAVE_EVICTOR_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -78,7 +77,7 @@ local interface BackgroundSaveEvictor extends Evictor
      * @param id The identity of the Ice object.
      *
      * @throws Ice.NotRegisteredException Raised if this object was not
-     * locked with {link #keep} or {@link #keepFacet}.
+     * locked with {@link #keep} or {@link #keepFacet}.
      *
      * @see #keepFacet
      * @see #release
@@ -109,5 +108,4 @@ local interface BackgroundSaveEvictor extends Evictor
 };
 
 
-#endif
 

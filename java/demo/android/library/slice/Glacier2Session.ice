@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef LIBRARY_GLACIER2_SESSION_ICE
-#define LIBRARY_GLACIER2_SESSION_ICE
+#pragma once
 
 #include <Glacier2/Session.ice>
 
@@ -46,5 +45,3 @@ interface Glacier2Session extends Glacier2::Session
 };
 
 };
-
-#endif

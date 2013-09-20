@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,10 +11,11 @@ package IceInternal;
 
 public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessageCallback
 {
-    public OutgoingAsync(Ice.ObjectPrx prx, String operation, CallbackBase callback)
+    public OutgoingAsync(Ice.ObjectPrx prx, String operation, CallbackBase cb)
     {
-        super(((Ice.ObjectPrxHelperBase)prx).__reference().getInstance(), operation, callback);
+        super(prx.ice_getCommunicator(), ((Ice.ObjectPrxHelperBase)prx).__reference().getInstance(), operation, cb);
         _proxy = (Ice.ObjectPrxHelperBase)prx;
+        _encoding = Protocol.getCompatibleEncoding(_proxy.__reference().getEncoding());
     }
 
     public void __prepare(String operation, Ice.OperationMode mode, java.util.Map<String, String> ctx,
@@ -25,10 +26,14 @@ public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessa
         _mode = mode;
         _sentSynchronously = false;
 
+        Protocol.checkSupportedProtocol(Protocol.getCompatibleProtocol(_proxy.__reference().getProtocol()));
+
         if(explicitCtx && ctx == null)
         {
             ctx = _emptyContext;
         }
+
+        _observer = ObserverHelper.get(_proxy, operation, ctx);
 
         //
         // Can't call async via a batch proxy.
@@ -60,7 +65,7 @@ public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessa
 
         _os.writeString(operation);
 
-        _os.writeByte((byte)mode.ordinal());
+        _os.writeByte((byte)mode.value());
 
         if(ctx != null)
         {
@@ -86,10 +91,9 @@ public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessa
                 implicitContext.write(prxContext, _os);
             }
         }
-
-        _os.startWriteEncaps();
     }
 
+    @Override
     public Ice.ObjectPrx getProxy()
     {
         return _proxy;
@@ -106,7 +110,13 @@ public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessa
             {
                 if(!_proxy.ice_isTwoway())
                 {
+                    if(_remoteObserver != null)
+                    {
+                        _remoteObserver.detach();
+                        _remoteObserver = null;
+                    }
                     _state |= Done | OK;
+                    _os.resize(0, false); // Clear buffer now, instead of waiting for AsyncResult deallocation
                 }
                 else if(connection.timeout() > 0)
                 {
@@ -138,6 +148,12 @@ public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessa
         synchronized(_monitor)
         {
             assert((_state & Done) == 0);
+            if(_remoteObserver != null)
+            {
+                _remoteObserver.failed(exc.ice_name());
+                _remoteObserver.detach();
+                _remoteObserver = null;
+            }
             if(_timerTaskConnection != null)
             {
                 _instance.timer().cancel(_timerTask);
@@ -176,7 +192,14 @@ public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessa
         // calling on the callback. The LocalExceptionWrapper exception is only called
         // before the invocation is sent.
         //
-
+        
+        if(_remoteObserver != null)
+        {
+            _remoteObserver.failed(exc.get().ice_name());
+            _remoteObserver.detach();
+            _remoteObserver = null;
+        }
+        
         try
         {
             int interval = handleException(exc); // This will throw if the invocation can't be retried.
@@ -205,6 +228,12 @@ public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessa
             synchronized(_monitor)
             {
                 assert(_exception == null && (_state & Done) == 0);
+                if(_remoteObserver != null)
+                {
+                    _remoteObserver.reply(is.size() - Protocol.headerSize - 4);
+                    _remoteObserver.detach();
+                    _remoteObserver = null;
+                }
 
                 if(_timerTaskConnection != null)
                 {
@@ -213,14 +242,26 @@ public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessa
                     _timerTask = null;
                 }
 
+                if(_is == null) // _is can already be initialized if the invocation is retried
+                {
+                    _is = new IceInternal.BasicStream(_instance, IceInternal.Protocol.currentProtocolEncoding);
+                }
                 _is.swap(is);
                 replyStatus = _is.readByte();
 
                 switch(replyStatus)
                 {
                     case ReplyStatus.replyOK:
+                    {
+                        break;
+                    }
+
                     case ReplyStatus.replyUserException:
                     {
+                        if(_observer != null)
+                        {
+                            _observer.userException();
+                        }
                         break;
                     }
 
@@ -330,6 +371,7 @@ public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessa
                 }
 
                 _state |= Done;
+                _os.resize(0, false); // Clear buffer now, instead of waiting for AsyncResult deallocation
                 if(replyStatus == ReplyStatus.replyOK)
                 {
                     _state |= OK;
@@ -394,6 +436,38 @@ public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessa
         return _sentSynchronously;
     }
 
+    public BasicStream
+    __startWriteParams(Ice.FormatType format)
+    {
+        _os.startWriteEncaps(_encoding, format);
+        return _os;
+    }
+
+    public void
+    __endWriteParams()
+    {
+        _os.endWriteEncaps();
+    }
+
+    public void
+    __writeEmptyParams()
+    {
+        _os.writeEmptyEncaps(_encoding);
+    }
+
+    public void 
+    __writeParamEncaps(byte[] encaps)
+    {
+        if(encaps == null || encaps.length == 0)
+        {
+            _os.writeEmptyEncaps(_encoding);
+        }
+        else
+        {
+            _os.writeEncaps(encaps);
+        }
+    }
+
     private int handleException(Ice.LocalException exc, boolean sent)
     {
         Ice.IntHolder interval = new Ice.IntHolder(0);
@@ -427,16 +501,16 @@ public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessa
         {
             if(_mode == Ice.OperationMode.Nonmutating || _mode == Ice.OperationMode.Idempotent)
             {
-                _cnt = _proxy.__handleExceptionWrapperRelaxed(_delegate, ex, interval, _cnt);
+                _cnt = _proxy.__handleExceptionWrapperRelaxed(_delegate, ex, interval, _cnt, _observer);
             }
             else
             {
-                _proxy.__handleExceptionWrapper(_delegate, ex);
+                _proxy.__handleExceptionWrapper(_delegate, ex, _observer);
             }
         }
         catch(Ice.LocalException ex)
         {
-            _cnt = _proxy.__handleException(_delegate, ex, interval, _cnt);
+            _cnt = _proxy.__handleException(_delegate, ex, interval, _cnt, _observer);
         }
         return interval.value;
     }
@@ -446,17 +520,16 @@ public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessa
         Ice.IntHolder interval = new Ice.IntHolder(0);
         if(_mode == Ice.OperationMode.Nonmutating || _mode == Ice.OperationMode.Idempotent)
         {
-            _cnt = _proxy.__handleExceptionWrapperRelaxed(_delegate, ex, interval, _cnt);
+            _cnt = _proxy.__handleExceptionWrapperRelaxed(_delegate, ex, interval, _cnt, _observer);
         }
         else
         {
-            _proxy.__handleExceptionWrapper(_delegate, ex);
+            _proxy.__handleExceptionWrapper(_delegate, ex, _observer);
         }
         return interval.value;
     }
 
-    private final void
-    __runTimerTask()
+    private final void __runTimerTask()
     {
         Ice.ConnectionI connection;
         synchronized(_monitor)
@@ -478,6 +551,7 @@ public class OutgoingAsync extends Ice.AsyncResult implements OutgoingAsyncMessa
     private TimerTask _timerTask;
 
     private Ice._ObjectDel _delegate;
+    private Ice.EncodingVersion _encoding;
     private int _cnt;
     private Ice.OperationMode _mode;
 

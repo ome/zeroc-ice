@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -77,31 +77,27 @@ final class TcpConnector implements Connector
         _timeout = timeout;
         _connectionId = connectionId;
 
-        _hashCode = _addr.getAddress().getHostAddress().hashCode();
-        _hashCode = 5 * _hashCode + _addr.getPort();
-        _hashCode = 5 * _hashCode + _timeout;
-        _hashCode = 5 * _hashCode + _connectionId.hashCode();
+        _hashCode = 5381;
+        _hashCode = IceInternal.HashUtil.hashAdd(_hashCode , _addr.getAddress().getHostAddress());
+        _hashCode = IceInternal.HashUtil.hashAdd(_hashCode , _addr.getPort());
+        _hashCode = IceInternal.HashUtil.hashAdd(_hashCode , _timeout);
+        _hashCode = IceInternal.HashUtil.hashAdd(_hashCode , _connectionId);
     }
 
     public boolean
     equals(java.lang.Object obj)
     {
-        TcpConnector p = null;
-
-        try
-        {
-            p = (TcpConnector)obj;
-        }
-        catch(ClassCastException ex)
+        if(!(obj instanceof TcpConnector))
         {
             return false;
         }
 
-        if(this == p)
+        if(this == obj)
         {
             return true;
         }
 
+        TcpConnector p = (TcpConnector)obj;
         if(_timeout != p._timeout)
         {
             return false;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -68,11 +68,7 @@ public:
             T item = _func();
 
             IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(staticMutex);
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-            pair<ItemSet::iterator, bool> ok = _itemSet.insert(item);
-#else
             pair<typename ItemSet::iterator, bool> ok = _itemSet.insert(item);
-#endif
             if(!ok.second)
             {
                 cerr << "******* iteration " << i << endl;

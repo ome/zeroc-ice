@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,6 +23,17 @@ public class Buffer
         _capacity = 0;
         _maxCapacity = maxCapacity;
         _direct = direct;
+    }
+
+    public
+    Buffer(byte[] data)
+    {
+        b = java.nio.ByteBuffer.wrap(data);
+        b.order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        _size = data.length;
+        _capacity = 0;
+        _maxCapacity = 0;
+        _direct = false;
     }
 
     public int
@@ -64,6 +75,8 @@ public class Buffer
     public void
     resize(int n, boolean reading)
     {
+        assert(b == _emptyBuffer || _capacity > 0);
+
         if(n == 0)
         {
             clear();
@@ -162,7 +175,7 @@ public class Buffer
         catch(OutOfMemoryError ex)
         {
             _capacity = b.capacity(); // Restore the previous capacity.
-            throw new Ice.MarshalException("OutOfMemoryError occurred while allocating a ByteBuffer", ex);
+            throw ex;
         }
     }
 

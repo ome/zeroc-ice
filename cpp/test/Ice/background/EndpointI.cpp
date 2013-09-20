@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,15 @@
 #include <Connector.h>
 #include <Acceptor.h>
 #include <Ice/BasicStream.h>
+
+#ifdef _MSC_VER
+// For 'Ice::Object::ice_getHash': was declared deprecated
+#pragma warning( disable : 4996 )
+#endif
+
+#if defined(__GNUC__)
+#   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 using namespace std;
 
@@ -34,6 +43,12 @@ Ice::Short
 EndpointI::type() const
 {
     return (Ice::Short)(TYPE_BASE + _endpoint->type());
+}
+
+std::string
+EndpointI::protocol() const
+{
+    return _endpoint->protocol();
 }
 
 int
@@ -127,10 +142,10 @@ EndpointI::transceiver(IceInternal::EndpointIPtr& endpoint) const
 }
 
 vector<IceInternal::ConnectorPtr>
-EndpointI::connectors() const
+EndpointI::connectors(Ice::EndpointSelectionType selType) const
 {
     _configuration->checkConnectorsException();
-    vector<IceInternal::ConnectorPtr> c = _endpoint->connectors();
+    vector<IceInternal::ConnectorPtr> c = _endpoint->connectors(selType);
     for(vector<IceInternal::ConnectorPtr>::iterator p = c.begin(); p != c.end(); ++p)
     {
         *p = new Connector(*p);
@@ -139,7 +154,7 @@ EndpointI::connectors() const
 }
 
 void
-EndpointI::connectors_async(const IceInternal::EndpointI_connectorsPtr& cb) const
+EndpointI::connectors_async(Ice::EndpointSelectionType selType, const IceInternal::EndpointI_connectorsPtr& cb) const
 {
     class Callback : public IceInternal::EndpointI_connectors
     {
@@ -174,7 +189,7 @@ EndpointI::connectors_async(const IceInternal::EndpointI_connectorsPtr& cb) cons
     try
     {
         _configuration->checkConnectorsException();
-        _endpoint->connectors_async(new Callback(cb));
+        _endpoint->connectors_async(selType, new Callback(cb));
     }
     catch(const Ice::LocalException& ex)
     {

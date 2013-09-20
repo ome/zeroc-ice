@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,9 +14,6 @@
 #include <Ice/BuiltinSequences.h>
 #include <Ice/Current.h>
 #include <Ice/Exception.h>
-#include <IceUtil/Thread.h>
-#include <IceUtil/Monitor.h>
-#include <IceUtil/Mutex.h>
 
 //
 // These macros replace Py_RETURN_FALSE and Py_RETURN TRUE. We use these
@@ -36,8 +33,13 @@ namespace IcePy
 //
 inline PyObject* getFalse()
 {
+#if PY_VERSION_HEX >= 0x03000000
+    PyLongObject* i = &_Py_FalseStruct;
+    return reinterpret_cast<PyObject*>(i);
+#else
     PyIntObject* i = &_Py_ZeroStruct;
     return reinterpret_cast<PyObject*>(i);
+#endif
 }
 
 //
@@ -45,19 +47,46 @@ inline PyObject* getFalse()
 //
 inline PyObject* getTrue()
 {
+#if PY_VERSION_HEX >= 0x03000000
+    PyLongObject* i = &_Py_TrueStruct;
+    return reinterpret_cast<PyObject*>(i);
+#else
     PyIntObject* i = &_Py_TrueStruct;
     return reinterpret_cast<PyObject*>(i);
+#endif
 }
 
+//
+// Create a string object.
+//
 inline PyObject* createString(const std::string& str)
 {
+#if PY_VERSION_HEX >= 0x03000000
+    //
+    // PyUnicode_FromStringAndSize interprets the argument as UTF-8.
+    //
+    return PyUnicode_FromStringAndSize(str.c_str(), static_cast<Py_ssize_t>(str.size()));
+#else
     return PyString_FromStringAndSize(str.c_str(), static_cast<Py_ssize_t>(str.size()));
+#endif
 }
 
 //
 // Obtain a string from a string object; None is also legal.
 //
 std::string getString(PyObject*);
+
+//
+// Verify that the object is a string; None is NOT legal.
+//
+inline bool checkString(PyObject* p)
+{
+#if PY_VERSION_HEX >= 0x03000000
+    return PyUnicode_Check(p) ? true : false;
+#else
+    return PyString_Check(p) ? true : false;
+#endif
+}
 
 //
 // Validate and retrieve a string argument; None is also legal.
@@ -128,37 +157,6 @@ private:
 
     PyObjectHandle _type;
     PyObjectHandle _tb;
-};
-
-//
-// Release Python's Global Interpreter Lock during potentially time-consuming
-// (and non-Python related) work.
-//
-class AllowThreads
-{
-public:
-
-    AllowThreads();
-    ~AllowThreads();
-
-private:
-
-    PyThreadState* _state;
-};
-
-//
-// Ensure that the current thread is capable of calling into Python.
-//
-class AdoptThread
-{
-public:
-
-    AdoptThread();
-    ~AdoptThread();
-
-private:
-
-    PyGILState_STATE _state;
 };
 
 //
@@ -236,60 +234,31 @@ bool setIdentity(PyObject*, const Ice::Identity&);
 bool getIdentity(PyObject*, Ice::Identity&);
 
 //
-// This class invokes a member function in a separate thread.
+// Create a Python instance of Ice.ProtocolVersion.
 //
-template<typename T>
-class InvokeThread : public IceUtil::Thread
-{
-public:
+PyObject* createProtocolVersion(const Ice::ProtocolVersion&);
 
-    InvokeThread(const IceInternal::Handle<T>& target, void (T::*func)(void),
-                 IceUtil::Monitor<IceUtil::Mutex>& monitor, bool& done) :
-        _target(target), _func(func), _monitor(monitor), _done(done), _ex(0)
-    {
-    }
+//
+// Create a Python instance of Ice.EncodingVersion.
+//
+PyObject* createEncodingVersion(const Ice::EncodingVersion&);
 
-    ~InvokeThread()
-    {
-        delete _ex;
-    }
-
-    virtual void run()
-    {
-        try
-        {
-            (_target.get() ->* _func)();
-        }
-        catch(const Ice::Exception& ex)
-        {
-            _ex = ex.ice_clone();
-        }
-
-        IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_monitor);
-        _done = true;
-        _monitor.notify();
-    }
-
-    Ice::Exception* getException() const
-    {
-        return _ex;
-    }
-
-private:
-
-    IceInternal::Handle<T> _target;
-    void (T::*_func)(void);
-    IceUtil::Monitor<IceUtil::Mutex>& _monitor;
-    bool& _done;
-    Ice::Exception* _ex;
-};
+//
+// Extracts the members of an encoding version.
+//
+bool getEncodingVersion(PyObject*, Ice::EncodingVersion&);
 
 }
 
 extern "C" PyObject* IcePy_stringVersion(PyObject*);
 extern "C" PyObject* IcePy_intVersion(PyObject*);
-extern "C" PyObject* IcePy_identityToString(PyObject*, PyObject*);
-extern "C" PyObject* IcePy_stringToIdentity(PyObject*, PyObject*);
+extern "C" PyObject* IcePy_currentProtocol(PyObject*);
+extern "C" PyObject* IcePy_currentProtocolEncoding(PyObject*);
+extern "C" PyObject* IcePy_currentEncoding(PyObject*);
+extern "C" PyObject* IcePy_protocolVersionToString(PyObject*, PyObject*);
+extern "C" PyObject* IcePy_stringToProtocolVersion(PyObject*, PyObject*);
+extern "C" PyObject* IcePy_encodingVersionToString(PyObject*, PyObject*);
+extern "C" PyObject* IcePy_stringToEncodingVersion(PyObject*, PyObject*);
 extern "C" PyObject* IcePy_generateUUID(PyObject*);
 
 #endif

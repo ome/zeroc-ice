@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,7 @@
 
 #include <IceGrid/Internal.h>
 #include <Ice/Locator.h>
+#include <IceUtil/Shared.h>
 
 namespace IceGrid
 {
@@ -27,6 +28,15 @@ class ReplicaSessionManager;
 class LocatorRegistryI : public Ice::LocatorRegistry
 {
 public:
+    
+    class AdapterSetDirectProxyCB : virtual public IceUtil::Shared
+    {
+    public:
+        
+        virtual void response() = 0;
+        virtual void exception(const ::Ice::Exception&) = 0;
+    };
+    typedef IceUtil::Handle<AdapterSetDirectProxyCB> AdapterSetDirectProxyCBPtr;
 
     LocatorRegistryI(const DatabasePtr&, bool, bool, ReplicaSessionManager&);
     
@@ -40,7 +50,7 @@ public:
     virtual void setServerProcessProxy_async(const Ice::AMD_LocatorRegistry_setServerProcessProxyPtr&,
                                              const ::std::string&, const ::Ice::ProcessPrx&, const ::Ice::Current&);
 
-    void setAdapterDirectProxy(const AMI_Adapter_setDirectProxyPtr&, const std::string&, const std::string&,
+    void setAdapterDirectProxy(const AdapterSetDirectProxyCBPtr&, const std::string&, const std::string&,
                                const Ice::ObjectPrx&);
 
     const TraceLevelsPtr& getTraceLevels() const;

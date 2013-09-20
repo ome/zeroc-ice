@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,7 @@ static void
 printIdentityFacetOperation(ostream& s, BasicStream& stream)
 {
     Identity identity;
-    identity.__read(&stream);
+    stream.read(identity);
     s << "\nidentity = " << stream.instance()->identityToString(identity);
 
     vector<string> facet;
@@ -100,8 +100,7 @@ printRequestHeader(ostream& s, BasicStream& stream)
         }
     }
 
-    Int sz;
-    stream.readSize(sz);
+    Int sz = stream.readSize();
     s << "\ncontext = ";
     while(sz--)
     {
@@ -113,6 +112,12 @@ printRequestHeader(ostream& s, BasicStream& stream)
         {
             s << ", ";
         }
+    }
+
+    Ice::EncodingVersion v = stream.skipEncaps();
+    if(v > Ice::Encoding_1_0)
+    {
+        s << "\nencoding = " << v;
     }
 }
 
@@ -206,7 +211,6 @@ printBatchRequest(ostream& s, BasicStream& stream)
     {
         s << "\nrequest #" << i << ':';
         printRequestHeader(s, stream);
-        stream.skipEncaps();
     }
 }
 

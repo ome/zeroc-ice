@@ -1,7 +1,7 @@
 <?
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -39,13 +39,15 @@ function allTests($communicator)
     $udpEndpointType = $NS ? constant("Ice\\UDPEndpointType") : constant("Ice_UDPEndpointType");
     $udpEndpointInfoClass = $NS ? "Ice\\UDPEndpointInfo" : "Ice_UDPEndpointInfo";
     $sslEndpointType = 2;
+    $protocolVersionClass = $NS ? "Ice\\ProtocolVersion" : "Ice_ProtocolVersion";
+    $encodingVersionClass = $NS ? "Ice\\EncodingVersion" : "Ice_EncodingVersion";
 
     echo "testing proxy endpoint information... ";
     flush();
     {
         $p1 = $communicator->stringToProxy("test -t:default -h tcphost -p 10000 -t 1200 -z:" .
                                            "udp -h udphost -p 10001 --interface eth0 --ttl 5:" .
-                                           "opaque -t 100 -v ABCD");
+                                           "opaque -e 1.8 -t 100 -v ABCD");
 
         $endps = $p1->ice_getEndpoints();
 
@@ -129,7 +131,7 @@ function allTests($communicator)
     return $testIntf;
 }
 
-$communicator = Ice_initialize(&$argv);
+$communicator = Ice_initialize($argv);
 $server = allTests($communicator);
 $server->shutdown();
 $communicator->destroy();

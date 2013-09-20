@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,7 +9,7 @@
 
 package test.Ice.slicing.exceptions;
 
-import test.Ice.slicing.exceptions.Test.TestIntfPrx;
+import test.Ice.slicing.exceptions.client.Test.TestIntfPrx;
 
 public class Client extends test.Util.Application
 {
@@ -17,7 +17,7 @@ public class Client extends test.Util.Application
     {
         Ice.InitializationData initData = new Ice.InitializationData();
         initData.properties = Ice.Util.createProperties(argsH);
-        initData.properties.setProperty("Ice.Package.Test", "test.Ice.slicing.exceptions");
+        initData.properties.setProperty("Ice.Package.Test", "test.Ice.slicing.exceptions.client");
         return initData;
     }
 

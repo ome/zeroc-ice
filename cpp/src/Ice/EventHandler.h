@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,11 +20,11 @@
 namespace IceInternal
 {
 
-class EventHandler : virtual public ::IceUtil::Shared
+class ICE_API EventHandler : virtual public ::IceUtil::Shared
 {
 public:
 
-#ifdef ICE_USE_IOCP
+#if defined(ICE_USE_IOCP) || defined(ICE_OS_WINRT)
     //
     // Called to start a new asynchronous read or write operation.
     //
@@ -55,9 +55,9 @@ public:
 protected:
     
     EventHandler();
-    ICE_API virtual ~EventHandler();
+    virtual ~EventHandler();
 
-#ifdef ICE_USE_IOCP
+#if defined(ICE_USE_IOCP) || defined(ICE_OS_WINRT)
     SocketOperation _ready;
     SocketOperation _pending;
     SocketOperation _started;

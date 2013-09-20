@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,19 +9,22 @@
 
 package Ice;
 
+import Ice.Instrumentation.InvocationObserver;
+
 public class _ObjectDelM implements _ObjectDel
 {
     public boolean
-    ice_isA(String __id, java.util.Map<String, String> __context)
+    ice_isA(String __id, java.util.Map<String, String> __context, InvocationObserver __observer)
         throws IceInternal.LocalExceptionWrapper
     {
-        IceInternal.Outgoing __og = __handler.getOutgoing("ice_isA", OperationMode.Nonmutating, __context);
+        IceInternal.Outgoing __og = __handler.getOutgoing("ice_isA", OperationMode.Nonmutating, __context, __observer);
         try
         {
             try
             {
-                IceInternal.BasicStream __os = __og.os();
+                IceInternal.BasicStream __os = __og.startWriteParams(Ice.FormatType.DefaultFormat);
                 __os.writeString(__id);
+                __og.endWriteParams();
             }
             catch(LocalException __ex)
             {
@@ -41,10 +44,9 @@ public class _ObjectDelM implements _ObjectDel
                         throw new UnknownUserException(__ex.ice_name(), __ex);
                     }
                 }
-                IceInternal.BasicStream __is = __og.is();
-                __is.startReadEncaps();
+                IceInternal.BasicStream __is = __og.startReadParams();
                 boolean __ret = __is.readBool();
-                __is.endReadEncaps();
+                __og.endReadParams();
                 return __ret;
             }
             catch(LocalException __ex)
@@ -59,14 +61,15 @@ public class _ObjectDelM implements _ObjectDel
     }
 
     public void
-    ice_ping(java.util.Map<String, String> __context)
+    ice_ping(java.util.Map<String, String> __context, InvocationObserver __observer)
         throws IceInternal.LocalExceptionWrapper
     {
-        IceInternal.Outgoing __og = __handler.getOutgoing("ice_ping", OperationMode.Nonmutating, __context);
+        IceInternal.Outgoing __og = __handler.getOutgoing("ice_ping", OperationMode.Nonmutating, __context, __observer);
         try
         {
+            __og.writeEmptyParams();
             boolean __ok = __og.invoke();
-            if(!__og.is().isEmpty())
+            if(__og.hasResponse())
             {
                 try
                 {
@@ -81,7 +84,7 @@ public class _ObjectDelM implements _ObjectDel
                             throw new UnknownUserException(__ex.ice_name(), __ex);
                         }
                     }
-                    __og.is().skipEmptyEncaps();
+                    __og.readEmptyParams();
                 }
                 catch(LocalException __ex)
                 {
@@ -96,12 +99,13 @@ public class _ObjectDelM implements _ObjectDel
     }
 
     public String[]
-    ice_ids(java.util.Map<String, String> __context)
+    ice_ids(java.util.Map<String, String> __context, InvocationObserver __observer)
         throws IceInternal.LocalExceptionWrapper
     {
-        IceInternal.Outgoing __og = __handler.getOutgoing("ice_ids", OperationMode.Nonmutating, __context);
+        IceInternal.Outgoing __og = __handler.getOutgoing("ice_ids", OperationMode.Nonmutating, __context, __observer);
         try
         {
+            __og.writeEmptyParams();
             boolean __ok = __og.invoke();
             try
             {
@@ -116,10 +120,9 @@ public class _ObjectDelM implements _ObjectDel
                         throw new UnknownUserException(__ex.ice_name(), __ex);
                     }
                 }
-                IceInternal.BasicStream __is = __og.is();
-                __is.startReadEncaps();
+                IceInternal.BasicStream __is = __og.startReadParams();
                 String[] __ret = __is.readStringSeq();
-                __is.endReadEncaps();
+                __og.endReadParams();
                 return __ret;
             }
             catch(LocalException __ex)
@@ -134,12 +137,13 @@ public class _ObjectDelM implements _ObjectDel
     }
 
     public String
-    ice_id(java.util.Map<String, String> __context)
+    ice_id(java.util.Map<String, String> __context, InvocationObserver __observer)
         throws IceInternal.LocalExceptionWrapper
     {
-        IceInternal.Outgoing __og = __handler.getOutgoing("ice_id", OperationMode.Nonmutating, __context);
+        IceInternal.Outgoing __og = __handler.getOutgoing("ice_id", OperationMode.Nonmutating, __context, __observer);
         try
         {
+            __og.writeEmptyParams();
             boolean __ok = __og.invoke();
             try
             {
@@ -154,10 +158,9 @@ public class _ObjectDelM implements _ObjectDel
                         throw new UnknownUserException(__ex.ice_name(), __ex);
                     }
                 }
-                IceInternal.BasicStream __is = __og.is();
-                __is.startReadEncaps();
+                IceInternal.BasicStream __is = __og.startReadParams();
                 String __ret = __is.readString();
-                __is.endReadEncaps();
+                __og.endReadParams();
                 return __ret;
             }
             catch(LocalException __ex)
@@ -172,37 +175,23 @@ public class _ObjectDelM implements _ObjectDel
     }
 
     public boolean
-    ice_invoke(String operation, OperationMode mode, byte[] inParams, ByteSeqHolder outParams, java.util.Map<String, String> __context)
+    ice_invoke(String operation, OperationMode mode, byte[] inParams, ByteSeqHolder outParams, 
+               java.util.Map<String, String> __context, InvocationObserver __observer)
         throws IceInternal.LocalExceptionWrapper
     {
-        IceInternal.Outgoing __og = __handler.getOutgoing(operation, mode, __context);
+        IceInternal.Outgoing __og = __handler.getOutgoing(operation, mode, __context, __observer);
         try
         {
-            if(inParams != null)
-            {
-                try
-                {
-                    IceInternal.BasicStream __os = __og.os();
-                    __os.writeBlob(inParams);
-                }
-                catch(LocalException __ex)
-                {
-                    __og.abort(__ex);
-                }
-            }
+            __og.writeParamEncaps(inParams);
             boolean ok = __og.invoke();
             if(__handler.getReference().getMode() == IceInternal.Reference.ModeTwoway)
             {
                 try
                 {
-                    IceInternal.BasicStream __is = __og.is();
-                    __is.startReadEncaps();
-                    int sz = __is.getReadEncapsSize();
-                    if(outParams != null)
+                    if(outParams != null) 
                     {
-                        outParams.value = __is.readBlob(sz);
+                        outParams.value = __og.readParamEncaps();
                     }
-                    __is.endReadEncaps();
                 }
                 catch(LocalException __ex)
                 {
@@ -218,9 +207,9 @@ public class _ObjectDelM implements _ObjectDel
     }
 
     public void
-    ice_flushBatchRequests()
+    ice_flushBatchRequests(InvocationObserver observer)
     {
-        IceInternal.BatchOutgoing out = new IceInternal.BatchOutgoing(__handler);
+        IceInternal.BatchOutgoing out = new IceInternal.BatchOutgoing(__handler, observer);
         out.invoke();
     }
 

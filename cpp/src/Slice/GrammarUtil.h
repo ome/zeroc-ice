@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,6 +26,9 @@ class ExceptionListTok;
 class ClassListTok;
 class EnumeratorListTok;
 class ConstDefTok;
+class OptionalDefTok;
+class OptionalTypeDefTok;
+class ClassIdTok;
 
 typedef ::IceUtil::Handle<StringTok> StringTokPtr;
 typedef ::IceUtil::Handle<StringListTok> StringListTokPtr;
@@ -38,6 +41,8 @@ typedef ::IceUtil::Handle<ExceptionListTok> ExceptionListTokPtr;
 typedef ::IceUtil::Handle<ClassListTok> ClassListTokPtr;
 typedef ::IceUtil::Handle<EnumeratorListTok> EnumeratorListTokPtr;
 typedef ::IceUtil::Handle<ConstDefTok> ConstDefTokPtr;
+typedef ::IceUtil::Handle<OptionalDefTok> OptionalDefTokPtr;
+typedef ::IceUtil::Handle<ClassIdTok> ClassIdTokPtr;
 
 // ----------------------------------------------------------------------
 // StringTok
@@ -172,6 +177,31 @@ public:
 
     ConstDefTok() { }
     ConstDef v;
+};
+
+// ----------------------------------------------------------------------
+// OptionalDefTok
+// ----------------------------------------------------------------------
+
+class SLICE_API OptionalDefTok : public GrammarBase
+{
+public:
+
+    OptionalDefTok() { }
+    OptionalDef v;
+};
+
+// ----------------------------------------------------------------------
+// ClassIdTok
+// ----------------------------------------------------------------------
+
+class SLICE_API ClassIdTok : public GrammarBase
+{
+public:
+
+    ClassIdTok() { }
+    std::string v;
+    int t;
 };
 
 }

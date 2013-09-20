@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,8 +34,7 @@ private:
     void v31migrate(const Freeze::ConnectionPtr&, SubscriberMap&);
 };
 
-//COMPILERFIX: Borland C++ 2010 doesn't support wmain for console applications.
-#if defined(_WIN32 ) && !defined(__BCPLUSPLUS__)
+#ifdef _WIN32
 
 int
 wmain(int argc, wchar_t* argv[])

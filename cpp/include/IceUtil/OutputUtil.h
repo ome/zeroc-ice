@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -134,26 +134,6 @@ operator<<(Output& out, const std::vector<T>& val)
     }
     return out;
 }
-
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-
-//
-// Visual C++ 6.0 needs also a version of the function above with a
-// non-const vector as argument.
-//
-
-template<typename T>
-inline Output&
-operator<<(Output& out, std::vector<T>& val)
-{
-    for(typename std::vector<T>::const_iterator p = val.begin(); p != val.end(); ++p)
-    {
-        out << *p;
-    }
-    return out;
-}
-
-#endif
 
 template<>
 inline Output&

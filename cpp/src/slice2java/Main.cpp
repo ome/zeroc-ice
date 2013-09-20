@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,7 @@ using namespace Slice;
 namespace
 {
 
-IceUtil::Mutex* mutex = 0;
+IceUtil::Mutex* globalMutex = 0;
 bool interrupted = false;
 
 class Init
@@ -32,13 +32,13 @@ public:
 
     Init()
     {
-        mutex = new IceUtil::Mutex;
+        globalMutex = new IceUtil::Mutex;
     }
 
     ~Init()
     {
-        delete mutex;
-        mutex = 0;
+        delete globalMutex;
+        globalMutex = 0;
     }
 };
 
@@ -47,9 +47,9 @@ Init init;
 }
 
 void
-interruptedCallback(int signal)
+interruptedCallback(int /*signal*/)
 {
-    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(mutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(globalMutex);
 
     interrupted = true;
 }
@@ -133,20 +133,19 @@ compile(int argc, char* argv[])
 
     vector<string> cppArgs;
     vector<string> optargs = opts.argVec("D");
-    vector<string>::const_iterator i;
-    for(i = optargs.begin(); i != optargs.end(); ++i)
+    for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
     {
         cppArgs.push_back("-D" + *i);
     }
 
     optargs = opts.argVec("U");
-    for(i = optargs.begin(); i != optargs.end(); ++i)
+    for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
     {
         cppArgs.push_back("-U" + *i);
     }
 
     vector<string> includePaths = opts.argVec("I");
-    for(i = includePaths.begin(); i != includePaths.end(); ++i)
+    for(vector<string>::const_iterator i = includePaths.begin(); i != includePaths.end(); ++i)
     {
         cppArgs.push_back("-I" + Preprocessor::normalizeIncludePath(*i));
     }
@@ -206,7 +205,7 @@ compile(int argc, char* argv[])
         cout << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<dependencies>" << endl;
     }
 
-    for(i = args.begin(); i != args.end(); ++i)
+    for(vector<string>::const_iterator i = args.begin(); i != args.end(); ++i)
     {
         //
         // Ignore duplicates.
@@ -356,7 +355,7 @@ compile(int argc, char* argv[])
         }
 
         {
-            IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(mutex);
+            IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(globalMutex);
 
             if(interrupted)
             {

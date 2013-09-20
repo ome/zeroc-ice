@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,7 @@ using namespace std;
 using namespace Ice;
 
 void
-TestIntfI::ping(const Test::PingReplyPrx& reply, const Current& current)
+TestIntfI::ping(const Test::PingReplyPrx& reply, const Current&)
 {
     try
     {
@@ -28,7 +28,7 @@ TestIntfI::ping(const Test::PingReplyPrx& reply, const Current& current)
 }
 
 void
-TestIntfI::sendByteSeq(const Test::ByteSeq&, const Test::PingReplyPrx& reply, const Current& current)
+TestIntfI::sendByteSeq(const Test::ByteSeq&, const Test::PingReplyPrx& reply, const Current&)
 {
     try
     {
@@ -63,7 +63,7 @@ TestIntfI::pingBiDir(const Ice::Identity& id, const Ice::Current& current)
         //
         // Send the reply through the incoming connection.
         //
-        Test::PingReplyPrx::uncheckedCast(current.con->createProxy(id))->reply();
+        Test::PingReplyPrx::uncheckedCast(current.con->createProxy(id))->begin_reply();
     }
     catch(const Ice::Exception& ex)
     {

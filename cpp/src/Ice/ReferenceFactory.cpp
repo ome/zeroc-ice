@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -55,7 +55,8 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
         return 0;
     }
 
-    return create(ident, facet, tmpl->getMode(), tmpl->getSecure(), endpoints, "", "");
+    return create(ident, facet, tmpl->getMode(), tmpl->getSecure(), tmpl->getProtocol(), tmpl->getEncoding(), 
+                  endpoints, "", "");
 }
 
 ReferencePtr
@@ -69,7 +70,8 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
         return 0;
     }
 
-    return create(ident, facet, tmpl->getMode(), tmpl->getSecure(), vector<EndpointIPtr>(), adapterId, "");
+    return create(ident, facet, tmpl->getMode(), tmpl->getSecure(), tmpl->getProtocol(), tmpl->getEncoding(), 
+                  vector<EndpointIPtr>(), adapterId, "");
 }
 
 ReferencePtr
@@ -89,6 +91,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident, const Ice::Connecti
                               "",  // Facet
                               connection->endpoint()->datagram() ? Reference::ModeDatagram : Reference::ModeTwoway,
                               connection->endpoint()->secure(),
+                              _instance->defaultsAndOverrides()->defaultEncoding,
                               connection);
 }
 
@@ -186,6 +189,8 @@ IceInternal::ReferenceFactory::create(const string& str, const string& propertyP
     string facet;
     Reference::Mode mode = Reference::ModeTwoway;
     bool secure = false;
+    Ice::EncodingVersion encoding = _instance->defaultsAndOverrides()->defaultEncoding;
+    Ice::ProtocolVersion protocol = Protocol_1_0;
     string adapter;
 
     while(true)
@@ -359,6 +364,50 @@ IceInternal::ReferenceFactory::create(const string& str, const string& propertyP
                 break;
             }
 
+            case 'e':
+            {
+                if(argument.empty())
+                {
+                    Ice::ProxyParseException ex(__FILE__, __LINE__);
+                    ex.str = "no argument provided for -e option in `" + s + "'";
+                    throw ex;
+                }
+                
+                try
+                {
+                    encoding = Ice::stringToEncodingVersion(argument);
+                }
+                catch(const Ice::VersionParseException& e)
+                {
+                    Ice::ProxyParseException ex(__FILE__, __LINE__);
+                    ex.str = "invalid encoding version `" + argument + "' in `" + s + "':\n" + e.str;
+                    throw ex;
+                }
+                break;
+            }
+
+            case 'p':
+            {
+                if(argument.empty())
+                {
+                    Ice::ProxyParseException ex(__FILE__, __LINE__);
+                    ex.str = "no argument provided for -p option in `" + s + "'";
+                    throw ex;
+                }
+                
+                try
+                {
+                    protocol = Ice::stringToProtocolVersion(argument);
+                }
+                catch(const Ice::VersionParseException& e)
+                {
+                    Ice::ProxyParseException ex(__FILE__, __LINE__);
+                    ex.str = "invalid protocol version `" + argument + "' in `" + s + "':\n" + e.str;
+                    throw ex;
+                }
+                break;
+            }
+
             default:
             {
                 ProxyParseException ex(__FILE__, __LINE__);
@@ -368,14 +417,12 @@ IceInternal::ReferenceFactory::create(const string& str, const string& propertyP
         }
     }
 
-
     if(beg == string::npos)
     {
-        return create(ident, facet, mode, secure, vector<EndpointIPtr>(), "", propertyPrefix);
+        return create(ident, facet, mode, secure, protocol, encoding, vector<EndpointIPtr>(), "", propertyPrefix);
     }
 
     vector<EndpointIPtr> endpoints;
-
     switch(s[beg])
     {
         case ':':
@@ -460,7 +507,7 @@ IceInternal::ReferenceFactory::create(const string& str, const string& propertyP
                 }
             }
 
-            return create(ident, facet, mode, secure, endpoints, "", propertyPrefix);
+            return create(ident, facet, mode, secure, protocol, encoding, endpoints, "", propertyPrefix);
             break;
         }
         case '@':
@@ -524,7 +571,7 @@ IceInternal::ReferenceFactory::create(const string& str, const string& propertyP
 
             adapter = Ice::UTF8ToNative(_instance->initializationData().stringConverter, adapter);
 
-            return create(ident, facet, mode, secure, vector<EndpointIPtr>(), adapter, propertyPrefix);
+            return create(ident, facet, mode, secure, protocol, encoding, endpoints, adapter, propertyPrefix);
             break;
         }
         default:
@@ -577,11 +624,23 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
     bool secure;
     s->read(secure);
 
+    Ice::ProtocolVersion protocol;
+    Ice::EncodingVersion encoding;
+    if(s->getReadEncoding() != Ice::Encoding_1_0)
+    {
+        s->read(protocol);
+        s->read(encoding);
+    }
+    else
+    {
+        protocol = Ice::Protocol_1_0;
+        encoding = Ice::Encoding_1_0;
+    }
+
     vector<EndpointIPtr> endpoints;
     string adapterId;
 
-    Ice::Int sz;
-    s->readSize(sz);
+    Ice::Int sz = s->readSize();
     
     if(sz > 0)
     {
@@ -597,7 +656,7 @@ IceInternal::ReferenceFactory::create(const Identity& ident, BasicStream* s)
         s->read(adapterId);
     }
 
-    return create(ident, facet, mode, secure, endpoints, adapterId, "");
+    return create(ident, facet, mode, secure, protocol, encoding, endpoints, adapterId, "");
 }
 
 ReferenceFactoryPtr
@@ -673,8 +732,7 @@ IceInternal::ReferenceFactory::checkForUnknownProperties(const string& prefix)
 
     StringSeq unknownProps;
     PropertyDict props = _instance->initializationData().properties->getPropertiesForPrefix(prefix + ".");
-    PropertyDict::const_iterator p;
-    for(p = props.begin(); p != props.end(); ++p)
+    for(PropertyDict::const_iterator p = props.begin(); p != props.end(); ++p)
     {
         bool valid = false;
         for(unsigned int i = 0; i < sizeof(suffixes)/sizeof(*suffixes); ++i)
@@ -709,6 +767,8 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
                                       const string& facet,
                                       Reference::Mode mode,
                                       bool secure,
+                                      const Ice::ProtocolVersion& protocol,
+                                      const Ice::EncodingVersion& encoding,
                                       const vector<EndpointIPtr>& endpoints,
                                       const string& adapterId,
                                       const string& propertyPrefix)
@@ -718,7 +778,18 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
     //
     // Default local proxy options.
     //
-    LocatorInfoPtr locatorInfo = _instance->locatorManager()->get(_defaultLocator);
+    LocatorInfoPtr locatorInfo;
+    if(_defaultLocator)
+    {
+        if(_defaultLocator->ice_getEncodingVersion() != encoding)
+        {
+            locatorInfo = _instance->locatorManager()->get(_defaultLocator->ice_encodingVersion(encoding));
+        }
+        else
+        {
+            locatorInfo = _instance->locatorManager()->get(_defaultLocator);
+        }
+    }
     RouterInfoPtr routerInfo = _instance->routerManager()->get(_defaultRouter);
     bool collocationOptimized = defaultsAndOverrides->defaultCollocationOptimization;
     bool cacheConnection = true;
@@ -743,7 +814,14 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
         LocatorPrx locator = LocatorPrx::uncheckedCast(_communicator->propertyToProxy(property));
         if(locator)
         {
-            locatorInfo = _instance->locatorManager()->get(locator);
+            if(locator->ice_getEncodingVersion() != encoding)
+            {
+                locatorInfo = _instance->locatorManager()->get(locator->ice_encodingVersion(encoding));
+            }
+            else
+            {
+                locatorInfo = _instance->locatorManager()->get(locator);
+            }
         }
 
         property = propertyPrefix + ".Router";
@@ -804,6 +882,8 @@ IceInternal::ReferenceFactory::create(const Identity& ident,
                                  facet,
                                  mode,
                                  secure,
+                                 protocol,
+                                 encoding,
                                  endpoints,
                                  adapterId,
                                  locatorInfo,

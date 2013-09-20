@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -9,7 +9,7 @@
 
 top_srcdir	= ../..
 
-ROUTER		= $(top_srcdir)/bin/glacier2router
+ROUTER		= $(bindir)/glacier2router
 TARGETS         = $(ROUTER)
 
 OBJS		= Blobject.o \
@@ -17,6 +17,8 @@ OBJS		= Blobject.o \
 		  CryptPermissionsVerifierI.o \
 		  Glacier2Router.o \
 		  Instance.o \
+		  Instrumentation.o \
+		  InstrumentationI.o \
 		  ProxyVerifier.o \
 		  RequestQueue.o \
 		  RouterI.o \
@@ -28,9 +30,13 @@ OBJS		= Blobject.o \
 
 SRCS		= $(OBJS:.o=.cpp)
 
+SLICE_SRCS	= Instrumentation.ice
+RPATH_DIR	= @loader_path/../lib
+
 include $(top_srcdir)/config/Make.rules
 
 CPPFLAGS	:= -I.. $(CPPFLAGS) $(OPENSSL_FLAGS)
+SLICE2CPPFLAGS	:= --include-dir Glacier2 $(SLICE2CPPFLAGS)
 
 $(ROUTER): $(OBJS)
 	rm -f $@

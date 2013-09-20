@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,8 +16,10 @@ namespace IceInternal
 
     sealed class OpaqueEndpointI : EndpointI
     {
-        public OpaqueEndpointI(string str)
+        public OpaqueEndpointI(string str) : base("")
         {
+            _rawEncoding = Ice.Util.Encoding_1_0;
+
             int topt = 0;
             int vopt = 0;
 
@@ -83,6 +85,26 @@ namespace IceInternal
                         break;
                     }
 
+                    case 'e':
+                    {
+                        if(argument == null)
+                        {
+                            throw new Ice.EndpointParseException(
+                                "no argument provided for -e option in endpoint `opaque " + str + "'");
+                        }
+                        
+                        try
+                        {
+                            _rawEncoding = Ice.Util.stringToEncodingVersion(argument);
+                        }
+                        catch(Ice.VersionParseException e)
+                        {
+                            throw new Ice.EndpointParseException("invalid encoding version `" + argument + 
+                                                                 "' in endpoint `opaque " + str + "':\n" + e.str);
+                        }
+                        break;
+                    }
+                    
                     case 'v':
                     {
                         if(argument == null)
@@ -131,7 +153,7 @@ namespace IceInternal
         public OpaqueEndpointI(short type, BasicStream s)
         {
             _type = type;
-            s.startReadEncaps();
+            _rawEncoding = s.startReadEncaps();
             int sz = s.getReadEncapsSize();
             _rawBytes = new byte[sz];
             s.readBlob(_rawBytes);
@@ -145,7 +167,7 @@ namespace IceInternal
         public override void streamWrite(BasicStream s)
         {
             s.writeShort(_type);
-            s.startWriteEncaps();
+            s.startWriteEncaps(_rawEncoding, Ice.FormatType.DefaultFormat);
             s.writeBlob(_rawBytes);
             s.endWriteEncaps();
         }
@@ -156,12 +178,13 @@ namespace IceInternal
         public override string ice_toString_()
         {
             string val = IceUtilInternal.Base64.encode(_rawBytes);
-            return "opaque -t " + _type + " -v " + val;
+            return "opaque -t " + _type + " -e " + Ice.Util.encodingVersionToString(_rawEncoding) + " -v " + val;
         }
 
         private sealed class InfoI : Ice.OpaqueEndpointInfo
         {
-            public InfoI(short type, byte[] rawBytes) : base(-1, false, rawBytes)
+            public InfoI(short type, Ice.EncodingVersion rawEncoding, byte[] rawBytes) : 
+                base(-1, false, rawEncoding, rawBytes)
             {                
                 _type = type;
             }
@@ -189,7 +212,7 @@ namespace IceInternal
         //
         public override Ice.EndpointInfo getInfo()
         {
-            return new InfoI(_type, _rawBytes);
+            return new InfoI(_type, _rawEncoding, _rawBytes);
         }
 
         //
@@ -200,6 +223,14 @@ namespace IceInternal
             return _type;
         }
         
+        //
+        // Return the protocol name;
+        //
+        public override string protocol()
+        {
+            return "opaque";
+        }
+
         //
         // Return the timeout for the endpoint in milliseconds. 0 means
         // non-blocking, -1 means no timeout.
@@ -279,12 +310,12 @@ namespace IceInternal
         // Return connectors for this endpoint, or empty list if no connector
         // is available.
         //
-        public override List<Connector> connectors()
+        public override List<Connector> connectors(Ice.EndpointSelectionType endSel)
         {
             return new List<Connector>();
         }
 
-        public override void connectors_async(EndpointI_connectors callback)
+        public override void connectors_async(Ice.EndpointSelectionType endSel, EndpointI_connectors callback)
         {
             callback.connectors(new List<Connector>());
         }
@@ -331,29 +362,19 @@ namespace IceInternal
         //
         // Compare endpoints for sorting purposes
         //
-        public override bool Equals(System.Object obj)
+        public override int CompareTo(EndpointI obj)
         {
-            return CompareTo(obj) == 0;
-        }
-        
-        public override int CompareTo(System.Object obj)
-        {
-            OpaqueEndpointI p = null;
-            
-            try
+            if(!(obj is OpaqueEndpointI))
             {
-                p = (OpaqueEndpointI) obj;
+                return type() < obj.type() ? -1 : 1;
             }
-            catch(System.InvalidCastException)
-            {
-                return 1;
-            }
-            
+
+            OpaqueEndpointI p = (OpaqueEndpointI)obj;
             if(this == p)
             {
                 return 0;
             }
-            
+
             if(_type < p._type)
             {
                 return -1;
@@ -363,6 +384,24 @@ namespace IceInternal
                 return 1;
             }
             
+            if(_rawEncoding.major < p._rawEncoding.major)
+            {
+                return -1;
+            }
+            else if(p._rawEncoding.major < _rawEncoding.major)
+            {
+                return 1;
+            }
+
+            if(_rawEncoding.minor < p._rawEncoding.minor)
+            {
+                return -1;
+            }
+            else if(p._rawEncoding.minor < _rawEncoding.minor)
+            {
+                return 1;
+            }
+
             if(_rawBytes.Length < p._rawBytes.Length)
             {
                 return -1;
@@ -388,14 +427,15 @@ namespace IceInternal
         
         private void calcHashValue()
         {
-            _hashCode = _type;
-            for(int i = 0; i < _rawBytes.Length; i++)
-            {
-                _hashCode = 5 * _hashCode + _rawBytes[i];
-            }
+            int h = 5381;
+            IceInternal.HashUtil.hashAdd(ref h, _type);
+            IceInternal.HashUtil.hashAdd(ref h, _rawEncoding);
+            IceInternal.HashUtil.hashAdd(ref h, _rawBytes);
+            _hashCode = h;
         }
         
         private short _type;
+        private Ice.EncodingVersion _rawEncoding;
         private byte[] _rawBytes;
         private int _hashCode;
     }

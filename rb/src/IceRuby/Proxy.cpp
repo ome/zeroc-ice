@@ -1,20 +1,23 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
 #include <Proxy.h>
 #include <Communicator.h>
 #include <Connection.h>
 #include <Endpoint.h>
 #include <Util.h>
+#include <Ice/LocalException.h>
 #include <Ice/Locator.h>
 #include <Ice/Proxy.h>
 #include <Ice/Router.h>
+
 
 using namespace std;
 using namespace IceRuby;
@@ -547,6 +550,37 @@ IceRuby_ObjectPrx_ice_secure(VALUE self, VALUE b)
 
 extern "C"
 VALUE
+IceRuby_ObjectPrx_ice_getEncodingVersion(VALUE self)
+{
+    ICE_RUBY_TRY
+    {
+        Ice::ObjectPrx p = getProxy(self);
+        return createEncodingVersion(p->ice_getEncodingVersion());
+    }
+    ICE_RUBY_CATCH
+    return Qnil;
+}
+
+extern "C"
+VALUE
+IceRuby_ObjectPrx_ice_encodingVersion(VALUE self, VALUE v)
+{
+    Ice::EncodingVersion val;
+    if(getEncodingVersion(v, val))
+    {
+        ICE_RUBY_TRY
+        {
+            Ice::ObjectPrx p = getProxy(self);
+            return createProxy(p->ice_encodingVersion(val), rb_class_of(self));
+        }
+        ICE_RUBY_CATCH
+    }
+
+    return Qnil;
+}
+
+extern "C"
+VALUE
 IceRuby_ObjectPrx_ice_isPreferSecure(VALUE self)
 {
     ICE_RUBY_TRY
@@ -861,6 +895,19 @@ IceRuby_ObjectPrx_ice_getCachedConnection(VALUE self)
 
 extern "C"
 VALUE
+IceRuby_ObjectPrx_ice_flushBatchRequests(VALUE self)
+{
+    ICE_RUBY_TRY
+    {
+        Ice::ObjectPrx p = getProxy(self);
+        p->ice_flushBatchRequests();
+    }
+    ICE_RUBY_CATCH
+    return Qnil;
+}
+
+extern "C"
+VALUE
 IceRuby_ObjectPrx_cmp(VALUE self, VALUE other)
 {
     ICE_RUBY_TRY
@@ -912,26 +959,33 @@ checkedCastImpl(const Ice::ObjectPrx& p, const string& id, VALUE facet, VALUE ct
         target = p->ice_facet(getString(facet));
     }
 
-    if(NIL_P(ctx))
+    try
     {
-        if(target->ice_isA(id))
+        if(NIL_P(ctx))
         {
-            return createProxy(target, type);
+            if(target->ice_isA(id))
+            {
+                return createProxy(target, type);
+            }
+        }
+        else
+        {
+            Ice::Context c;
+#ifndef NDEBUG
+            bool b =
+#endif
+            hashToContext(ctx, c);
+            assert(b);
+
+            if(target->ice_isA(id, c))
+            {
+                return createProxy(target, type);
+            }
         }
     }
-    else
+    catch(const Ice::FacetNotExistException&)
     {
-        Ice::Context c;
-#ifndef NDEBUG
-        bool b =
-#endif
-        hashToContext(ctx, c);
-        assert(b);
-
-        if(target->ice_isA(id, c))
-        {
-            return createProxy(target, type);
-        }
+        // Ignore.
     }
 
     return Qnil;
@@ -1180,6 +1234,8 @@ IceRuby::initProxy(VALUE iceModule)
     rb_define_method(_proxyClass, "ice_endpointSelection", CAST_METHOD(IceRuby_ObjectPrx_ice_endpointSelection), 1);
     rb_define_method(_proxyClass, "ice_isSecure", CAST_METHOD(IceRuby_ObjectPrx_ice_isSecure), 0);
     rb_define_method(_proxyClass, "ice_secure", CAST_METHOD(IceRuby_ObjectPrx_ice_secure), 1);
+    rb_define_method(_proxyClass, "ice_getEncodingVersion", CAST_METHOD(IceRuby_ObjectPrx_ice_getEncodingVersion), 0);
+    rb_define_method(_proxyClass, "ice_encodingVersion", CAST_METHOD(IceRuby_ObjectPrx_ice_encodingVersion), 1);
     rb_define_method(_proxyClass, "ice_isPreferSecure", CAST_METHOD(IceRuby_ObjectPrx_ice_isPreferSecure), 0);
     rb_define_method(_proxyClass, "ice_preferSecure", CAST_METHOD(IceRuby_ObjectPrx_ice_preferSecure), 1);
     rb_define_method(_proxyClass, "ice_getRouter", CAST_METHOD(IceRuby_ObjectPrx_ice_getRouter), 0);
@@ -1201,6 +1257,7 @@ IceRuby::initProxy(VALUE iceModule)
     rb_define_method(_proxyClass, "ice_connectionId", CAST_METHOD(IceRuby_ObjectPrx_ice_connectionId), 1);
     rb_define_method(_proxyClass, "ice_getConnection", CAST_METHOD(IceRuby_ObjectPrx_ice_getConnection), 0);
     rb_define_method(_proxyClass, "ice_getCachedConnection", CAST_METHOD(IceRuby_ObjectPrx_ice_getCachedConnection), 0);
+    rb_define_method(_proxyClass, "ice_flushBatchRequests", CAST_METHOD(IceRuby_ObjectPrx_ice_flushBatchRequests), 0);
 
     rb_define_method(_proxyClass, "hash", CAST_METHOD(IceRuby_ObjectPrx_hash), 0);
     rb_define_method(_proxyClass, "to_s", CAST_METHOD(IceRuby_ObjectPrx_ice_toString), 0);

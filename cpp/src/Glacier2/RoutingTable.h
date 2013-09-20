@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,9 +11,13 @@
 #define ICE_ROUTING_TABLE_H
 
 #include <Ice/Ice.h>
+#include <Ice/ObserverHelper.h>
 #include <IceUtil/Mutex.h>
-#include <list>
+
 #include <Glacier2/ProxyVerifier.h>
+#include <Glacier2/Instrumentation.h>
+
+#include <list>
 
 namespace Glacier2
 {
@@ -27,7 +31,13 @@ public:
 
     RoutingTable(const Ice::CommunicatorPtr&, const ProxyVerifierPtr&);
 
-    Ice::ObjectProxySeq add(const Ice::ObjectProxySeq&, const Ice::Current&); // Returns evicted proxies.
+    void destroy();
+
+    Glacier2::Instrumentation::SessionObserverPtr 
+    updateObserver(const Glacier2::Instrumentation::RouterObserverPtr&, const std::string&, const Ice::ConnectionPtr&);
+    
+    // Returns evicted proxies.
+    Ice::ObjectProxySeq add(const Ice::ObjectProxySeq&, const Ice::Current&);
     Ice::ObjectPrx get(const Ice::Identity&); // Returns null if no proxy can be found.
 
 private:
@@ -52,6 +62,8 @@ private:
 
     EvictorMap _map;
     EvictorQueue _queue;
+
+    IceInternal::ObserverHelperT<Glacier2::Instrumentation::SessionObserver> _observer;
 };
 
 }

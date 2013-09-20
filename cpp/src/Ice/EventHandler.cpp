@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,9 +17,9 @@ using namespace IceInternal;
 IceUtil::Shared* IceInternal::upCast(EventHandler* p) { return p; }
 
 IceInternal::EventHandler::EventHandler() :
-#ifdef ICE_USE_IOCP
-    _pending(SocketOperationNone),
+#if defined(ICE_USE_IOCP) || defined(ICE_OS_WINRT)
     _ready(SocketOperationNone),
+    _pending(SocketOperationNone),
     _started(SocketOperationNone),
     _finish(false),
 #else

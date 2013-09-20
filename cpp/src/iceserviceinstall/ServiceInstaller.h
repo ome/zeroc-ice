@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,25 +11,17 @@
 #define ICE_SERVICE_INSTALLER_H
 
 #include <Ice/Ice.h>
+#include <IceUtil/IceUtil.h>
 #include <AccCtrl.h>
 
 class IceServiceInstaller
 {
 public:
-
-#if defined(_MSC_VER) && _MSC_VER < 1300
-    enum { 
-        icegridregistry = 0, 
-        icegridnode = 1,
-        glacier2router = 2,
-        serviceCount = 3
-    };
-#else
+    
     static const int icegridregistry = 0;
     static const int icegridnode = 1;
     static const int glacier2router = 2;
     static const int serviceCount = 3;
-#endif
 
     IceServiceInstaller(int, const std::string&, const Ice::CommunicatorPtr&);
 
@@ -66,13 +58,14 @@ private:
 
     Ice::PropertiesPtr _serviceProperties;
     std::string _serviceName;
-    Ice::LocatorPrx _defaultLocator;
 
     std::string _icegridInstanceName;
     std::string _nodeName;
     std::string _glacier2InstanceName;
 
-    std::auto_ptr<SID> _sid;
+    SID* _sid;
+    IceUtil::ScopedArray<IceUtil::Byte> _sidBuffer;
+
     std::string _sidName;
 
     bool _debug;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -114,11 +114,51 @@ public final class Network
     }
 
     public static java.nio.channels.DatagramChannel
-    createUdpSocket()
+    createUdpSocket(java.net.InetSocketAddress addr)
     {
         try
         {
-            return java.nio.channels.DatagramChannel.open();
+            //
+            // Use reflection so this code still compiles with older JDK versions.
+            // java.net.StandardProtocolFamily is new in JDK 1.7
+            //
+            Class<?> c = Util.findClass("java.net.StandardProtocolFamily", null);
+            if(addr.getAddress().isMulticastAddress() && c != null)
+            {
+                //
+                // For multicast sockets with JDK 7 we must use the open overload that accepts
+                // ProtocolFamily and specify the ProtocolFamily that corresponds to the address
+                // type of the multicast groups that the channel will join.
+                //
+                String family = "INET";
+                if(addr.getAddress() instanceof java.net.Inet6Address)
+                {
+                    family = "INET6";
+                }
+                java.lang.reflect.Method valueOf = c.getDeclaredMethod("valueOf", new Class<?>[]{String.class});
+
+                Object[] args = new Object[]{valueOf.invoke(null, new Object[]{family})};
+
+                java.lang.reflect.Method open = java.nio.channels.DatagramChannel.class.getDeclaredMethod(
+                                            "open", new Class<?>[]{Util.findClass("java.net.ProtocolFamily", null)});
+                return (java.nio.channels.DatagramChannel)open.invoke(null, args);
+            }
+            else
+            {
+                return java.nio.channels.DatagramChannel.open();
+            }
+        }
+        catch(IllegalAccessException ex)
+        {
+            throw new Ice.SocketException(ex);
+        }
+        catch(java.lang.reflect.InvocationTargetException ex)
+        {
+            throw new Ice.SocketException(ex);   
+        }
+        catch(NoSuchMethodException ex)
+        {
+            throw new Ice.SocketException(ex);
         }
         catch(java.io.IOException ex)
         {
@@ -634,15 +674,32 @@ public final class Network
     }
 
     public static java.net.InetSocketAddress
-    getAddress(String host, int port, int protocol)
-    {
-        return getAddressImpl(host, port, protocol, false);
-    }
-
-    public static java.net.InetSocketAddress
-    getAddressForServer(String host, int port, int protocol)
+    getAddressForServer(String host, int port, int protocol, boolean preferIPv6)
     {    
-        return getAddressImpl(host, port, protocol, true);
+        if(host == null || host.length() == 0)
+        {
+            try
+            {
+                if(protocol != EnableIPv4)
+                {
+                    return new java.net.InetSocketAddress(java.net.InetAddress.getByName("::0"), port);
+                }
+                else
+                {
+                    return new java.net.InetSocketAddress(java.net.InetAddress.getByName("0.0.0.0"), port);
+                }
+            }
+            catch(java.net.UnknownHostException ex)
+            {
+                assert(false);
+                return null;
+            }
+            catch(java.lang.SecurityException ex)
+            {
+                throw new Ice.SocketException(ex);
+            } 
+        }
+        return getAddresses(host, port, protocol, Ice.EndpointSelectionType.Ordered, preferIPv6).get(0);
     }
 
     public static int
@@ -733,11 +790,10 @@ public final class Network
         return addr;
     }
 
-    public static java.util.ArrayList<java.net.InetSocketAddress>
-    getAddresses(String host, int port, int protocol)
+    public static java.util.List<java.net.InetSocketAddress>
+    getAddresses(String host, int port, int protocol, Ice.EndpointSelectionType selType, boolean preferIPv6)
     {
-        java.util.ArrayList<java.net.InetSocketAddress> addresses =
-            new java.util.ArrayList<java.net.InetSocketAddress>();
+        java.util.List<java.net.InetSocketAddress> addresses = new java.util.ArrayList<java.net.InetSocketAddress>();
         try
         {
             java.net.InetAddress[] addrs;
@@ -757,6 +813,23 @@ public final class Network
                     addresses.add(new java.net.InetSocketAddress(addr, port));
                 }
             }
+
+            if(selType == Ice.EndpointSelectionType.Random)
+            {
+                java.util.Collections.shuffle(addresses);
+            }
+
+            if(protocol == EnableBoth)
+            {
+                if(preferIPv6)
+                {
+                    java.util.Collections.sort(addresses, _preferIPv6Comparator);
+                }
+                else
+                {
+                    java.util.Collections.sort(addresses, _preferIPv4Comparator);
+                }
+            }
         }
         catch(java.net.UnknownHostException ex)
         {
@@ -770,7 +843,7 @@ public final class Network
         //
         // No Inet4Address/Inet6Address available.
         //
-        if(addresses.size() == 0)
+        if(addresses.isEmpty())
         {
             throw new Ice.DNSException(0, host);
         }
@@ -1056,14 +1129,14 @@ public final class Network
     private static boolean
     isValidAddr(java.net.InetAddress addr, int protocol)
     {
-	 byte[] bytes = null;
-	 if(addr != null)
-	 {
-	     bytes = addr.getAddress();
-	 }
-	 return bytes != null && 
-	       ((bytes.length == 16 && protocol == EnableIPv6) ||
-	        (bytes.length == 4 && protocol == EnableIPv4));
+         byte[] bytes = null;
+         if(addr != null)
+         {
+             bytes = addr.getAddress();
+         }
+         return bytes != null && 
+               ((bytes.length == 16 && protocol == EnableIPv6) ||
+                (bytes.length == 4 && protocol == EnableIPv4));
     }
 
     public static String
@@ -1094,51 +1167,6 @@ public final class Network
         return s.toString();
     }
 
-    private static java.net.InetSocketAddress
-    getAddressImpl(String host, int port, int protocol, boolean server)
-    {
-        try
-        {
-            java.net.InetAddress[] addrs;
-            if(host == null || host.length() == 0)
-            {
-                if(server)
-                {
-                    addrs = getWildcardAddresses(protocol);
-                }
-                else
-                {
-                    addrs = getLoopbackAddresses(protocol);
-                }
-            }
-            else
-            {
-                addrs = java.net.InetAddress.getAllByName(host);
-            }
-
-            for(java.net.InetAddress addr : addrs)
-            {
-                if(protocol == EnableBoth || isValidAddr(addr, protocol))
-                {
-                    return new java.net.InetSocketAddress(addr, port);
-                }
-            }
-        }
-        catch(java.net.UnknownHostException ex)
-        {
-            throw new Ice.DNSException(0, host, ex);
-        }
-        catch(java.lang.SecurityException ex)
-        {
-            throw new Ice.SocketException(ex);
-        }
-
-        //
-        // No Inet4Address/Inet6Address available.
-        //
-        throw new Ice.DNSException(0, host);
-    }
-
     private static java.net.InetAddress[]
     getLoopbackAddresses(int protocol)
     {
@@ -1167,31 +1195,33 @@ public final class Network
         }
     }
 
-    private static java.net.InetAddress[]
-    getWildcardAddresses(int protocol)
+    static class IPAddressComparator implements java.util.Comparator<java.net.InetSocketAddress>
     {
-        try
+        IPAddressComparator(boolean ipv6)
         {
-            java.net.InetAddress[] addrs = new java.net.InetAddress[protocol == EnableBoth ? 2 : 1];
-            int i = 0;
-            if(protocol != EnableIPv4)
+            _ipv6 = ipv6;
+        }
+        
+        public int
+        compare(java.net.InetSocketAddress lhs, java.net.InetSocketAddress rhs)
+        {
+            if(lhs.getAddress().getAddress().length < rhs.getAddress().getAddress().length)
             {
-                addrs[i++] = java.net.InetAddress.getByName("::0");
+                return _ipv6 ? 1 : -1;
             }
-            if(protocol != EnableIPv6)
+            else if(lhs.getAddress().getAddress().length > rhs.getAddress().getAddress().length)
             {
-                addrs[i++] = java.net.InetAddress.getByName("0.0.0.0");
+                return _ipv6 ? -1 : 1;
             }
-            return addrs;
+            else
+            {
+                return 0;
+            }
         }
-        catch(java.net.UnknownHostException ex)
-        {
-            assert(false);
-            return null;
-        }
-        catch(java.lang.SecurityException ex)
-        {
-            throw new Ice.SocketException(ex);
-        }
+
+        final private boolean _ipv6;
     }
+
+    private static IPAddressComparator _preferIPv4Comparator = new IPAddressComparator(false);
+    private static IPAddressComparator _preferIPv6Comparator = new IPAddressComparator(true);
 }

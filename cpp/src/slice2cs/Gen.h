@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,6 +24,13 @@ public:
     virtual ~CsVisitor();
 
 protected:
+
+    void writeMarshalUnmarshalParams(const ParamDeclList&, const OperationPtr&, bool);
+    void writePostUnmarshalParams(const ParamDeclList&, const OperationPtr&);
+    void writeMarshalDataMember(const DataMemberPtr&, const std::string&);
+    void writeUnmarshalDataMember(const DataMemberPtr&, const std::string&, bool, int&);
+    void writeStreamMarshalDataMember(const DataMemberPtr&, const std::string&);
+    void writeStreamUnmarshalDataMember(const DataMemberPtr&, const std::string&, bool, int&);
 
     virtual void writeInheritedOperations(const ClassDefPtr&);
     virtual void writeDispatchAndMarshalling(const ClassDefPtr&, bool);
@@ -104,6 +111,17 @@ private:
         virtual bool visitUnitStart(const UnitPtr&);
     };
 
+    class CompactIdVisitor : public CsVisitor
+    {
+    public:
+
+        CompactIdVisitor(IceUtilInternal::Output&);
+
+        virtual bool visitUnitStart(const UnitPtr&);
+        virtual void visitUnitEnd(const UnitPtr&);
+        virtual bool visitClassDefStart(const ClassDefPtr&);
+    };
+
     class TypesVisitor : public CsVisitor
     {
     public:
@@ -143,7 +161,7 @@ private:
         virtual void visitModuleEnd(const ModulePtr&);
         virtual bool visitClassDefStart(const ClassDefPtr&);
         virtual void visitClassDefEnd(const ClassDefPtr&);
-	virtual void visitOperation(const OperationPtr&);
+        virtual void visitOperation(const OperationPtr&);
     };
 
     class ProxyVisitor : public CsVisitor

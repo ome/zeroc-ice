@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -9,9 +9,9 @@
 
 top_srcdir	= ../../..
 
-CLIENT		= client
-SERVER		= server
-SERVERCUSTOM	= servercustom
+CLIENT		= client$(EXE_EXT)
+SERVER		= server$(EXE_EXT)
+SERVERCUSTOM	= servercustom$(EXE_EXT)
 
 TARGETS		= $(CLIENT) $(SERVER) $(SERVERCUSTOM)
 
@@ -28,7 +28,8 @@ SCOBJS		= ServerCustomThreadPool.o \
 		  TestI.o
 
 SRCS		= $(COBJS:.o=.cpp) \
-		  $(SOBJS:.o=.cpp)
+		  $(SOBJS:.o=.cpp) \
+		  $(SCOBJS:.o=.cpp)
 
 SLICE_SRCS	= Test.ice
 

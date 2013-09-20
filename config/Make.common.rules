@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -13,11 +13,11 @@
 
 SHELL			= /bin/sh
 VERSION_MAJOR   	= 3
-VERSION_MINOR   	= 4
-VERSION_PATCH           = 2
-VERSION			= 3.4.2
-SHORT_VERSION           = 3.4
-SOVERSION		= 34
+VERSION_MINOR   	= 5
+VERSION_PATCH           = 0
+VERSION			= 3.5.0
+SHORT_VERSION           = 3.5
+SOVERSION		= 35
 
 INSTALL			= cp -fp
 INSTALL_PROGRAM		= ${INSTALL}
@@ -42,8 +42,12 @@ endif
 
 ifeq ($(UNAME),SunOS)
     ifeq ($(MACHINE_TYPE),sun4u)
-       lp64suffix	= /sparcv9
+       lp64suffix	= /64
        lp64binsuffix	= /sparcv9
+    endif
+    ifeq ($(MACHINE_TYPE),sun4v)
+       lp64suffix       = /64
+       lp64binsuffix    = /sparcv9
     endif
     ifeq ($(MACHINE_TYPE),i86pc)
 	lp64suffix	= /amd64
@@ -65,12 +69,22 @@ ifeq ($(UNAME),Linux)
    endif
 endif
 
+ifeq ($(UNAME),Darwin)
+    ifeq ($(CPP11),yes)
+      cpp11suffix    = /c++11
+    endif
+endif
+
+ifneq ($(findstring MINGW,$(UNAME)),)
+    UNAME	:= MINGW
+endif
+
 ifeq ($(LP64),yes)
-    libsubdir		  := lib$(lp64suffix)
-    binsubdir		  := bin$(lp64binsuffix)
+	libsubdir		:= lib$(lp64suffix)
+    binsubdir		:= bin$(lp64binsuffix)
 else
-    libsubdir		  := lib
-    binsubdir		  := bin
+	libsubdir		:= lib
+	binsubdir		:= bin
 endif
 
 #
@@ -133,10 +147,10 @@ $(warning Ignoring ICE_HOME environment variable to build current source tree.)
         #
 	ifneq ($(ICE_HOME),)
 	    ifdef slice_translator
-		ifneq ($(shell test -f $(ICE_HOME)/$(binsubdir)/$(slice_translator) && echo 0), 0)
-$(error Unable to find $(slice_translator) in $(ICE_HOME)/$(binsubdir), please verify ICE_HOME is properly configured and Ice is correctly installed.)
+		ifneq ($(shell test -f $(ICE_HOME)/$(binsubdir)$(cpp11suffix)/$(slice_translator) && echo 0), 0)
+$(error Unable to find $(slice_translator) in $(ICE_HOME)/$(binsubdir)$(cpp11suffix), please verify ICE_HOME is properly configured and Ice is correctly installed.)
 		endif
-		ifeq ($(shell test -f $(ice_dir)/cpp/bin/$(slice_translator) && echo 0), 0)
+		ifeq ($(shell test -f $(ice_dir)/cpp/bin$(cpp11suffix)/$(slice_translator) && echo 0), 0)
 $(warning Found $(slice_translator) in both ICE_HOME/bin and $(ice_dir)/cpp/bin, ICE_HOME/bin/$(slice_translator) will be used!)
 		endif
 		ice_cpp_dir = $(ICE_HOME)
@@ -160,24 +174,31 @@ $(error slice_translator must be defined)
     endif
 
     ifneq ($(ICE_HOME),)
-        ifneq ($(shell test -f $(ICE_HOME)/$(binsubdir)/$(slice_translator) && echo 0), 0)
-$(error Unable to find $(slice_translator) in $(ICE_HOME)/$(binsubdir), please verify ICE_HOME is properly configured and Ice is correctly installed.)
+        ifneq ($(shell test -f $(ICE_HOME)/$(binsubdir)$(cpp11suffix)/$(slice_translator) && echo 0), 0)
+$(error Unable to find $(slice_translator) in $(ICE_HOME)/$(binsubdir)$(cpp11suffix), please verify ICE_HOME is properly configured and Ice is correctly installed.)
         endif
         ice_dir = $(ICE_HOME)
     else
         ifeq ($(shell test -f $(top_srcdir)/bin/$(slice_translator) && echo 0), 0)
             ice_dir = $(top_srcdir)
         else 
-	    ifeq ($(shell test -f /usr/bin/$(slice_translator) && echo 0), 0)
-	        ice_dir = /usr
-	        ifeq ($(shell test -f /opt/Ice-$(VERSION)/bin/$(slice_translator) && echo 0), 0)
-$(warning Found $(slice_translator) in both /usr/bin and /opt/Ice-$(VERSION)/bin, /usr/bin/$(slice_translator) will be used!)
-		endif
-	    else
-	        ifeq ($(shell test -f /opt/Ice-$(VERSION)/$(binsubdir)/$(slice_translator) && echo 0), 0)
-	            ice_dir = /opt/Ice-$(VERSION)
-		endif
-	    endif
+	        ifeq ($(shell test -f /usr/bin/$(slice_translator) && echo 0), 0)
+                ice_dir = /usr
+                ifeq ($(shell test -f /opt/Ice-$(VERSION)/bin/$(slice_translator) && echo 0), 0)
+                   $(warning Found $(slice_translator) in both /usr/bin and /opt/Ice-$(VERSION)/bin, /usr/bin/$(slice_translator) will be used!)
+                endif
+                ifeq ($(shell test -f /Library/Developer/Ice-$(VERSION)/bin/$(slice_translator) && echo 0), 0)
+                   $(warning Found $(slice_translator) in both /usr/bin and /Library/Developer/Ice-$(VERSION)/bin, /usr/bin/$(slice_translator) will be used!)
+                endif
+            else
+                ifeq ($(shell test -f /opt/Ice-$(VERSION)/$(binsubdir)/$(slice_translator) && echo 0), 0)
+                    ice_dir = /opt/Ice-$(VERSION)
+                else
+                    ifeq ($(shell test -f /Library/Developer/Ice-$(VERSION)/$(binsubdir)/$(slice_translator) && echo 0), 0)
+                        ice_dir = /Library/Developer/Ice-$(VERSION)
+                    endif
+                endif
+            endif
         endif
     endif
 
@@ -228,7 +249,7 @@ ifneq ($(ice_dir), /usr)
 	ifeq ($(ice_cpp_dir), $(ice_dir)/cpp)
 	    ice_lib_dir = $(ice_cpp_dir)/lib
 	else
-            ice_lib_dir = $(ice_cpp_dir)/$(libsubdir)
+    	ice_lib_dir = $(ice_cpp_dir)/$(libsubdir)
 	endif
     else
         ice_lib_dir = $(ice_dir)/$(libsubdir)
@@ -246,8 +267,10 @@ ifneq ($(ice_dir), /usr)
 	endif
     endif
 
-    ifeq ($(UNAME),Darwin)
-        export DYLD_LIBRARY_PATH := $(ice_lib_dir):$(DYLD_LIBRARY_PATH)
+    ifdef ice_src_dist
+	    ifeq ($(UNAME),Darwin)
+	        export DYLD_LIBRARY_PATH := $(ice_lib_dir):$(DYLD_LIBRARY_PATH)
+	    endif
     endif
 
     ifeq ($(UNAME),AIX)
@@ -270,6 +293,9 @@ ifneq ($(ice_dir), /usr)
         export LD_LIBRARY_PATH := $(ice_lib_dir):$(LD_LIBRARY_PATH)
     endif
 
+    ifneq ($(findstring MINGW,$(UNAME)),)
+	set PATH := $(ice_lib_dir);$(PATH)
+    endif
 endif
 
 
@@ -335,6 +361,12 @@ endif
 
 all::
 
+ifeq ($(wildcard $(top_srcdir)/../ICE_LICENSE.txt),) 
+    TEXT_EXTENSION =
+else 
+    TEXT_EXTENSION = .txt 
+endif
+
 install-common::
 	@if test ! -d $(prefix) ; \
 	then \
@@ -352,14 +384,14 @@ install-common::
 	        echo "Copying slice/$$subdir to $(install_slicedir)..." ; \
 	        cp -fpr $$subdir $(install_slicedir) ; \
 	    done ; \
-        fi
+	    fi
 
-	@if test ! -f $(prefix)/ICE_LICENSE ; \
+	@if test ! -f $(prefix)/ICE_LICENSE$(TEXT_EXTENSION) ; \
 	then \
-	    $(call installdata,$(top_srcdir)/../ICE_LICENSE,$(prefix)) ; \
+	    $(call installdata,$(top_srcdir)/../ICE_LICENSE$(TEXT_EXTENSION),$(prefix)) ; \
 	fi
 
-	@if test ! -f $(prefix)/LICENSE ; \
+	@if test ! -f $(prefix)/LICENSE$(TEXT_EXTENSION) ; \
 	then \
-	    $(call installdata,$(top_srcdir)/../LICENSE,$(prefix)) ; \
+	    $(call installdata,$(top_srcdir)/../LICENSE$(TEXT_EXTENSION),$(prefix)) ; \
 	fi

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -15,11 +15,13 @@ LIBNAME		= $(call mklibname,IceStorm)
 
 TARGETS		= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
 
-OBJS		= IceStorm.o
+OBJS		= IceStorm.o \
+		  Metrics.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
-SLICE_SRCS	= $(SDIR)/IceStorm.ice
+SLICE_SRCS	= $(SDIR)/IceStorm.ice \
+		  $(SDIR)/Metrics.ice
 
 HDIR		= $(headerdir)/IceStorm
 SDIR		= $(slicedir)/IceStorm

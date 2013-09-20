@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef WAREHOUSE_ICE
-#define WAREHOUSE_ICE
+#pragma once
 
 //
 // The main definitions for our simple Warehouse application
@@ -32,4 +31,3 @@ interface Item
 
 };
 
-#endif

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -88,6 +88,9 @@ class ThrowerI(Test.Thrower):
 
     def throwAssertException(self, current=None):
         raise RuntimeError("operation `throwAssertException' not supported")
+
+    def throwLocalExceptionIdempotent(self, current=None):
+        raise Ice.TimeoutException()
 
     def throwAfterResponse(self, current=None):
         #

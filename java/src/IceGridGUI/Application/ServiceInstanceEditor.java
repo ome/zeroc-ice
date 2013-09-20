@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -224,7 +224,7 @@ class ServiceInstanceEditor extends CommunicatorChildEditor
         }
     }
 
-    private JComboBox _template = new JComboBox();
+    private JComboBox<Object> _template = new JComboBox<Object>();
     private JButton _templateButton;
     private ParameterValuesField _parameters;
     private ListTextField _propertySets = new ListTextField(20);

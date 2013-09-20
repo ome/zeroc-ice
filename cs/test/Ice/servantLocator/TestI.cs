@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -37,6 +37,11 @@ public sealed class TestI : TestIntfDisp_
 
     public override void csException(Ice.Current current)
     {
+    }
+
+    public override void unknownExceptionWithServantException(Ice.Current current)
+    {
+        throw new Ice.ObjectNotExistException();
     }
 
     public override string impossibleException(bool @throw, Ice.Current current)

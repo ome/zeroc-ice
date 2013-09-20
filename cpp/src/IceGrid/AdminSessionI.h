@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -66,7 +66,7 @@ public:
 private:
 
     void setupObserverSubscription(TopicName, const Ice::ObjectPrx&);
-    Ice::ObjectPrx toProxy(const Ice::Identity&, const Ice::ConnectionPtr&);
+    Ice::ObjectPrx toProxy(const Ice::Identity&, const Ice::ConnectionPtr&, const Ice::EncodingVersion&);
     FileIteratorPrx addFileIterator(const FileReaderPrx&, const std::string&, int, const Ice::Current&);
 
     virtual void destroyImpl(bool);

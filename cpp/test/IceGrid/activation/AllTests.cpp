@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -53,7 +53,7 @@ public:
             }
             catch(const Ice::LocalException& ex)
             {
-                _exception.reset(dynamic_cast<Ice::LocalException*>(ex.ice_clone()));
+                _exception.reset(ex.ice_clone());
             }
             catch(...)
             {
@@ -66,7 +66,7 @@ public:
         notifyAll();
     }
 
-    auto_ptr<Ice::LocalException>
+    Ice::LocalException*
     waitUntilFinished()
     {
         Lock sync(*this);
@@ -74,13 +74,13 @@ public:
         {
             wait();
         }
-        return _exception;
+        return _exception.release();
     }
 
 private:
     
     Ice::ObjectPrx _proxy;
-    auto_ptr<Ice::LocalException> _exception;
+    IceUtil::UniquePtr<Ice::LocalException> _exception;
     bool _finished;
     int _nRepetitions;
 };
@@ -364,6 +364,27 @@ allTests(const Ice::CommunicatorPtr& communicator)
         {
         }
         test(admin->getServerState("server-always") == IceGrid::Inactive);
+
+
+        test(admin->getServerState("server") == IceGrid::Inactive);
+        admin->enableServer("server", true);
+        communicator->stringToProxy("server")->ice_locatorCacheTimeout(0)->ice_ping();
+        int pid = admin->getServerPid("server");
+        admin->enableServer("server", false);
+        test(admin->getServerState("server") == IceGrid::Active);
+        try
+        {
+            communicator->stringToProxy("server")->ice_locatorCacheTimeout(0)->ice_ping();
+            test(false);
+        }
+        catch(const Ice::NoEndpointException&)
+        {
+        }
+        admin->enableServer("server", true);
+        communicator->stringToProxy("server")->ice_locatorCacheTimeout(0)->ice_ping();
+        test(admin->getServerPid("server") == pid);
+        admin->stopServer("server");
+        test(admin->getServerState("server") == IceGrid::Inactive);
     }
     catch(const Ice::LocalException& ex)
     {
@@ -443,7 +464,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
         }
         for(p = threads.begin(); p != threads.end(); ++p)
         {
-            auto_ptr<Ice::LocalException> ex((*p)->waitUntilFinished());
+            IceUtil::UniquePtr<Ice::LocalException> ex((*p)->waitUntilFinished());
             test(dynamic_cast<Ice::NoEndpointException*>(ex.get()));
         }
         threads.resize(0);
@@ -459,7 +480,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
         }
         for(p = threads.begin(); p != threads.end(); ++p)
         {
-            auto_ptr<Ice::LocalException> ex((*p)->waitUntilFinished());
+            IceUtil::UniquePtr<Ice::LocalException> ex((*p)->waitUntilFinished());
             test(dynamic_cast<Ice::NoEndpointException*>(ex.get()));
         }
         threads.resize(0);
@@ -475,7 +496,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
         }
         for(p = threads.begin(); p != threads.end(); ++p)
         {
-            auto_ptr<Ice::LocalException> ex((*p)->waitUntilFinished());
+            IceUtil::UniquePtr<Ice::LocalException> ex((*p)->waitUntilFinished());
             test(dynamic_cast<Ice::NoEndpointException*>(ex.get()));
         }
         threads.resize(0);
@@ -528,7 +549,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
         }
         for(p = threads.begin(); p != threads.end(); ++p)
         {
-            auto_ptr<Ice::LocalException> ex((*p)->waitUntilFinished());
+            IceUtil::UniquePtr<Ice::LocalException> ex((*p)->waitUntilFinished());
             test(dynamic_cast<Ice::NoEndpointException*>(ex.get()));
         }
         admin->stopServer("server-activation-timeout");

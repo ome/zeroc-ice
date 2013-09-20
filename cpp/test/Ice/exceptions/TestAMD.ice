@@ -1,17 +1,20 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef TEST_AMD_ICE
-#define TEST_AMD_ICE
+#pragma once
 
 module Test
 {
+
+interface Empty
+{
+};
 
 interface Thrower;
 
@@ -33,6 +36,28 @@ exception C extends B
 exception D
 {
     int dMem;
+};
+
+exception E
+{
+    string data;
+};
+
+["cpp:ice_print"]
+exception F
+{
+    string data;
+};
+
+local exception G
+{
+    string data;
+};
+
+["cpp:ice_print"]
+local exception H
+{
+    string data;
 };
 
 module Mod
@@ -67,8 +92,15 @@ module Mod
     void throwNonIceException();
     void throwAssertException();
 
+    idempotent void throwLocalExceptionIdempotent();
+
     void throwAfterResponse();
     void throwAfterException() throws A;
+    
+    void throwE() throws E;
+    void throwF() throws F;
+    void throwG();
+    void throwH();
 };
 
 ["ami", "amd"] interface WrongOperation
@@ -78,4 +110,3 @@ module Mod
 
 };
 
-#endif

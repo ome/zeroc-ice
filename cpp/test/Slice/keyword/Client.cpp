@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,7 +25,12 @@ public:
 class charI: public _cpp_and::_cpp_char
 {
 public:
+
+#ifndef NDEBUG
     virtual void _cpp_explicit(const ::Ice::Current& current)
+#else
+    virtual void _cpp_explicit(const ::Ice::Current&)
+#endif
     {
         assert(current.operation == "explicit");
     }
@@ -84,8 +89,10 @@ testtypes()
     _cpp_and::_cpp_continue a = _cpp_and::_cpp_asm;
     test(a);
 
-    _cpp_and::_cpp_auto b;
+    _cpp_and::_cpp_auto b, b2;
     b._cpp_default = 0;
+    b2._cpp_default = b._cpp_default;
+    b._cpp_default = b2._cpp_default;
 
     _cpp_and::deletePtr c = new _cpp_and::_cpp_delete();
     c->_cpp_else = "";

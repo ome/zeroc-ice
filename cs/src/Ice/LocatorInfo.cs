@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,7 +31,15 @@ namespace IceInternal
                 if(proxy != null)
                 {
                     Reference r = ((Ice.ObjectPrxHelperBase)proxy).reference__();
-                    if(!r.isIndirect())
+                    if(_ref.isWellKnown() && !Protocol.isSupported(_ref.getEncoding(), r.getEncoding()))
+                    {
+                        //
+                        // If a well-known proxy and the returned
+                        // proxy encoding isn't supported, we're done:
+                        // there's no compatible endpoint we can use.
+                        //
+                    }
+                    else if(!r.isIndirect())
                     {
                         endpoints = r.getEndpoints();
                     }
@@ -259,28 +267,6 @@ namespace IceInternal
 
         private class ObjectRequest : Request
         {
-            private class AMICallback : Ice.AMI_Locator_findObjectById
-            {
-                public AMICallback(Request request)
-                {
-                    _request = request;
-                }
-
-                override public void
-                ice_response(Ice.ObjectPrx proxy)
-                {
-                    _request.response(proxy);
-                }
-
-                override public void
-                ice_exception(Ice.Exception ex)
-                {
-                    _request.exception(ex);
-                }
-
-                private readonly Request _request;
-            }
-
             public ObjectRequest(LocatorInfo locatorInfo, Reference @ref) : base(locatorInfo, @ref)
             {
             }
@@ -292,7 +278,8 @@ namespace IceInternal
                 {
                     if(async)
                     {
-                        _locatorInfo.getLocator().findObjectById_async(new AMICallback(this), _ref.getIdentity());
+                        _locatorInfo.getLocator().begin_findObjectById(_ref.getIdentity()).whenCompleted(
+                            this.response, this.exception);
                     }
                     else
                     {
@@ -308,28 +295,6 @@ namespace IceInternal
 
         private class AdapterRequest : Request
         {
-            private class AMICallback : Ice.AMI_Locator_findAdapterById
-            {
-                public AMICallback(Request request)
-                {
-                    _request = request;
-                }
-
-                override public void
-                ice_response(Ice.ObjectPrx proxy)
-                {
-                    _request.response(proxy);
-                }
-
-                override public void
-                ice_exception(Ice.Exception ex)
-                {
-                    _request.exception(ex);
-                }
-
-                private readonly Request _request;
-            }
-
             public AdapterRequest(LocatorInfo locatorInfo, Reference @ref) : base(locatorInfo, @ref)
             {
             }
@@ -341,7 +306,8 @@ namespace IceInternal
                 {
                     if(async)
                     {
-                        _locatorInfo.getLocator().findAdapterById_async(new AMICallback(this), _ref.getAdapterId());
+                        _locatorInfo.getLocator().begin_findAdapterById(_ref.getAdapterId()).whenCompleted(
+                            this.response, this.exception);
                     }
                     else
                     {
@@ -823,10 +789,45 @@ namespace IceInternal
 
     public sealed class LocatorManager
     {
+        struct LocatorKey
+        {
+            public LocatorKey(Ice.LocatorPrx prx)
+            {
+                Reference r = ((Ice.ObjectPrxHelperBase)prx).reference__();
+                _id = r.getIdentity();
+                _encoding = r.getEncoding();
+            }
+
+            public override bool Equals(object o)
+            {
+                LocatorKey k = (LocatorKey)o;
+                if(!k._id.Equals(_id))
+                {
+                    return false;
+                }
+                if(!k._encoding.Equals(_encoding))
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            public override int GetHashCode()
+            {
+                int h = 5381;
+                IceInternal.HashUtil.hashAdd(ref h, _id);
+                IceInternal.HashUtil.hashAdd(ref h, _encoding);
+                return h;
+            }
+
+            private Ice.Identity _id;
+            private Ice.EncodingVersion _encoding;
+        };
+
         internal LocatorManager(Ice.Properties properties)
         {
-            _table = new Hashtable();
-            _locatorTables = new Hashtable();
+            _table = new Dictionary<Ice.LocatorPrx, LocatorInfo>();
+            _locatorTables = new Dictionary<LocatorKey, LocatorTable>();
             _background = properties.getPropertyAsInt("Ice.BackgroundLocatorCacheUpdates") > 0;
         }
         
@@ -865,19 +866,20 @@ namespace IceInternal
             
             lock(this)
             {
-                LocatorInfo info = (LocatorInfo)_table[locator];
-                if(info == null)
+                LocatorInfo info = null;
+                if(!_table.TryGetValue(locator, out info))
                 {
                     //
                     // Rely on locator identity for the adapter table. We want to
                     // have only one table per locator (not one per locator
                     // proxy).
                     //
-                    LocatorTable table = (LocatorTable)_locatorTables[locator.ice_getIdentity()];
-                    if(table == null)
+                    LocatorTable table = null;
+                    LocatorKey key = new LocatorKey(locator);
+                    if(!_locatorTables.TryGetValue(key, out table))
                     {
                         table = new LocatorTable();
-                        _locatorTables[locator.ice_getIdentity()] = table;
+                        _locatorTables[key] = table;
                     }
                     
                     info = new LocatorInfo(locator, table, _background);
@@ -888,8 +890,8 @@ namespace IceInternal
             }
         }
         
-        private Hashtable _table;
-        private Hashtable _locatorTables;
+        private Dictionary<Ice.LocatorPrx, LocatorInfo> _table;
+        private Dictionary<LocatorKey, LocatorTable> _locatorTables;
         private readonly bool _background;
     }
 
@@ -897,8 +899,8 @@ namespace IceInternal
     {
         internal LocatorTable()
         {
-            _adapterEndpointsTable = new Hashtable();
-            _objectTable = new Hashtable();
+            _adapterEndpointsTable = new Dictionary<string, EndpointTableEntry>();
+            _objectTable = new Dictionary<Ice.Identity, ReferenceTableEntry>();
         }
         
         internal void clear()
@@ -920,11 +922,12 @@ namespace IceInternal
 
             lock(this)
             {
-                EndpointTableEntry entry = (EndpointTableEntry)_adapterEndpointsTable[adapter];
-                if(entry != null)
+                EndpointTableEntry entry = null;
+                if(_adapterEndpointsTable.TryGetValue(adapter, out entry))
                 {
                     cached = checkTTL(entry.time, ttl);
                     return entry.endpoints;
+
                 }
                 cached = false;
                 return null;
@@ -944,9 +947,13 @@ namespace IceInternal
         {
             lock(this)
             {
-                EndpointTableEntry entry = (EndpointTableEntry)_adapterEndpointsTable[adapter];
-                _adapterEndpointsTable.Remove(adapter);
-                return entry != null ? entry.endpoints : null;
+                EndpointTableEntry entry = null;
+                if(_adapterEndpointsTable.TryGetValue(adapter, out entry))
+                {
+                    _adapterEndpointsTable.Remove(adapter);
+                    return entry.endpoints;
+                }
+                return null;
             }
         }
         
@@ -960,8 +967,8 @@ namespace IceInternal
 
             lock(this)
             {
-                ReferenceTableEntry entry = (ReferenceTableEntry)_objectTable[id];
-                if(entry != null)
+                ReferenceTableEntry entry = null;
+                if(_objectTable.TryGetValue(id, out entry))
                 {
                     cached = checkTTL(entry.time, ttl);
                     return entry.reference;
@@ -983,9 +990,13 @@ namespace IceInternal
         {
             lock(this)
             {
-                ReferenceTableEntry entry = (ReferenceTableEntry)_objectTable[id];
-                _objectTable.Remove(id);
-                return entry != null ? entry.reference : null;
+                ReferenceTableEntry entry = null;
+                if(_objectTable.TryGetValue(id, out entry))
+                {
+                    _objectTable.Remove(id);
+                    return entry.reference;
+                }
+                return null;
             }
         }
         
@@ -1026,8 +1037,8 @@ namespace IceInternal
             public Reference reference;
         }
 
-        private Hashtable _adapterEndpointsTable;
-        private Hashtable _objectTable;
+        private Dictionary<string, EndpointTableEntry> _adapterEndpointsTable;
+        private Dictionary<Ice.Identity, ReferenceTableEntry> _objectTable;
     }
 
 }

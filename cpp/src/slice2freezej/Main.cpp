@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,7 +26,7 @@ using namespace IceUtilInternal;
 namespace
 {
 
-IceUtil::Mutex* mutex = 0;
+IceUtil::Mutex* globalMutex = 0;
 bool interrupted = false;
 
 class Init
@@ -35,13 +35,13 @@ public:
 
     Init()
     {
-        mutex = new IceUtil::Mutex;
+        globalMutex = new IceUtil::Mutex;
     }
 
     ~Init()
     {
-        delete mutex;
-        mutex = 0;
+        delete globalMutex;
+        globalMutex = 0;
     }
 };
 
@@ -50,9 +50,9 @@ Init init;
 }
 
 void
-interruptedCallback(int signal)
+interruptedCallback(int /*signal*/)
 {
-    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(mutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(globalMutex);
 
     interrupted = true;
 }
@@ -100,7 +100,13 @@ public:
 
     void generate(UnitPtr&, const Index&);
 
+#ifdef __SUNPRO_CC
+protected:
+    using JavaGenerator::typeToObjectString;
+#endif
+
 private:
+
     string typeToObjectString(const TypePtr&);
     string varToObject(const TypePtr&, const string&);
     string objectToVar(const TypePtr&, const string&);
@@ -296,9 +302,8 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
     vector<string> members;
     vector<string> capitalizedMembers;
     vector<string> indexNames;
-    size_t i;
 
-    for(i = 0; i < dict.indices.size(); ++i)
+    for(size_t i = 0; i < dict.indices.size(); ++i)
     {
         const DictIndex& index = dict.indices[i];
         const string& member = index.member;
@@ -457,13 +462,13 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
         out << sp;
         out << nl << "/**"
             << nl << " * This constructor accepts a comparator for each index key.";
-        for(i = 0; i < dict.indices.size(); ++i)
+        for(size_t i = 0; i < dict.indices.size(); ++i)
         {
             out << nl << " * @param " << members[i] << "Comparator Comparator for <code>" << members[i] << "</code>.";
         }
         out << nl << " */";
         out << nl << "public" << nl << "IndexComparators(";
-        for(i = 0; i < dict.indices.size(); ++i)
+        for(size_t i = 0; i < dict.indices.size(); ++i)
         {
             if(i > 0)
             {
@@ -474,14 +479,14 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
         }
         out << ")";
         out << sb;
-        for(i = 0; i < dict.indices.size(); ++i)
+        for(size_t i = 0; i < dict.indices.size(); ++i)
         {
             out << nl << "this." << members[i] << "Comparator = " << members[i] << "Comparator;";
         }
         out << eb;
 
         out << sp;
-        for(i = 0; i < dict.indices.size(); ++i)
+        for(size_t i = 0; i < dict.indices.size(); ++i)
         {
             out << nl << "/** Comparator for <code>" << members[i] << "</code>. */";
             out << nl << "public java.util.Comparator<" << typeToObjectString(indexTypes[i]) << "> " << members[i]
@@ -507,7 +512,7 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
     if(dict.indices.size() > 0)
     {
         out << nl << "_indices = new Freeze.MapIndex[" << dict.indices.size() << "];";
-        for(i = 0; i < dict.indices.size(); ++i)
+        for(size_t i = 0; i < dict.indices.size(); ++i)
         {
             out << nl << "_" << members[i] << "Index = new " << capitalizedMembers[i] << "Index(\"" << indexNames[i]
                 << "\", __indexComparators == null ? null : __indexComparators." << members[i] << "Comparator);";
@@ -671,7 +676,7 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
     //
     // Index methods
     //
-    for(i = 0; i < capitalizedMembers.size(); ++i)
+    for(size_t i = 0; i < capitalizedMembers.size(); ++i)
     {
         string indexClassName = capitalizedMembers[i] + "Index";
         string indexTypeS = typeToString(indexTypes[i], TypeModeIn);
@@ -864,7 +869,7 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
     //
     // Top-level encode/decode
     //
-    for(i = 0; i < 2; i++)
+    for(size_t i = 0; i < 2; i++)
     {
         string keyValue;
         TypePtr type;
@@ -894,16 +899,16 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
         // encode
         //
         out << sp << nl << "public byte[]" << nl << "encode" << keyValue << "(" << typeS
-            << " v, Ice.Communicator communicator)";
+            << " v, Ice.Communicator communicator, Ice.EncodingVersion encoding)";
         out << sb;
         out << nl << "IceInternal.BasicStream __os = "
-            << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), false, false);";
+            << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), encoding, true, false);";
         if(encaps)
         {
             out << nl << "__os.startWriteEncaps();";
         }
         iter = 0;
-        writeMarshalUnmarshalCode(out, "", type, valS, true, iter, false);
+        writeMarshalUnmarshalCode(out, "", type, OptionalNone, false, 0, valS, true, iter, false);
         if(type->usesClasses())
         {
             out << nl << "__os.writePendingObjects();";
@@ -922,19 +927,14 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
         // decode
         //
         out << sp << nl << "public " << typeS << nl << "decode" << keyValue
-            << "(byte[] b, Ice.Communicator communicator)";
+            << "(byte[] b, Ice.Communicator communicator, Ice.EncodingVersion encoding)";
         out << sb;
         out << nl << "IceInternal.BasicStream __is = "
-            << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), false, false);";
+            << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), encoding, b);";
         if(type->usesClasses())
         {
             out << nl << "__is.sliceObjects(false);";
         }
-        out << nl << "__is.resize(b.length, true);";
-        out << nl << "IceInternal.Buffer __buf = __is.getBuffer();";
-        out << nl << "__buf.b.position(0);";
-        out << nl << "__buf.b.put(b);";
-        out << nl << "__buf.b.position(0);";
         if(encaps)
         {
             out << nl << "__is.startReadEncaps();";
@@ -996,14 +996,16 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
             case Builtin::KindObjectProxy:
             case Builtin::KindLocalObject:
             {
-                writeMarshalUnmarshalCode(out, "", type, "__r", false, iter, false, metaData, patchParams);
+                writeMarshalUnmarshalCode(out, "", type, OptionalNone, false, 0, "__r", false, iter, false, metaData,
+                                          patchParams);
                 break;
             }
             }
         }
         else
         {
-            writeMarshalUnmarshalCode(out, "", type, "__r", false, iter, false, metaData, patchParams);
+            writeMarshalUnmarshalCode(out, "", type, OptionalNone, false, 0, "__r", false, iter, false, metaData,
+                                      patchParams);
         }
         if(type->usesClasses())
         {
@@ -1027,7 +1029,7 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
     //
     // Inner index classes
     //
-    for(i = 0; i < capitalizedMembers.size(); ++i)
+    for(size_t i = 0; i < capitalizedMembers.size(); ++i)
     {
         string indexClassName = capitalizedMembers[i] + "Index";
         string indexKeyTypeS = typeToObjectString(indexTypes[i]);
@@ -1040,7 +1042,8 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
         // encodeKey
         //
         out << sp << nl << "public byte[]";
-        out << nl << "encodeKey(" << indexKeyTypeS << " key, Ice.Communicator communicator)";
+        out << nl << "encodeKey(" << indexKeyTypeS << " key, Ice.Communicator communicator, "
+            << "Ice.EncodingVersion encoding)";
         out << sb;
         if(dict.indices[i].member.empty())
         {
@@ -1053,7 +1056,7 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
                 keyS = "key.toLowerCase()";
             }
 
-            out << nl << "return encodeValue(" << keyS << ", communicator);";
+            out << nl << "return encodeValue(" << keyS << ", communicator, encoding);";
         }
         else
         {
@@ -1065,9 +1068,9 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
             keyS = objectToVar(indexTypes[i], keyS);
 
             out << nl << "IceInternal.BasicStream __os = "
-                << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), false, false);";
+                << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), encoding, true, false);";
             int iter = 0;
-            writeMarshalUnmarshalCode(out, "", indexTypes[i], keyS, true, iter, false);
+            writeMarshalUnmarshalCode(out, "", indexTypes[i], OptionalNone, false, 0, keyS, true, iter, false);
             assert(!indexTypes[i]->usesClasses());
 
             out << nl << "IceInternal.Buffer buf = __os.prepareWrite();";
@@ -1081,24 +1084,19 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
         // decodeKey
         //
         out << sp << nl << "public " << indexKeyTypeS;
-        out << nl << "decodeKey(byte[] bytes, Ice.Communicator communicator)";
+        out << nl << "decodeKey(byte[] bytes, Ice.Communicator communicator, Ice.EncodingVersion encoding)";
         out << sb;
         if(dict.indices[i].member.empty())
         {
             //
             // Decode the full value (with an encaps!)
             //
-            out << nl << "return decodeValue(bytes, communicator);";
+            out << nl << "return decodeValue(bytes, communicator, encoding);";
         }
         else
         {
             out << nl << "IceInternal.BasicStream __is = "
-                << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), false, false);";
-            out << nl << "__is.resize(bytes.length, true);";
-            out << nl << "IceInternal.Buffer buf = __is.getBuffer();";
-            out << nl << "buf.b.position(0);";
-            out << nl << "buf.b.put(bytes);";
-            out << nl << "buf.b.position(0);";
+                << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator), encoding, bytes);";
 
             int iter = 0;
             list<string> metaData;
@@ -1151,14 +1149,16 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
                 case Builtin::KindObjectProxy:
                 case Builtin::KindLocalObject:
                 {
-                    writeMarshalUnmarshalCode(out, "", indexTypes[i], "r", false, iter, false, metaData, patchParams);
+                    writeMarshalUnmarshalCode(out, "", indexTypes[i], OptionalNone, false, 0, "r", false, iter, false,
+                                              metaData, patchParams);
                     break;
                 }
                 }
             }
             else
             {
-                writeMarshalUnmarshalCode(out, "", indexTypes[i], "r", false, iter, false, metaData, patchParams);
+                writeMarshalUnmarshalCode(out, "", indexTypes[i], OptionalNone, false, 0, "r", false, iter, false,
+                                          metaData, patchParams);
             }
             out << nl << "return r;";
         }
@@ -1258,7 +1258,7 @@ FreezeGenerator::generate(UnitPtr& u, const Dict& dict)
     {
         out << sp << nl << "private Freeze.MapIndex[] _indices;";
     }
-    for(i = 0; i < dict.indices.size(); ++i)
+    for(size_t i = 0; i < dict.indices.size(); ++i)
     {
         out << nl << "private " << capitalizedMembers[i] << "Index _" << members[i] << "Index;";
     }
@@ -1403,10 +1403,10 @@ FreezeGenerator::generate(UnitPtr& u, const Index& index)
         << "marshalKey(" << memberTypeString << " __key)";
     out << sb;
     out << nl << "IceInternal.BasicStream __os = "
-        << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator()), false, false);";
+        << "new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator()), encoding(), true, false);";
     int iter = 0;
-    writeMarshalUnmarshalCode(out, "", dataMember->type(), valueS, true, iter, false);
-    if(type->usesClasses())
+    writeMarshalUnmarshalCode(out, "", dataMember->type(), OptionalNone, false, 0, valueS, true, iter, false);
+    if(dataMember->type()->usesClasses())
     {
         out << nl << "__os.writePendingObjects();";
     }
@@ -1456,6 +1456,7 @@ usage(const char* n)
         "                          is sensitive).\n"
         "--output-dir DIR          Create files in the directory DIR.\n"
         "--depend                  Generate Makefile dependencies.\n"
+        "--depend-xml              Generate dependencies in XML format.\n"
         "-d, --debug               Print debug messages.\n"
         "--ice                     Permit `Ice' prefix (for building Ice source code only).\n"
         "--underscore              Permit underscores in Slice identifiers.\n"
@@ -1479,6 +1480,7 @@ compile(int argc, char* argv[])
     opts.addOpt("", "dict-index", IceUtilInternal::Options::NeedArg, "", IceUtilInternal::Options::Repeat);
     opts.addOpt("", "output-dir", IceUtilInternal::Options::NeedArg);
     opts.addOpt("", "depend");
+    opts.addOpt("", "depend-xml");
     opts.addOpt("d", "debug");
     opts.addOpt("", "ice");
     opts.addOpt("", "underscore");
@@ -1510,20 +1512,19 @@ compile(int argc, char* argv[])
 
     vector<string> cppArgs;
     vector<string> optargs = opts.argVec("D");
-    vector<string>::const_iterator i;
-    for(i = optargs.begin(); i != optargs.end(); ++i)
+    for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
     {
         cppArgs.push_back("-D" + *i);
     }
 
     optargs = opts.argVec("U");
-    for(i = optargs.begin(); i != optargs.end(); ++i)
+    for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
     {
         cppArgs.push_back("-U" + *i);
     }
 
     vector<string> includePaths = opts.argVec("I");
-    for(i = includePaths.begin(); i != includePaths.end(); ++i)
+    for(vector<string>::const_iterator i = includePaths.begin(); i != includePaths.end(); ++i)
     {
         cppArgs.push_back("-I" + Preprocessor::normalizeIncludePath(*i));
     }
@@ -1534,7 +1535,7 @@ compile(int argc, char* argv[])
 
     vector<Dict> dicts;
     optargs = opts.argVec("dict");
-    for(i = optargs.begin(); i != optargs.end(); ++i)
+    for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
     {
         string s = IceUtilInternal::removeWhitespace(*i);
 
@@ -1581,7 +1582,7 @@ compile(int argc, char* argv[])
 
     vector<Index> indices;
     optargs = opts.argVec("index");
-    for(i = optargs.begin(); i != optargs.end(); ++i)
+    for(vector<string>::const_iterator i = optargs.begin(); i != optargs.end(); ++i)
     {
         string s = IceUtilInternal::removeWhitespace(*i);
 
@@ -1734,6 +1735,7 @@ compile(int argc, char* argv[])
     string output = opts.optArg("output-dir");
 
     bool depend = opts.isSet("depend");
+    bool dependxml = opts.isSet("depend-xml");
 
     bool debug = opts.isSet("debug");
 
@@ -1758,10 +1760,15 @@ compile(int argc, char* argv[])
 
     IceUtil::CtrlCHandler ctrlCHandler;
     ctrlCHandler.setCallback(interruptedCallback);
+    
+    if(dependxml)
+    {
+        cout << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<dependencies>" << endl;
+    }
 
     for(vector<string>::size_type idx = 0; idx < args.size(); ++idx)
     {
-        if(depend)
+        if(depend || dependxml)
         {
             PreprocessorPtr icecpp = Preprocessor::create(argv[0], args[idx], cppArgs);
             FILE* cppHandle = icecpp->preprocess(false);
@@ -1780,7 +1787,7 @@ compile(int argc, char* argv[])
                 return EXIT_FAILURE;
             }
 
-            if(!icecpp->printMakefileDependencies(Preprocessor::Java, includePaths))
+            if(!icecpp->printMakefileDependencies(depend ? Preprocessor::Java : Preprocessor::JavaXML, includePaths))
             {
                 u->destroy();
                 return EXIT_FAILURE;
@@ -1826,9 +1833,9 @@ compile(int argc, char* argv[])
                 return EXIT_FAILURE;
             }
         }
-
+        
         {
-            IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(mutex);
+            IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(globalMutex);
 
             if(interrupted)
             {
@@ -1836,8 +1843,13 @@ compile(int argc, char* argv[])
             }
         }
     }
+    
+    if(dependxml)
+    {
+        cout << "</dependencies>\n";
+    }
 
-    if(depend)
+    if(depend || dependxml)
     {
         u->destroy();
         return EXIT_SUCCESS;
@@ -1923,7 +1935,7 @@ compile(int argc, char* argv[])
     u->destroy();
 
     {
-        IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(mutex);
+        IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(globalMutex);
 
         if(interrupted)
         {

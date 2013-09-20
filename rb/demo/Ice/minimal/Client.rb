@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -14,7 +14,7 @@ Ice::loadSlice('Hello.ice')
 
 begin
     communicator = Ice::initialize(ARGV)
-    hello = Demo::HelloPrx::checkedCast(communicator.stringToProxy("hello:tcp -p 10000"))
+    hello = Demo::HelloPrx::checkedCast(communicator.stringToProxy("hello:tcp -h localhost -p 10000"))
     hello.sayHello()
     communicator.destroy()
 rescue => ex

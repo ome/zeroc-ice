@@ -1,15 +1,11 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
-
-#if defined(_MSC_VER) && _MSC_VER >= 1400
-#    define _CRT_SECURE_NO_DEPRECATE 1  // C4996 '<C function>' was declared deprecated
-#endif
 
 #include <IceUtil/DisableWarnings.h>
 #include <IceUtil/Functional.h>
@@ -212,7 +208,7 @@ Slice::GeneratorBase::~GeneratorBase()
 // is created if necessary) and write the HTML header into the file.
 //
 void
-Slice::GeneratorBase::openDoc(const string& file, const string& title, const string& header, const string& footer)
+Slice::GeneratorBase::openDoc(const string& file, const string& title, const string& header, const string& /*footer*/)
 {
     makeDir(_dir);
     openStream(_dir + "/" + file);
@@ -834,7 +830,7 @@ Slice::GeneratorBase::printSearch()
 }
 
 void
-Slice::GeneratorBase::printLogo(const ContainedPtr& c, const ContainerPtr& container, bool forEnum)
+Slice::GeneratorBase::printLogo(const ContainedPtr& /*c*/, const ContainerPtr& container, bool forEnum)
 {
     string imageDir = getImageDir();
     if(!imageDir.empty())
@@ -1298,7 +1294,7 @@ Slice::GeneratorBase::closeStream()
 }
 
 string
-Slice::GeneratorBase::containedToId(const ContainedPtr& contained, bool asTarget)
+Slice::GeneratorBase::containedToId(const ContainedPtr& contained, bool /*asTarget*/)
 {
     assert(contained);
 
@@ -1808,7 +1804,7 @@ Slice::StartPageGenerator::printHeaderFooter()
 
     if(!imageDir.empty())
     {
-	start("td align=\"right\"");
+        start("td align=\"right\"");
         start("table");
         start("tr");
         start("td");
@@ -1825,7 +1821,7 @@ Slice::StartPageGenerator::printHeaderFooter()
         end(); // td
         end(); // tr
         end(); // table
-	end(); // td
+        end(); // td
     }
 
     end(); // tr
@@ -1838,7 +1834,7 @@ Slice::FileVisitor::FileVisitor(Files& files)
 }
 
 bool
-Slice::FileVisitor::visitUnitStart(const UnitPtr& u)
+Slice::FileVisitor::visitUnitStart(const UnitPtr&)
 {
     return true;
 }
@@ -1901,7 +1897,7 @@ Slice::StartPageVisitor::StartPageVisitor(const Files& files)
 }
 
 bool
-Slice::StartPageVisitor::visitUnitStart(const UnitPtr& unit)
+Slice::StartPageVisitor::visitUnitStart(const UnitPtr&)
 {
     return true;
 }
@@ -3003,7 +2999,7 @@ Slice::PageVisitor::PageVisitor(const Files& files)
 }
 
 bool
-Slice::PageVisitor::visitUnitStart(const UnitPtr& unit)
+Slice::PageVisitor::visitUnitStart(const UnitPtr&)
 {
     return true;
 }

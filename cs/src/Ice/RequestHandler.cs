@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,6 +8,7 @@
 // **********************************************************************
 
 using System.Collections.Generic;
+using Ice.Instrumentation;
 
 namespace IceInternal
 {
@@ -27,7 +28,8 @@ namespace IceInternal
 
         Ice.ConnectionI getConnection(bool wait);
 
-        Outgoing getOutgoing(string operation, Ice.OperationMode mode, Dictionary<string, string> context);
+        Outgoing getOutgoing(string operation, Ice.OperationMode mode, Dictionary<string, string> context, 
+                             InvocationObserver observer);
 
         void reclaimOutgoing(Outgoing @out);
     }

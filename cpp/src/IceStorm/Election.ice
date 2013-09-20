@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ELECTION_ICE
-#define ELECTION_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -69,7 +68,7 @@ interface ReplicaObserver
      * inconsisency was detected.
      *
      **/ 
-    ["ami"] void createTopic(LogUpdate llu, string name)
+    void createTopic(LogUpdate llu, string name)
         throws ObserverInconsistencyException;
 
     /**
@@ -84,7 +83,7 @@ interface ReplicaObserver
      * inconsisency was detected.
      *
      **/ 
-    ["ami"] void destroyTopic(LogUpdate llu, string name)
+    void destroyTopic(LogUpdate llu, string name)
         throws ObserverInconsistencyException;
 
     /**
@@ -101,7 +100,7 @@ interface ReplicaObserver
      * inconsisency was detected.
      *
      **/ 
-    ["ami"] void addSubscriber(LogUpdate llu, string topic, IceStorm::SubscriberRecord record)
+    void addSubscriber(LogUpdate llu, string topic, IceStorm::SubscriberRecord record)
         throws ObserverInconsistencyException;
 
     /**
@@ -118,7 +117,7 @@ interface ReplicaObserver
      * inconsisency was detected.
      *
      **/ 
-    ["ami"] void removeSubscriber(LogUpdate llu, string topic, Ice::IdentitySeq subscribers)
+    void removeSubscriber(LogUpdate llu, string topic, Ice::IdentitySeq subscribers)
         throws ObserverInconsistencyException;
 };
 
@@ -306,4 +305,3 @@ interface Node
 
 };
 
-#endif 

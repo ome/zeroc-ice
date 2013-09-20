@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,14 +15,20 @@
 #endif
 
 #include <Ice/Config.h>
+
 #include <Ice/PropertiesF.h> // For setTcpBufSize
 #include <Ice/LoggerF.h> // For setTcpBufSize
 #include <Ice/Protocol.h> 
+#include <Ice/EndpointTypes.h>
 
-#ifdef _WIN32
+#ifdef ICE_OS_WINRT
+#   include <Ice/EventHandlerF.h>
+#elif defined(_WIN32)
 #   include <winsock2.h>
 #   include <ws2tcpip.h>
+#  if !defined(__MINGW32__)
 typedef int ssize_t;
+#  endif
 #else
 #   include <unistd.h>
 #   include <fcntl.h>
@@ -39,7 +45,8 @@ typedef int ssize_t;
 #elif (defined(__APPLE__) || defined(__FreeBSD__)) && !defined(ICE_NO_KQUEUE)
 #   define ICE_USE_KQUEUE 1
 #elif defined(_WIN32)
-#  if !defined(ICE_NO_IOCP)
+#  if defined(ICE_OS_WINRT)
+#  elif !defined(ICE_NO_IOCP)
 #     define ICE_USE_IOCP 1
 #  else
 #     define ICE_USE_SELECT 1
@@ -52,10 +59,14 @@ typedef int ssize_t;
 typedef int socklen_t;
 #endif
 
-#ifndef _WIN32
+#if !defined(_WIN32)
 #   define SOCKET int
-#   define SOCKET_ERROR -1
 #   define INVALID_SOCKET -1
+#   define SOCKET_ERROR -1
+#elif defined(ICE_OS_WINRT)
+    typedef Platform::Object^ SOCKET;
+#   define INVALID_SOCKET nullptr
+#   define SOCKET_ERROR -1
 #endif
 
 #ifndef SHUT_RD
@@ -78,8 +89,42 @@ typedef int socklen_t;
 #   define NETDB_SUCCESS 0
 #endif
 
+#if defined(__MINGW32__) && !defined WSAID_CONNECTEX
+#  define WSAID_CONNECTEX {0x25a207b9,0xddf3,0x4660,{0x8e,0xe9,0x76,0xe5,0x8c,0x74,0x06,0x3e}}
+#  define WSAID_ACCEPTEX {0xb5367df1,0xcbac,0x11cf,{0x95,0xca,0x00,0x80,0x5f,0x48,0xa1,0x92}}
+#  define SO_UPDATE_ACCEPT_CONTEXT   0x700B
+#  define SO_UPDATE_CONNECT_CONTEXT  0x7010
+    typedef BOOL (PASCAL FAR * LPFN_CONNECTEX) (IN SOCKET s, IN const struct sockaddr FAR *name, IN int namelen,
+                                                IN PVOID lpSendBuffer OPTIONAL, IN DWORD dwSendDataLength,
+                                                OUT LPDWORD lpdwBytesSent, IN LPOVERLAPPED lpOverlapped);
+
+    typedef BOOL (PASCAL FAR * LPFN_ACCEPTEX)(IN SOCKET sListenSocket, IN SOCKET sAcceptSocket, 
+                                              IN PVOID lpOutputBuffer, IN DWORD dwReceiveDataLength,
+                                              IN DWORD dwLocalAddressLength, IN DWORD dwRemoteAddressLength,
+                                              OUT LPDWORD lpdwBytesReceived, IN LPOVERLAPPED lpOverlapped);
+#endif
+    
 namespace IceInternal
 {
+
+//
+// Use Address struct or union depending on the platform
+//
+#ifdef ICE_OS_WINRT
+struct ICE_API Address
+{
+    Windows::Networking::HostName^ host;
+    Platform::String^ port;
+};
+#else
+union Address
+{
+    sockaddr sa;
+    sockaddr_in saIn;
+    sockaddr_in6 saIn6;
+    sockaddr_storage saStorage;
+};
+#endif
 
 enum SocketOperation
 {
@@ -89,8 +134,11 @@ enum SocketOperation
     SocketOperationConnect = 2
 };
 
-#ifdef ICE_USE_IOCP
-
+//
+// AsyncInfo struct for Windows IOCP or WinRT holds the result of
+// asynchronous operations after it completed.
+//
+#if defined(ICE_USE_IOCP)
 struct ICE_API AsyncInfo : WSAOVERLAPPED
 {
     AsyncInfo(SocketOperation);
@@ -101,14 +149,21 @@ struct ICE_API AsyncInfo : WSAOVERLAPPED
     DWORD count;
     int error;
 };
-
-#endif 
+#elif defined(ICE_OS_WINRT)
+struct ICE_API AsyncInfo
+{
+    int count;
+    int error;
+};
+  
+public delegate void SocketOperationCompletedHandler(int);
+#endif
 
 class ICE_API NativeInfo : virtual public IceUtil::Shared
 {
 public:
     
-    NativeInfo(SOCKET fd = INVALID_SOCKET) : _fd(fd)
+    NativeInfo(SOCKET socketFd = INVALID_SOCKET) : _fd(socketFd)
     {
     }
 
@@ -117,11 +172,13 @@ public:
         return _fd;
     }
 
-#ifdef ICE_USE_IOCP
     //
     // This is implemented by transceiver and acceptor implementations.
     //
+#if defined(ICE_USE_IOCP)
     virtual AsyncInfo* getAsyncInfo(SocketOperation) = 0;
+#elif defined(ICE_OS_WINRT)
+    virtual void setCompletedHandler(SocketOperationCompletedHandler^) = 0;
 #endif
 
 protected:
@@ -130,73 +187,80 @@ protected:
 };
 typedef IceUtil::Handle<NativeInfo> NativeInfoPtr;
 
-ICE_API bool interrupted();
-ICE_API bool acceptInterrupted();
-ICE_API bool noBuffers();
-ICE_API bool wouldBlock();
-ICE_API bool connectFailed();
-ICE_API bool connectionRefused();
-ICE_API bool connectInProgress();
-ICE_API bool connectionLost();
-ICE_API bool notConnected();
-ICE_API bool recvTruncated();
 ICE_API bool noMoreFds(int);
+ICE_API std::string errorToStringDNS(int);
+ICE_API std::vector<Address> getAddresses(const std::string&, int, ProtocolSupport, Ice::EndpointSelectionType, bool, 
+                                          bool);
+ICE_API ProtocolSupport getProtocolSupport(const Address&);
+ICE_API Address getAddressForServer(const std::string&, int, ProtocolSupport, bool);
+ICE_API int compareAddress(const Address&, const Address&);
 
-ICE_API SOCKET createSocket(bool, int);
-ICE_API void closeSocket(SOCKET);
+ICE_API SOCKET createSocket(bool, const Address&);
+ICE_API SOCKET createServerSocket(bool, const Address&, ProtocolSupport);
 ICE_API void closeSocketNoThrow(SOCKET);
-ICE_API void shutdownSocketWrite(SOCKET);
-ICE_API void shutdownSocketReadWrite(SOCKET);
+ICE_API void closeSocket(SOCKET);
+
+ICE_API std::string addrToString(const Address&);
+ICE_API void fdToLocalAddress(SOCKET, Address&);
+ICE_API bool fdToRemoteAddress(SOCKET, Address&);
+ICE_API std::string fdToString(SOCKET);
+ICE_API void fdToAddressAndPort(SOCKET, std::string&, int&, std::string&, int&);
+ICE_API void addrToAddressAndPort(const Address&, std::string&, int&);
+ICE_API std::string addressesToString(const Address&, const Address&, bool);
+ICE_API bool isAddressValid(const Address&);
+
+ICE_API std::vector<std::string> getHostsForEndpointExpand(const std::string&, ProtocolSupport, bool);
+
+ICE_API std::string inetAddrToString(const Address&);
+ICE_API int getPort(const Address&);
+ICE_API void setPort(Address&, int);
+
+ICE_API bool isMulticast(const Address&);
+ICE_API void setTcpBufSize(SOCKET, const Ice::PropertiesPtr&, const Ice::LoggerPtr&);
 
 ICE_API void setBlock(SOCKET, bool);
-ICE_API void setTcpNoDelay(SOCKET);
-ICE_API void setKeepAlive(SOCKET);
 ICE_API void setSendBufferSize(SOCKET, int);
 ICE_API int getSendBufferSize(SOCKET);
 ICE_API void setRecvBufferSize(SOCKET, int);
 ICE_API int getRecvBufferSize(SOCKET);
-ICE_API void setMcastGroup(SOCKET, const struct sockaddr_storage&, const std::string&);
-ICE_API void setMcastInterface(SOCKET, const std::string&, bool);
-ICE_API void setMcastTtl(SOCKET, int, bool);
+
+ICE_API void setMcastGroup(SOCKET, const Address&, const std::string&);
+ICE_API void setMcastInterface(SOCKET, const std::string&, const Address&);
+ICE_API void setMcastTtl(SOCKET, int, const Address&);
 ICE_API void setReuseAddress(SOCKET, bool);
 
-ICE_API struct sockaddr_storage doBind(SOCKET, const struct sockaddr_storage&);
+ICE_API Address doBind(SOCKET, const Address&);
+
+#ifndef ICE_OS_WINRT
+ICE_API bool interrupted();
+ICE_API bool acceptInterrupted();
+ICE_API bool noBuffers();
+ICE_API bool wouldBlock();
+ICE_API bool notConnected();
+ICE_API bool recvTruncated();
+
+ICE_API bool connectFailed();
+ICE_API bool connectionRefused();
+ICE_API bool connectInProgress();
+ICE_API bool connectionLost();
+
 ICE_API void doListen(SOCKET, int);
-ICE_API bool doConnect(SOCKET, const struct sockaddr_storage&);
+ICE_API bool doConnect(SOCKET, const Address&);
 ICE_API void doFinishConnect(SOCKET);
-#ifdef ICE_USE_IOCP
-ICE_API void doConnectAsync(SOCKET, const struct sockaddr_storage&, AsyncInfo&);
-ICE_API void doFinishConnectAsync(SOCKET, AsyncInfo&);
-#endif
 ICE_API SOCKET doAccept(SOCKET);
-
-ICE_API struct sockaddr_storage getAddressForServer(const std::string&, int, ProtocolSupport);
-ICE_API struct sockaddr_storage getAddress(const std::string&, int, ProtocolSupport);
-ICE_API std::vector<struct sockaddr_storage> getAddresses(const std::string&, int, ProtocolSupport, bool);
-
-ICE_API int compareAddress(const struct sockaddr_storage&, const struct sockaddr_storage&);
 
 ICE_API void createPipe(SOCKET fds[2]);
 
-ICE_API std::string errorToStringDNS(int);
-
-ICE_API std::string fdToString(SOCKET);
-ICE_API void fdToAddressAndPort(SOCKET, std::string&, int&, std::string&, int&);
-ICE_API void addrToAddressAndPort(const struct sockaddr_storage&, std::string&, int&);
-ICE_API std::string addressesToString(const struct sockaddr_storage&, const struct sockaddr_storage&, bool);
-ICE_API void fdToLocalAddress(SOCKET, struct sockaddr_storage&);
-ICE_API bool fdToRemoteAddress(SOCKET, struct sockaddr_storage&);
-ICE_API std::string inetAddrToString(const struct sockaddr_storage&);
-ICE_API std::string addrToString(const struct sockaddr_storage&);
-ICE_API bool isMulticast(const struct sockaddr_storage&);
-ICE_API int getPort(const struct sockaddr_storage&);
-ICE_API void setPort(struct sockaddr_storage&, int);
-
-ICE_API std::vector<std::string> getHostsForEndpointExpand(const std::string&, ProtocolSupport, bool);
-ICE_API void setTcpBufSize(SOCKET, const Ice::PropertiesPtr&, const Ice::LoggerPtr&);
-
 ICE_API int getSocketErrno();
+#else
+ICE_API void checkConnectErrorCode(const char*, int, HRESULT, Windows::Networking::HostName^);
+ICE_API void checkErrorCode(const char*, int, HRESULT);
+#endif
 
+#if defined(ICE_USE_IOCP)
+ICE_API void doConnectAsync(SOCKET, const Address&, AsyncInfo&);
+ICE_API void doFinishConnectAsync(SOCKET, AsyncInfo&);
+#endif
 }
 
 #endif

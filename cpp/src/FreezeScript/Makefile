@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -9,8 +9,8 @@
 
 top_srcdir	= ../..
 
-TRANSFORMDB	= $(top_srcdir)/bin/transformdb
-DUMPDB		= $(top_srcdir)/bin/dumpdb
+TRANSFORMDB	= $(bindir)/transformdb
+DUMPDB		= $(bindir)/dumpdb
 
 TARGETS		= $(TRANSFORMDB) $(DUMPDB)
 
@@ -36,6 +36,12 @@ DUMP_OBJS	= DumpDescriptors.o \
 SRCS		= $(COMMON_OBJS:.o=.cpp) $(TRANSFORM_OBJS:.o=.cpp) $(DUMP_OBJS:.o=.cpp)
 
 HDIR		= $(headerdir)/FreezeScript
+
+ifeq ($(CPP11),yes)
+RPATH_DIR	= @loader_path/../../lib/c++11
+else
+RPATH_DIR	= @loader_path/../lib
+endif
 
 include $(top_srcdir)/config/Make.rules
 

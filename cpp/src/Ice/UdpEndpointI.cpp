@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,37 +17,30 @@
 #include <Ice/DefaultsAndOverrides.h>
 #include <Ice/Protocol.h>
 #include <Ice/HashUtil.h>
+#include <Ice/Logger.h>
 
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
 
 IceInternal::UdpEndpointI::UdpEndpointI(const InstancePtr& instance, const string& ho, Int po, const string& mif, 
-                                        Int mttl, Ice::Byte pma, Ice::Byte pmi, Ice::Byte ema, Ice::Byte emi,
-                                        bool conn, const string& conId, bool co) :
+                                        Int mttl, bool conn, const string& conId, bool co) :
+    EndpointI(conId),
     _instance(instance),
     _host(ho),
     _port(po),
     _mcastInterface(mif),
     _mcastTtl(mttl),
-    _protocolMajor(pma),
-    _protocolMinor(pmi),
-    _encodingMajor(ema),
-    _encodingMinor(emi),
     _connect(conn),
-    _connectionId(conId),
     _compress(co)
 {
 }
 
 IceInternal::UdpEndpointI::UdpEndpointI(const InstancePtr& instance, const string& str, bool oaEndpoint) :
+    EndpointI(""),
     _instance(instance),
     _port(0),
     _mcastTtl(-1),
-    _protocolMajor(protocolMajor),
-    _protocolMinor(protocolMinor),
-    _encodingMajor(encodingMajor),
-    _encodingMinor(encodingMinor),
     _connect(false),
     _compress(false)
 {
@@ -112,114 +105,7 @@ IceInternal::UdpEndpointI::UdpEndpointI(const InstancePtr& instance, const strin
             }
         }
 
-        if(option == "-v")
-        {
-            if(argument.empty())
-            {
-                EndpointParseException ex(__FILE__, __LINE__);
-                ex.str = "no argument provided for -v option in endpoint `udp " + str + "'";
-                throw ex;
-            }
-
-            string::size_type pos = argument.find('.');
-            if(pos == string::npos)
-            {
-                EndpointParseException ex(__FILE__, __LINE__);
-                ex.str = "malformed protocol version `" + argument + "' in endpoint `udp " + str + "'";
-                throw ex;
-            }
-            string majorStr = argument.substr(0, pos);
-            string minorStr = argument.substr(pos + 1, string::npos);
-
-            istringstream majStr(majorStr);
-            Int majVersion;
-            if(!(majStr >> majVersion) || !majStr.eof())
-            {
-                EndpointParseException ex(__FILE__, __LINE__);
-                ex.str = "invalid protocol major version `" + argument + "' in endpoint `udp " + str + "'";
-                throw ex;
-            }
-
-            istringstream minStr(minorStr);
-            Int minVersion;
-            if(!(minStr >> minVersion) || !minStr.eof())
-            {
-                EndpointParseException ex(__FILE__, __LINE__);
-                ex.str = "invalid protocol minor version `" + argument + "' in endpoint `udp " + str + "'";
-                throw ex;
-            }
-
-            if(majVersion < 1 || majVersion > 255 || minVersion < 0 || minVersion > 255)
-            {
-                EndpointParseException ex(__FILE__, __LINE__);
-                ex.str = "range error in protocol version `" + argument + "' in endpoint `udp " + str + "'";
-                throw ex;
-            }
-
-            if(majVersion != protocolMajor)
-            {
-                UnsupportedProtocolException ex(__FILE__, __LINE__);
-                ex.badMajor = majVersion;
-                ex.badMinor = minVersion;
-                ex.major = static_cast<unsigned char>(protocolMajor);
-                ex.minor = static_cast<unsigned char>(protocolMinor);
-                throw ex;
-            }
-
-            const_cast<Byte&>(_protocolMajor) = majVersion;
-            const_cast<Byte&>(_protocolMinor) = minVersion;
-        }
-        else if(option == "-e")
-        {
-            if(argument.empty())
-            {
-                EndpointParseException ex(__FILE__, __LINE__);
-                ex.str = "no argument provided for -e option in endpoint `udp " + str + "'";
-                throw ex;
-            }
-            string::size_type pos = argument.find('.');
-            string majorStr = argument.substr(0, pos);
-            string minorStr = argument.substr(pos + 1, string::npos);
-
-            istringstream majStr(majorStr);
-            Int majVersion;
-            if(!(majStr >> majVersion) || !majStr.eof())
-            {
-                EndpointParseException ex(__FILE__, __LINE__);
-                ex.str = "invalid encoding major version `" + argument + "' in endpoint `udp " + str + "'";
-                throw ex;
-            }
-
-            istringstream minStr(minorStr);
-            Int minVersion;
-            if(!(minStr >> minVersion) || !minStr.eof())
-            {
-                EndpointParseException ex(__FILE__, __LINE__);
-                ex.str = "invalid encoding minor version `" + argument + "' in endpoint `udp " + str + "'";
-                throw ex;
-            }
-
-            if(majVersion < 1 || majVersion > 255 || minVersion < 0 || minVersion > 255)
-            {
-                EndpointParseException ex(__FILE__, __LINE__);
-                ex.str = "range error in encoding version `" + argument + "' in endpoint `udp " + str + "'";
-                throw ex;
-            }
-
-            if(majVersion != static_cast<unsigned char>(encodingMajor))
-            {
-                UnsupportedEncodingException ex(__FILE__, __LINE__);
-                ex.badMajor = majVersion;
-                ex.badMinor = minVersion;
-                ex.major = static_cast<unsigned char>(encodingMajor);
-                ex.minor = static_cast<unsigned char>(encodingMinor);
-                throw ex;
-            }
-
-            const_cast<Byte&>(_encodingMajor) = majVersion;
-            const_cast<Byte&>(_encodingMinor) = minVersion;
-        }
-        else if(option == "-h")
+        if(option == "-h")
         {
             if(argument.empty())
             {
@@ -271,6 +157,30 @@ IceInternal::UdpEndpointI::UdpEndpointI(const InstancePtr& instance, const strin
             }
             const_cast<bool&>(_compress) = true;
         }
+        else if(option == "-v" || option == "-e")
+        {
+            if(argument.empty())
+            {
+                EndpointParseException ex(__FILE__, __LINE__);
+                ex.str = "no argument provided for " + option + " option in endpoint `udp " + str + "'";
+                throw ex;
+            }
+            try
+            {
+                Ice::Byte major, minor;
+                IceInternal::stringToMajorMinor(argument, major, minor);
+                if(major != 1 || minor != 0)
+                {
+                    _instance->initializationData().logger->warning("deprecated udp endpoint option: " + option);
+                }
+            }
+            catch(const VersionParseException& e)
+            {
+                EndpointParseException ex(__FILE__, __LINE__);
+                ex.str = "invalid version `" + argument + "' in endpoint `udp " + str + "':\n" + e.str;
+                throw ex;
+            }
+        }
         else if(option == "--interface")
         {
             if(argument.empty())
@@ -299,8 +209,8 @@ IceInternal::UdpEndpointI::UdpEndpointI(const InstancePtr& instance, const strin
         }
         else
         {
-            EndpointParseException ex(__FILE__, __LINE__);
-            ex.str = "unknown option `" + option + "' in `udp " + str + "'";
+            Ice::EndpointParseException ex(__FILE__, __LINE__);
+            ex.str = "unknown option `" + option + "' in endpoint `udp " + str + "'";
             throw ex;
         }
     }
@@ -328,37 +238,19 @@ IceInternal::UdpEndpointI::UdpEndpointI(BasicStream* s) :
     _instance(s->instance()),
     _port(0),
     _mcastTtl(-1),
-    _protocolMajor(protocolMajor),
-    _protocolMinor(protocolMinor),
-    _encodingMajor(encodingMajor),
-    _encodingMinor(encodingMinor),
     _connect(false),
     _compress(false)
 {
     s->startReadEncaps();
     s->read(const_cast<string&>(_host), false);
     s->read(const_cast<Int&>(_port));
-    s->read(const_cast<Byte&>(_protocolMajor));
-    s->read(const_cast<Byte&>(_protocolMinor));
-    s->read(const_cast<Byte&>(_encodingMajor));
-    s->read(const_cast<Byte&>(_encodingMinor));
-    if(_protocolMajor != protocolMajor)
+    if(s->getReadEncoding() == Ice::Encoding_1_0)
     {
-        UnsupportedProtocolException ex(__FILE__, __LINE__);
-        ex.badMajor = _protocolMajor;
-        ex.badMinor = _protocolMinor;
-        ex.major = static_cast<unsigned char>(protocolMajor);
-        ex.minor = static_cast<unsigned char>(protocolMinor);
-        throw ex;
-    }
-    if(_encodingMajor != encodingMajor)
-    {
-        UnsupportedEncodingException ex(__FILE__, __LINE__);
-        ex.badMajor = _encodingMajor;
-        ex.badMinor = _encodingMinor;
-        ex.major = static_cast<unsigned char>(encodingMajor);
-        ex.minor = static_cast<unsigned char>(encodingMinor);
-        throw ex;
+        Ice::Byte b;
+        s->read(b);
+        s->read(b);
+        s->read(b);
+        s->read(b);
     }
     // Not transmitted.
     //s->read(const_cast<bool&>(_connect));
@@ -373,10 +265,11 @@ IceInternal::UdpEndpointI::streamWrite(BasicStream* s) const
     s->startWriteEncaps();
     s->write(_host, false);
     s->write(_port);
-    s->write(_protocolMajor);
-    s->write(_protocolMinor);
-    s->write(_encodingMajor);
-    s->write(_encodingMinor);
+    if(s->getWriteEncoding() == Ice::Encoding_1_0)
+    {
+        s->write(Ice::Protocol_1_0);
+        s->write(Ice::Encoding_1_0);
+    }
     // Not transmitted.
     //s->write(_connect);
     s->write(_compress);
@@ -396,20 +289,6 @@ IceInternal::UdpEndpointI::toString() const
     ostringstream s;
 
     s << "udp";
-
-    if(_protocolMajor != Byte(1) || _protocolMinor != Byte(0))
-    {
-        s << " -v "
-          << static_cast<unsigned>(static_cast<unsigned char>(_protocolMajor)) << "."
-          << static_cast<unsigned>(static_cast<unsigned char>(_protocolMinor));
-    }
-
-    if(_encodingMajor != Byte(1) || _encodingMinor != Byte(0))
-    {
-        s << " -e "
-          << static_cast<unsigned>(static_cast<unsigned char>(_encodingMajor)) << "."
-          << static_cast<unsigned>(static_cast<unsigned char>(_encodingMinor));
-    }
 
     if(!_host.empty())
     {
@@ -458,10 +337,8 @@ IceInternal::UdpEndpointI::getInfo() const
     {
     public:
 
-        InfoI(bool comp, const string& host, Ice::Int port, Ice::Byte protocolMajor, Ice::Byte protocolMinor, 
-              Ice::Byte encodingMajor, Ice::Byte encodingMinor, const std::string& mcastInterface, Ice::Int mcastTtl) :
-            UDPEndpointInfo(-1, comp, host, port, protocolMajor, protocolMinor, encodingMajor, encodingMinor,
-                            mcastInterface, mcastTtl)
+        InfoI(bool comp, const string& host, Ice::Int port, const std::string& mcastInterface, Ice::Int mcastTtl) :
+            UDPEndpointInfo(-1, comp, host, port, mcastInterface, mcastTtl)
         {
         }
 
@@ -484,14 +361,19 @@ IceInternal::UdpEndpointI::getInfo() const
         }
     };
 
-    return new InfoI(_compress, _host, _port, _protocolMajor, _protocolMinor, _encodingMajor, _encodingMinor, 
-                     _mcastInterface, _mcastTtl);
+    return new InfoI(_compress, _host, _port, _mcastInterface, _mcastTtl);
 }
 
 Short
 IceInternal::UdpEndpointI::type() const
 {
     return UDPEndpointType;
+}
+
+std::string
+IceInternal::UdpEndpointI::protocol() const
+{
+    return "udp";
 }
 
 Int
@@ -515,8 +397,7 @@ IceInternal::UdpEndpointI::connectionId(const string& connectionId) const
     }
     else
     {
-        return new UdpEndpointI(_instance, _host, _port, _mcastInterface, _mcastTtl, _protocolMajor, _protocolMinor,
-                                _encodingMajor, _encodingMinor, _connect, connectionId, _compress);
+        return new UdpEndpointI(_instance, _host, _port, _mcastInterface, _mcastTtl, _connect, connectionId, _compress);
     }
 }
 
@@ -535,8 +416,7 @@ IceInternal::UdpEndpointI::compress(bool compress) const
     }
     else
     {
-        return new UdpEndpointI(_instance, _host, _port, _mcastInterface, _mcastTtl, _protocolMajor, _protocolMinor,
-                                _encodingMajor, _encodingMinor, _connect, _connectionId, compress);
+        return new UdpEndpointI(_instance, _host, _port, _mcastInterface, _mcastTtl, _connect, _connectionId, compress);
     }
 }
 
@@ -556,22 +436,21 @@ TransceiverPtr
 IceInternal::UdpEndpointI::transceiver(EndpointIPtr& endp) const
 {
     UdpTransceiver* p = new UdpTransceiver(_instance, _host, _port, _mcastInterface, _connect);
-    endp = new UdpEndpointI(_instance, _host, p->effectivePort(), _mcastInterface, _mcastTtl, _protocolMajor,
-                            _protocolMinor, _encodingMajor, _encodingMinor, _connect, _connectionId,
+    endp = new UdpEndpointI(_instance, _host, p->effectivePort(), _mcastInterface, _mcastTtl, _connect, _connectionId, 
                             _compress);
     return p;
 }
 
 vector<ConnectorPtr>
-IceInternal::UdpEndpointI::connectors() const
+IceInternal::UdpEndpointI::connectors(Ice::EndpointSelectionType selType) const
 {
-    return connectors(getAddresses(_host, _port, _instance->protocolSupport(), true));
+    return _instance->endpointHostResolver()->resolve(_host, _port, selType, const_cast<UdpEndpointI*>(this));
 }
 
 void
-IceInternal::UdpEndpointI::connectors_async(const EndpointI_connectorsPtr& callback) const
+IceInternal::UdpEndpointI::connectors_async(Ice::EndpointSelectionType selType, const EndpointI_connectorsPtr& cb) const
 {
-    _instance->endpointHostResolver()->resolve(_host, _port, const_cast<UdpEndpointI*>(this), callback);
+    _instance->endpointHostResolver()->resolve(_host, _port, selType, const_cast<UdpEndpointI*>(this), cb);
 }
 
 AcceptorPtr
@@ -594,9 +473,8 @@ IceInternal::UdpEndpointI::expand() const
     {
         for(vector<string>::const_iterator p = hosts.begin(); p != hosts.end(); ++p)
         {
-            endps.push_back(new UdpEndpointI(_instance, *p, _port, _mcastInterface, _mcastTtl, _protocolMajor,
-                                             _protocolMinor, _encodingMajor, _encodingMinor, _connect,
-                                             _connectionId, _compress));
+            endps.push_back(new UdpEndpointI(_instance, *p, _port, _mcastInterface, _mcastTtl, _connect, _connectionId,
+                                             _compress));
         }
     }
     return endps;
@@ -648,26 +526,6 @@ IceInternal::UdpEndpointI::operator==(const LocalObject& r) const
     }
 
     if(_connect != p->_connect)
-    {
-        return false;
-    }
-
-    if(_protocolMajor != p->_protocolMajor)
-    {
-        return false;
-    }
-
-    if(_protocolMinor != p->_protocolMinor)
-    {
-        return false;
-    }
-
-    if(_encodingMajor != p->_encodingMajor)
-    {
-        return false;
-    }
-
-    if(_encodingMinor != p->_encodingMinor)
     {
         return false;
     }
@@ -749,42 +607,6 @@ IceInternal::UdpEndpointI::operator<(const LocalObject& r) const
         return false;
     }
 
-    if(_protocolMajor < p->_protocolMajor)
-    {
-        return true;
-    }
-    else if(p->_protocolMajor < _protocolMajor)
-    {
-        return false;
-    }
-
-    if(_protocolMinor < p->_protocolMinor)
-    {
-        return true;
-    }
-    else if(p->_protocolMinor < _protocolMinor)
-    {
-        return false;
-    }
-
-    if(_encodingMajor < p->_encodingMajor)
-    {
-        return true;
-    }
-    else if(p->_encodingMajor < _encodingMajor)
-    {
-        return false;
-    }
-
-    if(_encodingMinor < p->_encodingMinor)
-    {
-        return true;
-    }
-    else if(p->_encodingMinor < _encodingMinor)
-    {
-        return false;
-    }
-
     if(_mcastTtl < p->_mcastTtl)
     {
         return true;
@@ -809,7 +631,8 @@ IceInternal::UdpEndpointI::operator<(const LocalObject& r) const
 Ice::Int
 IceInternal::UdpEndpointI::hashInit() const
 {
-    Ice::Int h = 0;
+    Ice::Int h = 5381;
+    hashAdd(h, UDPEndpointType);
     hashAdd(h, _host);
     hashAdd(h, _port);
     hashAdd(h, _mcastInterface);
@@ -821,16 +644,16 @@ IceInternal::UdpEndpointI::hashInit() const
 }
 
 vector<ConnectorPtr>
-IceInternal::UdpEndpointI::connectors(const vector<struct sockaddr_storage>& addresses) const
+IceInternal::UdpEndpointI::connectors(const vector<Address>& addresses) const
 {
     vector<ConnectorPtr> connectors;
     for(unsigned int i = 0; i < addresses.size(); ++i)
     {
-        connectors.push_back(new UdpConnector(_instance, addresses[i], _mcastInterface, _mcastTtl, _protocolMajor,
-                                              _protocolMinor, _encodingMajor, _encodingMinor, _connectionId));
+        connectors.push_back(new UdpConnector(_instance, addresses[i], _mcastInterface, _mcastTtl, _connectionId));
     }
     return connectors;
 }
+
 
 IceInternal::UdpEndpointFactory::UdpEndpointFactory(const InstancePtr& instance)
     : _instance(instance)

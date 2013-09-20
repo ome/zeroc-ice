@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -39,7 +39,7 @@ ICE_UTIL_API bool directoryExists(const std::string&);
 
 #ifdef _WIN32
 
-#if defined(__BCPLUSPLUS__) || (defined(_MSC_VER) && (_MSC_VER < 1300))
+#if defined(__MINGW32__)
 typedef struct _stat structstat;
 #else
 typedef struct _stat64i32 structstat;
@@ -71,7 +71,11 @@ ICE_UTIL_API int rmdir(const std::string&);
 ICE_UTIL_API int mkdir(const std::string&, int);
 ICE_UTIL_API FILE* fopen(const std::string&, const std::string&);
 ICE_UTIL_API int open(const std::string&, int);
+
+#ifndef ICE_OS_WINRT
 ICE_UTIL_API int getcwd(std::string&);
+#endif
+
 ICE_UTIL_API int unlink(const std::string&);
 ICE_UTIL_API int close(int);
 
@@ -115,21 +119,17 @@ public:
 
     ifstream();
     ifstream(const std::string&, std::ios_base::openmode mode = std::ios_base::in);
-#ifdef _STLP_BEGIN_NAMESPACE
-    ~ifstream();
-    void close();
-#endif
     void open(const std::string&, std::ios_base::openmode mode = std::ios_base::in);
+
+#ifdef __SUNPRO_CC
+    using std::ifstream::open;
+#endif
 
 private:
 
     // Hide const char* definitions since they shouldn't be used.
     ifstream(const char*);
     void open(const char*, std::ios_base::openmode mode = std::ios_base::in);
-    
-#ifdef _STLP_BEGIN_NAMESPACE
-    int _fd;
-#endif
 };
 
 class ICE_UTIL_API ofstream : public std::ofstream
@@ -138,21 +138,17 @@ public:
 
     ofstream();
     ofstream(const std::string&, std::ios_base::openmode mode = std::ios_base::out);
-#ifdef _STLP_BEGIN_NAMESPACE
-    ~ofstream();
-    void close();
-#endif
     void open(const std::string&, std::ios_base::openmode mode = std::ios_base::out);
+
+#ifdef __SUNPRO_CC
+    using std::ofstream::open;
+#endif
 
 private:
 
     // Hide const char* definitions since they shouldn't be used.
     ofstream(const char*);
     void open(const char*, std::ios_base::openmode mode = std::ios_base::out);
-
-#ifdef _STLP_BEGIN_NAMESPACE
-    int _fd;
-#endif
 };
 
 }

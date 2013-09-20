@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,6 +21,7 @@
 
 using namespace std;
 using namespace Ice;
+using namespace Glacier2;
 
 namespace Glacier2
 {
@@ -87,7 +88,7 @@ public:
     virtual ObjectPtr
     locate(const Current& current, LocalObjectPtr&)
     {
-        return _sessionRouter->getRouter(current.con, current.id)->getClientBlobject();
+        return _sessionRouter->getClientBlobject(current.con, current.id);
     }
 
     virtual void
@@ -117,7 +118,7 @@ public:
     virtual ObjectPtr
     locate(const Current& current, LocalObjectPtr&)
     {
-        return _sessionRouter->getRouter(current.id.category)->getServerBlobject();
+        return _sessionRouter->getServerBlobject(current.id.category);
     }
 
     virtual void
@@ -146,48 +147,37 @@ public:
         _password(password)
     {
     }
+    
 
-    class CheckPermissionsCB : public AMI_PermissionsVerifier_checkPermissions
+    void
+    checkPermissionsResponse(bool ok, const string& reason)
     {
-    public:
-
-        CheckPermissionsCB(const UserPasswordCreateSessionPtr& session, bool hasSessionManager) : 
-            _session(session),
-            _hasSessionManager(hasSessionManager)
+        if(ok)
         {
+            authorized(_sessionRouter->_sessionManager);
         }
-
-        virtual void
-        ice_response(bool ok, const string& reason)
+        else
         {
-            if(ok)
-            {
-                _session->authorized(_hasSessionManager);
-            }
-            else
-            {
-                _session->exception(PermissionDeniedException(reason.empty() ? string("permission denied") : reason));
-            }
+            exception(PermissionDeniedException(reason.empty() ? string("permission denied") : reason));
         }
+    }
 
-        virtual void
-        ice_exception(const Ice::Exception& ex)
+    void
+    checkPermissionsException(const Ice::Exception& ex)
+    {
+        if(dynamic_cast<const PermissionDeniedException*>(&ex))
         {
-            if(dynamic_cast<const CollocationOptimizationException*>(&ex))
-            {
-                _session->authorizeCollocated();
-            }
-            else
-            {
-                _session->unexpectedAuthorizeException(ex);
-            }
+            exception(ex);
         }
-
-    private:
-
-        const UserPasswordCreateSessionPtr _session;
-        const bool _hasSessionManager;
-    };
+        else if(dynamic_cast<const CollocationOptimizationException*>(&ex))
+        {
+            authorizeCollocated();
+        }
+        else
+        {
+            unexpectedAuthorizeException(ex);
+        }
+    }
 
     virtual void
     authorize()
@@ -196,8 +186,11 @@ public:
 
         Ice::Context ctx = _current.ctx;
         ctx.insert(_context.begin(), _context.end());
-        AMI_PermissionsVerifier_checkPermissionsPtr cb = new CheckPermissionsCB(this, _sessionRouter->_sessionManager);
-        _sessionRouter->_verifier->checkPermissions_async(cb, _user, _password, ctx);
+        
+        _sessionRouter->_verifier->begin_checkPermissions(_user, _password, ctx,
+                                                          newCallback_PermissionsVerifier_checkPermissions(this,
+                                                                &UserPasswordCreateSession::checkPermissionsResponse,
+                                                                &UserPasswordCreateSession::checkPermissionsException));
     }
 
     virtual void
@@ -229,48 +222,16 @@ public:
         return FilterManager::create(_instance, _user, true);
     }
 
-    class CreateCB : public AMI_SessionManager_create
-    {
-    public:
-        
-        CreateCB(const CreateSessionPtr& session) : _session(session)
-        {
-        }
-        
-        virtual void 
-        ice_response(const SessionPrx& session)
-        {
-            _session->sessionCreated(session);
-        }
-
-        virtual void
-        ice_exception(const Ice::Exception& ex)
-        {
-            try
-            {
-                ex.ice_throw();
-            }
-            catch(const CannotCreateSessionException& ex)
-            {
-                _session->exception(ex);
-            }
-            catch(const Ice::Exception& ex)
-            {
-                _session->unexpectedCreateSessionException(ex);
-            }
-        }
-
-    private:
-        
-        const CreateSessionPtr _session;
-    };
-
     virtual void
     createSession()
     {
         Ice::Context ctx = _current.ctx;
         ctx.insert(_context.begin(), _context.end());
-        _sessionRouter->_sessionManager->create_async(new CreateCB(this), _user, _control, ctx);
+        _sessionRouter->_sessionManager->begin_create(_user, _control, ctx,
+                                                      newCallback_SessionManager_create(
+                                                                        static_cast<CreateSession*>(this),
+                                                                        &CreateSession::sessionCreated, 
+                                                                        &CreateSession::createException));
     }
     
     virtual void
@@ -302,49 +263,36 @@ public:
         _sslInfo(sslInfo)
     {
     }
-
-    class AuthorizeCB : public AMI_SSLPermissionsVerifier_authorize
+    
+    void
+    authorizeResponse(bool ok, const string& reason)
     {
-    public:
-
-        AuthorizeCB(const SSLCreateSessionPtr& session, bool hasSessionManager) : 
-            _session(session),
-            _hasSessionManager(hasSessionManager)
+        if(ok)
         {
+            authorized(_sessionRouter->_sslSessionManager);
         }
-
-        virtual void
-        ice_response(bool ok, const string& reason)
+        else
         {
-            if(ok)
-            {
-                _session->authorized(_hasSessionManager);
-            }
-            else
-            {
-                _session->exception(PermissionDeniedException(reason.empty() ? string("permission denied")
-                                                                             : reason));
-            }
+            exception(PermissionDeniedException(reason.empty() ? string("permission denied") : reason));
         }
+    }
 
-        virtual void
-        ice_exception(const Ice::Exception& ex)
+    void
+    authorizeException(const Ice::Exception& ex)
+    {
+        if(dynamic_cast<const PermissionDeniedException*>(&ex))
         {
-            if(dynamic_cast<const CollocationOptimizationException*>(&ex))
-            {
-                _session->authorizeCollocated();
-            }
-            else
-            {
-                _session->unexpectedAuthorizeException(ex);
-            }
+            exception(ex);
         }
-
-    private:
-
-        const SSLCreateSessionPtr _session;
-        const bool _hasSessionManager;
-    };
+        else if(dynamic_cast<const CollocationOptimizationException*>(&ex))
+        {
+            authorizeCollocated();
+        }
+        else
+        {
+            unexpectedAuthorizeException(ex);
+        }
+    }
 
     virtual void
     authorize()
@@ -353,9 +301,10 @@ public:
 
         Ice::Context ctx = _current.ctx;
         ctx.insert(_context.begin(), _context.end());
-
-        AMI_SSLPermissionsVerifier_authorizePtr cb = new AuthorizeCB(this, _sessionRouter->_sslSessionManager);
-        _sessionRouter->_sslVerifier->authorize_async(cb, _sslInfo, ctx);
+        _sessionRouter->_sslVerifier->begin_authorize(_sslInfo, ctx, 
+                                                      newCallback_SSLPermissionsVerifier_authorize(this,
+                                                                             &SSLCreateSession::authorizeResponse, 
+                                                                             &SSLCreateSession::authorizeException));
     }
 
     virtual void
@@ -387,48 +336,16 @@ public:
         return FilterManager::create(_instance, _user, false);
     }
 
-    class CreateCB : public AMI_SSLSessionManager_create
-    {
-    public:
-        
-        CreateCB(const CreateSessionPtr& session) : _session(session)
-        {
-        }
-        
-        virtual void 
-        ice_response(const SessionPrx& session)
-        {
-            _session->sessionCreated(session);
-        }
-
-        virtual void
-        ice_exception(const Ice::Exception& ex)
-        {
-            try
-            {
-                ex.ice_throw();
-            }
-            catch(const CannotCreateSessionException& ex)
-            {
-                _session->exception(ex);
-            }
-            catch(const Ice::Exception& ex)
-            {
-                _session->unexpectedCreateSessionException(ex);
-            }
-        }
-
-    private:
-        
-        const CreateSessionPtr _session;
-    };
-
     virtual void
     createSession()
     {
         Ice::Context ctx = _current.ctx;
         ctx.insert(_context.begin(), _context.end());
-        _sessionRouter->_sslSessionManager->create_async(new CreateCB(this), _sslInfo, _control, ctx);
+        _sessionRouter->_sslSessionManager->begin_create(_sslInfo, _control, ctx,
+                                                         newCallback_SSLSessionManager_create(
+                                                                        static_cast<CreateSession*>(this),
+                                                                        &CreateSession::sessionCreated, 
+                                                                        &CreateSession::createException));
     }
     
     virtual void
@@ -449,44 +366,9 @@ private:
     const SSLInfo _sslInfo;
 };
 
-class DestroyCB : public AMI_Session_destroy
-{
-public:
-
-    DestroyCB(int traceLevel, const LoggerPtr& logger)
-    {
-        if(traceLevel > 0)
-        {
-            _logger = logger;
-        }
-    }
-
-    virtual void
-    ice_response()
-    {
-    }
-
-    virtual void
-    ice_exception(const Ice::Exception& ex)
-    {
-        if(_logger)
-        {
-            Trace out(_logger, "Glacier2");
-            out << "exception while destroying session\n" << ex;
-        }
-    }
-
-private:
-
-    LoggerPtr _logger;
-};
-
 }
 
-using namespace Glacier2;
-
-Glacier2::CreateSession::CreateSession(const SessionRouterIPtr& sessionRouter, const string& user, 
-                                       const Ice::Current& current) :
+CreateSession::CreateSession(const SessionRouterIPtr& sessionRouter, const string& user, const Ice::Current& current) :
     _instance(sessionRouter->_instance),
     _sessionRouter(sessionRouter),
     _user(user),
@@ -523,7 +405,7 @@ Glacier2::CreateSession::CreateSession(const SessionRouterIPtr& sessionRouter, c
 }
 
 void
-Glacier2::CreateSession::create()
+CreateSession::create()
 {
     try
     {
@@ -539,13 +421,13 @@ Glacier2::CreateSession::create()
 }
 
 void
-Glacier2::CreateSession::addPendingCallback(const CreateSessionPtr& callback)
+CreateSession::addPendingCallback(const CreateSessionPtr& callback)
 {
     _pendingCallbacks.push_back(callback);
 }
 
 void
-Glacier2::CreateSession::authorized(bool createSession)
+CreateSession::authorized(bool createSession)
 {
     //
     // Create the filter manager now as it's required for the session control object.
@@ -572,7 +454,7 @@ Glacier2::CreateSession::authorized(bool createSession)
 }
 
 void
-Glacier2::CreateSession::unexpectedAuthorizeException(const Ice::Exception& ex)
+CreateSession::unexpectedAuthorizeException(const Ice::Exception& ex)
 {
     if(_sessionRouter->sessionTraceLevel() >= 1)
     {
@@ -583,7 +465,24 @@ Glacier2::CreateSession::unexpectedAuthorizeException(const Ice::Exception& ex)
 }
 
 void
-Glacier2::CreateSession::sessionCreated(const SessionPrx& session)
+CreateSession::createException(const Ice::Exception& ex)
+{
+    try
+    {
+        ex.ice_throw();
+    }
+    catch(const CannotCreateSessionException& ex)
+    {
+        exception(ex);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        unexpectedCreateSessionException(ex);
+    }
+}
+
+void
+CreateSession::sessionCreated(const SessionPrx& session)
 {
     //
     // Create the session router object.
@@ -633,7 +532,7 @@ Glacier2::CreateSession::sessionCreated(const SessionPrx& session)
     {
         if(session)
         {
-            session->destroy_async(new DestroyCB(0, 0));
+            session->begin_destroy();
         }
         unexpectedCreateSessionException(ex);
         return;
@@ -659,7 +558,7 @@ Glacier2::CreateSession::sessionCreated(const SessionPrx& session)
 }
 
 void
-Glacier2::CreateSession::unexpectedCreateSessionException(const Ice::Exception& ex)
+CreateSession::unexpectedCreateSessionException(const Ice::Exception& ex)
 {
     if(_sessionRouter->sessionTraceLevel() >= 1)
     {
@@ -670,7 +569,7 @@ Glacier2::CreateSession::unexpectedCreateSessionException(const Ice::Exception& 
 }
 
 void
-Glacier2::CreateSession::exception(const Ice::Exception& ex)
+CreateSession::exception(const Ice::Exception& ex)
 {
     try
     {    
@@ -699,11 +598,11 @@ Glacier2::CreateSession::exception(const Ice::Exception& ex)
     }
 }
 
-Glacier2::SessionRouterI::SessionRouterI(const InstancePtr& instance,
-                                         const PermissionsVerifierPrx& verifier,
-                                         const SessionManagerPrx& sessionManager,
-                                         const SSLPermissionsVerifierPrx& sslVerifier,
-                                         const SSLSessionManagerPrx& sslSessionManager) :
+SessionRouterI::SessionRouterI(const InstancePtr& instance,
+                               const PermissionsVerifierPrx& verifier,
+                               const SessionManagerPrx& sessionManager,
+                               const SSLPermissionsVerifierPrx& sslVerifier,
+                               const SSLSessionManagerPrx& sslSessionManager) :
     _instance(instance),
     _sessionTraceLevel(_instance->properties()->getPropertyAsInt("Glacier2.Trace.Session")),
     _rejectTraceLevel(_instance->properties()->getPropertyAsInt("Glacier2.Client.Trace.Reject")),
@@ -716,6 +615,7 @@ Glacier2::SessionRouterI::SessionRouterI(const InstancePtr& instance,
     _routersByConnectionHint(_routersByConnection.end()),
     _routersByCategoryHint(_routersByCategory.end()),
     _sessionPingCallback(newCallback_Object_ice_ping(this, &SessionRouterI::sessionPingException)),
+    _sessionDestroyCallback(newCallback_Session_destroy(this, &SessionRouterI::sessionDestroyException)),
     _destroy(false)
 {
 
@@ -772,7 +672,7 @@ Glacier2::SessionRouterI::SessionRouterI(const InstancePtr& instance,
     _instance->setSessionRouter(this);
 }
 
-Glacier2::SessionRouterI::~SessionRouterI()
+SessionRouterI::~SessionRouterI()
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock lock(*this);
 
@@ -784,11 +684,11 @@ Glacier2::SessionRouterI::~SessionRouterI()
 }
 
 void
-Glacier2::SessionRouterI::destroy()
+SessionRouterI::destroy()
 {
     map<ConnectionPtr, RouterIPtr> routers;
     SessionThreadPtr sessionThread;
-
+    Callback_Session_destroyPtr destroyCallback;
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock lock(*this);
         
@@ -805,6 +705,7 @@ Glacier2::SessionRouterI::destroy()
         sessionThread = _sessionThread;
         _sessionThread = 0;
 
+        swap(destroyCallback, _sessionDestroyCallback); // Break cyclic reference count.
         _sessionPingCallback = 0; // Break cyclic reference count.
     }
 
@@ -814,7 +715,7 @@ Glacier2::SessionRouterI::destroy()
     //
     for(map<ConnectionPtr, RouterIPtr>::iterator p = routers.begin(); p != routers.end(); ++p)
     {
-        p->second->destroy(new DestroyCB(_sessionTraceLevel, _instance->logger()));
+        p->second->destroy(destroyCallback);
     }
 
     if(sessionThread)
@@ -825,19 +726,19 @@ Glacier2::SessionRouterI::destroy()
 }
 
 ObjectPrx
-Glacier2::SessionRouterI::getClientProxy(const Current& current) const
+SessionRouterI::getClientProxy(const Current& current) const
 {
     return getRouter(current.con, current.id)->getClientProxy(current); // Forward to the per-client router.
 }
 
 ObjectPrx
-Glacier2::SessionRouterI::getServerProxy(const Current& current) const
+SessionRouterI::getServerProxy(const Current& current) const
 {
     return getRouter(current.con, current.id)->getServerProxy(current); // Forward to the per-client router.
 }
 
 void
-Glacier2::SessionRouterI::addProxy(const ObjectPrx& proxy, const Current& current)
+SessionRouterI::addProxy(const ObjectPrx& proxy, const Current& current)
 {
     ObjectProxySeq seq;
     seq.push_back(proxy);
@@ -845,16 +746,16 @@ Glacier2::SessionRouterI::addProxy(const ObjectPrx& proxy, const Current& curren
 }
 
 ObjectProxySeq
-Glacier2::SessionRouterI::addProxies(const ObjectProxySeq& proxies, const Current& current)
+SessionRouterI::addProxies(const ObjectProxySeq& proxies, const Current& current)
 {
     //
     // Forward to the per-client router.
     //
-    return getRouter(current.con, current.id)->getClientBlobject()->add(proxies, current); 
+    return getRouter(current.con, current.id)->addProxies(proxies, current);
 }
 
 string
-Glacier2::SessionRouterI::getCategoryForClient(const Ice::Current& current) const
+SessionRouterI::getCategoryForClient(const Ice::Current& current) const
 {
     // Forward to the per-client router.
     if(_instance->serverObjectAdapter())
@@ -868,7 +769,7 @@ Glacier2::SessionRouterI::getCategoryForClient(const Ice::Current& current) cons
 }
 
 void
-Glacier2::SessionRouterI::createSession_async(const AMD_Router_createSessionPtr& amdCB, const std::string& userId, 
+SessionRouterI::createSession_async(const AMD_Router_createSessionPtr& amdCB, const std::string& userId, 
                                               const std::string& password, const Current& current)
 {
     if(!_verifier)
@@ -882,7 +783,7 @@ Glacier2::SessionRouterI::createSession_async(const AMD_Router_createSessionPtr&
 }
 
 void
-Glacier2::SessionRouterI::createSessionFromSecureConnection_async(
+SessionRouterI::createSessionFromSecureConnection_async(
     const AMD_Router_createSessionFromSecureConnectionPtr& amdCB, const Current& current)
 {
     if(!_sslVerifier)
@@ -932,26 +833,25 @@ Glacier2::SessionRouterI::createSessionFromSecureConnection_async(
 }
 
 void
-Glacier2::SessionRouterI::destroySession(const Current& current)
+SessionRouterI::destroySession(const Current& current)
 {
     destroySession(current.con);
 }
 
 void
-Glacier2::SessionRouterI::refreshSession(const Ice::Current& current)
+SessionRouterI::refreshSession(const Ice::Current& current)
 {
-    RouterIPtr router = getRouter(current.con, current.id, false);
+    RouterIPtr router = getRouter(current.con, current.id, false); // getRouter updates the session timestamp.
     if(!router)
     {
         throw SessionNotExistException();
     }
-    router->updateTimestamp();
 
     //
     // Ping the session to ensure it does not timeout.
     //
     assert(_sessionPingCallback);
-    Glacier2::SessionPrx session = router->getSession();
+    SessionPrx session = router->getSession();
     if(session)
     {
         session->begin_ice_ping(_sessionPingCallback, current.con);
@@ -959,7 +859,7 @@ Glacier2::SessionRouterI::refreshSession(const Ice::Current& current)
 }
 
 void
-Glacier2::SessionRouterI::destroySession(const ConnectionPtr& connection)
+SessionRouterI::destroySession(const ConnectionPtr& connection)
 {
     RouterIPtr router;
 
@@ -1010,56 +910,45 @@ Glacier2::SessionRouterI::destroySession(const ConnectionPtr& connection)
         Trace out(_instance->logger(), "Glacier2");
         out << "destroying session\n" << router->toString();
     }
-    
-    router->destroy(new DestroyCB(_sessionTraceLevel, _instance->logger()));
+    router->destroy(_sessionDestroyCallback);
 }
 
 Ice::Long
-Glacier2::SessionRouterI::getSessionTimeout(const Ice::Current&) const
+SessionRouterI::getSessionTimeout(const Ice::Current&) const
 {
     return _sessionTimeout.toSeconds();
 }
 
-RouterIPtr
-Glacier2::SessionRouterI::getRouter(const ConnectionPtr& connection, const Ice::Identity& id, bool close) const
+void 
+SessionRouterI::updateSessionObservers()
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock lock(*this);
 
-    if(_destroy)
-    {
-        throw ObjectNotExistException(__FILE__, __LINE__);
-    }
+    Glacier2::Instrumentation::RouterObserverPtr observer = _instance->getObserver();
+    assert(observer);
 
-    map<ConnectionPtr, RouterIPtr>& routers = const_cast<map<ConnectionPtr, RouterIPtr>&>(_routersByConnection);
-
-    if(_routersByConnectionHint != routers.end() && _routersByConnectionHint->first == connection)
+    for(map<ConnectionPtr, RouterIPtr>::iterator p = _routersByConnection.begin(); p != _routersByConnection.end(); ++p)
     {
-        return _routersByConnectionHint->second;
-    }
-    
-    map<ConnectionPtr, RouterIPtr>::iterator p = routers.find(connection);
-
-    if(p != routers.end())
-    {
-        _routersByConnectionHint = p;
-        return p->second;
-    }
-    else if(close)
-    {
-        if(_rejectTraceLevel >= 1)
-        {
-            Trace out(_instance->logger(), "Glacier2");
-            out << "rejecting request. no session is associated with the connection.\n";
-            out << "identity: " << _instance->communicator()->identityToString(id);
-        }
-        connection->close(true);
-        throw ObjectNotExistException(__FILE__, __LINE__);
-    }
-    return 0;
+        p->second->updateObserver(observer);
+    }   
 }
 
 RouterIPtr
-Glacier2::SessionRouterI::getRouter(const string& category) const
+SessionRouterI::getRouter(const ConnectionPtr& connection, const Ice::Identity& id, bool close) const
+{
+    IceUtil::Monitor<IceUtil::Mutex>::Lock lock(*this);
+    return getRouterImpl(connection, id, close);
+}
+
+Ice::ObjectPtr
+SessionRouterI::getClientBlobject(const ConnectionPtr& connection, const Ice::Identity& id) const
+{
+    IceUtil::Monitor<IceUtil::Mutex>::Lock lock(*this);
+    return getRouterImpl(connection, id, true)->getClientBlobject();
+}
+
+Ice::ObjectPtr
+SessionRouterI::getServerBlobject(const string& category) const
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock lock(*this);
 
@@ -1072,7 +961,7 @@ Glacier2::SessionRouterI::getRouter(const string& category) const
 
     if(_routersByCategoryHint != routers.end() && _routersByCategoryHint->first == category)
     {
-        return _routersByCategoryHint->second;
+        return _routersByCategoryHint->second->getServerBlobject();
     }
     
     map<string, RouterIPtr>::iterator p = routers.find(category);
@@ -1080,7 +969,7 @@ Glacier2::SessionRouterI::getRouter(const string& category) const
     if(p != routers.end())
     {
         _routersByCategoryHint = p;
-        return p->second;
+        return p->second->getServerBlobject();
     }
     else
     {
@@ -1089,7 +978,7 @@ Glacier2::SessionRouterI::getRouter(const string& category) const
 }
 
 void
-Glacier2::SessionRouterI::expireSessions()
+SessionRouterI::expireSessions()
 {
     vector<RouterIPtr> routers;
     
@@ -1142,19 +1031,67 @@ Glacier2::SessionRouterI::expireSessions()
             Trace out(_instance->logger(), "Glacier2");
             out << "expiring session\n" << (*p)->toString();
         }
-            
-        (*p)->destroy(new DestroyCB(_sessionTraceLevel, _instance->logger()));
+        (*p)->destroy(_sessionDestroyCallback);
     }
 }
 
+RouterIPtr
+SessionRouterI::getRouterImpl(const ConnectionPtr& connection, const Ice::Identity& id, bool close) const
+{
+    if(_destroy)
+    {
+        throw ObjectNotExistException(__FILE__, __LINE__);
+    }
+
+    map<ConnectionPtr, RouterIPtr>& routers = const_cast<map<ConnectionPtr, RouterIPtr>&>(_routersByConnection);
+
+    if(_routersByConnectionHint != routers.end() && _routersByConnectionHint->first == connection)
+    {
+        _routersByConnectionHint->second->updateTimestamp();
+        return _routersByConnectionHint->second;
+    }
+    
+    map<ConnectionPtr, RouterIPtr>::iterator p = routers.find(connection);
+
+    if(p != routers.end())
+    {
+        _routersByConnectionHint = p;
+        p->second->updateTimestamp();
+        return p->second;
+    }
+    else if(close)
+    {
+        if(_rejectTraceLevel >= 1)
+        {
+            Trace out(_instance->logger(), "Glacier2");
+            out << "rejecting request. no session is associated with the connection.\n";
+            out << "identity: " << _instance->communicator()->identityToString(id);
+        }
+        connection->close(true);
+        throw ObjectNotExistException(__FILE__, __LINE__);
+    }
+    return 0;
+}
+
 void
-Glacier2::SessionRouterI::sessionPingException(const Ice::Exception&, const Ice::ConnectionPtr& con)
+SessionRouterI::sessionPingException(const Ice::Exception&, const Ice::ConnectionPtr& con)
 {
     destroySession(con);
 }
 
+void
+SessionRouterI::sessionDestroyException(const Ice::Exception& ex)
+{
+    if(_sessionTraceLevel > 0)
+    {
+        Trace out(_instance->logger(), "Glacier2");
+        out << "exception while destroying session\n" << ex;
+    }
+}
+
+
 bool
-Glacier2::SessionRouterI::startCreateSession(const CreateSessionPtr& cb, const ConnectionPtr& connection)
+SessionRouterI::startCreateSession(const CreateSessionPtr& cb, const ConnectionPtr& connection)
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock lock(*this);
         
@@ -1211,7 +1148,7 @@ Glacier2::SessionRouterI::startCreateSession(const CreateSessionPtr& cb, const C
 }
 
 void
-Glacier2::SessionRouterI::finishCreateSession(const ConnectionPtr& connection, const RouterIPtr& router)
+SessionRouterI::finishCreateSession(const ConnectionPtr& connection, const RouterIPtr& router)
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock lock(*this);
     
@@ -1229,7 +1166,7 @@ Glacier2::SessionRouterI::finishCreateSession(const ConnectionPtr& connection, c
 
     if(_destroy)
     {
-        router->destroy(new DestroyCB(0, 0));
+        router->destroy(_sessionDestroyCallback);
 
         CannotCreateSessionException exc;
         exc.reason = "router is shutting down";
@@ -1248,7 +1185,7 @@ Glacier2::SessionRouterI::finishCreateSession(const ConnectionPtr& connection, c
         assert(rc.second);
         _routersByCategoryHint = rc.first;
     }
-    
+
     if(_sessionTraceLevel >= 1)
     {
         Trace out(_instance->logger(), "Glacier2");
@@ -1256,7 +1193,7 @@ Glacier2::SessionRouterI::finishCreateSession(const ConnectionPtr& connection, c
     }
 }
 
-Glacier2::SessionRouterI::SessionThread::SessionThread(const SessionRouterIPtr& sessionRouter,
+SessionRouterI::SessionThread::SessionThread(const SessionRouterIPtr& sessionRouter,
                                                        const IceUtil::Time& sessionTimeout) :
     IceUtil::Thread("Glacier2 session thread"),
     _sessionRouter(sessionRouter),
@@ -1264,13 +1201,13 @@ Glacier2::SessionRouterI::SessionThread::SessionThread(const SessionRouterIPtr& 
 {
 }
 
-Glacier2::SessionRouterI::SessionThread::~SessionThread()
+SessionRouterI::SessionThread::~SessionThread()
 {
     assert(!_sessionRouter);
 }
 
 void
-Glacier2::SessionRouterI::SessionThread::destroy()
+SessionRouterI::SessionThread::destroy()
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock lock(*this);
     _sessionRouter = 0;
@@ -1278,7 +1215,7 @@ Glacier2::SessionRouterI::SessionThread::destroy()
 }
 
 void
-Glacier2::SessionRouterI::SessionThread::run()
+SessionRouterI::SessionThread::run()
 {
     while(true)
     {

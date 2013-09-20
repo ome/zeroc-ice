@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -45,6 +45,22 @@ public class ProtocolPluginFacadeI implements ProtocolPluginFacade
     {
         return _instance.protocolSupport();
     }    
+
+    public boolean
+    getPreferIPv6()
+    {
+        return _instance.preferIPv6();
+    }
+
+    //
+    // Get the default encoding to be used in endpoints.
+    //
+    public Ice.EncodingVersion
+    getDefaultEncoding()
+    {
+        return _instance.defaultsAndOverrides().defaultEncoding;
+    }
+
     //
     // Get the default hostname to be used in endpoints.
     //

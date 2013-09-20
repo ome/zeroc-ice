@@ -1,16 +1,16 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <Ice/PropertiesI.h>
 #include <IceUtil/DisableWarnings.h>
 #include <IceUtil/StringUtil.h>
 #include <IceUtil/FileUtil.h>
-#include <Ice/PropertiesI.h>
 #include <Ice/Initialize.h>
 #include <Ice/LocalException.h>
 #include <Ice/PropertyNames.h>
@@ -126,8 +126,7 @@ Ice::PropertiesI::getPropertiesForPrefix(const string& prefix)
     IceUtil::Mutex::Lock sync(*this);
 
     PropertyDict result;
-    map<string, PropertyValue>::iterator p;
-    for(p = _properties.begin(); p != _properties.end(); ++p)
+    for(map<string, PropertyValue>::iterator p = _properties.begin(); p != _properties.end(); ++p)
     {
         if(prefix.empty() || p->first.compare(0, prefix.size(), prefix) == 0)
         {
@@ -171,9 +170,11 @@ Ice::PropertiesI::setProperty(const string& key, const string& value)
             // dot is an error.
             //
             assert(dotPos != string::npos);
-
+            
+            bool mismatchCase = false;
+            string otherKey;
             string propPrefix = pattern.substr(0, dotPos);
-            if(propPrefix != prefix)
+            if(IceUtilInternal::toUpper(propPrefix) != IceUtilInternal::toUpper(prefix))
             {
                 continue;
             }
@@ -193,10 +194,23 @@ Ice::PropertiesI::setProperty(const string& key, const string& value)
                         currentKey = prop.deprecatedBy;
                     }
                 }
+                
+                if(!found && IceUtilInternal::match(IceUtilInternal::toUpper(currentKey), 
+                                                    IceUtilInternal::toUpper(prop.pattern)))
+                {
+                    found = true;
+                    mismatchCase = true;
+                    otherKey = prop.pattern;
+                    break;
+                }
             }
             if(!found)
             {
                 logger->warning("unknown property: `" + currentKey + "'");
+            }
+            else if(mismatchCase)
+            {
+                logger->warning("unknown property: `" + currentKey + "'; did you mean `" + otherKey + "'");
             }
         }
     }
@@ -229,8 +243,7 @@ Ice::PropertiesI::getCommandLineOptions()
 
     StringSeq result;
     result.reserve(_properties.size());
-    map<string, PropertyValue>::const_iterator p;
-    for(p = _properties.begin(); p != _properties.end(); ++p)
+    for(map<string, PropertyValue>::const_iterator p = _properties.begin(); p != _properties.end(); ++p)
     {
         result.push_back("--" + p->first + "=" + p->second.value);
     }
@@ -248,8 +261,7 @@ Ice::PropertiesI::parseCommandLineOptions(const string& prefix, const StringSeq&
     pfx = "--" + pfx;
     
     StringSeq result;
-    StringSeq::size_type i;
-    for(i = 0; i < options.size(); i++)
+    for(StringSeq::size_type i = 0; i < options.size(); i++)
     {
         string opt = options[i];
        
@@ -285,7 +297,10 @@ Ice::PropertiesI::parseIceCommandLineOptions(const StringSeq& options)
 void
 Ice::PropertiesI::load(const std::string& file)
 {
-#ifdef _WIN32
+//
+// Metro style applications cannot access Windows registry.
+//
+#if defined (_WIN32) && !defined(ICE_OS_WINRT)
     if(file.find("HKLM\\") == 0)
     {
         HKEY iceKey;
@@ -700,9 +715,12 @@ void
 Ice::PropertiesI::loadConfig()
 {
     string value = getProperty("Ice.Config");
+#ifndef ICE_OS_WINRT
+    //
+    // WinRT cannot access environment variables
     if(value.empty() || value == "1")
     {
-#ifdef _WIN32
+#   ifdef _WIN32
         vector<wchar_t> v(256);
         DWORD ret = GetEnvironmentVariableW(L"ICE_CONFIG", &v[0], static_cast<DWORD>(v.size()));
         if(ret >= v.size())
@@ -718,14 +736,15 @@ Ice::PropertiesI::loadConfig()
         {
             value = "";
         }
-#else
+#   else
        const char* s = getenv("ICE_CONFIG");
        if(s && *s != '\0')
        {
            value = s;
        }
-#endif
+#   endif
     }
+#endif
 
     if(!value.empty())
     {
@@ -751,27 +770,4 @@ Ice::PropertiesI::loadConfig()
 
     PropertyValue pv(value, true);
     _properties["Ice.Config"] = pv;
-}
-
-
-//
-// PropertiesAdminI
-//
-
-
-Ice::PropertiesAdminI::PropertiesAdminI(const PropertiesPtr& properties) :
-    _properties(properties)
-{
-}
-
-string 
-Ice::PropertiesAdminI::getProperty(const string& name, const Ice::Current&)
-{
-    return _properties->getProperty(name);
-}
-
-Ice::PropertyDict 
-Ice::PropertiesAdminI::getPropertiesForPrefix(const string& prefix, const Ice::Current&)
-{
-    return _properties->getPropertiesForPrefix(prefix);
 }

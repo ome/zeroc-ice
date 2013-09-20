@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -49,6 +49,17 @@ namespace IceInternal
             ret._limit = capacity;
             ret._capacity = capacity;
             ret._bytes = new byte[capacity];
+            ret._valBytes = new ValBytes();
+            return ret;
+        }
+
+        public static ByteBuffer wrap(byte[] bytes)
+        {
+            ByteBuffer ret = new ByteBuffer();
+            ret._position = 0;
+            ret._limit = bytes.Length;
+            ret._capacity = bytes.Length;
+            ret._bytes = bytes;
             ret._valBytes = new ValBytes();
             return ret;
         }
@@ -186,6 +197,12 @@ namespace IceInternal
             return this;
         }
 
+        public ByteBuffer put(int pos, byte b)
+        {
+            System.Buffer.SetByte(_bytes, pos, b);
+            return this;
+        }
+
         public ByteBuffer put(byte[] b)
         {
             return put(b, 0, System.Buffer.ByteLength(b));
@@ -273,19 +290,19 @@ namespace IceInternal
             public byte b7;
         }
 
-#if !MANAGED && !COMPACT
-	unsafe
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+        unsafe
 #endif
         public short getShort()
         {
             checkUnderflow(2);
             if(NO._o == _order)
             {
-#if !MANAGED && !COMPACT
-		fixed(byte* p = &_bytes[_position])
-		{
-		    _valBytes.shortVal = *((short*)p);
-		}
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+                fixed(byte* p = &_bytes[_position])
+                {
+                    _valBytes.shortVal = *((short*)p);
+                }
 #else
                 _valBytes.b0 = _bytes[_position];
                 _valBytes.b1 = _bytes[_position + 1];
@@ -321,8 +338,8 @@ namespace IceInternal
             _position += len;
         }
 
-#if !MANAGED && !COMPACT
-	unsafe
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+        unsafe
 #endif
         public ByteBuffer putShort(short val)
         {
@@ -330,11 +347,11 @@ namespace IceInternal
             _valBytes.shortVal = val;
             if(NO._o == _order)
             {
-#if !MANAGED && !COMPACT
-		fixed(byte* p = &_bytes[_position])
-		{
-		    *((short*)p) = _valBytes.shortVal;
-		}
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+                fixed(byte* p = &_bytes[_position])
+                {
+                    *((short*)p) = _valBytes.shortVal;
+                }
 #else
                 _bytes[_position] = _valBytes.b0;
                 _bytes[_position + 1] = _valBytes.b1;
@@ -371,19 +388,19 @@ namespace IceInternal
             return this;
         }
 
-#if !MANAGED && !COMPACT
-	unsafe
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+        unsafe
 #endif
         public int getInt()
         {
             checkUnderflow(4);  
             if(NO._o == _order)
             {
-#if !MANAGED && !COMPACT
-		fixed(byte* p = &_bytes[_position])
-		{
-		    _valBytes.intVal = *((int*)p);
-		}
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+                fixed(byte* p = &_bytes[_position])
+                {
+                    _valBytes.intVal = *((int*)p);
+                }
 #else
                 _valBytes.b0 = _bytes[_position];
                 _valBytes.b1 = _bytes[_position + 1];
@@ -432,8 +449,8 @@ namespace IceInternal
             return this;
         }
 
-#if !MANAGED && !COMPACT
-	unsafe
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+        unsafe
 #endif
         public ByteBuffer putInt(int pos, int val)
         {
@@ -448,11 +465,11 @@ namespace IceInternal
             _valBytes.intVal = val;
             if(NO._o == _order)
             {
-#if !MANAGED && !COMPACT
-		fixed(byte* p = &_bytes[pos])
-		{
-		    *((int*)p) = _valBytes.intVal;
-		}
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+                fixed(byte* p = &_bytes[pos])
+                {
+                    *((int*)p) = _valBytes.intVal;
+                }
 #else
                 _bytes[pos] = _valBytes.b0;
                 _bytes[pos + 1] = _valBytes.b1;
@@ -494,19 +511,19 @@ namespace IceInternal
             return this;
         }
 
-#if !MANAGED && !COMPACT
-	unsafe
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+        unsafe
 #endif
         public long getLong()
         {
             checkUnderflow(8);  
             if(NO._o == _order)
             {
-#if !MANAGED && !COMPACT
-		fixed(byte* p = &_bytes[_position])
-		{
-		    _valBytes.longVal = *((long*)p);
-		}
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+                fixed(byte* p = &_bytes[_position])
+                {
+                    _valBytes.longVal = *((long*)p);
+                }
 #else
                 _valBytes.b0 = _bytes[_position];
                 _valBytes.b1 = _bytes[_position + 1];
@@ -560,8 +577,8 @@ namespace IceInternal
             _position += len;
         }
 
-#if !MANAGED && !COMPACT
-	unsafe
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+        unsafe
 #endif
         public ByteBuffer putLong(long val)
         {
@@ -569,11 +586,11 @@ namespace IceInternal
             _valBytes.longVal = val;
             if(NO._o == _order)
             {
-#if !MANAGED && !COMPACT
-		fixed(byte* p = &_bytes[_position])
-		{
-		    *((long*)p) = _valBytes.longVal;
-		}
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+                fixed(byte* p = &_bytes[_position])
+                {
+                    *((long*)p) = _valBytes.longVal;
+                }
 #else
                 _bytes[_position] = _valBytes.b0;
                 _bytes[_position + 1] = _valBytes.b1;
@@ -628,19 +645,19 @@ namespace IceInternal
             return this;
         }
 
-#if !MANAGED && !COMPACT
-	unsafe
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+        unsafe
 #endif
         public float getFloat()
         {
             checkUnderflow(4);  
             if(NO._o == _order)
             {
-#if !MANAGED && !COMPACT
-		fixed(byte* p = &_bytes[_position])
-		{
-		    _valBytes.floatVal = *((float*)p);
-		}
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+                fixed(byte* p = &_bytes[_position])
+                {
+                    _valBytes.floatVal = *((float*)p);
+                }
 #else
                 _valBytes.b0 = _bytes[_position];
                 _valBytes.b1 = _bytes[_position + 1];
@@ -682,8 +699,8 @@ namespace IceInternal
             _position += len;
         }
 
-#if !MANAGED && !COMPACT
-	unsafe
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+        unsafe
 #endif
         public ByteBuffer putFloat(float val)
         {
@@ -691,11 +708,11 @@ namespace IceInternal
             _valBytes.floatVal = val;
             if(NO._o == _order)
             {
-#if !MANAGED && !COMPACT
-		fixed(byte* p = &_bytes[_position])
-		{
-		    *((float*)p) = _valBytes.floatVal;
-		}
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+                fixed(byte* p = &_bytes[_position])
+                {
+                    *((float*)p) = _valBytes.floatVal;
+                }
 #else
                 _bytes[_position] = _valBytes.b0;
                 _bytes[_position + 1] = _valBytes.b1;
@@ -738,19 +755,19 @@ namespace IceInternal
             return this;
         }
 
-#if !MANAGED && !COMPACT
-	unsafe
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+        unsafe
 #endif
         public double getDouble()
         {
             checkUnderflow(8);  
             if(NO._o == _order)
             {
-#if !MANAGED && !COMPACT
-		fixed(byte* p = &_bytes[_position])
-		{
-		    _valBytes.doubleVal = *((double*)p);
-		}
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+                fixed(byte* p = &_bytes[_position])
+                {
+                    _valBytes.doubleVal = *((double*)p);
+                }
 #else
                 _valBytes.b0 = _bytes[_position];
                 _valBytes.b1 = _bytes[_position + 1];
@@ -804,8 +821,8 @@ namespace IceInternal
             _position += len;
         }
 
-#if !MANAGED && !COMPACT
-	unsafe
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+        unsafe
 #endif
         public ByteBuffer putDouble(double val)
         {
@@ -813,11 +830,11 @@ namespace IceInternal
             _valBytes.doubleVal = val;
             if(NO._o == _order)
             {
-#if !MANAGED && !COMPACT
-		fixed(byte* p = &_bytes[_position])
-		{
-		    *((double*)p) = _valBytes.doubleVal;
-		}
+#if !MANAGED && !COMPACT && !SILVERLIGHT
+                fixed(byte* p = &_bytes[_position])
+                {
+                    *((double*)p) = _valBytes.doubleVal;
+                }
 #else
                 _bytes[_position] = _valBytes.b0;
                 _bytes[_position + 1] = _valBytes.b1;
@@ -926,7 +943,7 @@ namespace IceInternal
 
         private static void throwOutOfRange(string param, object value, string message)
         {
-#if COMPACT
+#if COMPACT || SILVERLIGHT
             throw new ArgumentOutOfRangeException(param, message);
 #else
             throw new ArgumentOutOfRangeException(param, value, message);

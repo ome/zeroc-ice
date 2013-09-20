@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -237,15 +237,24 @@ class IteratorI<K, V> implements Freeze.Map.EntryIterator<java.util.Map.Entry<K,
     finalize()
         throws Throwable
     {
-        if(_cursor != null)
+        try
         {
-            _trace.logger.warning(
-                "iterator leaked for Map \"" + _dbName + "\"; the application " +
-                "should have closed it earlier by calling Map.EntryIterator.close(), " +
-                "Map.closeAllIterators(), Map.close(), Connection.close(), or (if also " +
-                "leaking a transaction) Transaction.commit() or Transaction.rollback()");
+            if(_cursor != null)
+            {
+                _trace.logger.warning(
+                    "iterator leaked for Map \"" + _dbName + "\"; the application " +
+                    "should have closed it earlier by calling Map.EntryIterator.close(), " +
+                    "Map.closeAllIterators(), Map.close(), Connection.close(), or (if also " +
+                    "leaking a transaction) Transaction.commit() or Transaction.rollback()");
+            }
         }
-        super.finalize();
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     void
@@ -271,7 +280,7 @@ class IteratorI<K, V> implements Freeze.Map.EntryIterator<java.util.Map.Entry<K,
             //
             // Yes, update it directly
             //
-            byte[] v = _map.encodeValue(value, _map.connection().getCommunicator());
+            byte[] v = _map.encodeValue(value, _map.connection().getCommunicator(), _map.connection().getEncoding());
             com.sleepycat.db.DatabaseEntry dbValue = new com.sleepycat.db.DatabaseEntry(v);
 
             try
@@ -317,7 +326,8 @@ class IteratorI<K, V> implements Freeze.Map.EntryIterator<java.util.Map.Entry<K,
                     throw ex;
                 }
 
-                byte[] v = _map.encodeValue(value, _map.connection().getCommunicator());
+                byte[] v = _map.encodeValue(value, _map.connection().getCommunicator(), 
+                                            _map.connection().getEncoding());
                 com.sleepycat.db.DatabaseEntry dbValue = new com.sleepycat.db.DatabaseEntry(v);
                 clone.putCurrent(dbValue);
             }

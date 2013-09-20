@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -100,6 +100,11 @@ public sealed class ThrowerI : ThrowerDisp_
     public override void throwAssertException(Ice.Current current)
     {
         Debug.Assert(false);
+    }
+    
+    public override void throwLocalExceptionIdempotent(Ice.Current current)
+    {
+        throw new Ice.TimeoutException();
     }
     
     public override void throwUndeclaredA(int a, Ice.Current current)

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -79,7 +79,7 @@ EvictorBase::finished(const Ice::Current&, const Ice::ObjectPtr&, const Ice::Loc
 }
 
 void
-EvictorBase::deactivate(const std::string& category)
+EvictorBase::deactivate(const std::string& /*category*/)
 {
     IceUtil::Mutex::Lock lock(_mutex);
 

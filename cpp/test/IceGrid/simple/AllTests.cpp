@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -117,6 +117,33 @@ allTestsWithDeploy(const Ice::CommunicatorPtr& communicator)
     cout << "pinging server... " << flush;
     obj->ice_ping();
     obj2->ice_ping();
+    cout << "ok" << endl;
+
+    cout << "testing encoding versioning... " << flush;
+    Ice::ObjectPrx base10 = communicator->stringToProxy("test10 @ TestAdapter10");
+    test(base10);
+    Ice::ObjectPrx base102 = communicator->stringToProxy("test10");
+    test(base102);
+    try
+    {
+        base10->ice_ping();
+        test(false);
+    }
+    catch(const Ice::NoEndpointException&)
+    {
+    }
+    try
+    {
+        base102->ice_ping();
+        test(false);
+    }
+    catch(const Ice::NoEndpointException&)
+    {
+    }
+    base10 = base10->ice_encodingVersion(Ice::Encoding_1_0);
+    base102 = base102->ice_encodingVersion(Ice::Encoding_1_0);
+    base10->ice_ping();
+    base102->ice_ping();
     cout << "ok" << endl;
 
     cout << "testing reference with unknown identity... " << flush;

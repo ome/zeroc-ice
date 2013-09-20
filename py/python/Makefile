@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -51,14 +51,19 @@ ICE_SRCS	= Ice_LocalException_ice.py \
 		  Ice_SliceChecksumDict_ice.py \
 		  Ice_Endpoint_ice.py \
 		  Ice_EndpointF_ice.py \
-		  Ice_EndpointTypes_ice.py
+		  Ice_EndpointTypes_ice.py \
+		  Ice_Version_ice.py \
+		  Ice_Instrumentation_ice.py \
+		  Ice_InstrumentationF_ice.py \
+		  Ice_Metrics_ice.py
 
 GLACIER2_SRCS	= Glacier2_RouterF_ice.py \
 		  Glacier2_Router_ice.py \
 		  Glacier2_Session_ice.py \
 		  Glacier2_PermissionsVerifierF_ice.py \
 		  Glacier2_PermissionsVerifier_ice.py \
-		  Glacier2_SSLInfo_ice.py
+		  Glacier2_SSLInfo_ice.py \
+		  Glacier2_Metrics_ice.py
 
 ICEBOX_SRCS	= IceBox_IceBox_ice.py
 
@@ -76,7 +81,8 @@ ICEGRID_SRCS	= IceGrid_Admin_ice.py \
 ICEPATCH2_SRCS	= IcePatch2_FileInfo_ice.py \
 		  IcePatch2_FileServer_ice.py
 
-ICESTORM_SRCS	= IceStorm_IceStorm_ice.py
+ICESTORM_SRCS	= IceStorm_IceStorm_ice.py \
+		  IceStorm_Metrics_ice.py
 
 ALL_SRCS	= $(ICE_SRCS) \
 		  $(GLACIER2_SRCS) \
@@ -92,7 +98,7 @@ ICEGRID_SLICE	= $(patsubst IceGrid_%_ice.py,$(slicedir)/IceGrid/%.ice,$(ICEGRID_
 ICEPATCH2_SLICE	= $(patsubst IcePatch2_%_ice.py,$(slicedir)/IcePatch2/%.ice,$(ICEPATCH2_SRCS))
 ICESTORM_SLICE	= $(patsubst IceStorm_%_ice.py,$(slicedir)/IceStorm/%.ice,$(ICESTORM_SRCS))
 
-PACKAGES	= IceBox IceGrid IcePatch2 IceStorm
+PACKAGES	= IceBox IceGrid IcePatch2 IceStorm IceMX
 
 all:: $(ALL_SRCS)
 
@@ -101,8 +107,14 @@ SLICE2PYFLAGS	+= --ice
 Ice_%_ice.py: $(slicedir)/Ice/%.ice $(SLICE2PY) $(SLICEPARSERLIB)
 	$(SLICE2PY) --prefix Ice_ --no-package $(SLICE2PYFLAGS) $<
 
+Ice_Metrics_ice.py: $(slicedir)/Ice/Metrics.ice $(SLICE2PY) $(SLICEPARSERLIB)
+	$(SLICE2PY) --prefix Ice_ --checksum $(SLICE2PYFLAGS) $<
+
 Glacier2_%_ice.py: $(slicedir)/Glacier2/%.ice $(SLICE2PY) $(SLICEPARSERLIB)
 	$(SLICE2PY) --prefix Glacier2_ --no-package --checksum $(SLICE2PYFLAGS) $<
+
+Glacier2_Metrics_ice.py: $(slicedir)/Glacier2/Metrics.ice $(SLICE2PY) $(SLICEPARSERLIB)
+	$(SLICE2PY) --prefix Glacier2_ --checksum $(SLICE2PYFLAGS) $<
 
 IceBox_%_ice.py: $(slicedir)/IceBox/%.ice $(SLICE2PY) $(SLICEPARSERLIB)
 	$(SLICE2PY) --prefix IceBox_ --checksum $(SLICE2PYFLAGS) $<

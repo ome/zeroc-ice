@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,15 +33,6 @@ public abstract class UserExceptionWriter extends UserException
     public abstract void
     write(Ice.OutputStream os);
 
-    /**
-     * Indicates whether the encapsulated exception contains one or more
-     * data members that are instances of Slice classes.
-     *
-     * @return True if the exception contains classes, or false otherwise.
-     **/
-    public abstract boolean
-    usesClasses();
-
     public void
     __write(IceInternal.BasicStream os)
     {
@@ -69,12 +60,6 @@ public abstract class UserExceptionWriter extends UserException
     __read(Ice.InputStream is, boolean rid)
     {
         assert(false);
-    }
-
-    public boolean
-    __usesClasses()
-    {
-        return usesClasses();
     }
 
     protected Communicator _communicator;

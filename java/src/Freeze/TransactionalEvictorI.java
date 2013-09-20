@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -61,10 +61,6 @@ class TransactionalEvictorI extends EvictorI implements TransactionalEvictor
         _deactivateController.lock();
         try
         {
-            long currentTime = IceInternal.Time.currentMonotonicTimeMillis();
-
-            ObjectRecord rec = new ObjectRecord(servant, new Statistics(currentTime, 0, 0));
-
             ObjectStore store = findStore(facet, _createDb);
             if(store == null)
             {
@@ -73,9 +69,25 @@ class TransactionalEvictorI extends EvictorI implements TransactionalEvictor
                 throw ex;
             }
 
+            long currentTime = 0;
+            ObjectRecord rec;
+
+            if(store.keepStats())
+            {
+                currentTime = IceInternal.Time.currentMonotonicTimeMillis();
+                rec = new ObjectRecord(servant, new Statistics(currentTime, 0, 0));
+            }
+            else
+            {
+                rec = new ObjectRecord(servant, null);
+            }
+
             TransactionI tx = beforeQuery();
 
-            updateStats(rec.stats, currentTime);
+            if(store.keepStats())
+            {
+                updateStats(rec.stats, currentTime);
+            }
 
             if(!store.insert(ident, rec, tx))
             {
@@ -350,6 +362,11 @@ class TransactionalEvictorI extends EvictorI implements TransactionalEvictor
 
                 int operationAttributes = sample.ice_operationAttributes(current.operation);
 
+                if(operationAttributes < 0)
+                {
+                    throw new Ice.OperationNotExistException();
+                }
+
                 boolean readOnly = (operationAttributes & 0x1) == 0;
 
                 int txMode = (operationAttributes & 0x6) >> 1;
@@ -394,6 +411,7 @@ class TransactionalEvictorI extends EvictorI implements TransactionalEvictor
                     default:
                     {
                         assert false;
+                        throw new Ice.OperationNotExistException();
                     }
                 }
 

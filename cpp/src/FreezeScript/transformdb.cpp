@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -184,8 +184,7 @@ transformDb(bool evictor,  const Ice::CommunicatorPtr& communicator,
         }
         
         Freeze::Catalog catalogNew(connectionNew, Freeze::catalogName());
-        Freeze::CatalogData catalogData;
-        catalogData.evictor = true;
+        Freeze::CatalogData catalogData = { true, "::Ice::Identity", "Object" };
         catalogNew.put(Freeze::Catalog::value_type(dbName, catalogData));
     }
     else
@@ -308,6 +307,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
     purgeObjects = opts.isSet("p");
     catastrophicRecover = opts.isSet("c");
     suppress = opts.isSet("w");
+
     if(opts.isSet("f"))
     {
         inputFile = opts.optArg("f");
@@ -490,7 +490,8 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
         FreezeScript::TransformAnalyzer analyzer(oldUnit, newUnit, ignoreTypeChanges, out, missingTypes, analyzeErrors);
 
         const string evictorKeyName = "::Ice::Identity";
-        const string evictorValueName = "::Freeze::ObjectRecord";
+        const string oldEvictorValueName = "::Freeze::ObjectRecord";
+        const string newEvictorValueName = "Object";
 
         if(allDb)
         {
@@ -503,8 +504,17 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
 
                 if(p->second.evictor)
                 {
-                    keyName = evictorKeyName;
-                    valueName = evictorValueName;
+                    keyName = p->second.key;
+                    valueName = p->second.value;
+
+                    if(keyName.empty())
+                    {
+                        keyName = evictorKeyName;
+                    }
+                    if(valueName.empty())
+                    {
+                        valueName = oldEvictorValueName;
+                    }
                 }
                 else
                 {
@@ -533,7 +543,20 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
                     cerr << appName << ": type `" << valueName << "' from database `" << p->first
                          << "' not found in old Slice definitions" << endl;
                 }
-                Slice::TypePtr newValueType = findType(newUnit, valueName);
+
+                Slice::TypePtr newValueType;
+                if(p->second.evictor)
+                {
+                    //
+                    // The new evictor does not keep stats
+                    //
+                    newValueType = findType(newUnit, newEvictorValueName);
+                }
+                else
+                {
+                    newValueType = findType(newUnit, valueName);
+                }
+
                 if(!newValueType)
                 {
                     cerr << appName << ": type `" << valueName << "' from database `" << p->first
@@ -553,29 +576,24 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
                 {   
                     return EXIT_FAILURE;
                 }
-
+                
                 analyzer.addDatabase(p->first, oldKeyType, newKeyType, oldValueType, newValueType);
             }
         }
         else
         {
             string oldKeyName, newKeyName, oldValueName, newValueName;
+           
+            string::size_type pos;
 
-            if(evictor)
+            if(!evictor && (keyTypeNames.empty() || valueTypeNames.empty()))
             {
-                oldKeyName = newKeyName = evictorKeyName;
-                oldValueName = newValueName = evictorValueName;
+                usage(appName);
+                return EXIT_FAILURE;
             }
-            else
+
+            if(!keyTypeNames.empty())
             {
-                string::size_type pos;
-
-                if(keyTypeNames.empty() || valueTypeNames.empty())
-                {
-                    usage(appName);
-                    return EXIT_FAILURE;
-                }
-
                 pos = keyTypeNames.find(',');
                 if(pos == 0 || pos == keyTypeNames.size())
                 {
@@ -592,7 +610,10 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
                     oldKeyName = keyTypeNames.substr(0, pos);
                     newKeyName = keyTypeNames.substr(pos + 1);
                 }
+            }
 
+            if(!valueTypeNames.empty())
+            {
                 pos = valueTypeNames.find(',');
                 if(pos == 0 || pos == valueTypeNames.size())
                 {
@@ -608,6 +629,26 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
                 {
                     oldValueName = valueTypeNames.substr(0, pos);
                     newValueName = valueTypeNames.substr(pos + 1);
+                }
+            }
+            
+            if(evictor)
+            {
+                if(oldKeyName.empty())
+                {
+                    oldKeyName = evictorKeyName;
+                }
+                if(newKeyName.empty())
+                {
+                    newKeyName = evictorKeyName;
+                }
+                if(oldValueName.empty())
+                {
+                    oldValueName = newEvictorValueName;
+                }
+                if(newValueName.empty())
+                {
+                    newValueName = newEvictorValueName;
                 }
             }
 
@@ -928,8 +969,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
     return status;
 }
 
-//COMPILERFIX: Borland C++ 2010 doesn't support wmain for console applications.
-#if defined(_WIN32 ) && !defined(__BCPLUSPLUS__)
+#ifdef _WIN32
 
 int
 wmain(int argc, wchar_t* argv[])

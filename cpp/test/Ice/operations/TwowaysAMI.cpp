@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,13 @@
 #include <TestCommon.h>
 #include <Test.h>
 #include <limits>
+
+//
+// Work-around for GCC warning bug
+//
+#if defined(__GNUC__)
+#   pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif
 
 using namespace std;
 
@@ -113,7 +120,7 @@ class AMI_MyClass_opByteExI : public Test::AMI_MyClass_opByte, public CallbackBa
 {
 public:
 
-    virtual void ice_response(::Ice::Byte r, ::Ice::Byte b)
+    virtual void ice_response(::Ice::Byte, ::Ice::Byte)
     {
         test(false);
     }
@@ -496,7 +503,7 @@ class AMI_MyClass_opBoolSSI : public Test::AMI_MyClass_opBoolSS, public Callback
 {
 public:
 
-    virtual void ice_response(const ::Test::BoolSS&, const ::Test::BoolSS& bso)
+    virtual void ice_response(const ::Test::BoolSS&, const ::Test::BoolSS&)
     {
         called();
     }
@@ -913,7 +920,7 @@ public:
         called();
     }
 
-    virtual void ice_exception(const ::Ice::Exception& ex)
+    virtual void ice_exception(const ::Ice::Exception&)
     {
         test(false);
     }
@@ -977,10 +984,10 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
     }
 
     {
-	//
+        //
         // Check that a call to a twoway operation raises NoEndpointException
         // in the ice_exception() callback instead of at the point of call.
-	//
+        //
         Test::MyClassPrx indirect = Test::MyClassPrx::uncheckedCast(p->ice_adapterId("dummy"));
         AMI_MyClass_opByteExIPtr cb = new AMI_MyClass_opByteExI;
         try
@@ -1004,9 +1011,9 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
     }
 
     {
-	//
+        //
         // Check that CommunicatorDestroyedException is raised directly.
-	//
+        //
         Ice::InitializationData initData;
         initData.properties = communicator->getProperties()->clone();
         Ice::CommunicatorPtr ic = Ice::initialize(initData);
@@ -1378,6 +1385,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
             cb->check();
         }
 
+#ifndef ICE_OS_WINRT
         {
             //
             // Test implicit context propagation
@@ -1447,6 +1455,7 @@ twowaysAMI(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
                 ic->destroy();
             }
         }
+#endif
     }
 
     {

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -169,13 +169,8 @@ template<typename Key, typename Value> bool
 Cache<Key, Value>::pin(const Key& key, const Handle<Value>& obj)
 {
     Mutex::Lock sync(_mutex);
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-    std::pair<CacheMap::iterator, bool> ir = 
-#else
     std::pair<typename CacheMap::iterator, bool> ir =
-#endif 
-
-#if defined(_MSC_VER)
+#ifdef _MSC_VER
        _map.insert(CacheMap::value_type(key, CacheValue(obj)));
 #else
        _map.insert(typename CacheMap::value_type(key, CacheValue(obj)));
@@ -223,13 +218,8 @@ Cache<Key, Value>::pinImpl(const Key& key, const Handle<Value>& newObj)
                 latch = 0;
             }
     
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-            std::pair<CacheMap::iterator, bool> ir = 
-#else
             std::pair<typename CacheMap::iterator, bool> ir =
-#endif          
-            
-#if defined(_MSC_VER) || defined(__BCPLUSPLUS__)
+#if defined(_MSC_VER)
                 _map.insert(CacheMap::value_type(key, CacheValue(0)));
 #else
                 _map.insert(typename CacheMap::value_type(key, CacheValue(0)));

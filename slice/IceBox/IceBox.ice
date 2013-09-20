@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_BOX_ICE_BOX_ICE
-#define ICE_BOX_ICE_BOX_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -36,6 +35,7 @@ module IceBox
  * to load a service executable.
  *
  **/
+["cpp:ice_print"]
 local exception FailureException
 {
     /**
@@ -126,8 +126,8 @@ local interface Service
  **/
 interface ServiceObserver
 {
-    ["ami"] void servicesStarted(Ice::StringSeq services);
-    ["ami"] void servicesStopped(Ice::StringSeq services);
+    void servicesStarted(Ice::StringSeq services);
+    void servicesStopped(Ice::StringSeq services);
 };
 
 
@@ -156,7 +156,7 @@ interface ServiceManager
      * @param service The service name.
      *
      **/
-    ["ami"] void startService(string service)
+    void startService(string service)
         throws AlreadyStartedException, NoSuchServiceException;
 
     /**
@@ -166,7 +166,7 @@ interface ServiceManager
      * @param service The service name.
      *
      **/
-    ["ami"] void stopService(string service)
+    void stopService(string service)
         throws AlreadyStoppedException, NoSuchServiceException;
 
     
@@ -177,7 +177,7 @@ interface ServiceManager
      * @param observer The new observer
      *
      **/
-    ["ami"] void addObserver(ServiceObserver* observer);
+    void addObserver(ServiceObserver* observer);
 
 
     /**
@@ -191,4 +191,3 @@ interface ServiceManager
 
 };
 
-#endif

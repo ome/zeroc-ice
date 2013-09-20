@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,24 +10,24 @@
 #ifndef ICE_ENDPOINT_I_H
 #define ICE_ENDPOINT_I_H
 
+#include <IceUtil/Config.h>
 #include <IceUtil/Shared.h>
 #include <IceUtil/Thread.h>
 #include <IceUtil/Monitor.h>
 #include <Ice/Endpoint.h>
+#include <Ice/EndpointTypes.h>
 #include <Ice/EndpointIF.h>
 #include <Ice/InstanceF.h>
 #include <Ice/TransceiverF.h>
 #include <Ice/ConnectorF.h>
 #include <Ice/AcceptorF.h>
 #include <Ice/Protocol.h>
+#include <Ice/Network.h>
+#include <Ice/ObserverHelper.h>
 
-#ifdef _WIN32
-#   include <winsock2.h>
-#else
-#   include <sys/socket.h> // For struct sockaddr_storage
+#ifndef ICE_OS_WINRT
+#   include <deque>
 #endif
-
-#include <deque>
 
 namespace IceInternal
 {
@@ -58,6 +58,11 @@ public:
     // Return the endpoint type.
     //
     virtual Ice::Short type() const = 0;
+
+    //
+    // Return the protocol name
+    //
+    virtual std::string protocol() const = 0;
     
     //
     // Return the timeout for the endpoint in milliseconds. 0 means
@@ -110,11 +115,13 @@ public:
     virtual TransceiverPtr transceiver(EndpointIPtr&) const = 0;
 
     //
-    // Return connectors for this endpoint, or empty vector if no 
-    // connector is available.
+    // Return connectors for this endpoint, or empty vector if no
+    // connector is available. Implementation is responsible for
+    // returning connectors sorted according to the endpoint selection
+    // type.
     //
-    virtual std::vector<ConnectorPtr> connectors() const = 0;
-    virtual void connectors_async(const EndpointI_connectorsPtr&) const = 0;
+    virtual std::vector<ConnectorPtr> connectors(Ice::EndpointSelectionType) const = 0;
+    virtual void connectors_async(Ice::EndpointSelectionType, const EndpointI_connectorsPtr&) const = 0;
 
     //
     // Return an acceptor for this endpoint, or null if no acceptors
@@ -141,15 +148,22 @@ public:
     //
     virtual bool operator==(const Ice::LocalObject&) const = 0;
     virtual bool operator<(const Ice::LocalObject&) const = 0;
-    virtual ::Ice::Int ice_getHash() const;
 
+    const std::string& connectionId() const;
+    
 protected:
+    
+    virtual ::Ice::Int internal_getHash() const;
 
-    virtual std::vector<ConnectorPtr> connectors(const std::vector<struct sockaddr_storage>&) const;
+    virtual std::vector<ConnectorPtr> connectors(const std::vector<Address>&) const;
     friend class EndpointHostResolver;
 
+    EndpointI(const std::string&);
     EndpointI();
+
     virtual ::Ice::Int hashInit() const = 0;
+
+    const std::string _connectionId;
 
 private:
 
@@ -167,30 +181,46 @@ inline bool operator<(const EndpointI& l, const EndpointI& r)
     return static_cast<const ::Ice::LocalObject&>(l) < static_cast<const ::Ice::LocalObject&>(r);
 }
 
+#ifndef ICE_OS_WINRT
 class ICE_API EndpointHostResolver : public IceUtil::Thread, public IceUtil::Monitor<IceUtil::Mutex>
+#else
+class ICE_API EndpointHostResolver : public IceUtil::Shared
+#endif
 {
 public:
 
     EndpointHostResolver(const InstancePtr&);
 
-    void resolve(const std::string&, int, const EndpointIPtr&, const EndpointI_connectorsPtr&);
+    std::vector<ConnectorPtr> resolve(const std::string&, int, Ice::EndpointSelectionType, const EndpointIPtr&);
+    void resolve(const std::string&, int, Ice::EndpointSelectionType, const EndpointIPtr&, 
+                 const EndpointI_connectorsPtr&);
     void destroy();
 
     virtual void run();
+    void updateObserver();
 
 private:
 
+#ifndef ICE_OS_WINRT
     struct ResolveEntry
     {
         std::string host;
         int port;
+        Ice::EndpointSelectionType selType;
         EndpointIPtr endpoint;
         EndpointI_connectorsPtr callback;
+        Ice::Instrumentation::ObserverPtr observer;
     };
 
     const InstancePtr _instance;
+    const IceInternal::ProtocolSupport _protocol;
+    const bool _preferIPv6;
     bool _destroyed;
     std::deque<ResolveEntry> _queue;
+    ObserverHelperT<Ice::Instrumentation::ThreadObserver> _observer;
+#else
+    const InstancePtr _instance;
+#endif
 };
 
 }

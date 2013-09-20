@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,7 +34,7 @@ public:
     public:
         
         ServantHolder();
-        ~ServantHolder();
+        ~ServantHolder() ICE_NOEXCEPT_FALSE;
 
         void init(const TransactionalEvictorContextPtr&, const Ice::Current&, ObjectStore<TransactionalEvictorElement>*);
 
@@ -145,10 +145,8 @@ private:
     TransactionIPtr _tx;
     IceUtil::ThreadControl _owner;
 
-    bool _rollbackOnly;
-
-    std::auto_ptr<DeadlockException> _deadlockException;
-    std::auto_ptr<TransactionalEvictorDeadlockException> _nestedCallDeadlockException;
+    IceUtil::UniquePtr<DeadlockException> _deadlockException;
+    IceUtil::UniquePtr<TransactionalEvictorDeadlockException> _nestedCallDeadlockException;
   
     //
     // Protected by this

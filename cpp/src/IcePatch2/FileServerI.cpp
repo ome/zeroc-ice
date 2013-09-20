@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -85,7 +85,7 @@ IcePatch2::FileServerI::getFileCompressed_async(const AMD_FileServer_getFileComp
     }
 
 #if (defined(_MSC_VER) && (_MSC_VER >= 1600))
-    pair<const Byte*, const Byte*> ret(nullptr, nullptr);
+    pair<const Byte*, const Byte*> ret(static_cast<const Byte*>(nullptr), static_cast<const Byte*>(nullptr));
 #else
     pair<const Byte*, const Byte*> ret(0, 0);
 #endif
@@ -106,7 +106,7 @@ IcePatch2::FileServerI::getFileCompressed_async(const AMD_FileServer_getFileComp
     }
 
     if(
-#if defined(_MSC_VER) && (_MSC_VER >= 1400)
+#if defined(_MSC_VER)
         _lseek(fd, static_cast<off_t>(pos), SEEK_SET)
 #else
         lseek(fd, static_cast<off_t>(pos), SEEK_SET)
@@ -127,13 +127,7 @@ IcePatch2::FileServerI::getFileCompressed_async(const AMD_FileServer_getFileComp
     IceUtil::ScopedArray<Byte> bytes(new Byte[num]);
 #ifdef _WIN32
     int r;
-    if((r =
-#if defined(_MSC_VER) && (_MSC_VER >= 1400)
-        _read(fd, bytes.get(), static_cast<unsigned int>(num))
-#else
-        read(fd, bytes.get(), static_cast<unsigned int>(num))
-#endif
-        ) == -1)
+    if((r = _read(fd, bytes.get(), static_cast<unsigned int>(num))) == -1)
 #else
     ssize_t r;
     if((r = read(fd, bytes.get(), static_cast<size_t>(num))) == -1)

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,6 @@
 #include <Ice/Communicator.h>
 #include <Ice/LocalException.h>
 #include <Ice/LoggerUtil.h>
-#include <Ice/Network.h>
 
 using namespace std;
 using namespace Ice;
@@ -42,7 +41,7 @@ IceSSL::ConnectorI::connect()
 
     try
     {
-        return new TransceiverI(_instance, IceInternal::createSocket(false, _addr.ss_family), _host, _addr);
+        return new TransceiverI(_instance, IceInternal::createSocket(false, _addr), _host, _addr);
     }
     catch(const Ice::LocalException& ex)
     {
@@ -130,7 +129,7 @@ IceSSL::ConnectorI::operator<(const IceInternal::Connector& r) const
     return IceInternal::compareAddress(_addr, p->_addr) == -1;
 }
 
-IceSSL::ConnectorI::ConnectorI(const InstancePtr& instance, const string& host, const struct sockaddr_storage& addr,
+IceSSL::ConnectorI::ConnectorI(const InstancePtr& instance, const string& host, const IceInternal::Address& addr,
                                Ice::Int timeout, const string& connectionId) :
     _instance(instance),
     _logger(instance->communicator()->getLogger()),

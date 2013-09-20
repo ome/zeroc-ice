@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -616,6 +616,18 @@ public class AllTests
         hello.sayHello();
         obj.migrateHello();
         hello.sayHello();
+        out.println("ok");
+
+        out.print("testing locator encoding resolution... ");
+        out.flush();
+        hello = HelloPrxHelper.checkedCast(communicator.stringToProxy("hello"));
+        count = locator.getRequestCount();
+        communicator.stringToProxy("test@TestAdapter").ice_encodingVersion(Ice.Util.Encoding_1_1).ice_ping();
+        test(count == locator.getRequestCount());
+        communicator.stringToProxy("test@TestAdapter10").ice_encodingVersion(Ice.Util.Encoding_1_0).ice_ping();
+        test(++count == locator.getRequestCount());
+        communicator.stringToProxy("test -e 1.0@TestAdapter10-2").ice_ping();
+        test(++count == locator.getRequestCount());
         out.println("ok");
 
         out.print("shutdown server... ");

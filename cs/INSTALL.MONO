@@ -13,17 +13,17 @@ Ice for .NET is expected to build and run properly on any recent Linux
 distribution for x86 and x86_64. However, Ice is officially supported
 only on:
 
- - Novell SuSE Linux Enterprise Server 11 for i586 or x86_64 (SLES 11)
+ - SuSE Linux Enterprise Server 11 SP2 for i586 or x86_64 (SLES 11)
 
-You need to install the mono-core and the mono-devel RPMs to build Ice 
+You need to install the mono-core and the mono-devel RPMs to build Ice
 for .NET on Linux.
 
 
 Build instructions
 ------------------
 
-Unpack the source archive. The .NET sources will be contained in the 
-Ice-3.4.2/cs subdirectory.
+Unpack the source archive. The .NET sources will be contained in the
+Ice-3.5.0/cs subdirectory.
 
 You will need the Slice to C# translator (slice2cs) and supporting
 executables and libraries. You can download a binary distribution from
@@ -99,10 +99,10 @@ Running the tests
 Some of the Ice for .NET tests employ applications that are part of the
 Ice for C++ distribution. If you have not built Ice for C++ from the cpp
 subdirectory then you need to set the ICE_HOME environment variable to
-the path where these applications are installed for these tests to run 
+the path where these applications are installed for these tests to run
 properly:
 
-$ export ICE_HOME=/opt/Ice-3.4.2
+$ export ICE_HOME=/opt/Ice-3.5.0
 
 Python is required to run the test suite:
 
@@ -125,7 +125,7 @@ case of a failure, the tests abort with "failed".
 Running the demos
 -----------------
 
-To run the demos, you need to have Ice-3.4.2/cs/bin in your MONO_PATH
+To run the demos, you need to have Ice-3.5.0/cs/bin in your MONO_PATH
 or install the Ice DLLs in the GAC. See the README file in each demo
 directory for a description of each demo.
 
@@ -135,7 +135,7 @@ Installation
 
 Open config/Make.rules.cs and change the "prefix" variable to hold the
 top-level installation directory. This directory will be created
-automatically if necessary. Also review the comments for the "no_gac"
+automatically if necessary. Also review the comments for the "GACINSTALL"
 variable and decide whether to enable it. Next, run
 
 $ make install
@@ -145,7 +145,7 @@ MONO_PATH. When building applications, you need to reference the
 libraries with the -r option to mcs.
 
 Alternatively, you can add the libraries to the global assembly cache.
-To do this, use
+To do this, either set GACINSTALL before building the libraries, or use
 
 $ gacutil -i <library.dll>
 
@@ -154,15 +154,3 @@ correctly without having to set environment variables.
 
 Finally, you could also copy the necessary libraries into the
 directory that contains the .exe for your application.
-
-
-Binary compatibility
---------------------
-
-Ice patch releases are binary compatible. For example, Ice version 
-3.4.1 is compatible with 3.4.0: you can run an application built
-against Ice 3.4.0 with Ice 3.4.1 (or later) without having to
-recompile or relink this application.
-
-Please refer to the Ice 3.4.2 Release Notes for detailed upgrade 
-instructions.

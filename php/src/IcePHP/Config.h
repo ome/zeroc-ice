@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,6 +38,8 @@ extern "C"
 
 #ifdef _WIN32
 #   pragma warning( disable : 4018) // suppress signed/unsigned mismatch in zend_execute.h (PHP 5.3.x)
+#elif defined(__GNUC__)
+#	pragma GCC diagnostic warning "-Wsign-compare"
 #endif
 
 #include "php.h"
@@ -84,9 +86,11 @@ ZEND_MINFO_FUNCTION(ice);
 ZEND_BEGIN_MODULE_GLOBALS(ice)
     void* communicatorMap;
     void* idToClassInfoMap;
+    void* compactIdToClassInfoMap;
     void* nameToClassInfoMap;
     void* proxyInfoMap;
     void* exceptionInfoMap;
+    zval* unset;
 ZEND_END_MODULE_GLOBALS(ice)
 
 #ifdef ZTS
@@ -107,15 +111,11 @@ ZEND_END_MODULE_GLOBALS(ice)
 #endif
 
 //
-// Newer versions of PHP use const char* instead of char* in most APIs.
+// Older versions of PHP use char* instead of const char* in many APIs.
 //
 #ifdef STRCAST
 #   error "STRCAST already defined!"
 #endif
-#if PHP_MAJOR_VERSION > 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3)
-#   define STRCAST(s) s
-#else
-#   define STRCAST(s) const_cast<char*>(s)
-#endif
+#define STRCAST(s) const_cast<char*>(s)
 
 #endif

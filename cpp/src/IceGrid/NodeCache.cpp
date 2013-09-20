@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -178,20 +178,17 @@ struct ToInternalServerDescriptor : std::unary_function<CommunicatorDescriptorPt
     int _iceVersion;
 };
 
-class LoadCB : public AMI_Node_loadServer
+class LoadCB : virtual public IceUtil::Shared
 {
 public:
 
-    LoadCB(const TraceLevelsPtr& traceLevels, 
-           const ServerEntryPtr& server, 
-           const string& node,
-           int timeout) : 
+    LoadCB(const TraceLevelsPtr& traceLevels, const ServerEntryPtr& server, const string& node, int timeout) : 
         _traceLevels(traceLevels), _server(server), _id(server->getId()), _node(node), _timeout(timeout)
     {
     }
 
     void
-    ice_response(const ServerPrx& server, const AdapterPrxDict& adapters, int at, int dt)
+    response(const ServerPrx& server, const AdapterPrxDict& adapters, int at, int dt)
     {
         if(_traceLevels && _traceLevels->server > 1)
         {
@@ -207,7 +204,7 @@ public:
     }
 
     void
-    ice_exception(const Ice::Exception& ex)
+    exception(const Ice::Exception& ex)
     {
         try
         {
@@ -248,7 +245,7 @@ private:
     const int _timeout;
 };
 
-class DestroyCB : public AMI_Node_destroyServer
+class DestroyCB : virtual public IceUtil::Shared
 {
 public:
 
@@ -258,7 +255,7 @@ public:
     }
 
     void
-    ice_response()
+    response()
     {
         if(_traceLevels && _traceLevels->server > 1)
         {
@@ -269,7 +266,7 @@ public:
     }
 
     void
-    ice_exception(const Ice::Exception& ex)
+    exception(const Ice::Exception& ex)
     {
         try
         {
@@ -308,31 +305,7 @@ private:
     const string _node;
 };
 
-class RegisterCB : public AMI_Node_registerWithReplica
-{
-public:
-
-    RegisterCB(const NodeEntryPtr& node) : _node(node)
-    {
-    }
-
-    void
-    ice_response()
-    {
-        _node->finishedRegistration();
-    }
-
-    void
-    ice_exception(const Ice::Exception& ex)
-    {
-        _node->finishedRegistration(ex);
-    }
-
-private:
-    const NodeEntryPtr _node;
-};
-
-};
+}
 
 NodeCache::NodeCache(const Ice::CommunicatorPtr& communicator, ReplicaCache& replicaCache, const string& replicaName) :
     _communicator(communicator),
@@ -573,7 +546,8 @@ NodeEntry::canRemove()
 }
 
 void
-NodeEntry::loadServer(const ServerEntryPtr& entry, const ServerInfo& server, const SessionIPtr& session, int timeout)
+NodeEntry::loadServer(const ServerEntryPtr& entry, const ServerInfo& server, const SessionIPtr& session, int timeout,
+                      bool noRestart)
 {
     try
     {
@@ -624,9 +598,23 @@ NodeEntry::loadServer(const ServerEntryPtr& entry, const ServerInfo& server, con
                 out << " for session `" << session->getId() << "'";
             }
         }
-        
-        AMI_Node_loadServerPtr amiCB = new LoadCB(_cache.getTraceLevels(), entry, _name, sessionTimeout);
-        node->loadServer_async(amiCB, desc, _cache.getReplicaName());
+
+        if(noRestart)
+        {
+            node->begin_loadServerWithoutRestart(desc, _cache.getReplicaName(),
+                                                 newCallback_Node_loadServerWithoutRestart(
+                                                     new LoadCB(_cache.getTraceLevels(), entry, _name, sessionTimeout),
+                                                     &LoadCB::response, 
+                                                     &LoadCB::exception));
+        }
+        else
+        {
+            node->begin_loadServer(desc, _cache.getReplicaName(),
+                                   newCallback_Node_loadServer(
+                                       new LoadCB(_cache.getTraceLevels(), entry, _name, sessionTimeout),
+                                       &LoadCB::response, 
+                                       &LoadCB::exception));
+        }
     }
     catch(const NodeUnreachableException& ex)
     {
@@ -663,8 +651,10 @@ NodeEntry::destroyServer(const ServerEntryPtr& entry, const ServerInfo& info, in
             out << "unloading `" << info.descriptor->id << "' on node `" << _name << "'";       
         }
 
-        AMI_Node_destroyServerPtr amiCB = new DestroyCB(_cache.getTraceLevels(), entry, _name);
-        node->destroyServer_async(amiCB, info.descriptor->id, info.uuid, info.revision, _cache.getReplicaName());
+        node->begin_destroyServer(info.descriptor->id, info.uuid, info.revision, _cache.getReplicaName(),
+                                  newCallback_Node_destroyServer(new DestroyCB(_cache.getTraceLevels(), entry, _name),
+                                                                 &DestroyCB::response, 
+                                                                 &DestroyCB::exception));
     }
     catch(const NodeUnreachableException& ex)
     {
@@ -684,31 +674,27 @@ NodeEntry::getServerInfo(const ServerInfo& server, const SessionIPtr& session)
     return info;
 }
 
-ServerDescriptorPtr
-NodeEntry::getServerDescriptor(const ServerInfo& server, const SessionIPtr& session)
+InternalServerDescriptorPtr
+NodeEntry::getInternalServerDescriptor(const ServerInfo& server, const SessionIPtr& session)
 {
-    assert(_session);
-
-    Resolver resolve(_session->getInfo(), _cache.getCommunicator());
-    resolve.setReserved("application", server.application);
-    resolve.setReserved("server", server.descriptor->id);
-    resolve.setContext("server `${server}'");
-
-    if(session)
+    Lock sync(*this);
+    checkSession();
+    
+    ServerInfo info = server;
+    try
     {
-        resolve.setReserved("session.id", session->getId());
+        info.descriptor = getServerDescriptor(server, session);
     }
-
-    IceBoxDescriptorPtr iceBox = IceBoxDescriptorPtr::dynamicCast(server.descriptor);
-    if(iceBox)
+    catch(const DeploymentException&)
     {
-        return IceBoxHelper(iceBox).instantiate(resolve, PropertyDescriptorSeq(), PropertySetDescriptorDict());
+        //
+        // We ignore the deployment error for now (which can
+        // only be caused in theory by session variables not
+        // being defined because the server isn't
+        // allocated...)
+        //
     }
-    else
-    {
-        return ServerHelper(server.descriptor).instantiate(resolve, PropertyDescriptorSeq(), 
-                                                           PropertySetDescriptorDict());
-    }
+    return getInternalServerDescriptor(info);
 }
 
 void
@@ -794,7 +780,10 @@ NodeEntry::checkSession() const
         //
         _registering = true; 
         NodeEntry* self = const_cast<NodeEntry*>(this);
-        _proxy->registerWithReplica_async(new RegisterCB(self), _cache.getReplicaCache().getInternalRegistry());
+        _proxy->begin_registerWithReplica(_cache.getReplicaCache().getInternalRegistry(), 
+                                          newCallback_Node_registerWithReplica(self, 
+                                                                               &NodeEntry::finishedRegistration, 
+                                                                               &NodeEntry::finishedRegistration));
         _proxy = 0; // Registration with the proxy is only attempted once.
     }
 
@@ -870,6 +859,33 @@ NodeEntry::finishedRegistration(const Ice::Exception& ex)
     }
 }
 
+ServerDescriptorPtr
+NodeEntry::getServerDescriptor(const ServerInfo& server, const SessionIPtr& session)
+{
+    assert(_session);
+
+    Resolver resolve(_session->getInfo(), _cache.getCommunicator());
+    resolve.setReserved("application", server.application);
+    resolve.setReserved("server", server.descriptor->id);
+    resolve.setContext("server `${server}'");
+
+    if(session)
+    {
+        resolve.setReserved("session.id", session->getId());
+    }
+
+    IceBoxDescriptorPtr iceBox = IceBoxDescriptorPtr::dynamicCast(server.descriptor);
+    if(iceBox)
+    {
+        return IceBoxHelper(iceBox).instantiate(resolve, PropertyDescriptorSeq(), PropertySetDescriptorDict());
+    }
+    else
+    {
+        return ServerHelper(server.descriptor).instantiate(resolve, PropertyDescriptorSeq(), 
+                                                           PropertySetDescriptorDict());
+    }
+}
+
 InternalServerDescriptorPtr
 NodeEntry::getInternalServerDescriptor(const ServerInfo& info) const
 {
@@ -932,7 +948,7 @@ NodeEntry::getInternalServerDescriptor(const ServerInfo& info) const
         }
         else
         {
-            props.push_back(createProperty("Ice.Admin.Endpoints", "tcp -h 127.0.0.1"));
+            props.push_back(createProperty("Ice.Admin.Endpoints", "tcp -h localhost"));
             server->processRegistered = true;
         }
     }
@@ -955,22 +971,22 @@ NodeEntry::getInternalServerDescriptor(const ServerInfo& info) const
             ServiceDescriptorPtr s = p->descriptor;
             const string path = _session->getInfo()->dataDir + "/servers/" + server->id + "/config/config_" + s->name;
 
-	    //
-	    // We escape the path here because the command-line option --Ice.Config=xxx will be parsed an encoded 
+            //
+            // We escape the path here because the command-line option --Ice.Config=xxx will be parsed an encoded 
             // (escaped) property
-	    // For example, \\server\dir\file.cfg needs to become \\\server\dir\file.cfg or \\\\server\\dir\\file.cfg.
-	    //
+            // For example, \\server\dir\file.cfg needs to become \\\server\dir\file.cfg or \\\\server\\dir\\file.cfg.
+            //
             props.push_back(createProperty("IceBox.Service." + s->name, s->entry + " --Ice.Config='" 
-					   + escapeProperty(path) + "'"));
+                                           + escapeProperty(path) + "'"));
             
-	    if(servicesStr.empty())
-	    {
-		servicesStr = s->name;
-	    }
-	    else
-	    {
-		servicesStr += " " + s->name;
-	    }
+            if(servicesStr.empty())
+            {
+                servicesStr = s->name;
+            }
+            else
+            {
+                servicesStr += " " + s->name;
+            }
         }
         if(!hasProperty(info.descriptor->propertySet.properties, "IceBox.InstanceName"))
         {

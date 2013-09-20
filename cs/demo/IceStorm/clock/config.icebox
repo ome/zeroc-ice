@@ -5,13 +5,13 @@
 #
 # The IceStorm service has its own endpoints (see config.service).
 #
-IceBox.ServiceManager.Endpoints=tcp -p 9998
+IceBox.ServiceManager.Endpoints=tcp -p 9998 -h localhost
 
 #
 # The IceStorm service. The service is configured using a separate
 # configuration file (see config.service).
 #
-IceBox.Service.IceStorm=IceStormService,34:createIceStorm --Ice.Config=config.service
+IceBox.Service.IceStorm=IceStormService,35:createIceStorm --Ice.Config=config.service
 
 #
 # Warn about connection exceptions

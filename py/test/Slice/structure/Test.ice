@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,13 +12,8 @@
 module Test
 {
 
-sequence<string> StringSeq;
+sequence<int> IntSeq;
 dictionary<string, string> StringDict;
-
-class C
-{
-    int i;
-};
 
 struct S1
 {
@@ -32,13 +27,20 @@ struct S2
     short sh;
     int i;
     long l;
-    float f;
-    double d;
     string str;
-    StringSeq ss;
-    StringDict sd;
+    IntSeq seq;
     S1 s;
-    C cls;
+};
+
+class C
+{
+    string name;
+};
+
+struct S3
+{
+    C obj;
+    StringDict sd;
     Object* prx;
 };
 

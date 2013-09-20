@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,10 +23,10 @@ public interface AMD_Object_ice_invoke
      * @param ok <code>true</code> indicates that the operation
      * completed successfully; <code>false</code> indicates that the
      * operation raised a user exception.
-     * @param outParams The encoded out-parameters for the operation or,
+     * @param outEncaps The encoded out-parameters for the operation or,
      * if <code>ok</code> is <code>false</code>, the encoded user exception.
      **/
-    void ice_response(boolean ok, byte[] outParams);
+    void ice_response(boolean ok, byte[] outEncaps);
 
     /**
      * Indicates to the Ice run time that an operation completed

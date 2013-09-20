@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_PROPERTIES_ICE
-#define ICE_PROPERTIES_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -251,22 +250,33 @@ interface PropertiesAdmin
      * @return The property value.
      *
      **/
-    ["ami"] string getProperty(string key);
+    string getProperty(string key);
 
     /**
      *
-     * Get all properties whose keys begins with
-     * <em>prefix</em>. If
-     * <em>prefix</em> is an empty string,
-     * then all properties are returned.
+     * Get all properties whose keys begin with <em>prefix</em>. If
+     * <em>prefix</em> is an empty string then all properties are returned.
      *
      * @param prefix The prefix to search for (empty string if none).
      * @return The matching property set.
      *
      **/
-    ["ami", "java:type:java.util.TreeMap<String, String>"] PropertyDict getPropertiesForPrefix(string prefix);
+    ["java:type:java.util.TreeMap<String, String>"] PropertyDict getPropertiesForPrefix(string prefix);
+
+    /**
+     *
+     * Update the communicator's properties with the given property set.
+     *
+     * @param newProperties Properties to be added, changed, or removed.
+     * If an entry in <em>newProperties</em> matches the name of an existing property,
+     * that property's value is replaced with the new value. If the new value
+     * is an empty string, the property is removed. Any existing properties
+     * that are not modified or removed by the entries in newProperties are
+     * retained with their original values.
+     *
+     **/
+    ["amd"] void setProperties(PropertyDict newProperties);
 };
 
 };
 
-#endif

@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef TEST_ICE
-#define TEST_ICE
+#pragma once
 
 #include <Ice/BuiltinSequences.ice>
 
@@ -24,7 +23,7 @@ enum MyEnum
 
 class MyClass;
 
-struct SmallStruct
+["cpp:comparable"] struct SmallStruct
 {
     bool bo;
     byte by;
@@ -41,6 +40,14 @@ struct SmallStruct
 ["cpp:class"] struct ClassStruct
 {
     int i;
+};
+
+class OptionalClass
+{
+    bool bo;
+    byte by;
+    optional(1) short sh;
+    optional(2) int i;
 };
 
 sequence<MyEnum> MyEnumS;
@@ -101,7 +108,7 @@ module Sub
         nestedEnum3
     };
 
-    struct NestedStruct
+    ["cpp:comparable"] struct NestedStruct
     {
         bool bo;
         byte by;
@@ -137,7 +144,7 @@ module Sub2
         nestedEnum6
     };
 
-    struct NestedStruct2
+    ["cpp:comparable"] struct NestedStruct2
     {
         bool bo;
         byte by;
@@ -162,4 +169,3 @@ module Sub2
 };
 };
 
-#endif

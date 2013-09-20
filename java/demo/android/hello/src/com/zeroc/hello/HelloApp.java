@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -120,7 +120,7 @@ public class HelloApp extends Application
                 // little faster since the plugin will not initialize
                 // two keystores.
                 //
-                java.io.InputStream certs = getResources().openRawResource(R.raw.certs);
+                java.io.InputStream certs = getResources().openRawResource(R.raw.client);
                 plugin.setKeystoreStream(certs);
                 plugin.setTruststoreStream(certs);
                 communicator.getPluginManager().initializePlugins();

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,7 +14,7 @@
 using namespace std;
 
 void
-oneways(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& proxy)
+oneways(const Ice::CommunicatorPtr&, const Test::MyClassPrx& proxy)
 {
     Test::MyClassPrx p = Test::MyClassPrx::uncheckedCast(proxy->ice_oneway());
     

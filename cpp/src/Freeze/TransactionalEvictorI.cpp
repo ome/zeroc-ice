@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -81,11 +81,11 @@ Freeze::TransactionalEvictorI::TransactionalEvictorI(const ObjectAdapterPtr& ada
     _currentEvictorSize(0)
 {
     
-    class DipatchInterceptorAdapter : public Ice::DispatchInterceptor
+    class DispatchInterceptorAdapter : public Ice::DispatchInterceptor
     {
     public:
 
-        DipatchInterceptorAdapter(const TransactionalEvictorIPtr& evictor) :
+        DispatchInterceptorAdapter(const TransactionalEvictorIPtr& evictor) :
             _evictor(evictor)
         {
         }
@@ -100,7 +100,7 @@ Freeze::TransactionalEvictorI::TransactionalEvictorI(const ObjectAdapterPtr& ada
         TransactionalEvictorIPtr _evictor;
     };
 
-    _interceptor = new DipatchInterceptorAdapter(this);
+    _interceptor = new DispatchInterceptorAdapter(this);
 
     string propertyPrefix = string("Freeze.Evictor.") + envName + '.' + _filename; 
     
@@ -139,24 +139,29 @@ Freeze::TransactionalEvictorI::addFacet(const ObjectPtr& servant, const Identity
     checkIdentity(ident);
     DeactivateController::Guard deactivateGuard(_deactivateController);
    
-    Ice::Long currentTime = IceUtil::Time::now(IceUtil::Time::Monotonic).toMilliSeconds();
-
-    Statistics stats = { currentTime };
-    ObjectRecord rec;
-    rec.servant = servant;
-    rec.stats = stats;
-   
     ObjectStore<TransactionalEvictorElement>* store = findStore(facet, _createDb);
-    
     if(store == 0)
     {
         throw NotFoundException(__FILE__, __LINE__, "addFacet: could not open database for facet '"
                                 + facet + "'");
     }
      
+    Ice::Long currentTime = 0;
+
+    if(store->keepStats())
+    {
+        currentTime = IceUtil::Time::now(IceUtil::Time::Monotonic).toMilliSeconds();
+    }
+
+    Statistics stats = { currentTime };
+    ObjectRecord rec = { servant, stats };
+  
     TransactionIPtr tx = beforeQuery();
         
-    updateStats(rec.stats, currentTime);
+    if(store->keepStats())
+    {
+        updateStats(rec.stats, currentTime);
+    }
 
     if(!store->insert(ident, rec, tx))
     {
@@ -339,14 +344,20 @@ Freeze::TransactionalEvictorI::dispatch(Request& request)
     {
     public:
 
+#ifndef NDEBUG
         CtxHolder(bool ownCtx, const TransactionalEvictorContextPtr& ctx, const SharedDbEnvPtr& dbEnv) :
             _ownCtx(ownCtx),
             _ctx(ctx),
             _dbEnv(dbEnv)
+#else
+        CtxHolder(bool ownCtx, const TransactionalEvictorContextPtr& ctx) :
+            _ownCtx(ownCtx),
+            _ctx(ctx)
+#endif
         {
         }
         
-        ~CtxHolder()
+        ~CtxHolder() ICE_NOEXCEPT_FALSE
         {
             if(_ownCtx)
             {
@@ -366,7 +377,9 @@ Freeze::TransactionalEvictorI::dispatch(Request& request)
     private:
         const bool _ownCtx;
         const TransactionalEvictorContextPtr _ctx;
+#ifndef NDEBUG
         const SharedDbEnvPtr& _dbEnv;
+#endif
     };
     
 
@@ -422,7 +435,12 @@ Freeze::TransactionalEvictorI::dispatch(Request& request)
     assert(sample != 0);
 
     int operationAttributes = sample->ice_operationAttributes(current.operation);
-                
+   
+    if(operationAttributes < 0)
+    {
+        throw OperationNotExistException(__FILE__, __LINE__);
+    }
+             
     bool readOnly = (operationAttributes & 0x1) == 0;
                 
     int txMode = (operationAttributes & 0x6) >> 1;
@@ -467,6 +485,7 @@ Freeze::TransactionalEvictorI::dispatch(Request& request)
         default:
         {
             assert(0);
+            throw OperationNotExistException(__FILE__, __LINE__);
         }
     }
     
@@ -506,7 +525,11 @@ Freeze::TransactionalEvictorI::dispatch(Request& request)
                     ctx = _dbEnv->createCurrent();
                 }
                 
+#ifndef NDEBUG
                 CtxHolder ctxHolder(ownCtx, ctx, _dbEnv);
+#else
+                CtxHolder ctxHolder(ownCtx, ctx);
+#endif
                 tx = ctx->transaction();
 
                 try
@@ -829,11 +852,8 @@ Freeze::TransactionalEvictorElement::~TransactionalEvictorElement()
 {
 }
 
-// COMPILERFIX: Required to build with C++ Builder 2007
-typedef ObjectStore<TransactionalEvictorElement>::Position TransactionalEvictorElementPosition;
-
 void 
-Freeze::TransactionalEvictorElement::init(TransactionalEvictorElementPosition p)
+Freeze::TransactionalEvictorElement::init(ObjectStore<TransactionalEvictorElement>::Position p)
 {
     _stale = false;
     _cachePosition = p;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,9 +17,9 @@ namespace IceInternal
         internal DefaultsAndOverrides(Ice.Properties properties)
         {
             string val;
-            
+
             defaultProtocol = properties.getPropertyWithDefault("Ice.Default.Protocol", "tcp");
-            
+
             val = properties.getProperty("Ice.Default.Host");
             if(val.Length != 0)
             {
@@ -29,7 +29,7 @@ namespace IceInternal
             {
                 defaultHost = null;
             }
-            
+
             val = properties.getProperty("Ice.Override.Timeout");
             if(val.Length > 0)
             {
@@ -41,7 +41,7 @@ namespace IceInternal
                 overrideTimeout = false;
                 overrideTimeoutValue = -1;
             }
-            
+
             val = properties.getProperty("Ice.Override.ConnectTimeout");
             if(val.Length > 0)
             {
@@ -123,15 +123,25 @@ namespace IceInternal
             defaultLocatorCacheTimeout = properties.getPropertyAsIntWithDefault("Ice.Default.LocatorCacheTimeout", -1);
 
             defaultPreferSecure = properties.getPropertyAsIntWithDefault("Ice.Default.PreferSecure", 0) > 0;
+
+            val = properties.getPropertyWithDefault("Ice.Default.EncodingVersion",
+                                                    Ice.Util.encodingVersionToString(Ice.Util.currentEncoding));
+            defaultEncoding = Ice.Util.stringToEncodingVersion(val);
+            Protocol.checkSupportedEncoding(defaultEncoding);
+
+            bool slicedFormat = properties.getPropertyAsIntWithDefault("Ice.Default.SlicedFormat", 0) > 0;
+            defaultFormat = slicedFormat ? Ice.FormatType.SlicedFormat : Ice.FormatType.CompactFormat;
         }
-        
+
         public string defaultHost;
         public string defaultProtocol;
         public bool defaultCollocationOptimization;
         public Ice.EndpointSelectionType defaultEndpointSelection;
         public int defaultLocatorCacheTimeout;
         public bool defaultPreferSecure;
-        
+        public Ice.EncodingVersion defaultEncoding;
+        public Ice.FormatType defaultFormat;
+
         public bool overrideTimeout;
         public int overrideTimeoutValue;
         public bool overrideConnectTimeout;

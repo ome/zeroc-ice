@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -9,8 +9,8 @@
 
 top_srcdir	= ../../..
 
-WQ		= workqueue
-MATCH		= match
+WQ		= workqueue$(EXE_EXT)
+MATCH		= match$(EXE_EXT)
 
 TARGETS		= $(WQ) $(MATCH)
 

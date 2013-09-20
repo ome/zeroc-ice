@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,29 +10,52 @@
 #include <Ice/Application.h>
 #include <TestCommon.h>
 #include <Test.h>
+#include <string>
+#include <iostream>
+
+DEFINE_TEST("client")
 
 using namespace std;
 using namespace Ice;
 using namespace Test;
 
-class TestClient : public Application
+int
+run(int, char**, const Ice::CommunicatorPtr& communicator)
 {
-public:
-
-    virtual int run(int, char*[]);
-};
+    TestIntfPrx allTests(const CommunicatorPtr&);
+    TestIntfPrx obj = allTests(communicator);
+    return EXIT_SUCCESS;
+}
 
 int
 main(int argc, char* argv[])
 {
-    TestClient app;
-    return app.main(argc, argv);
-}
+    int status;
+    Ice::CommunicatorPtr communicator;
 
-int
-TestClient::run(int argc, char* argv[])
-{
-    TestIntfPrx allTests(const CommunicatorPtr&);
-    TestIntfPrx obj = allTests(communicator());
-    return EXIT_SUCCESS;
+    try
+    {
+        communicator = Ice::initialize(argc, argv);
+        status = run(argc, argv, communicator);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        cerr << ex << endl;
+        status = EXIT_FAILURE;
+    }
+
+    if(communicator)
+    {
+        try
+        {
+            communicator->destroy();
+        }
+        catch(const Ice::Exception& ex)
+        {
+            cerr << ex << endl;
+            status = EXIT_FAILURE;
+        }
+    }
+
+    return status;
 }

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -31,6 +31,6 @@ $(CLIENT): $(OBJS) $(COBJS)
 
 $(SERVER): $(OBJS) $(SOBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(SOBJS) $(LIBS) -lGlacier2 $(OPENSSL_RPATH_LINK) -lIceSSL
+	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(SOBJS) $(ICESSL_LIBS) -lGlacier2 $(OPENSSL_RPATH_LINK)
 
 include .depend

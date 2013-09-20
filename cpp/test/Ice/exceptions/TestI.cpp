@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,8 +9,10 @@
 
 #include <Ice/Ice.h>
 #include <TestI.h>
+#include <TestCommon.h>
 
 using namespace Test;
+using namespace std;
 
 ThrowerI::ThrowerI()
 {
@@ -151,6 +153,12 @@ ThrowerI::throwAssertException(const Ice::Current&)
 }
 
 void
+ThrowerI::throwLocalExceptionIdempotent(const Ice::Current&)
+{
+    throw Ice::TimeoutException(__FILE__, __LINE__);
+}
+
+void
 ThrowerI::throwAfterResponse(const Ice::Current&)
 {
     //
@@ -164,5 +172,5 @@ ThrowerI::throwAfterException(const Ice::Current&)
     //
     // Only relevant for AMD.
     //
-    throw A();
+    throw A(12345);
 }

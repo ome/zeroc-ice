@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -15,7 +15,7 @@ for toplevel in [".", "..", "../..", "../../..", "../../../..", "../../../../.."
     if os.path.exists(os.path.join(toplevel, "scripts", "TestUtil.py")):
         break
 else:
-    raise "can't find toplevel directory!"
+    raise RuntimeError("can't find toplevel directory!")
 
 sys.path.append(toplevel)
 from scripts import *

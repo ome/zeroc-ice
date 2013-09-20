@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,6 +25,7 @@ public class Server
         // We don't want connection warnings because of the timeout test.
         //
         communicator.getProperties().setProperty("Ice.Warn.Connections", "0");
+        communicator.getProperties().setProperty("Ice.Warn.Dispatch", "0");
 
         communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010:udp");
         Ice.ObjectAdapter adapter = communicator.createObjectAdapter("TestAdapter");
@@ -39,10 +40,6 @@ public class Server
     {
         int status = 0;
         Ice.Communicator communicator = null;
-
-#if !COMPACT
-        Debug.Listeners.Add(new ConsoleTraceListener());
-#endif
 
         try
         {

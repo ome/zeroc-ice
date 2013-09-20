@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,13 +16,77 @@
 #include <Ice/LocalException.h>
 #include <Ice/LoggerUtil.h>
 #include <Ice/Communicator.h>
+
 #ifndef _WIN32
 #include <Ice/IconvStringConverter.h>
+#endif
+
+#ifdef __MINGW32__
+#  include <limits.h>
 #endif
 
 using namespace IceUtil;
 using namespace IceUtilInternal;
 using namespace std;
+
+namespace
+{
+
+class UTF8BufferI : public Ice::UTF8Buffer
+{
+public:
+
+   UTF8BufferI() :
+        _buffer(0),
+        _offset(0)
+    {
+    }
+    
+   ~UTF8BufferI()
+    {
+        free(_buffer);
+    }
+
+    Ice::Byte* getMoreBytes(size_t howMany, Byte* firstUnused)
+    {
+        if(_buffer == 0)
+        {
+            _buffer = (Byte*)malloc(howMany);
+        }
+        else
+        {
+            assert(firstUnused != 0);
+            _offset = firstUnused - _buffer;
+            _buffer = (Byte*)realloc(_buffer, _offset + howMany);
+        }
+        
+        if(!_buffer)
+        {
+            throw std::bad_alloc();
+        }
+        return _buffer + _offset;
+    }
+    
+    Ice::Byte* getBuffer()
+    {
+        return _buffer;
+    }
+    
+    void reset()
+    {
+        free(_buffer);
+        _buffer = 0;
+        _offset = 0;
+    }
+
+private:
+
+    Ice::Byte* _buffer;
+    size_t _offset;
+};
+}
+
+
 
 namespace Ice
 {
@@ -353,7 +417,7 @@ Ice::nativeToUTF8(const Ice::StringConverterPtr& converter, const string& str)
     {
         return str;
     }
-    IceInternal::UTF8BufferI buffer;
+    UTF8BufferI buffer;
     Ice::Byte* last = converter->toUTF8(str.data(), str.data() + str.size(), buffer);
     return string(reinterpret_cast<const char*>(buffer.getBuffer()), last - buffer.getBuffer());
 }

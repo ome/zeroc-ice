@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -9,10 +9,9 @@
 
 top_srcdir	= ../..
 
-LIBFILENAME     = $(call mklibfilename,IceUtil,$(VERSION))
-SONAME          = $(call mksoname,IceUtil,$(SOVERSION))  
+LIBFILENAME	= $(call mklibfilename,IceUtil,$(VERSION))
+SONAME		= $(call mksoname,IceUtil,$(SOVERSION))  
 LIBNAME		= $(call mklibname,IceUtil)
-
 TARGETS		= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
 
 OBJS		= ArgVector.o \
@@ -21,14 +20,11 @@ OBJS		= ArgVector.o \
 		  CountDownLatch.o \
 		  CtrlCHandler.o \
 		  Exception.o \
-		  FileUtil.o \
 		  InputUtil.o \
 		  Options.o \
 		  OutputUtil.o \
 		  Random.o \
-		  RWRecMutex.o \
 		  RecMutex.o \
-		  StaticMutex.o \
 		  Shared.o \
 		  StringUtil.o \
 		  Thread.o \
@@ -37,15 +33,15 @@ OBJS		= ArgVector.o \
 		  Timer.o \
 		  UUID.o \
 		  Unicode.o \
-		  MutexProtocol.o
+		  MutexProtocol.o \
+		  FileUtil.o
 
 SRCS		= $(OBJS:.o=.cpp)
 
 include $(top_srcdir)/config/Make.rules
 
-CPPFLAGS        := $(CPPFLAGS) -DICE_UTIL_API_EXPORTS -I..
-
-LINKWITH        := $(STLPORT_LIBS) $(ICEUTIL_OS_LIBS)
+CPPFLAGS        := $(CPPFLAGS) $(ICEUTIL_FLAGS) -DICE_UTIL_API_EXPORTS -I..
+LINKWITH        := $(ICEUTIL_OS_LIBS)
 
 ifeq ($(STATICLIBS),yes)
 $(libdir)/$(LIBNAME): $(OBJS)
@@ -69,8 +65,3 @@ install:: all
 	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))
 
 include .depend
-
-parser: parser.o
-	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ parser.o $(BASELIBS)
-

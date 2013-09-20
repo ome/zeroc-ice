@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -125,6 +125,11 @@ public:
         {
             Ice::Identity id = _communicator->stringToIdentity("does not exist");
             test(ex.id == id);
+        }
+        catch(const Ice::Exception& ex)
+        {
+            cerr << ex << endl;
+            test(false);
         }
         catch(...)
         {
@@ -836,6 +841,9 @@ public:
         catch(const Ice::UnknownLocalException&)
         {
         }
+        catch(const Ice::OperationNotExistException&)
+        {
+        }
         catch(...)
         {
             test(false);
@@ -865,6 +873,16 @@ private:
 };
 
 typedef IceUtil::Handle<Callback> CallbackPtr;
+
+bool
+endsWith(const string& s, const string& findme)
+{
+    if(s.length() > findme.length())
+    {
+        return 0 == s.compare(s.length() - findme.length(), findme.length(), findme);
+    }
+    return false;
+}
 
 ThrowerPrx
 allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
@@ -913,6 +931,42 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
 
         test(uleMsg == ule.what());
         test(uleMsg == ule.what());
+
+        {
+            E ex("E");
+            ostringstream os;
+            ex.ice_print(os);
+            test(os.str() == "Test::E");
+            test(ex.data == "E");
+        }
+    
+        //
+        // Test custom ice_print
+        // 
+        {
+            F ex("F");
+            ostringstream os;
+            ex.ice_print(os);
+            test(os.str() == "Test::F data:'F'");
+            test(ex.data == "F");
+        }
+
+        {
+            G ex(__FILE__, __LINE__, "G");
+            ostringstream os;
+            ex.ice_print(os);
+            test(endsWith(os.str(), "Test::G"));
+            test(ex.data == "G");
+        }
+
+        {
+            H ex(__FILE__, __LINE__, "H");
+            ostringstream os;
+            ex.ice_print(os);
+            test(endsWith(os.str(), "Test::H data:'H'"));
+            test(ex.data == "H");
+        }
+
     }
     cout << "ok" << endl;
 
@@ -1110,10 +1164,6 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
         test(false);
     }
 
-#if (!defined(_MSC_VER) || _MSC_VER >= 1300)
-//
-// With VC6 SP5, there is no way to call ::A::__write from ::Mod::A
-//
     try
     {
         thrower->throwModA(1, 2);
@@ -1134,7 +1184,6 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     {
         test(false);
     }
-#endif
 
     cout << "ok" << endl;
 
@@ -1169,10 +1218,6 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
         test(false);
     }
 
-#if (!defined(_MSC_VER) || _MSC_VER >= 1300)
-//
-// With VC6 SP5, there is no way to call ::A::__write from ::Mod::A
-//
     try
     {
         thrower->throwModA(1, 2);
@@ -1192,7 +1237,6 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     {
         test(false);
     }
-#endif
 
     cout << "ok" << endl;
 
@@ -1375,6 +1419,21 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     {
         test(false);
     }
+    try
+    {
+        thrower->throwLocalExceptionIdempotent();
+        test(false);
+    }
+    catch(const Ice::UnknownLocalException&)
+    {
+    }
+    catch(const Ice::OperationNotExistException&)
+    {
+    }
+    catch(...)
+    {
+        test(false);
+    }
 
     cout << "ok" << endl;
 
@@ -1419,7 +1478,7 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
     }
 
     cout << "ok" << endl;
-
+    
     if(!collocated)
     {
         cout << "catching exact types with AMI... " << flush;
@@ -1460,16 +1519,11 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
             cb->check();
         }
 
-#if (!defined(_MSC_VER) || _MSC_VER >= 1300)
-//
-// With VC6 SP5, there is no way to call ::A::__write from ::Mod::A
-//
         {
             AMI_Thrower_throwModAIPtr cb = new AMI_Thrower_throwModAI;
             thrower->throwModA_async(cb, 1, 2);
             cb->check();
         }
-#endif
 
         cout << "ok" << endl;
 
@@ -1614,10 +1668,6 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
             cb->check();
         }
 
-#if (!defined(_MSC_VER) || _MSC_VER >= 1300)
-//
-// With VC6 SP5, there is no way to call ::A::__write from ::Mod::A
-//
         {
             CallbackPtr cb = new Callback;
             Callback_Thrower_throwModAPtr callback = 
@@ -1625,7 +1675,6 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
             thrower->begin_throwModA(1, 2, callback);
             cb->check();
         }
-#endif
 
         cout << "ok" << endl;
 
@@ -1736,6 +1785,15 @@ allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
             Callback_Thrower_throwLocalExceptionPtr callback = 
                 newCallback_Thrower_throwLocalException(cb, &Callback::response, &Callback::exception_LocalException);
             thrower->begin_throwLocalException(callback);
+            cb->check();
+        }
+
+        {
+            CallbackPtr cb = new Callback;
+            Callback_Thrower_throwLocalExceptionIdempotentPtr callback = 
+                newCallback_Thrower_throwLocalExceptionIdempotent(cb, &Callback::response, 
+                                                                  &Callback::exception_LocalException);
+            thrower->begin_throwLocalExceptionIdempotent(callback);
             cb->check();
         }
 

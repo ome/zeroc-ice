@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,7 +22,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
     {
         Ice::ObjectPrx p1 = communicator->stringToProxy("test -t:default -h tcphost -p 10000 -t 1200 -z:"
                                                         "udp -h udphost -p 10001 --interface eth0 --ttl 5:"
-                                                        "opaque -t 100 -v ABCD");
+                                                        "opaque -e 1.8 -t 100 -v ABCD");
 
         Ice::EndpointSeq endps = p1->ice_getEndpoints();
 
@@ -52,6 +52,10 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
         Ice::OpaqueEndpointInfoPtr opaqueEndpoint = Ice::OpaqueEndpointInfoPtr::dynamicCast(endps[2]->getInfo());
         test(opaqueEndpoint);
+        Ice::EncodingVersion rev;
+        rev.major = 1;
+        rev.minor = 8;
+        test(opaqueEndpoint->rawEncoding == rev);
     }
     cout << "ok" << endl;
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,12 +9,15 @@
 
 #include <Ice/Ice.h>
 #include <ServerLocator.h>
+#include <TestCommon.h>
 #include <TestI.h>
+
+DEFINE_TEST("server")
 
 using namespace std;
 
 int
-run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator,
+run(int, char**, const Ice::CommunicatorPtr& communicator,
     const Ice::InitializationData& initData)
 {
     //
@@ -45,6 +48,7 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator,
     adapter->add(locator, communicator->stringToIdentity("locator"));
 
     adapter->activate();
+    TEST_READY
     communicator->waitForShutdown();
 
     return EXIT_SUCCESS;

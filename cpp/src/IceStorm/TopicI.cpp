@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -63,11 +63,7 @@ public:
                const Ice::Current& current)
     {
         // The publish call does a cached read.
-        EventDataPtr event = new EventData(
-            current.operation,
-            current.mode,
-            Ice::ByteSeq(),
-            current.ctx);
+        EventDataPtr event = new EventData(current.operation, current.mode, Ice::ByteSeq(), current.ctx);
 
         //
         // COMPILERBUG: gcc 4.0.1 doesn't like this.
@@ -108,7 +104,7 @@ public:
     }
 
     virtual void
-    forward(const EventDataSeq& v, const Ice::Current& current)
+    forward(const EventDataSeq& v, const Ice::Current& /*current*/)
     {
         // The publish call does a cached read.
         _impl->publish(true, v);
@@ -258,7 +254,7 @@ public:
         return _impl->getLinkProxy();
     }
 
-    virtual void reap(const Ice::IdentitySeq& ids, const Ice::Current& current)
+    virtual void reap(const Ice::IdentitySeq& ids, const Ice::Current& /*current*/)
     {
         NodeIPtr node = _instance->node();
         if(!node->updateMaster(__FILE__, __LINE__))
@@ -404,7 +400,7 @@ TopicImpl::TopicImpl(
     _instance(instance),
     _name(name),
     _id(id),
-    _databaseCache(instance->databaseCache()),
+    _connectionPool(instance->connectionPool()),
     _destroyed(false)
 {
     try
@@ -483,6 +479,11 @@ TopicImpl::TopicImpl(
                 out << " failed: " << ex;
             }
         }
+
+        if(_instance->observer())
+        {
+            _observer.attach(_instance->observer()->getTopicObserver(_instance->serviceName(), _name, 0));
+        }
     }
     catch(...)
     {
@@ -530,28 +531,6 @@ TopicImpl::getNonReplicatedPublisher() const
         return _instance->publishAdapter()->createDirectProxy(_publisherPrx->ice_getIdentity());
     }
 }
-
-//
-// COMPILERFIX: For some reason with VC6 find reports an error.
-//
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-namespace
-{
-vector<SubscriberPtr>::iterator
-find(vector<SubscriberPtr>::iterator start, vector<SubscriberPtr>::iterator end, const Ice::Identity& ident)
-{
-    while(start != end)
-    {
-        if(*start == ident)
-        {
-            return start;
-        }
-        ++start;
-    }
-    return end;
-}
-}
-#endif
 
 namespace
 {
@@ -666,17 +645,17 @@ TopicImpl::subscribe(const QoS& origQoS, const Ice::ObjectPrx& obj)
         {
             try
             {
-                DatabaseConnectionPtr connection = _databaseCache->getConnection();
+                DatabaseConnectionPtr connection = _connectionPool->newConnection();
                 TransactionHolder txn(connection);
 
                 SubscriberRecordKey key;
                 key.topic = _id;
                 key.id =  record.id;
 
-                SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+                SubscribersWrapperPtr subscribersWrapper = _connectionPool->getSubscribers(connection);
                 subscribersWrapper->erase(key);
 
-                LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+                LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
                 llu = lluWrapper->get();
                 llu.iteration++;
                 lluWrapper->put(llu);
@@ -691,7 +670,7 @@ TopicImpl::subscribe(const QoS& origQoS, const Ice::ObjectPrx& obj)
             catch(const DatabaseException& ex)
             {
                 halt(_instance->communicator(), ex);
-            }	
+            }   
         }
         Ice::IdentitySeq ids;
         ids.push_back(id);
@@ -703,18 +682,18 @@ TopicImpl::subscribe(const QoS& origQoS, const Ice::ObjectPrx& obj)
     {
         try
         {
-            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            DatabaseConnectionPtr connection = _connectionPool->newConnection();
             TransactionHolder txn(connection);
 
             SubscriberRecordKey key;
             key.topic = _id;
             key.id = subscriber->id();
 
-            SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+            SubscribersWrapperPtr subscribersWrapper = _connectionPool->getSubscribers(connection);
             subscribersWrapper->put(key, record);
 
             // Update the LLU.
-            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
             llu = lluWrapper->get();
             llu.iteration++;
             lluWrapper->put(llu);
@@ -729,7 +708,7 @@ TopicImpl::subscribe(const QoS& origQoS, const Ice::ObjectPrx& obj)
         catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
-        }	
+        }       
     }
 
     _subscribers.push_back(subscriber);
@@ -788,17 +767,17 @@ TopicImpl::subscribeAndGetPublisher(const QoS& qos, const Ice::ObjectPrx& obj)
     {
         try
         {
-            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            DatabaseConnectionPtr connection = _connectionPool->newConnection();
             TransactionHolder txn(connection);
 
             SubscriberRecordKey key;
             key.topic = _id;
             key.id = subscriber->id();
 
-            SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+            SubscribersWrapperPtr subscribersWrapper = _connectionPool->getSubscribers(connection);
             subscribersWrapper->put(key, record);
 
-            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
             llu = lluWrapper->get();
             llu.iteration++;
             lluWrapper->put(llu);
@@ -813,7 +792,7 @@ TopicImpl::subscribeAndGetPublisher(const QoS& qos, const Ice::ObjectPrx& obj)
         catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
-        }	
+        }       
     }
 
     _subscribers.push_back(subscriber);
@@ -912,17 +891,17 @@ TopicImpl::link(const TopicPrx& topic, Ice::Int cost)
     {
         try
         {
-            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            DatabaseConnectionPtr connection = _connectionPool->newConnection();
             TransactionHolder txn(connection);
 
             SubscriberRecordKey key;
             key.topic = _id;
             key.id = id;
 
-            SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+            SubscribersWrapperPtr subscribersWrapper = _connectionPool->getSubscribers(connection);
             subscribersWrapper->put(key, record);
 
-            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
             llu = lluWrapper->get();
             llu.iteration++;
             lluWrapper->put(llu);
@@ -937,7 +916,7 @@ TopicImpl::link(const TopicPrx& topic, Ice::Int cost)
         catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
-        }	
+        }       
     }
 
     _subscribers.push_back(subscriber);
@@ -1016,8 +995,10 @@ TopicImpl::shutdown()
     // Shutdown each subscriber. This waits for the event queues to drain.
     for(vector<SubscriberPtr>::const_iterator p = _subscribers.begin(); p != _subscribers.end(); ++p)
     {
-	(*p)->shutdown();
+        (*p)->shutdown();
     }
+
+    _observer.detach();
 }
 
 LinkInfoSeq
@@ -1062,6 +1043,8 @@ TopicImpl::destroy()
     // destroyInternal clears out the topic content.
     LogUpdate llu = {0,0};
     _instance->observers()->destroyTopic(destroyInternal(llu, true), _name);
+
+    _observer.detach();
 }
 
 TopicContent
@@ -1173,20 +1156,16 @@ TopicImpl::proxy() const
 namespace
 {
 
-class TopicInternal_reapI : public AMI_TopicInternal_reap
+class TopicInternalReapCB : public IceUtil::Shared
 {
 public:
 
-    TopicInternal_reapI(const InstancePtr& instance, Ice::Long generation) :
+    TopicInternalReapCB(const InstancePtr& instance, Ice::Long generation) :
         _instance(instance), _generation(generation)
     {
     }
 
-    virtual void ice_response()
-    {
-    }
-
-    virtual void ice_exception(const Ice::Exception& ex)
+    virtual void exception(const Ice::Exception& ex)
     {
         TraceLevelsPtr traceLevels = _instance->traceLevels();
         if(traceLevels->topic > 0)
@@ -1222,6 +1201,17 @@ TopicImpl::publish(bool forwarded, const EventDataSeq& events)
         vector<SubscriberPtr> copy;
         {
             IceUtil::Mutex::Lock sync(_subscribersMutex);
+            if(_observer)
+            {
+                if(forwarded)
+                {
+                    _observer->forwarded();
+                }
+                else
+                {
+                    _observer->published();
+                }
+            }
             copy = _subscribers;
         }
 
@@ -1262,7 +1252,8 @@ TopicImpl::publish(bool forwarded, const EventDataSeq& events)
     // call may raise an exception in the caller (that is directly
     // call ice_exception) which calls recover() on the node which
     // would result in a deadlock since the node is locked.
-    masterInternal->reap_async(new TopicInternal_reapI(_instance, generation), reap);
+    masterInternal->begin_reap(reap, newCallback_TopicInternal_reap(new TopicInternalReapCB(_instance, generation),
+                                                                    &TopicInternalReapCB::exception));
 }
 
 void
@@ -1311,18 +1302,18 @@ TopicImpl::observerAddSubscriber(const LogUpdate& llu, const SubscriberRecord& r
     {
         try
         {
-            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            DatabaseConnectionPtr connection = _connectionPool->newConnection();
             TransactionHolder txn(connection);
 
             SubscriberRecordKey key;
             key.topic = _id;
             key.id = subscriber->id();
 
-            SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+            SubscribersWrapperPtr subscribersWrapper = _connectionPool->getSubscribers(connection);
             subscribersWrapper->put(key, record);
 
             // Update the LLU.
-            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
             lluWrapper->put(llu);
 
             txn.commit();
@@ -1335,7 +1326,7 @@ TopicImpl::observerAddSubscriber(const LogUpdate& llu, const SubscriberRecord& r
         catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
-        }	
+        }       
     }
 
     _subscribers.push_back(subscriber);
@@ -1380,7 +1371,7 @@ TopicImpl::observerRemoveSubscriber(const LogUpdate& llu, const Ice::IdentitySeq
     {
         try
         {
-            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            DatabaseConnectionPtr connection = _connectionPool->newConnection();
             TransactionHolder txn(connection);
 
             for(Ice::IdentitySeq::const_iterator id = ids.begin(); id != ids.end(); ++id)
@@ -1389,11 +1380,11 @@ TopicImpl::observerRemoveSubscriber(const LogUpdate& llu, const Ice::IdentitySeq
                 key.topic = _id;
                 key.id = *id;
 
-                SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+                SubscribersWrapperPtr subscribersWrapper = _connectionPool->getSubscribers(connection);
                 subscribersWrapper->erase(key);
             }
 
-            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
             lluWrapper->put(llu);
 
             txn.commit();
@@ -1406,7 +1397,7 @@ TopicImpl::observerRemoveSubscriber(const LogUpdate& llu, const Ice::IdentitySeq
         catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
-        }	
+        }       
     }
 }
 
@@ -1437,6 +1428,26 @@ TopicImpl::getServant() const
     return _servant;
 }
 
+void
+TopicImpl::updateObserver()
+{
+    IceUtil::Mutex::Lock sync(_subscribersMutex);
+    if(_instance->observer())
+    {
+        _observer.attach(_instance->observer()->getTopicObserver(_instance->serviceName(), _name, _observer.get()));
+    }
+}
+
+void
+TopicImpl::updateSubscriberObservers()
+{
+    IceUtil::Mutex::Lock sync(_subscribersMutex);
+    for(vector<SubscriberPtr>::const_iterator p = _subscribers.begin(); p != _subscribers.end(); ++p)
+    {
+        (*p)->updateObserver();
+    }
+}
+
 LogUpdate
 TopicImpl::destroyInternal(const LogUpdate& origLLU, bool master)
 {
@@ -1456,15 +1467,15 @@ TopicImpl::destroyInternal(const LogUpdate& origLLU, bool master)
     {
         try
         {
-            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            DatabaseConnectionPtr connection = _connectionPool->newConnection();
             TransactionHolder txn(connection);
 
             // Erase all subscriber records and the topic record.
-            SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+            SubscribersWrapperPtr subscribersWrapper = _connectionPool->getSubscribers(connection);
             subscribersWrapper->eraseTopic(_id);
 
             // Update the LLU.
-            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
             if(master)
             {
                 llu = lluWrapper->get();
@@ -1486,7 +1497,7 @@ TopicImpl::destroyInternal(const LogUpdate& origLLU, bool master)
         catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
-        }	
+        }       
     }
 
     _instance->topicAdapter()->remove(_id);
@@ -1531,7 +1542,7 @@ TopicImpl::removeSubscribers(const Ice::IdentitySeq& ids)
     {
         try
         {
-            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            DatabaseConnectionPtr connection = _connectionPool->newConnection();
             TransactionHolder txn(connection);
 
             for(Ice::IdentitySeq::const_iterator id = ids.begin(); id != ids.end(); ++id)
@@ -1540,11 +1551,11 @@ TopicImpl::removeSubscribers(const Ice::IdentitySeq& ids)
                 key.topic = _id;
                 key.id = *id;
                 
-                SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+                SubscribersWrapperPtr subscribersWrapper = _connectionPool->getSubscribers(connection);
                 subscribersWrapper->erase(key);
             }
 
-            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
             llu = lluWrapper->get();
             llu.iteration++;
             lluWrapper->put(llu);
@@ -1559,7 +1570,7 @@ TopicImpl::removeSubscribers(const Ice::IdentitySeq& ids)
         catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
-        }	
+        }       
     }
 
     _instance->observers()->removeSubscriber(llu, _name, ids);

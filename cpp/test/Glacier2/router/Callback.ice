@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef CALLBACK_ICE
-#define CALLBACK_ICE
+#pragma once
 
 #include <Ice/BuiltinSequences.ice>
 
@@ -23,16 +22,16 @@ exception CallbackException
 
 interface CallbackReceiver
 {
-    ["ami"] void callback();
+    void callback();
 
-    ["ami"] void callbackEx()
+    void callbackEx()
         throws CallbackException;
 
-    ["amd", "ami"] int concurrentCallback(int number);
+    ["amd"] int concurrentCallback(int number);
 
-    ["ami"] void waitCallback();
+    void waitCallback();
 
-    ["ami"] void callbackWithPayload(Ice::ByteSeq payload);
+    void callbackWithPayload(Ice::ByteSeq payload);
 };
 
 interface Callback
@@ -42,7 +41,7 @@ interface Callback
     ["amd"] void initiateCallbackEx(CallbackReceiver* proxy)
         throws CallbackException;
 
-    ["amd", "ami"] int initiateConcurrentCallback(int number, CallbackReceiver* proxy);
+    ["amd"] int initiateConcurrentCallback(int number, CallbackReceiver* proxy);
 
     ["amd"] void initiateWaitCallback(CallbackReceiver* proxy);
 
@@ -53,4 +52,3 @@ interface Callback
 
 };
 
-#endif

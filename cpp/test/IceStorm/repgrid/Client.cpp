@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -58,7 +58,7 @@ private:
 typedef IceUtil::Handle<SingleI> SingleIPtr;
 
 int
-run(int argc, char* argv[], const CommunicatorPtr& communicator)
+run(int, char* argv[], const CommunicatorPtr& communicator)
 {
     ObjectPrx base = communicator->stringToProxy("Test.IceStorm/TopicManager");
     IceStorm::TopicManagerPrx manager = IceStorm::TopicManagerPrx::checkedCast(base);

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 #include <Ice/Communicator.h>
 #include <Ice/LoggerUtil.h>
+#include <Ice/LocalException.h>
 #include <IceGrid/DescriptorBuilder.h>
 #include <IceGrid/Util.h>
 
@@ -260,6 +261,7 @@ ApplicationDescriptorBuilder::addReplicaGroup(const XmlAttributesHelper& attrs)
 {
     ReplicaGroupDescriptor adapter;
     adapter.id = attrs("id");
+    adapter.proxyOptions = attrs("proxy-options", "");
     _descriptor.replicaGroups.push_back(adapter);
 }
 
@@ -316,6 +318,7 @@ ApplicationDescriptorBuilder::addObject(const XmlAttributesHelper& attrs)
     ObjectDescriptor object;
     object.type = attrs("type", "");
     object.id = _communicator->stringToIdentity(attrs("identity"));
+    object.proxyOptions = attrs("proxy-options", "");
     if(attrs.contains("property"))
     {
         throw "property attribute is not allowed in object descriptors from a replica group";   
@@ -676,6 +679,10 @@ CommunicatorDescriptorBuilder::addAdapter(const XmlAttributesHelper& attrs)
     _descriptor->adapters.push_back(desc);
 
     addProperty(_hiddenProperties, desc.name + ".Endpoints", attrs("endpoints", "default"));
+    if(attrs.contains("proxy-options"))
+    {
+        addProperty(_hiddenProperties, desc.name + ".ProxyOptions", attrs("proxy-options", ""));
+    }
 }
 
 void
@@ -690,6 +697,7 @@ CommunicatorDescriptorBuilder::addObject(const XmlAttributesHelper& attrs)
     ObjectDescriptor object;
     object.type = attrs("type", "");
     object.id = _communicator->stringToIdentity(attrs("identity"));
+    object.proxyOptions = attrs("proxy-options", "");
     if(attrs.contains("property"))
     {
         addProperty(_hiddenProperties, attrs("property"), attrs("identity"));
@@ -703,6 +711,7 @@ CommunicatorDescriptorBuilder::addAllocatable(const XmlAttributesHelper& attrs)
     ObjectDescriptor object;
     object.type = attrs("type", "");
     object.id = _communicator->stringToIdentity(attrs("identity"));
+    object.proxyOptions = attrs("proxy-options", "");
     if(attrs.contains("property"))
     {
         addProperty(_hiddenProperties, attrs("property"), attrs("identity"));
@@ -842,14 +851,14 @@ ServerDescriptorBuilder::init(const ServerDescriptorPtr& desc, const XmlAttribut
 }
 
 ServiceDescriptorBuilder*
-ServerDescriptorBuilder::createService(const XmlAttributesHelper& attrs)
+ServerDescriptorBuilder::createService(const XmlAttributesHelper& /*attrs*/)
 {
     throw "<service> element can only be a child of an <icebox> element";
     return 0;
 }
 
 ServiceInstanceDescriptorBuilder*
-ServerDescriptorBuilder::createServiceInstance(const XmlAttributesHelper& attrs)
+ServerDescriptorBuilder::createServiceInstance(const XmlAttributesHelper& /*attrs*/)
 {
     throw "<service-instance> element can only be a child of an <icebox> element";
     return 0;
@@ -868,13 +877,13 @@ ServerDescriptorBuilder::addEnv(const string& v)
 }
 
 void
-ServerDescriptorBuilder::addService(const ServiceDescriptorPtr& desc)
+ServerDescriptorBuilder::addService(const ServiceDescriptorPtr& /*desc*/)
 {
     assert(false);
 }
 
 void
-ServerDescriptorBuilder::addServiceInstance(const ServiceInstanceDescriptor& desc)
+ServerDescriptorBuilder::addServiceInstance(const ServiceInstanceDescriptor& /*desc*/)
 {
     assert(false);
 }
@@ -918,13 +927,13 @@ IceBoxDescriptorBuilder::createServiceInstance(const XmlAttributesHelper& attrs)
 }
 
 void
-IceBoxDescriptorBuilder::addAdapter(const XmlAttributesHelper& attrs)
+IceBoxDescriptorBuilder::addAdapter(const XmlAttributesHelper& /*attrs*/)
 {
     throw "<adapter> element can't be a child of an <icebox> element";
 }
 
 void
-IceBoxDescriptorBuilder::addDbEnv(const XmlAttributesHelper& attrs)
+IceBoxDescriptorBuilder::addDbEnv(const XmlAttributesHelper& /*attrs*/)
 {
     throw "<dbenv> element can't be a child of an <icebox> element";
 }

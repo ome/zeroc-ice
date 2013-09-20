@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -159,6 +159,8 @@ Freeze::EvictorIBase::EvictorIBase(const ObjectAdapterPtr& adapter,
     _txTrace(0),
     _pingObject(new PingObject)
 {
+    _encoding = _dbEnv->getEncoding();
+
     _trace = _communicator->getProperties()->getPropertyAsInt("Freeze.Trace.Evictor");
     _txTrace = _communicator->getProperties()->getPropertyAsInt("Freeze.Trace.Transaction");
     _deadlockWarning = (_communicator->getProperties()->getPropertyAsInt("Freeze.Warn.Deadlocks") != 0);
@@ -356,24 +358,5 @@ Freeze::EvictorIBase::allDbs() const
     }
     
     return result;
-}
-
-
-//
-// Print for the various exception types.
-//
-
-void
-Freeze::EvictorDeactivatedException::ice_print(ostream& out) const
-{
-    Exception::ice_print(out);
-    out << ":\nevictor deactivated";
-}
-
-void
-Freeze::NoSuchElementException::ice_print(ostream& out) const
-{
-    Exception::ice_print(out);
-    out << ":\nno such element";
 }
 

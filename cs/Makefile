@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -13,12 +13,18 @@ include $(top_srcdir)/config/Make.rules.cs
 
 SUBDIRS		= src test demo
 
+INSTALL_SUBDIRS	= $(install_bindir) $(install_assembliesdir)
+
 install:: install-common
-	@if test ! -d $(install_bindir) ; \
-	then \
-	    echo "Creating $(install_bindir)..." ; \
-	    $(call mkdir,$(install_bindir)) ; \
-	fi
+	@for subdir in $(INSTALL_SUBDIRS); \
+	do \
+	    if test ! -d $$subdir ; \
+	    then \
+		echo "Creating $$subdir..." ; \
+		mkdir -p $$subdir ; \
+		chmod a+rx $$subdir ; \
+	    fi ; \
+	done
 
 ifeq ($(GACINSTALL),yes)
 install:: install-common

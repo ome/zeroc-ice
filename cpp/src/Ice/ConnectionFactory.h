@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,7 @@
 
 #include <IceUtil/Mutex.h>
 #include <IceUtil/Monitor.h>
+#include <Ice/CommunicatorF.h>
 #include <Ice/ConnectionFactoryF.h>
 #include <Ice/ConnectionI.h>
 #include <Ice/InstanceF.h>
@@ -24,6 +25,8 @@
 #include <Ice/RouterInfoF.h>
 #include <Ice/EventHandler.h>
 #include <Ice/EndpointI.h>
+#include <Ice/InstrumentationF.h>
+
 #include <list>
 #include <set>
 
@@ -53,6 +56,8 @@ public:
 
     void destroy();
 
+    void updateConnectionObservers();
+
     void waitUntilFinished();
 
     Ice::ConnectionIPtr create(const std::vector<EndpointIPtr>&, bool, Ice::EndpointSelectionType, bool&);
@@ -64,7 +69,7 @@ public:
 
 private:
 
-    OutgoingConnectionFactory(const InstancePtr&);
+    OutgoingConnectionFactory(const Ice::CommunicatorPtr&, const InstancePtr&);
     virtual ~OutgoingConnectionFactory();
     friend class Instance;
 
@@ -115,6 +120,7 @@ private:
         const bool _hasMore;
         const CreateConnectionCallbackPtr _callback;
         const Ice::EndpointSelectionType _selType;
+        Ice::Instrumentation::ObserverPtr _observer;
         std::vector<EndpointIPtr>::const_iterator _endpointsIter;
         std::vector<ConnectorInfo> _connectors;
         std::vector<ConnectorInfo>::const_iterator _iter;
@@ -140,6 +146,7 @@ private:
     void handleException(const Ice::LocalException&, bool);
     void handleConnectionException(const Ice::LocalException&, bool);
 
+    Ice::CommunicatorPtr _communicator;
     const InstancePtr _instance;
     const ConnectionReaperPtr _reaper;
     bool _destroyed;
@@ -162,6 +169,8 @@ public:
     void hold();
     void destroy();
 
+    void updateConnectionObservers();
+
     void waitUntilHolding() const;
     void waitUntilFinished();
 
@@ -173,10 +182,11 @@ public:
     // Operations from EventHandler
     //
 
-#ifdef ICE_USE_IOCP
+#if defined(ICE_USE_IOCP) || defined(ICE_OS_WINRT)
     virtual bool startAsync(SocketOperation);
     virtual bool finishAsync(SocketOperation);
 #endif
+
     virtual void message(ThreadPoolCurrent&);
     virtual void finished(ThreadPoolCurrent&);
     virtual std::string toString() const;

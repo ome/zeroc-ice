@@ -1,7 +1,7 @@
 <?php
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -87,11 +87,22 @@ abstract class Ice_ObjectImpl implements Ice_Object
     }
 }
 
-$Ice__t_Object = IcePHP_defineClass('::Ice::Object', "Ice_Object", true, null, null, null);
+$Ice__t_Object = IcePHP_defineClass('::Ice::Object', "Ice_Object", -1, true, false, null, null, null);
 $Ice__t_ObjectSeq = IcePHP_defineSequence('::Ice::ObjectSeq', $Ice__t_Object);
-$Ice__t_LocalObject = IcePHP_defineClass('::Ice::LocalObject', "Ice_LocalObject", true, null, null, null);
+$Ice__t_LocalObject = IcePHP_defineClass('::Ice::LocalObject', "Ice_LocalObject", -1, true, false, null, null, null);
 $Ice__t_ObjectPrx = IcePHP_defineProxy($Ice__t_Object);
 $Ice__t_ObjectProxySeq = IcePHP_defineSequence('::Ice::ObjectProxySeq', $Ice__t_ObjectPrx);
+
+class Ice_UnknownSlicedObject extends Ice_ObjectImpl
+{
+    public function __construct()
+    {
+    }
+
+    public $unknownTypeId;
+}
+
+$Ice__t_UnknownSlicedObject = IcePHP_defineClass('::Ice::UnknownSlicedObject', 'Ice_UnknownSlicedObject', -1, false, true, $Ice__t_Object, null, null);
 
 interface Ice_ObjectFactory
 {
@@ -111,6 +122,25 @@ class Ice_InitializationData
     public $logger;
 }
 
+class Ice_SlicedData
+{
+    public $slices;
+}
+
+class Ice_SliceInfo
+{
+    public $typeId;
+    public $bytes;
+    public $objects;
+}
+
+class Ice_FormatType
+{
+    const DefaultFormat = 0;
+    const CompactFormat = 1;
+    const SlicedFormat = 2;
+}
+
 $Ice_sliceChecksums = array();
 
 //
@@ -124,11 +154,18 @@ require_once 'Ice/Locator.php';
 require_once 'Ice/ObjectFactory.php';
 require_once 'Ice/Process.php';
 require_once 'Ice/Router.php';
+require_once 'Ice/Version.php';
+require_once 'Ice/Instrumentation.php';
+require_once 'Ice/Metrics.php';
 
-IcePHP_defineOperation($Ice__t_Object, 'ice_isA', 2, 1, array($IcePHP__t_string), null, $IcePHP__t_bool, null);
-IcePHP_defineOperation($Ice__t_Object, 'ice_ping', 2, 1, null, null, null, null);
-IcePHP_defineOperation($Ice__t_Object, 'ice_id', 2, 1, null, null, $IcePHP__t_string, null);
-IcePHP_defineOperation($Ice__t_Object, 'ice_ids', 2, 1, null, null, $Ice__t_StringSeq, null);
+$Ice_Protocol_1_0 = new Ice_ProtocolVersion(1, 0);
+$Ice_Encoding_1_0 = new Ice_EncodingVersion(1, 0);
+$Ice_Encoding_1_1 = new Ice_EncodingVersion(1, 1);
+
+IcePHP_defineOperation($Ice__t_Object, 'ice_isA', 2, 1, 0, array(array($IcePHP__t_string, false, 0)), null, array($IcePHP__t_bool, false, 0), null);
+IcePHP_defineOperation($Ice__t_Object, 'ice_ping', 2, 1, 0, null, null, null, null);
+IcePHP_defineOperation($Ice__t_Object, 'ice_id', 2, 1, 0, null, null, array($IcePHP__t_string, false, 0), null);
+IcePHP_defineOperation($Ice__t_Object, 'ice_ids', 2, 1, 0, null, null, array($Ice__t_StringSeq, false, 0), null);
 
 //
 // Proxy comparison functions.

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,26 +20,6 @@ using namespace IcePatch2;
 
 namespace IcePatch2
 {
-
-class AdminI : public Admin
-{
-public:
-    
-    AdminI(const CommunicatorPtr& communicator) :
-        _communicator(communicator)
-    {
-    }
-
-    virtual void
-    shutdown(const Current&)
-    {
-        _communicator->shutdown();
-    }
-
-private:
-
-    const CommunicatorPtr _communicator;
-};
 
 class PatcherService : public Service
 {
@@ -153,12 +133,6 @@ IcePatch2::PatcherService::start(int argc, char* argv[], int& status)
     }
     ObjectAdapterPtr adapter = communicator()->createObjectAdapter("IcePatch2");
 
-    ObjectAdapterPtr adminAdapter;
-    if(!properties->getProperty("IcePatch2.Admin.Endpoints").empty())
-    {
-        adminAdapter = communicator()->createObjectAdapter("IcePatch2.Admin");
-    }
-
     const string instanceNameProperty = "IcePatch2.InstanceName";
     string instanceName = properties->getPropertyWithDefault(instanceNameProperty, "IcePatch2");
 
@@ -167,19 +141,7 @@ IcePatch2::PatcherService::start(int argc, char* argv[], int& status)
     id.name = "server";
     adapter->add(new FileServerI(dataDir, infoSeq), id);
 
-    if(adminAdapter)
-    {
-        Identity adminId;
-        adminId.category = instanceName;
-        adminId.name = "admin";
-        adminAdapter->add(new AdminI(communicator()), adminId);
-    }
-
     adapter->activate();
-    if(adminAdapter)
-    {
-        adminAdapter->activate();
-    }
 
     return true;
 }
@@ -213,18 +175,8 @@ IcePatch2::PatcherService::usage(const string& appName)
 
 #ifdef _WIN32
 
-//COMPILERFIX: Borland C++ 2010 doesn't support wmain for console applications.
-#ifdef __BCCPLUSPLUS__
-
-int
-main(int argc, char* argv[])
-
-#else
-
 int
 wmain(int argc, wchar_t* argv[])
-
-#endif
 {
     IcePatch2::PatcherService svc;
     int status = EXIT_FAILURE;

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,10 +13,10 @@ namespace Ice
 {
     using System.Diagnostics;
     using System.Globalization;
-#if COMPACT
+#if !SILVERLIGHT && !UNITY
     using System.IO;
 #endif
-	
+
     public abstract class LoggerI : Logger
     {
         public LoggerI(string prefix)
@@ -122,53 +122,39 @@ namespace Ice
         }
     }
 
-#if COMPACT
-    public sealed class TraceLoggerI : LoggerI
+#if !SILVERLIGHT && !UNITY
+    public sealed class FileLoggerI : LoggerI
     {
-        public TraceLoggerI(string prefix, string file, bool console)
-            : base(prefix)
+        public FileLoggerI(string prefix, string file) :
+            base(prefix)
         {
-            _console = console;
-
-            if(file.Length != 0)
-            {
-                _file = file;
-                FileStream fs = new FileStream(file, FileMode.Append, FileAccess.Write, FileShare.None);
-                _writer = new StreamWriter(fs);
-            }
-            else
-            {
-                _writer = System.Console.Error;
-            }
+            _file = file;
+            _writer = new StreamWriter(new FileStream(file, FileMode.Append, FileAccess.Write, FileShare.None));
         }
 
         public override Logger cloneWithPrefix(string prefix)
         {
-            return new TraceLoggerI(prefix, _file, _console);
+            return new FileLoggerI(prefix, _file);
         }
 
         protected override void write(string message)
         {
             _writer.WriteLine(message);
+            _writer.Flush();
         }
 
-        private string _file = "";
-        private bool _console = false;
+        private string _file;
         private TextWriter _writer;
     }
-#else
+
+
+#  if !COMPACT
     public sealed class TraceLoggerI : LoggerI
     {
-        public TraceLoggerI(string prefix, string file, bool console)
+        public TraceLoggerI(string prefix, bool console)
             : base(prefix)
         {
             _console = console;
-
-            if(file.Length != 0)
-            {
-                _file = file;
-                Trace.Listeners.Add(new TextWriterTraceListener(file));
-            }
             if(console && !Trace.Listeners.Contains(_consoleListener))
             {
                 Trace.Listeners.Add(_consoleListener);
@@ -177,7 +163,7 @@ namespace Ice
 
         public override Logger cloneWithPrefix(string prefix)
         {
-            return new TraceLoggerI(prefix, _file, _console);
+            return new TraceLoggerI(prefix, _console);
         }
 
         protected override void write(string message)
@@ -186,9 +172,9 @@ namespace Ice
             Trace.Flush();
         }
 
-        private string _file = "";
-        private bool _console = false;
+        private bool _console;
         internal static ConsoleTraceListener _consoleListener = new ConsoleTraceListener(true);
     }
+#  endif
 #endif
 }

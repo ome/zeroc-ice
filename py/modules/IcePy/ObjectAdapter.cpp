@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,6 +16,7 @@
 #include <Endpoint.h>
 #include <Operation.h>
 #include <Proxy.h>
+#include <Thread.h>
 #include <Types.h>
 #include <Util.h>
 #include <Ice/Communicator.h>
@@ -269,7 +270,7 @@ IcePy::ServantLocatorWrapper::Cookie::~Cookie()
 extern "C"
 #endif
 static ObjectAdapterObject*
-adapterNew(PyObject* /*arg*/)
+adapterNew(PyTypeObject* /*type*/, PyObject* /*args*/, PyObject* /*kwds*/)
 {
     PyErr_Format(PyExc_RuntimeError, STRCAST("Use communicator.createObjectAdapter to create an adapter"));
     return 0;
@@ -294,7 +295,7 @@ adapterDealloc(ObjectAdapterObject* self)
     delete self->deactivateThread;
     delete self->holdMonitor;
     delete self->holdThread;
-    PyObject_Del(self);
+    Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 #ifdef WIN32
@@ -1661,8 +1662,7 @@ PyTypeObject ObjectAdapterType =
 {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
-    PyObject_HEAD_INIT(0)
-    0,                               /* ob_size */
+    PyVarObject_HEAD_INIT(0, 0)
     STRCAST("IcePy.ObjectAdapter"),  /* tp_name */
     sizeof(ObjectAdapterObject),     /* tp_basicsize */
     0,                               /* tp_itemsize */
@@ -1671,7 +1671,7 @@ PyTypeObject ObjectAdapterType =
     0,                               /* tp_print */
     0,                               /* tp_getattr */
     0,                               /* tp_setattr */
-    0,                               /* tp_compare */
+    0,                               /* tp_reserved */
     0,                               /* tp_repr */
     0,                               /* tp_as_number */
     0,                               /* tp_as_sequence */
@@ -1728,7 +1728,8 @@ IcePy::initObjectAdapter(PyObject* module)
 PyObject*
 IcePy::createObjectAdapter(const Ice::ObjectAdapterPtr& adapter)
 {
-    ObjectAdapterObject* obj = PyObject_New(ObjectAdapterObject, &ObjectAdapterType);
+    ObjectAdapterObject* obj =
+        reinterpret_cast<ObjectAdapterObject*>(ObjectAdapterType.tp_alloc(&ObjectAdapterType, 0));
     if(obj)
     {
         obj->adapter = new Ice::ObjectAdapterPtr(adapter);

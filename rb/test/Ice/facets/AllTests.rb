@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -48,6 +48,7 @@ def allTests(communicator)
     d = Test::DPrx::checkedCast(db)
     test(d)
     test(d == db)
+    test(Test::DPrx::checkedCast(d, "bogus") == nil)
     puts "ok"
 
     print "testing non-facets A, B, C, and D... "

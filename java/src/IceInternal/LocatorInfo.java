@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,7 +26,15 @@ public final class LocatorInfo
             if(proxy != null)
             {
                 Reference r = ((Ice.ObjectPrxHelperBase)proxy).__reference();
-                if(!r.isIndirect())
+                if(_ref.isWellKnown() && !Protocol.isSupported(_ref.getEncoding(), r.getEncoding()))
+                {
+                    //
+                    // If a well-known proxy and the returned proxy
+                    // encoding isn't supported, we're done: there's
+                    // no compatible endpoint we can use.
+                    //
+                }
+                else if(!r.isIndirect())
                 {
                     endpoints = r.getEndpoints();
                 }
@@ -239,28 +247,27 @@ public final class LocatorInfo
             {
                 if(async)
                 {
-                    _locatorInfo.getLocator().findObjectById_async(
-                        new Ice.AMI_Locator_findObjectById()
+                    _locatorInfo.getLocator().begin_findObjectById(_ref.getIdentity(),
+                        new Ice.Callback_Locator_findObjectById()
                         {
                             public void
-                            ice_response(Ice.ObjectPrx proxy)
+                            response(Ice.ObjectPrx proxy)
                             {
                                 ObjectRequest.this.response(proxy);
                             }
                             
                             public void
-                            ice_exception(Ice.UserException ex)
+                            exception(Ice.UserException ex)
                             {
                                 ObjectRequest.this.exception(ex);
                             }
                             
                             public void
-                            ice_exception(Ice.LocalException ex)
+                            exception(Ice.LocalException ex)
                             {
                                 ObjectRequest.this.exception(ex);
                             }
-                        },
-                        _ref.getIdentity());
+                        });
                 }
                 else
                 {
@@ -289,28 +296,27 @@ public final class LocatorInfo
             {
                 if(async)
                 {
-                    _locatorInfo.getLocator().findAdapterById_async(
-                        new Ice.AMI_Locator_findAdapterById()
+                    _locatorInfo.getLocator().begin_findAdapterById(_ref.getAdapterId(),
+                        new Ice.Callback_Locator_findAdapterById()
                         {
                             public void
-                            ice_response(Ice.ObjectPrx proxy)
+                            response(Ice.ObjectPrx proxy)
                             {
                                 AdapterRequest.this.response(proxy);
                             }
                             
                             public void
-                            ice_exception(Ice.UserException ex)
+                            exception(Ice.UserException ex)
                             {
                                 AdapterRequest.this.exception(ex);
                             }
                             
                             public void
-                            ice_exception(Ice.LocalException ex)
+                            exception(Ice.LocalException ex)
                             {
                                 AdapterRequest.this.exception(ex);
                             }
-                        },
-                        _ref.getAdapterId());
+                        });
                 }
                 else
                 {

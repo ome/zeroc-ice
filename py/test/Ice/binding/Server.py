@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -15,7 +15,6 @@ Ice.loadSlice('Test.ice')
 import Test, TestI
 
 def run(args, communicator):
-    communicator.getProperties().setProperty("Ice.Warn.Connections", "0")
     communicator.getProperties().setProperty("TestAdapter.Endpoints", "default -p 12010:udp")
     adapter = communicator.createObjectAdapter("TestAdapter")
     id = communicator.stringToIdentity("communicator")

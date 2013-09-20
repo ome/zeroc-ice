@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,6 +23,10 @@ typedef IceUtil::Handle<PhoneBookI> PhoneBookIPtr;
 class ContactI;
 typedef IceUtil::Handle<ContactI> ContactIPtr;
 
+#ifdef __SUNPRO_CC
+#   pragma error_messages(off,hidef)
+#endif
+
 class ContactI : public Demo::Contact, public IceUtil::AbstractMutexI<IceUtil::Mutex>
 {
 public:
@@ -44,6 +48,10 @@ private:
 
     const ContactFactoryPtr _factory;
 };
+
+#ifdef __SUNPRO_CC
+#   pragma error_messages(default,hidef)
+#endif
 
 class PhoneBookI : public Demo::PhoneBook
 {

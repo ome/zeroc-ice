@@ -1,16 +1,16 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef TEST_ICE
-#define TEST_ICE
+#pragma once
 
-[["cpp:include:deque", "cpp:include:list", "cpp:include:MyByteSeq.h"]]
+[["cpp:include:deque", "cpp:include:list", "cpp:include:MyByteSeq.h", "cpp:include:CustomMap.h",
+  "cpp:include:CustomBuffer.h"]]
 
 module Test
 {
@@ -109,6 +109,33 @@ sequence<ClassOtherStruct> ClassOtherStructSeq;
 };
 sequence<ClassStruct> ClassStructSeq;
 
+["cpp:type:Test::CustomMap<Ice::Int, std::string>"] dictionary<int, string> IntStringDict;
+dictionary<long, long> LongLongDict;
+dictionary<string, int> StringIntDict;
+
+class DictClass
+{
+    IntStringDict isdict;
+};
+
+["cpp:type:Test::CustomBuffer<bool>"] sequence<bool> BoolBuffer;
+["cpp:type:Test::CustomBuffer<Ice::Short>"] sequence<short> ShortBuffer;
+["cpp:type:Test::CustomBuffer<Ice::Int>"] sequence<int> IntBuffer;
+["cpp:type:Test::CustomBuffer<Ice::Long>"] sequence<long> LongBuffer;
+["cpp:type:Test::CustomBuffer<Ice::Float>"] sequence<float> FloatBuffer;
+["cpp:type:Test::CustomBuffer<Ice::Double>"] sequence<double> DoubleBuffer;
+["cpp:type:Test::CustomBuffer<Ice::Byte>"] sequence<byte> ByteBuffer;
+struct BufferStruct
+{
+    ByteBuffer byteBuf;
+    BoolBuffer boolBuf;
+    ShortBuffer shortBuf;
+    IntBuffer intBuf;
+    LongBuffer longBuf;
+    FloatBuffer floatBuf;
+    DoubleBuffer doubleBuf;
+};
+
 ["amd", "ami"] class TestIntf
 {
     DoubleSeq opDoubleArray(["cpp:array"] DoubleSeq inSeq, out DoubleSeq outSeq);
@@ -192,9 +219,22 @@ sequence<ClassStruct> ClassStructSeq;
     
     void opOutRangeByteSeq(ByteSeq org, out ["cpp:range"] ByteSeq copy);
 
+    IntStringDict opIntStringDict(IntStringDict idict, out IntStringDict odict);
+
+    ["cpp:type:::Test::CustomMap< ::Ice::Long, ::Ice::Long>"] LongLongDict 
+    opVarDict(["cpp:type:::Test::CustomMap<std::string, ::Ice::Int>"] StringIntDict idict,
+              out ["cpp:type:::Test::CustomMap<std::string, ::Ice::Int>"] StringIntDict odict);
+
+    ShortBuffer opShortBuffer(ShortBuffer inS, out ShortBuffer outS);
+
+    ["cpp:type:::Test::CustomBuffer<bool>"] BoolSeq opBoolBuffer(
+        ["cpp:type:::Test::CustomBuffer<bool>"] BoolSeq inS,
+        out ["cpp:type:::Test::CustomBuffer<bool>"] BoolSeq outS);
+
+    BufferStruct opBufferStruct(BufferStruct s);
+
     void shutdown();
 };
 
 };
 
-#endif

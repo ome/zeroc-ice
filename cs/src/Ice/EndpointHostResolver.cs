@@ -1,12 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#if !SILVERLIGHT
 namespace IceInternal
 {
     using System;
@@ -20,7 +21,10 @@ namespace IceInternal
         internal EndpointHostResolver(Instance instance)
         {
             _instance = instance;
+            _protocol = instance.protocolSupport();
+            _preferIPv6 = instance.preferIPv6();
             _thread = new HelperThread(this);
+            updateObserver();
             if(instance.initializationData().properties.getProperty("Ice.ThreadPriority").Length > 0)
             {
                 ThreadPriority priority = IceInternal.Util.stringToThreadPriority(
@@ -33,7 +37,56 @@ namespace IceInternal
             }
         }
 
-        public void resolve(string host, int port, EndpointI endpoint, EndpointI_connectors callback)
+        
+        public List<Connector> resolve(string host, int port, Ice.EndpointSelectionType selType, EndpointI endpoint)
+        {
+            //
+            // Try to get the addresses without DNS lookup. If this doesn't
+            // work, we retry with DNS lookup (and observer).
+            //
+            List<EndPoint> addrs = Network.getAddresses(host, port, _protocol, selType, _preferIPv6, false);
+            if(addrs.Count > 0)
+            {
+                return endpoint.connectors(addrs);
+            }
+
+            Ice.Instrumentation.CommunicatorObserver obsv = _instance.initializationData().observer;
+            Ice.Instrumentation.Observer observer = null;
+            if(obsv != null)
+            {
+                observer = obsv.getEndpointLookupObserver(endpoint);
+                if(observer != null)
+                {
+                    observer.attach();
+                }
+            }
+    
+            List<Connector> connectors = null;
+            try 
+            {
+                connectors = endpoint.connectors(Network.getAddresses(host, port, _protocol, selType, _preferIPv6, 
+                                                                      true));
+            }
+            catch(Ice.LocalException ex)
+            {
+                if(observer != null)
+                {
+                    observer.failed(ex.ice_name());
+                }
+                throw ex;
+            }
+            finally
+            {
+                if(observer != null)
+                {
+                    observer.detach();
+                }
+            }
+            return connectors;
+        }
+
+        public void resolve(string host, int port, Ice.EndpointSelectionType selType, EndpointI endpoint, 
+                            EndpointI_connectors callback)
         {
             //
             // Try to get the addresses without DNS lookup. If this doesn't work, we queue a resolve
@@ -41,7 +94,7 @@ namespace IceInternal
             //
             try
             {
-                List<IPEndPoint> addrs = Network.getAddresses(host, port, _instance.protocolSupport(), false);
+                List<EndPoint> addrs = Network.getAddresses(host, port, _protocol, selType, _preferIPv6, false);
                 if(addrs.Count > 0)
                 {
                     callback.connectors(endpoint.connectors(addrs));
@@ -62,8 +115,20 @@ namespace IceInternal
                 ResolveEntry entry = new ResolveEntry();
                 entry.host = host;
                 entry.port = port;
+                entry.selType = selType;
                 entry.endpoint = endpoint;
                 entry.callback = callback;
+
+                Ice.Instrumentation.CommunicatorObserver obsv = _instance.initializationData().observer;
+                if(obsv != null)
+                {
+                    entry.observer = obsv.getEndpointLookupObserver(endpoint);
+                    if(entry.observer != null)
+                    {
+                        entry.observer.attach();
+                    }
+                }
+
                 _queue.AddLast(entry);
                 _m.Notify();
             }
@@ -100,7 +165,9 @@ namespace IceInternal
         {
             while(true)
             {
-                ResolveEntry resolve;
+                ResolveEntry r;
+                Ice.Instrumentation.ThreadObserver threadObserver;
+
                 _m.Lock();
                 try
                 {
@@ -114,8 +181,9 @@ namespace IceInternal
                         break;
                     }
 
-                    resolve = _queue.First.Value;
+                    r = _queue.First.Value;
                     _queue.RemoveFirst();
+                    threadObserver = _observer;
                 }
                 finally
                 {
@@ -124,34 +192,101 @@ namespace IceInternal
 
                 try
                 {
-                    resolve.callback.connectors(
-                        resolve.endpoint.connectors(
-                            Network.getAddresses(resolve.host, resolve.port, _instance.protocolSupport())));
+                    if(threadObserver != null)
+                    {
+                        threadObserver.stateChanged(Ice.Instrumentation.ThreadState.ThreadStateIdle, 
+                                                    Ice.Instrumentation.ThreadState.ThreadStateInUseForOther);
+                    }
+
+                    r.callback.connectors(r.endpoint.connectors(Network.getAddresses(r.host, 
+                                                                                     r.port, 
+                                                                                     _protocol, 
+                                                                                     r.selType, 
+                                                                                     _preferIPv6, 
+                                                                                     true)));
+
+                    if(threadObserver != null)
+                    {
+                        threadObserver.stateChanged(Ice.Instrumentation.ThreadState.ThreadStateInUseForOther, 
+                                                    Ice.Instrumentation.ThreadState.ThreadStateIdle);
+                    }
                 }
                 catch(Ice.LocalException ex)
                 {
-                    resolve.callback.exception(ex);
+                    if(r.observer != null)
+                    {
+                        r.observer.failed(ex.ice_name());
+                    }
+                    r.callback.exception(ex);
+                }
+                finally
+                {
+                    if(r.observer != null)
+                    {
+                        r.observer.detach();
+                    }
                 }
             }
 
             foreach(ResolveEntry entry in _queue)
             {
-                entry.callback.exception(new Ice.CommunicatorDestroyedException());
+                Ice.CommunicatorDestroyedException ex = new Ice.CommunicatorDestroyedException();
+                entry.callback.exception(ex);
+                if(entry.observer != null)
+                {
+                    entry.observer.failed(ex.ice_name());
+                    entry.observer.detach();
+                }
             }
             _queue.Clear();
+
+            if(_observer != null)
+            {
+                _observer.detach();
+            }
+        }
+
+        public void
+        updateObserver()
+        {
+            _m.Lock();
+            try
+            {
+                Ice.Instrumentation.CommunicatorObserver obsv = _instance.initializationData().observer;
+                if(obsv != null)
+                {
+                    _observer = obsv.getThreadObserver("Communicator", 
+                                                       _thread.getName(), 
+                                                       Ice.Instrumentation.ThreadState.ThreadStateIdle, 
+                                                       _observer);
+                    if(_observer != null)
+                    {
+                        _observer.attach();
+                    }
+                }
+            } 
+            finally
+            {
+                _m.Unlock();
+            }
         }
 
         private class ResolveEntry
         {
             internal string host;
             internal int port;
+            internal Ice.EndpointSelectionType selType;
             internal EndpointI endpoint;
             internal EndpointI_connectors callback;
+            internal Ice.Instrumentation.Observer observer;
         }
 
-        private Instance _instance;
+        private readonly Instance _instance;
+        private readonly int _protocol;
+        private readonly bool _preferIPv6;
         private bool _destroyed;
         private LinkedList<ResolveEntry> _queue = new LinkedList<ResolveEntry>();
+        private Ice.Instrumentation.ThreadObserver _observer;
 
         private sealed class HelperThread
         {
@@ -163,7 +298,7 @@ namespace IceInternal
                 {
                     _name += "-";
                 }
-                _name += "Ice.EndpointHostResolverThread";
+                _name += "Ice.HostResolver";
             }
 
             public void Join()
@@ -193,6 +328,11 @@ namespace IceInternal
                 }
             }
 
+            public string getName()
+            {
+                return _name;
+            }
+
             private EndpointHostResolver _resolver;
             private string _name;
             private Thread _thread;
@@ -203,3 +343,4 @@ namespace IceInternal
         private readonly IceUtilInternal.Monitor _m = new IceUtilInternal.Monitor();
     }
 }
+#endif

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -43,7 +43,7 @@ class PermissionsVerifierI : public Glacier2::PermissionsVerifier
 public:
 
     virtual bool
-    checkPermissions(const string& userId, const string& password, string& reason, const Ice::Current& current) const
+    checkPermissions(const string& userId, const string&, string&, const Ice::Current& current) const
     {
         testContext(userId == "ssl", current.ctx);
         return true;
@@ -88,7 +88,7 @@ public:
         {
             // DEPRECATED
             Ice::Context::const_iterator p = current.ctx.find("SSL.Active");
-            assert(p != current.ctx.end() && p->second == "1");
+            test(p != current.ctx.end() && p->second == "1");
         }
 
         current.adapter->remove(current.id);
@@ -99,7 +99,7 @@ public:
     }
 
     virtual void
-    ice_ping(const Ice::Current& current)
+    ice_ping(const Ice::Current& current) const
     {
         testContext(_ssl, current.ctx);
     }
@@ -172,7 +172,7 @@ main(int argc, char* argv[])
 }
 
 int
-SessionServer::run(int argc, char* argv[])
+SessionServer::run(int, char**)
 {
     Ice::ObjectAdapterPtr adapter = communicator()->createObjectAdapterWithEndpoints(
         "SessionServer", "tcp -h 127.0.0.1 -p 12350");

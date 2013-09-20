@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,6 +18,7 @@ namespace IceInternal
     using System;
     using System.Diagnostics;
     using System.Threading;
+    using System.Collections;
     using System.Collections.Generic;
 
     public interface TimerTask
@@ -66,7 +67,16 @@ namespace IceInternal
                 try
                 {
                     _tasks.Add(task, token);
+#if SILVERLIGHT
+                    int index = _tokens.BinarySearch(token);
+                    Debug.Assert(index < 0);
+                    if(index < 0)
+                    {
+                        _tokens.Insert(~index, token);
+                    }
+#else
                     _tokens.Add(token, null);
+#endif
                 }
                 catch(System.ArgumentException)
                 {
@@ -99,7 +109,16 @@ namespace IceInternal
                 try
                 {
                     _tasks.Add(task, token);
+#if SILVERLIGHT
+                    int index = _tokens.BinarySearch(token);
+                    Debug.Assert(index < 0);
+                    if(index < 0)
+                    {
+                        _tokens.Insert(~index, token);
+                    }
+#else
                     _tokens.Add(token, null);
+#endif
                 }
                 catch(System.ArgumentException)
                 {
@@ -145,17 +164,27 @@ namespace IceInternal
         //
         // Only for use by Instance.
         //
+#if !SILVERLIGHT
         internal Timer(IceInternal.Instance instance, ThreadPriority priority)
         {
             init(instance, priority, true);
         }
-
+#endif
+        
         internal Timer(IceInternal.Instance instance)
         {
+#if !SILVERLIGHT
             init(instance, ThreadPriority.Normal, false);
+#else
+            init(instance);
+#endif
         }
 
-        internal void init(IceInternal.Instance instance, ThreadPriority priority, bool hasPriority)
+#if !SILVERLIGHT
+        internal void init(IceInternal.Instance instance, ThreadPriority priority,  bool hasPriority)
+#else
+        internal void init(IceInternal.Instance instance)
+#endif
         {
             _instance = instance;
 
@@ -168,10 +197,12 @@ namespace IceInternal
             _thread = new Thread(new ThreadStart(Run));
             _thread.IsBackground = true;
             _thread.Name = threadName + "Ice.Timer";
+#if !SILVERLIGHT
             if(hasPriority)
             {
                 _thread.Priority = priority;
             }
+#endif
             _thread.Start();
         }
 
@@ -194,7 +225,16 @@ namespace IceInternal
                             if(_tasks.ContainsKey(token.task))
                             {
                                 token.scheduledTime = Time.currentMonotonicTimeMillis() + token.delay;
+#if SILVERLIGHT
+                                int index = _tokens.BinarySearch(token);
+                                Debug.Assert(index < 0);
+                                if(index < 0)
+                                {
+                                    _tokens.Insert(~index, token);
+                                }
+#else
                                 _tokens.Add(token, null);
+#endif
                             }
                         }
                     }
@@ -221,7 +261,11 @@ namespace IceInternal
                         long now = Time.currentMonotonicTimeMillis();
 
                         Token first = null;
+#if SILVERLIGHT
+                        foreach(Token t in _tokens)
+#else
                         foreach(Token t in _tokens.Keys)
+#endif
                         {
                             first = t;
                             break;
@@ -317,31 +361,23 @@ namespace IceInternal
                 return 0;
             }
 
-	    public override bool Equals(object o)
-	    {
-		Token t = null;
+            public override bool Equals(object o)
+            {
+                if(object.ReferenceEquals(this, o))
+                {
+                    return true;
+                }
+                Token t = o as Token;
+                return t == null ? false : CompareTo(t) == 0;
+            }
 
-		try
-		{
-		    t = (Token)o;
-		}
-		catch(InvalidCastException)
-		{
-		    return false;
-		}
-
-	        if(this == t)
-		{
-		    return true;
-		}
-
-		return CompareTo(t) == 0;
-	    }
-
-	    public override int GetHashCode()
-	    {
-	        return id ^ (int)scheduledTime;
-	    }
+            public override int GetHashCode()
+            {
+                int h = 5381;
+                IceInternal.HashUtil.hashAdd(ref h, id);
+                IceInternal.HashUtil.hashAdd(ref h, scheduledTime);
+                return h;
+            }
 
             public long scheduledTime;
             public int id; // Since we can't compare references, we need to use another id.
@@ -351,6 +387,8 @@ namespace IceInternal
 
 #if COMPACT
         private IDictionary<Token, object> _tokens = new SortedList<Token, object>();
+#elif SILVERLIGHT
+        private List<Token> _tokens = new List<Token>();
 #else
         private IDictionary<Token, object> _tokens = new SortedDictionary<Token, object>();
 #endif
@@ -361,5 +399,6 @@ namespace IceInternal
         private Thread _thread;
 
         private readonly IceUtilInternal.Monitor _m = new IceUtilInternal.Monitor();
-   }
+}
+
 }

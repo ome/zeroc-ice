@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 #include <Endpoint.h>
 #include <Util.h>
+#include <Ice/Object.h>
 
 using namespace std;
 using namespace IceRuby;
@@ -143,10 +144,6 @@ IceRuby::createEndpointInfo(const Ice::EndpointInfoPtr& p)
         Ice::UDPEndpointInfoPtr udp = Ice::UDPEndpointInfoPtr::dynamicCast(p);
         rb_ivar_set(info, rb_intern("@host"), createString(udp->host));
         rb_ivar_set(info, rb_intern("@port"), INT2FIX(udp->port));
-        rb_ivar_set(info, rb_intern("@protocolMajor"), CHR2FIX(udp->protocolMajor));
-        rb_ivar_set(info, rb_intern("@protocolMinor"), CHR2FIX(udp->protocolMinor));
-        rb_ivar_set(info, rb_intern("@encodingMajor"), CHR2FIX(udp->encodingMajor));
-        rb_ivar_set(info, rb_intern("@encodingMinor"), CHR2FIX(udp->encodingMinor));
         rb_ivar_set(info, rb_intern("@mcastInterface"), createString(udp->mcastInterface));
         rb_ivar_set(info, rb_intern("@mcastTtl"), INT2FIX(udp->mcastTtl));
     }
@@ -158,6 +155,7 @@ IceRuby::createEndpointInfo(const Ice::EndpointInfoPtr& p)
         Ice::ByteSeq b = opaque->rawBytes;
         VALUE v = callRuby(rb_str_new, reinterpret_cast<const char*>(&b[0]), static_cast<long>(b.size()));
         rb_ivar_set(info, rb_intern("@rawBytes"), v);
+        rb_ivar_set(info, rb_intern("@rawEncoding"), createEncodingVersion(opaque->rawEncoding));
     }
     else if(Ice::IPEndpointInfoPtr::dynamicCast(p))
     {
@@ -256,10 +254,12 @@ IceRuby::initEndpoint(VALUE iceModule)
     rb_define_method(_endpointInfoClass, "secure", CAST_METHOD(IceRuby_EndpointInfo_secure), 0);
 
     //
-    // Instance members. 
+    // Instance members.
     //
-    rb_define_attr(_endpointInfoClass, "timeout", 1, 0); 
-    rb_define_attr(_endpointInfoClass, "compress", 1, 0); 
+    rb_define_attr(_endpointInfoClass, "protocol", 1, 0);
+    rb_define_attr(_endpointInfoClass, "encoding", 1, 0);
+    rb_define_attr(_endpointInfoClass, "timeout", 1, 0);
+    rb_define_attr(_endpointInfoClass, "compress", 1, 0);
 
     //
     // IPEndpointInfo
@@ -267,10 +267,10 @@ IceRuby::initEndpoint(VALUE iceModule)
     _ipEndpointInfoClass = rb_define_class_under(iceModule, "IPEndpointInfo", _endpointInfoClass);
 
     //
-    // Instance members. 
+    // Instance members.
     //
-    rb_define_attr(_ipEndpointInfoClass, "host", 1, 0); 
-    rb_define_attr(_ipEndpointInfoClass, "port", 1, 0); 
+    rb_define_attr(_ipEndpointInfoClass, "host", 1, 0);
+    rb_define_attr(_ipEndpointInfoClass, "port", 1, 0);
 
     //
     // TCPEndpointInfo
@@ -283,14 +283,10 @@ IceRuby::initEndpoint(VALUE iceModule)
     _udpEndpointInfoClass = rb_define_class_under(iceModule, "UDPEndpointInfo", _ipEndpointInfoClass);
 
     //
-    // Instance members. 
+    // Instance members.
     //
-    rb_define_attr(_udpEndpointInfoClass, "protocolMajor", 1, 0); 
-    rb_define_attr(_udpEndpointInfoClass, "protocolMinor", 1, 0); 
-    rb_define_attr(_udpEndpointInfoClass, "encodingMajor", 1, 0); 
-    rb_define_attr(_udpEndpointInfoClass, "encodingMinor", 1, 0); 
-    rb_define_attr(_udpEndpointInfoClass, "mcastInterface", 1, 0); 
-    rb_define_attr(_udpEndpointInfoClass, "mcastTtl", 1, 0); 
+    rb_define_attr(_udpEndpointInfoClass, "mcastInterface", 1, 0);
+    rb_define_attr(_udpEndpointInfoClass, "mcastTtl", 1, 0);
 
     //
     // OpaqueEndpointInfo
@@ -298,9 +294,10 @@ IceRuby::initEndpoint(VALUE iceModule)
     _opaqueEndpointInfoClass = rb_define_class_under(iceModule, "OpaqueEndpointInfo", _endpointInfoClass);
 
     //
-    // Instance members. 
+    // Instance members.
     //
-    rb_define_attr(_opaqueEndpointInfoClass, "rawBytes", 1, 0); 
+    rb_define_attr(_opaqueEndpointInfoClass, "rawBytes", 1, 0);
+    rb_define_attr(_opaqueEndpointInfoClass, "rawEncoding", 1, 0);
 }
 
 bool
@@ -308,4 +305,3 @@ IceRuby::checkEndpoint(VALUE v)
 {
     return callRuby(rb_obj_is_kind_of, v, _endpointClass) == Qtrue;
 }
-

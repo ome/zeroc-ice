@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -13,12 +13,12 @@ CA_FILES	=  iceca
 
 CLASS_FILES	= ImportKey.class
 
-TARGETS		= $(top_srcdir)/bin/iceca \
+TARGETS		= $(bindir)/iceca \
 		  $(top_srcdir)/lib/ImportKey.class
 
 include $(top_srcdir)/config/Make.rules
 
-$(top_srcdir)/bin/iceca: iceca
+$(bindir)/iceca: iceca
 	cp iceca $@
 
 $(top_srcdir)/lib/ImportKey.class: ImportKey.class

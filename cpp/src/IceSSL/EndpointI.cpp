@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,28 +12,29 @@
 #include <IceSSL/ConnectorI.h>
 #include <IceSSL/TransceiverI.h>
 #include <IceSSL/Instance.h>
-#include <Ice/Network.h>
 #include <Ice/BasicStream.h>
 #include <Ice/LocalException.h>
 #include <Ice/DefaultsAndOverrides.h>
+#include <Ice/Object.h>
 #include <Ice/HashUtil.h>
 
 using namespace std;
 using namespace Ice;
 using namespace IceSSL;
 
-IceSSL::EndpointI::EndpointI(const InstancePtr& instance, const string& ho, Int po, Int ti, const string& conId,
+IceSSL::EndpointI::EndpointI(const InstancePtr& instance, const string& ho, Int po, Int ti, const string& conId, 
                              bool co) :
+    IceInternal::EndpointI(conId),
     _instance(instance),
     _host(ho),
     _port(po),
     _timeout(ti),
-    _connectionId(conId),
     _compress(co)
 {
 }
 
 IceSSL::EndpointI::EndpointI(const InstancePtr& instance, const string& str, bool oaEndpoint) :
+    IceInternal::EndpointI(""),
     _instance(instance),
     _port(0),
     _timeout(-1),
@@ -153,8 +154,8 @@ IceSSL::EndpointI::EndpointI(const InstancePtr& instance, const string& str, boo
 
             default:
             {
-                EndpointParseException ex(__FILE__, __LINE__);
-                ex.str = "unknown option `" + option + "' in `ssl " + str + "'";
+                Ice::EndpointParseException ex(__FILE__, __LINE__);
+                ex.str = "unknown option `" + option + "' in endpoint `ssl " + str + "'";
                 throw ex;
             }
         }
@@ -245,18 +246,14 @@ IceSSL::EndpointI::toString() const
     return s.str();
 }
 
-//
-// COMPILERFIX: VC6 complains about an ambiguous "EndpointInfo" symbol when this class is defined inside
-//              getInfo(). Moving the definition into an anonymous namespace works around it.
-//
-namespace
+Ice::EndpointInfoPtr
+IceSSL::EndpointI::getInfo() const
 {
     class InfoI : public IceSSL::EndpointInfo
     {
     public:
 
-        InfoI(Int to, bool comp, const string& host, Int port) :
-            IceSSL::EndpointInfo(to, comp, host, port)
+        InfoI(Int to, bool comp, const string& host, Int port) : IceSSL::EndpointInfo(to, comp, host, port)
         {
         }
 
@@ -278,11 +275,6 @@ namespace
             return true;
         }
     };
-}
-
-Ice::EndpointInfoPtr
-IceSSL::EndpointI::getInfo() const
-{
     return new InfoI(_timeout, _compress, _host, _port);
 }
 
@@ -290,6 +282,12 @@ Short
 IceSSL::EndpointI::type() const
 {
     return EndpointType;
+}
+
+std::string
+IceSSL::EndpointI::protocol() const
+{
+    return "ssl";
 }
 
 Int
@@ -363,15 +361,16 @@ IceSSL::EndpointI::transceiver(IceInternal::EndpointIPtr& endp) const
 }
 
 vector<IceInternal::ConnectorPtr>
-IceSSL::EndpointI::connectors() const
+IceSSL::EndpointI::connectors(Ice::EndpointSelectionType selType) const
 {
-    return connectors(IceInternal::getAddresses(_host, _port, _instance->protocolSupport(), true));
+    return _instance->endpointHostResolver()->resolve(_host, _port, selType, const_cast<EndpointI*>(this));
 }
 
 void
-IceSSL::EndpointI::connectors_async(const IceInternal::EndpointI_connectorsPtr& callback) const
+IceSSL::EndpointI::connectors_async(Ice::EndpointSelectionType selType, 
+                                    const IceInternal::EndpointI_connectorsPtr& callback) const
 {
-    _instance->endpointHostResolver()->resolve(_host, _port, const_cast<EndpointI*>(this), callback);
+    _instance->endpointHostResolver()->resolve(_host, _port, selType, const_cast<EndpointI*>(this), callback);
 }
 
 IceInternal::AcceptorPtr
@@ -524,7 +523,8 @@ IceSSL::EndpointI::operator<(const Ice::LocalObject& r) const
 Ice::Int
 IceSSL::EndpointI::hashInit() const
 {
-    Int h = 0;
+    Int h = 5381;
+    IceInternal::hashAdd(h, EndpointType);
     IceInternal::hashAdd(h, _host);
     IceInternal::hashAdd(h, _port);
     IceInternal::hashAdd(h, _timeout);
@@ -534,7 +534,7 @@ IceSSL::EndpointI::hashInit() const
 }
 
 vector<IceInternal::ConnectorPtr>
-IceSSL::EndpointI::connectors(const vector<struct sockaddr_storage>& addresses) const
+IceSSL::EndpointI::connectors(const vector<IceInternal::Address>& addresses) const
 {
     vector<IceInternal::ConnectorPtr> connectors;
     for(unsigned int i = 0; i < addresses.size(); ++i)

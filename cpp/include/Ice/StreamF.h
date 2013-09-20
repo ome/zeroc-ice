@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,22 +18,11 @@ namespace Ice
 {
 
 class InputStream;
-class OutputStream;
-
-}
-
-namespace IceInternal
-{
-
 ICE_API IceUtil::Shared* upCast(::Ice::InputStream*);
-ICE_API IceUtil::Shared* upCast(::Ice::OutputStream*);
-
-}
-
-namespace Ice
-{
-
 typedef IceInternal::Handle< InputStream > InputStreamPtr;
+
+class OutputStream;
+ICE_API IceUtil::Shared* upCast(::Ice::OutputStream*);
 typedef IceInternal::Handle< OutputStream > OutputStreamPtr;
 
 }

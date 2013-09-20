@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -54,7 +54,7 @@ public:
             try
             {
                 _single->event(_published);
-		IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(1));
+                IceUtil::ThreadControl::sleep(IceUtil::Time::milliSeconds(1));
             }
             catch(const Ice::UnknownException&)
             {
@@ -81,7 +81,7 @@ private:
 typedef IceUtil::Handle<PublishThread> PublishThreadPtr;
 
 int
-run(int argc, char* argv[], const CommunicatorPtr& communicator)
+run(int, char* argv[], const CommunicatorPtr& communicator)
 {
     PropertiesPtr properties = communicator->getProperties();
     const char* managerProxyProperty = "IceStormAdmin.TopicManager.Default";

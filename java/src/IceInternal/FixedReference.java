@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,9 +18,10 @@ public class FixedReference extends Reference
                    String facet,
                    int mode,
                    boolean secure,
+                   Ice.EncodingVersion encoding,
                    Ice.ConnectionI connection)
     {
-        super(instance, communicator, identity, facet, mode, secure);
+        super(instance, communicator, identity, facet, mode, secure, Ice.Util.Protocol_1_0, encoding);
         _fixedConnection = connection;
     }
 
@@ -57,7 +58,7 @@ public class FixedReference extends Reference
     public final boolean
     getCacheConnection()
     {
-        return false;
+        return true;
     }
 
     public boolean

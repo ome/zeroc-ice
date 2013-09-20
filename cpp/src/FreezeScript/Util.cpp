@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -90,8 +90,8 @@ FreezeScript::createEvictorSliceTypes(const Slice::UnitPtr& u)
     {
         identity = ice->createStruct("Identity", false);
         Slice::TypePtr str = u->builtin(Slice::Builtin::KindString);
-        identity->createDataMember("name", str, 0, "", "");
-        identity->createDataMember("category", str, 0, "", "");
+        identity->createDataMember("name", str, false, 0, 0, "", "");
+        identity->createDataMember("category", str, false, 0, 0, "", "");
     }
     else
     {
@@ -132,9 +132,9 @@ FreezeScript::createEvictorSliceTypes(const Slice::UnitPtr& u)
     {
         stats = freeze->createStruct("Statistics", false);
         Slice::TypePtr tl = u->builtin(Slice::Builtin::KindLong);
-        stats->createDataMember("creationTime", tl, 0, "", "");
-        stats->createDataMember("lastSaveTime", tl, 0, "", "");
-        stats->createDataMember("avgSaveTime", tl, 0, "", "");
+        stats->createDataMember("creationTime", tl, false, 0, 0, "", "");
+        stats->createDataMember("lastSaveTime", tl, false, 0, 0, "", "");
+        stats->createDataMember("avgSaveTime", tl, false, 0, 0, "", "");
     }
     else
     {
@@ -155,8 +155,8 @@ FreezeScript::createEvictorSliceTypes(const Slice::UnitPtr& u)
     {
         Slice::StructPtr rec = freeze->createStruct("ObjectRecord", false);
         Slice::TypePtr obj = u->builtin(Slice::Builtin::KindObject);
-        rec->createDataMember("servant", obj, 0, "", "");
-        rec->createDataMember("stats", stats, 0, "", "");
+        rec->createDataMember("servant", obj, false, 0, 0, "", "");
+        rec->createDataMember("stats", stats, false, 0, 0, "", "");
     }
     else
     {

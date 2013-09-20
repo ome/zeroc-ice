@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,8 +18,10 @@
 #include <ObjectFactory.h>
 #include <Operation.h>
 #include <Properties.h>
+#include <PropertiesAdmin.h>
 #include <Proxy.h>
-#include <ThreadNotification.h>
+#include <Thread.h>
+#include <Types.h>
 #include <Util.h>
 #include <Ice/Initialize.h>
 #include <Ice/CommunicatorAsync.h>
@@ -63,9 +65,10 @@ struct CommunicatorObject
 extern "C"
 #endif
 static CommunicatorObject*
-communicatorNew(PyObject* /*arg*/)
+communicatorNew(PyTypeObject* type, PyObject* /*args*/, PyObject* /*kwds*/)
 {
-    CommunicatorObject* self = PyObject_New(CommunicatorObject, &CommunicatorType);
+    assert(type && type->tp_alloc);
+    CommunicatorObject* self = reinterpret_cast<CommunicatorObject*>(type->tp_alloc(type, 0));
     if(!self)
     {
         return 0;
@@ -161,7 +164,7 @@ communicatorInit(CommunicatorObject* self, PyObject* args, PyObject* /*kwds*/)
 
         if(threadHook.get() && threadHook.get() != Py_None)
         {
-            data.threadHook = new ThreadNotificationWrapper(threadHook.get());
+            data.threadHook = new ThreadHook(threadHook.get());
         }
     }
 
@@ -202,9 +205,12 @@ communicatorInit(CommunicatorObject* self, PyObject* args, PyObject* /*kwds*/)
     }
     argv[argc] = 0;
 
+    data.compactIdResolver = new IdResolver;
+
     Ice::CommunicatorPtr communicator;
     try
     {
+        AllowThreads allowThreads;
         if(hasArgs)
         {
             communicator = Ice::initialize(argc, argv, data);
@@ -285,7 +291,7 @@ communicatorDealloc(CommunicatorObject* self)
     delete self->communicator;
     delete self->shutdownMonitor;
     delete self->shutdownThread;
-    PyObject_Del(self);
+    Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 #ifdef WIN32
@@ -759,7 +765,7 @@ communicatorBeginFlushBatchRequests(CommunicatorObject* self, PyObject* args, Py
         return 0;
     }
 
-    return createAsyncResult(result, 0, 0, reinterpret_cast<PyObject*>(self));
+    return createAsyncResult(result, 0, 0, self->wrapper);
 }
 
 #ifdef WIN32
@@ -848,6 +854,62 @@ communicatorAddAdminFacet(CommunicatorObject* self, PyObject* args)
     try
     {
         (*self->communicator)->addAdminFacet(wrapper, facet);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+communicatorFindAdminFacet(CommunicatorObject* self, PyObject* args)
+{
+    PyObject* facetObj;
+    if(!PyArg_ParseTuple(args, STRCAST("O"), &facetObj))
+    {
+        return 0;
+    }
+
+    string facet;
+    if(!getStringArg(facetObj, "facet", facet))
+    {
+        return 0;
+    }
+
+    assert(self->communicator);
+    try
+    {
+        //
+        // The facet being found may not be implemented by a Python servant
+        // (e.g., it could be the Process or Properties facet), in which case
+        // we return None.
+        //
+        Ice::ObjectPtr obj = (*self->communicator)->findAdminFacet(facet);
+        if(obj)
+        {
+            ServantWrapperPtr wrapper = ServantWrapperPtr::dynamicCast(obj);
+            if(wrapper)
+            {
+                return wrapper->getObject();
+            }
+
+            Ice::NativePropertiesAdminPtr props = Ice::NativePropertiesAdminPtr::dynamicCast(obj);
+            if(props)
+            {
+                return createNativePropertiesAdmin(props);
+            }
+
+            // If the facet isn't supported in Python, just return an Ice.Object.
+            PyTypeObject* objectType = reinterpret_cast<PyTypeObject*>(lookupType("Ice.Object"));
+            return objectType->tp_alloc(objectType, 0);
+        }
     }
     catch(const Ice::Exception& ex)
     {
@@ -1424,6 +1486,8 @@ static PyMethodDef CommunicatorMethods[] =
         PyDoc_STR(STRCAST("getAdmin() -> Ice.ObjectPrx")) },
     { STRCAST("addAdminFacet"), reinterpret_cast<PyCFunction>(communicatorAddAdminFacet), METH_VARARGS,
         PyDoc_STR(STRCAST("addAdminFacet(servant, facet) -> None")) },
+    { STRCAST("findAdminFacet"), reinterpret_cast<PyCFunction>(communicatorFindAdminFacet), METH_VARARGS,
+        PyDoc_STR(STRCAST("findAdminFacet(facet) -> Ice.Object")) },
     { STRCAST("removeAdminFacet"), reinterpret_cast<PyCFunction>(communicatorRemoveAdminFacet), METH_VARARGS,
         PyDoc_STR(STRCAST("removeAdminFacet(facet) -> Ice.Object")) },
     { STRCAST("_setWrapper"), reinterpret_cast<PyCFunction>(communicatorSetWrapper), METH_VARARGS,
@@ -1440,8 +1504,7 @@ PyTypeObject CommunicatorType =
 {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
-    PyObject_HEAD_INIT(0)
-    0,                               /* ob_size */
+    PyVarObject_HEAD_INIT(0, 0)
     STRCAST("IcePy.Communicator"),   /* tp_name */
     sizeof(CommunicatorObject),      /* tp_basicsize */
     0,                               /* tp_itemsize */
@@ -1450,7 +1513,7 @@ PyTypeObject CommunicatorType =
     0,                               /* tp_print */
     0,                               /* tp_getattr */
     0,                               /* tp_setattr */
-    0,                               /* tp_compare */
+    0,                               /* tp_reserved */
     0,                               /* tp_repr */
     0,                               /* tp_as_number */
     0,                               /* tp_as_sequence */
@@ -1522,7 +1585,7 @@ IcePy::createCommunicator(const Ice::CommunicatorPtr& communicator)
         return p->second;
     }
 
-    CommunicatorObject* obj = communicatorNew(0);
+    CommunicatorObject* obj = communicatorNew(&CommunicatorType, 0, 0);
     if(obj)
     {
         obj->communicator = new Ice::CommunicatorPtr(communicator);

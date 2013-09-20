@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,7 +14,7 @@
 #include <IceUtil/Cond.h>
 #include <IceUtil/ArgVector.h>
 #include <Ice/GC.h>
-#include <memory>
+#include <IceUtil/UniquePtr.h>
 
 using namespace std;
 using namespace Ice;
@@ -141,7 +141,7 @@ destroyOnInterruptCallback(int signal)
             //
             return;
         }
-        if(_nohup && signal == SIGHUP)
+        if(_nohup && signal == static_cast<int>(SIGHUP))
         {
             return;
         }
@@ -197,7 +197,7 @@ shutdownOnInterruptCallback(int signal)
             //
             return;
         }
-        if(_nohup && signal == SIGHUP)
+        if(_nohup && signal == static_cast<int>(SIGHUP))
         {
             return;
         }
@@ -330,7 +330,7 @@ Ice::Application::main(int argc, char* argv[], const char* configFile)
         catch(const std::exception& ex)
         {
             Error out(getProcessLogger());
-	    out << ex;
+            out << ex;
             return EXIT_FAILURE;
         }
         catch(...)

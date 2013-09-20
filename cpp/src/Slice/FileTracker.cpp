@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,12 +9,10 @@
 
 #include <Slice/FileTracker.h>
 
-#ifdef __sun
-#   include <unistd.h>
-#endif
-
 #ifdef _WIN32
 #   include <direct.h>
+#else
+#   include <unistd.h>
 #endif
 
 using namespace std;
@@ -40,15 +38,11 @@ Slice::FileException::ice_name() const
 void
 Slice::FileException::ice_print(ostream& out) const
 {
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-    Exception::ice_print(out);
-#else
     IceUtil::Exception::ice_print(out);
-#endif
     out << ": " << _reason;
 }
 
-IceUtil::Exception*
+Slice::FileException*
 Slice::FileException::ice_clone() const
 {
     return new FileException(*this);

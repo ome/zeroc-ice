@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,11 +14,11 @@ final class TcpEndpointI extends EndpointI
     public
     TcpEndpointI(Instance instance, String ho, int po, int ti, String conId, boolean co)
     {
+        super(conId);
         _instance = instance;
         _host = ho;
         _port = po;
         _timeout = ti;
-        _connectionId = conId;
         _compress = co;
         calcHashValue();
     }
@@ -26,6 +26,7 @@ final class TcpEndpointI extends EndpointI
     public
     TcpEndpointI(Instance instance, String str, boolean oaEndpoint)
     {
+        super("");
         _instance = instance;
         _host = null;
         _port = 0;
@@ -168,6 +169,7 @@ final class TcpEndpointI extends EndpointI
     public
     TcpEndpointI(BasicStream s)
     {
+        super("");
         _instance = s.instance();
         s.startReadEncaps();
         _host = s.readString();
@@ -268,6 +270,15 @@ final class TcpEndpointI extends EndpointI
     type()
     {
         return Ice.TCPEndpointType.value;
+    }
+
+    //
+    // Return the protocol name
+    //
+    public String
+    protocol()
+    {
+        return "tcp";
     }
 
     //
@@ -379,15 +390,16 @@ final class TcpEndpointI extends EndpointI
     // is available.
     //
     public java.util.List<Connector>
-    connectors()
+    connectors(Ice.EndpointSelectionType selType)
     {
-        return connectors(Network.getAddresses(_host, _port, _instance.protocolSupport()));
+        return connectors(Network.getAddresses(_host, _port, _instance.protocolSupport(), selType,
+                                               _instance.preferIPv6()));
     }
 
     public void
-    connectors_async(EndpointI_connectors callback)
+    connectors_async(Ice.EndpointSelectionType selType, EndpointI_connectors callback)
     {
-        _instance.endpointHostResolver().resolve(_host, _port, this, callback);
+        _instance.endpointHostResolver().resolve(_host, _port, selType, this, callback);
     }
 
     //
@@ -401,8 +413,7 @@ final class TcpEndpointI extends EndpointI
     acceptor(EndpointIHolder endpoint, String adapterName)
     {
         TcpAcceptor p = new TcpAcceptor(_instance, _host, _port);
-        endpoint.value =
-            new TcpEndpointI(_instance, _host, p.effectivePort(), _timeout, _connectionId, _compress);
+        endpoint.value = new TcpEndpointI(_instance, _host, p.effectivePort(), _timeout, _connectionId, _compress);
         return p;
     }
 
@@ -435,15 +446,11 @@ final class TcpEndpointI extends EndpointI
     public boolean
     equivalent(EndpointI endpoint)
     {
-        TcpEndpointI tcpEndpointI = null;
-        try
-        {
-            tcpEndpointI = (TcpEndpointI)endpoint;
-        }
-        catch(ClassCastException ex)
+        if(!(endpoint instanceof TcpEndpointI))
         {
             return false;
         }
+        TcpEndpointI tcpEndpointI = (TcpEndpointI)endpoint;
         return tcpEndpointI._host.equals(_host) && tcpEndpointI._port == _port;
     }
 
@@ -456,37 +463,26 @@ final class TcpEndpointI extends EndpointI
     //
     // Compare endpoints for sorting purposes
     //
-    public boolean
-    equals(java.lang.Object obj)
-    {
-        try
-        {
-            return compareTo((EndpointI)obj) == 0;
-        }
-        catch(ClassCastException ee)
-        {
-            assert(false);
-            return false;
-        }
-    }
-
     public int
     compareTo(EndpointI obj) // From java.lang.Comparable
     {
-        TcpEndpointI p = null;
-
-        try
-        {
-            p = (TcpEndpointI)obj;
-        }
-        catch(ClassCastException ex)
+        if(!(obj instanceof TcpEndpointI))
         {
             return type() < obj.type() ? -1 : 1;
         }
 
+        TcpEndpointI p = (TcpEndpointI)obj;
         if(this == p)
         {
             return 0;
+        }
+        else
+        {
+            int r = super.compareTo(p);
+            if(r != 0)
+            {
+                return r;
+            }
         }
 
         if(_port < p._port)
@@ -505,11 +501,6 @@ final class TcpEndpointI extends EndpointI
         else if(p._timeout < _timeout)
         {
             return 1;
-        }
-
-        if(!_connectionId.equals(p._connectionId))
-        {
-            return _connectionId.compareTo(p._connectionId);
         }
 
         if(!_compress && p._compress)
@@ -538,18 +529,20 @@ final class TcpEndpointI extends EndpointI
     private void
     calcHashValue()
     {
-        _hashCode = _host.hashCode();
-        _hashCode = 5 * _hashCode + _port;
-        _hashCode = 5 * _hashCode + _timeout;
-        _hashCode = 5 * _hashCode + _connectionId.hashCode();
-        _hashCode = 5 * _hashCode + (_compress ? 1 : 0);
+        int h = 5381;
+        h = IceInternal.HashUtil.hashAdd(h, Ice.TCPEndpointType.value);
+        h = IceInternal.HashUtil.hashAdd(h, _host);
+        h = IceInternal.HashUtil.hashAdd(h, _port);
+        h = IceInternal.HashUtil.hashAdd(h, _timeout);
+        h = IceInternal.HashUtil.hashAdd(h, _connectionId);
+        h = IceInternal.HashUtil.hashAdd(h, _compress);
+        _hashCode = h;
     }
 
     private Instance _instance;
     private String _host;
     private int _port;
     private int _timeout;
-    private String _connectionId = "";
     private boolean _compress;
     private int _hashCode;
 }

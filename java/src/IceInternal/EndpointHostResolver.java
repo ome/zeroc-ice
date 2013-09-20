@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,9 +14,12 @@ public class EndpointHostResolver
     EndpointHostResolver(Instance instance)
     {
         _instance = instance;
+        _protocol = instance.protocolSupport();
+        _preferIPv6 = instance.preferIPv6();
         try
         {
             _thread = new HelperThread();
+            updateObserver();
             if(_instance.initializationData().properties.getProperty("Ice.ThreadPriority").length() > 0)
             {
                 _thread.setPriority(Util.getThreadPriorityProperty(_instance.initializationData().properties, "Ice"));
@@ -31,8 +34,45 @@ public class EndpointHostResolver
         }
     }
 
+    public java.util.List<Connector> 
+    resolve(String host, int port, Ice.EndpointSelectionType selType, EndpointI endpoint)
+    {
+        Ice.Instrumentation.CommunicatorObserver obsv = _instance.initializationData().observer;
+        Ice.Instrumentation.Observer observer = null;
+        if(obsv != null)
+        {
+            observer = obsv.getEndpointLookupObserver(endpoint);
+            if(observer != null)
+            {
+                observer.attach();
+            }
+        }
+    
+        java.util.List<Connector> connectors = null;
+        try 
+        {
+            connectors = endpoint.connectors(Network.getAddresses(host, port, _protocol, selType, _preferIPv6));
+        }
+        catch(Ice.LocalException ex)
+        {
+            if(observer != null)
+            {
+                observer.failed(ex.ice_name());
+            }
+            throw ex;
+        }
+        finally
+        {
+            if(observer != null)
+            {
+                observer.detach();
+            }
+        }
+        return connectors;
+    }
+    
     synchronized public void
-    resolve(String host, int port, EndpointI endpoint, EndpointI_connectors callback)
+    resolve(String host, int port, Ice.EndpointSelectionType selType, EndpointI endpoint, EndpointI_connectors callback)
     {
         //
         // TODO: Optimize to avoid the lookup if the given host is a textual IPv4 or IPv6
@@ -45,8 +85,20 @@ public class EndpointHostResolver
         ResolveEntry entry = new ResolveEntry();
         entry.host = host;
         entry.port = port;
+        entry.selType = selType;
         entry.endpoint = endpoint;
         entry.callback = callback;
+
+        Ice.Instrumentation.CommunicatorObserver obsv = _instance.initializationData().observer;
+        if(obsv != null)
+        {
+            entry.observer = obsv.getEndpointLookupObserver(endpoint);
+            if(entry.observer != null)
+            {
+                entry.observer.attach();
+            }
+        }
+
         _queue.add(entry);
         notify();
     }
@@ -71,6 +123,10 @@ public class EndpointHostResolver
             catch(InterruptedException ex)
             {
             }
+            if(_observer != null)
+            {
+                _observer.detach();
+            }
         }
     }
 
@@ -79,7 +135,8 @@ public class EndpointHostResolver
     {
         while(true)
         {
-            ResolveEntry resolve;
+            ResolveEntry r;
+            Ice.Instrumentation.ThreadObserver threadObserver;
             synchronized(this)
             {
                 while(!_destroyed && _queue.isEmpty())
@@ -98,40 +155,94 @@ public class EndpointHostResolver
                     break;
                 }
 
-                resolve = (ResolveEntry)_queue.removeFirst();
+                r = (ResolveEntry)_queue.removeFirst();
+                threadObserver = _observer;
             }
 
             try
             {
-                resolve.callback.connectors(
-                    resolve.endpoint.connectors(
-                        Network.getAddresses(resolve.host, resolve.port, _instance.protocolSupport())));
+                if(threadObserver != null)
+                {
+                    threadObserver.stateChanged(Ice.Instrumentation.ThreadState.ThreadStateIdle, 
+                                                Ice.Instrumentation.ThreadState.ThreadStateInUseForOther);
+                }
+
+                r.callback.connectors(r.endpoint.connectors(Network.getAddresses(r.host, 
+                                                                                 r.port, 
+                                                                                 _protocol, 
+                                                                                 r.selType,
+                                                                                 _preferIPv6)));
+
+                if(threadObserver != null)
+                {
+                    threadObserver.stateChanged(Ice.Instrumentation.ThreadState.ThreadStateInUseForOther, 
+                                                Ice.Instrumentation.ThreadState.ThreadStateIdle);
+                }
             }
             catch(Ice.LocalException ex)
             {
-                resolve.callback.exception(ex);
+                if(r.observer != null)
+                {
+                    r.observer.failed(ex.ice_name());
+                }
+                r.callback.exception(ex);
+            }
+            finally
+            {
+                if(r.observer != null)
+                {
+                    r.observer.detach();
+                }
             }
         }
 
-        for(ResolveEntry p : _queue)
+        for(ResolveEntry entry : _queue)
         {
-            p.callback.exception(new Ice.CommunicatorDestroyedException());
+            Ice.CommunicatorDestroyedException ex = new Ice.CommunicatorDestroyedException();
+            entry.callback.exception(ex);
+            if(entry.observer != null)
+            {
+                entry.observer.failed(ex.ice_name());
+                entry.observer.detach();
+            }
         }
         _queue.clear();
+    }
+
+    synchronized public void
+    updateObserver()
+    {
+        Ice.Instrumentation.CommunicatorObserver obsv = _instance.initializationData().observer;
+        if(obsv != null)
+        {
+            _observer = obsv.getThreadObserver("Communicator", 
+                                               _thread.getName(), 
+                                               Ice.Instrumentation.ThreadState.ThreadStateIdle, 
+                                               _observer);
+            if(_observer != null)
+            {
+                _observer.attach();
+            }
+        }
     }
 
     static class ResolveEntry
     {
         String host;
         int port;
+        Ice.EndpointSelectionType selType;
         EndpointI endpoint;
         EndpointI_connectors callback;
+        Ice.Instrumentation.Observer observer;
     }
 
     private final Instance _instance;
+    private final int _protocol;
+    private final boolean _preferIPv6;
     private boolean _destroyed;
     private java.util.LinkedList<ResolveEntry> _queue = new java.util.LinkedList<ResolveEntry>();
-
+    private Ice.Instrumentation.ThreadObserver _observer;
+    
     private final class HelperThread extends Thread
     {
         HelperThread()
@@ -141,7 +252,7 @@ public class EndpointHostResolver
             {
                 threadName += "-";
             }
-            setName(threadName + "Ice.EndpointHostResolverThread");
+            setName(threadName + "Ice.HostResolver");
         }
 
         public void
